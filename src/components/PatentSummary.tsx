@@ -1,0 +1,131 @@
+import { FileText, Download, Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { toast } from "sonner";
+
+interface PatentSummaryProps {
+  content: string;
+  patentNumber: string;
+  isStreaming: boolean;
+}
+
+export function PatentSummary({ content, patentNumber, isStreaming }: PatentSummaryProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    toast.success("클립보드에 복사되었습니다");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `특허요약_${patentNumber}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("파일이 다운로드되었습니다");
+  };
+
+  // Simple markdown to HTML conversion
+  const renderMarkdown = (text: string) => {
+    const lines = text.split('\n');
+    const elements: JSX.Element[] = [];
+    
+    lines.forEach((line, index) => {
+      if (line.startsWith('## ')) {
+        elements.push(
+          <h2 key={index} className="text-xl font-semibold text-primary mt-6 mb-3 first:mt-0">
+            {line.replace('## ', '')}
+          </h2>
+        );
+      } else if (line.startsWith('- ')) {
+        elements.push(
+          <li key={index} className="text-foreground/90 ml-4 list-disc">
+            {line.replace('- ', '')}
+          </li>
+        );
+      } else if (line.match(/^\d+\.\s/)) {
+        elements.push(
+          <li key={index} className="text-foreground/90 ml-4 list-decimal">
+            {line.replace(/^\d+\.\s/, '')}
+          </li>
+        );
+      } else if (line.trim()) {
+        elements.push(
+          <p key={index} className="text-foreground/80 leading-relaxed mb-2">
+            {line}
+          </p>
+        );
+      }
+    });
+    
+    return elements;
+  };
+
+  return (
+    <div className="w-full max-w-4xl mx-auto animate-fade-up">
+      <div className="glass-effect rounded-2xl border border-border/50 overflow-hidden">
+        {/* Header */}
+        <div className="bg-primary/5 border-b border-border/50 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">특허 요약서</h3>
+              <p className="text-sm text-muted-foreground">등록번호: {patentNumber}</p>
+            </div>
+          </div>
+          
+          {!isStreaming && content && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopy}
+                className="gap-2"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? "복사됨" : "복사"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                다운로드
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-6 md:p-8 min-h-[400px]">
+          {content ? (
+            <div className="prose prose-slate max-w-none">
+              {renderMarkdown(content)}
+              {isStreaming && (
+                <span className="inline-block w-2 h-5 bg-accent animate-pulse-subtle ml-1" />
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <FileText className="w-8 h-8" />
+              </div>
+              <p>요약서가 여기에 표시됩니다</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
