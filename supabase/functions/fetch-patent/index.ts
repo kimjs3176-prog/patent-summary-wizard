@@ -19,6 +19,15 @@ interface PatentData {
   description?: string;
 }
 
+interface RelatedPatent {
+  patentId: string;
+  title: string;
+  assignee?: string;
+  publicationDate?: string;
+  snippet?: string;
+  link?: string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -137,8 +146,49 @@ serve(async (req) => {
 
     console.log("Patent data fetched successfully");
 
+    // Fetch related patents based on title or classifications
+    let relatedPatents: RelatedPatent[] = [];
+    
+    if (patentData.title || (patentData.classifications && patentData.classifications.length > 0)) {
+      try {
+        // Extract keywords from title for related search
+        const searchQuery = patentData.classifications?.[0] || 
+          patentData.title?.split(' ').slice(0, 3).join(' ') || 
+          formattedPatentId;
+        
+        const relatedUrl = new URL("https://serpapi.com/search.json");
+        relatedUrl.searchParams.set("engine", "google_patents");
+        relatedUrl.searchParams.set("q", `${searchQuery} country:KR`);
+        relatedUrl.searchParams.set("api_key", SERPAPI_API_KEY);
+        relatedUrl.searchParams.set("num", "6");
+
+        const relatedResponse = await fetch(relatedUrl.toString());
+        
+        if (relatedResponse.ok) {
+          const relatedData = await relatedResponse.json();
+          const relatedResults = relatedData.organic_results || [];
+          
+          // Filter out the current patent and map to RelatedPatent interface
+          relatedPatents = relatedResults
+            .filter((r: any) => r.patent_id !== firstResult.patent_id)
+            .slice(0, 5)
+            .map((r: any) => ({
+              patentId: r.patent_id || "",
+              title: r.title || "제목 없음",
+              assignee: r.assignee,
+              publicationDate: r.publication_date,
+              snippet: r.snippet,
+              link: r.patent_id ? `https://patents.google.com/patent/${r.patent_id}` : undefined,
+            }));
+        }
+      } catch (relatedError) {
+        console.error("Error fetching related patents:", relatedError);
+        // Continue without related patents
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, data: patentData }),
+      JSON.stringify({ success: true, data: patentData, relatedPatents }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
