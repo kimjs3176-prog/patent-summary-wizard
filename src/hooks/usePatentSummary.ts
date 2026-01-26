@@ -15,18 +15,29 @@ interface PatentData {
   description?: string;
 }
 
+interface RelatedPatent {
+  patentId: string;
+  title: string;
+  assignee?: string;
+  publicationDate?: string;
+  snippet?: string;
+  link?: string;
+}
+
 export function usePatentSummary() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [summary, setSummary] = useState("");
   const [currentPatent, setCurrentPatent] = useState("");
   const [patentData, setPatentData] = useState<PatentData | null>(null);
+  const [relatedPatents, setRelatedPatents] = useState<RelatedPatent[]>([]);
 
   const generateSummary = useCallback(async (patentNumber: string) => {
     setIsLoading(true);
     setIsFetching(true);
     setSummary("");
     setPatentData(null);
+    setRelatedPatents([]);
     setCurrentPatent(patentNumber);
 
     let fetchedPatentData: PatentData | null = null;
@@ -52,6 +63,12 @@ export function usePatentSummary() {
       if (fetchResult.success && fetchResult.data) {
         fetchedPatentData = fetchResult.data;
         setPatentData(fetchedPatentData);
+        
+        // Set related patents if available
+        if (fetchResult.relatedPatents && fetchResult.relatedPatents.length > 0) {
+          setRelatedPatents(fetchResult.relatedPatents);
+        }
+        
         toast.success("특허 정보를 성공적으로 가져왔습니다!");
       } else {
         toast.warning(fetchResult.error || "특허 정보를 가져올 수 없어 일반 요약을 생성합니다.");
@@ -142,6 +159,7 @@ export function usePatentSummary() {
     setSummary("");
     setCurrentPatent("");
     setPatentData(null);
+    setRelatedPatents([]);
   }, []);
 
   return {
@@ -150,6 +168,7 @@ export function usePatentSummary() {
     summary,
     currentPatent,
     patentData,
+    relatedPatents,
     generateSummary,
     reset,
   };

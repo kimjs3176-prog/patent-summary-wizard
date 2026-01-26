@@ -5,7 +5,7 @@ import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const { isLoading, isFetching, summary, currentPatent, patentData, generateSummary, reset } = usePatentSummary();
+  const { isLoading, isFetching, summary, currentPatent, patentData, relatedPatents, generateSummary, reset } = usePatentSummary();
 
   const features = [
     {
@@ -115,6 +115,7 @@ const Index = () => {
                 patentNumber={currentPatent}
                 isStreaming={isLoading}
                 patentData={patentData}
+                relatedPatents={relatedPatents}
               />
             </section>
 
