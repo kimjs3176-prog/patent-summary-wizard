@@ -2,3 +2,6 @@ project_id = "rrvraugvigylkdpstwsl"
 
 [functions.summarize-patent]
 verify_jwt = false
+
+[functions.fetch-patent]
+verify_jwt = false

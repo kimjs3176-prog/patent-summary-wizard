@@ -1,15 +1,29 @@
-import { FileText, Download, Copy, Check } from "lucide-react";
+import { FileText, Download, Copy, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
+
+interface PatentData {
+  title?: string;
+  abstract?: string;
+  inventors?: string[];
+  assignee?: string;
+  filingDate?: string;
+  publicationDate?: string;
+  claims?: string[];
+  patentNumber?: string;
+  applicationNumber?: string;
+  classifications?: string[];
+}
 
 interface PatentSummaryProps {
   content: string;
   patentNumber: string;
   isStreaming: boolean;
+  patentData?: PatentData | null;
 }
 
-export function PatentSummary({ content, patentNumber, isStreaming }: PatentSummaryProps) {
+export function PatentSummary({ content, patentNumber, isStreaming, patentData }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -30,6 +44,16 @@ export function PatentSummary({ content, patentNumber, isStreaming }: PatentSumm
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("파일이 다운로드되었습니다");
+  };
+
+  const openGooglePatents = () => {
+    let patentId = patentNumber.trim();
+    if (patentId.startsWith("10-")) {
+      patentId = `KR10${patentId.replace("10-", "")}`;
+    } else if (!patentId.startsWith("KR")) {
+      patentId = `KR${patentId}`;
+    }
+    window.open(`https://patents.google.com/patent/${patentId}`, "_blank");
   };
 
   // Simple markdown to HTML conversion
@@ -70,9 +94,22 @@ export function PatentSummary({ content, patentNumber, isStreaming }: PatentSumm
 
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-up">
+      {/* Patent Data Badge */}
+      {patentData && (
+        <div className="mb-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+            <span className="text-sm font-medium text-accent">Google Patents 데이터 연동됨</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            실제 특허 데이터를 기반으로 요약서가 생성됩니다.
+          </p>
+        </div>
+      )}
+
       <div className="glass-effect rounded-2xl border border-border/50 overflow-hidden">
         {/* Header */}
-        <div className="bg-primary/5 border-b border-border/50 px-6 py-4 flex items-center justify-between">
+        <div className="bg-primary/5 border-b border-border/50 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <FileText className="w-5 h-5 text-primary" />
@@ -83,28 +120,39 @@ export function PatentSummary({ content, patentNumber, isStreaming }: PatentSumm
             </div>
           </div>
           
-          {!isStreaming && content && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopy}
-                className="gap-2"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? "복사됨" : "복사"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-                className="gap-2"
-              >
-                <Download className="w-4 h-4" />
-                다운로드
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openGooglePatents}
+              className="gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Google Patents
+            </Button>
+            {!isStreaming && content && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="gap-2"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? "복사됨" : "복사"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  다운로드
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Content */}

@@ -1,17 +1,72 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 
+interface PatentData {
+  title?: string;
+  abstract?: string;
+  inventors?: string[];
+  assignee?: string;
+  filingDate?: string;
+  publicationDate?: string;
+  claims?: string[];
+  patentNumber?: string;
+  applicationNumber?: string;
+  classifications?: string[];
+  description?: string;
+}
+
 export function usePatentSummary() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [summary, setSummary] = useState("");
   const [currentPatent, setCurrentPatent] = useState("");
+  const [patentData, setPatentData] = useState<PatentData | null>(null);
 
   const generateSummary = useCallback(async (patentNumber: string) => {
     setIsLoading(true);
+    setIsFetching(true);
     setSummary("");
+    setPatentData(null);
     setCurrentPatent(patentNumber);
 
+    let fetchedPatentData: PatentData | null = null;
+
+    // Step 1: Fetch patent data from Google Patents via SerpApi
     try {
+      toast.info("Google Patents에서 특허 정보를 조회 중...");
+      
+      const fetchResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-patent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ patentNumber }),
+        }
+      );
+
+      const fetchResult = await fetchResponse.json();
+
+      if (fetchResult.success && fetchResult.data) {
+        fetchedPatentData = fetchResult.data;
+        setPatentData(fetchedPatentData);
+        toast.success("특허 정보를 성공적으로 가져왔습니다!");
+      } else {
+        toast.warning(fetchResult.error || "특허 정보를 가져올 수 없어 일반 요약을 생성합니다.");
+      }
+    } catch (fetchError) {
+      console.error("Patent fetch error:", fetchError);
+      toast.warning("특허 정보 조회 실패. 일반 요약을 생성합니다.");
+    }
+
+    setIsFetching(false);
+
+    // Step 2: Generate AI summary with patent data
+    try {
+      toast.info("AI 요약서를 생성 중...");
+      
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-patent`,
         {
@@ -20,7 +75,10 @@ export function usePatentSummary() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ patentNumber }),
+          body: JSON.stringify({ 
+            patentNumber,
+            patentData: fetchedPatentData 
+          }),
         }
       );
 
@@ -83,12 +141,15 @@ export function usePatentSummary() {
   const reset = useCallback(() => {
     setSummary("");
     setCurrentPatent("");
+    setPatentData(null);
   }, []);
 
   return {
     isLoading,
+    isFetching,
     summary,
     currentPatent,
+    patentData,
     generateSummary,
     reset,
   };

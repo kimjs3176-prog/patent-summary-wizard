@@ -1,16 +1,21 @@
-import { FileText, Sparkles, Shield, Zap } from "lucide-react";
+import { FileText, Sparkles, Shield, Zap, Database } from "lucide-react";
 import { PatentInput } from "@/components/PatentInput";
 import { PatentSummary } from "@/components/PatentSummary";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const { isLoading, summary, currentPatent, generateSummary, reset } = usePatentSummary();
+  const { isLoading, isFetching, summary, currentPatent, patentData, generateSummary, reset } = usePatentSummary();
 
   const features = [
     {
+      icon: Database,
+      title: "Google Patents 연동",
+      description: "실제 특허 데이터베이스에서 정보를 가져옵니다",
+    },
+    {
       icon: Zap,
-      title: "빠른 요약",
+      title: "빠른 AI 요약",
       description: "AI가 몇 초 만에 핵심 내용을 추출합니다",
     },
     {
@@ -54,7 +59,7 @@ const Index = () => {
             <section className="text-center max-w-3xl mx-auto mb-16">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent mb-6 animate-fade-up">
                 <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-medium">AI 기반 특허 분석</span>
+                <span className="text-sm font-medium">Google Patents API 연동</span>
               </div>
               
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
@@ -63,9 +68,9 @@ const Index = () => {
               </h2>
               
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "0.2s" }}>
-                특허 등록번호만 입력하면 AI가 핵심 내용을 분석하여
+                특허 등록번호만 입력하면 Google Patents에서 데이터를 가져와
                 <br className="hidden sm:block" />
-                깔끔한 1페이지 요약서를 생성해 드립니다.
+                AI가 깔끔한 1페이지 요약서를 생성해 드립니다.
               </p>
             </section>
 
@@ -75,7 +80,7 @@ const Index = () => {
             </section>
 
             {/* Features */}
-            <section className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
               {features.map((feature, index) => (
                 <div
                   key={feature.title}
@@ -93,17 +98,28 @@ const Index = () => {
           </>
         ) : (
           <>
+            {/* Loading State */}
+            {isFetching && (
+              <div className="text-center mb-8 animate-fade-up">
+                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-accent/10 border border-accent/20">
+                  <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                  <span className="text-accent font-medium">Google Patents에서 데이터 조회 중...</span>
+                </div>
+              </div>
+            )}
+
             {/* Summary Section */}
             <section className="mb-8">
               <PatentSummary
                 content={summary}
                 patentNumber={currentPatent}
                 isStreaming={isLoading}
+                patentData={patentData}
               />
             </section>
 
             {/* Loading Input for new search during streaming */}
-            {isLoading && (
+            {isLoading && !isFetching && (
               <section className="mt-12">
                 <PatentInput onSubmit={generateSummary} isLoading={isLoading} />
               </section>
@@ -115,7 +131,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 mt-auto">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>© 2025 특허요약 서비스. AI 기반 특허 분석 솔루션.</p>
+          <p>© 2025 특허요약 서비스. Google Patents API 연동 • AI 기반 특허 분석</p>
         </div>
       </footer>
     </div>
