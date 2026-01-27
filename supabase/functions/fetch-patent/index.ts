@@ -52,16 +52,22 @@ serve(async (req) => {
     }
 
     // Format patent number for Google Patents
-    // Korean patent format: 10-1234567 -> KR101234567B1 or KR10-1234567
+    // Korean patent formats:
+    // - Registration: 10-1234567 -> KR101234567
+    // - Application: 10-2023-0123456 -> KR1020230123456
     let formattedPatentId = patentNumber.trim();
     
-    // Convert Korean patent number format
-    if (formattedPatentId.startsWith("10-")) {
-      // Remove hyphen and add KR prefix
-      const numericPart = formattedPatentId.replace("10-", "");
-      formattedPatentId = `KR10${numericPart}`;
+    // Detect and convert Korean patent number format
+    if (formattedPatentId.match(/^10-\d{4}-\d+$/)) {
+      // Application number format: 10-2023-0123456 -> KR1020230123456
+      const parts = formattedPatentId.split("-");
+      formattedPatentId = `KR10${parts[1]}${parts[2]}`;
+    } else if (formattedPatentId.match(/^10-\d{7}$/)) {
+      // Registration number format: 10-1234567 -> KR101234567
+      formattedPatentId = `KR10${formattedPatentId.replace("10-", "")}`;
     } else if (!formattedPatentId.startsWith("KR")) {
-      formattedPatentId = `KR${formattedPatentId}`;
+      // Add KR prefix if not present
+      formattedPatentId = `KR${formattedPatentId.replace(/-/g, "")}`;
     }
 
     console.log("Fetching patent:", formattedPatentId);
