@@ -1,6 +1,6 @@
 import { FileText, Sparkles, Shield, Zap, Database } from "lucide-react";
 import { PatentInput } from "@/components/PatentInput";
-import { PatentSummary } from "@/components/PatentSummary";
+import { PatentSummary } from "@/components/PatentSummary/index";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { Button } from "@/components/ui/button";
 
