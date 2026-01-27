@@ -88,11 +88,11 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
           position: "absolute",
           left: "-9999px",
           top: 0,
-          width: "210mm",
-          minHeight: "297mm",
-          padding: "20mm",
+          width: "170mm",
+          padding: "0",
           backgroundColor: "#ffffff",
           fontFamily: "'Noto Sans KR', sans-serif",
+          boxSizing: "border-box",
         }}
       >
         {/* Header */}
@@ -218,12 +218,9 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
         {/* Footer */}
         <div
           style={{
-            position: "absolute",
-            bottom: "15mm",
-            left: "20mm",
-            right: "20mm",
+            marginTop: "24px",
             borderTop: "1px solid #e2e8f0",
-            paddingTop: "10px",
+            paddingTop: "12px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",

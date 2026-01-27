@@ -39,13 +39,21 @@ export function PdfGenerator({ content, patentNumber, patentData, printRef }: Pd
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15; // 균일한 여백 15mm
+      const contentWidth = pdfWidth - margin * 2;
+      const contentHeight = pdfHeight - margin * 2;
+      
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 10;
+      const ratio = Math.min(contentWidth / imgWidth, contentHeight / imgHeight);
+      const scaledWidth = imgWidth * ratio;
+      const scaledHeight = imgHeight * ratio;
+      
+      // 상하좌우 중앙 정렬
+      const imgX = (pdfWidth - scaledWidth) / 2;
+      const imgY = (pdfHeight - scaledHeight) / 2;
 
-      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(imgData, "PNG", imgX, imgY, scaledWidth, scaledHeight);
       pdf.save(`특허요약_${patentNumber}.pdf`);
 
       toast.success("PDF가 다운로드되었습니다!");
