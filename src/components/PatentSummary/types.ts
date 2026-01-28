@@ -9,6 +9,9 @@ export interface PatentData {
   patentNumber?: string;
   applicationNumber?: string;
   classifications?: string[];
+  description?: string;
+  representativeImage?: string;
+  images?: string[];
 }
 
 export interface RelatedPatent {

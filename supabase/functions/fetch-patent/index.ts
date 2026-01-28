@@ -17,6 +17,8 @@ interface PatentData {
   applicationNumber?: string;
   classifications?: string[];
   description?: string;
+  representativeImage?: string;
+  images?: string[];
 }
 
 interface RelatedPatent {
@@ -114,6 +116,7 @@ serve(async (req) => {
       filingDate: firstResult.filing_date,
       publicationDate: firstResult.publication_date,
       inventors: firstResult.inventor ? [firstResult.inventor] : [],
+      representativeImage: firstResult.thumbnail,
     };
 
     // If we have a patent_id, try to get more details
@@ -129,6 +132,12 @@ serve(async (req) => {
         if (detailResponse.ok) {
           const detailData = await detailResponse.json();
           
+          // Extract images from detail data
+          const images: string[] = [];
+          if (detailData.images && Array.isArray(detailData.images)) {
+            images.push(...detailData.images.slice(0, 5));
+          }
+          
           // Extract detailed information
           patentData = {
             ...patentData,
@@ -142,6 +151,8 @@ serve(async (req) => {
             applicationNumber: detailData.application_number,
             classifications: detailData.classifications?.map((c: any) => c.code || c) || [],
             description: detailData.description,
+            representativeImage: images[0] || patentData.representativeImage,
+            images: images,
           };
         }
       } catch (detailError) {
