@@ -59,9 +59,30 @@ export function PatentSummary({
         .replace(/^\s*\d+\.\s+/, ''); // Remove numbered lists
 
       if (line.startsWith("## ")) {
+        const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
+        
+        // Check if this is the 대표 도면 section - insert image before it
+        if (sectionTitle === "발명의 요약" && patentData?.representativeImage) {
+          elements.push(
+            <div key={`img-${index}`} className="my-6 flex justify-center">
+              <div className="text-center">
+                <img 
+                  src={patentData.representativeImage} 
+                  alt="대표 도면" 
+                  className="max-w-xs md:max-w-sm h-auto rounded-lg border border-border/50 bg-white mx-auto"
+                  onError={(e) => {
+                    e.currentTarget.parentElement!.style.display = 'none';
+                  }}
+                />
+                <p className="text-xs text-muted-foreground mt-2">【대표 도면】</p>
+              </div>
+            </div>
+          );
+        }
+        
         elements.push(
           <h2 key={index} className="text-xl font-semibold text-primary mt-6 mb-3 first:mt-0">
-            {line.replace("## ", "").replace(/\*\*/g, '')}
+            {sectionTitle}
           </h2>
         );
       } else if (cleanLine.trim()) {
@@ -86,33 +107,52 @@ export function PatentSummary({
         patentData={patentData}
       />
 
-      {/* Patent Data Badge with Representative Image */}
+      {/* Patent Data Badge */}
       {patentData && (
         <div className="mb-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Representative Image */}
-            {patentData.representativeImage && (
-              <div className="shrink-0">
-                <img 
-                  src={patentData.representativeImage} 
-                  alt="대표 도면" 
-                  className="w-full md:w-48 h-auto rounded-lg border border-border/50 bg-white"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <p className="text-xs text-muted-foreground mt-1 text-center">대표 도면</p>
-              </div>
-            )}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                <span className="text-sm font-medium text-accent">Google Patents 데이터 연동됨</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                실제 특허 데이터를 기반으로 요약서가 생성됩니다.
-              </p>
-            </div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+            <span className="text-sm font-medium text-accent">Google Patents 데이터 연동됨</span>
+          </div>
+          <div className="text-sm text-foreground/80 space-y-1">
+            <p>
+              <span className="text-muted-foreground">{patentData.searchType === 'application' ? '출원번호' : '등록번호'}:</span>{' '}
+              <span className="font-medium">{patentData.displayNumber || patentData.patentNumber}</span>
+              {patentData.titleKo && (
+                <>
+                  <span className="text-muted-foreground ml-4">발명의 명칭:</span>{' '}
+                  <span className="font-medium">{patentData.titleKo}</span>
+                </>
+              )}
+            </p>
+            <p>
+              {patentData.assignee && (
+                <>
+                  <span className="text-muted-foreground">출원인:</span>{' '}
+                  <span>{patentData.assignee}</span>
+                </>
+              )}
+              {patentData.inventors && patentData.inventors.length > 0 && (
+                <>
+                  <span className="text-muted-foreground ml-4">발명자:</span>{' '}
+                  <span>{patentData.inventors.join(', ')}</span>
+                </>
+              )}
+            </p>
+            <p>
+              {patentData.filingDate && (
+                <>
+                  <span className="text-muted-foreground">출원일:</span>{' '}
+                  <span>{patentData.filingDate}</span>
+                </>
+              )}
+              {patentData.publicationDate && (
+                <>
+                  <span className="text-muted-foreground ml-4">공개일:</span>{' '}
+                  <span>{patentData.publicationDate}</span>
+                </>
+              )}
+            </p>
           </div>
         </div>
       )}

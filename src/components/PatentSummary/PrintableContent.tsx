@@ -21,31 +21,50 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
           .replace(/^\s*\d+\.\s+/, ''); // Remove numbered lists
 
         if (line.startsWith("## ")) {
+          const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
+          
+          // Skip "특허 기본 정보" section entirely
+          if (sectionTitle === "특허 기본 정보") {
+            return;
+          }
+          
           elements.push(
             <h2
               key={index}
               style={{
-                fontSize: "16px",
+                fontSize: "14px",
                 fontWeight: 600,
                 color: "#1e3a5f",
-                marginTop: index === 0 ? "0" : "20px",
-                marginBottom: "10px",
+                marginTop: index === 0 ? "0" : "16px",
+                marginBottom: "8px",
                 borderBottom: "2px solid #e2e8f0",
-                paddingBottom: "6px",
+                paddingBottom: "4px",
               }}
             >
-              {line.replace("## ", "").replace(/\*\*/g, '')}
+              {sectionTitle}
             </h2>
           );
         } else if (cleanLine.trim()) {
+          // Skip lines that look like they're from 특허 기본 정보 section
+          if (
+            cleanLine.includes("등록번호는") ||
+            cleanLine.includes("출원번호는") ||
+            cleanLine.includes("발명의 명칭은") ||
+            cleanLine.includes("출원인/권리자는") ||
+            cleanLine.includes("출원일/등록일은") ||
+            cleanLine.includes("발명자는")
+          ) {
+            return;
+          }
+          
           elements.push(
             <p
               key={index}
               style={{
-                fontSize: "12px",
+                fontSize: "11px",
                 color: "#374151",
-                lineHeight: "1.6",
-                marginBottom: "8px",
+                lineHeight: "1.5",
+                marginBottom: "6px",
               }}
             >
               {cleanLine}
@@ -56,6 +75,9 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
 
       return elements;
     };
+
+    const displayNumber = patentData?.displayNumber || patentNumber;
+    const numberLabel = patentData?.searchType === 'application' ? '출원번호' : '등록번호';
 
     return (
       <div
@@ -75,8 +97,8 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
         <div
           style={{
             borderBottom: "3px solid #1e3a5f",
-            paddingBottom: "16px",
-            marginBottom: "20px",
+            paddingBottom: "12px",
+            marginBottom: "16px",
           }}
         >
           <div
@@ -89,7 +111,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
             <div>
               <h1
                 style={{
-                  fontSize: "24px",
+                  fontSize: "22px",
                   fontWeight: 700,
                   color: "#1e3a5f",
                   margin: 0,
@@ -99,9 +121,9 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
               </h1>
               <p
                 style={{
-                  fontSize: "14px",
+                  fontSize: "12px",
                   color: "#6b7280",
-                  marginTop: "4px",
+                  marginTop: "2px",
                 }}
               >
                 Patent Summary Report
@@ -114,102 +136,76 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
             >
               <p
                 style={{
-                  fontSize: "12px",
+                  fontSize: "10px",
                   color: "#6b7280",
                   margin: 0,
                 }}
               >
-                등록번호
+                {numberLabel}
               </p>
               <p
                 style={{
-                  fontSize: "18px",
+                  fontSize: "16px",
                   fontWeight: 600,
                   color: "#1e3a5f",
                   margin: 0,
                 }}
               >
-                {patentNumber}
+                {displayNumber}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Patent Info Box with Representative Image */}
+        {/* Patent Info - Non-descriptive format */}
         {patentData && (
           <div
             style={{
               backgroundColor: "#f8fafc",
               border: "1px solid #e2e8f0",
-              borderRadius: "8px",
-              padding: "16px",
-              marginBottom: "20px",
+              borderRadius: "6px",
+              padding: "12px",
+              marginBottom: "16px",
+              fontSize: "10px",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                gap: "16px",
-              }}
-            >
-              {/* Representative Image */}
-              {patentData.representativeImage && (
-                <div style={{ flexShrink: 0 }}>
-                  <img 
-                    src={patentData.representativeImage} 
-                    alt="대표 도면" 
-                    style={{
-                      width: "100px",
-                      height: "auto",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "4px",
-                      backgroundColor: "#ffffff",
-                    }}
-                  />
-                  <p style={{ fontSize: "9px", color: "#6b7280", textAlign: "center", marginTop: "4px" }}>대표 도면</p>
-                </div>
+            <div style={{ marginBottom: "6px" }}>
+              <span style={{ color: "#6b7280" }}>{numberLabel}: </span>
+              <span style={{ color: "#1e3a5f", fontWeight: 600 }}>{displayNumber}</span>
+              {patentData.titleKo && (
+                <>
+                  <span style={{ color: "#6b7280", marginLeft: "16px" }}>발명의 명칭: </span>
+                  <span style={{ color: "#1e3a5f", fontWeight: 500 }}>{patentData.titleKo}</span>
+                </>
               )}
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px",
-                    fontSize: "11px",
-                  }}
-                >
-                  {patentData.title && (
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <span style={{ color: "#6b7280", fontWeight: 500 }}>발명의 명칭: </span>
-                      <span style={{ color: "#1e3a5f", fontWeight: 600 }}>{patentData.title}</span>
-                    </div>
-                  )}
-                  {patentData.assignee && (
-                    <div>
-                      <span style={{ color: "#6b7280", fontWeight: 500 }}>출원인: </span>
-                      <span style={{ color: "#374151" }}>{patentData.assignee}</span>
-                    </div>
-                  )}
-                  {patentData.inventors && patentData.inventors.length > 0 && (
-                    <div>
-                      <span style={{ color: "#6b7280", fontWeight: 500 }}>발명자: </span>
-                      <span style={{ color: "#374151" }}>{patentData.inventors.join(", ")}</span>
-                    </div>
-                  )}
-                  {patentData.filingDate && (
-                    <div>
-                      <span style={{ color: "#6b7280", fontWeight: 500 }}>출원일: </span>
-                      <span style={{ color: "#374151" }}>{patentData.filingDate}</span>
-                    </div>
-                  )}
-                  {patentData.publicationDate && (
-                    <div>
-                      <span style={{ color: "#6b7280", fontWeight: 500 }}>공개일: </span>
-                      <span style={{ color: "#374151" }}>{patentData.publicationDate}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            </div>
+            <div style={{ marginBottom: "6px" }}>
+              {patentData.assignee && (
+                <>
+                  <span style={{ color: "#6b7280" }}>출원인: </span>
+                  <span style={{ color: "#374151" }}>{patentData.assignee}</span>
+                </>
+              )}
+              {patentData.inventors && patentData.inventors.length > 0 && (
+                <>
+                  <span style={{ color: "#6b7280", marginLeft: "16px" }}>발명자: </span>
+                  <span style={{ color: "#374151" }}>{patentData.inventors.join(', ')}</span>
+                </>
+              )}
+            </div>
+            <div>
+              {patentData.filingDate && (
+                <>
+                  <span style={{ color: "#6b7280" }}>출원일: </span>
+                  <span style={{ color: "#374151" }}>{patentData.filingDate}</span>
+                </>
+              )}
+              {patentData.publicationDate && (
+                <>
+                  <span style={{ color: "#6b7280", marginLeft: "16px" }}>공개일: </span>
+                  <span style={{ color: "#374151" }}>{patentData.publicationDate}</span>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -220,13 +216,13 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
         {/* Footer */}
         <div
           style={{
-            marginTop: "24px",
+            marginTop: "20px",
             borderTop: "1px solid #e2e8f0",
-            paddingTop: "12px",
+            paddingTop: "10px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            fontSize: "10px",
+            fontSize: "9px",
             color: "#9ca3af",
           }}
         >
