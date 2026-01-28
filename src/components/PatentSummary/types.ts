@@ -1,5 +1,6 @@
 export interface PatentData {
   title?: string;
+  titleKo?: string;
   abstract?: string;
   inventors?: string[];
   assignee?: string;
@@ -8,6 +9,8 @@ export interface PatentData {
   claims?: string[];
   patentNumber?: string;
   applicationNumber?: string;
+  displayNumber?: string;
+  searchType?: 'registration' | 'application';
   classifications?: string[];
   description?: string;
   representativeImage?: string;

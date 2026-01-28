@@ -7,6 +7,7 @@ const corsHeaders = {
 
 interface PatentData {
   title?: string;
+  titleKo?: string;
   abstract?: string;
   inventors?: string[];
   assignee?: string;
@@ -15,6 +16,8 @@ interface PatentData {
   claims?: string[];
   patentNumber?: string;
   applicationNumber?: string;
+  displayNumber?: string; // Formatted display number (10-XXXXXXX or 10-YYYY-XXXXXXX)
+  searchType?: 'registration' | 'application'; // What type of search was performed
   classifications?: string[];
   description?: string;
   representativeImage?: string;
@@ -58,18 +61,42 @@ serve(async (req) => {
     // - Registration: 10-1234567 -> KR101234567
     // - Application: 10-2023-0123456 -> KR1020230123456
     let formattedPatentId = patentNumber.trim();
+    let searchType: 'registration' | 'application' = 'registration';
+    let displayNumber = patentNumber.trim();
     
     // Detect and convert Korean patent number format
     if (formattedPatentId.match(/^10-\d{4}-\d+$/)) {
       // Application number format: 10-2023-0123456 -> KR1020230123456
+      searchType = 'application';
       const parts = formattedPatentId.split("-");
       formattedPatentId = `KR10${parts[1]}${parts[2]}`;
+      displayNumber = patentNumber.trim(); // Keep original format for application
     } else if (formattedPatentId.match(/^10-\d{7}$/)) {
       // Registration number format: 10-1234567 -> KR101234567
+      searchType = 'registration';
       formattedPatentId = `KR10${formattedPatentId.replace("10-", "")}`;
+      displayNumber = patentNumber.trim();
+    } else if (formattedPatentId.match(/^\d{7}$/)) {
+      // Just 7 digits (registration without prefix): 1234567 -> KR101234567
+      searchType = 'registration';
+      formattedPatentId = `KR10${formattedPatentId}`;
+      displayNumber = `10-${formattedPatentId.slice(-7)}`;
+    } else if (formattedPatentId.match(/^KR10\d{7}$/)) {
+      // Already formatted registration: KR101234567
+      searchType = 'registration';
+      displayNumber = `10-${formattedPatentId.slice(4)}`;
+    } else if (formattedPatentId.match(/^KR10\d{11,}$/)) {
+      // Already formatted application: KR1020230123456
+      searchType = 'application';
+      const num = formattedPatentId.slice(4);
+      displayNumber = `10-${num.slice(0, 4)}-${num.slice(4)}`;
     } else if (!formattedPatentId.startsWith("KR")) {
       // Add KR prefix if not present
-      formattedPatentId = `KR${formattedPatentId.replace(/-/g, "")}`;
+      const cleanNum = formattedPatentId.replace(/-/g, "");
+      formattedPatentId = `KR${cleanNum}`;
+      if (cleanNum.length > 7) {
+        searchType = 'application';
+      }
     }
 
     console.log("Fetching patent:", formattedPatentId);
@@ -110,8 +137,11 @@ serve(async (req) => {
     // Try to get detailed patent info if patent_id is available
     let patentData: PatentData = {
       title: firstResult.title,
+      titleKo: firstResult.title, // Will be updated from details if available
       abstract: firstResult.snippet,
       patentNumber: firstResult.patent_id || patentNumber,
+      displayNumber: displayNumber,
+      searchType: searchType,
       assignee: firstResult.assignee,
       filingDate: firstResult.filing_date,
       publicationDate: firstResult.publication_date,
@@ -139,9 +169,23 @@ serve(async (req) => {
           }
           
           // Extract detailed information
+          // Try to get Korean title from localized_titles or keep existing
+          let titleKo = patentData.titleKo;
+          if (detailData.localized_titles) {
+            const koTitle = detailData.localized_titles.find((t: any) => t.language === 'ko' || t.lang === 'ko');
+            if (koTitle) {
+              titleKo = koTitle.text || koTitle.title || titleKo;
+            }
+          }
+          // If title contains Korean characters, use it
+          if (detailData.title && /[가-힣]/.test(detailData.title)) {
+            titleKo = detailData.title;
+          }
+          
           patentData = {
             ...patentData,
             title: detailData.title || patentData.title,
+            titleKo: titleKo || detailData.title || patentData.title,
             abstract: detailData.abstract || patentData.abstract,
             inventors: detailData.inventors?.map((inv: any) => inv.name || inv) || patentData.inventors,
             assignee: detailData.assignee?.name || detailData.assignee || patentData.assignee,
