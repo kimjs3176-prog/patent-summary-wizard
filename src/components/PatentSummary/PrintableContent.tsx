@@ -14,6 +14,12 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
       const elements: JSX.Element[] = [];
 
       lines.forEach((line, index) => {
+        // Remove markdown formatting: **, -, numbered lists
+        let cleanLine = line
+          .replace(/\*\*/g, '') // Remove **
+          .replace(/^\s*[-•]\s+/, '') // Remove bullet points
+          .replace(/^\s*\d+\.\s+/, ''); // Remove numbered lists
+
         if (line.startsWith("## ")) {
           elements.push(
             <h2
@@ -28,40 +34,10 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
                 paddingBottom: "6px",
               }}
             >
-              {line.replace("## ", "")}
+              {line.replace("## ", "").replace(/\*\*/g, '')}
             </h2>
           );
-        } else if (line.startsWith("- ")) {
-          elements.push(
-            <li
-              key={index}
-              style={{
-                fontSize: "12px",
-                color: "#374151",
-                marginLeft: "16px",
-                marginBottom: "4px",
-                listStyleType: "disc",
-              }}
-            >
-              {line.replace("- ", "")}
-            </li>
-          );
-        } else if (line.match(/^\d+\.\s/)) {
-          elements.push(
-            <li
-              key={index}
-              style={{
-                fontSize: "12px",
-                color: "#374151",
-                marginLeft: "16px",
-                marginBottom: "4px",
-                listStyleType: "decimal",
-              }}
-            >
-              {line.replace(/^\d+\.\s/, "")}
-            </li>
-          );
-        } else if (line.trim()) {
+        } else if (cleanLine.trim()) {
           elements.push(
             <p
               key={index}
@@ -72,7 +48,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
                 marginBottom: "8px",
               }}
             >
-              {line}
+              {cleanLine}
             </p>
           );
         }
@@ -159,7 +135,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
           </div>
         </div>
 
-        {/* Patent Info Box */}
+        {/* Patent Info Box with Representative Image */}
         {patentData && (
           <div
             style={{
@@ -172,42 +148,68 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-                fontSize: "11px",
+                display: "flex",
+                gap: "16px",
               }}
             >
-              {patentData.title && (
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <span style={{ color: "#6b7280", fontWeight: 500 }}>발명의 명칭: </span>
-                  <span style={{ color: "#1e3a5f", fontWeight: 600 }}>{patentData.title}</span>
+              {/* Representative Image */}
+              {patentData.representativeImage && (
+                <div style={{ flexShrink: 0 }}>
+                  <img 
+                    src={patentData.representativeImage} 
+                    alt="대표 도면" 
+                    style={{
+                      width: "100px",
+                      height: "auto",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "4px",
+                      backgroundColor: "#ffffff",
+                    }}
+                  />
+                  <p style={{ fontSize: "9px", color: "#6b7280", textAlign: "center", marginTop: "4px" }}>대표 도면</p>
                 </div>
               )}
-              {patentData.assignee && (
-                <div>
-                  <span style={{ color: "#6b7280", fontWeight: 500 }}>출원인: </span>
-                  <span style={{ color: "#374151" }}>{patentData.assignee}</span>
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px",
+                    fontSize: "11px",
+                  }}
+                >
+                  {patentData.title && (
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <span style={{ color: "#6b7280", fontWeight: 500 }}>발명의 명칭: </span>
+                      <span style={{ color: "#1e3a5f", fontWeight: 600 }}>{patentData.title}</span>
+                    </div>
+                  )}
+                  {patentData.assignee && (
+                    <div>
+                      <span style={{ color: "#6b7280", fontWeight: 500 }}>출원인: </span>
+                      <span style={{ color: "#374151" }}>{patentData.assignee}</span>
+                    </div>
+                  )}
+                  {patentData.inventors && patentData.inventors.length > 0 && (
+                    <div>
+                      <span style={{ color: "#6b7280", fontWeight: 500 }}>발명자: </span>
+                      <span style={{ color: "#374151" }}>{patentData.inventors.join(", ")}</span>
+                    </div>
+                  )}
+                  {patentData.filingDate && (
+                    <div>
+                      <span style={{ color: "#6b7280", fontWeight: 500 }}>출원일: </span>
+                      <span style={{ color: "#374151" }}>{patentData.filingDate}</span>
+                    </div>
+                  )}
+                  {patentData.publicationDate && (
+                    <div>
+                      <span style={{ color: "#6b7280", fontWeight: 500 }}>공개일: </span>
+                      <span style={{ color: "#374151" }}>{patentData.publicationDate}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {patentData.inventors && patentData.inventors.length > 0 && (
-                <div>
-                  <span style={{ color: "#6b7280", fontWeight: 500 }}>발명자: </span>
-                  <span style={{ color: "#374151" }}>{patentData.inventors.join(", ")}</span>
-                </div>
-              )}
-              {patentData.filingDate && (
-                <div>
-                  <span style={{ color: "#6b7280", fontWeight: 500 }}>출원일: </span>
-                  <span style={{ color: "#374151" }}>{patentData.filingDate}</span>
-                </div>
-              )}
-              {patentData.publicationDate && (
-                <div>
-                  <span style={{ color: "#6b7280", fontWeight: 500 }}>공개일: </span>
-                  <span style={{ color: "#374151" }}>{patentData.publicationDate}</span>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         )}
