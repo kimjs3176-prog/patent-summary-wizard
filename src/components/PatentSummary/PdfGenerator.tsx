@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { PatentData } from "./types";
+import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
 
 interface PdfGeneratorProps {
   content: string;
@@ -18,14 +19,20 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       return;
     }
 
-    toast.info("PDF 생성 중...");
+    toast.info("PDF 생성 중... (폰트 로딩 중)");
 
     try {
+      // Load Korean font first
+      const koreanFontBase64 = await loadKoreanFont();
+      
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
+
+      // Add Korean font support
+      addKoreanFontToDoc(pdf, koreanFontBase64);
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -44,7 +51,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       };
 
       // Helper function to wrap and add text
-      const addWrappedText = (text: string, fontSize: number, fontStyle: string, color: number[], lineHeight: number = 1.4) => {
+      const addWrappedText = (text: string, fontSize: number, color: number[], lineHeight: number = 1.4) => {
         pdf.setFontSize(fontSize);
         pdf.setTextColor(color[0], color[1], color[2]);
         
@@ -90,35 +97,29 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       pdf.line(margin, yPosition, pageWidth - margin, yPosition);
       yPosition += 8;
 
-      // Patent info box
+      // Patent info box (minimal - just title and key info)
       if (patentData) {
+        // Use Korean title (titleKo) if available
+        const inventionTitle = patentData.titleKo || patentData.title || "정보 없음";
+        
         pdf.setFillColor(248, 250, 252);
         pdf.setDrawColor(226, 232, 240);
-        pdf.roundedRect(margin, yPosition, contentWidth, 28, 2, 2, "FD");
+        pdf.roundedRect(margin, yPosition, contentWidth, 20, 2, 2, "FD");
         yPosition += 5;
 
         const infoX = margin + 4;
         pdf.setFontSize(9);
         
-        // First line: Number and title
+        // First line: Title (Korean)
         pdf.setTextColor(107, 114, 128);
-        pdf.text(`${numberLabel}: `, infoX, yPosition);
-        let xPos = infoX + pdf.getTextWidth(`${numberLabel}: `);
+        pdf.text("발명의 명칭: ", infoX, yPosition);
+        let xPos = infoX + pdf.getTextWidth("발명의 명칭: ");
         pdf.setTextColor(30, 58, 95);
-        pdf.text(displayNumber, xPos, yPosition);
-        xPos += pdf.getTextWidth(displayNumber);
-
-        if (patentData.titleKo) {
-          pdf.setTextColor(107, 114, 128);
-          pdf.text("   발명의 명칭: ", xPos, yPosition);
-          xPos += pdf.getTextWidth("   발명의 명칭: ");
-          pdf.setTextColor(30, 58, 95);
-          const maxTitleWidth = contentWidth - (xPos - margin) - 4;
-          const truncatedTitle = patentData.titleKo.length > 40 
-            ? patentData.titleKo.substring(0, 40) + "..." 
-            : patentData.titleKo;
-          pdf.text(truncatedTitle, xPos, yPosition);
-        }
+        
+        // Truncate title if too long
+        const maxTitleWidth = contentWidth - (xPos - margin) - 8;
+        const titleLines = pdf.splitTextToSize(inventionTitle, maxTitleWidth);
+        pdf.text(titleLines[0] + (titleLines.length > 1 ? "..." : ""), xPos, yPosition);
         yPosition += 5;
 
         // Second line: Assignee and inventors
@@ -164,14 +165,29 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         yPosition += 12;
       }
 
-      // Process content
+      // Process content - skip basic info section from AI summary
       const lines = content.split("\n");
       let imageInserted = false;
+      let skipSection = false;
 
       for (const line of lines) {
-        // Skip patent info section from AI summary
-        if (line.includes("특허 기본 정보") || 
-            line.includes("등록번호는") ||
+        // Skip the entire "특허 기본 정보" section
+        if (line.startsWith("## 특허 기본 정보")) {
+          skipSection = true;
+          continue;
+        }
+        
+        // Stop skipping when we reach the next section
+        if (skipSection && line.startsWith("## ")) {
+          skipSection = false;
+        }
+        
+        if (skipSection) {
+          continue;
+        }
+
+        // Skip lines that describe basic patent info
+        if (line.includes("등록번호는") ||
             line.includes("출원번호는") ||
             line.includes("발명의 명칭은") ||
             line.includes("출원인/권리자는") ||
@@ -189,8 +205,9 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         if (line.startsWith("## ")) {
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
           
-          // Skip 특허 기본 정보 section
+          // Skip 특허 기본 정보 section header
           if (sectionTitle === "특허 기본 정보") {
+            skipSection = true;
             continue;
           }
 
@@ -209,7 +226,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
                   reader.onload = () => {
                     try {
                       const imgData = reader.result as string;
-                      const imgWidth = 50; // Appropriate size relative to text
+                      const imgWidth = 50;
                       const imgHeight = 40;
                       
                       checkNewPage(imgHeight + 10);
@@ -255,7 +272,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
           yPosition += 5;
           
         } else if (cleanLine.trim()) {
-          addWrappedText(cleanLine, 10, "normal", [55, 65, 81], 1.5);
+          addWrappedText(cleanLine, 10, [55, 65, 81], 1.5);
           yPosition += 1;
         }
       }
@@ -278,7 +295,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       toast.success("PDF가 다운로드되었습니다!");
     } catch (error) {
       console.error("PDF generation error:", error);
-      toast.error("PDF 생성 중 오류가 발생했습니다.");
+      toast.error("PDF 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   };
 
