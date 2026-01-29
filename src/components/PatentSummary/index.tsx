@@ -69,7 +69,7 @@ export function PatentSummary({
                 <img 
                   src={patentData.representativeImage} 
                   alt="대표 도면" 
-                  className="max-w-xs md:max-w-sm h-auto rounded-lg border border-border/50 bg-white mx-auto"
+                  className="w-48 md:w-56 h-auto rounded-lg border border-border/50 bg-white mx-auto"
                   onError={(e) => {
                     e.currentTarget.parentElement!.style.display = 'none';
                   }}
@@ -118,13 +118,13 @@ export function PatentSummary({
             <p>
               <span className="text-muted-foreground">{patentData.searchType === 'application' ? '출원번호' : '등록번호'}:</span>{' '}
               <span className="font-medium">{patentData.displayNumber || patentData.patentNumber}</span>
-              {patentData.titleKo && (
-                <>
-                  <span className="text-muted-foreground ml-4">발명의 명칭:</span>{' '}
-                  <span className="font-medium">{patentData.titleKo}</span>
-                </>
-              )}
             </p>
+            {patentData.titleKo && (
+              <p>
+                <span className="text-muted-foreground">발명의 명칭:</span>{' '}
+                <span className="font-medium">{patentData.titleKo}</span>
+              </p>
+            )}
             <p>
               {patentData.assignee && (
                 <>

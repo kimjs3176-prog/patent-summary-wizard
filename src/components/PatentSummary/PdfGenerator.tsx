@@ -1,9 +1,7 @@
-import { useRef } from "react";
 import { FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { PatentData } from "./types";
 
 interface PdfGeneratorProps {
@@ -13,9 +11,9 @@ interface PdfGeneratorProps {
   printRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export function PdfGenerator({ content, patentNumber, patentData, printRef }: PdfGeneratorProps) {
+export function PdfGenerator({ content, patentNumber, patentData }: PdfGeneratorProps) {
   const handlePdfDownload = async () => {
-    if (!printRef.current) {
+    if (!content) {
       toast.error("PDF 생성에 실패했습니다.");
       return;
     }
@@ -23,39 +21,260 @@ export function PdfGenerator({ content, patentNumber, patentData, printRef }: Pd
     toast.info("PDF 생성 중...");
 
     try {
-      const canvas = await html2canvas(printRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-      });
-
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 15; // 균일한 여백 15mm
-      const contentWidth = pdfWidth - margin * 2;
-      const contentHeight = pdfHeight - margin * 2;
-      
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(contentWidth / imgWidth, contentHeight / imgHeight);
-      const scaledWidth = imgWidth * ratio;
-      const scaledHeight = imgHeight * ratio;
-      
-      // 상하좌우 중앙 정렬
-      const imgX = (pdfWidth - scaledWidth) / 2;
-      const imgY = (pdfHeight - scaledHeight) / 2;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - margin * 2;
+      let yPosition = margin;
 
-      pdf.addImage(imgData, "PNG", imgX, imgY, scaledWidth, scaledHeight);
+      // Helper function to add new page if needed
+      const checkNewPage = (neededHeight: number) => {
+        if (yPosition + neededHeight > pageHeight - margin) {
+          pdf.addPage();
+          yPosition = margin;
+          return true;
+        }
+        return false;
+      };
+
+      // Helper function to wrap and add text
+      const addWrappedText = (text: string, fontSize: number, fontStyle: string, color: number[], lineHeight: number = 1.4) => {
+        pdf.setFontSize(fontSize);
+        pdf.setTextColor(color[0], color[1], color[2]);
+        
+        const lines = pdf.splitTextToSize(text, contentWidth);
+        const lineHeightMm = fontSize * 0.352778 * lineHeight;
+        
+        for (const line of lines) {
+          checkNewPage(lineHeightMm);
+          pdf.text(line, margin, yPosition);
+          yPosition += lineHeightMm;
+        }
+      };
+
+      // Title: 특허 요약서
+      pdf.setFontSize(22);
+      pdf.setTextColor(30, 58, 95);
+      pdf.text("특허 요약서", margin, yPosition);
+      yPosition += 6;
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text("Patent Summary Report", margin, yPosition);
+      yPosition += 4;
+
+      // Display number on the right
+      const displayNumber = patentData?.displayNumber || patentNumber;
+      const numberLabel = patentData?.searchType === 'application' ? '출원번호' : '등록번호';
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(107, 114, 128);
+      const labelWidth = pdf.getTextWidth(numberLabel);
+      pdf.text(numberLabel, pageWidth - margin - labelWidth, margin + 2);
+      
+      pdf.setFontSize(14);
+      pdf.setTextColor(30, 58, 95);
+      const numWidth = pdf.getTextWidth(displayNumber);
+      pdf.text(displayNumber, pageWidth - margin - numWidth, margin + 7);
+
+      // Divider line
+      yPosition += 2;
+      pdf.setDrawColor(30, 58, 95);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 8;
+
+      // Patent info box
+      if (patentData) {
+        pdf.setFillColor(248, 250, 252);
+        pdf.setDrawColor(226, 232, 240);
+        pdf.roundedRect(margin, yPosition, contentWidth, 28, 2, 2, "FD");
+        yPosition += 5;
+
+        const infoX = margin + 4;
+        pdf.setFontSize(9);
+        
+        // First line: Number and title
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`${numberLabel}: `, infoX, yPosition);
+        let xPos = infoX + pdf.getTextWidth(`${numberLabel}: `);
+        pdf.setTextColor(30, 58, 95);
+        pdf.text(displayNumber, xPos, yPosition);
+        xPos += pdf.getTextWidth(displayNumber);
+
+        if (patentData.titleKo) {
+          pdf.setTextColor(107, 114, 128);
+          pdf.text("   발명의 명칭: ", xPos, yPosition);
+          xPos += pdf.getTextWidth("   발명의 명칭: ");
+          pdf.setTextColor(30, 58, 95);
+          const maxTitleWidth = contentWidth - (xPos - margin) - 4;
+          const truncatedTitle = patentData.titleKo.length > 40 
+            ? patentData.titleKo.substring(0, 40) + "..." 
+            : patentData.titleKo;
+          pdf.text(truncatedTitle, xPos, yPosition);
+        }
+        yPosition += 5;
+
+        // Second line: Assignee and inventors
+        if (patentData.assignee || patentData.inventors?.length) {
+          xPos = infoX;
+          if (patentData.assignee) {
+            pdf.setTextColor(107, 114, 128);
+            pdf.text("출원인: ", xPos, yPosition);
+            xPos += pdf.getTextWidth("출원인: ");
+            pdf.setTextColor(55, 65, 81);
+            pdf.text(patentData.assignee, xPos, yPosition);
+            xPos += pdf.getTextWidth(patentData.assignee);
+          }
+          if (patentData.inventors && patentData.inventors.length > 0) {
+            pdf.setTextColor(107, 114, 128);
+            pdf.text("   발명자: ", xPos, yPosition);
+            xPos += pdf.getTextWidth("   발명자: ");
+            pdf.setTextColor(55, 65, 81);
+            pdf.text(patentData.inventors.join(", "), xPos, yPosition);
+          }
+          yPosition += 5;
+        }
+
+        // Third line: Dates
+        if (patentData.filingDate || patentData.publicationDate) {
+          xPos = infoX;
+          if (patentData.filingDate) {
+            pdf.setTextColor(107, 114, 128);
+            pdf.text("출원일: ", xPos, yPosition);
+            xPos += pdf.getTextWidth("출원일: ");
+            pdf.setTextColor(55, 65, 81);
+            pdf.text(patentData.filingDate, xPos, yPosition);
+            xPos += pdf.getTextWidth(patentData.filingDate);
+          }
+          if (patentData.publicationDate) {
+            pdf.setTextColor(107, 114, 128);
+            pdf.text("   공개일: ", xPos, yPosition);
+            xPos += pdf.getTextWidth("   공개일: ");
+            pdf.setTextColor(55, 65, 81);
+            pdf.text(patentData.publicationDate, xPos, yPosition);
+          }
+        }
+        yPosition += 12;
+      }
+
+      // Process content
+      const lines = content.split("\n");
+      let imageInserted = false;
+
+      for (const line of lines) {
+        // Skip patent info section from AI summary
+        if (line.includes("특허 기본 정보") || 
+            line.includes("등록번호는") ||
+            line.includes("출원번호는") ||
+            line.includes("발명의 명칭은") ||
+            line.includes("출원인/권리자는") ||
+            line.includes("출원일/등록일은") ||
+            line.includes("발명자는")) {
+          continue;
+        }
+
+        // Clean line from markdown
+        let cleanLine = line
+          .replace(/\*\*/g, '')
+          .replace(/^\s*[-•]\s+/, '')
+          .replace(/^\s*\d+\.\s+/, '');
+
+        if (line.startsWith("## ")) {
+          const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
+          
+          // Skip 특허 기본 정보 section
+          if (sectionTitle === "특허 기본 정보") {
+            continue;
+          }
+
+          // Insert representative image before 발명의 요약 section
+          if (sectionTitle === "발명의 요약" && patentData?.representativeImage && !imageInserted) {
+            imageInserted = true;
+            
+            try {
+              // Fetch and embed image
+              const response = await fetch(patentData.representativeImage);
+              if (response.ok) {
+                const blob = await response.blob();
+                const reader = new FileReader();
+                
+                await new Promise<void>((resolve) => {
+                  reader.onload = () => {
+                    try {
+                      const imgData = reader.result as string;
+                      const imgWidth = 50; // Appropriate size relative to text
+                      const imgHeight = 40;
+                      
+                      checkNewPage(imgHeight + 10);
+                      
+                      // Center the image
+                      const imgX = (pageWidth - imgWidth) / 2;
+                      pdf.addImage(imgData, "PNG", imgX, yPosition, imgWidth, imgHeight);
+                      yPosition += imgHeight + 2;
+                      
+                      // Caption
+                      pdf.setFontSize(8);
+                      pdf.setTextColor(156, 163, 175);
+                      const captionText = "【대표 도면】";
+                      const captionWidth = pdf.getTextWidth(captionText);
+                      pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
+                      yPosition += 8;
+                    } catch (imgError) {
+                      console.error("Error adding image to PDF:", imgError);
+                    }
+                    resolve();
+                  };
+                  reader.onerror = () => resolve();
+                  reader.readAsDataURL(blob);
+                });
+              }
+            } catch (imgError) {
+              console.error("Error fetching image:", imgError);
+            }
+          }
+
+          // Section header
+          checkNewPage(10);
+          yPosition += 4;
+          pdf.setFontSize(12);
+          pdf.setTextColor(30, 58, 95);
+          pdf.text(sectionTitle, margin, yPosition);
+          yPosition += 2;
+          
+          // Underline
+          pdf.setDrawColor(226, 232, 240);
+          pdf.setLineWidth(0.3);
+          pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+          yPosition += 5;
+          
+        } else if (cleanLine.trim()) {
+          addWrappedText(cleanLine, 10, "normal", [55, 65, 81], 1.5);
+          yPosition += 1;
+        }
+      }
+
+      // Footer
+      yPosition = pageHeight - margin;
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setLineWidth(0.2);
+      pdf.line(margin, yPosition - 5, pageWidth - margin, yPosition - 5);
+      
+      pdf.setFontSize(8);
+      pdf.setTextColor(156, 163, 175);
+      pdf.text("© 특허요약 서비스 | AI 기반 특허 분석", margin, yPosition);
+      
+      const dateText = `생성일: ${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}`;
+      const dateWidth = pdf.getTextWidth(dateText);
+      pdf.text(dateText, pageWidth - margin - dateWidth, yPosition);
+
       pdf.save(`특허요약_${patentNumber}.pdf`);
-
       toast.success("PDF가 다운로드되었습니다!");
     } catch (error) {
       console.error("PDF generation error:", error);
