@@ -50,8 +50,24 @@ export function PatentSummary({
   const renderMarkdown = (text: string) => {
     const lines = text.split("\n");
     const elements: JSX.Element[] = [];
+    let skipSection = false;
 
     lines.forEach((line, index) => {
+      // Skip the entire "특허 기본 정보" section
+      if (line.startsWith("## 특허 기본 정보")) {
+        skipSection = true;
+        return;
+      }
+      
+      // Stop skipping when we reach the next section
+      if (skipSection && line.startsWith("## ")) {
+        skipSection = false;
+      }
+      
+      if (skipSection) {
+        return;
+      }
+
       // Remove markdown formatting: **, -, numbered lists
       let cleanLine = line
         .replace(/\*\*/g, '') // Remove **
@@ -61,7 +77,13 @@ export function PatentSummary({
       if (line.startsWith("## ")) {
         const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
         
-        // Check if this is the 대표 도면 section - insert image before it
+        // Skip 특허 기본 정보 section
+        if (sectionTitle === "특허 기본 정보") {
+          skipSection = true;
+          return;
+        }
+        
+        // Check if this is the 발명의 요약 section - insert image before it
         if (sectionTitle === "발명의 요약" && patentData?.representativeImage) {
           elements.push(
             <div key={`img-${index}`} className="my-6 flex justify-center">
