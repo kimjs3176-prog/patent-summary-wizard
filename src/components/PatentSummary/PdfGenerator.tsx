@@ -211,7 +211,21 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
             continue;
           }
 
-          // Insert representative image before 발명의 요약 section
+          // Section header
+          checkNewPage(10);
+          yPosition += 4;
+          pdf.setFontSize(12);
+          pdf.setTextColor(30, 58, 95);
+          pdf.text(sectionTitle, margin, yPosition);
+          yPosition += 2;
+          
+          // Underline
+          pdf.setDrawColor(226, 232, 240);
+          pdf.setLineWidth(0.3);
+          pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+          yPosition += 5;
+
+          // Insert representative image AFTER 발명의 요약 section header
           if (sectionTitle === "발명의 요약" && patentData?.representativeImage && !imageInserted) {
             imageInserted = true;
             
@@ -256,20 +270,6 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
               console.error("Error fetching image:", imgError);
             }
           }
-
-          // Section header
-          checkNewPage(10);
-          yPosition += 4;
-          pdf.setFontSize(12);
-          pdf.setTextColor(30, 58, 95);
-          pdf.text(sectionTitle, margin, yPosition);
-          yPosition += 2;
-          
-          // Underline
-          pdf.setDrawColor(226, 232, 240);
-          pdf.setLineWidth(0.3);
-          pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-          yPosition += 5;
           
         } else if (cleanLine.trim()) {
           addWrappedText(cleanLine, 10, [55, 65, 81], 1.5);
