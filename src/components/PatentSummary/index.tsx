@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { FileText, Download, Copy, Check, ExternalLink } from "lucide-react";
+import { FileText, Copy, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps } from "./types";
@@ -24,18 +24,7 @@ export function PatentSummary({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `특허요약_${patentNumber}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("파일이 다운로드되었습니다");
-  };
+  // MD 다운로드 기능 제거 (요청사항)
 
   const openGooglePatents = () => {
     let patentId = patentNumber.trim();
@@ -91,7 +80,7 @@ export function PatentSummary({
                 <img 
                   src={patentData.representativeImage} 
                   alt="대표 도면" 
-                  className="w-48 md:w-56 h-auto rounded-lg border border-border/50 bg-white mx-auto"
+                  className="w-40 md:w-44 h-auto max-h-64 object-contain rounded-lg border border-border/50 bg-white mx-auto"
                   onError={(e) => {
                     e.currentTarget.parentElement!.style.display = 'none';
                   }}
@@ -202,10 +191,6 @@ export function PatentSummary({
                 <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   {copied ? "복사됨" : "복사"}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-                  <Download className="w-4 h-4" />
-                  MD
                 </Button>
                 <PdfGenerator
                   content={content}

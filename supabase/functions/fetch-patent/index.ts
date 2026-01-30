@@ -5,6 +5,42 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function translateToKorean(text: string): Promise<string> {
+  // Best-effort: if no key is configured, just return original.
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) return text;
+
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You translate patent titles into natural Korean. Output ONLY the Korean title. If input is already Korean, return it unchanged.",
+          },
+          { role: "user", content: text },
+        ],
+        temperature: 0.2,
+        stream: false,
+      }),
+    });
+
+    if (!resp.ok) return text;
+    const data = await resp.json();
+    const out = data?.choices?.[0]?.message?.content?.trim();
+    return out || text;
+  } catch (_e) {
+    return text;
+  }
+}
+
 interface PatentData {
   title?: string;
   titleKo?: string;
@@ -203,6 +239,15 @@ serve(async (req) => {
         console.error("Error fetching patent details:", detailError);
         // Continue with basic info if detail fetch fails
       }
+    }
+
+    // Force Korean invention title (best-effort translation if we only have English)
+    if (patentData.titleKo && !/[가-힣]/.test(patentData.titleKo)) {
+      const translated = await translateToKorean(patentData.titleKo);
+      patentData.titleKo = translated;
+    } else if (!patentData.titleKo && patentData.title) {
+      const translated = await translateToKorean(patentData.title);
+      patentData.titleKo = translated;
     }
 
     console.log("Patent data fetched successfully");
