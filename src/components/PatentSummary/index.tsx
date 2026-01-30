@@ -72,7 +72,13 @@ export function PatentSummary({
           return;
         }
         
-        // Check if this is the 발명의 요약 section - insert image before it
+        elements.push(
+          <h2 key={index} className="text-xl font-semibold text-primary mt-6 mb-3 first:mt-0">
+            {sectionTitle}
+          </h2>
+        );
+        
+        // Insert representative image AFTER "발명의 요약" section header
         if (sectionTitle === "발명의 요약" && patentData?.representativeImage) {
           elements.push(
             <div key={`img-${index}`} className="my-6 flex justify-center">
@@ -90,12 +96,6 @@ export function PatentSummary({
             </div>
           );
         }
-        
-        elements.push(
-          <h2 key={index} className="text-xl font-semibold text-primary mt-6 mb-3 first:mt-0">
-            {sectionTitle}
-          </h2>
-        );
       } else if (cleanLine.trim()) {
         elements.push(
           <p key={index} className="text-foreground/80 leading-relaxed mb-2">
