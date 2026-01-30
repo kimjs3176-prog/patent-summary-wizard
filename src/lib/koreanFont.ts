@@ -1,9 +1,12 @@
-// This file provides Korean font support for jsPDF
-// We use multiple CDN sources for reliability
+// This file provides Korean font support for jsPDF.
+// IMPORTANT: For reliability, we ship a font file in /public/fonts and fetch it locally first.
 
 const FONT_URLS = [
-  'https://cdn.jsdelivr.net/gh/nicemoon-developer/jspdf-korean-font@main/malgun.ttf',
-  'https://raw.githubusercontent.com/nicemoon-developer/jspdf-korean-font/main/malgun.ttf',
+  // Local (bundled) font (preferred)
+  "/fonts/NotoSansKR-VF.ttf",
+  // Fallbacks (may change/404 over time)
+  "https://cdn.jsdelivr.net/gh/nicemoon-developer/jspdf-korean-font@main/malgun.ttf",
+  "https://raw.githubusercontent.com/nicemoon-developer/jspdf-korean-font/main/malgun.ttf",
 ];
 
 export async function loadKoreanFont(): Promise<string> {
@@ -11,10 +14,7 @@ export async function loadKoreanFont(): Promise<string> {
   
   for (const fontUrl of FONT_URLS) {
     try {
-      const response = await fetch(fontUrl, {
-        mode: 'cors',
-        cache: 'force-cache',
-      });
+      const response = await fetch(fontUrl);
       
       if (!response.ok) {
         throw new Error(`Font fetch failed: ${response.status}`);
