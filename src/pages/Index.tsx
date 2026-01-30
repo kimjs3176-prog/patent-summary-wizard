@@ -63,7 +63,7 @@ const Index = () => {
               </div>
               
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-                한국 특허
+                농식품 특허
                 <span className="gradient-text block">1페이지 요약 서비스</span>
               </h2>
               
@@ -132,7 +132,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 mt-auto">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>© 2025 특허요약 서비스. Google Patents API 연동 • AI 기반 특허 분석</p>
+          <p>© 2025 농식품 특허 1페이지 요약 서비스. Google Patents API 연동 • AI 기반 특허 분석</p>
         </div>
       </footer>
     </div>

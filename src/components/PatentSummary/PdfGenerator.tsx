@@ -65,15 +65,15 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         }
       };
 
-      // Title: 특허 요약서
-      pdf.setFontSize(22);
+      // Title: 농식품 특허 요약서
+      pdf.setFontSize(20);
       pdf.setTextColor(30, 58, 95);
-      pdf.text("특허 요약서", margin, yPosition);
+      pdf.text("농식품 특허 요약서", margin, yPosition);
       yPosition += 6;
       
-      pdf.setFontSize(10);
+      pdf.setFontSize(9);
       pdf.setTextColor(107, 114, 128);
-      pdf.text("Patent Summary Report", margin, yPosition);
+      pdf.text("Agri-Food Patent Summary Report", margin, yPosition);
       yPosition += 4;
 
       // Display number on the right
@@ -285,7 +285,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       
       pdf.setFontSize(8);
       pdf.setTextColor(156, 163, 175);
-      pdf.text("© 특허요약 서비스 | AI 기반 특허 분석", margin, yPosition);
+      pdf.text("© 농식품 특허 1페이지 요약 서비스 | AI 기반 특허 분석", margin, yPosition);
       
       const dateText = `생성일: ${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}`;
       const dateWidth = pdf.getTextWidth(dateText);
