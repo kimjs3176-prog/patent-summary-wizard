@@ -128,7 +128,11 @@ export function PatentSummary({
           <div className="text-sm text-foreground/80 space-y-1">
             <p>
               <span className="text-muted-foreground">{patentData.searchType === 'application' ? '출원번호' : '등록번호'}:</span>{' '}
-              <span className="font-medium">{patentData.displayNumber || patentData.patentNumber}</span>
+              <span className="font-medium">
+                {patentData.searchType === 'application' 
+                  ? (patentData.applicationNumber || patentData.displayNumber || patentData.patentNumber)
+                  : (patentData.displayNumber || patentData.patentNumber)}
+              </span>
             </p>
             {patentData.titleKo && (
               <p>
@@ -177,7 +181,9 @@ export function PatentSummary({
             </div>
             <div>
               <h3 className="font-semibold text-foreground">특허 요약서</h3>
-              <p className="text-sm text-muted-foreground">등록번호: {patentNumber}</p>
+              <p className="text-sm text-muted-foreground">
+                {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
+              </p>
             </div>
           </div>
 

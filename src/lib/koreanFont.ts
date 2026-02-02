@@ -59,9 +59,9 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 
 export function addKoreanFontToDoc(doc: any, fontBase64: string): void {
   try {
-    doc.addFileToVFS('malgun.ttf', fontBase64);
-    doc.addFont('malgun.ttf', 'malgun', 'normal');
-    doc.setFont('malgun');
+    doc.addFileToVFS('NotoSansKR.ttf', fontBase64);
+    doc.addFont('NotoSansKR.ttf', 'NotoSansKR', 'normal');
+    doc.setFont('NotoSansKR');
   } catch (error) {
     console.error('Failed to add font to PDF:', error);
     throw error;
