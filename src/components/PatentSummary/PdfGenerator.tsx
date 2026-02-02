@@ -50,8 +50,8 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         return false;
       };
 
-      // Helper function to wrap and add text
-      const addWrappedText = (text: string, fontSize: number, color: number[], lineHeight: number = 1.4) => {
+      // Helper function to wrap and add text with improved readability
+      const addWrappedText = (text: string, fontSize: number, color: number[], lineHeight: number = 1.6) => {
         pdf.setFontSize(fontSize);
         pdf.setTextColor(color[0], color[1], color[2]);
         
@@ -76,19 +76,22 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       pdf.text("Agri-Food Patent Summary Report", margin, yPosition);
       yPosition += 4;
 
-      // Display number on the right
-      const displayNumber = patentData?.displayNumber || patentNumber;
-      const numberLabel = patentData?.searchType === 'application' ? '출원번호' : '등록번호';
+      // Display number on the right - use application number when searched by application
+      const isApplicationSearch = patentData?.searchType === 'application';
+      const displayNumber = isApplicationSearch 
+        ? (patentData?.applicationNumber || patentData?.displayNumber || patentNumber)
+        : (patentData?.displayNumber || patentNumber);
+      const numberLabel = isApplicationSearch ? '출원번호' : '등록번호';
       
       pdf.setFontSize(10);
       pdf.setTextColor(107, 114, 128);
       const labelWidth = pdf.getTextWidth(numberLabel);
       pdf.text(numberLabel, pageWidth - margin - labelWidth, margin + 2);
       
-      pdf.setFontSize(14);
+      pdf.setFontSize(13);
       pdf.setTextColor(30, 58, 95);
       const numWidth = pdf.getTextWidth(displayNumber);
-      pdf.text(displayNumber, pageWidth - margin - numWidth, margin + 7);
+      pdf.text(displayNumber, pageWidth - margin - numWidth, margin + 8);
 
       // Divider line
       yPosition += 2;
@@ -230,8 +233,15 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
             imageInserted = true;
             
             try {
-              // Fetch and embed image
-              const response = await fetch(patentData.representativeImage);
+              // Fetch and embed image using proxy to avoid CORS issues
+              const imageUrl = patentData.representativeImage;
+              console.log("Fetching representative image for PDF:", imageUrl);
+              
+              const response = await fetch(imageUrl, { 
+                mode: 'cors',
+                credentials: 'omit'
+              });
+              
               if (response.ok) {
                 const blob = await response.blob();
                 const reader = new FileReader();
@@ -240,40 +250,46 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
                   reader.onload = () => {
                     try {
                       const imgData = reader.result as string;
-                      const imgWidth = 50;
-                      const imgHeight = 40;
+                      const imgWidth = 55;
+                      const imgHeight = 45;
                       
-                      checkNewPage(imgHeight + 10);
+                      checkNewPage(imgHeight + 12);
                       
                       // Center the image
                       const imgX = (pageWidth - imgWidth) / 2;
-                      pdf.addImage(imgData, "PNG", imgX, yPosition, imgWidth, imgHeight);
-                      yPosition += imgHeight + 2;
+                      pdf.addImage(imgData, "JPEG", imgX, yPosition, imgWidth, imgHeight);
+                      yPosition += imgHeight + 3;
                       
                       // Caption
-                      pdf.setFontSize(8);
-                      pdf.setTextColor(156, 163, 175);
+                      pdf.setFontSize(9);
+                      pdf.setTextColor(120, 120, 120);
                       const captionText = "【대표 도면】";
                       const captionWidth = pdf.getTextWidth(captionText);
                       pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
-                      yPosition += 8;
+                      yPosition += 10;
                     } catch (imgError) {
                       console.error("Error adding image to PDF:", imgError);
                     }
                     resolve();
                   };
-                  reader.onerror = () => resolve();
+                  reader.onerror = (err) => {
+                    console.error("FileReader error:", err);
+                    resolve();
+                  };
                   reader.readAsDataURL(blob);
                 });
+              } else {
+                console.error("Failed to fetch image:", response.status, response.statusText);
               }
             } catch (imgError) {
-              console.error("Error fetching image:", imgError);
+              console.error("Error fetching image for PDF:", imgError);
             }
           }
           
         } else if (cleanLine.trim()) {
-          addWrappedText(cleanLine, 10, [55, 65, 81], 1.5);
-          yPosition += 1;
+          // Improved text readability with slightly larger font and better spacing
+          addWrappedText(cleanLine, 10.5, [45, 55, 70], 1.65);
+          yPosition += 2;
         }
       }
 
