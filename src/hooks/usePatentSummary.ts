@@ -1,28 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-
-interface PatentData {
-  title?: string;
-  abstract?: string;
-  inventors?: string[];
-  assignee?: string;
-  filingDate?: string;
-  publicationDate?: string;
-  claims?: string[];
-  patentNumber?: string;
-  applicationNumber?: string;
-  classifications?: string[];
-  description?: string;
-}
-
-interface RelatedPatent {
-  patentId: string;
-  title: string;
-  assignee?: string;
-  publicationDate?: string;
-  snippet?: string;
-  link?: string;
-}
+import { PatentData, RelatedPatent } from "@/components/PatentSummary/types";
 
 export function usePatentSummary() {
   const [isLoading, setIsLoading] = useState(false);
@@ -146,13 +124,33 @@ export function usePatentSummary() {
       }
 
       toast.success("요약서가 생성되었습니다!");
+      
+      // Return the generated data for history saving
+      return {
+        summary: fullContent,
+        patentData: fetchedPatentData,
+        relatedPatents: relatedPatents,
+      };
     } catch (error) {
       console.error("Patent summary error:", error);
       toast.error(error instanceof Error ? error.message : "오류가 발생했습니다.");
       setSummary("");
+      return null;
     } finally {
       setIsLoading(false);
     }
+  }, [relatedPatents]);
+
+  const loadFromHistory = useCallback((historyItem: {
+    summary: string;
+    patentData: PatentData;
+    relatedPatents: RelatedPatent[];
+    patentNumber: string;
+  }) => {
+    setSummary(historyItem.summary);
+    setPatentData(historyItem.patentData);
+    setRelatedPatents(historyItem.relatedPatents);
+    setCurrentPatent(historyItem.patentNumber);
   }, []);
 
   const reset = useCallback(() => {
@@ -170,6 +168,7 @@ export function usePatentSummary() {
     patentData,
     relatedPatents,
     generateSummary,
+    loadFromHistory,
     reset,
   };
 }

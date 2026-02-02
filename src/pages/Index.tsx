@@ -2,10 +2,13 @@ import { FileText, Sparkles, Shield, Zap, Database } from "lucide-react";
 import { PatentInput } from "@/components/PatentInput";
 import { PatentSummary } from "@/components/PatentSummary/index";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
+import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
+import { SearchHistory } from "@/components/SearchHistory";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const { isLoading, isFetching, summary, currentPatent, patentData, relatedPatents, generateSummary, reset } = usePatentSummary();
+  const { isLoading, isFetching, summary, currentPatent, patentData, relatedPatents, generateSummary, loadFromHistory, reset } = usePatentSummary();
+  const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
 
   const features = [
     {
@@ -29,6 +32,24 @@ const Index = () => {
       description: "기술 분야별 전문 분석을 제공합니다",
     },
   ];
+
+  // Handle patent search with history saving
+  const handleSubmit = async (patentNumber: string) => {
+    const result = await generateSummary(patentNumber);
+    if (result && result.patentData) {
+      addToHistory({
+        patentNumber,
+        patentData: result.patentData,
+        summary: result.summary,
+        relatedPatents: result.relatedPatents || [],
+      });
+    }
+  };
+
+  // Handle selecting from history
+  const handleHistorySelect = (item: SearchHistoryItem) => {
+    loadFromHistory(item);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
@@ -75,9 +96,21 @@ const Index = () => {
             </section>
 
             {/* Input Section */}
-            <section className="mb-20" style={{ animationDelay: "0.3s" }}>
-              <PatentInput onSubmit={generateSummary} isLoading={isLoading} />
+            <section className="mb-12" style={{ animationDelay: "0.3s" }}>
+              <PatentInput onSubmit={handleSubmit} isLoading={isLoading} />
             </section>
+
+            {/* Search History Section */}
+            {history.length > 0 && (
+              <section className="mb-12 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "0.35s" }}>
+                <SearchHistory
+                  history={history}
+                  onSelect={handleHistorySelect}
+                  onRemove={removeFromHistory}
+                  onClear={clearHistory}
+                />
+              </section>
+            )}
 
             {/* Features */}
             <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
