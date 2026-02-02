@@ -233,56 +233,98 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
             imageInserted = true;
             
             try {
-              // Fetch and embed image using proxy to avoid CORS issues
               const imageUrl = patentData.representativeImage;
               console.log("Fetching representative image for PDF:", imageUrl);
               
-              const response = await fetch(imageUrl, { 
-                mode: 'cors',
-                credentials: 'omit'
-              });
-              
-              if (response.ok) {
-                const blob = await response.blob();
-                const reader = new FileReader();
-                
-                await new Promise<void>((resolve) => {
-                  reader.onload = () => {
-                    try {
-                      const imgData = reader.result as string;
-                      const imgWidth = 55;
-                      const imgHeight = 45;
-                      
-                      checkNewPage(imgHeight + 12);
-                      
-                      // Center the image
-                      const imgX = (pageWidth - imgWidth) / 2;
-                      pdf.addImage(imgData, "JPEG", imgX, yPosition, imgWidth, imgHeight);
-                      yPosition += imgHeight + 3;
-                      
-                      // Caption
-                      pdf.setFontSize(9);
-                      pdf.setTextColor(120, 120, 120);
-                      const captionText = "【대표 도면】";
-                      const captionWidth = pdf.getTextWidth(captionText);
-                      pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
-                      yPosition += 10;
-                    } catch (imgError) {
-                      console.error("Error adding image to PDF:", imgError);
+              // Use a more robust image loading approach
+              const loadImageAsBase64 = async (url: string): Promise<string | null> => {
+                try {
+                  // Try direct fetch first
+                  const response = await fetch(url, { 
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                      'Accept': 'image/*'
                     }
-                    resolve();
+                  });
+                  
+                  if (!response.ok) {
+                    console.warn("Direct fetch failed, status:", response.status);
+                    return null;
+                  }
+                  
+                  const blob = await response.blob();
+                  
+                  return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = () => resolve(null);
+                    reader.readAsDataURL(blob);
+                  });
+                } catch (err) {
+                  console.warn("Fetch error:", err);
+                  return null;
+                }
+              };
+
+              // Alternative: Load via Image element for better compatibility
+              const loadImageViaCanvas = (url: string): Promise<string | null> => {
+                return new Promise((resolve) => {
+                  const img = new Image();
+                  img.crossOrigin = 'anonymous';
+                  img.onload = () => {
+                    try {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = img.naturalWidth;
+                      canvas.height = img.naturalHeight;
+                      const ctx = canvas.getContext('2d');
+                      if (ctx) {
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                      } else {
+                        resolve(null);
+                      }
+                    } catch (e) {
+                      console.warn("Canvas error:", e);
+                      resolve(null);
+                    }
                   };
-                  reader.onerror = (err) => {
-                    console.error("FileReader error:", err);
-                    resolve();
-                  };
-                  reader.readAsDataURL(blob);
+                  img.onerror = () => resolve(null);
+                  img.src = url;
                 });
+              };
+
+              // Try both methods
+              let imgData = await loadImageAsBase64(imageUrl);
+              if (!imgData) {
+                console.log("Trying canvas method for image...");
+                imgData = await loadImageViaCanvas(imageUrl);
+              }
+              
+              if (imgData) {
+                const imgWidth = 55;
+                const imgHeight = 45;
+                
+                checkNewPage(imgHeight + 12);
+                
+                // Center the image
+                const imgX = (pageWidth - imgWidth) / 2;
+                const format = imgData.includes('image/png') ? 'PNG' : 'JPEG';
+                pdf.addImage(imgData, format, imgX, yPosition, imgWidth, imgHeight);
+                yPosition += imgHeight + 3;
+                
+                // Caption
+                pdf.setFontSize(9);
+                pdf.setTextColor(120, 120, 120);
+                const captionText = "【대표 도면】";
+                const captionWidth = pdf.getTextWidth(captionText);
+                pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
+                yPosition += 10;
               } else {
-                console.error("Failed to fetch image:", response.status, response.statusText);
+                console.warn("Could not load representative image for PDF");
               }
             } catch (imgError) {
-              console.error("Error fetching image for PDF:", imgError);
+              console.error("Error processing image for PDF:", imgError);
             }
           }
           
