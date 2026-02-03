@@ -75,8 +75,22 @@ export function addKoreanFontToDoc(doc: any, fontBase64: string): void {
   try {
     // Register font with medium weight for better readability
     doc.addFileToVFS('NotoSansKR-Medium.ttf', fontBase64);
-    doc.addFont('NotoSansKR-Medium.ttf', 'NotoSansKR', 'normal', 500);
-    doc.setFont('NotoSansKR', 'normal');
+
+    // jsPDF v4: addFont(fileName, fontName, fontStyle)
+    // (Passing a weight here can prevent proper registration and lead to garbled text.)
+    doc.addFont('NotoSansKR-Medium.ttf', 'NotoSansKR', 'normal');
+
+    // Ensure the font is available before setting it.
+    const fontList = typeof doc.getFontList === 'function' ? doc.getFontList() : null;
+    const hasFont = !!(fontList && (fontList.NotoSansKR || fontList["NotoSansKR"]));
+
+    if (!hasFont) {
+      console.warn('NotoSansKR font not found in getFontList(); falling back to setFont without style');
+      doc.setFont('NotoSansKR');
+    } else {
+      doc.setFont('NotoSansKR', 'normal');
+    }
+
     console.log('Korean font added to PDF document');
   } catch (error) {
     console.error('Failed to add font to PDF:', error);
