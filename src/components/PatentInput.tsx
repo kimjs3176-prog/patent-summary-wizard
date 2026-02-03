@@ -40,16 +40,16 @@ export function PatentInput({ onSubmit, isLoading }: PatentInputProps) {
         <Button
           type="submit"
           disabled={!patentNumber.trim() || isLoading}
-          className="w-full py-6 text-lg font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+          className="w-full py-4 text-base font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
         >
           {isLoading ? (
             <span className="flex items-center gap-2">
-              <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               요약서 생성 중...
             </span>
           ) : (
             <span className="flex items-center gap-2">
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4" />
               1페이지 요약서 생성
             </span>
           )}
