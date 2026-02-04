@@ -5,6 +5,42 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function translateToKorean(text: string): Promise<string> {
+  // Best-effort: if no key is configured, just return original.
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) return text;
+
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You translate patent titles into natural Korean. Output ONLY the Korean title. If input is already Korean, return it unchanged.",
+          },
+          { role: "user", content: text },
+        ],
+        temperature: 0.2,
+        stream: false,
+      }),
+    });
+
+    if (!resp.ok) return text;
+    const data = await resp.json();
+    const out = data?.choices?.[0]?.message?.content?.trim();
+    return out || text;
+  } catch (_e) {
+    return text;
+  }
+}
+
 interface PatentData {
   title?: string;
   titleKo?: string;
@@ -16,8 +52,8 @@ interface PatentData {
   claims?: string[];
   patentNumber?: string;
   applicationNumber?: string;
-  displayNumber?: string;
-  searchType?: 'registration' | 'application';
+  displayNumber?: string; // Formatted display number (10-XXXXXXX or 10-YYYY-XXXXXXX)
+  searchType?: 'registration' | 'application'; // What type of search was performed
   classifications?: string[];
   description?: string;
   representativeImage?: string;
@@ -31,59 +67,6 @@ interface RelatedPatent {
   publicationDate?: string;
   snippet?: string;
   link?: string;
-}
-
-// Parse XML text content helper
-function getXmlText(xml: string, tagName: string): string {
-  const regex = new RegExp(`<${tagName}[^>]*>([^<]*)</${tagName}>`, 'i');
-  const match = xml.match(regex);
-  return match ? match[1].trim() : '';
-}
-
-// Parse multiple XML elements
-function getXmlTexts(xml: string, tagName: string): string[] {
-  const regex = new RegExp(`<${tagName}[^>]*>([^<]*)</${tagName}>`, 'gi');
-  const matches = [...xml.matchAll(regex)];
-  return matches.map(m => m[1].trim()).filter(Boolean);
-}
-
-// Parse XML items (for nested structures)
-function getXmlItems(xml: string, itemTag: string): string[] {
-  const regex = new RegExp(`<${itemTag}[^>]*>([\\s\\S]*?)</${itemTag}>`, 'gi');
-  const matches = [...xml.matchAll(regex)];
-  return matches.map(m => m[1]);
-}
-
-// Format Korean patent number for KIPRIS API
-function formatPatentNumber(patentNumber: string): { formattedNumber: string; searchType: 'registration' | 'application'; displayNumber: string } {
-  let formattedNumber = patentNumber.trim().replace(/-/g, '');
-  let searchType: 'registration' | 'application' = 'registration';
-  let displayNumber = patentNumber.trim();
-
-  // Detect format
-  if (patentNumber.match(/^10-\d{4}-\d+$/)) {
-    // Application number format: 10-2023-0123456
-    searchType = 'application';
-    const parts = patentNumber.split("-");
-    formattedNumber = `10${parts[1]}${parts[2]}`;
-  } else if (patentNumber.match(/^10-\d{7}$/)) {
-    // Registration number format: 10-1234567
-    searchType = 'registration';
-    formattedNumber = `10${patentNumber.replace("10-", "")}`;
-  } else if (patentNumber.match(/^\d{7}$/)) {
-    // Just 7 digits (registration without prefix): 1234567
-    searchType = 'registration';
-    formattedNumber = `10${formattedNumber}`;
-    displayNumber = `10-${formattedNumber.slice(-7)}`;
-  } else if (patentNumber.match(/^\d{10,}$/)) {
-    // Long number - likely application number
-    searchType = 'application';
-    if (!formattedNumber.startsWith('10')) {
-      formattedNumber = `10${formattedNumber}`;
-    }
-  }
-
-  return { formattedNumber, searchType, displayNumber };
 }
 
 serve(async (req) => {
@@ -101,204 +84,213 @@ serve(async (req) => {
       );
     }
 
-    const KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
-    if (!KIPRIS_API_KEY) {
+    const SERPAPI_API_KEY = Deno.env.get("SERPAPI_API_KEY");
+    if (!SERPAPI_API_KEY) {
       return new Response(
-        JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),
+        JSON.stringify({ success: false, error: "SerpApi API 키가 설정되지 않았습니다." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { formattedNumber, searchType, displayNumber } = formatPatentNumber(patentNumber);
-    console.log("Fetching patent from KIPRIS:", formattedNumber, "type:", searchType);
-
-    // Step 1: Search for patent using registration or application number
-    let searchUrl: string;
-    if (searchType === 'registration') {
-      // Use registration number search endpoint
-      searchUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/registrationNumberSearchInfo?registrationNumber=${formattedNumber}&accessKey=${KIPRIS_API_KEY}`;
-    } else {
-      // Use application number search endpoint
-      searchUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/applicationNumberSearchInfo?applicationNumber=${formattedNumber}&accessKey=${KIPRIS_API_KEY}`;
+    // Format patent number for Google Patents
+    // Korean patent formats:
+    // - Registration: 10-1234567 -> KR101234567
+    // - Application: 10-2023-0123456 -> KR1020230123456
+    let formattedPatentId = patentNumber.trim();
+    let searchType: 'registration' | 'application' = 'registration';
+    let displayNumber = patentNumber.trim();
+    
+    // Detect and convert Korean patent number format
+    if (formattedPatentId.match(/^10-\d{4}-\d+$/)) {
+      // Application number format: 10-2023-0123456 -> KR1020230123456
+      searchType = 'application';
+      const parts = formattedPatentId.split("-");
+      formattedPatentId = `KR10${parts[1]}${parts[2]}`;
+      displayNumber = patentNumber.trim(); // Keep original format for application
+    } else if (formattedPatentId.match(/^10-\d{7}$/)) {
+      // Registration number format: 10-1234567 -> KR101234567
+      searchType = 'registration';
+      formattedPatentId = `KR10${formattedPatentId.replace("10-", "")}`;
+      displayNumber = patentNumber.trim();
+    } else if (formattedPatentId.match(/^\d{7}$/)) {
+      // Just 7 digits (registration without prefix): 1234567 -> KR101234567
+      searchType = 'registration';
+      formattedPatentId = `KR10${formattedPatentId}`;
+      displayNumber = `10-${formattedPatentId.slice(-7)}`;
+    } else if (formattedPatentId.match(/^KR10\d{7}$/)) {
+      // Already formatted registration: KR101234567
+      searchType = 'registration';
+      displayNumber = `10-${formattedPatentId.slice(4)}`;
+    } else if (formattedPatentId.match(/^KR10\d{11,}$/)) {
+      // Already formatted application: KR1020230123456
+      searchType = 'application';
+      const num = formattedPatentId.slice(4);
+      displayNumber = `10-${num.slice(0, 4)}-${num.slice(4)}`;
+    } else if (!formattedPatentId.startsWith("KR")) {
+      // Add KR prefix if not present
+      const cleanNum = formattedPatentId.replace(/-/g, "");
+      formattedPatentId = `KR${cleanNum}`;
+      if (cleanNum.length > 7) {
+        searchType = 'application';
+      }
     }
 
-    console.log("Search URL:", searchUrl);
-    const searchResponse = await fetch(searchUrl);
-    const searchXml = await searchResponse.text();
-    console.log("Search response:", searchXml.substring(0, 500));
+    console.log("Fetching patent:", formattedPatentId);
 
-    // Check for errors
-    if (searchXml.includes('<errMsg>') || searchXml.includes('<resultCode>E</resultCode>')) {
-      const errorMsg = getXmlText(searchXml, 'errMsg') || '특허 정보를 조회할 수 없습니다.';
-      console.error("KIPRIS API error:", errorMsg);
+    // Use SerpApi Google Patents endpoint
+    const searchUrl = new URL("https://serpapi.com/search.json");
+    searchUrl.searchParams.set("engine", "google_patents");
+    searchUrl.searchParams.set("q", formattedPatentId);
+    searchUrl.searchParams.set("api_key", SERPAPI_API_KEY);
+
+    const searchResponse = await fetch(searchUrl.toString());
+    const searchData = await searchResponse.json();
+
+    if (!searchResponse.ok) {
+      console.error("SerpApi search error:", searchData);
       return new Response(
-        JSON.stringify({ success: false, error: errorMsg }),
+        JSON.stringify({ success: false, error: "특허 검색에 실패했습니다." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if we found any patents
+    const organicResults = searchData.organic_results || [];
+    
+    if (organicResults.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "해당 번호의 특허를 찾을 수 없습니다. 등록번호를 확인해주세요." 
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse search results
-    const items = getXmlItems(searchXml, 'PatentUtilityInfo');
-    if (items.length === 0) {
-      // Try alternative search - free search with the number
-      const freeSearchUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/freeSearchInfo?word=${formattedNumber}&accessKey=${KIPRIS_API_KEY}&numOfRows=1`;
-      console.log("Trying free search:", freeSearchUrl);
-      
-      const freeSearchResponse = await fetch(freeSearchUrl);
-      const freeSearchXml = await freeSearchResponse.text();
-      console.log("Free search response:", freeSearchXml.substring(0, 500));
-      
-      const freeItems = getXmlItems(freeSearchXml, 'PatentUtilityInfo');
-      if (freeItems.length === 0) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "해당 번호의 특허를 찾을 수 없습니다. 등록번호를 확인해주세요." 
-          }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      items.push(...freeItems);
-    }
-
-    const firstItem = items[0];
+    // Get the first matching result
+    const firstResult = organicResults[0];
     
-    // Extract basic info from search result
-    const applicationNumber = getXmlText(firstItem, 'ApplicationNumber') || getXmlText(firstItem, 'applicationNumber');
-    const registrationNumber = getXmlText(firstItem, 'RegistrationNumber') || getXmlText(firstItem, 'registrationNumber');
-    const inventionName = getXmlText(firstItem, 'InventionName') || getXmlText(firstItem, 'inventionName');
-    const abstractText = getXmlText(firstItem, 'Abstract') || getXmlText(firstItem, 'abstract') || getXmlText(firstItem, 'astrtCont');
-    
-    // Step 2: Get detailed bibliographic information
-    const applicationNum = applicationNumber || formattedNumber;
-    const biblioUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/biblioSearchInfo?applicationNumber=${applicationNum}&accessKey=${KIPRIS_API_KEY}`;
-    
-    console.log("Fetching biblio info:", biblioUrl);
-    const biblioResponse = await fetch(biblioUrl);
-    const biblioXml = await biblioResponse.text();
-    console.log("Biblio response:", biblioXml.substring(0, 500));
-
-    // Parse bibliographic details
-    const biblioItems = getXmlItems(biblioXml, 'BiblioSummaryInfo') || getXmlItems(biblioXml, 'PatentUtilityInfo');
-    const biblioItem = biblioItems[0] || firstItem;
-    
-    // Extract detailed information
-    const applicantName = getXmlText(biblioItem, 'Applicant') || getXmlText(biblioItem, 'applicantName') || 
-                          getXmlText(biblioItem, 'ApplicantName') || getXmlText(firstItem, 'Applicant');
-    const inventorNames = getXmlTexts(biblioItem, 'InventorName') || getXmlTexts(biblioItem, 'inventorName') || 
-                          getXmlTexts(firstItem, 'InventorName');
-    const applicationDate = getXmlText(biblioItem, 'ApplicationDate') || getXmlText(biblioItem, 'applicationDate') ||
-                           getXmlText(firstItem, 'ApplicationDate');
-    const publicationDate = getXmlText(biblioItem, 'PublicationDate') || getXmlText(biblioItem, 'publicationDate') ||
-                           getXmlText(biblioItem, 'OpenDate') || getXmlText(firstItem, 'OpenDate');
-    const registrationDate = getXmlText(biblioItem, 'RegistrationDate') || getXmlText(biblioItem, 'registrationDate');
-    
-    // Get IPC classifications
-    const ipcCodes = getXmlTexts(biblioItem, 'IpcCode') || getXmlTexts(biblioItem, 'ipcCode') ||
-                     getXmlTexts(firstItem, 'IpcCode');
-
-    // Step 3: Try to get representative image
-    let representativeImage: string | undefined;
-    try {
-      const imageUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/patentRepresentativeImageInfo?applicationNumber=${applicationNum}&accessKey=${KIPRIS_API_KEY}`;
-      const imageResponse = await fetch(imageUrl);
-      const imageXml = await imageResponse.text();
-      
-      const imagePath = getXmlText(imageXml, 'LargeImage') || getXmlText(imageXml, 'largeImage') ||
-                       getXmlText(imageXml, 'SmallImage') || getXmlText(imageXml, 'smallImage') ||
-                       getXmlText(imageXml, 'ImagePath') || getXmlText(imageXml, 'imagePath');
-      
-      if (imagePath && imagePath.startsWith('http')) {
-        representativeImage = imagePath;
-      }
-    } catch (imageError) {
-      console.error("Error fetching representative image:", imageError);
-    }
-
-    // Step 4: Try to get claims
-    const claims: string[] = [];
-    try {
-      const claimUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/claimSearchInfo?applicationNumber=${applicationNum}&accessKey=${KIPRIS_API_KEY}`;
-      const claimResponse = await fetch(claimUrl);
-      const claimXml = await claimResponse.text();
-      
-      const claimTexts = getXmlTexts(claimXml, 'Claim') || getXmlTexts(claimXml, 'claim') ||
-                        getXmlTexts(claimXml, 'ClaimScope');
-      claims.push(...claimTexts.slice(0, 10));
-    } catch (claimError) {
-      console.error("Error fetching claims:", claimError);
-    }
-
-    // Format dates for display
-    const formatDate = (dateStr: string): string => {
-      if (!dateStr || dateStr.length < 8) return dateStr;
-      // Convert YYYYMMDD to YYYY.MM.DD
-      return `${dateStr.slice(0, 4)}.${dateStr.slice(4, 6)}.${dateStr.slice(6, 8)}`;
-    };
-
-    const patentData: PatentData = {
-      title: inventionName,
-      titleKo: inventionName,
-      abstract: abstractText,
-      inventors: inventorNames.length > 0 ? inventorNames : undefined,
-      assignee: applicantName,
-      filingDate: formatDate(applicationDate),
-      publicationDate: formatDate(publicationDate || registrationDate),
-      claims: claims.length > 0 ? claims : undefined,
-      patentNumber: registrationNumber || applicationNumber,
-      applicationNumber: applicationNumber,
+    // Try to get detailed patent info if patent_id is available
+    let patentData: PatentData = {
+      title: firstResult.title,
+      titleKo: firstResult.title, // Will be updated from details if available
+      abstract: firstResult.snippet,
+      patentNumber: firstResult.patent_id || patentNumber,
       displayNumber: displayNumber,
       searchType: searchType,
-      classifications: ipcCodes.length > 0 ? ipcCodes : undefined,
-      representativeImage: representativeImage,
+      assignee: firstResult.assignee,
+      filingDate: firstResult.filing_date,
+      publicationDate: firstResult.publication_date,
+      inventors: firstResult.inventor ? [firstResult.inventor] : [],
+      representativeImage: firstResult.thumbnail,
     };
 
-    console.log("Patent data fetched successfully:", patentData.title);
+    // If we have a patent_id, try to get more details
+    if (firstResult.patent_id) {
+      try {
+        const detailUrl = new URL("https://serpapi.com/search.json");
+        detailUrl.searchParams.set("engine", "google_patents_details");
+        detailUrl.searchParams.set("patent_id", firstResult.patent_id);
+        detailUrl.searchParams.set("api_key", SERPAPI_API_KEY);
 
-    // Step 5: Fetch related patents based on IPC or title keywords
+        const detailResponse = await fetch(detailUrl.toString());
+        
+        if (detailResponse.ok) {
+          const detailData = await detailResponse.json();
+          
+          // Extract images from detail data
+          const images: string[] = [];
+          if (detailData.images && Array.isArray(detailData.images)) {
+            images.push(...detailData.images.slice(0, 5));
+          }
+          
+          // Extract detailed information
+          // Try to get Korean title from localized_titles or keep existing
+          let titleKo = patentData.titleKo;
+          if (detailData.localized_titles) {
+            const koTitle = detailData.localized_titles.find((t: any) => t.language === 'ko' || t.lang === 'ko');
+            if (koTitle) {
+              titleKo = koTitle.text || koTitle.title || titleKo;
+            }
+          }
+          // If title contains Korean characters, use it
+          if (detailData.title && /[가-힣]/.test(detailData.title)) {
+            titleKo = detailData.title;
+          }
+          
+          patentData = {
+            ...patentData,
+            title: detailData.title || patentData.title,
+            titleKo: titleKo || detailData.title || patentData.title,
+            abstract: detailData.abstract || patentData.abstract,
+            inventors: detailData.inventors?.map((inv: any) => inv.name || inv) || patentData.inventors,
+            assignee: detailData.assignee?.name || detailData.assignee || patentData.assignee,
+            filingDate: detailData.filing_date || patentData.filingDate,
+            publicationDate: detailData.publication_date || patentData.publicationDate,
+            claims: detailData.claims?.map((c: any) => c.text || c) || [],
+            applicationNumber: detailData.application_number,
+            classifications: detailData.classifications?.map((c: any) => c.code || c) || [],
+            description: detailData.description,
+            representativeImage: images[0] || patentData.representativeImage,
+            images: images,
+          };
+        }
+      } catch (detailError) {
+        console.error("Error fetching patent details:", detailError);
+        // Continue with basic info if detail fetch fails
+      }
+    }
+
+    // Force Korean invention title (best-effort translation if we only have English)
+    if (patentData.titleKo && !/[가-힣]/.test(patentData.titleKo)) {
+      const translated = await translateToKorean(patentData.titleKo);
+      patentData.titleKo = translated;
+    } else if (!patentData.titleKo && patentData.title) {
+      const translated = await translateToKorean(patentData.title);
+      patentData.titleKo = translated;
+    }
+
+    console.log("Patent data fetched successfully");
+
+    // Fetch related patents based on title or classifications
     let relatedPatents: RelatedPatent[] = [];
     
-    try {
-      // Search for related patents using IPC code or keywords from title
-      const searchQuery = (ipcCodes.length > 0 ? ipcCodes[0].split('/')[0] : '') ||
-                          (inventionName ? inventionName.split(' ').slice(0, 2).join(' ') : '');
-      
-      if (searchQuery) {
-        const relatedUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/freeSearchInfo?word=${encodeURIComponent(searchQuery)}&accessKey=${KIPRIS_API_KEY}&numOfRows=6`;
+    if (patentData.title || (patentData.classifications && patentData.classifications.length > 0)) {
+      try {
+        // Extract keywords from title for related search
+        const searchQuery = patentData.classifications?.[0] || 
+          patentData.title?.split(' ').slice(0, 3).join(' ') || 
+          formattedPatentId;
         
-        const relatedResponse = await fetch(relatedUrl);
-        const relatedXml = await relatedResponse.text();
+        const relatedUrl = new URL("https://serpapi.com/search.json");
+        relatedUrl.searchParams.set("engine", "google_patents");
+        relatedUrl.searchParams.set("q", `${searchQuery} country:KR`);
+        relatedUrl.searchParams.set("api_key", SERPAPI_API_KEY);
+        relatedUrl.searchParams.set("num", "6");
+
+        const relatedResponse = await fetch(relatedUrl.toString());
         
-        const relatedItems = getXmlItems(relatedXml, 'PatentUtilityInfo');
-        
-        relatedPatents = relatedItems
-          .filter(item => {
-            const itemRegNum = getXmlText(item, 'RegistrationNumber') || getXmlText(item, 'registrationNumber');
-            const itemAppNum = getXmlText(item, 'ApplicationNumber') || getXmlText(item, 'applicationNumber');
-            // Filter out the current patent
-            return itemRegNum !== registrationNumber && itemAppNum !== applicationNumber;
-          })
-          .slice(0, 5)
-          .map(item => {
-            const itemAppNum = getXmlText(item, 'ApplicationNumber') || getXmlText(item, 'applicationNumber');
-            const itemRegNum = getXmlText(item, 'RegistrationNumber') || getXmlText(item, 'registrationNumber');
-            const itemTitle = getXmlText(item, 'InventionName') || getXmlText(item, 'inventionName') || '제목 없음';
-            const itemApplicant = getXmlText(item, 'Applicant') || getXmlText(item, 'applicantName');
-            const itemOpenDate = getXmlText(item, 'OpenDate') || getXmlText(item, 'PublicationDate');
-            const itemAbstract = getXmlText(item, 'Abstract') || getXmlText(item, 'abstract');
-            
-            return {
-              patentId: itemRegNum || itemAppNum || '',
-              title: itemTitle,
-              assignee: itemApplicant,
-              publicationDate: formatDate(itemOpenDate),
-              snippet: itemAbstract ? itemAbstract.substring(0, 200) + '...' : undefined,
-              link: `https://www.kipris.or.kr/khome/main.jsp`,
-            };
-          });
+        if (relatedResponse.ok) {
+          const relatedData = await relatedResponse.json();
+          const relatedResults = relatedData.organic_results || [];
+          
+          // Filter out the current patent and map to RelatedPatent interface
+          relatedPatents = relatedResults
+            .filter((r: any) => r.patent_id !== firstResult.patent_id)
+            .slice(0, 5)
+            .map((r: any) => ({
+              patentId: r.patent_id || "",
+              title: r.title || "제목 없음",
+              assignee: r.assignee,
+              publicationDate: r.publication_date,
+              snippet: r.snippet,
+              link: r.patent_id ? `https://patents.google.com/patent/${r.patent_id}` : undefined,
+            }));
+        }
+      } catch (relatedError) {
+        console.error("Error fetching related patents:", relatedError);
+        // Continue without related patents
       }
-    } catch (relatedError) {
-      console.error("Error fetching related patents:", relatedError);
     }
 
     return new Response(
