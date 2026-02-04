@@ -56,31 +56,44 @@ function getXmlItems(xml: string, itemTag: string): string[] {
 
 // Format Korean patent number for KIPRIS API
 function formatPatentNumber(patentNumber: string): { formattedNumber: string; searchType: 'registration' | 'application'; displayNumber: string } {
-  let formattedNumber = patentNumber.trim().replace(/-/g, '');
+  const cleaned = patentNumber.trim();
   let searchType: 'registration' | 'application' = 'registration';
-  let displayNumber = patentNumber.trim();
+  let displayNumber = cleaned;
+  let formattedNumber = '';
 
-  // Detect format
-  if (patentNumber.match(/^10-\d{4}-\d+$/)) {
+  // Check for application number format: 10-2023-0123456 or 1020230123456
+  if (cleaned.match(/^10-\d{4}-\d{7}$/)) {
     // Application number format: 10-2023-0123456
     searchType = 'application';
-    const parts = patentNumber.split("-");
-    formattedNumber = `10${parts[1]}${parts[2]}`;
-  } else if (patentNumber.match(/^10-\d{7}$/)) {
+    formattedNumber = cleaned.replace(/-/g, '');
+    displayNumber = cleaned;
+  } else if (cleaned.match(/^10\d{4}\d{7}$/)) {
+    // Application number without dashes: 1020230123456
+    searchType = 'application';
+    formattedNumber = cleaned;
+    displayNumber = `10-${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
+  } else if (cleaned.match(/^10-\d{7}$/)) {
     // Registration number format: 10-1234567
     searchType = 'registration';
-    formattedNumber = `10${patentNumber.replace("10-", "")}`;
-  } else if (patentNumber.match(/^\d{7}$/)) {
+    formattedNumber = cleaned.replace(/-/g, '');
+    displayNumber = cleaned;
+  } else if (cleaned.match(/^\d{7}$/)) {
     // Just 7 digits (registration without prefix): 1234567
     searchType = 'registration';
-    formattedNumber = `10${formattedNumber}`;
-    displayNumber = `10-${formattedNumber.slice(-7)}`;
-  } else if (patentNumber.match(/^\d{10,}$/)) {
-    // Long number - likely application number
-    searchType = 'application';
+    formattedNumber = `10${cleaned}`;
+    displayNumber = `10-${cleaned}`;
+  } else if (cleaned.match(/^10\d{7}$/)) {
+    // 8 digits starting with 10: 101234567
+    searchType = 'registration';
+    formattedNumber = cleaned;
+    displayNumber = `10-${cleaned.slice(2)}`;
+  } else {
+    // Default: treat as registration, remove dashes
+    formattedNumber = cleaned.replace(/-/g, '');
     if (!formattedNumber.startsWith('10')) {
       formattedNumber = `10${formattedNumber}`;
     }
+    displayNumber = cleaned;
   }
 
   return { formattedNumber, searchType, displayNumber };
@@ -101,31 +114,51 @@ serve(async (req) => {
       );
     }
 
-    const KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
+    let KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
     if (!KIPRIS_API_KEY) {
       return new Response(
         JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    // Decode URL-encoded API key if needed
+    try {
+      KIPRIS_API_KEY = decodeURIComponent(KIPRIS_API_KEY);
+    } catch {
+      // Already decoded, use as-is
+    }
 
     const { formattedNumber, searchType, displayNumber } = formatPatentNumber(patentNumber);
     console.log("Fetching patent from KIPRIS:", formattedNumber, "type:", searchType);
 
-    // Step 1: Search for patent using registration or application number
-    let searchUrl: string;
-    if (searchType === 'registration') {
-      // Use registration number search endpoint
-      searchUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/registrationNumberSearchInfo?registrationNumber=${formattedNumber}&accessKey=${KIPRIS_API_KEY}`;
-    } else {
-      // Use application number search endpoint
-      searchUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/applicationNumberSearchInfo?applicationNumber=${formattedNumber}&accessKey=${KIPRIS_API_KEY}`;
+    // Step 1: Search for patent using keyword/free search (more universally accessible)
+    // Try the newer kipo-api endpoint first, then fall back to openapi/rest
+    const encodedKey = encodeURIComponent(KIPRIS_API_KEY);
+    
+    // Use patent bibliographic search with the patent number
+    let searchUrl = `http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch?registrationNumber=${formattedNumber}&ServiceKey=${encodedKey}&numOfRows=1`;
+    
+    console.log("Trying kipo-api search...");
+    let searchResponse = await fetch(searchUrl);
+    let searchXml = await searchResponse.text();
+    console.log("Search response (kipo-api):", searchXml.substring(0, 500));
+    
+    // If kipo-api fails, try the openapi/rest endpoint
+    if (searchXml.includes('<resultCode>') && !searchXml.includes('<resultCode>00</resultCode>')) {
+      console.log("kipo-api failed, trying openapi/rest...");
+      
+      if (searchType === 'registration') {
+        searchUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/registrationNumberSearchInfo?registrationNumber=${formattedNumber}&accessKey=${encodedKey}`;
+      } else {
+        searchUrl = `http://plus.kipris.or.kr/openapi/rest/patUtiModInfoSearchSevice/applicationNumberSearchInfo?applicationNumber=${formattedNumber}&accessKey=${encodedKey}`;
+      }
+      
+      console.log("Search URL:", searchUrl);
+      searchResponse = await fetch(searchUrl);
+      searchXml = await searchResponse.text();
+      console.log("Search response (openapi):", searchXml.substring(0, 500));
     }
-
-    console.log("Search URL:", searchUrl);
-    const searchResponse = await fetch(searchUrl);
-    const searchXml = await searchResponse.text();
-    console.log("Search response:", searchXml.substring(0, 500));
 
     // Check for errors
     if (searchXml.includes('<errMsg>') || searchXml.includes('<resultCode>E</resultCode>')) {
