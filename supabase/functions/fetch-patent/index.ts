@@ -135,11 +135,23 @@ serve(async (req) => {
       searchType = 'registration';
       formattedPatentId = `KR10${formattedPatentId.replace("10-", "")}`;
       displayNumber = patentNumber.trim();
+    } else if (formattedPatentId.match(/^10-\d{6}$/)) {
+      // Some sources omit leading zeros: 10-186227 -> 10-0186227
+      searchType = 'registration';
+      const digits = formattedPatentId.replace("10-", "").padStart(7, "0");
+      formattedPatentId = `KR10${digits}`;
+      displayNumber = `10-${digits}`;
     } else if (formattedPatentId.match(/^\d{7}$/)) {
       // Just 7 digits (registration without prefix): 1234567 -> KR101234567
       searchType = 'registration';
       formattedPatentId = `KR10${formattedPatentId}`;
       displayNumber = `10-${formattedPatentId.slice(-7)}`;
+    } else if (formattedPatentId.match(/^\d{6}$/)) {
+      // 6 digits without prefix (leading zero omitted)
+      searchType = 'registration';
+      const digits = formattedPatentId.padStart(7, "0");
+      formattedPatentId = `KR10${digits}`;
+      displayNumber = `10-${digits}`;
     } else if (formattedPatentId.match(/^KR10\d{7}$/)) {
       // Already formatted registration: KR101234567
       searchType = 'registration';
