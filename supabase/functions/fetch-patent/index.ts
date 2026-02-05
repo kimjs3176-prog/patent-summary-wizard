@@ -102,26 +102,38 @@ serve(async (req) => {
     let displayNumber = patentNumber.trim();
     
     // Handle patent IDs that already start with KR (from keyword search)
-    if (formattedPatentId.match(/^KR\d{10,}[A-Z]?\d?$/i)) {
+    if (formattedPatentId.match(/^KR\d{10,}[A-Z]?\d?$/i) || formattedPatentId.match(/^KR10\d{7}[A-Z]\d?$/i)) {
       // Already in Google Patents format: KR20190132335A or KR101234567B1
-      searchType = 'application';
-      const numPart = formattedPatentId.slice(2).replace(/[A-Z]\d?$/i, '');
-      if (numPart.length >= 11) {
-        // Application publication: KR20190132335A -> 10-2019-0132335
-        displayNumber = `10-${numPart.slice(0, 4)}-${numPart.slice(4)}`;
-      } else if (numPart.length === 7) {
-        // Registration: KR1234567B1 -> 10-1234567
+      const numPart = formattedPatentId.slice(2).replace(/[A-Z]\d?$/i, ''); // Remove KR prefix and suffix letter
+      
+      // Check if it's an application publication (starts with year like 2019, 2020, etc.)
+      // or a registration (starts with 10)
+      if (numPart.startsWith('10') && numPart.length === 9) {
+        // Registration format: KR102295358B1 -> numPart = 102295358 (9 digits starting with 10)
+        // This is 10 + 7-digit registration number
         searchType = 'registration';
-        displayNumber = `10-${numPart}`;
+        const regNum = numPart.slice(2); // Remove leading "10", get 7-digit number
+        displayNumber = `10-${regNum}`;
+      } else if (numPart.length >= 11 && numPart.startsWith('10')) {
+        // Application publication: KR20190132335A -> 10-2019-0132335
+        searchType = 'application';
+        displayNumber = `10-${numPart.slice(0, 4)}-${numPart.slice(4)}`;
+      } else if (numPart.length === 7 || numPart.length === 8) {
+        // Old registration format: KR1234567B1 -> 10-1234567
+        searchType = 'registration';
+        const regNum = numPart.slice(-7); // Take last 7 digits
+        displayNumber = `10-${regNum}`;
       } else {
-        displayNumber = formattedPatentId;
+        // Fallback: try to extract meaningful display number
+        if (numPart.length >= 11) {
+          searchType = 'application';
+          displayNumber = `10-${numPart.slice(0, 4)}-${numPart.slice(4)}`;
+        } else {
+          searchType = 'registration';
+          displayNumber = `10-${numPart.slice(-7).padStart(7, '0')}`;
+        }
       }
       // Keep the original formattedPatentId as is for search
-    } else if (formattedPatentId.match(/^KR10\d{7}[A-Z]?\d?$/i)) {
-      // Registration format: KR101234567B1
-      searchType = 'registration';
-      const numPart = formattedPatentId.slice(4, 11);
-      displayNumber = `10-${numPart}`;
     }
     // Detect and convert Korean patent number format
     else if (formattedPatentId.match(/^10-\d{4}-\d+$/)) {
