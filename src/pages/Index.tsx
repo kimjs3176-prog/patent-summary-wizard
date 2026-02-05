@@ -124,12 +124,7 @@ const Index = () => {
                 <span className="gradient-text block">AI SMK 요약 서비스</span>
               </h2>
               
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-up" style={{
-            animationDelay: "0.2s"
-          }}>
-            <br className="hidden sm:block" />
-                ​     
-              </p>
+              
             </section>
 
             {/* Input Section */}
