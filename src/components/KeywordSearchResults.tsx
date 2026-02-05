@@ -22,16 +22,30 @@
    }
  
    const handlePatentClick = (patentId: string) => {
-     // Convert patent ID to Korean format for the summary generator
-     let koreanFormat = patentId;
-     if (patentId.startsWith("KR10") && patentId.length === 11) {
+    // Extract actual patent ID from path format (e.g., "patent/KR20190132335A/ko" -> "KR20190132335A")
+    let actualPatentId = patentId;
+    if (patentId.includes("/")) {
+      const parts = patentId.split("/");
+      // Find the part that looks like a patent ID (starts with KR)
+      actualPatentId = parts.find(p => p.startsWith("KR")) || parts[1] || patentId;
+    }
+    
+    // Convert patent ID to Korean format for the summary generator
+    let koreanFormat = actualPatentId;
+    
+    // Handle different Korean patent formats
+    if (actualPatentId.match(/^KR10\d{7}[A-Z]?\d?$/i)) {
        // Registration: KR101234567 -> 10-1234567
-       koreanFormat = `10-${patentId.slice(4)}`;
-     } else if (patentId.startsWith("KR10") && patentId.length > 11) {
-       // Application: KR1020230123456 -> 10-2023-0123456
-       const num = patentId.slice(4);
+      koreanFormat = `10-${actualPatentId.slice(4, 11)}`;
+    } else if (actualPatentId.match(/^KR10\d{10,}/i)) {
+      // Application: KR1020230123456A -> 10-2023-0123456
+      const num = actualPatentId.slice(4).replace(/[A-Z]\d?$/, '');
        koreanFormat = `10-${num.slice(0, 4)}-${num.slice(4)}`;
+    } else if (actualPatentId.match(/^KR\d+/i)) {
+      // Other format: just use as is with KR prefix removed
+      koreanFormat = actualPatentId.replace(/^KR/i, '');
      }
+    
      onPatentSelect(koreanFormat);
    };
  
