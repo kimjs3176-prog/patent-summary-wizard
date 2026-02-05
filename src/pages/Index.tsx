@@ -5,10 +5,17 @@ import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
 import { SearchHistory } from "@/components/SearchHistory";
 import { Button } from "@/components/ui/button";
+import { KeywordSearchResults } from "@/components/KeywordSearchResults";
+import { KeywordSearchResult } from "@/components/PatentSummary/types";
+import { useState } from "react";
 
 const Index = () => {
   const { isLoading, isFetching, summary, currentPatent, patentData, relatedPatents, generateSummary, loadFromHistory, reset } = usePatentSummary();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
+  
+  // Keyword search state
+  const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
+  const [searchedKeyword, setSearchedKeyword] = useState("");
 
   const features = [
     {
@@ -35,6 +42,10 @@ const Index = () => {
 
   // Handle patent search with history saving
   const handleSubmit = async (patentNumber: string) => {
+    // Clear keyword results when starting a patent search
+    setKeywordResults([]);
+    setSearchedKeyword("");
+    
     const result = await generateSummary(patentNumber);
     if (result && result.patentData) {
       addToHistory({
@@ -48,7 +59,28 @@ const Index = () => {
 
   // Handle selecting from history
   const handleHistorySelect = (item: SearchHistoryItem) => {
+    setKeywordResults([]);
+    setSearchedKeyword("");
     loadFromHistory(item);
+  };
+  
+  // Handle keyword search results
+  const handleKeywordSearch = (results: KeywordSearchResult[], keyword: string) => {
+    setKeywordResults(results);
+    setSearchedKeyword(keyword);
+  };
+  
+  // Handle selecting a patent from keyword search results
+  const handleKeywordPatentSelect = (patentNumber: string) => {
+    setKeywordResults([]);
+    setSearchedKeyword("");
+    handleSubmit(patentNumber);
+  };
+  
+  // Clear keyword search results
+  const handleClearKeywordResults = () => {
+    setKeywordResults([]);
+    setSearchedKeyword("");
   };
 
   return (
@@ -97,11 +129,28 @@ const Index = () => {
 
             {/* Input Section */}
             <section className="mb-12" style={{ animationDelay: "0.3s" }}>
-              <PatentInput onSubmit={handleSubmit} isLoading={isLoading} />
+              <PatentInput 
+                onSubmit={handleSubmit} 
+                isLoading={isLoading} 
+                onKeywordSearch={handleKeywordSearch}
+              />
             </section>
 
+            {/* Keyword Search Results Section */}
+            {keywordResults.length > 0 && (
+              <section className="mb-12 animate-fade-up" style={{ animationDelay: "0.35s" }}>
+                <KeywordSearchResults
+                  results={keywordResults}
+                  keyword={searchedKeyword}
+                  onPatentSelect={handleKeywordPatentSelect}
+                  onClose={handleClearKeywordResults}
+                  isLoading={isLoading}
+                />
+              </section>
+            )}
+
             {/* Search History Section */}
-            {history.length > 0 && (
+            {history.length > 0 && keywordResults.length === 0 && (
               <section className="mb-12 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "0.35s" }}>
                 <SearchHistory
                   history={history}

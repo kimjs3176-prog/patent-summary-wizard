@@ -6,6 +6,7 @@ import { PatentSummaryProps } from "./types";
 import { PdfGenerator } from "./PdfGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
+import { PatentIndices } from "./PatentIndices";
 
 export function PatentSummary({
   content,
@@ -120,56 +121,61 @@ export function PatentSummary({
 
       {/* Patent Data Badge */}
       {patentData && (
-        <div className="mb-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-            <span className="text-sm font-medium text-accent">Google Patents 데이터 연동됨</span>
-          </div>
-          <div className="text-sm text-foreground/80 space-y-1">
-            <p>
-              <span className="text-muted-foreground">{patentData.searchType === 'application' ? '출원번호' : '등록번호'}:</span>{' '}
-              <span className="font-medium">
-                {patentData.searchType === 'application' 
-                  ? (patentData.applicationNumber || patentData.displayNumber || patentData.patentNumber)
-                  : (patentData.displayNumber || patentData.patentNumber)}
-              </span>
-            </p>
-            {patentData.titleKo && (
+        <>
+          {/* Patent Indices */}
+          <PatentIndices patentData={patentData} />
+          
+          <div className="mb-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-sm font-medium text-accent">Google Patents 데이터 연동됨</span>
+            </div>
+            <div className="text-sm text-foreground/80 space-y-1">
               <p>
-                <span className="text-muted-foreground">발명의 명칭:</span>{' '}
-                <span className="font-medium">{patentData.titleKo}</span>
+                <span className="text-muted-foreground">{patentData.searchType === 'application' ? '출원번호' : '등록번호'}:</span>{' '}
+                <span className="font-medium">
+                  {patentData.searchType === 'application' 
+                    ? (patentData.applicationNumber || patentData.displayNumber || patentData.patentNumber)
+                    : (patentData.displayNumber || patentData.patentNumber)}
+                </span>
               </p>
-            )}
-            <p>
-              {patentData.assignee && (
-                <>
-                  <span className="text-muted-foreground">출원인:</span>{' '}
-                  <span>{patentData.assignee}</span>
-                </>
+              {patentData.titleKo && (
+                <p>
+                  <span className="text-muted-foreground">발명의 명칭:</span>{' '}
+                  <span className="font-medium">{patentData.titleKo}</span>
+                </p>
               )}
-              {patentData.inventors && patentData.inventors.length > 0 && (
-                <>
-                  <span className="text-muted-foreground ml-4">발명자:</span>{' '}
-                  <span>{patentData.inventors.join(', ')}</span>
-                </>
-              )}
-            </p>
-            <p>
-              {patentData.filingDate && (
-                <>
-                  <span className="text-muted-foreground">출원일:</span>{' '}
-                  <span>{patentData.filingDate}</span>
-                </>
-              )}
-              {patentData.publicationDate && (
-                <>
-                  <span className="text-muted-foreground ml-4">공개일:</span>{' '}
-                  <span>{patentData.publicationDate}</span>
-                </>
-              )}
-            </p>
+              <p>
+                {patentData.assignee && (
+                  <>
+                    <span className="text-muted-foreground">출원인:</span>{' '}
+                    <span>{patentData.assignee}</span>
+                  </>
+                )}
+                {patentData.inventors && patentData.inventors.length > 0 && (
+                  <>
+                    <span className="text-muted-foreground ml-4">발명자:</span>{' '}
+                    <span>{patentData.inventors.join(', ')}</span>
+                  </>
+                )}
+              </p>
+              <p>
+                {patentData.filingDate && (
+                  <>
+                    <span className="text-muted-foreground">출원일:</span>{' '}
+                    <span>{patentData.filingDate}</span>
+                  </>
+                )}
+                {patentData.publicationDate && (
+                  <>
+                    <span className="text-muted-foreground ml-4">공개일:</span>{' '}
+                    <span>{patentData.publicationDate}</span>
+                  </>
+                )}
+              </p>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <div className="glass-effect rounded-2xl border border-border/50 overflow-hidden">

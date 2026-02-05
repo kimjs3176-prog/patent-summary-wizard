@@ -15,6 +15,8 @@ export interface PatentData {
   description?: string;
   representativeImage?: string;
   images?: string[];
+  citationCount?: number;
+  citedByCount?: number;
 }
 
 export interface RelatedPatent {
@@ -32,4 +34,31 @@ export interface PatentSummaryProps {
   isStreaming: boolean;
   patentData?: PatentData | null;
   relatedPatents?: RelatedPatent[];
+}
+
+export interface PatentIndices {
+  innovationIndex: number;
+  marketDominanceIndex: number;
+  innovationFactors: {
+    claimsCount: number;
+    classificationsCount: number;
+    descriptionLength: number;
+    hasCitations: boolean;
+  };
+  marketFactors: {
+    assigneeType: 'corporate' | 'individual' | 'research' | 'unknown';
+    inventorsCount: number;
+    ipcBreadth: number;
+    citedByCount: number;
+  };
+}
+
+export interface KeywordSearchResult {
+  patentId: string;
+  title: string;
+  titleKo?: string;
+  assignee?: string;
+  publicationDate?: string;
+  snippet?: string;
+  thumbnail?: string;
 }
