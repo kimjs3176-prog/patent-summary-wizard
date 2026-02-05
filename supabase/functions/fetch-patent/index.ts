@@ -96,12 +96,35 @@ serve(async (req) => {
     // Korean patent formats:
     // - Registration: 10-1234567 -> KR101234567
     // - Application: 10-2023-0123456 -> KR1020230123456
+    // - Direct from search: KR20190132335A (already formatted)
     let formattedPatentId = patentNumber.trim();
     let searchType: 'registration' | 'application' = 'registration';
     let displayNumber = patentNumber.trim();
     
+    // Handle patent IDs that already start with KR (from keyword search)
+    if (formattedPatentId.match(/^KR\d{10,}[A-Z]?\d?$/i)) {
+      // Already in Google Patents format: KR20190132335A or KR101234567B1
+      searchType = 'application';
+      const numPart = formattedPatentId.slice(2).replace(/[A-Z]\d?$/i, '');
+      if (numPart.length >= 11) {
+        // Application publication: KR20190132335A -> 10-2019-0132335
+        displayNumber = `10-${numPart.slice(0, 4)}-${numPart.slice(4)}`;
+      } else if (numPart.length === 7) {
+        // Registration: KR1234567B1 -> 10-1234567
+        searchType = 'registration';
+        displayNumber = `10-${numPart}`;
+      } else {
+        displayNumber = formattedPatentId;
+      }
+      // Keep the original formattedPatentId as is for search
+    } else if (formattedPatentId.match(/^KR10\d{7}[A-Z]?\d?$/i)) {
+      // Registration format: KR101234567B1
+      searchType = 'registration';
+      const numPart = formattedPatentId.slice(4, 11);
+      displayNumber = `10-${numPart}`;
+    }
     // Detect and convert Korean patent number format
-    if (formattedPatentId.match(/^10-\d{4}-\d+$/)) {
+    else if (formattedPatentId.match(/^10-\d{4}-\d+$/)) {
       // Application number format: 10-2023-0123456 -> KR1020230123456
       searchType = 'application';
       const parts = formattedPatentId.split("-");
