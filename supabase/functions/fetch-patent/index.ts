@@ -237,21 +237,27 @@ serve(async (req) => {
     
     if (patentData.title) {
       try {
-        const keywords = patentData.title
+        // 제목에서 핵심 키워드 추출 - 더 단순하게 핵심 단어 1-2개만 사용
+        const words = patentData.title
           .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
           .split(/\s+/)
-          .filter(w => w.length >= 2)
-          .slice(0, 2)
-          .join(' ');
+          .filter(w => w.length >= 2 && w.length <= 8)
+          // 조사, 일반적인 단어 제외
+          .filter(w => !['우수한', '이를', '하는', '위한', '관한', '대한', '있는', '방법', '장치', '시스템'].includes(w));
+        
+        // 핵심 단어 1개로만 검색 (더 넓은 결과)
+        const keyword = words.length > 0 ? words[0] : "";
 
-        if (keywords) {
+        console.log("Related patents search keyword:", keyword);
+
+        if (keyword) {
           const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
           relatedUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-          relatedUrl.searchParams.set("inventionTitle", keywords);
+          relatedUrl.searchParams.set("inventionTitle", keyword);
           relatedUrl.searchParams.set("astrtCont", "");
           relatedUrl.searchParams.set("pageNo", "1");
-          relatedUrl.searchParams.set("numOfRows", "10");
-          relatedUrl.searchParams.set("sortSpec", "AD");
+          relatedUrl.searchParams.set("numOfRows", "20");
+          relatedUrl.searchParams.set("sortSpec", "PD");
           relatedUrl.searchParams.set("descSort", "true");
           relatedUrl.searchParams.set("patent", "true");
           relatedUrl.searchParams.set("utility", "true");
@@ -259,8 +265,12 @@ serve(async (req) => {
           const relatedResponse = await fetch(relatedUrl.toString());
           const relatedText = await relatedResponse.text();
 
+          console.log("Related patents API response preview:", relatedText.substring(0, 500));
+
           if (relatedResponse.ok && !relatedText.includes("<successYN>N</successYN>")) {
             const itemMatches = [...relatedText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+            
+            console.log("Found", itemMatches.length, "related patent candidates");
             
             for (const match of itemMatches) {
               const itemXml = match[1];
@@ -284,12 +294,12 @@ serve(async (req) => {
               let relatedPatentId = "";
               if (regNum && regNum.length >= 7) {
                 const cleanNum = regNum.replace(/[^0-9]/g, "");
-                if (cleanNum.startsWith("10")) {
+                if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
                   relatedPatentId = `10-${cleanNum.slice(2, 9)}`;
                 }
               } else if (appNum && appNum.length >= 11) {
                 const cleanNum = appNum.replace(/[^0-9]/g, "");
-                if (cleanNum.startsWith("10")) {
+                if (cleanNum.length >= 11 && cleanNum.startsWith("10")) {
                   relatedPatentId = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
                 }
               }
@@ -298,10 +308,10 @@ serve(async (req) => {
                 relatedPatents.push({
                   patentId: relatedPatentId,
                   title: title,
-                  assignee: getField("applicant"),
+                  assignee: getField("applicantName") || getField("applicant"),
                   publicationDate: formatDate(getField("openDate") || getField("registerDate") || ""),
-                  snippet: getField("astrtCont")?.substring(0, 100),
-                  link: `https://www.kipris.or.kr/khome/main.jsp?searchType=1&searchText=${appNum}`,
+                  snippet: getField("astrtCont")?.substring(0, 150),
+                  link: `https://www.kipris.or.kr/khome/main.jsp?searchType=1&searchText=${appNum || regNum}`,
                 });
               }
 
@@ -313,6 +323,8 @@ serve(async (req) => {
         console.error("Error fetching related patents:", relatedError);
       }
     }
+    
+    console.log("Final related patents count:", relatedPatents.length);
 
     return new Response(
       JSON.stringify({ success: true, data: patentData, relatedPatents }),
