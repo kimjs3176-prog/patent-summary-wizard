@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { FileText, Copy, Check } from "lucide-react";
+import { FileText, Copy, Check, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps } from "./types";
@@ -70,6 +70,162 @@ export function PatentSummary({
     setCopied(true);
     toast.success("클립보드에 복사되었습니다");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePrint = () => {
+    if (!printRef.current) {
+      toast.error("인쇄할 내용이 없습니다");
+      return;
+    }
+    
+    const printContent = printRef.current.innerHTML;
+    const printWindow = window.open('', '_blank');
+    
+    if (!printWindow) {
+      toast.error("팝업이 차단되었습니다. 팝업을 허용해주세요.");
+      return;
+    }
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>특허 요약서 - ${patentNumber}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+          
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 11pt;
+            line-height: 1.7;
+            color: #1a1a1a;
+            padding: 15mm;
+            max-width: 210mm;
+            margin: 0 auto;
+          }
+          
+          .print-header {
+            border-bottom: 2px solid #1e3a5f;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+          }
+          
+          .print-title {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin-bottom: 4px;
+          }
+          
+          .print-subtitle {
+            font-size: 9pt;
+            color: #6b7280;
+          }
+          
+          .print-number {
+            text-align: right;
+            font-size: 12pt;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-top: -30px;
+          }
+          
+          .patent-info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 9pt;
+          }
+          
+          .patent-info-box p {
+            margin: 3px 0;
+          }
+          
+          .patent-info-label {
+            color: #6b7280;
+          }
+          
+          h2 {
+            font-size: 13pt;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          
+          p {
+            margin-bottom: 8px;
+            text-align: justify;
+          }
+          
+          .representative-image {
+            text-align: center;
+            margin: 16px 0;
+          }
+          
+          .representative-image img {
+            max-width: 180px;
+            max-height: 150px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+          }
+          
+          .representative-image .caption {
+            font-size: 9pt;
+            color: #6b7280;
+            margin-top: 6px;
+          }
+          
+          .print-footer {
+            position: fixed;
+            bottom: 10mm;
+            left: 15mm;
+            right: 15mm;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+            font-size: 8pt;
+            color: #9ca3af;
+            display: flex;
+            justify-content: space-between;
+          }
+          
+          @media print {
+            body {
+              padding: 0;
+            }
+            .print-footer {
+              position: fixed;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent}
+        <div class="print-footer">
+          <span>© 농식품 특허 1페이지 요약 서비스 | AI 기반 특허 분석</span>
+          <span>생성일: ${new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Wait for fonts and images to load
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   };
 
   // MD 다운로드 기능 및 Google Patents 링크 기능 제거 (요청사항)
@@ -239,6 +395,10 @@ export function PatentSummary({
                 <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   {copied ? "복사됨" : "복사"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
+                  <Printer className="w-4 h-4" />
+                  인쇄
                 </Button>
                 <PdfGenerator
                   content={content}
