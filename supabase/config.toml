@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.fetch-patent]
 verify_jwt = false
+
+[functions.search-patents]
+verify_jwt = false

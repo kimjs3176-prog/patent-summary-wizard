@@ -32,8 +32,8 @@ const Index = () => {
   const [searchedKeyword, setSearchedKeyword] = useState("");
   const features = [{
     icon: Database,
-    title: "Google Patents 연동",
-    description: "실제 특허 데이터베이스에서 정보를 가져옵니다"
+    title: "KIPRIS 연동",
+    description: "한국특허정보원(KIPRIS) 공식 데이터를 사용합니다"
   }, {
     icon: Zap,
     title: "빠른 AI 요약",
@@ -44,8 +44,8 @@ const Index = () => {
     description: "깔끔하게 정리된 요약서를 제공합니다"
   }, {
     icon: Shield,
-    title: "정확한 분석",
-    description: "기술 분야별 전문 분석을 제공합니다"
+    title: "농촌진흥청 특허 우선",
+    description: "농촌진흥청 출원 특허를 우선 표시합니다"
   }];
 
   // Handle patent search with history saving
@@ -114,7 +114,7 @@ const Index = () => {
             <section className="text-center max-w-3xl mx-auto mb-16">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent mb-6 animate-fade-up">
                 <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-medium">Google Patents API 연동</span>
+                <span className="text-sm font-medium">KIPRIS 특허 데이터 연동</span>
               </div>
               
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-6 animate-fade-up" style={{
@@ -165,7 +165,7 @@ const Index = () => {
             {isFetching && <div className="text-center mb-8 animate-fade-up">
                 <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-accent/10 border border-accent/20">
                   <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
-                  <span className="text-accent font-medium">Google Patents에서 데이터 조회 중...</span>
+                  <span className="text-accent font-medium">KIPRIS에서 특허 데이터 조회 중...</span>
                 </div>
               </div>}
 
@@ -184,7 +184,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 mt-auto">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>© 2025 농식품 특허 1페이지 요약 서비스. Google Patents API 연동 • AI 기반 특허 분석</p>
+          <p>© 2025 농식품 특허 1페이지 요약 서비스. KIPRIS(한국특허정보원) 데이터 연동 • AI 기반 특허 분석</p>
         </div>
       </footer>
     </div>;

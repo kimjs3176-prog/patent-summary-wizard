@@ -5,55 +5,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function translateToKorean(text: string): Promise<string> {
-  // Best-effort: if no key is configured, just return original.
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) return text;
-
-  try {
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You translate patent titles into natural Korean. Output ONLY the Korean title. If input is already Korean, return it unchanged.",
-          },
-          { role: "user", content: text },
-        ],
-        temperature: 0.2,
-        stream: false,
-      }),
-    });
-
-    if (!resp.ok) return text;
-    const data = await resp.json();
-    const out = data?.choices?.[0]?.message?.content?.trim();
-    return out || text;
-  } catch (_e) {
-    return text;
-  }
-}
-
 interface PatentData {
   title?: string;
   titleKo?: string;
   abstract?: string;
   inventors?: string[];
   assignee?: string;
+  applicant?: string;
   filingDate?: string;
   publicationDate?: string;
+  registrationDate?: string;
   claims?: string[];
   patentNumber?: string;
   applicationNumber?: string;
-  displayNumber?: string; // Formatted display number (10-XXXXXXX or 10-YYYY-XXXXXXX)
-  searchType?: 'registration' | 'application'; // What type of search was performed
+  registrationNumber?: string;
+  displayNumber?: string;
+  searchType?: 'registration' | 'application';
   classifications?: string[];
   description?: string;
   representativeImage?: string;
@@ -69,6 +36,76 @@ interface RelatedPatent {
   link?: string;
 }
 
+// 날짜 포맷팅: 20231015 -> 2023.10.15
+function formatDate(dateStr: string): string {
+  if (!dateStr || dateStr.length !== 8) return dateStr;
+  return `${dateStr.slice(0, 4)}.${dateStr.slice(4, 6)}.${dateStr.slice(6, 8)}`;
+}
+
+// 특허번호에서 KIPRIS 검색용 번호 추출
+function parsePatentNumber(input: string): { applicationNumber?: string; registrationNumber?: string; displayNumber: string; searchType: 'registration' | 'application' } {
+  const trimmed = input.trim();
+  
+  // 등록번호 형식: 10-1234567
+  const regMatch = trimmed.match(/^10-(\d{7})$/);
+  if (regMatch) {
+    return {
+      registrationNumber: `10${regMatch[1]}00`,
+      displayNumber: trimmed,
+      searchType: 'registration'
+    };
+  }
+  
+  // 등록번호 형식 (6자리): 10-186227 -> 10-0186227
+  const regMatch6 = trimmed.match(/^10-(\d{6})$/);
+  if (regMatch6) {
+    const paddedNum = regMatch6[1].padStart(7, '0');
+    return {
+      registrationNumber: `10${paddedNum}00`,
+      displayNumber: `10-${paddedNum}`,
+      searchType: 'registration'
+    };
+  }
+  
+  // 출원번호 형식: 10-2023-0123456
+  const appMatch = trimmed.match(/^10-(\d{4})-(\d{7})$/);
+  if (appMatch) {
+    return {
+      applicationNumber: `10${appMatch[1]}${appMatch[2]}`,
+      displayNumber: trimmed,
+      searchType: 'application'
+    };
+  }
+  
+  // 순수 7자리 숫자 (등록번호)
+  const pureRegMatch = trimmed.match(/^(\d{7})$/);
+  if (pureRegMatch) {
+    return {
+      registrationNumber: `10${pureRegMatch[1]}00`,
+      displayNumber: `10-${pureRegMatch[1]}`,
+      searchType: 'registration'
+    };
+  }
+  
+  // 순수 6자리 숫자 (등록번호, 앞자리 0 생략)
+  const pureRegMatch6 = trimmed.match(/^(\d{6})$/);
+  if (pureRegMatch6) {
+    const paddedNum = pureRegMatch6[1].padStart(7, '0');
+    return {
+      registrationNumber: `10${paddedNum}00`,
+      displayNumber: `10-${paddedNum}`,
+      searchType: 'registration'
+    };
+  }
+  
+  // 기본값
+  return {
+    applicationNumber: trimmed.replace(/-/g, ''),
+    displayNumber: trimmed,
+    searchType: 'application'
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -79,264 +116,236 @@ serve(async (req) => {
 
     if (!patentNumber) {
       return new Response(
-        JSON.stringify({ success: false, error: "특허 등록번호를 입력해주세요." }),
+        JSON.stringify({ success: false, error: "특허 번호를 입력해주세요." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const SERPAPI_API_KEY = Deno.env.get("SERPAPI_API_KEY");
-    if (!SERPAPI_API_KEY) {
+    const KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
+    if (!KIPRIS_API_KEY) {
       return new Response(
-        JSON.stringify({ success: false, error: "SerpApi API 키가 설정되지 않았습니다." }),
+        JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Format patent number for Google Patents
-    // Korean patent formats:
-    // - Registration: 10-1234567 -> KR101234567
-    // - Application: 10-2023-0123456 -> KR1020230123456
-    // - Direct from search: KR20190132335A (already formatted)
-    let formattedPatentId = patentNumber.trim();
-    let searchType: 'registration' | 'application' = 'registration';
-    let displayNumber = patentNumber.trim();
-    
-    // Handle patent IDs that already start with KR (from keyword search)
-    if (formattedPatentId.match(/^KR\d{10,}[A-Z]?\d?$/i) || formattedPatentId.match(/^KR10\d{7}[A-Z]\d?$/i)) {
-      // Already in Google Patents format: KR20190132335A or KR101234567B1
-      const numPart = formattedPatentId.slice(2).replace(/[A-Z]\d?$/i, ''); // Remove KR prefix and suffix letter
+    const parsed = parsePatentNumber(patentNumber);
+    console.log("Fetching patent:", patentNumber, "->", parsed);
+
+    let patentData: PatentData = {
+      displayNumber: parsed.displayNumber,
+      searchType: parsed.searchType,
+    };
+
+    // KIPRIS API로 특허 상세정보 조회
+    // 1. 먼저 출원번호로 상세정보 조회 시도
+    let detailData: string | null = null;
+    let applicationNo = parsed.applicationNumber;
+
+    // 등록번호로 검색하는 경우, 먼저 등록번호로 출원번호를 찾아야 함
+    if (parsed.searchType === 'registration' && parsed.registrationNumber) {
+      // 등록번호로 검색하여 출원번호 찾기
+      const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/freeSearchInfo");
+      searchUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
+      searchUrl.searchParams.set("freeSearchWord", parsed.displayNumber.replace(/-/g, ''));
+      searchUrl.searchParams.set("docsStart", "1");
+      searchUrl.searchParams.set("docsCount", "5");
+
+      console.log("Searching by registration number...");
+      const searchResponse = await fetch(searchUrl.toString());
+      const searchText = await searchResponse.text();
+
+      // 검색 결과에서 출원번호 추출
+      const appNumMatch = searchText.match(/<applicationNumber><!?\[?C?D?A?T?A?\[?([^\]<]+)\]?\]?<\/applicationNumber>/);
+      if (appNumMatch) {
+        applicationNo = appNumMatch[1].trim();
+        console.log("Found application number:", applicationNo);
+      }
+    }
+
+    // 출원번호로 상세정보 조회
+    if (applicationNo) {
+      const detailUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getBibliographyDetailInfoSearch");
+      detailUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
+      detailUrl.searchParams.set("applicationNumber", applicationNo);
+
+      console.log("Fetching detail info for:", applicationNo);
+      const detailResponse = await fetch(detailUrl.toString());
+      detailData = await detailResponse.text();
       
-      // Check if it's an application publication (starts with year like 2019, 2020, etc.)
-      // or a registration (starts with 10)
-      if (numPart.startsWith('10') && numPart.length === 9) {
-        // Registration format: KR102295358B1 -> numPart = 102295358 (9 digits starting with 10)
-        // This is 10 + 7-digit registration number
-        searchType = 'registration';
-        const regNum = numPart.slice(2); // Remove leading "10", get 7-digit number
-        displayNumber = `10-${regNum}`;
-      } else if (numPart.length >= 11 && numPart.startsWith('10')) {
-        // Application publication: KR20190132335A -> 10-2019-0132335
-        searchType = 'application';
-        displayNumber = `10-${numPart.slice(0, 4)}-${numPart.slice(4)}`;
-      } else if (numPart.length === 7 || numPart.length === 8) {
-        // Old registration format: KR1234567B1 -> 10-1234567
-        searchType = 'registration';
-        const regNum = numPart.slice(-7); // Take last 7 digits
-        displayNumber = `10-${regNum}`;
-      } else {
-        // Fallback: try to extract meaningful display number
-        if (numPart.length >= 11) {
-          searchType = 'application';
-          displayNumber = `10-${numPart.slice(0, 4)}-${numPart.slice(4)}`;
-        } else {
-          searchType = 'registration';
-          displayNumber = `10-${numPart.slice(-7).padStart(7, '0')}`;
-        }
-      }
-      // Keep the original formattedPatentId as is for search
-    }
-    // Detect and convert Korean patent number format
-    else if (formattedPatentId.match(/^10-\d{4}-\d+$/)) {
-      // Application number format: 10-2023-0123456 -> KR1020230123456
-      searchType = 'application';
-      const parts = formattedPatentId.split("-");
-      formattedPatentId = `KR10${parts[1]}${parts[2]}`;
-      displayNumber = patentNumber.trim(); // Keep original format for application
-    } else if (formattedPatentId.match(/^10-\d{7}$/)) {
-      // Registration number format: 10-1234567 -> KR101234567
-      searchType = 'registration';
-      formattedPatentId = `KR10${formattedPatentId.replace("10-", "")}`;
-      displayNumber = patentNumber.trim();
-    } else if (formattedPatentId.match(/^10-\d{6}$/)) {
-      // Some sources omit leading zeros: 10-186227 -> 10-0186227
-      searchType = 'registration';
-      const digits = formattedPatentId.replace("10-", "").padStart(7, "0");
-      formattedPatentId = `KR10${digits}`;
-      displayNumber = `10-${digits}`;
-    } else if (formattedPatentId.match(/^\d{7}$/)) {
-      // Just 7 digits (registration without prefix): 1234567 -> KR101234567
-      searchType = 'registration';
-      formattedPatentId = `KR10${formattedPatentId}`;
-      displayNumber = `10-${formattedPatentId.slice(-7)}`;
-    } else if (formattedPatentId.match(/^\d{6}$/)) {
-      // 6 digits without prefix (leading zero omitted)
-      searchType = 'registration';
-      const digits = formattedPatentId.padStart(7, "0");
-      formattedPatentId = `KR10${digits}`;
-      displayNumber = `10-${digits}`;
-    } else if (formattedPatentId.match(/^KR10\d{7}$/)) {
-      // Already formatted registration: KR101234567
-      searchType = 'registration';
-      displayNumber = `10-${formattedPatentId.slice(4)}`;
-    } else if (formattedPatentId.match(/^KR10\d{11,}$/)) {
-      // Already formatted application: KR1020230123456
-      searchType = 'application';
-      const num = formattedPatentId.slice(4);
-      displayNumber = `10-${num.slice(0, 4)}-${num.slice(4)}`;
-    } else if (!formattedPatentId.startsWith("KR")) {
-      // Add KR prefix if not present
-      const cleanNum = formattedPatentId.replace(/-/g, "");
-      formattedPatentId = `KR${cleanNum}`;
-      if (cleanNum.length > 7) {
-        searchType = 'application';
+      if (detailResponse.ok && detailData) {
+        // XML에서 필드 추출 헬퍼
+        const getField = (xml: string, field: string): string | undefined => {
+          const cdataMatch = xml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`));
+          if (cdataMatch) return cdataMatch[1].trim();
+          const simpleMatch = xml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`));
+          return simpleMatch ? simpleMatch[1].trim() : undefined;
+        };
+
+        const getFields = (xml: string, field: string): string[] => {
+          const results: string[] = [];
+          const regex = new RegExp(`<${field}><!?\\[?C?D?A?T?A?\\[?([^\\]<]+)\\]?\\]?<\\/${field}>`, 'g');
+          let match;
+          while ((match = regex.exec(xml)) !== null) {
+            if (match[1].trim()) results.push(match[1].trim());
+          }
+          return results;
+        };
+
+        patentData = {
+          ...patentData,
+          title: getField(detailData, "inventionTitle") || getField(detailData, "inventionName"),
+          titleKo: getField(detailData, "inventionTitle") || getField(detailData, "inventionName"),
+          abstract: getField(detailData, "astrtCont") || getField(detailData, "abstract"),
+          applicant: getField(detailData, "applicant"),
+          assignee: getField(detailData, "applicant"),
+          inventors: getFields(detailData, "inventor"),
+          filingDate: formatDate(getField(detailData, "applicationDate") || ""),
+          publicationDate: formatDate(getField(detailData, "openDate") || getField(detailData, "publicDate") || ""),
+          registrationDate: formatDate(getField(detailData, "registerDate") || ""),
+          applicationNumber: getField(detailData, "applicationNumber"),
+          registrationNumber: getField(detailData, "registrationNumber"),
+          classifications: getFields(detailData, "ipcNumber"),
+        };
       }
     }
 
-    console.log("Fetching patent:", formattedPatentId);
+    // 상세정보가 없으면 키워드 검색으로 기본 정보 조회
+    if (!patentData.title) {
+      const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/freeSearchInfo");
+      searchUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
+      searchUrl.searchParams.set("freeSearchWord", patentNumber.replace(/-/g, ''));
+      searchUrl.searchParams.set("docsStart", "1");
+      searchUrl.searchParams.set("docsCount", "5");
 
-    // Use SerpApi Google Patents endpoint
-    const searchUrl = new URL("https://serpapi.com/search.json");
-    searchUrl.searchParams.set("engine", "google_patents");
-    searchUrl.searchParams.set("q", formattedPatentId);
-    searchUrl.searchParams.set("api_key", SERPAPI_API_KEY);
+      console.log("Falling back to keyword search...");
+      const searchResponse = await fetch(searchUrl.toString());
+      const searchText = await searchResponse.text();
 
-    const searchResponse = await fetch(searchUrl.toString());
-    const searchData = await searchResponse.json();
+      const getField = (xml: string, field: string): string | undefined => {
+        const cdataMatch = xml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`));
+        if (cdataMatch) return cdataMatch[1].trim();
+        const simpleMatch = xml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`));
+        return simpleMatch ? simpleMatch[1].trim() : undefined;
+      };
 
-    if (!searchResponse.ok) {
-      console.error("SerpApi search error:", searchData);
-      return new Response(
-        JSON.stringify({ success: false, error: "특허 검색에 실패했습니다." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // 첫 번째 결과 사용
+      const itemMatch = searchText.match(/<PatentUtilityInfo>([\s\S]*?)<\/PatentUtilityInfo>/);
+      if (itemMatch) {
+        const itemXml = itemMatch[1];
+        patentData = {
+          ...patentData,
+          title: getField(itemXml, "inventionTitle"),
+          titleKo: getField(itemXml, "inventionTitle"),
+          applicant: getField(itemXml, "applicant"),
+          assignee: getField(itemXml, "applicant"),
+          filingDate: formatDate(getField(itemXml, "applicationDate") || ""),
+          publicationDate: formatDate(getField(itemXml, "openDate") || ""),
+          applicationNumber: getField(itemXml, "applicationNumber"),
+          registrationNumber: getField(itemXml, "registrationNumber"),
+        };
+      }
     }
 
-    // Check if we found any patents
-    const organicResults = searchData.organic_results || [];
-    
-    if (organicResults.length === 0) {
+    if (!patentData.title) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "해당 번호의 특허를 찾을 수 없습니다. 등록번호를 확인해주세요." 
+          error: "해당 번호의 특허를 찾을 수 없습니다. 등록번호 또는 출원번호를 확인해주세요." 
         }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get the first matching result
-    const firstResult = organicResults[0];
-    
-    // Try to get detailed patent info if patent_id is available
-    let patentData: PatentData = {
-      title: firstResult.title,
-      titleKo: firstResult.title, // Will be updated from details if available
-      abstract: firstResult.snippet,
-      patentNumber: firstResult.patent_id || patentNumber,
-      displayNumber: displayNumber,
-      searchType: searchType,
-      assignee: firstResult.assignee,
-      filingDate: firstResult.filing_date,
-      publicationDate: firstResult.publication_date,
-      inventors: firstResult.inventor ? [firstResult.inventor] : [],
-      representativeImage: firstResult.thumbnail,
-    };
-
-    // If we have a patent_id, try to get more details
-    if (firstResult.patent_id) {
-      try {
-        const detailUrl = new URL("https://serpapi.com/search.json");
-        detailUrl.searchParams.set("engine", "google_patents_details");
-        detailUrl.searchParams.set("patent_id", firstResult.patent_id);
-        detailUrl.searchParams.set("api_key", SERPAPI_API_KEY);
-
-        const detailResponse = await fetch(detailUrl.toString());
-        
-        if (detailResponse.ok) {
-          const detailData = await detailResponse.json();
-          
-          // Extract images from detail data
-          const images: string[] = [];
-          if (detailData.images && Array.isArray(detailData.images)) {
-            images.push(...detailData.images.slice(0, 5));
-          }
-          
-          // Extract detailed information
-          // Try to get Korean title from localized_titles or keep existing
-          let titleKo = patentData.titleKo;
-          if (detailData.localized_titles) {
-            const koTitle = detailData.localized_titles.find((t: any) => t.language === 'ko' || t.lang === 'ko');
-            if (koTitle) {
-              titleKo = koTitle.text || koTitle.title || titleKo;
-            }
-          }
-          // If title contains Korean characters, use it
-          if (detailData.title && /[가-힣]/.test(detailData.title)) {
-            titleKo = detailData.title;
-          }
-          
-          patentData = {
-            ...patentData,
-            title: detailData.title || patentData.title,
-            titleKo: titleKo || detailData.title || patentData.title,
-            abstract: detailData.abstract || patentData.abstract,
-            inventors: detailData.inventors?.map((inv: any) => inv.name || inv) || patentData.inventors,
-            assignee: detailData.assignee?.name || detailData.assignee || patentData.assignee,
-            filingDate: detailData.filing_date || patentData.filingDate,
-            publicationDate: detailData.publication_date || patentData.publicationDate,
-            claims: detailData.claims?.map((c: any) => c.text || c) || [],
-            applicationNumber: detailData.application_number,
-            classifications: detailData.classifications?.map((c: any) => c.code || c) || [],
-            description: detailData.description,
-            representativeImage: images[0] || patentData.representativeImage,
-            images: images,
-          };
-        }
-      } catch (detailError) {
-        console.error("Error fetching patent details:", detailError);
-        // Continue with basic info if detail fetch fails
+    // displayNumber 재설정 (조회된 데이터 기반)
+    if (patentData.registrationNumber && patentData.searchType === 'registration') {
+      const regNum = patentData.registrationNumber.replace(/^10/, '').slice(0, 7);
+      patentData.displayNumber = `10-${regNum}`;
+    } else if (patentData.applicationNumber) {
+      const appNum = patentData.applicationNumber.replace(/^10/, '');
+      if (appNum.length >= 11) {
+        patentData.displayNumber = `10-${appNum.slice(0, 4)}-${appNum.slice(4)}`;
       }
     }
 
-    // Force Korean invention title (best-effort translation if we only have English)
-    if (patentData.titleKo && !/[가-힣]/.test(patentData.titleKo)) {
-      const translated = await translateToKorean(patentData.titleKo);
-      patentData.titleKo = translated;
-    } else if (!patentData.titleKo && patentData.title) {
-      const translated = await translateToKorean(patentData.title);
-      patentData.titleKo = translated;
-    }
+    patentData.patentNumber = patentData.displayNumber;
 
-    console.log("Patent data fetched successfully");
+    console.log("Patent data fetched successfully:", patentData.title);
 
-    // Fetch related patents based on title or classifications
+    // 관련 특허 검색 (제목 키워드 기반)
     let relatedPatents: RelatedPatent[] = [];
     
-    if (patentData.title || (patentData.classifications && patentData.classifications.length > 0)) {
+    if (patentData.title) {
       try {
-        // Extract keywords from title for related search
-        const searchQuery = patentData.classifications?.[0] || 
-          patentData.title?.split(' ').slice(0, 3).join(' ') || 
-          formattedPatentId;
-        
-        const relatedUrl = new URL("https://serpapi.com/search.json");
-        relatedUrl.searchParams.set("engine", "google_patents");
-        relatedUrl.searchParams.set("q", `${searchQuery} country:KR`);
-        relatedUrl.searchParams.set("api_key", SERPAPI_API_KEY);
-        relatedUrl.searchParams.set("num", "6");
+        // 제목에서 주요 키워드 추출 (2-3단어)
+        const keywords = patentData.title
+          .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
+          .split(/\s+/)
+          .filter(w => w.length >= 2)
+          .slice(0, 2)
+          .join(' ');
 
-        const relatedResponse = await fetch(relatedUrl.toString());
-        
-        if (relatedResponse.ok) {
-          const relatedData = await relatedResponse.json();
-          const relatedResults = relatedData.organic_results || [];
-          
-          // Filter out the current patent and map to RelatedPatent interface
-          relatedPatents = relatedResults
-            .filter((r: any) => r.patent_id !== firstResult.patent_id)
-            .slice(0, 5)
-            .map((r: any) => ({
-              patentId: r.patent_id || "",
-              title: r.title || "제목 없음",
-              assignee: r.assignee,
-              publicationDate: r.publication_date,
-              snippet: r.snippet,
-              link: r.patent_id ? `https://patents.google.com/patent/${r.patent_id}` : undefined,
-            }));
+        if (keywords) {
+          const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/freeSearchInfo");
+          relatedUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
+          relatedUrl.searchParams.set("freeSearchWord", keywords);
+          relatedUrl.searchParams.set("docsStart", "1");
+          relatedUrl.searchParams.set("docsCount", "10");
+          relatedUrl.searchParams.set("sortSpec", "AD");
+          relatedUrl.searchParams.set("descSort", "true");
+
+          const relatedResponse = await fetch(relatedUrl.toString());
+          const relatedText = await relatedResponse.text();
+
+          if (relatedResponse.ok) {
+            const itemMatches = relatedText.matchAll(/<PatentUtilityInfo>([\s\S]*?)<\/PatentUtilityInfo>/g);
+            
+            for (const match of itemMatches) {
+              const itemXml = match[1];
+              
+              const getField = (field: string): string | undefined => {
+                const cdataMatch = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`));
+                if (cdataMatch) return cdataMatch[1].trim();
+                const simpleMatch = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`));
+                return simpleMatch ? simpleMatch[1].trim() : undefined;
+              };
+
+              const title = getField("inventionTitle");
+              const appNum = getField("applicationNumber") || "";
+              const regNum = getField("registrationNumber") || "";
+              
+              // 현재 특허 제외
+              if (appNum === patentData.applicationNumber || regNum === patentData.registrationNumber) {
+                continue;
+              }
+
+              let relatedPatentId = "";
+              if (regNum && regNum.length > 0) {
+                const num = regNum.replace(/^10/, '').slice(0, 7);
+                relatedPatentId = `10-${num}`;
+              } else if (appNum && appNum.length > 0) {
+                const num = appNum.replace(/^10/, '');
+                if (num.length >= 11) {
+                  relatedPatentId = `10-${num.slice(0, 4)}-${num.slice(4)}`;
+                }
+              }
+
+              if (relatedPatentId && title) {
+                relatedPatents.push({
+                  patentId: relatedPatentId,
+                  title: title,
+                  assignee: getField("applicant"),
+                  publicationDate: formatDate(getField("openDate") || getField("registerDate") || ""),
+                  link: `https://www.kipris.or.kr/khome/main.jsp?searchType=1&searchText=${appNum}`,
+                });
+              }
+
+              if (relatedPatents.length >= 5) break;
+            }
+          }
         }
       } catch (relatedError) {
         console.error("Error fetching related patents:", relatedError);
-        // Continue without related patents
       }
     }
 
