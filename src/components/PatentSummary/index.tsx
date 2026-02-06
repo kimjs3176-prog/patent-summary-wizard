@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { FileText, Copy, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -6,7 +6,14 @@ import { PatentSummaryProps } from "./types";
 import { PdfGenerator } from "./PdfGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
-import { PatentIndices } from "./PatentIndices";
+import { TechnologyCommercializationScore } from "./TechnologyCommercializationScore";
+
+interface CommercializationDetails {
+  technologyScore: number;
+  marketScore: number;
+  businessScore: number;
+  analysis: string;
+}
 
 export function PatentSummary({
   content,
@@ -17,6 +24,45 @@ export function PatentSummary({
 }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const [commercializationScore, setCommercializationScore] = useState<number | null>(null);
+  const [commercializationDetails, setCommercializationDetails] = useState<CommercializationDetails | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Fetch commercialization score when patent data is available
+  useEffect(() => {
+    const analyzeCommercialization = async () => {
+      if (!patentData || !patentNumber || isStreaming) {
+        return;
+      }
+
+      setIsAnalyzing(true);
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-commercialization`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ patentNumber, patentData }),
+          }
+        );
+
+        const result = await response.json();
+        if (result.success) {
+          setCommercializationScore(result.score);
+          setCommercializationDetails(result.details);
+        }
+      } catch (error) {
+        console.error("Commercialization analysis error:", error);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    };
+
+    analyzeCommercialization();
+  }, [patentData, patentNumber, isStreaming]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -119,11 +165,14 @@ export function PatentSummary({
         patentData={patentData}
       />
 
-      {/* Patent Data Badge */}
+      {/* Technology Commercialization Score */}
       {patentData && (
         <>
-          {/* Patent Indices */}
-          <PatentIndices patentData={patentData} />
+          <TechnologyCommercializationScore 
+            score={commercializationScore}
+            isLoading={isAnalyzing}
+            details={commercializationDetails}
+          />
           
           <div className="mb-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
             <div className="flex items-center gap-2 mb-3">

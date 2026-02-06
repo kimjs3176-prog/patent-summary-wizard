@@ -51,6 +51,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       };
 
       // Helper function to wrap and add text with improved readability
+      // Using darker colors for better visibility
       const addWrappedText = (text: string, fontSize: number, color: number[], lineHeight: number = 1.6) => {
         pdf.setFontSize(fontSize);
         pdf.setTextColor(color[0], color[1], color[2]);
@@ -63,6 +64,58 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
           pdf.text(line, margin, yPosition);
           yPosition += lineHeightMm;
         }
+      };
+
+      // Helper function to load image with multiple fallback methods
+      const loadImageForPdf = async (imageUrl: string): Promise<string | null> => {
+        // Method 1: Try fetch with cors
+        try {
+          const response = await fetch(imageUrl, { 
+            mode: 'cors',
+            credentials: 'omit',
+          });
+          
+          if (response.ok) {
+            const blob = await response.blob();
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = () => resolve(null);
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch (e) {
+          console.warn("Fetch method failed:", e);
+        }
+
+        // Method 2: Try loading via Image element
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth || img.width;
+              canvas.height = img.naturalHeight || img.height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+              } else {
+                resolve(null);
+              }
+            } catch (e) {
+              console.warn("Canvas method failed:", e);
+              resolve(null);
+            }
+          };
+          img.onerror = () => {
+            console.warn("Image load failed");
+            resolve(null);
+          };
+          // Add timestamp to bypass cache
+          img.src = imageUrl + (imageUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+        });
       };
 
       // Title: 농식품 특허 요약서
@@ -129,18 +182,18 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         if (patentData.assignee || patentData.inventors?.length) {
           xPos = infoX;
           if (patentData.assignee) {
-            pdf.setTextColor(107, 114, 128);
+            pdf.setTextColor(80, 85, 95);
             pdf.text("출원인: ", xPos, yPosition);
             xPos += pdf.getTextWidth("출원인: ");
-            pdf.setTextColor(55, 65, 81);
+            pdf.setTextColor(30, 35, 45);
             pdf.text(patentData.assignee, xPos, yPosition);
             xPos += pdf.getTextWidth(patentData.assignee);
           }
           if (patentData.inventors && patentData.inventors.length > 0) {
-            pdf.setTextColor(107, 114, 128);
+            pdf.setTextColor(80, 85, 95);
             pdf.text("   발명자: ", xPos, yPosition);
             xPos += pdf.getTextWidth("   발명자: ");
-            pdf.setTextColor(55, 65, 81);
+            pdf.setTextColor(30, 35, 45);
             pdf.text(patentData.inventors.join(", "), xPos, yPosition);
           }
           yPosition += 5;
@@ -150,18 +203,18 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         if (patentData.filingDate || patentData.publicationDate) {
           xPos = infoX;
           if (patentData.filingDate) {
-            pdf.setTextColor(107, 114, 128);
+            pdf.setTextColor(80, 85, 95);
             pdf.text("출원일: ", xPos, yPosition);
             xPos += pdf.getTextWidth("출원일: ");
-            pdf.setTextColor(55, 65, 81);
+            pdf.setTextColor(30, 35, 45);
             pdf.text(patentData.filingDate, xPos, yPosition);
             xPos += pdf.getTextWidth(patentData.filingDate);
           }
           if (patentData.publicationDate) {
-            pdf.setTextColor(107, 114, 128);
+            pdf.setTextColor(80, 85, 95);
             pdf.text("   공개일: ", xPos, yPosition);
             xPos += pdf.getTextWidth("   공개일: ");
-            pdf.setTextColor(55, 65, 81);
+            pdf.setTextColor(30, 35, 45);
             pdf.text(patentData.publicationDate, xPos, yPosition);
           }
         }
@@ -236,70 +289,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
               const imageUrl = patentData.representativeImage;
               console.log("Fetching representative image for PDF:", imageUrl);
               
-              // Use a more robust image loading approach
-              const loadImageAsBase64 = async (url: string): Promise<string | null> => {
-                try {
-                  // Try direct fetch first
-                  const response = await fetch(url, { 
-                    mode: 'cors',
-                    credentials: 'omit',
-                    headers: {
-                      'Accept': 'image/*'
-                    }
-                  });
-                  
-                  if (!response.ok) {
-                    console.warn("Direct fetch failed, status:", response.status);
-                    return null;
-                  }
-                  
-                  const blob = await response.blob();
-                  
-                  return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result as string);
-                    reader.onerror = () => resolve(null);
-                    reader.readAsDataURL(blob);
-                  });
-                } catch (err) {
-                  console.warn("Fetch error:", err);
-                  return null;
-                }
-              };
-
-              // Alternative: Load via Image element for better compatibility
-              const loadImageViaCanvas = (url: string): Promise<string | null> => {
-                return new Promise((resolve) => {
-                  const img = new Image();
-                  img.crossOrigin = 'anonymous';
-                  img.onload = () => {
-                    try {
-                      const canvas = document.createElement('canvas');
-                      canvas.width = img.naturalWidth;
-                      canvas.height = img.naturalHeight;
-                      const ctx = canvas.getContext('2d');
-                      if (ctx) {
-                        ctx.drawImage(img, 0, 0);
-                        resolve(canvas.toDataURL('image/png'));
-                      } else {
-                        resolve(null);
-                      }
-                    } catch (e) {
-                      console.warn("Canvas error:", e);
-                      resolve(null);
-                    }
-                  };
-                  img.onerror = () => resolve(null);
-                  img.src = url;
-                });
-              };
-
-              // Try both methods
-              let imgData = await loadImageAsBase64(imageUrl);
-              if (!imgData) {
-                console.log("Trying canvas method for image...");
-                imgData = await loadImageViaCanvas(imageUrl);
-              }
+              const imgData = await loadImageForPdf(imageUrl);
               
               if (imgData) {
                 const imgWidth = 55;
@@ -315,7 +305,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
                 
                 // Caption
                 pdf.setFontSize(9);
-                pdf.setTextColor(120, 120, 120);
+                pdf.setTextColor(80, 80, 80);
                 const captionText = "【대표 도면】";
                 const captionWidth = pdf.getTextWidth(captionText);
                 pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
@@ -329,8 +319,9 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
           }
           
         } else if (cleanLine.trim()) {
-          // Improved text readability with slightly larger font and better spacing
-          addWrappedText(cleanLine, 10.5, [45, 55, 70], 1.65);
+          // Improved text readability - using much darker color for better visibility
+          // Changed from [45, 55, 70] to [25, 30, 35] for significantly better contrast
+          addWrappedText(cleanLine, 10.5, [25, 30, 35], 1.65);
           yPosition += 2;
         }
       }
