@@ -1,14 +1,30 @@
-import { Link2, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RelatedPatent } from "./types";
 
 interface RelatedPatentsSectionProps {
   relatedPatents: RelatedPatent[];
+  onPatentClick?: (patentNumber: string) => void;
 }
 
-export function RelatedPatentsSection({ relatedPatents }: RelatedPatentsSectionProps) {
+export function RelatedPatentsSection({ relatedPatents, onPatentClick }: RelatedPatentsSectionProps) {
   if (relatedPatents.length === 0) return null;
+
+  const handlePatentClick = (patent: RelatedPatent) => {
+    // Extract patent number from patentId or use it directly
+    let patentNumber = patent.patentId || "";
+    
+    // Clean up the patent number format (remove "patent/" prefix and "/en" suffix)
+    patentNumber = patentNumber
+      .replace("patent/", "")
+      .replace("/en", "")
+      .replace("/ko", "")
+      .trim();
+    
+    if (patentNumber && onPatentClick) {
+      onPatentClick(patentNumber);
+    }
+  };
 
   return (
     <div
@@ -32,22 +48,16 @@ export function RelatedPatentsSection({ relatedPatents }: RelatedPatentsSectionP
           {relatedPatents.map((patent, index) => (
             <div
               key={patent.patentId || index}
-              className="p-4 rounded-xl bg-muted/50 border border-border/30 hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 group"
+              className="p-4 rounded-xl bg-muted/50 border border-border/30 hover:bg-muted/80 hover:border-primary/30 transition-all duration-200 group cursor-pointer"
+              onClick={() => handlePatentClick(patent)}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
                 <Badge variant="secondary" className="text-xs shrink-0">
                   {patent.patentId?.replace("patent/", "").replace("/en", "") || "번호 없음"}
                 </Badge>
-                {patent.link && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => window.open(patent.link, "_blank")}
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                  </Button>
-                )}
+                <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  클릭하여 요약서 생성 →
+                </span>
               </div>
               <h4 className="font-medium text-sm text-foreground line-clamp-2 mb-2">{patent.title}</h4>
               {patent.snippet && (

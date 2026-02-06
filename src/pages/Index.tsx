@@ -171,7 +171,7 @@ const Index = () => {
 
             {/* Summary Section */}
             <section className="mb-8">
-              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} />
+              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} />
             </section>
 
             {/* Loading Input for new search during streaming */}

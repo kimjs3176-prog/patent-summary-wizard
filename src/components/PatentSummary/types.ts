@@ -34,6 +34,7 @@ export interface PatentSummaryProps {
   isStreaming: boolean;
   patentData?: PatentData | null;
   relatedPatents?: RelatedPatent[];
+  onRelatedPatentClick?: (patentNumber: string) => void;
 }
 
 export interface PatentIndices {
