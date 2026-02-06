@@ -129,7 +129,9 @@ serve(async (req) => {
     // KIPRIS Plus API로 특허 검색
     // getAdvancedSearch API 사용하여 번호로 검색
     const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-    searchUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
+    searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+    searchUrl.searchParams.set("astrtCont", "");
+    searchUrl.searchParams.set("inventionTitle", "");
     
     // 등록번호 또는 출원번호로 검색
     if (parsed.searchType === 'registration') {
@@ -237,8 +239,9 @@ serve(async (req) => {
 
         if (keywords) {
           const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-          relatedUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
-          relatedUrl.searchParams.set("word", keywords);
+          relatedUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+          relatedUrl.searchParams.set("inventionTitle", keywords);
+          relatedUrl.searchParams.set("astrtCont", "");
           relatedUrl.searchParams.set("pageNo", "1");
           relatedUrl.searchParams.set("numOfRows", "10");
           relatedUrl.searchParams.set("sortSpec", "AD");
