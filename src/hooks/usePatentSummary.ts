@@ -20,9 +20,9 @@ export function usePatentSummary() {
 
     let fetchedPatentData: PatentData | null = null;
 
-    // Step 1: Fetch patent data from Google Patents via SerpApi
+    // Step 1: Fetch patent data from KIPRIS
     try {
-      toast.info("Google Patents에서 특허 정보를 조회 중...");
+      toast.info("KIPRIS에서 특허 정보를 조회 중...");
       
       const fetchResponse = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-patent`,

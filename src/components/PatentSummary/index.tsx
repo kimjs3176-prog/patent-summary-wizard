@@ -177,7 +177,7 @@ export function PatentSummary({
           <div className="mb-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span className="text-sm font-medium text-accent">Google Patents 데이터 연동됨</span>
+              <span className="text-sm font-medium text-accent">KIPRIS 데이터 연동됨</span>
             </div>
             <div className="text-sm text-foreground/80 space-y-1">
               <p>

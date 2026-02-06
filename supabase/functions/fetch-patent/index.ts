@@ -194,13 +194,20 @@ serve(async (req) => {
         }
       }
 
+      // 발명자 정보 파싱 (inventorName 필드)
+      const inventorName = getField("inventorName");
+      const inventors: string[] = inventorName 
+        ? inventorName.split(/[,|]/).map(n => n.trim()).filter(n => n.length > 0)
+        : [];
+
       patentData = {
         ...patentData,
         title: getField("inventionTitle"),
         titleKo: getField("inventionTitle"),
         abstract: getField("astrtCont"),
-        applicant: getField("applicant"),
-        assignee: getField("applicant"),
+        applicant: getField("applicantName") || getField("applicant"),
+        assignee: getField("applicantName") || getField("applicant"),
+        inventors: inventors,
         filingDate: formatDate(getField("applicationDate") || ""),
         publicationDate: formatDate(getField("openDate") || getField("publicationDate") || ""),
         registrationDate: formatDate(getField("registerDate") || ""),
