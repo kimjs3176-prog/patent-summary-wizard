@@ -117,7 +117,7 @@ ${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
