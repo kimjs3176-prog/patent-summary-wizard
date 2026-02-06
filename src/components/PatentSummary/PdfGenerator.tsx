@@ -68,54 +68,90 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
 
       // Helper function to load image with multiple fallback methods
       const loadImageForPdf = async (imageUrl: string): Promise<string | null> => {
-        // Method 1: Try fetch with cors
+        console.log("Starting image load for PDF:", imageUrl);
+        
+        // Method 1: Try no-cors fetch and convert to blob (most reliable for external images)
         try {
-          const response = await fetch(imageUrl, { 
-            mode: 'cors',
-            credentials: 'omit',
-          });
-          
-          if (response.ok) {
-            const blob = await response.blob();
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = () => resolve(null);
-              reader.readAsDataURL(blob);
-            });
-          }
-        } catch (e) {
-          console.warn("Fetch method failed:", e);
-        }
-
-        // Method 2: Try loading via Image element
-        return new Promise((resolve) => {
+          // Use a proxy-like approach by loading through Image first
           const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.naturalWidth || img.width;
-              canvas.height = img.naturalHeight || img.height;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL('image/png'));
-              } else {
+          
+          return new Promise((resolve) => {
+            const timeoutId = setTimeout(() => {
+              console.warn("Image load timed out");
+              resolve(null);
+            }, 10000); // 10 second timeout
+            
+            img.onload = () => {
+              clearTimeout(timeoutId);
+              try {
+                const canvas = document.createElement('canvas');
+                // Ensure minimum dimensions
+                const width = img.naturalWidth || img.width || 300;
+                const height = img.naturalHeight || img.height || 300;
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.fillStyle = '#ffffff';
+                  ctx.fillRect(0, 0, width, height);
+                  ctx.drawImage(img, 0, 0, width, height);
+                  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                  console.log("Image successfully converted to base64, length:", dataUrl.length);
+                  resolve(dataUrl);
+                } else {
+                  console.warn("Could not get canvas context");
+                  resolve(null);
+                }
+              } catch (e) {
+                console.warn("Canvas conversion failed:", e);
                 resolve(null);
               }
-            } catch (e) {
-              console.warn("Canvas method failed:", e);
-              resolve(null);
-            }
-          };
-          img.onerror = () => {
-            console.warn("Image load failed");
-            resolve(null);
-          };
-          // Add timestamp to bypass cache
-          img.src = imageUrl + (imageUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
-        });
+            };
+            
+            img.onerror = (e) => {
+              clearTimeout(timeoutId);
+              console.warn("Image load error:", e);
+              
+              // Method 2: Try with crossOrigin attribute
+              const img2 = new Image();
+              img2.crossOrigin = 'anonymous';
+              
+              img2.onload = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = img2.naturalWidth || img2.width || 300;
+                  canvas.height = img2.naturalHeight || img2.height || 300;
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img2, 0, 0);
+                    resolve(canvas.toDataURL('image/jpeg', 0.9));
+                  } else {
+                    resolve(null);
+                  }
+                } catch (e2) {
+                  console.warn("Fallback canvas failed:", e2);
+                  resolve(null);
+                }
+              };
+              
+              img2.onerror = () => {
+                console.warn("Fallback image load also failed");
+                resolve(null);
+              };
+              
+              // Try with cache-busting parameter
+              img2.src = imageUrl + (imageUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+            };
+            
+            // First attempt without crossOrigin (works better for some servers)
+            img.src = imageUrl;
+          });
+        } catch (e) {
+          console.error("Image loading completely failed:", e);
+          return null;
+        }
       };
 
       // Title: 농식품 특허 요약서
