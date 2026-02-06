@@ -49,16 +49,14 @@ serve(async (req) => {
 
     console.log("Searching patents with keyword:", keyword);
 
-    // KIPRIS Plus API - 특허 검색
+    // KIPRIS Plus API - 전체검색 (getAdvancedSearch)
     // 문서: https://plus.kipris.or.kr/portal/popup/DBII_000000000000001/SC002/ADI_0000000000002944/apiDescriptionSearch.do
-    // advancedSearch API 사용
-    const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/advancedSearch");
+    // 파라미터: word, inventionTitle, applicant, pageNo, numOfRows, sortSpec, descSort, patent, utility
+    const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
     searchUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
-    // advancedSearch는 다양한 검색 조건을 지원
-    // word 파라미터가 아닌 freeSearchWord나 inventionTitle 사용
-    searchUrl.searchParams.set("inventionTitle", keyword.trim()); // 발명명칭으로 검색
-    searchUrl.searchParams.set("docsStart", "1");
-    searchUrl.searchParams.set("docsCount", "30");
+    searchUrl.searchParams.set("word", keyword.trim()); // 자유검색
+    searchUrl.searchParams.set("pageNo", "1");
+    searchUrl.searchParams.set("numOfRows", "30");
     searchUrl.searchParams.set("sortSpec", "AD");
     searchUrl.searchParams.set("descSort", "true");
     searchUrl.searchParams.set("patent", "true");
@@ -70,20 +68,20 @@ serve(async (req) => {
     const searchText = await searchResponse.text();
     
     console.log("KIPRIS API response status:", searchResponse.status);
-    console.log("KIPRIS API response preview:", searchText.substring(0, 1000));
+    console.log("KIPRIS API response preview:", searchText.substring(0, 1500));
 
     // Check for API error response
     if (searchText.includes("<successYN>N</successYN>") || 
         searchText.includes("INVALID REQUEST") ||
-        searchText.includes("503 Service")) {
+        searchText.includes("503 Service") ||
+        searchText.includes("<resultCode>10</resultCode>")) {
       const errorMsg = searchText.match(/<resultMsg>([^<]+)<\/resultMsg>/)?.[1] || "API 응답 오류";
       console.error("KIPRIS API error:", errorMsg);
       
-      // KIPRIS Plus API가 작동하지 않으면 사용자에게 안내
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "KIPRIS API 연결에 문제가 있습니다. API 키와 서비스 구독 상태를 확인해주세요." 
+          error: "KIPRIS API 연결에 문제가 있습니다. API 키와 서비스 구독 상태를 확인해주세요. (오류: " + errorMsg + ")" 
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -100,9 +98,10 @@ serve(async (req) => {
     // Parse XML response
     const patents: KeywordSearchResult[] = [];
     
-    // KIPRIS API 응답의 item 또는 PatentUtilityInfo 태그 추출
+    // KIPRIS API 응답의 items 태그 내 item 추출
     let itemMatches = [...searchText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
     if (itemMatches.length === 0) {
+      // PatentUtilityInfo 태그도 시도
       itemMatches = [...searchText.matchAll(/<PatentUtilityInfo>([\s\S]*?)<\/PatentUtilityInfo>/g)];
     }
     
@@ -121,19 +120,19 @@ serve(async (req) => {
         return simpleMatch ? simpleMatch[1].trim() : undefined;
       };
       
-      const applicationNumber = getField("applicationNumber") || getField("ApplicationNumber") || "";
-      const registrationNumber = getField("registrationNumber") || getField("RegistrationNumber") || "";
-      const inventionTitle = getField("inventionTitle") || getField("InventionTitle") || 
-                             getField("inventionName") || getField("title") || "";
-      const applicationDate = getField("applicationDate") || getField("ApplicationDate") || "";
-      const openDate = getField("openingDate") || getField("OpeningDate") || getField("publicDate") || "";
-      const registerDate = getField("registrationDate") || getField("RegistrationDate") || "";
-      const applicant = getField("applicant") || getField("Applicant") || 
-                        getField("applicantName") || getField("ApplicantName") || "";
-      const applicantNumber = getField("applicantNumber") || getField("ApplicantNumber") || "";
+      const applicationNumber = getField("applicationNumber") || "";
+      const registrationNumber = getField("registerNumber") || getField("registrationNumber") || "";
+      const inventionTitle = getField("inventionTitle") || "";
+      const applicationDate = getField("applicationDate") || "";
+      const openDate = getField("openDate") || "";
+      const publicationDate = getField("publicationDate") || "";
+      const registerDate = getField("registerDate") || "";
+      const applicant = getField("applicant") || "";
+      const astrtCont = getField("astrtCont") || "";
+      const drawing = getField("drawing") || "";
       
       // 농촌진흥청 출원 여부 확인
-      const isRDA = applicantNumber.includes(RDA_APPLICANT_ID) || 
+      const isRDA = applicant.includes(RDA_APPLICANT_ID) || 
                     applicant.includes("농촌진흥청") ||
                     applicant.includes(RDA_APPLICANT_NAME);
       
@@ -142,7 +141,6 @@ serve(async (req) => {
       let displayNumber = "";
       
       if (registrationNumber && registrationNumber.length >= 7) {
-        // 등록번호 형식 처리
         const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
         if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
           const regNum = cleanNum.slice(2, 9);
@@ -152,7 +150,6 @@ serve(async (req) => {
         }
         patentId = displayNumber;
       } else if (applicationNumber && applicationNumber.length >= 7) {
-        // 출원번호 형식 처리
         const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
         if (cleanNum.length >= 13 && cleanNum.startsWith("10")) {
           const year = cleanNum.slice(2, 6);
@@ -175,9 +172,11 @@ serve(async (req) => {
         applicant: applicant,
         assignee: applicant,
         applicationDate: applicationDate ? formatDate(applicationDate) : undefined,
-        publicationDate: openDate ? formatDate(openDate) : (registerDate ? formatDate(registerDate) : undefined),
+        publicationDate: openDate ? formatDate(openDate) : (publicationDate ? formatDate(publicationDate) : (registerDate ? formatDate(registerDate) : undefined)),
         applicationNumber: applicationNumber,
         registrationNumber: registrationNumber,
+        snippet: astrtCont ? astrtCont.substring(0, 150) + (astrtCont.length > 150 ? "..." : "") : undefined,
+        thumbnail: drawing || undefined,
         isRDA,
       });
     }
