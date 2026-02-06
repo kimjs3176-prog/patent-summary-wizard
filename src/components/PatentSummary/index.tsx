@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { FileText, Copy, Check, ExternalLink } from "lucide-react";
+import { FileText, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps } from "./types";
@@ -21,6 +21,7 @@ export function PatentSummary({
   isStreaming,
   patentData,
   relatedPatents = [],
+  onRelatedPatentClick,
 }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -71,17 +72,7 @@ export function PatentSummary({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // MD 다운로드 기능 제거 (요청사항)
-
-  const openGooglePatents = () => {
-    let patentId = patentNumber.trim();
-    if (patentId.startsWith("10-")) {
-      patentId = `KR10${patentId.replace("10-", "")}`;
-    } else if (!patentId.startsWith("KR")) {
-      patentId = `KR${patentId}`;
-    }
-    window.open(`https://patents.google.com/patent/${patentId}`, "_blank");
-  };
+  // MD 다운로드 기능 및 Google Patents 링크 기능 제거 (요청사항)
 
   const renderMarkdown = (text: string) => {
     const lines = text.split("\n");
@@ -243,10 +234,6 @@ export function PatentSummary({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={openGooglePatents} className="gap-2">
-              <ExternalLink className="w-4 h-4" />
-              Google Patents
-            </Button>
             {!isStreaming && content && (
               <>
                 <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
@@ -285,7 +272,7 @@ export function PatentSummary({
       </div>
 
       {/* Related Patents Section */}
-      <RelatedPatentsSection relatedPatents={relatedPatents} />
+      <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
     </div>
   );
 }
