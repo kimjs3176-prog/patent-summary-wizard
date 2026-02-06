@@ -53,8 +53,9 @@ serve(async (req) => {
     // 문서: https://plus.kipris.or.kr/portal/popup/DBII_000000000000001/SC002/ADI_0000000000002944/apiDescriptionSearch.do
     // 파라미터: word, inventionTitle, applicant, pageNo, numOfRows, sortSpec, descSort, patent, utility
     const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-    searchUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
-    searchUrl.searchParams.set("word", keyword.trim()); // 자유검색
+    searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+    searchUrl.searchParams.set("inventionTitle", keyword.trim()); // 발명명칭 검색
+    searchUrl.searchParams.set("astrtCont", ""); // 초록 (빈값)
     searchUrl.searchParams.set("pageNo", "1");
     searchUrl.searchParams.set("numOfRows", "30");
     searchUrl.searchParams.set("sortSpec", "AD");
