@@ -42,15 +42,15 @@ function formatDate(dateStr: string): string {
   return `${dateStr.slice(0, 4)}.${dateStr.slice(4, 6)}.${dateStr.slice(6, 8)}`;
 }
 
-// 특허번호에서 KIPRIS 검색용 번호 추출
-function parsePatentNumber(input: string): { applicationNumber?: string; registrationNumber?: string; displayNumber: string; searchType: 'registration' | 'application' } {
+// 특허번호에서 검색용 번호 추출
+function parsePatentNumber(input: string): { searchNumber: string; displayNumber: string; searchType: 'registration' | 'application' } {
   const trimmed = input.trim();
   
   // 등록번호 형식: 10-1234567
   const regMatch = trimmed.match(/^10-(\d{7})$/);
   if (regMatch) {
     return {
-      registrationNumber: `10${regMatch[1]}00`,
+      searchNumber: `10${regMatch[1]}`,
       displayNumber: trimmed,
       searchType: 'registration'
     };
@@ -61,7 +61,7 @@ function parsePatentNumber(input: string): { applicationNumber?: string; registr
   if (regMatch6) {
     const paddedNum = regMatch6[1].padStart(7, '0');
     return {
-      registrationNumber: `10${paddedNum}00`,
+      searchNumber: `10${paddedNum}`,
       displayNumber: `10-${paddedNum}`,
       searchType: 'registration'
     };
@@ -71,7 +71,7 @@ function parsePatentNumber(input: string): { applicationNumber?: string; registr
   const appMatch = trimmed.match(/^10-(\d{4})-(\d{7})$/);
   if (appMatch) {
     return {
-      applicationNumber: `10${appMatch[1]}${appMatch[2]}`,
+      searchNumber: `10${appMatch[1]}${appMatch[2]}`,
       displayNumber: trimmed,
       searchType: 'application'
     };
@@ -81,26 +81,15 @@ function parsePatentNumber(input: string): { applicationNumber?: string; registr
   const pureRegMatch = trimmed.match(/^(\d{7})$/);
   if (pureRegMatch) {
     return {
-      registrationNumber: `10${pureRegMatch[1]}00`,
+      searchNumber: `10${pureRegMatch[1]}`,
       displayNumber: `10-${pureRegMatch[1]}`,
-      searchType: 'registration'
-    };
-  }
-  
-  // 순수 6자리 숫자 (등록번호, 앞자리 0 생략)
-  const pureRegMatch6 = trimmed.match(/^(\d{6})$/);
-  if (pureRegMatch6) {
-    const paddedNum = pureRegMatch6[1].padStart(7, '0');
-    return {
-      registrationNumber: `10${paddedNum}00`,
-      displayNumber: `10-${paddedNum}`,
       searchType: 'registration'
     };
   }
   
   // 기본값
   return {
-    applicationNumber: trimmed.replace(/-/g, ''),
+    searchNumber: trimmed.replace(/-/g, ''),
     displayNumber: trimmed,
     searchType: 'application'
   };
@@ -137,114 +126,87 @@ serve(async (req) => {
       searchType: parsed.searchType,
     };
 
-    // KIPRIS API로 특허 상세정보 조회
-    // 1. 먼저 출원번호로 상세정보 조회 시도
-    let detailData: string | null = null;
-    let applicationNo = parsed.applicationNumber;
+    // KIPRIS Plus API로 특허 검색
+    // getAdvancedSearch API 사용하여 번호로 검색
+    const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+    searchUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
+    
+    // 등록번호 또는 출원번호로 검색
+    if (parsed.searchType === 'registration') {
+      searchUrl.searchParams.set("registerNumber", parsed.searchNumber);
+    } else {
+      searchUrl.searchParams.set("applicationNumber", parsed.searchNumber);
+    }
+    
+    searchUrl.searchParams.set("pageNo", "1");
+    searchUrl.searchParams.set("numOfRows", "5");
+    searchUrl.searchParams.set("patent", "true");
+    searchUrl.searchParams.set("utility", "true");
 
-    // 등록번호로 검색하는 경우, 먼저 등록번호로 출원번호를 찾아야 함
-    if (parsed.searchType === 'registration' && parsed.registrationNumber) {
-      // 등록번호로 검색하여 출원번호 찾기
-      const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/freeSearchInfo");
-      searchUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
-      searchUrl.searchParams.set("freeSearchWord", parsed.displayNumber.replace(/-/g, ''));
-      searchUrl.searchParams.set("docsStart", "1");
-      searchUrl.searchParams.set("docsCount", "5");
+    console.log("KIPRIS search URL:", searchUrl.toString().replace(KIPRIS_API_KEY, "***"));
 
-      console.log("Searching by registration number...");
-      const searchResponse = await fetch(searchUrl.toString());
-      const searchText = await searchResponse.text();
+    const searchResponse = await fetch(searchUrl.toString());
+    const searchText = await searchResponse.text();
 
-      // 검색 결과에서 출원번호 추출
-      const appNumMatch = searchText.match(/<applicationNumber><!?\[?C?D?A?T?A?\[?([^\]<]+)\]?\]?<\/applicationNumber>/);
-      if (appNumMatch) {
-        applicationNo = appNumMatch[1].trim();
-        console.log("Found application number:", applicationNo);
-      }
+    console.log("KIPRIS API response status:", searchResponse.status);
+    console.log("KIPRIS API response preview:", searchText.substring(0, 1500));
+
+    // Check for API error
+    if (searchText.includes("<successYN>N</successYN>") || 
+        searchText.includes("INVALID REQUEST") ||
+        searchText.includes("<resultCode>10</resultCode>")) {
+      const errorMsg = searchText.match(/<resultMsg>([^<]+)<\/resultMsg>/)?.[1] || "API 오류";
+      console.error("KIPRIS API error:", errorMsg);
+      return new Response(
+        JSON.stringify({ success: false, error: "KIPRIS API 오류: " + errorMsg }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // 출원번호로 상세정보 조회
-    if (applicationNo) {
-      const detailUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getBibliographyDetailInfoSearch");
-      detailUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
-      detailUrl.searchParams.set("applicationNumber", applicationNo);
-
-      console.log("Fetching detail info for:", applicationNo);
-      const detailResponse = await fetch(detailUrl.toString());
-      detailData = await detailResponse.text();
+    // Parse XML response - find first item
+    const itemMatch = searchText.match(/<item>([\s\S]*?)<\/item>/);
+    
+    if (itemMatch) {
+      const itemXml = itemMatch[1];
       
-      if (detailResponse.ok && detailData) {
-        // XML에서 필드 추출 헬퍼
-        const getField = (xml: string, field: string): string | undefined => {
-          const cdataMatch = xml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`));
-          if (cdataMatch) return cdataMatch[1].trim();
-          const simpleMatch = xml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`));
-          return simpleMatch ? simpleMatch[1].trim() : undefined;
-        };
-
-        const getFields = (xml: string, field: string): string[] => {
-          const results: string[] = [];
-          const regex = new RegExp(`<${field}><!?\\[?C?D?A?T?A?\\[?([^\\]<]+)\\]?\\]?<\\/${field}>`, 'g');
-          let match;
-          while ((match = regex.exec(xml)) !== null) {
-            if (match[1].trim()) results.push(match[1].trim());
-          }
-          return results;
-        };
-
-        patentData = {
-          ...patentData,
-          title: getField(detailData, "inventionTitle") || getField(detailData, "inventionName"),
-          titleKo: getField(detailData, "inventionTitle") || getField(detailData, "inventionName"),
-          abstract: getField(detailData, "astrtCont") || getField(detailData, "abstract"),
-          applicant: getField(detailData, "applicant"),
-          assignee: getField(detailData, "applicant"),
-          inventors: getFields(detailData, "inventor"),
-          filingDate: formatDate(getField(detailData, "applicationDate") || ""),
-          publicationDate: formatDate(getField(detailData, "openDate") || getField(detailData, "publicDate") || ""),
-          registrationDate: formatDate(getField(detailData, "registerDate") || ""),
-          applicationNumber: getField(detailData, "applicationNumber"),
-          registrationNumber: getField(detailData, "registrationNumber"),
-          classifications: getFields(detailData, "ipcNumber"),
-        };
-      }
-    }
-
-    // 상세정보가 없으면 키워드 검색으로 기본 정보 조회
-    if (!patentData.title) {
-      const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/freeSearchInfo");
-      searchUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
-      searchUrl.searchParams.set("freeSearchWord", patentNumber.replace(/-/g, ''));
-      searchUrl.searchParams.set("docsStart", "1");
-      searchUrl.searchParams.set("docsCount", "5");
-
-      console.log("Falling back to keyword search...");
-      const searchResponse = await fetch(searchUrl.toString());
-      const searchText = await searchResponse.text();
-
-      const getField = (xml: string, field: string): string | undefined => {
-        const cdataMatch = xml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`));
+      const getField = (field: string): string | undefined => {
+        const cdataMatch = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`, 'i'));
         if (cdataMatch) return cdataMatch[1].trim();
-        const simpleMatch = xml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`));
+        const simpleMatch = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i'));
         return simpleMatch ? simpleMatch[1].trim() : undefined;
       };
 
-      // 첫 번째 결과 사용
-      const itemMatch = searchText.match(/<PatentUtilityInfo>([\s\S]*?)<\/PatentUtilityInfo>/);
-      if (itemMatch) {
-        const itemXml = itemMatch[1];
-        patentData = {
-          ...patentData,
-          title: getField(itemXml, "inventionTitle"),
-          titleKo: getField(itemXml, "inventionTitle"),
-          applicant: getField(itemXml, "applicant"),
-          assignee: getField(itemXml, "applicant"),
-          filingDate: formatDate(getField(itemXml, "applicationDate") || ""),
-          publicationDate: formatDate(getField(itemXml, "openDate") || ""),
-          applicationNumber: getField(itemXml, "applicationNumber"),
-          registrationNumber: getField(itemXml, "registrationNumber"),
-        };
+      const applicationNumber = getField("applicationNumber") || "";
+      const registrationNumber = getField("registerNumber") || "";
+      
+      // displayNumber 재설정
+      if (registrationNumber && registrationNumber.length >= 7) {
+        const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
+        if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
+          patentData.displayNumber = `10-${cleanNum.slice(2, 9)}`;
+        }
+      } else if (applicationNumber && applicationNumber.length >= 11) {
+        const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
+        if (cleanNum.startsWith("10")) {
+          patentData.displayNumber = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
+        }
       }
+
+      patentData = {
+        ...patentData,
+        title: getField("inventionTitle"),
+        titleKo: getField("inventionTitle"),
+        abstract: getField("astrtCont"),
+        applicant: getField("applicant"),
+        assignee: getField("applicant"),
+        filingDate: formatDate(getField("applicationDate") || ""),
+        publicationDate: formatDate(getField("openDate") || getField("publicationDate") || ""),
+        registrationDate: formatDate(getField("registerDate") || ""),
+        applicationNumber: applicationNumber,
+        registrationNumber: registrationNumber,
+        classifications: getField("ipcNumber") ? [getField("ipcNumber")!] : [],
+        representativeImage: getField("drawing"),
+      };
     }
 
     if (!patentData.title) {
@@ -257,17 +219,6 @@ serve(async (req) => {
       );
     }
 
-    // displayNumber 재설정 (조회된 데이터 기반)
-    if (patentData.registrationNumber && patentData.searchType === 'registration') {
-      const regNum = patentData.registrationNumber.replace(/^10/, '').slice(0, 7);
-      patentData.displayNumber = `10-${regNum}`;
-    } else if (patentData.applicationNumber) {
-      const appNum = patentData.applicationNumber.replace(/^10/, '');
-      if (appNum.length >= 11) {
-        patentData.displayNumber = `10-${appNum.slice(0, 4)}-${appNum.slice(4)}`;
-      }
-    }
-
     patentData.patentNumber = patentData.displayNumber;
 
     console.log("Patent data fetched successfully:", patentData.title);
@@ -277,7 +228,6 @@ serve(async (req) => {
     
     if (patentData.title) {
       try {
-        // 제목에서 주요 키워드 추출 (2-3단어)
         const keywords = patentData.title
           .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
           .split(/\s+/)
@@ -286,33 +236,35 @@ serve(async (req) => {
           .join(' ');
 
         if (keywords) {
-          const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/freeSearchInfo");
+          const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
           relatedUrl.searchParams.set("accessKey", KIPRIS_API_KEY);
-          relatedUrl.searchParams.set("freeSearchWord", keywords);
-          relatedUrl.searchParams.set("docsStart", "1");
-          relatedUrl.searchParams.set("docsCount", "10");
+          relatedUrl.searchParams.set("word", keywords);
+          relatedUrl.searchParams.set("pageNo", "1");
+          relatedUrl.searchParams.set("numOfRows", "10");
           relatedUrl.searchParams.set("sortSpec", "AD");
           relatedUrl.searchParams.set("descSort", "true");
+          relatedUrl.searchParams.set("patent", "true");
+          relatedUrl.searchParams.set("utility", "true");
 
           const relatedResponse = await fetch(relatedUrl.toString());
           const relatedText = await relatedResponse.text();
 
-          if (relatedResponse.ok) {
-            const itemMatches = relatedText.matchAll(/<PatentUtilityInfo>([\s\S]*?)<\/PatentUtilityInfo>/g);
+          if (relatedResponse.ok && !relatedText.includes("<successYN>N</successYN>")) {
+            const itemMatches = [...relatedText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
             
             for (const match of itemMatches) {
               const itemXml = match[1];
               
               const getField = (field: string): string | undefined => {
-                const cdataMatch = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`));
+                const cdataMatch = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`, 'i'));
                 if (cdataMatch) return cdataMatch[1].trim();
-                const simpleMatch = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`));
+                const simpleMatch = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i'));
                 return simpleMatch ? simpleMatch[1].trim() : undefined;
               };
 
               const title = getField("inventionTitle");
               const appNum = getField("applicationNumber") || "";
-              const regNum = getField("registrationNumber") || "";
+              const regNum = getField("registerNumber") || "";
               
               // 현재 특허 제외
               if (appNum === patentData.applicationNumber || regNum === patentData.registrationNumber) {
@@ -320,13 +272,15 @@ serve(async (req) => {
               }
 
               let relatedPatentId = "";
-              if (regNum && regNum.length > 0) {
-                const num = regNum.replace(/^10/, '').slice(0, 7);
-                relatedPatentId = `10-${num}`;
-              } else if (appNum && appNum.length > 0) {
-                const num = appNum.replace(/^10/, '');
-                if (num.length >= 11) {
-                  relatedPatentId = `10-${num.slice(0, 4)}-${num.slice(4)}`;
+              if (regNum && regNum.length >= 7) {
+                const cleanNum = regNum.replace(/[^0-9]/g, "");
+                if (cleanNum.startsWith("10")) {
+                  relatedPatentId = `10-${cleanNum.slice(2, 9)}`;
+                }
+              } else if (appNum && appNum.length >= 11) {
+                const cleanNum = appNum.replace(/[^0-9]/g, "");
+                if (cleanNum.startsWith("10")) {
+                  relatedPatentId = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
                 }
               }
 
@@ -336,6 +290,7 @@ serve(async (req) => {
                   title: title,
                   assignee: getField("applicant"),
                   publicationDate: formatDate(getField("openDate") || getField("registerDate") || ""),
+                  snippet: getField("astrtCont")?.substring(0, 100),
                   link: `https://www.kipris.or.kr/khome/main.jsp?searchType=1&searchText=${appNum}`,
                 });
               }
