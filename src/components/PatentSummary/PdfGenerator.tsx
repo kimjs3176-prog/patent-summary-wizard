@@ -24,7 +24,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
     try {
       // Load Korean font first
       const koreanFontBase64 = await loadKoreanFont();
-      
+
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -40,7 +40,6 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       const contentWidth = pageWidth - margin * 2;
       let yPosition = margin;
 
-      // Helper function to add new page if needed
       const checkNewPage = (neededHeight: number) => {
         if (yPosition + neededHeight > pageHeight - margin) {
           pdf.addPage();
@@ -50,15 +49,13 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         return false;
       };
 
-      // Helper function to wrap and add text with improved readability
-      // Using darker colors for better visibility
       const addWrappedText = (text: string, fontSize: number, color: number[], lineHeight: number = 1.6) => {
         pdf.setFontSize(fontSize);
         pdf.setTextColor(color[0], color[1], color[2]);
-        
+
         const lines = pdf.splitTextToSize(text, contentWidth);
         const lineHeightMm = fontSize * 0.352778 * lineHeight;
-        
+
         for (const line of lines) {
           checkNewPage(lineHeightMm);
           pdf.text(line, margin, yPosition);
@@ -66,125 +63,102 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         }
       };
 
-      // Helper function to load image with multiple fallback methods
-      const loadImageForPdf = async (imageUrl: string): Promise<string | null> => {
-        console.log("Starting image load for PDF:", imageUrl);
+      const getProxiedImageUrl = (imageUrl: string) => {
+        const base = import.meta.env.VITE_SUPABASE_URL;
+        return `${base}/functions/v1/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+      };
 
+      // Load image as base64 via backend proxy (avoids CORS-tainted canvas issues)
+      const loadImageForPdf = async (imageUrl: string): Promise<{ dataUrl: string; format: "PNG" | "JPEG" } | null> => {
         try {
-          const img = new Image();
+          const proxied = getProxiedImageUrl(imageUrl);
+          console.log("Loading representative image via proxy:", proxied);
 
-          return await new Promise((resolve) => {
-            const timeoutId = setTimeout(() => {
-              console.warn("Image load timed out");
-              resolve(null);
-            }, 12000);
+          const res = await fetch(proxied);
+          if (!res.ok) return null;
 
-            const toPngDataUrl = (imageEl: HTMLImageElement) => {
-              try {
-                const canvas = document.createElement("canvas");
-                const width = imageEl.naturalWidth || imageEl.width || 800;
-                const height = imageEl.naturalHeight || imageEl.height || 600;
+          const contentType = (res.headers.get("content-type") || "").toLowerCase();
+          const blob = await res.blob();
 
-                // 원본 해상도를 최대한 유지
-                canvas.width = width;
-                canvas.height = height;
-
-                const ctx = canvas.getContext("2d");
-                if (!ctx) return null;
-
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = "high";
-                ctx.fillStyle = "#ffffff";
-                ctx.fillRect(0, 0, width, height);
-                ctx.drawImage(imageEl, 0, 0, width, height);
-
-                // JPEG 재압축으로 생기는 뭉개짐을 피하기 위해 PNG로 저장
-                return canvas.toDataURL("image/png");
-              } catch (e) {
-                console.warn("Canvas conversion failed:", e);
-                return null;
-              }
-            };
-
-            img.onload = () => {
-              clearTimeout(timeoutId);
-              const dataUrl = toPngDataUrl(img);
-              if (dataUrl) {
-                console.log("Image successfully converted to base64(PNG), length:", dataUrl.length);
-                resolve(dataUrl);
-              } else {
-                resolve(null);
-              }
-            };
-
-            img.onerror = () => {
-              clearTimeout(timeoutId);
-              console.warn("Image load error, retrying with crossOrigin");
-
-              const img2 = new Image();
-              img2.crossOrigin = "anonymous";
-
-              img2.onload = () => {
-                const dataUrl = toPngDataUrl(img2);
-                resolve(dataUrl);
-              };
-
-              img2.onerror = () => {
-                console.warn("Fallback image load also failed");
-                resolve(null);
-              };
-
-              img2.src = imageUrl + (imageUrl.includes("?") ? "&" : "?") + "_t=" + Date.now();
-            };
-
-            img.src = imageUrl;
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error("FileReader failed"));
+            reader.readAsDataURL(blob);
           });
+
+          const format: "PNG" | "JPEG" = contentType.includes("png") ? "PNG" : "JPEG";
+          return { dataUrl, format };
         } catch (e) {
-          console.error("Image loading completely failed:", e);
+          console.warn("loadImageForPdf failed:", e);
           return null;
         }
       };
 
-      // Title: 농식품 특허 요약서
+      const insertRepresentativeImage = async () => {
+        if (!patentData?.representativeImage) return false;
+
+        const img = await loadImageForPdf(patentData.representativeImage);
+        if (!img) return false;
+
+        const imgWidth = 70;
+        const imgHeight = 55;
+
+        checkNewPage(imgHeight + 12);
+
+        const imgX = (pageWidth - imgWidth) / 2;
+        pdf.addImage(img.dataUrl, img.format, imgX, yPosition, imgWidth, imgHeight);
+        yPosition += imgHeight + 3;
+
+        pdf.setFontSize(9);
+        pdf.setTextColor(80, 80, 80);
+        const captionText = "【대표 도면】";
+        const captionWidth = pdf.getTextWidth(captionText);
+        pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
+        yPosition += 10;
+
+        return true;
+      };
+
+      // Title
       pdf.setFontSize(20);
       pdf.setTextColor(30, 58, 95);
       pdf.text("농식품 특허 요약서", margin, yPosition);
       yPosition += 6;
-      
+
       pdf.setFontSize(9);
       pdf.setTextColor(107, 114, 128);
       pdf.text("Agri-Food Patent Summary Report", margin, yPosition);
       yPosition += 4;
 
-      // Display number on the right - use application number when searched by application
-      const isApplicationSearch = patentData?.searchType === 'application';
-      const displayNumber = isApplicationSearch 
-        ? (patentData?.applicationNumber || patentData?.displayNumber || patentNumber)
-        : (patentData?.displayNumber || patentNumber);
-      const numberLabel = isApplicationSearch ? '출원번호' : '등록번호';
-      
+      // Display number on the right
+      const isApplicationSearch = patentData?.searchType === "application";
+      const displayNumber = isApplicationSearch
+        ? patentData?.applicationNumber || patentData?.displayNumber || patentNumber
+        : patentData?.displayNumber || patentNumber;
+      const numberLabel = isApplicationSearch ? "출원번호" : "등록번호";
+
       pdf.setFontSize(10);
       pdf.setTextColor(107, 114, 128);
       const labelWidth = pdf.getTextWidth(numberLabel);
       pdf.text(numberLabel, pageWidth - margin - labelWidth, margin + 2);
-      
+
       pdf.setFontSize(13);
       pdf.setTextColor(30, 58, 95);
       const numWidth = pdf.getTextWidth(displayNumber);
       pdf.text(displayNumber, pageWidth - margin - numWidth, margin + 8);
 
-      // Divider line
+      // Divider
       yPosition += 2;
       pdf.setDrawColor(30, 58, 95);
       pdf.setLineWidth(0.5);
       pdf.line(margin, yPosition, pageWidth - margin, yPosition);
       yPosition += 8;
 
-      // Patent info box (minimal - just title and key info)
+      // Patent info box
       if (patentData) {
-        // Use Korean title (titleKo) if available
         const inventionTitle = patentData.titleKo || patentData.title || "정보 없음";
-        
+
         pdf.setFillColor(248, 250, 252);
         pdf.setDrawColor(226, 232, 240);
         pdf.roundedRect(margin, yPosition, contentWidth, 20, 2, 2, "FD");
@@ -192,20 +166,17 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
 
         const infoX = margin + 4;
         pdf.setFontSize(9);
-        
-        // First line: Title (Korean)
+
         pdf.setTextColor(107, 114, 128);
         pdf.text("발명의 명칭: ", infoX, yPosition);
         let xPos = infoX + pdf.getTextWidth("발명의 명칭: ");
         pdf.setTextColor(30, 58, 95);
-        
-        // Truncate title if too long
+
         const maxTitleWidth = contentWidth - (xPos - margin) - 8;
         const titleLines = pdf.splitTextToSize(inventionTitle, maxTitleWidth);
         pdf.text(titleLines[0] + (titleLines.length > 1 ? "..." : ""), xPos, yPosition);
         yPosition += 5;
 
-        // Second line: Assignee and inventors
         if (patentData.assignee || patentData.inventors?.length) {
           xPos = infoX;
           if (patentData.assignee) {
@@ -226,7 +197,6 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
           yPosition += 5;
         }
 
-        // Third line: Dates
         if (patentData.filingDate || patentData.publicationDate) {
           xPos = infoX;
           if (patentData.filingDate) {
@@ -248,107 +218,70 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
         yPosition += 12;
       }
 
-      // Process content - skip basic info section from AI summary
-      const lines = content.split("\n");
+      // If summary doesn't contain '발명의 요약' header, insert image here as fallback
+      const hasSummaryHeader = content.includes("## 발명의 요약");
       let imageInserted = false;
+      if (!hasSummaryHeader) {
+        imageInserted = await insertRepresentativeImage();
+      }
+
+      // Process content - skip basic info section
+      const lines = content.split("\n");
       let skipSection = false;
 
       for (const line of lines) {
-        // Skip the entire "특허 기본 정보" section
         if (line.startsWith("## 특허 기본 정보")) {
           skipSection = true;
           continue;
         }
-        
-        // Stop skipping when we reach the next section
+
         if (skipSection && line.startsWith("## ")) {
           skipSection = false;
         }
-        
-        if (skipSection) {
+
+        if (skipSection) continue;
+
+        if (
+          line.includes("등록번호는") ||
+          line.includes("출원번호는") ||
+          line.includes("발명의 명칭은") ||
+          line.includes("출원인/권리자는") ||
+          line.includes("출원일/등록일은") ||
+          line.includes("발명자는")
+        ) {
           continue;
         }
 
-        // Skip lines that describe basic patent info
-        if (line.includes("등록번호는") ||
-            line.includes("출원번호는") ||
-            line.includes("발명의 명칭은") ||
-            line.includes("출원인/권리자는") ||
-            line.includes("출원일/등록일은") ||
-            line.includes("발명자는")) {
-          continue;
-        }
-
-        // Clean line from markdown
-        let cleanLine = line
-          .replace(/\*\*/g, '')
-          .replace(/^\s*[-•]\s+/, '')
-          .replace(/^\s*\d+\.\s+/, '');
+        const cleanLine = line
+          .replace(/\*\*/g, "")
+          .replace(/^\s*[-•]\s+/, "")
+          .replace(/^\s*\d+\.\s+/, "");
 
         if (line.startsWith("## ")) {
-          const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
-          
-          // Skip 특허 기본 정보 section header
+          const sectionTitle = line.replace("## ", "").replace(/\*\*/g, "");
+
           if (sectionTitle === "특허 기본 정보") {
             skipSection = true;
             continue;
           }
 
-          // Section header
           checkNewPage(10);
           yPosition += 4;
           pdf.setFontSize(12);
           pdf.setTextColor(30, 58, 95);
           pdf.text(sectionTitle, margin, yPosition);
           yPosition += 2;
-          
-          // Underline
+
           pdf.setDrawColor(226, 232, 240);
           pdf.setLineWidth(0.3);
           pdf.line(margin, yPosition, pageWidth - margin, yPosition);
           yPosition += 5;
 
-          // Insert representative image AFTER 발명의 요약 section header
-          if (sectionTitle === "발명의 요약" && patentData?.representativeImage && !imageInserted) {
-            imageInserted = true;
-            
-            try {
-              const imageUrl = patentData.representativeImage;
-              console.log("Fetching representative image for PDF:", imageUrl);
-              
-              const imgData = await loadImageForPdf(imageUrl);
-              
-               if (imgData) {
-                 // PDF에서 너무 작게 보이지 않도록 확대
-                 const imgWidth = 70;
-                 const imgHeight = 55;
-                 
-                 checkNewPage(imgHeight + 12);
-                 
-                 // Center the image
-                 const imgX = (pageWidth - imgWidth) / 2;
-                 const format = 'PNG';
-                 pdf.addImage(imgData, format, imgX, yPosition, imgWidth, imgHeight);
-                 yPosition += imgHeight + 3;
-                 
-                 // Caption
-                 pdf.setFontSize(9);
-                 pdf.setTextColor(80, 80, 80);
-                 const captionText = "【대표 도면】";
-                 const captionWidth = pdf.getTextWidth(captionText);
-                 pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
-                 yPosition += 10;
-               } else {
-                console.warn("Could not load representative image for PDF");
-              }
-            } catch (imgError) {
-              console.error("Error processing image for PDF:", imgError);
-            }
+          // Preferred placement: right after '발명의 요약' header
+          if (sectionTitle === "발명의 요약" && !imageInserted) {
+            imageInserted = await insertRepresentativeImage();
           }
-          
         } else if (cleanLine.trim()) {
-          // Improved text readability - using much darker color for better visibility
-          // Changed from [45, 55, 70] to [25, 30, 35] for significantly better contrast
           addWrappedText(cleanLine, 10.5, [25, 30, 35], 1.65);
           yPosition += 2;
         }
@@ -359,12 +292,16 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       pdf.setDrawColor(226, 232, 240);
       pdf.setLineWidth(0.2);
       pdf.line(margin, yPosition - 5, pageWidth - margin, yPosition - 5);
-      
+
       pdf.setFontSize(8);
       pdf.setTextColor(156, 163, 175);
       pdf.text("© 농식품 특허 1페이지 요약 서비스 | AI 기반 특허 분석", margin, yPosition);
-      
-      const dateText = `생성일: ${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}`;
+
+      const dateText = `생성일: ${new Date().toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })}`;
       const dateWidth = pdf.getTextWidth(dateText);
       pdf.text(dateText, pageWidth - margin - dateWidth, yPosition);
 
@@ -375,6 +312,7 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       toast.error("PDF 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   };
+
 
   return (
     <Button
