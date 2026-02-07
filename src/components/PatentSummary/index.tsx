@@ -321,68 +321,67 @@ export function PatentSummary({
             details={commercializationDetails}
           />
           
-          <div className="mb-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span className="text-sm font-medium text-accent">KIPRIS 데이터 연동됨</span>
+          {/* Patent Info Card */}
+          <div className="mb-6 glass-effect rounded-3xl p-8 animate-slide-in">
+            <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+                📄
+              </div>
+              <div className="card-title text-xl font-bold text-foreground">특허 정보</div>
             </div>
-            <div className="text-sm text-foreground/80 space-y-1">
-              <p>
-                <span className="text-muted-foreground">{patentData.searchType === 'application' ? '출원번호' : '등록번호'}:</span>{' '}
-                <span className="font-medium">
-                  {patentData.searchType === 'application' 
-                    ? (patentData.applicationNumber || patentData.displayNumber || patentData.patentNumber)
-                    : (patentData.displayNumber || patentData.patentNumber)}
-                </span>
-              </p>
-              {patentData.titleKo && (
-                <p>
-                  <span className="text-muted-foreground">발명의 명칭:</span>{' '}
-                  <span className="font-medium">{patentData.titleKo}</span>
-                </p>
+            
+            <div className="inline-block px-4 py-2 bg-accent/20 text-accent rounded-lg text-sm font-medium mb-3">
+              {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {
+                patentData.searchType === 'application' 
+                  ? (patentData.applicationNumber || patentData.displayNumber || patentData.patentNumber)
+                  : (patentData.displayNumber || patentData.patentNumber)
+              }
+            </div>
+            
+            {patentData.titleKo && (
+              <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
+            )}
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+              {patentData.assignee && (
+                <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                  <div className="text-xs text-muted-foreground mb-1 font-medium">출원인</div>
+                  <div className="text-sm text-foreground font-medium">{patentData.assignee}</div>
+                </div>
               )}
-              <p>
-                {patentData.assignee && (
-                  <>
-                    <span className="text-muted-foreground">출원인:</span>{' '}
-                    <span>{patentData.assignee}</span>
-                  </>
-                )}
-                {patentData.inventors && patentData.inventors.length > 0 && (
-                  <>
-                    <span className="text-muted-foreground ml-4">발명자:</span>{' '}
-                    <span>{patentData.inventors.join(', ')}</span>
-                  </>
-                )}
-              </p>
-              <p>
-                {patentData.filingDate && (
-                  <>
-                    <span className="text-muted-foreground">출원일:</span>{' '}
-                    <span>{patentData.filingDate}</span>
-                  </>
-                )}
-                {patentData.publicationDate && (
-                  <>
-                    <span className="text-muted-foreground ml-4">공개일:</span>{' '}
-                    <span>{patentData.publicationDate}</span>
-                  </>
-                )}
-              </p>
+              {patentData.inventors && patentData.inventors.length > 0 && (
+                <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                  <div className="text-xs text-muted-foreground mb-1 font-medium">발명자</div>
+                  <div className="text-sm text-foreground font-medium">{patentData.inventors.join(', ')}</div>
+                </div>
+              )}
+              {patentData.filingDate && (
+                <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                  <div className="text-xs text-muted-foreground mb-1 font-medium">출원일</div>
+                  <div className="text-sm text-foreground font-medium">{patentData.filingDate}</div>
+                </div>
+              )}
+              {patentData.publicationDate && (
+                <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                  <div className="text-xs text-muted-foreground mb-1 font-medium">공개일</div>
+                  <div className="text-sm text-foreground font-medium">{patentData.publicationDate}</div>
+                </div>
+              )}
             </div>
           </div>
         </>
       )}
 
-      <div className="glass-effect rounded-2xl border border-border/50 overflow-hidden">
+      {/* AI Summary Card */}
+      <div className="glass-effect rounded-3xl overflow-hidden animate-slide-in" style={{ animationDelay: '0.1s' }}>
         {/* Header */}
-        <div className="bg-primary/5 border-b border-border/50 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
+        <div className="bg-secondary/30 border-b border-border/50 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+              🤖
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">특허 요약서</h3>
+              <h3 className="font-bold text-lg text-foreground">AI 종합 요약</h3>
               <p className="text-sm text-muted-foreground">
                 {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
               </p>
@@ -392,11 +391,11 @@ export function PatentSummary({
           <div className="flex items-center gap-2 flex-wrap">
             {!isStreaming && content && (
               <>
-                <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
+                <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   {copied ? "복사됨" : "복사"}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
                   <Printer className="w-4 h-4" />
                   인쇄
                 </Button>
@@ -414,10 +413,10 @@ export function PatentSummary({
         {/* Content */}
         <div className="p-6 md:p-8 min-h-[400px]">
           {content ? (
-            <div className="prose prose-slate max-w-none">
+            <div className="prose prose-invert max-w-none">
               {renderMarkdown(content)}
               {isStreaming && (
-                <span className="inline-block w-2 h-5 bg-accent animate-pulse-subtle ml-1" />
+                <span className="inline-block w-2 h-5 bg-primary animate-pulse-subtle ml-1" />
               )}
             </div>
           ) : (

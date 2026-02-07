@@ -12,16 +12,16 @@ interface TechnologyCommercializationScoreProps {
 }
 
 function getScoreColor(value: number): string {
-  if (value >= 80) return "text-green-600";
-  if (value >= 60) return "text-blue-600";
-  if (value >= 40) return "text-amber-600";
-  return "text-red-500";
+  if (value >= 80) return "text-accent";
+  if (value >= 60) return "text-blue-400";
+  if (value >= 40) return "text-amber-400";
+  return "text-red-400";
 }
 
 function getScoreBgColor(value: number): string {
-  if (value >= 80) return "bg-green-500";
-  if (value >= 60) return "bg-blue-500";
-  if (value >= 40) return "bg-amber-500";
+  if (value >= 80) return "bg-accent";
+  if (value >= 60) return "bg-blue-400";
+  if (value >= 40) return "bg-amber-400";
   return "bg-red-400";
 }
 
@@ -50,10 +50,10 @@ export function TechnologyCommercializationScore({
 }: TechnologyCommercializationScoreProps) {
   if (isLoading) {
     return (
-      <div className="mb-4 p-6 rounded-xl bg-card border border-border/50">
-        <div className="flex items-center justify-center gap-3 py-4">
-          <Loader2 className="w-5 h-5 animate-spin text-primary" />
-          <span className="text-muted-foreground">AI가 기술사업화점수를 분석 중...</span>
+      <div className="mb-6 glass-effect rounded-3xl p-8">
+        <div className="flex items-center justify-center gap-3 py-6">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-muted-foreground font-medium">AI가 기술사업화점수를 분석 중...</span>
         </div>
       </div>
     );
@@ -64,37 +64,37 @@ export function TechnologyCommercializationScore({
   }
 
   return (
-    <div className="mb-4 p-5 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-primary" />
+    <div className="mb-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in">
+      <div className="flex items-center gap-3 mb-6 pb-5 border-b border-border/50">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+          ✨
         </div>
         <div>
-          <h4 className="font-semibold text-foreground text-sm">AI 기술사업화점수</h4>
-          <p className="text-xs text-muted-foreground">Technology Commercialization Score</p>
+          <h4 className="font-bold text-lg text-foreground">AI 기술사업화점수</h4>
+          <p className="text-sm text-muted-foreground">Technology Commercialization Score</p>
         </div>
       </div>
 
       {/* Main Score */}
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-6 mb-6">
         <div className="flex items-end gap-2">
-          <span className={`text-5xl font-bold ${getScoreColor(score)}`}>
+          <span className={`text-6xl font-black ${getScoreColor(score)}`}>
             {score}
           </span>
-          <span className="text-muted-foreground text-lg mb-2">/ 100</span>
+          <span className="text-muted-foreground text-xl mb-2">/ 100</span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className={`text-2xl font-bold ${getScoreColor(score)}`}>
+          <span className={`text-3xl font-black ${getScoreColor(score)}`}>
             {getGradeLabel(score)}
           </span>
-          <span className={`text-sm font-medium ${getScoreColor(score)}`}>
+          <span className={`text-base font-semibold ${getScoreColor(score)}`}>
             {getScoreLabel(score)}
           </span>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full h-3 bg-muted rounded-full overflow-hidden mb-5">
+      <div className="w-full h-4 bg-muted rounded-full overflow-hidden mb-6">
         <div 
           className={`h-full ${getScoreBgColor(score)} transition-all duration-700 ease-out`}
           style={{ width: `${score}%` }}
@@ -102,16 +102,16 @@ export function TechnologyCommercializationScore({
       </div>
 
       {/* Sub-scores */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="p-3 rounded-lg bg-background/50 border border-border/30">
-          <p className="text-xs text-muted-foreground mb-1">기술성</p>
+      <div className="grid grid-cols-3 gap-4 mb-5">
+        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
+          <p className="text-xs text-muted-foreground mb-2 font-medium">기술성</p>
           <div className="flex items-end gap-1">
-            <span className={`text-xl font-bold ${getScoreColor(details.technologyScore)}`}>
+            <span className={`text-2xl font-bold ${getScoreColor(details.technologyScore)}`}>
               {details.technologyScore}
             </span>
-            <span className="text-xs text-muted-foreground mb-0.5">점</span>
+            <span className="text-xs text-muted-foreground mb-1">점</span>
           </div>
-          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
             <div 
               className={`h-full ${getScoreBgColor(details.technologyScore)}`}
               style={{ width: `${details.technologyScore}%` }}
@@ -119,15 +119,15 @@ export function TechnologyCommercializationScore({
           </div>
         </div>
         
-        <div className="p-3 rounded-lg bg-background/50 border border-border/30">
-          <p className="text-xs text-muted-foreground mb-1">시장성</p>
+        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
+          <p className="text-xs text-muted-foreground mb-2 font-medium">시장성</p>
           <div className="flex items-end gap-1">
-            <span className={`text-xl font-bold ${getScoreColor(details.marketScore)}`}>
+            <span className={`text-2xl font-bold ${getScoreColor(details.marketScore)}`}>
               {details.marketScore}
             </span>
-            <span className="text-xs text-muted-foreground mb-0.5">점</span>
+            <span className="text-xs text-muted-foreground mb-1">점</span>
           </div>
-          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
             <div 
               className={`h-full ${getScoreBgColor(details.marketScore)}`}
               style={{ width: `${details.marketScore}%` }}
@@ -135,15 +135,15 @@ export function TechnologyCommercializationScore({
           </div>
         </div>
         
-        <div className="p-3 rounded-lg bg-background/50 border border-border/30">
-          <p className="text-xs text-muted-foreground mb-1">사업성</p>
+        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
+          <p className="text-xs text-muted-foreground mb-2 font-medium">사업성</p>
           <div className="flex items-end gap-1">
-            <span className={`text-xl font-bold ${getScoreColor(details.businessScore)}`}>
+            <span className={`text-2xl font-bold ${getScoreColor(details.businessScore)}`}>
               {details.businessScore}
             </span>
-            <span className="text-xs text-muted-foreground mb-0.5">점</span>
+            <span className="text-xs text-muted-foreground mb-1">점</span>
           </div>
-          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
             <div 
               className={`h-full ${getScoreBgColor(details.businessScore)}`}
               style={{ width: `${details.businessScore}%` }}
@@ -154,8 +154,8 @@ export function TechnologyCommercializationScore({
 
       {/* Analysis */}
       {details.analysis && (
-        <div className="p-3 rounded-lg bg-background/30 border border-border/20">
-          <p className="text-xs text-muted-foreground mb-1">AI 분석 의견</p>
+        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
+          <p className="text-xs text-muted-foreground mb-2 font-medium">AI 분석 의견</p>
           <p className="text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
         </div>
       )}
