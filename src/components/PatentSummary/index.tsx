@@ -277,15 +277,25 @@ export function PatentSummary({
           elements.push(
             <div key={`img-${index}`} className="my-6 flex justify-center">
               <div className="text-center">
-                <img 
-                  src={patentData.representativeImage} 
-                  alt="대표 도면" 
-                  className="w-40 md:w-44 h-auto max-h-64 object-contain rounded-lg border border-border/50 bg-white mx-auto"
-                  onError={(e) => {
-                    e.currentTarget.parentElement!.style.display = 'none';
-                  }}
-                />
-                <p className="text-xs text-muted-foreground mt-2">【대표 도면】</p>
+                <a
+                  href={patentData.representativeImage}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-block"
+                  title="대표 도면 원본 보기"
+                >
+                  <img
+                    src={patentData.representativeImage}
+                    alt="대표 도면"
+                    className="w-56 md:w-64 h-auto max-h-80 object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md"
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      (e.currentTarget.parentElement as HTMLElement)!.style.display = 'none';
+                    }}
+                  />
+                </a>
+                <p className="text-xs text-muted-foreground mt-2">【대표 도면】 (클릭하여 원본)</p>
               </div>
             </div>
           );
@@ -429,6 +439,36 @@ export function PatentSummary({
           )}
         </div>
       </div>
+
+
+      {/* Claims Card */}
+      {patentData?.claims && patentData.claims.length > 0 && (
+        <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.15s' }}>
+          <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+              📑
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-foreground">청구항</h3>
+              <p className="text-sm text-muted-foreground">{patentData.claims.length}개</p>
+            </div>
+          </div>
+
+          <details>
+            <summary className="cursor-pointer select-none text-sm font-semibold text-foreground/90 hover:text-foreground">
+              청구항 내용 펼치기/접기
+            </summary>
+            <div className="mt-4 space-y-3">
+              {patentData.claims.map((c, idx) => (
+                <div key={idx} className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
+                  <div className="text-xs text-muted-foreground mb-2">청구항 {idx + 1}</div>
+                  <div className="text-sm text-foreground/85 leading-relaxed">{c}</div>
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
 
       {/* Related Patents Section */}
       <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />

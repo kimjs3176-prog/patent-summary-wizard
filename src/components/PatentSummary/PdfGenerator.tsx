@@ -69,83 +69,74 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
       // Helper function to load image with multiple fallback methods
       const loadImageForPdf = async (imageUrl: string): Promise<string | null> => {
         console.log("Starting image load for PDF:", imageUrl);
-        
-        // Method 1: Try no-cors fetch and convert to blob (most reliable for external images)
+
         try {
-          // Use a proxy-like approach by loading through Image first
           const img = new Image();
-          
-          return new Promise((resolve) => {
+
+          return await new Promise((resolve) => {
             const timeoutId = setTimeout(() => {
               console.warn("Image load timed out");
               resolve(null);
-            }, 10000); // 10 second timeout
-            
-            img.onload = () => {
-              clearTimeout(timeoutId);
+            }, 12000);
+
+            const toPngDataUrl = (imageEl: HTMLImageElement) => {
               try {
-                const canvas = document.createElement('canvas');
-                // Ensure minimum dimensions
-                const width = img.naturalWidth || img.width || 300;
-                const height = img.naturalHeight || img.height || 300;
+                const canvas = document.createElement("canvas");
+                const width = imageEl.naturalWidth || imageEl.width || 800;
+                const height = imageEl.naturalHeight || imageEl.height || 600;
+
+                // 원본 해상도를 최대한 유지
                 canvas.width = width;
                 canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                  ctx.fillStyle = '#ffffff';
-                  ctx.fillRect(0, 0, width, height);
-                  ctx.drawImage(img, 0, 0, width, height);
-                  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                  console.log("Image successfully converted to base64, length:", dataUrl.length);
-                  resolve(dataUrl);
-                } else {
-                  console.warn("Could not get canvas context");
-                  resolve(null);
-                }
+
+                const ctx = canvas.getContext("2d");
+                if (!ctx) return null;
+
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = "high";
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(imageEl, 0, 0, width, height);
+
+                // JPEG 재압축으로 생기는 뭉개짐을 피하기 위해 PNG로 저장
+                return canvas.toDataURL("image/png");
               } catch (e) {
                 console.warn("Canvas conversion failed:", e);
+                return null;
+              }
+            };
+
+            img.onload = () => {
+              clearTimeout(timeoutId);
+              const dataUrl = toPngDataUrl(img);
+              if (dataUrl) {
+                console.log("Image successfully converted to base64(PNG), length:", dataUrl.length);
+                resolve(dataUrl);
+              } else {
                 resolve(null);
               }
             };
-            
-            img.onerror = (e) => {
+
+            img.onerror = () => {
               clearTimeout(timeoutId);
-              console.warn("Image load error:", e);
-              
-              // Method 2: Try with crossOrigin attribute
+              console.warn("Image load error, retrying with crossOrigin");
+
               const img2 = new Image();
-              img2.crossOrigin = 'anonymous';
-              
+              img2.crossOrigin = "anonymous";
+
               img2.onload = () => {
-                try {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = img2.naturalWidth || img2.width || 300;
-                  canvas.height = img2.naturalHeight || img2.height || 300;
-                  const ctx = canvas.getContext('2d');
-                  if (ctx) {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img2, 0, 0);
-                    resolve(canvas.toDataURL('image/jpeg', 0.9));
-                  } else {
-                    resolve(null);
-                  }
-                } catch (e2) {
-                  console.warn("Fallback canvas failed:", e2);
-                  resolve(null);
-                }
+                const dataUrl = toPngDataUrl(img2);
+                resolve(dataUrl);
               };
-              
+
               img2.onerror = () => {
                 console.warn("Fallback image load also failed");
                 resolve(null);
               };
-              
-              // Try with cache-busting parameter
-              img2.src = imageUrl + (imageUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+
+              img2.src = imageUrl + (imageUrl.includes("?") ? "&" : "?") + "_t=" + Date.now();
             };
-            
-            // First attempt without crossOrigin (works better for some servers)
+
             img.src = imageUrl;
           });
         } catch (e) {
@@ -327,26 +318,27 @@ export function PdfGenerator({ content, patentNumber, patentData }: PdfGenerator
               
               const imgData = await loadImageForPdf(imageUrl);
               
-              if (imgData) {
-                const imgWidth = 55;
-                const imgHeight = 45;
-                
-                checkNewPage(imgHeight + 12);
-                
-                // Center the image
-                const imgX = (pageWidth - imgWidth) / 2;
-                const format = imgData.includes('image/png') ? 'PNG' : 'JPEG';
-                pdf.addImage(imgData, format, imgX, yPosition, imgWidth, imgHeight);
-                yPosition += imgHeight + 3;
-                
-                // Caption
-                pdf.setFontSize(9);
-                pdf.setTextColor(80, 80, 80);
-                const captionText = "【대표 도면】";
-                const captionWidth = pdf.getTextWidth(captionText);
-                pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
-                yPosition += 10;
-              } else {
+               if (imgData) {
+                 // PDF에서 너무 작게 보이지 않도록 확대
+                 const imgWidth = 70;
+                 const imgHeight = 55;
+                 
+                 checkNewPage(imgHeight + 12);
+                 
+                 // Center the image
+                 const imgX = (pageWidth - imgWidth) / 2;
+                 const format = 'PNG';
+                 pdf.addImage(imgData, format, imgX, yPosition, imgWidth, imgHeight);
+                 yPosition += imgHeight + 3;
+                 
+                 // Caption
+                 pdf.setFontSize(9);
+                 pdf.setTextColor(80, 80, 80);
+                 const captionText = "【대표 도면】";
+                 const captionWidth = pdf.getTextWidth(captionText);
+                 pdf.text(captionText, (pageWidth - captionWidth) / 2, yPosition);
+                 yPosition += 10;
+               } else {
                 console.warn("Could not load representative image for PDF");
               }
             } catch (imgError) {
