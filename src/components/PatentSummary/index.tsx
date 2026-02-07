@@ -274,6 +274,10 @@ export function PatentSummary({
         
         // Insert representative image AFTER "발명의 요약" section header
         if (sectionTitle === "발명의 요약" && patentData?.representativeImage) {
+          const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(
+            patentData.representativeImage
+          )}`;
+
           elements.push(
             <div key={`img-${index}`} className="my-6 flex justify-center">
               <div className="text-center">
@@ -285,13 +289,13 @@ export function PatentSummary({
                   title="대표 도면 원본 보기"
                 >
                   <img
-                    src={patentData.representativeImage}
+                    src={proxied}
                     alt="대표 도면"
-                    className="w-56 md:w-64 h-auto max-h-80 object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md"
+                    className="w-72 md:w-80 h-auto max-h-96 object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md"
                     loading="lazy"
                     decoding="async"
                     onError={(e) => {
-                      (e.currentTarget.parentElement as HTMLElement)!.style.display = 'none';
+                      (e.currentTarget.parentElement as HTMLElement)!.style.display = "none";
                     }}
                   />
                 </a>
