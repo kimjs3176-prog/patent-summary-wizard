@@ -1,4 +1,4 @@
-import { FileText, Sparkles, Shield, Zap, Database } from "lucide-react";
+import { FileText, Sparkles } from "lucide-react";
 import { PatentInput } from "@/components/PatentInput";
 import { PatentSummary } from "@/components/PatentSummary/index";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
@@ -7,6 +7,7 @@ import { SearchHistory } from "@/components/SearchHistory";
 import { Button } from "@/components/ui/button";
 import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
+import { RdaLatestPatents } from "@/components/RdaLatestPatents";
 import { useState } from "react";
 
 const Index = () => {
@@ -31,24 +32,6 @@ const Index = () => {
   // Keyword search state
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
-
-  const features = [{
-    icon: Database,
-    title: "KIPRIS 연동",
-    description: "한국특허정보원(KIPRIS) 공식 데이터를 사용합니다"
-  }, {
-    icon: Zap,
-    title: "빠른 AI 요약",
-    description: "AI가 몇 초 만에 핵심 내용을 추출합니다"
-  }, {
-    icon: FileText,
-    title: "1페이지 포맷",
-    description: "깔끔하게 정리된 요약서를 제공합니다"
-  }, {
-    icon: Shield,
-    title: "농촌진흥청 특허 우선",
-    description: "농촌진흥청 출원 특허를 우선 표시합니다"
-  }];
 
   // Handle patent search with history saving
   const handleSubmit = async (patentNumber: string) => {
@@ -171,22 +154,8 @@ const Index = () => {
               </section>
             )}
 
-            {/* Features */}
-            <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto mt-16">
-              {features.map((feature, index) => (
-                <div 
-                  key={feature.title} 
-                  className="p-6 rounded-2xl glass-effect hover:shadow-glow transition-all duration-300 animate-slide-in group"
-                  style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-                >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </div>
-              ))}
-            </section>
+            {/* RDA Latest Patents Section - replaces features */}
+            <RdaLatestPatents onPatentSelect={handleSubmit} />
           </>
         ) : (
           <>
