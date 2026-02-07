@@ -256,7 +256,8 @@ serve(async (req) => {
         applicationNumber,
         registrationNumber,
         classifications: getFieldFromXml(itemXml, "ipcNumber") ? [getFieldFromXml(itemXml, "ipcNumber")!] : [],
-        representativeImage: getFieldFromXml(itemXml, "drawing"),
+        // bigDrawing 우선 사용 (고해상도), 없으면 drawing 사용
+        representativeImage: getFieldFromXml(itemXml, "bigDrawing") || getFieldFromXml(itemXml, "drawing"),
       };
 
       // 2차 상세 조회: 청구항(claims) 확보
@@ -304,10 +305,12 @@ serve(async (req) => {
             patentData.claims = claims.slice(0, 50); // 과도한 길이 방지
           }
 
-          // 상세 응답에 대표도면(drawing)이 더 풍부하게 오는 경우가 있어 보강
+          // 상세 응답에서 bigDrawing(고해상도) 우선, 없으면 drawing 사용
+          const detailedBigDrawing = getFieldFromXml(detailText, "bigDrawing");
           const detailedDrawing = getFieldFromXml(detailText, "drawing");
-          if (detailedDrawing && detailedDrawing.startsWith("http")) {
-            patentData.representativeImage = detailedDrawing;
+          const bestDrawing = detailedBigDrawing || detailedDrawing;
+          if (bestDrawing && bestDrawing.startsWith("http")) {
+            patentData.representativeImage = bestDrawing;
           }
         } else {
           console.warn("Detail API returned error or empty payload");

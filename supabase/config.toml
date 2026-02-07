@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.search-patents]
 verify_jwt = false
+
+[functions.proxy-image]
+verify_jwt = false
+
+[functions.rda-latest-patents]
+verify_jwt = false
