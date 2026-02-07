@@ -5,6 +5,38 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Retry fetch with exponential backoff for transient network errors
+async function fetchWithRetry(url: string, maxRetries = 3, initialDelay = 1000): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url);
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`Fetch attempt ${attempt + 1}/${maxRetries} failed:`, lastError.message);
+      
+      // Check if it's a retryable error (connection reset, timeout, etc.)
+      const isRetryable = lastError.message.includes('Connection reset') ||
+                          lastError.message.includes('connection error') ||
+                          lastError.message.includes('timeout') ||
+                          lastError.message.includes('ECONNRESET');
+      
+      if (!isRetryable || attempt === maxRetries - 1) {
+        throw lastError;
+      }
+      
+      // Exponential backoff with jitter
+      const delay = initialDelay * Math.pow(2, attempt) + Math.random() * 500;
+      console.log(`Retrying in ${Math.round(delay)}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError || new Error('Fetch failed after retries');
+}
+
 interface PatentData {
   title?: string;
   titleKo?: string;
@@ -147,7 +179,7 @@ serve(async (req) => {
 
     console.log("KIPRIS search URL:", searchUrl.toString().replace(KIPRIS_API_KEY, "***"));
 
-    const searchResponse = await fetch(searchUrl.toString());
+    const searchResponse = await fetchWithRetry(searchUrl.toString());
     const searchText = await searchResponse.text();
 
     console.log("KIPRIS API response status:", searchResponse.status);
@@ -242,7 +274,7 @@ serve(async (req) => {
 
         console.log("KIPRIS detail URL:", detailUrl.toString().replace(KIPRIS_API_KEY, "***"));
 
-        const detailRes = await fetch(detailUrl.toString());
+        const detailRes = await fetchWithRetry(detailUrl.toString());
         const detailText = await detailRes.text();
 
         if (detailRes.ok && !detailText.includes("<successYN>N</successYN>")) {
@@ -329,7 +361,7 @@ serve(async (req) => {
           relatedUrl.searchParams.set("patent", "true");
           relatedUrl.searchParams.set("utility", "true");
 
-          const relatedResponse = await fetch(relatedUrl.toString());
+          const relatedResponse = await fetchWithRetry(relatedUrl.toString());
           const relatedText = await relatedResponse.text();
 
           console.log("Related patents API response preview:", relatedText.substring(0, 500));
