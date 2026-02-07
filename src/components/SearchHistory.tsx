@@ -18,44 +18,44 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
   }
 
   return (
-    <Card className="p-6 bg-card/50 border-border/50">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <History className="w-4 h-4" />
-          <span className="text-sm font-medium">최근 검색 기록</span>
+    <div className="glass-effect rounded-3xl p-6">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <History className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-muted-foreground">최근 검색 기록</span>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={onClear}
-          className="text-xs text-muted-foreground hover:text-destructive"
+          className="text-xs text-muted-foreground hover:text-primary hover:bg-primary/10"
         >
           전체 삭제
         </Button>
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-3">
         {history.map((item) => (
           <div
             key={item.patentNumber}
-            className="group flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/30 hover:border-primary/30 hover:bg-accent/5 transition-all cursor-pointer"
+            className="group flex items-center gap-3 p-4 rounded-2xl bg-secondary/30 border border-border/50 hover:border-primary/30 hover:bg-secondary/50 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
             onClick={() => onSelect(item)}
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-medium text-primary">
+                <span className="font-mono text-sm font-semibold text-accent">
                   {item.patentData?.displayNumber || item.patentNumber}
                 </span>
                 {item.patentData?.searchType === 'application' && (
-                  <span className="px-1.5 py-0.5 text-[10px] bg-accent/10 text-accent rounded">
+                  <span className="px-2 py-0.5 text-[10px] bg-primary/20 text-primary rounded-full">
                     출원
                   </span>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground truncate mt-0.5">
+              <p className="text-sm text-muted-foreground truncate mt-1">
                 {item.patentData?.titleKo || item.patentData?.title || "제목 없음"}
               </p>
-              <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground/70">
+              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground/60">
                 <Clock className="w-3 h-3" />
                 <span>
                   {formatDistanceToNow(new Date(item.searchedAt), { 
@@ -69,7 +69,7 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
             <Button
               variant="ghost"
               size="icon"
-              className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove(item.patentNumber);
@@ -80,6 +80,6 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   );
 }
