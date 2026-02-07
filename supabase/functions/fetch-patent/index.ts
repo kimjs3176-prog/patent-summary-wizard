@@ -132,14 +132,14 @@ serve(async (req) => {
     searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
     searchUrl.searchParams.set("astrtCont", "");
     searchUrl.searchParams.set("inventionTitle", "");
-    
+
     // 등록번호 또는 출원번호로 검색
     if (parsed.searchType === 'registration') {
       searchUrl.searchParams.set("registerNumber", parsed.searchNumber);
     } else {
       searchUrl.searchParams.set("applicationNumber", parsed.searchNumber);
     }
-    
+
     searchUrl.searchParams.set("pageNo", "1");
     searchUrl.searchParams.set("numOfRows", "5");
     searchUrl.searchParams.set("patent", "true");
@@ -154,9 +154,9 @@ serve(async (req) => {
     console.log("KIPRIS API response preview:", searchText.substring(0, 1500));
 
     // Check for API error
-    if (searchText.includes("<successYN>N</successYN>") || 
-        searchText.includes("INVALID REQUEST") ||
-        searchText.includes("<resultCode>10</resultCode>")) {
+    if (searchText.includes("<successYN>N</successYN>") ||
+      searchText.includes("INVALID REQUEST") ||
+      searchText.includes("<resultCode>10</resultCode>")) {
       const errorMsg = searchText.match(/<resultMsg>([^<]+)<\/resultMsg>/)?.[1] || "API 오류";
       console.error("KIPRIS API error:", errorMsg);
       return new Response(
@@ -167,20 +167,30 @@ serve(async (req) => {
 
     // Parse XML response - find first item
     const itemMatch = searchText.match(/<item>([\s\S]*?)<\/item>/);
-    
+
+    // Small XML helpers (CDATA 우선)
+    const getFieldFromXml = (xml: string, field: string): string | undefined => {
+      const cdataMatch = xml.match(new RegExp(`<${field}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${field}>`, "i"));
+      if (cdataMatch) return cdataMatch[1].trim();
+      const simpleMatch = xml.match(new RegExp(`<${field}>([\\s\\S]*?)<\\/${field}>`, "i"));
+      return simpleMatch ? simpleMatch[1].trim() : undefined;
+    };
+
+    const getFieldsFromXml = (xml: string, field: string): string[] => {
+      const values: string[] = [];
+      const reCdata = new RegExp(`<${field}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${field}>`, "gi");
+      const reSimple = new RegExp(`<${field}>([\\s\\S]*?)<\\/${field}>`, "gi");
+      for (const m of xml.matchAll(reCdata)) values.push((m[1] || "").trim());
+      for (const m of xml.matchAll(reSimple)) values.push((m[1] || "").trim());
+      return values.filter(v => v.length > 0);
+    };
+
     if (itemMatch) {
       const itemXml = itemMatch[1];
-      
-      const getField = (field: string): string | undefined => {
-        const cdataMatch = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`, 'i'));
-        if (cdataMatch) return cdataMatch[1].trim();
-        const simpleMatch = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i'));
-        return simpleMatch ? simpleMatch[1].trim() : undefined;
-      };
 
-      const applicationNumber = getField("applicationNumber") || "";
-      const registrationNumber = getField("registerNumber") || "";
-      
+      const applicationNumber = getFieldFromXml(itemXml, "applicationNumber") || "";
+      const registrationNumber = getFieldFromXml(itemXml, "registerNumber") || "";
+
       // displayNumber 재설정
       if (registrationNumber && registrationNumber.length >= 7) {
         const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
@@ -195,34 +205,91 @@ serve(async (req) => {
       }
 
       // 발명자 정보 파싱 (inventorName 필드)
-      const inventorName = getField("inventorName");
-      const inventors: string[] = inventorName 
+      const inventorName = getFieldFromXml(itemXml, "inventorName");
+      const inventors: string[] = inventorName
         ? inventorName.split(/[,|]/).map(n => n.trim()).filter(n => n.length > 0)
         : [];
 
       patentData = {
         ...patentData,
-        title: getField("inventionTitle"),
-        titleKo: getField("inventionTitle"),
-        abstract: getField("astrtCont"),
-        applicant: getField("applicantName") || getField("applicant"),
-        assignee: getField("applicantName") || getField("applicant"),
-        inventors: inventors,
-        filingDate: formatDate(getField("applicationDate") || ""),
-        publicationDate: formatDate(getField("openDate") || getField("publicationDate") || ""),
-        registrationDate: formatDate(getField("registerDate") || ""),
-        applicationNumber: applicationNumber,
-        registrationNumber: registrationNumber,
-        classifications: getField("ipcNumber") ? [getField("ipcNumber")!] : [],
-        representativeImage: getField("drawing"),
+        title: getFieldFromXml(itemXml, "inventionTitle"),
+        titleKo: getFieldFromXml(itemXml, "inventionTitle"),
+        abstract: getFieldFromXml(itemXml, "astrtCont"),
+        applicant: getFieldFromXml(itemXml, "applicantName") || getFieldFromXml(itemXml, "applicant"),
+        assignee: getFieldFromXml(itemXml, "applicantName") || getFieldFromXml(itemXml, "applicant"),
+        inventors,
+        filingDate: formatDate(getFieldFromXml(itemXml, "applicationDate") || ""),
+        publicationDate: formatDate(getFieldFromXml(itemXml, "openDate") || getFieldFromXml(itemXml, "publicationDate") || ""),
+        registrationDate: formatDate(getFieldFromXml(itemXml, "registerDate") || ""),
+        applicationNumber,
+        registrationNumber,
+        classifications: getFieldFromXml(itemXml, "ipcNumber") ? [getFieldFromXml(itemXml, "ipcNumber")!] : [],
+        representativeImage: getFieldFromXml(itemXml, "drawing"),
       };
+
+      // 2차 상세 조회: 청구항(claims) 확보
+      // getAdvancedSearch에는 청구항이 포함되지 않는 경우가 많아 별도 상세 API를 호출합니다.
+      try {
+        const detailUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getBibliographyDetailInfoSearch");
+        detailUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+        // 상세 API는 일반적으로 applicationNumber 기반 조회가 안정적
+        if (applicationNumber) {
+          detailUrl.searchParams.set("applicationNumber", applicationNumber.replace(/[^0-9]/g, ""));
+        } else {
+          // fallback: 사용자가 입력한 번호를 그대로 정규화
+          detailUrl.searchParams.set("applicationNumber", parsed.searchNumber.replace(/[^0-9]/g, ""));
+        }
+
+        console.log("KIPRIS detail URL:", detailUrl.toString().replace(KIPRIS_API_KEY, "***"));
+
+        const detailRes = await fetch(detailUrl.toString());
+        const detailText = await detailRes.text();
+
+        if (detailRes.ok && !detailText.includes("<successYN>N</successYN>")) {
+          // 청구항 태그는 응답 포맷에 따라 claim / claimText 등으로 다를 수 있어 폭넓게 파싱
+          const claimCandidates = [
+            ...getFieldsFromXml(detailText, "claim"),
+            ...getFieldsFromXml(detailText, "claimText"),
+            ...getFieldsFromXml(detailText, "claimContents"),
+          ];
+
+          const cleaned = claimCandidates
+            .map(c => c.replace(/\s+/g, " ").trim())
+            .filter(c => c.length > 0);
+
+          // 너무 긴 단일 문자열만 내려오는 경우, '청구항' 번호 패턴으로 분리 시도
+          let claims: string[] = cleaned;
+          if (claims.length === 1) {
+            const one = claims[0];
+            const split = one
+              .split(/(?=(?:\s|^)(?:\d+\s*\)|\d+\.|\[청구항\s*\d+\]))/)
+              .map(s => s.trim())
+              .filter(Boolean);
+            if (split.length > 1) claims = split;
+          }
+
+          if (claims.length > 0) {
+            patentData.claims = claims.slice(0, 50); // 과도한 길이 방지
+          }
+
+          // 상세 응답에 대표도면(drawing)이 더 풍부하게 오는 경우가 있어 보강
+          const detailedDrawing = getFieldFromXml(detailText, "drawing");
+          if (detailedDrawing && detailedDrawing.startsWith("http")) {
+            patentData.representativeImage = detailedDrawing;
+          }
+        } else {
+          console.warn("Detail API returned error or empty payload");
+        }
+      } catch (detailErr) {
+        console.error("Error fetching patent detail (claims):", detailErr);
+      }
     }
 
     if (!patentData.title) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "해당 번호의 특허를 찾을 수 없습니다. 등록번호 또는 출원번호를 확인해주세요." 
+        JSON.stringify({
+          success: false,
+          error: "해당 번호의 특허를 찾을 수 없습니다. 등록번호 또는 출원번호를 확인해주세요."
         }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
