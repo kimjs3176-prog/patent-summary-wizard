@@ -13,8 +13,11 @@ interface RdaPatent {
   thumbnail?: string;
 }
 
-// 농촌진흥청 출원인 식별
-const RDA_APPLICANT_NAME = "대한민국(농촌진흥청장)";
+// 농촌진흥청 관련 출원인 식별
+const RDA_KEYWORDS = ["농촌진흥청", "농촌진흥청장"];
+
+// 농업 관련 검색 키워드 (무작위 선택)
+const AGRI_KEYWORDS = ["농업", "작물", "재배", "토양", "비료", "수확", "병해충", "축산", "양봉", "온실", "관개", "육종"];
 
 // 날짜 포맷팅: 20231015 -> 2023.10.15
 function formatDate(dateStr: string): string {
@@ -66,89 +69,101 @@ serve(async (req) => {
 
     console.log("Fetching RDA (농촌진흥청) latest patents...");
 
-    // KIPRIS API - 출원인 기반 검색
-    const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-    searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-    searchUrl.searchParams.set("applicantName", RDA_APPLICANT_NAME);
-    searchUrl.searchParams.set("astrtCont", "");
-    searchUrl.searchParams.set("inventionTitle", "");
-    searchUrl.searchParams.set("pageNo", "1");
-    searchUrl.searchParams.set("numOfRows", "20"); // 더 많이 가져와서 무작위 선택
-    searchUrl.searchParams.set("sortSpec", "AD"); // 출원일 기준 정렬
-    searchUrl.searchParams.set("descSort", "true"); // 최신순
-    searchUrl.searchParams.set("patent", "true");
-    searchUrl.searchParams.set("utility", "true");
+    // 무작위 농업 키워드 2개 선택
+    const shuffledKeywords = [...AGRI_KEYWORDS].sort(() => Math.random() - 0.5);
+    const selectedKeywords = shuffledKeywords.slice(0, 2);
+    
+    const allRdaPatents: RdaPatent[] = [];
 
-    console.log("KIPRIS RDA search URL:", searchUrl.toString().replace(KIPRIS_API_KEY, "***"));
+    // 각 키워드로 검색하여 농촌진흥청 특허 수집
+    for (const keyword of selectedKeywords) {
+      const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+      searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+      searchUrl.searchParams.set("inventionTitle", keyword);
+      searchUrl.searchParams.set("astrtCont", "");
+      searchUrl.searchParams.set("pageNo", "1");
+      searchUrl.searchParams.set("numOfRows", "30");
+      searchUrl.searchParams.set("sortSpec", "AD"); // 출원일 기준
+      searchUrl.searchParams.set("descSort", "true"); // 최신순
+      searchUrl.searchParams.set("patent", "true");
+      searchUrl.searchParams.set("utility", "true");
 
-    const searchResponse = await fetchWithRetry(searchUrl.toString());
-    const searchText = await searchResponse.text();
+      console.log(`Searching with keyword: ${keyword}`);
 
-    console.log("KIPRIS RDA response status:", searchResponse.status);
-    console.log("KIPRIS RDA response preview:", searchText.substring(0, 800));
+      try {
+        const searchResponse = await fetchWithRetry(searchUrl.toString());
+        const searchText = await searchResponse.text();
 
-    if (searchText.includes("<successYN>N</successYN>") || 
-        searchText.includes("INVALID REQUEST")) {
-      console.error("KIPRIS API error in RDA search");
-      return new Response(
-        JSON.stringify({ success: false, error: "KIPRIS API 오류" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const patents: RdaPatent[] = [];
-    const itemMatches = [...searchText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-
-    console.log("Found", itemMatches.length, "RDA patent items");
-
-    // XML 필드 추출 헬퍼
-    const getField = (xml: string, field: string): string | undefined => {
-      const cdataMatch = xml.match(new RegExp(`<${field}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${field}>`, "i"));
-      if (cdataMatch) return cdataMatch[1].trim();
-      const simpleMatch = xml.match(new RegExp(`<${field}>([\\s\\S]*?)<\\/${field}>`, "i"));
-      return simpleMatch ? simpleMatch[1].trim() : undefined;
-    };
-
-    for (const match of itemMatches) {
-      const itemXml = match[1];
-
-      const applicationNumber = getField(itemXml, "applicationNumber") || "";
-      const registrationNumber = getField(itemXml, "registerNumber") || "";
-      const inventionTitle = getField(itemXml, "inventionTitle") || "";
-      const applicant = getField(itemXml, "applicantName") || "";
-      const applicationDate = getField(itemXml, "applicationDate") || "";
-      const drawing = getField(itemXml, "drawing") || getField(itemXml, "bigDrawing") || "";
-
-      // 특허 ID 생성
-      let patentId = "";
-      if (registrationNumber && registrationNumber.length >= 7) {
-        const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
-        if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
-          patentId = `10-${cleanNum.slice(2, 9)}`;
+        if (searchText.includes("<successYN>N</successYN>") || 
+            searchText.includes("INVALID REQUEST")) {
+          console.warn(`Search failed for keyword: ${keyword}`);
+          continue;
         }
-      } else if (applicationNumber && applicationNumber.length >= 7) {
-        const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
-        if (cleanNum.length >= 11 && cleanNum.startsWith("10")) {
-          patentId = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
+
+        const itemMatches = [...searchText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+        console.log(`Found ${itemMatches.length} items for keyword: ${keyword}`);
+
+        // XML 필드 추출 헬퍼
+        const getField = (xml: string, field: string): string | undefined => {
+          const cdataMatch = xml.match(new RegExp(`<${field}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${field}>`, "i"));
+          if (cdataMatch) return cdataMatch[1].trim();
+          const simpleMatch = xml.match(new RegExp(`<${field}>([\\s\\S]*?)<\\/${field}>`, "i"));
+          return simpleMatch ? simpleMatch[1].trim() : undefined;
+        };
+
+        for (const match of itemMatches) {
+          const itemXml = match[1];
+          const applicant = getField(itemXml, "applicantName") || "";
+
+          // 농촌진흥청 특허인지 확인
+          const isRda = RDA_KEYWORDS.some(k => applicant.includes(k));
+          if (!isRda) continue;
+
+          const applicationNumber = getField(itemXml, "applicationNumber") || "";
+          const registrationNumber = getField(itemXml, "registerNumber") || "";
+          const inventionTitle = getField(itemXml, "inventionTitle") || "";
+          const applicationDate = getField(itemXml, "applicationDate") || "";
+          const drawing = getField(itemXml, "bigDrawing") || getField(itemXml, "drawing") || "";
+
+          // 특허 ID 생성
+          let patentId = "";
+          if (registrationNumber && registrationNumber.length >= 7) {
+            const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
+            if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
+              patentId = `10-${cleanNum.slice(2, 9)}`;
+            }
+          } else if (applicationNumber && applicationNumber.length >= 7) {
+            const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
+            if (cleanNum.length >= 11 && cleanNum.startsWith("10")) {
+              patentId = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
+            }
+          }
+
+          if (!patentId || !inventionTitle) continue;
+
+          // 중복 체크
+          if (allRdaPatents.some(p => p.patentId === patentId)) continue;
+
+          allRdaPatents.push({
+            patentId,
+            title: inventionTitle,
+            applicant: applicant,
+            applicationDate: formatDate(applicationDate),
+            thumbnail: drawing || undefined,
+          });
         }
+      } catch (err) {
+        console.error(`Error searching keyword ${keyword}:`, err);
       }
-
-      if (!patentId || !inventionTitle) continue;
-
-      patents.push({
-        patentId,
-        title: inventionTitle,
-        applicant: applicant || RDA_APPLICANT_NAME,
-        applicationDate: formatDate(applicationDate),
-        thumbnail: drawing || undefined,
-      });
     }
+
+    console.log(`Total RDA patents found: ${allRdaPatents.length}`);
 
     // 무작위로 6개 선택
-    const shuffled = patents.sort(() => Math.random() - 0.5);
+    const shuffled = allRdaPatents.sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 6);
 
-    console.log(`Returning ${selected.length} random RDA patents out of ${patents.length}`);
+    console.log(`Returning ${selected.length} random RDA patents`);
 
     return new Response(
       JSON.stringify({ success: true, patents: selected }),
