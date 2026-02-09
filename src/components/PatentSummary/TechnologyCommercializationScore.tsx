@@ -1,4 +1,5 @@
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { TrlChart } from "./TrlChart";
 
 interface TechnologyCommercializationScoreProps {
   score: number | null;
@@ -8,6 +9,8 @@ interface TechnologyCommercializationScoreProps {
     marketScore: number;
     businessScore: number;
     analysis: string;
+    trl?: number;
+    trlReason?: string;
   } | null;
 }
 
@@ -154,9 +157,33 @@ export function TechnologyCommercializationScore({
 
       {/* Analysis */}
       {details.analysis && (
-        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
+        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50 mb-5">
           <p className="text-xs text-muted-foreground mb-2 font-medium">AI 분석 의견</p>
           <p className="text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
+        </div>
+      )}
+
+      {/* TRL Chart Section */}
+      {details.trl && (
+        <div className="mt-6 pt-6 border-t border-border/50">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center text-lg">
+              📊
+            </div>
+            <div>
+              <h5 className="font-bold text-foreground">기술성숙도 (TRL)</h5>
+              <p className="text-xs text-muted-foreground">Technology Readiness Level</p>
+            </div>
+          </div>
+          
+          <TrlChart estimatedTrl={details.trl} />
+          
+          {details.trlReason && (
+            <div className="mt-4 p-3 rounded-xl bg-accent/10 border border-accent/20">
+              <p className="text-xs text-muted-foreground mb-1">TRL 추정 근거</p>
+              <p className="text-sm text-foreground/80">{details.trlReason}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
