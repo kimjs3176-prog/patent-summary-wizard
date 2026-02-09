@@ -281,25 +281,17 @@ export function PatentSummary({
           elements.push(
             <div key={`img-${index}`} className="my-6 flex justify-center">
               <div className="text-center">
-                <a
-                  href={patentData.representativeImage}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-block"
-                  title="대표 도면 원본 보기"
-                >
-                  <img
-                    src={proxied}
-                    alt="대표 도면"
-                    className="w-72 md:w-80 h-auto max-h-96 object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md"
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                      (e.currentTarget.parentElement as HTMLElement)!.style.display = "none";
-                    }}
-                  />
-                </a>
-                <p className="text-xs text-muted-foreground mt-2">【대표 도면】 (클릭하여 원본)</p>
+                <img
+                  src={proxied}
+                  alt="대표 도면"
+                  className="w-72 md:w-80 h-auto max-h-96 object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md"
+                  loading="lazy"
+                  decoding="async"
+                  onError={(e) => {
+                    (e.currentTarget.parentElement?.parentElement as HTMLElement)!.style.display = "none";
+                  }}
+                />
+                <p className="text-xs text-muted-foreground mt-2">【대표 도면】</p>
               </div>
             </div>
           );
