@@ -9,7 +9,6 @@ import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { RdaLatestPatents } from "@/components/RdaLatestPatents";
 import { useState } from "react";
-
 const Index = () => {
   const {
     isLoading,
@@ -73,9 +72,7 @@ const Index = () => {
     setKeywordResults([]);
     setSearchedKeyword("");
   };
-
-  return (
-    <div className="min-h-screen relative z-10">
+  return <div className="min-h-screen relative z-10">
       {/* Header */}
       <header className="w-full border-b border-border/50 bg-card/30 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -88,22 +85,14 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Patent Summary</p>
             </div>
           </div>
-          {(summary || isLoading) && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={reset}
-              className="border-border/50 bg-card/50 hover:bg-card text-foreground"
-            >
+          {(summary || isLoading) && <Button variant="outline" size="sm" onClick={reset} className="border-border/50 bg-card/50 hover:bg-card text-foreground">
               새로운 특허 검색
-            </Button>
-          )}
+            </Button>}
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-16">
-        {!summary && !isLoading ? (
-          <>
+        {!summary && !isLoading ? <>
             {/* Hero Section */}
             <section className="text-center max-w-3xl mx-auto mb-16 animate-fade-down">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 text-accent mb-8 border border-accent/30">
@@ -112,93 +101,64 @@ const Index = () => {
               </div>
               
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground mb-6 leading-tight">
-                특허 AI 요약
+                농식품 특허 AI 요약 서비스      
               </h2>
               
               <p className="text-lg text-muted-foreground font-light tracking-wide">
-                한국 특허를 인공지능이 자동으로 분석하고 요약합니다
+                 농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다
               </p>
             </section>
 
             {/* Input Section */}
-            <section className="mb-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-              <PatentInput 
-                onSubmit={handleSubmit} 
-                isLoading={isLoading} 
-                onKeywordSearch={handleKeywordSearch} 
-              />
+            <section className="mb-12 animate-fade-up" style={{
+          animationDelay: "0.2s"
+        }}>
+              <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
             </section>
 
             {/* Keyword Search Results Section */}
-            {keywordResults.length > 0 && (
-              <section className="mb-12 animate-fade-up" style={{ animationDelay: "0.25s" }}>
-                <KeywordSearchResults 
-                  results={keywordResults} 
-                  keyword={searchedKeyword} 
-                  onPatentSelect={handleKeywordPatentSelect} 
-                  onClose={handleClearKeywordResults} 
-                  isLoading={isLoading} 
-                />
-              </section>
-            )}
+            {keywordResults.length > 0 && <section className="mb-12 animate-fade-up" style={{
+          animationDelay: "0.25s"
+        }}>
+                <KeywordSearchResults results={keywordResults} keyword={searchedKeyword} onPatentSelect={handleKeywordPatentSelect} onClose={handleClearKeywordResults} isLoading={isLoading} />
+              </section>}
 
             {/* Search History Section */}
-            {history.length > 0 && keywordResults.length === 0 && (
-              <section className="mb-12 max-w-2xl mx-auto animate-fade-up" style={{ animationDelay: "0.3s" }}>
-                <SearchHistory 
-                  history={history} 
-                  onSelect={handleHistorySelect} 
-                  onRemove={removeFromHistory} 
-                  onClear={clearHistory} 
-                />
-              </section>
-            )}
+            {history.length > 0 && keywordResults.length === 0 && <section className="mb-12 max-w-2xl mx-auto animate-fade-up" style={{
+          animationDelay: "0.3s"
+        }}>
+                <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
+              </section>}
 
             {/* RDA Latest Patents Section - replaces features */}
             <RdaLatestPatents onPatentSelect={handleSubmit} />
-          </>
-        ) : (
-          <>
+          </> : <>
             {/* Loading State */}
-            {isFetching && (
-              <div className="text-center mb-8 animate-fade-up">
+            {isFetching && <div className="text-center mb-8 animate-fade-up">
                 <div className="inline-flex flex-col items-center gap-4 px-8 py-6 rounded-2xl glass-effect">
                   <div className="w-14 h-14 border-4 border-muted border-t-primary rounded-full animate-spin" />
                   <span className="text-muted-foreground font-medium">특허 정보를 불러오는 중...</span>
                 </div>
-              </div>
-            )}
+              </div>}
 
             {/* Summary Section */}
             <section className="mb-8">
-              <PatentSummary 
-                content={summary} 
-                patentNumber={currentPatent} 
-                isStreaming={isLoading} 
-                patentData={patentData} 
-                relatedPatents={relatedPatents} 
-                onRelatedPatentClick={handleSubmit} 
-              />
+              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} />
             </section>
 
             {/* Loading Input for new search during streaming */}
-            {isLoading && !isFetching && (
-              <section className="mt-12">
+            {isLoading && !isFetching && <section className="mt-12">
                 <PatentInput onSubmit={generateSummary} isLoading={isLoading} />
-              </section>
-            )}
-          </>
-        )}
+              </section>}
+          </>}
       </main>
 
       {/* Footer */}
       <footer className="border-t border-border/50 mt-auto relative z-10">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>© 2025 농식품 특허 1페이지 요약 서비스. KIPRIS(한국특허정보원) 데이터 연동 • AI 기반 특허 분석</p>
+          <p>KIPRIS(한국특허정보원) 데이터 연동 • AI 기반 특허 분석</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
