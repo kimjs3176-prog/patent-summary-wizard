@@ -60,7 +60,7 @@ ${data.claims && data.claims.length > 0 ? `주요 청구항:\n${data.claims.slic
 `;
 
     const systemPrompt = `당신은 특허 기술의 사업화 가능성을 평가하는 전문가입니다.
-주어진 특허 정보를 분석하여 기술사업화점수를 백분위(0-100점)로 평가해주세요.
+주어진 특허 정보를 분석하여 기술사업화점수와 기술성숙도(TRL)를 평가해주세요.
 
 평가 기준:
 1. 기술성 (0-100점): 기술의 혁신성, 독창성, 완성도, 청구항의 범위와 품질
@@ -69,12 +69,27 @@ ${data.claims && data.claims.length > 0 ? `주요 청구항:\n${data.claims.slic
 
 종합점수는 세 점수의 가중 평균입니다: 기술성(35%) + 시장성(35%) + 사업성(30%)
 
+기술성숙도(TRL, Technology Readiness Level) 평가:
+- TRL 1: 기본 원리 관찰 및 보고
+- TRL 2: 기술 개념 및 응용 정립
+- TRL 3: 핵심 기능의 분석적/실험적 증명
+- TRL 4: 실험실 환경에서 기술 검증
+- TRL 5: 유사 환경에서 기술 검증
+- TRL 6: 시제품의 유사 환경 시연
+- TRL 7: 실제 운영 환경에서 시연
+- TRL 8: 시스템 완성 및 검증
+- TRL 9: 실제 운영 환경에서 성공적 검증 (상용화 완료)
+
+특허 내용(초록, 청구항, 기술분류)을 기반으로 해당 기술의 TRL 단계를 1-9 사이로 추정하세요.
+
 반드시 다음 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 {
   "technologyScore": 75,
   "marketScore": 68,
   "businessScore": 72,
   "totalScore": 72,
+  "trl": 5,
+  "trlReason": "TRL 추정 근거를 한 문장으로 (30자 이내)",
   "analysis": "한 문장으로 종합 평가 (50자 이내)"
 }`;
 
@@ -124,6 +139,8 @@ ${data.claims && data.claims.length > 0 ? `주요 청구항:\n${data.claims.slic
           marketScore: scores.marketScore,
           businessScore: scores.businessScore,
           analysis: scores.analysis,
+          trl: scores.trl || 5,
+          trlReason: scores.trlReason || "",
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
