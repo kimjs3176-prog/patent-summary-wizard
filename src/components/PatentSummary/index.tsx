@@ -223,26 +223,6 @@ export function PatentSummary({
 
   // MD 다운로드 기능 및 Google Patents 링크 기능 제거 (요청사항)
 
-  // Section icons mapping
-  const getSectionIcon = (title: string): string => {
-    const iconMap: Record<string, string> = {
-      "발명의 요약": "💡",
-      "기술적 특징": "⚙️",
-      "핵심 청구항": "📋",
-      "기술적 효과": "✅",
-      "산업적 활용": "🏭",
-      "응용 분야": "🎯",
-      "장점": "👍",
-      "단점": "👎",
-      "결론": "📝",
-    };
-    
-    for (const [key, icon] of Object.entries(iconMap)) {
-      if (title.includes(key)) return icon;
-    }
-    return "📌";
-  };
-
   const renderMarkdown = (text: string) => {
     const lines = text.split("\n");
     const elements: JSX.Element[] = [];
@@ -279,19 +259,10 @@ export function PatentSummary({
           return;
         }
         
-        const sectionIcon = getSectionIcon(sectionTitle);
-        
         elements.push(
-          <div key={`section-${index}`} className="mt-8 first:mt-0">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-xl border border-primary/10">
-                {sectionIcon}
-              </div>
-              <h2 className="text-xl font-bold text-foreground">
-                {sectionTitle}
-              </h2>
-            </div>
-          </div>
+          <h2 key={index} className="text-xl font-semibold text-primary mt-6 mb-3 first:mt-0">
+            {sectionTitle}
+          </h2>
         );
         
         // Insert representative image AFTER "발명의 요약" section header
@@ -302,28 +273,25 @@ export function PatentSummary({
 
           elements.push(
             <div key={`img-${index}`} className="my-6 flex justify-center">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-secondary/50 to-secondary/30 border border-border/50">
+              <div className="text-center">
                 <img
                   src={proxied}
                   alt="대표 도면"
-                  className="w-72 md:w-80 h-auto max-h-96 object-contain rounded-xl bg-white/90 mx-auto"
+                  className="w-72 md:w-80 h-auto max-h-96 object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md"
                   loading="lazy"
                   decoding="async"
                   onError={(e) => {
                     (e.currentTarget.parentElement?.parentElement as HTMLElement)!.style.display = "none";
                   }}
                 />
-                <p className="text-xs text-muted-foreground mt-3 text-center flex items-center justify-center gap-2">
-                  <span>🖼️</span>
-                  <span>대표 도면</span>
-                </p>
+                <p className="text-xs text-muted-foreground mt-2">【대표 도면】</p>
               </div>
             </div>
           );
         }
       } else if (cleanLine.trim()) {
         elements.push(
-          <p key={index} className="text-foreground/80 leading-relaxed mb-3 pl-13">
+          <p key={index} className="text-foreground/80 leading-relaxed mb-2">
             {cleanLine}
           </p>
         );
@@ -343,75 +311,51 @@ export function PatentSummary({
         patentData={patentData}
       />
 
-      {/* 1. Patent Info Card with Enhanced Visuals */}
+      {/* 1. Patent Info Card */}
       {patentData && (
         <div className="mb-6 glass-effect rounded-3xl p-8 animate-slide-in">
           <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl shadow-lg">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
               📄
             </div>
-            <div className="flex-1">
-              <div className="card-title text-xl font-bold text-foreground">특허 정보</div>
-              <p className="text-sm text-muted-foreground">Patent Information</p>
-            </div>
-            <div className="px-4 py-2 bg-gradient-to-r from-accent/20 to-primary/20 text-foreground rounded-full text-sm font-medium border border-accent/30">
-              {patentData.searchType === 'application' ? '📋 출원번호' : '✅ 등록번호'}
-            </div>
+            <div className="card-title text-xl font-bold text-foreground">특허 정보</div>
           </div>
           
-          {/* Patent Number Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-xl text-sm font-mono mb-4 border border-primary/20">
-            <span className="text-primary">🔢</span>
-            <span className="text-foreground font-semibold">
-              {patentData.searchType === 'application' 
+          <div className="inline-block px-4 py-2 bg-accent/20 text-accent rounded-lg text-sm font-medium mb-3">
+            {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {
+              patentData.searchType === 'application' 
                 ? (patentData.applicationNumber || patentData.displayNumber || patentData.patentNumber)
-                : (patentData.displayNumber || patentData.patentNumber)}
-            </span>
+                : (patentData.displayNumber || patentData.patentNumber)
+            }
           </div>
           
           {patentData.titleKo && (
-            <h2 className="text-2xl font-bold text-foreground mb-5 leading-tight flex items-start gap-3">
-              <span className="text-primary text-2xl mt-1">📌</span>
-              <span>{patentData.titleKo}</span>
-            </h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
           )}
           
-          {/* Info Grid with Icons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
             {patentData.assignee && (
-              <div className="bg-gradient-to-br from-secondary/50 to-secondary/30 p-4 rounded-xl border border-border/50 hover:border-primary/30 transition-colors">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 font-medium">
-                  <span>🏢</span>
-                  <span>출원인</span>
-                </div>
-                <div className="text-sm text-foreground font-semibold">{patentData.assignee}</div>
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">출원인</div>
+                <div className="text-sm text-foreground font-medium">{patentData.assignee}</div>
               </div>
             )}
             {patentData.inventors && patentData.inventors.length > 0 && (
-              <div className="bg-gradient-to-br from-secondary/50 to-secondary/30 p-4 rounded-xl border border-border/50 hover:border-primary/30 transition-colors">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 font-medium">
-                  <span>👨‍🔬</span>
-                  <span>발명자</span>
-                </div>
-                <div className="text-sm text-foreground font-semibold">{patentData.inventors.join(', ')}</div>
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">발명자</div>
+                <div className="text-sm text-foreground font-medium">{patentData.inventors.join(', ')}</div>
               </div>
             )}
             {patentData.filingDate && (
-              <div className="bg-gradient-to-br from-secondary/50 to-secondary/30 p-4 rounded-xl border border-border/50 hover:border-primary/30 transition-colors">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 font-medium">
-                  <span>📅</span>
-                  <span>출원일</span>
-                </div>
-                <div className="text-sm text-foreground font-semibold">{patentData.filingDate}</div>
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">출원일</div>
+                <div className="text-sm text-foreground font-medium">{patentData.filingDate}</div>
               </div>
             )}
             {patentData.publicationDate && (
-              <div className="bg-gradient-to-br from-secondary/50 to-secondary/30 p-4 rounded-xl border border-border/50 hover:border-primary/30 transition-colors">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 font-medium">
-                  <span>📢</span>
-                  <span>공개일</span>
-                </div>
-                <div className="text-sm text-foreground font-semibold">{patentData.publicationDate}</div>
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">공개일</div>
+                <div className="text-sm text-foreground font-medium">{patentData.publicationDate}</div>
               </div>
             )}
           </div>
@@ -498,43 +442,28 @@ export function PatentSummary({
         />
       )}
 
-      {/* 5. Claims Card with Enhanced Design */}
+      {/* 5. Claims Card */}
       {patentData?.claims && patentData.claims.length > 0 && (
         <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.15s' }}>
-          <div className="flex items-center justify-between mb-5 pb-5 border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
-                📑
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-foreground">청구항</h3>
-                <p className="text-sm text-muted-foreground">Patent Claims</p>
-              </div>
+          <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+              📑
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
-              <span className="text-lg">📊</span>
-              <span className="text-foreground font-bold">{patentData.claims.length}</span>
-              <span className="text-muted-foreground text-sm">개</span>
+            <div>
+              <h3 className="font-bold text-lg text-foreground">청구항</h3>
+              <p className="text-sm text-muted-foreground">{patentData.claims.length}개</p>
             </div>
           </div>
 
-          <details className="group">
-            <summary className="cursor-pointer select-none flex items-center gap-2 text-sm font-semibold text-foreground/90 hover:text-foreground p-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors">
-              <span className="text-lg group-open:rotate-90 transition-transform">▶</span>
-              <span>청구항 내용 펼치기/접기</span>
+          <details>
+            <summary className="cursor-pointer select-none text-sm font-semibold text-foreground/90 hover:text-foreground">
+              청구항 내용 펼치기/접기
             </summary>
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-3">
               {patentData.claims.map((c, idx) => (
-                <div key={idx} className="p-5 rounded-2xl bg-gradient-to-br from-secondary/40 to-secondary/20 border border-border/50 hover:border-primary/30 transition-all">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                      <span className="text-primary font-bold text-sm">{idx + 1}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {idx === 0 ? "🔹 독립항" : "🔸 종속항"}
-                    </span>
-                  </div>
-                  <div className="text-sm text-foreground/85 leading-relaxed pl-11">{c}</div>
+                <div key={idx} className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
+                  <div className="text-xs text-muted-foreground mb-2">청구항 {idx + 1}</div>
+                  <div className="text-sm text-foreground/85 leading-relaxed">{c}</div>
                 </div>
               ))}
             </div>
