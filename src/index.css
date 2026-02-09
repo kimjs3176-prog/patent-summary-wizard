@@ -4,105 +4,105 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Playfair+Display:wght@700;900&display=swap');
 
-/* Korean Patent AI Summary Service - Dark Gradient Theme
-   Modern dark theme with vibrant accent colors */
+/* 농식품 특허 AI 요약 서비스 - Agricultural Green Theme
+   자연과 농산업을 연상시키는 그린/어스톤 테마 */
 
 @layer base {
   :root {
-    --background: 222 47% 11%;
-    --foreground: 0 0% 95%;
+    --background: 90 20% 10%;
+    --foreground: 60 10% 95%;
 
-    --card: 222 50% 8%;
-    --card-foreground: 0 0% 95%;
+    --card: 90 25% 8%;
+    --card-foreground: 60 10% 95%;
 
-    --popover: 222 50% 8%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 90 25% 8%;
+    --popover-foreground: 60 10% 95%;
 
-    --primary: 345 83% 55%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 85 50% 40%;
+    --primary-foreground: 60 10% 98%;
 
-    --secondary: 222 40% 20%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 90 20% 18%;
+    --secondary-foreground: 60 10% 95%;
 
-    --muted: 222 30% 18%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 90 15% 16%;
+    --muted-foreground: 60 5% 60%;
 
-    --accent: 165 82% 45%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 35 70% 50%;
+    --accent-foreground: 90 20% 10%;
 
-    --destructive: 345 83% 55%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 60 10% 98%;
 
-    --border: 0 0% 100% / 0.1;
-    --input: 0 0% 100% / 0.1;
-    --ring: 345 83% 55%;
+    --border: 60 10% 100% / 0.1;
+    --input: 60 10% 100% / 0.1;
+    --ring: 85 50% 40%;
 
     --radius: 1rem;
 
-    /* Custom design tokens */
-    --gradient-bg: linear-gradient(135deg, hsl(240 20% 12%) 0%, hsl(222 40% 14%) 50%, hsl(210 50% 20%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(345 83% 55%) 0%, hsl(345 70% 40%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(345 83% 55%), hsl(165 82% 45%));
-    --gradient-glow: radial-gradient(circle at 20% 50%, hsla(345 83% 55% / 0.1) 0%, transparent 50%),
-                     radial-gradient(circle at 80% 80%, hsla(165 82% 45% / 0.1) 0%, transparent 50%);
+    /* Custom design tokens - Agricultural theme */
+    --gradient-bg: linear-gradient(135deg, hsl(100 15% 8%) 0%, hsl(90 20% 12%) 50%, hsl(80 25% 15%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(85 50% 40%) 0%, hsl(90 45% 30%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(85 50% 40%), hsl(35 70% 50%));
+    --gradient-glow: radial-gradient(circle at 20% 50%, hsla(85 50% 40% / 0.12) 0%, transparent 50%),
+                     radial-gradient(circle at 80% 80%, hsla(35 70% 50% / 0.1) 0%, transparent 50%);
     --shadow-sm: 0 1px 2px 0 hsla(0 0% 0% / 0.2);
     --shadow-md: 0 4px 6px -1px hsla(0 0% 0% / 0.3), 0 2px 4px -2px hsla(0 0% 0% / 0.2);
     --shadow-lg: 0 20px 60px hsla(0 0% 0% / 0.4);
     --shadow-card: 0 20px 60px hsla(0 0% 0% / 0.3);
-    --shadow-glow: 0 8px 24px hsla(345 83% 55% / 0.3);
+    --shadow-glow: 0 8px 24px hsla(85 50% 40% / 0.3);
 
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 345 83% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 100% / 0.1;
-    --sidebar-ring: 345 83% 55%;
+    --sidebar-background: 90 20% 6%;
+    --sidebar-foreground: 60 10% 95%;
+    --sidebar-primary: 85 50% 40%;
+    --sidebar-primary-foreground: 60 10% 98%;
+    --sidebar-accent: 90 20% 12%;
+    --sidebar-accent-foreground: 60 10% 95%;
+    --sidebar-border: 60 10% 100% / 0.1;
+    --sidebar-ring: 85 50% 40%;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 0 0% 95%;
+    --background: 90 20% 10%;
+    --foreground: 60 10% 95%;
 
-    --card: 222 50% 8%;
-    --card-foreground: 0 0% 95%;
+    --card: 90 25% 8%;
+    --card-foreground: 60 10% 95%;
 
-    --popover: 222 50% 8%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 90 25% 8%;
+    --popover-foreground: 60 10% 95%;
 
-    --primary: 345 83% 55%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 85 50% 40%;
+    --primary-foreground: 60 10% 98%;
 
-    --secondary: 222 40% 20%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 90 20% 18%;
+    --secondary-foreground: 60 10% 95%;
 
-    --muted: 222 30% 18%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 90 15% 16%;
+    --muted-foreground: 60 5% 60%;
 
-    --accent: 165 82% 45%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 35 70% 50%;
+    --accent-foreground: 90 20% 10%;
 
-    --destructive: 345 83% 55%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 60 10% 98%;
 
-    --border: 0 0% 100% / 0.1;
-    --input: 0 0% 100% / 0.1;
-    --ring: 345 83% 55%;
+    --border: 60 10% 100% / 0.1;
+    --input: 60 10% 100% / 0.1;
+    --ring: 85 50% 40%;
 
-    --gradient-bg: linear-gradient(135deg, hsl(240 20% 12%) 0%, hsl(222 40% 14%) 50%, hsl(210 50% 20%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(345 83% 55%) 0%, hsl(345 70% 40%) 100%);
+    --gradient-bg: linear-gradient(135deg, hsl(100 15% 8%) 0%, hsl(90 20% 12%) 50%, hsl(80 25% 15%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(85 50% 40%) 0%, hsl(90 45% 30%) 100%);
     --shadow-card: 0 20px 60px hsla(0 0% 0% / 0.4);
-    --shadow-glow: 0 12px 32px hsla(345 83% 55% / 0.4);
+    --shadow-glow: 0 12px 32px hsla(85 50% 40% / 0.4);
 
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 345 83% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 12%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 100% / 0.1;
-    --sidebar-ring: 345 83% 55%;
+    --sidebar-background: 90 20% 5%;
+    --sidebar-foreground: 60 10% 95%;
+    --sidebar-primary: 85 50% 40%;
+    --sidebar-primary-foreground: 60 10% 98%;
+    --sidebar-accent: 90 20% 10%;
+    --sidebar-accent-foreground: 60 10% 95%;
+    --sidebar-border: 60 10% 100% / 0.1;
+    --sidebar-ring: 85 50% 40%;
   }
 }
 
@@ -146,14 +146,14 @@
   }
 
   .glass-effect {
-    background: hsla(0 0% 100% / 0.05);
+    background: hsla(60 10% 100% / 0.05);
     backdrop-filter: blur(10px);
-    border: 1px solid hsla(0 0% 100% / 0.1);
+    border: 1px solid hsla(60 10% 100% / 0.1);
     box-shadow: var(--shadow-card);
   }
 
   .card-gradient {
-    background: hsla(0 0% 100% / 0.05);
+    background: hsla(60 10% 100% / 0.05);
     backdrop-filter: blur(10px);
   }
 
