@@ -334,7 +334,10 @@ serve(async (req) => {
 
     console.log("Patent data fetched successfully:", patentData.title);
 
-    // 관련 특허 검색 (제목 키워드 기반)
+    // 관련 특허 검색 (제목 키워드 기반 + 농촌진흥청 출원인 필터)
+    // 농촌진흥청 출원인 코드
+    const RDA_APPLICANT_ID = "219980050314";
+    
     let relatedPatents: RelatedPatent[] = [];
     
     if (patentData.title) {
@@ -353,9 +356,11 @@ serve(async (req) => {
         console.log("Related patents search keyword:", keyword);
 
         if (keyword) {
+          // 농촌진흥청 특허만 검색 (applicant 파라미터로 필터링)
           const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
           relatedUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
           relatedUrl.searchParams.set("inventionTitle", keyword);
+          relatedUrl.searchParams.set("applicant", RDA_APPLICANT_ID); // 농촌진흥청 출원인 코드로 필터링
           relatedUrl.searchParams.set("astrtCont", "");
           relatedUrl.searchParams.set("pageNo", "1");
           relatedUrl.searchParams.set("numOfRows", "20");
@@ -363,6 +368,8 @@ serve(async (req) => {
           relatedUrl.searchParams.set("descSort", "true");
           relatedUrl.searchParams.set("patent", "true");
           relatedUrl.searchParams.set("utility", "true");
+
+          console.log("Related patents search URL (RDA only):", relatedUrl.toString().replace(KIPRIS_API_KEY, "***"));
 
           const relatedResponse = await fetchWithRetry(relatedUrl.toString());
           const relatedText = await relatedResponse.text();
@@ -372,7 +379,7 @@ serve(async (req) => {
           if (relatedResponse.ok && !relatedText.includes("<successYN>N</successYN>")) {
             const itemMatches = [...relatedText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
             
-            console.log("Found", itemMatches.length, "related patent candidates");
+            console.log("Found", itemMatches.length, "related patent candidates from RDA");
             
             for (const match of itemMatches) {
               const itemXml = match[1];
@@ -387,6 +394,7 @@ serve(async (req) => {
               const title = getField("inventionTitle");
               const appNum = getField("applicationNumber") || "";
               const regNum = getField("registerNumber") || "";
+              const applicant = getField("applicantName") || getField("applicant") || "";
               
               // 현재 특허 제외
               if (appNum === patentData.applicationNumber || regNum === patentData.registrationNumber) {
@@ -410,7 +418,7 @@ serve(async (req) => {
                 relatedPatents.push({
                   patentId: relatedPatentId,
                   title: title,
-                  assignee: getField("applicantName") || getField("applicant"),
+                  assignee: applicant || "농촌진흥청",
                   publicationDate: formatDate(getField("openDate") || getField("registerDate") || ""),
                   snippet: getField("astrtCont")?.substring(0, 150),
                   link: `https://www.kipris.or.kr/khome/main.jsp?searchType=1&searchText=${appNum || regNum}`,
