@@ -1,17 +1,20 @@
 import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
 
+export interface CommercializationDetails {
+  technologyScore: number;
+  marketScore: number;
+  businessScore: number;
+  analysis: string;
+  trl?: number;
+  trlReason?: string;
+}
+
 interface TechnologyCommercializationScoreProps {
   score: number | null;
   isLoading: boolean;
-  details?: {
-    technologyScore: number;
-    marketScore: number;
-    businessScore: number;
-    analysis: string;
-    trl?: number;
-    trlReason?: string;
-  } | null;
+  details?: CommercializationDetails | null;
+  showTrlOnly?: boolean;
 }
 
 function getScoreColor(value: number): string {
@@ -49,9 +52,10 @@ function getGradeLabel(value: number): string {
 export function TechnologyCommercializationScore({ 
   score, 
   isLoading, 
-  details 
+  details,
+  showTrlOnly = false
 }: TechnologyCommercializationScoreProps) {
-  if (isLoading) {
+  if (isLoading && !showTrlOnly) {
     return (
       <div className="mb-6 glass-effect rounded-3xl p-8">
         <div className="flex items-center justify-center gap-3 py-6">
@@ -66,6 +70,35 @@ export function TechnologyCommercializationScore({
     return null;
   }
 
+  // Show only TRL section
+  if (showTrlOnly) {
+    if (!details.trl) return null;
+    
+    return (
+      <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.12s' }}>
+        <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center text-xl">
+            📊
+          </div>
+          <div>
+            <h4 className="font-bold text-lg text-foreground">기술성숙도 (TRL)</h4>
+            <p className="text-sm text-muted-foreground">Technology Readiness Level</p>
+          </div>
+        </div>
+        
+        <TrlChart estimatedTrl={details.trl} />
+        
+        {details.trlReason && (
+          <div className="mt-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
+            <p className="text-xs text-muted-foreground mb-1 font-medium">TRL 추정 근거</p>
+            <p className="text-sm text-foreground/80 leading-relaxed">{details.trlReason}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Show commercialization score section (without TRL)
   return (
     <div className="mb-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in">
       <div className="flex items-center gap-3 mb-6 pb-5 border-b border-border/50">
@@ -157,33 +190,9 @@ export function TechnologyCommercializationScore({
 
       {/* Analysis */}
       {details.analysis && (
-        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50 mb-5">
+        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
           <p className="text-xs text-muted-foreground mb-2 font-medium">AI 분석 의견</p>
           <p className="text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
-        </div>
-      )}
-
-      {/* TRL Chart Section */}
-      {details.trl && (
-        <div className="mt-6 pt-6 border-t border-border/50">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center text-lg">
-              📊
-            </div>
-            <div>
-              <h5 className="font-bold text-foreground">기술성숙도 (TRL)</h5>
-              <p className="text-xs text-muted-foreground">Technology Readiness Level</p>
-            </div>
-          </div>
-          
-          <TrlChart estimatedTrl={details.trl} />
-          
-          {details.trlReason && (
-            <div className="mt-4 p-3 rounded-xl bg-accent/10 border border-accent/20">
-              <p className="text-xs text-muted-foreground mb-1">TRL 추정 근거</p>
-              <p className="text-sm text-foreground/80">{details.trlReason}</p>
-            </div>
-          )}
         </div>
       )}
     </div>

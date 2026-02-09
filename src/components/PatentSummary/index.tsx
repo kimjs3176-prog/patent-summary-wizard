@@ -6,14 +6,7 @@ import { PatentSummaryProps } from "./types";
 import { PdfGenerator } from "./PdfGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
-import { TechnologyCommercializationScore } from "./TechnologyCommercializationScore";
-
-interface CommercializationDetails {
-  technologyScore: number;
-  marketScore: number;
-  businessScore: number;
-  analysis: string;
-}
+import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 
 export function PatentSummary({
   content,
@@ -318,67 +311,68 @@ export function PatentSummary({
         patentData={patentData}
       />
 
-      {/* Technology Commercialization Score */}
+      {/* 1. Patent Info Card */}
       {patentData && (
-        <>
-          <TechnologyCommercializationScore 
-            score={commercializationScore}
-            isLoading={isAnalyzing}
-            details={commercializationDetails}
-          />
-          
-          {/* Patent Info Card */}
-          <div className="mb-6 glass-effect rounded-3xl p-8 animate-slide-in">
-            <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
-                📄
-              </div>
-              <div className="card-title text-xl font-bold text-foreground">특허 정보</div>
+        <div className="mb-6 glass-effect rounded-3xl p-8 animate-slide-in">
+          <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+              📄
             </div>
-            
-            <div className="inline-block px-4 py-2 bg-accent/20 text-accent rounded-lg text-sm font-medium mb-3">
-              {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {
-                patentData.searchType === 'application' 
-                  ? (patentData.applicationNumber || patentData.displayNumber || patentData.patentNumber)
-                  : (patentData.displayNumber || patentData.patentNumber)
-              }
-            </div>
-            
-            {patentData.titleKo && (
-              <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
-            )}
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
-              {patentData.assignee && (
-                <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
-                  <div className="text-xs text-muted-foreground mb-1 font-medium">출원인</div>
-                  <div className="text-sm text-foreground font-medium">{patentData.assignee}</div>
-                </div>
-              )}
-              {patentData.inventors && patentData.inventors.length > 0 && (
-                <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
-                  <div className="text-xs text-muted-foreground mb-1 font-medium">발명자</div>
-                  <div className="text-sm text-foreground font-medium">{patentData.inventors.join(', ')}</div>
-                </div>
-              )}
-              {patentData.filingDate && (
-                <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
-                  <div className="text-xs text-muted-foreground mb-1 font-medium">출원일</div>
-                  <div className="text-sm text-foreground font-medium">{patentData.filingDate}</div>
-                </div>
-              )}
-              {patentData.publicationDate && (
-                <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
-                  <div className="text-xs text-muted-foreground mb-1 font-medium">공개일</div>
-                  <div className="text-sm text-foreground font-medium">{patentData.publicationDate}</div>
-                </div>
-              )}
-            </div>
+            <div className="card-title text-xl font-bold text-foreground">특허 정보</div>
           </div>
-        </>
+          
+          <div className="inline-block px-4 py-2 bg-accent/20 text-accent rounded-lg text-sm font-medium mb-3">
+            {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {
+              patentData.searchType === 'application' 
+                ? (patentData.applicationNumber || patentData.displayNumber || patentData.patentNumber)
+                : (patentData.displayNumber || patentData.patentNumber)
+            }
+          </div>
+          
+          {patentData.titleKo && (
+            <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
+          )}
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+            {patentData.assignee && (
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">출원인</div>
+                <div className="text-sm text-foreground font-medium">{patentData.assignee}</div>
+              </div>
+            )}
+            {patentData.inventors && patentData.inventors.length > 0 && (
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">발명자</div>
+                <div className="text-sm text-foreground font-medium">{patentData.inventors.join(', ')}</div>
+              </div>
+            )}
+            {patentData.filingDate && (
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">출원일</div>
+                <div className="text-sm text-foreground font-medium">{patentData.filingDate}</div>
+              </div>
+            )}
+            {patentData.publicationDate && (
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">공개일</div>
+                <div className="text-sm text-foreground font-medium">{patentData.publicationDate}</div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
-      {/* AI Summary Card */}
+      {/* 2. Technology Commercialization Score */}
+      {patentData && (
+        <TechnologyCommercializationScore 
+          score={commercializationScore}
+          isLoading={isAnalyzing}
+          details={commercializationDetails}
+          showTrlOnly={false}
+        />
+      )}
+
+      {/* 3. AI Summary Card */}
       <div className="glass-effect rounded-3xl overflow-hidden animate-slide-in" style={{ animationDelay: '0.1s' }}>
         {/* Header */}
         <div className="bg-secondary/30 border-b border-border/50 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
@@ -410,6 +404,8 @@ export function PatentSummary({
                   patentNumber={patentNumber}
                   patentData={patentData}
                   printRef={printRef}
+                  commercializationDetails={commercializationDetails}
+                  commercializationScore={commercializationScore}
                 />
               </>
             )}
@@ -436,8 +432,17 @@ export function PatentSummary({
         </div>
       </div>
 
+      {/* 4. TRL Section (Technology Maturity) */}
+      {patentData && commercializationDetails && (
+        <TechnologyCommercializationScore 
+          score={commercializationScore}
+          isLoading={false}
+          details={commercializationDetails}
+          showTrlOnly={true}
+        />
+      )}
 
-      {/* Claims Card */}
+      {/* 5. Claims Card */}
       {patentData?.claims && patentData.claims.length > 0 && (
         <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.15s' }}>
           <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
@@ -466,7 +471,7 @@ export function PatentSummary({
         </div>
       )}
 
-      {/* Related Patents Section */}
+      {/* 6. Related Patents Section */}
       <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
     </div>
   );
