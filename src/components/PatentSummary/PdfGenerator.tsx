@@ -88,12 +88,29 @@ export function PdfGenerator({
       let yPosition = margin;
 
       const checkNewPage = (neededHeight: number) => {
-        if (yPosition + neededHeight > pageHeight - margin - 10) {
+        if (yPosition + neededHeight > pageHeight - margin - 8) {
           pdf.addPage();
           yPosition = margin;
           return true;
         }
         return false;
+      };
+
+      // Estimate height of upcoming body text after a section header
+      const estimateBodyHeight = (linesArr: string[], startIdx: number, fontSize: number, maxW: number, lineHeight: number): number => {
+        let h = 0;
+        const lhMm = fontSize * 0.352778 * lineHeight;
+        for (let i = startIdx; i < linesArr.length; i++) {
+          const l = linesArr[i];
+          if (l.startsWith("## ")) break; // next section
+          const clean = l.replace(/\*\*/g, "").replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "");
+          if (!clean.trim()) continue;
+          pdf.setFontSize(fontSize);
+          const wrapped = pdf.splitTextToSize(clean, maxW);
+          h += wrapped.length * lhMm + 0.5;
+          if (h > 25) break; // only need first few lines to prevent orphan headers
+        }
+        return Math.min(h, 30); // cap at 30mm for lookahead
       };
 
       const drawCard = (x: number, y: number, w: number, h: number, r = 2.5) => {
@@ -499,7 +516,8 @@ export function PdfGenerator({
         yPosition += trlCardH + 3;
       };
 
-      for (const line of lines) {
+      for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
         if (line.startsWith("## 특허 기본 정보")) { skipSection = true; continue; }
         if (skipSection && line.startsWith("## ")) skipSection = false;
         if (skipSection) continue;
@@ -516,7 +534,10 @@ export function PdfGenerator({
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, "");
           if (sectionTitle === "특허 기본 정보") { skipSection = true; continue; }
 
-          checkNewPage(8);
+          // Estimate header + first body paragraph height to prevent orphan headers
+          const bodyPreview = estimateBodyHeight(lines, li + 1, 9, pageWidth - margin - margin - 7, 1.55);
+          const neededForSection = 8 + bodyPreview;
+          checkNewPage(neededForSection);
           yPosition += 2;
 
           // Small green accent dot
