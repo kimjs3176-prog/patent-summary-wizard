@@ -118,9 +118,8 @@ export function PatentSummary({
         return;
       }
 
-      // Remove markdown formatting: **, -, numbered lists
+      // Remove markdown formatting: -, numbered lists (keep ** for bold)
       let cleanLine = line
-        .replace(/\*\*/g, '') // Remove **
         .replace(/^\s*[-•]\s+/, '') // Remove bullet points
         .replace(/^\s*\d+\.\s+/, ''); // Remove numbered lists
 
@@ -164,9 +163,16 @@ export function PatentSummary({
           );
         }
       } else if (cleanLine.trim()) {
+        // Parse bold text (**text**)
+        const parts = cleanLine.split(/(\*\*[^*]+\*\*)/g);
         elements.push(
           <p key={index} className="text-foreground/80 leading-relaxed mb-2">
-            {cleanLine}
+            {parts.map((part, i) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
+              }
+              return part;
+            })}
           </p>
         );
       }
