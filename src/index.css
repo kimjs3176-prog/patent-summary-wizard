@@ -262,23 +262,26 @@
     border-radius: 8px !important;
     padding: 16px !important;
     margin-bottom: 12px !important;
+  }
+
+  /* Small cards: prevent splitting */
+  .glass-effect:has(.card-title),
+  div[class*="bg-secondary/30"][class*="rounded-xl"] {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Prevent ALL card-like containers from splitting across pages */
-  div[class*="border"],
-  div[class*="rounded"],
-  div[class*="card"],
-  div[class*="Card"],
-  div[class*="glass"],
-  div[class*="bg-"],
-  section,
-  article,
-  [class*="rounded-3xl"],
-  [class*="rounded-2xl"],
-  [class*="rounded-xl"],
-  .prose, .prose > * {
+  /* Large content cards (AI summary etc): ALLOW splitting across pages */
+  .glass-effect:has(.prose) {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Keep individual paragraphs and small blocks together */
+  .prose > p,
+  .prose > h2,
+  details,
+  div[class*="bg-secondary/30"][class*="p-4"] {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
