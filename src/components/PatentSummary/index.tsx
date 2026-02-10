@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { FileText, Copy, Check, Share2, Printer, Presentation } from "lucide-react";
+import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps } from "./types";
@@ -98,43 +98,61 @@ export function PatentSummary({
 
   // MD 다운로드 기능 및 Google Patents 링크 기능 제거 (요청사항)
 
+  const sectionIconMap: [RegExp, LucideIcon][] = [
+    [/요약|개요|소개/, Lightbulb],
+    [/기술\s*분야|기술적|핵심\s*기술/, Cpu],
+    [/과제|문제|해결/, Target],
+    [/수단|방법|구성|구현/, Wrench],
+    [/효과|기대|장점|이점/, Zap],
+    [/활용|응용|적용|용도/, Globe],
+    [/시장|사업화|상업|경제/, BarChart3],
+    [/농업|농산|작물|재배/, Leaf],
+    [/분석|평가|검토/, Microscope],
+    [/권리|청구|보호|특허성/, ShieldCheck],
+    [/구조|계층|시스템/, Layers],
+    [/참고|참조|문헌/, BookOpen],
+    [/협력|협업|인력/, Users],
+    [/성장|전망|발전|추세/, TrendingUp],
+  ];
+
+  const getSectionIcon = (title: string): LucideIcon => {
+    for (const [pattern, icon] of sectionIconMap) {
+      if (pattern.test(title)) return icon;
+    }
+    return FileText;
+  };
+
   const renderMarkdown = (text: string) => {
     const lines = text.split("\n");
     const elements: JSX.Element[] = [];
     let skipSection = false;
 
     lines.forEach((line, index) => {
-      // Skip the entire "특허 기본 정보" section
       if (line.startsWith("## 특허 기본 정보")) {
         skipSection = true;
         return;
       }
-      
-      // Stop skipping when we reach the next section
       if (skipSection && line.startsWith("## ")) {
         skipSection = false;
       }
-      
-      if (skipSection) {
-        return;
-      }
+      if (skipSection) return;
 
-      // Remove markdown formatting: -, numbered lists (keep ** for bold)
       let cleanLine = line
-        .replace(/^\s*[-•]\s+/, '') // Remove bullet points
-        .replace(/^\s*\d+\.\s+/, ''); // Remove numbered lists
+        .replace(/^\s*[-•]\s+/, '')
+        .replace(/^\s*\d+\.\s+/, '');
 
       if (line.startsWith("## ")) {
         const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
-        
-        // Skip 특허 기본 정보 section
         if (sectionTitle === "특허 기본 정보") {
           skipSection = true;
           return;
         }
-        
+        const IconComp = getSectionIcon(sectionTitle);
         elements.push(
-          <h2 key={index} className="text-xl font-semibold text-primary mt-6 mb-3 first:mt-0">
+          <h2 key={index} className="text-xl font-semibold text-primary mt-6 mb-3 first:mt-0 flex items-center gap-2.5">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
+              <IconComp className="w-4.5 h-4.5" />
+            </span>
             {sectionTitle}
           </h2>
         );
