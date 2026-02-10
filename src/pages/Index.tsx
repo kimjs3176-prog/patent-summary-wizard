@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { RdaLatestPatents } from "@/components/RdaLatestPatents";
+import { PopularSearches } from "@/components/PopularSearches";
+import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useState, useEffect, useRef } from "react";
 const Index = () => {
   const {
@@ -66,6 +68,8 @@ const Index = () => {
         summary: result.summary,
         relatedPatents: result.relatedPatents || []
       });
+      // Track search for popular ranking
+      trackPatentSearch(patentNumber, result.patentData.titleKo || result.patentData.title);
     }
   };
 
@@ -143,13 +147,18 @@ const Index = () => {
             <section className="mb-4 animate-fade-up" style={{
           animationDelay: "0.2s"
         }}>
-              <div className="w-full max-w-2xl mx-auto space-y-3">
-                <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
-                {history.length > 0 && keywordResults.length === 0 && (
-                  <div className="px-2">
-                    <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
-                  </div>
-                )}
+              <div className="w-full max-w-4xl mx-auto flex gap-6 items-start justify-center">
+                <div className="flex-1 max-w-2xl space-y-3">
+                  <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
+                  {history.length > 0 && keywordResults.length === 0 && (
+                    <div className="px-2">
+                      <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
+                    </div>
+                  )}
+                </div>
+                <div className="hidden lg:block flex-shrink-0">
+                  <PopularSearches onPatentSelect={handleSubmit} />
+                </div>
               </div>
             </section>
 

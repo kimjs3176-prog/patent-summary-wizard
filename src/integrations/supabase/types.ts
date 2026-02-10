@@ -14,13 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      patent_search_stats: {
+        Row: {
+          created_at: string
+          id: string
+          last_searched_at: string
+          patent_number: string
+          patent_title: string | null
+          search_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_searched_at?: string
+          patent_number: string
+          patent_title?: string | null
+          search_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_searched_at?: string
+          patent_number?: string
+          patent_title?: string | null
+          search_count?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      upsert_search_stat: {
+        Args: { p_patent_number: string; p_patent_title?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

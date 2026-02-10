@@ -165,14 +165,6 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full h-4 bg-muted rounded-full overflow-hidden mb-6">
-        <div 
-          className={`h-full ${getScoreBgColor(score)} transition-all duration-700 ease-out`}
-          style={{ width: `${score}%` }}
-        />
-      </div>
-
       {/* Sub-scores */}
       <div className="grid grid-cols-3 gap-4 mb-5">
         {[
