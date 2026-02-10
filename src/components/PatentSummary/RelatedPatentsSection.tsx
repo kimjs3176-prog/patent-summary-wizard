@@ -28,7 +28,7 @@ export function RelatedPatentsSection({ relatedPatents, onPatentClick }: Related
 
   return (
     <div
-      className="mt-6 glass-effect rounded-3xl overflow-hidden animate-slide-in"
+      className="related-patents-section mt-6 glass-effect rounded-3xl overflow-hidden animate-slide-in"
       style={{ animationDelay: "0.2s" }}
     >
       <div className="bg-secondary/30 border-b border-border/50 px-6 py-4">
