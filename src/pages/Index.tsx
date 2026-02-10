@@ -123,15 +123,15 @@ const Index = () => {
                 <KeywordSearchResults results={keywordResults} keyword={searchedKeyword} onPatentSelect={handleKeywordPatentSelect} onClose={handleClearKeywordResults} isLoading={isLoading} />
               </section>}
 
-            {/* Search History Section */}
-            {history.length > 0 && keywordResults.length === 0 && <section className="mb-12 max-w-2xl mx-auto animate-fade-up" style={{
-          animationDelay: "0.3s"
+            {/* RDA Latest Patents Section */}
+            <RdaLatestPatents onPatentSelect={handleSubmit} />
+
+            {/* Search History Section - at bottom */}
+            {history.length > 0 && keywordResults.length === 0 && <section className="mt-12 max-w-2xl mx-auto animate-fade-up" style={{
+          animationDelay: "0.4s"
         }}>
                 <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
               </section>}
-
-            {/* RDA Latest Patents Section - replaces features */}
-            <RdaLatestPatents onPatentSelect={handleSubmit} />
           </> : <>
             {/* Loading State */}
             {isFetching && <div className="text-center mb-8 animate-fade-up">
