@@ -137,14 +137,75 @@ export function PdfGenerator({
       };
 
       const addWrappedText = (text: string, fontSize: number, color: [number, number, number], lineHeight = 1.7, indentX = margin + 5) => {
-        pdf.setFontSize(fontSize);
-        pdf.setTextColor(...color);
         const maxW = pageWidth - indentX - margin - 2;
-        const lines = pdf.splitTextToSize(text, maxW);
         const lhMm = fontSize * 0.352778 * lineHeight;
-        for (const line of lines) {
+        
+        // Parse bold segments: split by **text**
+        const segments = text.split(/(\*\*[^*]+\*\*)/g);
+        const plainText = text.replace(/\*\*/g, '');
+        
+        pdf.setFontSize(fontSize);
+        const wrappedLines = pdf.splitTextToSize(plainText, maxW);
+        
+        // For each wrapped line, render with bold segments
+        let charIdx = 0;
+        for (const wLine of wrappedLines) {
           checkNewPage(lhMm + 1);
-          pdf.text(line, indentX, yPosition);
+          
+          // Find bold ranges in the original text
+          let xPos = indentX;
+          let lineCharIdx = charIdx;
+          let remaining = wLine;
+          
+          // Build segments for this line
+          const lineSegments: { text: string; bold: boolean }[] = [];
+          let segCharCount = 0;
+          
+          for (const seg of segments) {
+            if (!remaining) break;
+            const isBold = seg.startsWith('**') && seg.endsWith('**');
+            const cleanSeg = isBold ? seg.slice(2, -2) : seg;
+            
+            if (segCharCount + cleanSeg.length <= charIdx) {
+              segCharCount += cleanSeg.length;
+              continue;
+            }
+            
+            const startInSeg = Math.max(0, charIdx - segCharCount);
+            const availableFromSeg = cleanSeg.substring(startInSeg);
+            
+            if (availableFromSeg.length <= remaining.length && remaining.startsWith(availableFromSeg)) {
+              if (availableFromSeg) lineSegments.push({ text: availableFromSeg, bold: isBold });
+              remaining = remaining.substring(availableFromSeg.length);
+              segCharCount += cleanSeg.length;
+              charIdx = segCharCount;
+            } else if (remaining.length < availableFromSeg.length && availableFromSeg.startsWith(remaining)) {
+              if (remaining) lineSegments.push({ text: remaining, bold: isBold });
+              charIdx += remaining.length;
+              remaining = '';
+            } else {
+              // Fallback: just push remaining as plain
+              if (remaining) lineSegments.push({ text: remaining, bold: false });
+              charIdx += remaining.length;
+              remaining = '';
+            }
+          }
+          
+          // Render segments
+          for (const ls of lineSegments) {
+            pdf.setFontSize(fontSize);
+            pdf.setTextColor(...(ls.bold ? THEME.text : color));
+            // jsPDF doesn't support true bold with custom fonts, use darker color for emphasis
+            pdf.text(ls.text, xPos, yPosition);
+            xPos += pdf.getTextWidth(ls.text);
+          }
+          
+          if (lineSegments.length === 0) {
+            pdf.setFontSize(fontSize);
+            pdf.setTextColor(...color);
+            pdf.text(wLine, indentX, yPosition);
+          }
+          
           yPosition += lhMm;
         }
       };
@@ -513,7 +574,7 @@ export function PdfGenerator({
 
         if (isDuplicatePatentInfo(line)) continue;
 
-        const cleanLine = line.replace(/\*\*/g, "").replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "");
+        const cleanLine = line.replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "");
 
         if (line.startsWith("## ")) {
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, "");
