@@ -249,7 +249,9 @@
   nav, footer, button, .no-print,
   [class*="search"], [class*="Search"],
   [class*="history"], [class*="History"],
-  [class*="related"], [class*="Related"] {
+  [class*="related"], [class*="Related"],
+  details,
+  details + div {
     display: none !important;
   }
 

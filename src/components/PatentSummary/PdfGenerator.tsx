@@ -380,13 +380,13 @@ export function PdfGenerator({
         pdf.setLineWidth(0.25);
         pdf.roundedRect(imgX - 1.5, yPosition - 0.5, imgW + 3, imgH + 1, 1.5, 1.5, "D");
         pdf.addImage(img.dataUrl, img.format, imgX, yPosition, imgW, imgH);
-        yPosition += imgH + 2;
+        yPosition += imgH + 3;
 
         pdf.setFontSize(6.5);
         pdf.setTextColor(...THEME.textMuted);
         const cap = "【대표 도면】";
         pdf.text(cap, (pageWidth - pdf.getTextWidth(cap)) / 2, yPosition);
-        yPosition += 4;
+        yPosition += 7;
         imageInserted = true;
       };
 
@@ -491,7 +491,7 @@ export function PdfGenerator({
           }
         }
 
-        yPosition += trlCardH + 3;
+        yPosition += trlCardH + 6;
       };
 
       // Lines that duplicate patent number info already shown in 특허정보 card
@@ -537,7 +537,10 @@ export function PdfGenerator({
           yPosition += 7.5;
 
           if (sectionTitle === "발명의 요약") await insertImage();
-          if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("상용화 전망")) insertTrl();
+          if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("상용화 전망")) {
+            yPosition += 3;
+            insertTrl();
+          }
         } else if (cleanLine.trim()) {
           addWrappedText(cleanLine, 11, THEME.textBody, 1.7);
           yPosition += 1.5;
