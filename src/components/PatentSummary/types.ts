@@ -9,6 +9,7 @@ export interface PatentData {
   claims?: string[];
   patentNumber?: string;
   applicationNumber?: string;
+  registrationNumber?: string;
   displayNumber?: string;
   searchType?: 'registration' | 'application';
   classifications?: string[];

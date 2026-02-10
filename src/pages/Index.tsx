@@ -123,13 +123,15 @@ const Index = () => {
         {!summary && !isLoading ? <>
             {/* Hero Section */}
             <section className="text-center max-w-3xl mx-auto mb-16 animate-fade-down">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 text-accent mb-8 border border-accent/30">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 text-accent mb-8 border border-accent/30 animate-pulse-subtle">
                 <Sparkles className="w-4 h-4" />
                 <span className="text-sm font-medium">KIPRIS 특허 데이터 연동</span>
               </div>
               
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground mb-6 leading-tight">
-                농식품 특허 AI 요약 서비스      
+                농식품 특허{' '}
+                <span className="gradient-text">AI 요약</span>{' '}
+                서비스      
               </h2>
               
               <p className="text-lg text-muted-foreground font-light tracking-wide">
