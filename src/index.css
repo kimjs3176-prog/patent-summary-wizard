@@ -364,7 +364,7 @@
   }
 
   img {
-    max-width: 60% !important;
+    max-width: 100% !important;
     height: auto !important;
     break-inside: avoid;
   }
