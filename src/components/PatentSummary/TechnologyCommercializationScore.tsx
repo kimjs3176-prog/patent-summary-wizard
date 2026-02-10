@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
 
@@ -8,6 +9,9 @@ export interface CommercializationDetails {
   analysis: string;
   trl?: number;
   trlReason?: string;
+  technologyReason?: string;
+  marketReason?: string;
+  businessReason?: string;
 }
 
 interface TechnologyCommercializationScoreProps {
@@ -47,6 +51,38 @@ function getGradeLabel(value: number): string {
   if (value >= 60) return "C";
   if (value >= 50) return "D";
   return "F";
+}
+
+function SubScoreCard({ label, score, reason }: { label: string; score: number; reason?: string }) {
+  const [showReason, setShowReason] = useState(false);
+
+  return (
+    <div
+      className="relative p-4 rounded-2xl bg-secondary/30 border border-border/50 cursor-pointer transition-all hover:bg-secondary/50"
+      onMouseEnter={() => setShowReason(true)}
+      onMouseLeave={() => setShowReason(false)}
+      onTouchStart={() => setShowReason((v) => !v)}
+    >
+      <p className="text-xs text-muted-foreground mb-2 font-medium">{label}</p>
+      <div className="flex items-end gap-1">
+        <span className={`text-2xl font-bold ${getScoreColor(score)}`}>
+          {score}
+        </span>
+        <span className="text-xs text-muted-foreground mb-1">점</span>
+      </div>
+      <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
+        <div
+          className={`h-full ${getScoreBgColor(score)}`}
+          style={{ width: `${score}%` }}
+        />
+      </div>
+      {showReason && reason && (
+        <div className="absolute left-0 right-0 -bottom-1 translate-y-full z-20 p-3 rounded-xl bg-card border border-border shadow-lg text-xs text-foreground/80 leading-relaxed animate-fade-in">
+          {reason}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function TechnologyCommercializationScore({ 
@@ -139,53 +175,13 @@ export function TechnologyCommercializationScore({
 
       {/* Sub-scores */}
       <div className="grid grid-cols-3 gap-4 mb-5">
-        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">기술성</p>
-          <div className="flex items-end gap-1">
-            <span className={`text-2xl font-bold ${getScoreColor(details.technologyScore)}`}>
-              {details.technologyScore}
-            </span>
-            <span className="text-xs text-muted-foreground mb-1">점</span>
-          </div>
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
-            <div 
-              className={`h-full ${getScoreBgColor(details.technologyScore)}`}
-              style={{ width: `${details.technologyScore}%` }}
-            />
-          </div>
-        </div>
-        
-        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">시장성</p>
-          <div className="flex items-end gap-1">
-            <span className={`text-2xl font-bold ${getScoreColor(details.marketScore)}`}>
-              {details.marketScore}
-            </span>
-            <span className="text-xs text-muted-foreground mb-1">점</span>
-          </div>
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
-            <div 
-              className={`h-full ${getScoreBgColor(details.marketScore)}`}
-              style={{ width: `${details.marketScore}%` }}
-            />
-          </div>
-        </div>
-        
-        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">사업성</p>
-          <div className="flex items-end gap-1">
-            <span className={`text-2xl font-bold ${getScoreColor(details.businessScore)}`}>
-              {details.businessScore}
-            </span>
-            <span className="text-xs text-muted-foreground mb-1">점</span>
-          </div>
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
-            <div 
-              className={`h-full ${getScoreBgColor(details.businessScore)}`}
-              style={{ width: `${details.businessScore}%` }}
-            />
-          </div>
-        </div>
+        {[
+          { label: "기술성", score: details.technologyScore, reason: details.technologyReason },
+          { label: "시장성", score: details.marketScore, reason: details.marketReason },
+          { label: "사업성", score: details.businessScore, reason: details.businessReason },
+        ].map((item) => (
+          <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} />
+        ))}
       </div>
 
       {/* Analysis */}

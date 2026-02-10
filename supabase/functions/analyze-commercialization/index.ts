@@ -90,7 +90,10 @@ ${data.claims && data.claims.length > 0 ? `주요 청구항:\n${data.claims.slic
   "totalScore": 72,
   "trl": 5,
   "trlReason": "TRL 추정 근거를 한 문장으로 (30자 이내)",
-  "analysis": "한 문장으로 종합 평가 (50자 이내)"
+  "analysis": "한 문장으로 종합 평가 (50자 이내)",
+  "technologyReason": "기술성 점수의 근거를 한 문장으로 (30자 이내)",
+  "marketReason": "시장성 점수의 근거를 한 문장으로 (30자 이내)",
+  "businessReason": "사업성 점수의 근거를 한 문장으로 (30자 이내)"
 }`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -141,6 +144,9 @@ ${data.claims && data.claims.length > 0 ? `주요 청구항:\n${data.claims.slic
           analysis: scores.analysis,
           trl: scores.trl || 5,
           trlReason: scores.trlReason || "",
+          technologyReason: scores.technologyReason || "",
+          marketReason: scores.marketReason || "",
+          businessReason: scores.businessReason || "",
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
