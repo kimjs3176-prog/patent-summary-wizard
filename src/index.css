@@ -224,3 +224,89 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Print-optimized styles for A4 layout */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 12mm;
+  }
+
+  body {
+    background: white !important;
+    color: #1a1a1a !important;
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body::before {
+    display: none !important;
+  }
+
+  /* Hide non-printable elements */
+  nav, footer, button, .no-print,
+  [class*="search"], [class*="Search"],
+  [class*="history"], [class*="History"],
+  [class*="related"], [class*="Related"] {
+    display: none !important;
+  }
+
+  /* Reset glass effects for print */
+  .glass-effect {
+    background: white !important;
+    backdrop-filter: none !important;
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+    break-inside: avoid;
+  }
+
+  /* Ensure text contrast */
+  h1, h2, h3, h4, h5, h6 {
+    color: #1a1a1a !important;
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 14pt !important;
+    margin-top: 14px !important;
+    margin-bottom: 6px !important;
+  }
+
+  p {
+    color: #333 !important;
+    font-size: 10.5pt !important;
+    line-height: 1.65 !important;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Prevent page breaks inside cards */
+  [class*="rounded-3xl"],
+  [class*="rounded-2xl"] {
+    break-inside: avoid;
+  }
+
+  img {
+    max-width: 60% !important;
+    height: auto !important;
+    break-inside: avoid;
+  }
+
+  /* Make badges and small text readable */
+  [class*="bg-accent"],
+  [class*="bg-secondary"],
+  [class*="bg-primary"] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Muted text slightly darker for print */
+  [class*="text-muted-foreground"] {
+    color: #666 !important;
+  }
+}
