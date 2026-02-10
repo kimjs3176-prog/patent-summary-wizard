@@ -364,9 +364,15 @@
   }
 
   img {
-    max-width: 40% !important;
+    max-width: 60% !important;
     height: auto !important;
     break-inside: avoid;
+  }
+
+  /* TRL section: keep together on one page */
+  .trl-print-section {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   [class*="bg-accent"],
