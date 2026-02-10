@@ -1,10 +1,9 @@
 import { useRef, useState, useEffect } from "react";
-import { FileText, Copy, Check, Printer, Share2, FileDown } from "lucide-react";
+import { FileText, Copy, Check, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import { PatentSummaryProps } from "./types";
+import { PdfGenerator } from "./PdfGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
@@ -18,9 +17,7 @@ export function PatentSummary({
   onRelatedPatentClick,
 }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
-  const summaryRef = useRef<HTMLDivElement>(null);
   const [commercializationScore, setCommercializationScore] = useState<number | null>(null);
   const [commercializationDetails, setCommercializationDetails] = useState<CommercializationDetails | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -94,169 +91,8 @@ export function PatentSummary({
     }
   };
 
-  const handlePrint = async () => {
-    if (!summaryRef.current) {
-      toast.error("인쇄할 내용이 없습니다");
-      return;
-    }
-
-    toast.info("인쇄 준비 중...");
-
-    try {
-      const canvas = await html2canvas(summaryRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const printWindow = window.open("", "_blank");
-      
-      if (!printWindow) {
-        toast.error("팝업이 차단되었습니다. 팝업을 허용해주세요.");
-        return;
-      }
-
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>특허 요약서 - ${patentNumber}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
-              display: flex; 
-              justify-content: center; 
-              align-items: flex-start;
-              min-height: 100vh;
-              padding: 10mm;
-              background: white;
-            }
-            img { 
-              max-width: 100%; 
-              height: auto; 
-            }
-            @media print {
-              body { padding: 0; }
-              img { max-width: 100%; page-break-inside: avoid; }
-            }
-          </style>
-        </head>
-        <body>
-          <img src="${imgData}" alt="특허 요약서" />
-        </body>
-        </html>
-      `);
-
-      printWindow.document.close();
-
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 300);
-      };
-    } catch (error) {
-      console.error("Print error:", error);
-      toast.error("인쇄 준비 중 오류가 발생했습니다.");
-    }
-  };
-
-  const handlePdfDownload = async () => {
-    if (!summaryRef.current) {
-      toast.error("PDF 생성에 실패했습니다.");
-      return;
-    }
-
-    setIsGeneratingPdf(true);
-    toast.info("PDF 생성 중...");
-
-    try {
-      const canvas = await html2canvas(summaryRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-
-      // A4 dimensions in mm
-      const pdfWidth = 210;
-      const pdfHeight = 297;
-      const margin = 10;
-      const contentWidth = pdfWidth - margin * 2;
-
-      // Calculate the height needed for the content to fit the width
-      const ratio = contentWidth / imgWidth;
-      const scaledHeight = imgHeight * ratio;
-
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      // Calculate number of pages needed
-      const pageContentHeight = pdfHeight - margin * 2;
-      const totalPages = Math.ceil(scaledHeight / pageContentHeight);
-
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) {
-          pdf.addPage();
-        }
-
-        // Calculate the portion of the image to draw on this page
-        const sourceY = (page * pageContentHeight) / ratio;
-        const sourceHeight = Math.min(pageContentHeight / ratio, imgHeight - sourceY);
-        const destHeight = sourceHeight * ratio;
-
-        // Create a temporary canvas to extract the portion
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = imgWidth;
-        tempCanvas.height = sourceHeight;
-        const tempCtx = tempCanvas.getContext("2d");
-
-        if (tempCtx) {
-          tempCtx.drawImage(
-            canvas,
-            0, sourceY, imgWidth, sourceHeight,
-            0, 0, imgWidth, sourceHeight
-          );
-
-          const pageImgData = tempCanvas.toDataURL("image/png");
-          pdf.addImage(pageImgData, "PNG", margin, margin, contentWidth, destHeight);
-        }
-      }
-
-      // Add footer to each page
-      const totalPdfPages = pdf.getNumberOfPages();
-      for (let i = 1; i <= totalPdfPages; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(8);
-        pdf.setTextColor(150, 150, 150);
-        pdf.text(
-          `© 농식품 특허 요약 서비스 | 생성일: ${new Date().toLocaleDateString("ko-KR")}`,
-          margin,
-          pdfHeight - 5
-        );
-        pdf.text(`${i} / ${totalPdfPages}`, pdfWidth - margin - 10, pdfHeight - 5);
-      }
-
-      pdf.save(`특허요약_${patentNumber}.pdf`);
-      toast.success("PDF가 다운로드되었습니다!");
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      toast.error("PDF 생성 중 오류가 발생했습니다.");
-    } finally {
-      setIsGeneratingPdf(false);
-    }
+  const handlePrint = () => {
+    window.print();
   };
 
 
@@ -350,8 +186,8 @@ export function PatentSummary({
         patentData={patentData}
       />
 
-      {/* Main Summary Container - Used for PDF/Print capture */}
-      <div ref={summaryRef} className="space-y-6 bg-background p-4 rounded-lg">
+      {/* Main Summary Container */}
+      <div className="space-y-6">
       {patentData && (
         <div className="mb-6 glass-effect rounded-3xl p-8 animate-slide-in">
           <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
@@ -439,20 +275,14 @@ export function PatentSummary({
                   <Share2 className="w-4 h-4" />
                   공유
                 </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
-                  <Printer className="w-4 h-4" />
-                  인쇄
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handlePdfDownload} 
-                  disabled={isGeneratingPdf}
-                  className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground"
-                >
-                  <FileDown className="w-4 h-4" />
-                  {isGeneratingPdf ? "생성 중..." : "PDF 다운로드"}
-                </Button>
+                <PdfGenerator
+                  content={content}
+                  patentNumber={patentNumber}
+                  patentData={patentData}
+                  printRef={printRef}
+                  commercializationDetails={commercializationDetails}
+                  commercializationScore={commercializationScore}
+                />
               </>
             )}
           </div>
@@ -475,6 +305,13 @@ export function PatentSummary({
               <p>요약서가 여기에 표시됩니다</p>
             </div>
           )}
+        </div>
+
+        {/* Disclaimer */}
+        <div className="mt-4 px-6 pb-2">
+          <p className="text-xs text-muted-foreground italic text-center">
+            ※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음
+          </p>
         </div>
       </div>
 

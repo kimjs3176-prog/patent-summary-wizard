@@ -9,22 +9,22 @@
 
 @layer base {
   :root {
-    --background: 90 20% 10%;
+    --background: 90 15% 16%;
     --foreground: 60 10% 95%;
 
-    --card: 90 25% 8%;
+    --card: 90 18% 13%;
     --card-foreground: 60 10% 95%;
 
-    --popover: 90 25% 8%;
+    --popover: 90 18% 13%;
     --popover-foreground: 60 10% 95%;
 
     --primary: 85 50% 40%;
     --primary-foreground: 60 10% 98%;
 
-    --secondary: 90 20% 18%;
+    --secondary: 90 15% 22%;
     --secondary-foreground: 60 10% 95%;
 
-    --muted: 90 15% 16%;
+    --muted: 90 12% 20%;
     --muted-foreground: 60 5% 60%;
 
     --accent: 35 70% 50%;
@@ -40,7 +40,7 @@
     --radius: 1rem;
 
     /* Custom design tokens - Agricultural theme */
-    --gradient-bg: linear-gradient(135deg, hsl(100 15% 8%) 0%, hsl(90 20% 12%) 50%, hsl(80 25% 15%) 100%);
+    --gradient-bg: linear-gradient(135deg, hsl(100 15% 14%) 0%, hsl(90 18% 17%) 50%, hsl(80 20% 19%) 100%);
     --gradient-primary: linear-gradient(135deg, hsl(85 50% 40%) 0%, hsl(90 45% 30%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(85 50% 40%), hsl(35 70% 50%));
     --gradient-glow: radial-gradient(circle at 20% 50%, hsla(85 50% 40% / 0.12) 0%, transparent 50%),
@@ -62,22 +62,22 @@
   }
 
   .dark {
-    --background: 90 20% 10%;
+    --background: 90 15% 16%;
     --foreground: 60 10% 95%;
 
-    --card: 90 25% 8%;
+    --card: 90 18% 13%;
     --card-foreground: 60 10% 95%;
 
-    --popover: 90 25% 8%;
+    --popover: 90 18% 13%;
     --popover-foreground: 60 10% 95%;
 
     --primary: 85 50% 40%;
     --primary-foreground: 60 10% 98%;
 
-    --secondary: 90 20% 18%;
+    --secondary: 90 15% 22%;
     --secondary-foreground: 60 10% 95%;
 
-    --muted: 90 15% 16%;
+    --muted: 90 12% 20%;
     --muted-foreground: 60 5% 60%;
 
     --accent: 35 70% 50%;
@@ -90,7 +90,7 @@
     --input: 60 10% 100% / 0.1;
     --ring: 85 50% 40%;
 
-    --gradient-bg: linear-gradient(135deg, hsl(100 15% 8%) 0%, hsl(90 20% 12%) 50%, hsl(80 25% 15%) 100%);
+    --gradient-bg: linear-gradient(135deg, hsl(100 15% 14%) 0%, hsl(90 18% 17%) 50%, hsl(80 20% 19%) 100%);
     --gradient-primary: linear-gradient(135deg, hsl(85 50% 40%) 0%, hsl(90 45% 30%) 100%);
     --shadow-card: 0 20px 60px hsla(0 0% 0% / 0.4);
     --shadow-glow: 0 12px 32px hsla(85 50% 40% / 0.4);
