@@ -26,7 +26,15 @@ serve(async (req) => {
   }
 
   try {
-    const { patentNumber, patentData } = await req.json();
+    // Basic input validation
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(
+        JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { patentNumber, patentData } = body;
 
     if (!patentNumber || !patentData) {
       return new Response(
@@ -214,7 +222,7 @@ totalScore = round(기술성 × 0.35 + 시장성 × 0.35 + 사업성 × 0.30)
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : "알 수 없는 오류" 
+        error: "서버 오류가 발생했습니다." 
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
