@@ -235,8 +235,8 @@
   body {
     background: white !important;
     color: #111 !important;
-    font-size: 11pt !important;
-    line-height: 1.7 !important;
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -249,85 +249,69 @@
   nav, footer, button, .no-print,
   [class*="search"], [class*="Search"],
   [class*="history"], [class*="History"],
-  [class*="related"], [class*="Related"],
-  [class*="claim"], [class*="Claim"],
   details,
   details + div {
     display: none !important;
   }
 
-  /* Hide claims and related patents sections entirely in print */
+  /* Hide claims, related patents sections entirely in print */
   .claims-section,
-  .related-patents-section {
+  .related-patents-section,
+  [class*="related"], [class*="Related"],
+  [class*="claim"], [class*="Claim"] {
     display: none !important;
   }
 
-  /* Reset glass effects for print - compact */
+  /* Reset glass effects for print */
   .glass-effect {
     background: white !important;
     backdrop-filter: none !important;
-    border: 1px solid #ccc !important;
+    border: 1px solid #ddd !important;
     box-shadow: none !important;
     border-radius: 6px !important;
-    padding: 10px 12px !important;
-    margin-bottom: 6px !important;
+    padding: 10px 14px !important;
+    margin-bottom: 8px !important;
   }
 
-  /* Reduce spacing inside cards */
-  .glass-effect .mb-5,
-  .glass-effect .mb-6 {
-    margin-bottom: 4px !important;
-  }
-  .glass-effect .pb-5 {
-    padding-bottom: 4px !important;
-  }
-  .glass-effect .p-8,
-  .glass-effect .p-6 {
-    padding: 8px 10px !important;
-  }
-  .glass-effect .mt-6,
-  .glass-effect .mt-5 {
-    margin-top: 4px !important;
-  }
-  .glass-effect .gap-4 {
-    gap: 4px !important;
-  }
+  /* Reduce inner spacing but don't collapse */
+  .glass-effect .mb-5 { margin-bottom: 6px !important; }
+  .glass-effect .mb-6 { margin-bottom: 6px !important; }
+  .glass-effect .pb-5 { padding-bottom: 6px !important; }
+  .glass-effect .mt-5,
+  .glass-effect .mt-6 { margin-top: 6px !important; }
 
-  /* Reduce section spacing */
+  /* Section spacing */
   .space-y-6 > * + * {
-    margin-top: 6px !important;
+    margin-top: 8px !important;
   }
 
-  /* All glass cards: allow splitting to avoid huge gaps */
+  /* Allow cards to split across pages */
   .glass-effect {
     break-inside: auto !important;
     page-break-inside: auto !important;
   }
 
-  /* Only small sub-cards should avoid splitting */
+  /* Sub-cards stay together */
   div[class*="bg-secondary/30"][class*="rounded-xl"] {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Keep individual paragraphs and small blocks together */
   .prose > p,
   .prose > h2 {
     break-inside: avoid !important;
-    page-break-inside: avoid !important;
   }
 
   /* Headings */
   h1, h2, h3, h4, h5, h6 {
     color: #111 !important;
     break-after: avoid !important;
-    page-break-after: avoid !important;
   }
 
   h2 {
-    font-size: 13pt !important;
+    font-size: 12pt !important;
     font-weight: 700 !important;
-    margin-top: 8px !important;
+    margin-top: 10px !important;
     margin-bottom: 4px !important;
   }
 
@@ -338,12 +322,11 @@
   }
 
   img {
-    max-width: 50% !important;
+    max-width: 45% !important;
     height: auto !important;
     break-inside: avoid;
   }
 
-  /* Make badges and small text readable */
   [class*="bg-accent"],
   [class*="bg-secondary"],
   [class*="bg-primary"] {
@@ -351,7 +334,6 @@
     print-color-adjust: exact;
   }
 
-  /* Muted text darker for print readability */
   [class*="text-muted-foreground"] {
     color: #555 !important;
   }
