@@ -57,6 +57,16 @@ serve(async (req) => {
 
     console.log("Searching patents with keyword:", keyword);
 
+    // 키워드를 공백으로 분리해서 AND 조건으로 결합 (e.g. "쌀 가공 기술" -> "쌀*가공*기술")
+    const rawKeyword = keyword.trim();
+    const words = rawKeyword.split(/\s+/).filter((w: string) => w.length > 0);
+    // 2글자 이상 단어들만 추출하되, 전체가 1단어면 그대로 사용
+    const searchKeyword = words.length > 1
+      ? words.filter((w: string) => w.length >= 1).join("*")
+      : rawKeyword;
+
+    console.log("Processed search keyword:", searchKeyword);
+
     // 농업 기관별로 검색 수행
     const allPatents: KeywordSearchResult[] = [];
 
@@ -65,7 +75,7 @@ serve(async (req) => {
         // KIPRIS Plus API - 전체검색 (getAdvancedSearch)
         const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
         searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-        searchUrl.searchParams.set("inventionTitle", keyword.trim());
+        searchUrl.searchParams.set("inventionTitle", searchKeyword);
         searchUrl.searchParams.set("applicant", org.id); // 출원인 코드로 필터링
         searchUrl.searchParams.set("astrtCont", "");
         searchUrl.searchParams.set("pageNo", "1");

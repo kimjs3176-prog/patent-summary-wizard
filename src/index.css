@@ -262,26 +262,32 @@
     border-radius: 8px !important;
     padding: 16px !important;
     margin-bottom: 12px !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
-  /* Prevent ALL card-like containers from splitting */
+  /* Prevent ALL card-like containers from splitting across pages */
   div[class*="border"],
   div[class*="rounded"],
   div[class*="card"],
   div[class*="Card"],
+  div[class*="glass"],
+  div[class*="bg-"],
   section,
-  article {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  article,
+  [class*="rounded-3xl"],
+  [class*="rounded-2xl"],
+  [class*="rounded-xl"],
+  .prose, .prose > * {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   /* Keep headings with their following content */
   h1, h2, h3, h4, h5, h6 {
     color: #111 !important;
-    break-after: avoid;
-    page-break-after: avoid;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
     orphans: 3;
     widows: 3;
   }
@@ -301,18 +307,18 @@
     widows: 4;
   }
 
-  /* Prevent page breaks inside cards */
-  [class*="rounded-3xl"],
-  [class*="rounded-2xl"],
-  [class*="rounded-xl"] {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  /* Prevent summary content sections from breaking */
+  div + h2,
+  h2 + div,
+  h2 + p {
+    break-before: avoid !important;
+    page-break-before: avoid !important;
   }
 
-  /* Prose/content blocks stay together */
-  .prose, .prose > * {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  /* Each summary section as a block */
+  div[class*="space-y"] > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   img {
