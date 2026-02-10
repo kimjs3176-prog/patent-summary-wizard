@@ -111,7 +111,7 @@ export function TechnologyCommercializationScore({
     if (!details.trl) return null;
     
     return (
-      <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.12s' }}>
+      <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in trl-print-section" style={{ animationDelay: '0.12s' }}>
         <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center text-xl">
             📊
