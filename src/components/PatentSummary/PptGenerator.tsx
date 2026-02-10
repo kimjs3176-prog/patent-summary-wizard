@@ -397,10 +397,22 @@ export function PptGenerator({
         // Try merging two small sections
         if (nextSec && canMergeSections(sec, nextSec)) {
           currentSlide = pptx.addSlide();
-          addSlideHeader(currentSlide, pptx, sec.title);
+          // Use a combined title for merged slides (equal hierarchy)
+          const combinedTitle = `${sec.title}  |  ${nextSec.title}`;
+          addSlideHeader(currentSlide, pptx, combinedTitle);
           addDecoStripe(currentSlide, pptx);
           currentY = 1.15;
           hasImageOnSlide = false;
+
+          // First section: accent bar + title
+          currentSlide.addShape(pptx.ShapeType.roundRect, {
+            x: 0.5, y: currentY, w: 0.08, h: 0.3, fill: { color: C.midGreen }, rectRadius: 0.04,
+          });
+          currentSlide.addText(sec.title, {
+            x: 0.7, y: currentY, w: 8, h: 0.3,
+            fontSize: 13, fontFace: "맑은 고딕", color: C.headerGreen, bold: true,
+          });
+          currentY += 0.4;
 
           // First section content
           if (sec.title === "발명의 요약" && patentData?.representativeImage) {
@@ -410,7 +422,7 @@ export function PptGenerator({
             );
             if (imgDataUrl) {
               currentSlide.addImage({
-                data: imgDataUrl, x: 6.8, y: 1.15, w: 2.4, h: 1.9,
+                data: imgDataUrl, x: 6.8, y: currentY, w: 2.4, h: 1.9,
                 rounding: true,
               });
             }
@@ -418,7 +430,7 @@ export function PptGenerator({
 
           const textW1 = hasImageOnSlide ? 6.0 : 9.0;
           for (const line of sec.lines) {
-            if (currentY > 4.5) break;
+            if (currentY > 4.3) break;
             const runs = parseBoldText(line);
             const lineH = Math.max(0.32, estimateHeight(line));
             currentSlide.addText(runs, {
@@ -429,22 +441,22 @@ export function PptGenerator({
             currentY += lineH + 0.04;
           }
 
-          // Divider + second section title
-          currentY += 0.15;
+          // Divider between sections
+          currentY += 0.12;
           currentSlide.addShape(pptx.ShapeType.rect, {
-            x: 0.5, y: currentY, w: 9, h: 0.015, fill: { color: C.border },
+            x: 0.5, y: currentY, w: 9, h: 0.012, fill: { color: C.border },
           });
-          currentY += 0.25;
+          currentY += 0.2;
 
-          // Section title accent
-          currentSlide.addShape(pptx.ShapeType.rect, {
-            x: 0.5, y: currentY, w: 0.06, h: 0.35, fill: { color: C.midGreen },
+          // Second section: accent bar + title (same style as first = equal hierarchy)
+          currentSlide.addShape(pptx.ShapeType.roundRect, {
+            x: 0.5, y: currentY, w: 0.08, h: 0.3, fill: { color: C.midGreen }, rectRadius: 0.04,
           });
           currentSlide.addText(nextSec.title, {
-            x: 0.7, y: currentY, w: 8, h: 0.35,
+            x: 0.7, y: currentY, w: 8, h: 0.3,
             fontSize: 13, fontFace: "맑은 고딕", color: C.headerGreen, bold: true,
           });
-          currentY += 0.45;
+          currentY += 0.4;
 
           for (const line of nextSec.lines) {
             if (currentY > 4.8) break;

@@ -264,7 +264,7 @@
     background: white !important;
     color: #111 !important;
     font-size: 10pt !important;
-    line-height: 1.4 !important;
+    line-height: 1.55 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -374,8 +374,8 @@
   h2 {
     font-size: 11pt !important;
     font-weight: 700 !important;
-    margin-top: 8px !important;
-    margin-bottom: 3px !important;
+    margin-top: 10px !important;
+    margin-bottom: 5px !important;
   }
 
   h3 {
@@ -387,8 +387,10 @@
   p {
     color: #222 !important;
     font-size: 9.5pt !important;
-    line-height: 1.4 !important;
-    margin-bottom: 2px !important;
+    line-height: 1.6 !important;
+    margin-bottom: 4px !important;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
   }
 
   img {

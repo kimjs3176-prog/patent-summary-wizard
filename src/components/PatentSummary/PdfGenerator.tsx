@@ -584,18 +584,24 @@ export function PdfGenerator({
 
           // Estimate header + first body paragraph height to prevent orphan headers
           const bodyPreview = estimateBodyHeight(lines, li + 1, 11, pageWidth - margin - margin - 7, 1.7);
-          const neededForSection = 12 + bodyPreview;
+          const neededForSection = 14 + bodyPreview;
           checkNewPage(neededForSection);
-          yPosition += 6;
+          yPosition += 7;
 
-          // Small green accent dot
+          // Section accent bar (rounded pill shape)
           pdf.setFillColor(...THEME.primary);
-          pdf.roundedRect(margin + 2, yPosition - 3.5, 1.8, 5, 0.7, 0.7, "F");
+          pdf.roundedRect(margin + 2, yPosition - 3.5, 2, 5.5, 0.8, 0.8, "F");
 
           pdf.setFontSize(12);
           pdf.setTextColor(...THEME.primary);
-          pdf.text(sectionTitle, margin + 5, yPosition);
-          yPosition += 7.5;
+          pdf.text(sectionTitle, margin + 5.5, yPosition);
+          
+          // Subtle underline below section title
+          pdf.setDrawColor(...THEME.border);
+          pdf.setLineWidth(0.15);
+          pdf.line(margin + 5.5, yPosition + 1.5, margin + 5.5 + Math.min(pdf.getTextWidth(sectionTitle), contentWidth - 10), yPosition + 1.5);
+          
+          yPosition += 8.5;
 
           if (sectionTitle === "발명의 요약") await insertImage();
           if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("상용화 전망")) {
@@ -604,7 +610,7 @@ export function PdfGenerator({
           }
         } else if (cleanLine.trim()) {
           addWrappedText(cleanLine, 11, THEME.textBody, 1.7);
-          yPosition += 1.5;
+          yPosition += 2;
         }
       }
 
