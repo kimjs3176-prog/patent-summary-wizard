@@ -234,9 +234,9 @@
 
   body {
     background: white !important;
-    color: #1a1a1a !important;
+    color: #111 !important;
     font-size: 11pt !important;
-    line-height: 1.6 !important;
+    line-height: 1.7 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -257,38 +257,62 @@
   .glass-effect {
     background: white !important;
     backdrop-filter: none !important;
-    border: 1px solid #ddd !important;
+    border: 1px solid #ccc !important;
     box-shadow: none !important;
     border-radius: 8px !important;
     padding: 16px !important;
     margin-bottom: 12px !important;
     break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-  /* Ensure text contrast */
+  /* Prevent ALL card-like containers from splitting */
+  div[class*="border"],
+  div[class*="rounded"],
+  div[class*="card"],
+  div[class*="Card"],
+  section,
+  article {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Keep headings with their following content */
   h1, h2, h3, h4, h5, h6 {
-    color: #1a1a1a !important;
+    color: #111 !important;
     break-after: avoid;
-  }
-
-  h2 {
-    font-size: 14pt !important;
-    margin-top: 14px !important;
-    margin-bottom: 6px !important;
-  }
-
-  p {
-    color: #333 !important;
-    font-size: 10.5pt !important;
-    line-height: 1.65 !important;
+    page-break-after: avoid;
     orphans: 3;
     widows: 3;
   }
 
+  h2 {
+    font-size: 14pt !important;
+    font-weight: 700 !important;
+    margin-top: 16px !important;
+    margin-bottom: 8px !important;
+  }
+
+  p {
+    color: #222 !important;
+    font-size: 11pt !important;
+    line-height: 1.7 !important;
+    orphans: 4;
+    widows: 4;
+  }
+
   /* Prevent page breaks inside cards */
   [class*="rounded-3xl"],
-  [class*="rounded-2xl"] {
+  [class*="rounded-2xl"],
+  [class*="rounded-xl"] {
     break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Prose/content blocks stay together */
+  .prose, .prose > * {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   img {
@@ -305,8 +329,8 @@
     print-color-adjust: exact;
   }
 
-  /* Muted text slightly darker for print */
+  /* Muted text darker for print readability */
   [class*="text-muted-foreground"] {
-    color: #666 !important;
+    color: #555 !important;
   }
 }

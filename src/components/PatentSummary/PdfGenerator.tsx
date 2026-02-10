@@ -52,9 +52,9 @@ const THEME = {
   cardBgLight: [243, 246, 243] as [number, number, number],
   primary: [56, 120, 50] as [number, number, number],
   accent: [180, 120, 30] as [number, number, number],
-  text: [25, 30, 25] as [number, number, number],
-  textMuted: [100, 105, 100] as [number, number, number],
-  textBody: [40, 45, 40] as [number, number, number],
+  text: [15, 18, 15] as [number, number, number],
+  textMuted: [80, 85, 80] as [number, number, number],
+  textBody: [20, 24, 20] as [number, number, number],
   border: [210, 215, 210] as [number, number, number],
   headerGreen: [34, 85, 55] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
@@ -136,7 +136,7 @@ export function PdfGenerator({
         }
       };
 
-      const addWrappedText = (text: string, fontSize: number, color: [number, number, number], lineHeight = 1.6, indentX = margin + 5) => {
+      const addWrappedText = (text: string, fontSize: number, color: [number, number, number], lineHeight = 1.7, indentX = margin + 5) => {
         pdf.setFontSize(fontSize);
         pdf.setTextColor(...color);
         const maxW = pageWidth - indentX - margin - 2;
@@ -511,27 +511,29 @@ export function PdfGenerator({
         if (line.startsWith("## ")) {
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, "");
           if (sectionTitle === "특허 기본 정보") { skipSection = true; continue; }
+          // Skip the "AI 종합 요약" header box (yellow highlighted in screenshot)
+          if (sectionTitle.includes("AI 종합") || sectionTitle.includes("종합 요약") || sectionTitle.includes("종합요약")) continue;
 
           // Estimate header + first body paragraph height to prevent orphan headers
-          const bodyPreview = estimateBodyHeight(lines, li + 1, 10, pageWidth - margin - margin - 7, 1.6);
-          const neededForSection = 10 + bodyPreview;
+          const bodyPreview = estimateBodyHeight(lines, li + 1, 11, pageWidth - margin - margin - 7, 1.7);
+          const neededForSection = 12 + bodyPreview;
           checkNewPage(neededForSection);
-          yPosition += 4;
+          yPosition += 5;
 
           // Small green accent dot
           pdf.setFillColor(...THEME.primary);
-          pdf.roundedRect(margin + 2, yPosition - 3, 1.5, 4, 0.6, 0.6, "F");
+          pdf.roundedRect(margin + 2, yPosition - 3.5, 1.8, 5, 0.7, 0.7, "F");
 
-          pdf.setFontSize(11);
+          pdf.setFontSize(12);
           pdf.setTextColor(...THEME.primary);
           pdf.text(sectionTitle, margin + 5, yPosition);
-          yPosition += 5.5;
+          yPosition += 7;
 
           if (sectionTitle === "발명의 요약") await insertImage();
           if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("상용화 전망")) insertTrl();
         } else if (cleanLine.trim()) {
-          addWrappedText(cleanLine, 10, THEME.textBody, 1.6);
-          yPosition += 0.8;
+          addWrappedText(cleanLine, 11, THEME.textBody, 1.7);
+          yPosition += 1;
         }
       }
 
