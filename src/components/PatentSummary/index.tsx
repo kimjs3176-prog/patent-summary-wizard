@@ -294,7 +294,7 @@ export function PatentSummary({
         {/* Content */}
         <div className="p-6 md:p-8 min-h-[400px]">
           {content ? (
-            <div className="prose prose-invert max-w-none">
+            <div className="prose max-w-none">
               {renderMarkdown(content)}
               {isStreaming && (
                 <span className="inline-block w-2 h-5 bg-primary animate-pulse-subtle ml-1" />
@@ -330,7 +330,7 @@ export function PatentSummary({
 
       {/* 5. Claims Card */}
       {patentData?.claims && patentData.claims.length > 0 && (
-        <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.15s' }}>
+        <div className="claims-section mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.15s' }}>
           <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
               📑
