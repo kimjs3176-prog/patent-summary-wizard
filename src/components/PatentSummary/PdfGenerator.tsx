@@ -48,15 +48,15 @@ function getTrlStageLabel(trl: number): string {
 
 const THEME = {
   bg: [255, 255, 255] as [number, number, number],
-  cardBg: [248, 250, 248] as [number, number, number],
-  cardBgLight: [243, 246, 243] as [number, number, number],
-  primary: [56, 120, 50] as [number, number, number],
-  accent: [180, 120, 30] as [number, number, number],
-  text: [15, 18, 15] as [number, number, number],
-  textMuted: [80, 85, 80] as [number, number, number],
-  textBody: [20, 24, 20] as [number, number, number],
-  border: [210, 215, 210] as [number, number, number],
-  headerGreen: [34, 85, 55] as [number, number, number],
+  cardBg: [240, 248, 243] as [number, number, number],
+  cardBgLight: [232, 243, 237] as [number, number, number],
+  primary: [38, 120, 80] as [number, number, number],
+  accent: [200, 135, 40] as [number, number, number],
+  text: [20, 30, 25] as [number, number, number],
+  textMuted: [90, 110, 100] as [number, number, number],
+  textBody: [30, 40, 35] as [number, number, number],
+  border: [195, 215, 205] as [number, number, number],
+  headerGreen: [28, 100, 70] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
 };
 
