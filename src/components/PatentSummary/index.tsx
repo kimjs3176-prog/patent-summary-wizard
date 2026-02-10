@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { FileText, Copy, Check, Share2 } from "lucide-react";
+import { FileText, Copy, Check, Share2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps } from "./types";
@@ -269,6 +269,10 @@ export function PatentSummary({
                 <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   {copied ? "복사됨" : "복사"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
+                  <Printer className="w-4 h-4" />
+                  인쇄
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleShare} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
                   <Share2 className="w-4 h-4" />
