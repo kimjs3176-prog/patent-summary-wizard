@@ -262,79 +262,83 @@
     display: none !important;
   }
 
-  /* Reset glass effects for print */
+  /* Reset glass effects for print - compact */
   .glass-effect {
     background: white !important;
     backdrop-filter: none !important;
     border: 1px solid #ccc !important;
     box-shadow: none !important;
-    border-radius: 8px !important;
-    padding: 16px !important;
-    margin-bottom: 12px !important;
+    border-radius: 6px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 6px !important;
   }
 
-  /* Small cards: prevent splitting */
-  .glass-effect:has(.card-title),
+  /* Reduce spacing inside cards */
+  .glass-effect .mb-5,
+  .glass-effect .mb-6 {
+    margin-bottom: 4px !important;
+  }
+  .glass-effect .pb-5 {
+    padding-bottom: 4px !important;
+  }
+  .glass-effect .p-8,
+  .glass-effect .p-6 {
+    padding: 8px 10px !important;
+  }
+  .glass-effect .mt-6,
+  .glass-effect .mt-5 {
+    margin-top: 4px !important;
+  }
+  .glass-effect .gap-4 {
+    gap: 4px !important;
+  }
+
+  /* Reduce section spacing */
+  .space-y-6 > * + * {
+    margin-top: 6px !important;
+  }
+
+  /* All glass cards: allow splitting to avoid huge gaps */
+  .glass-effect {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Only small sub-cards should avoid splitting */
   div[class*="bg-secondary/30"][class*="rounded-xl"] {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Large content cards (AI summary etc): ALLOW splitting across pages */
-  .glass-effect:has(.prose) {
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
   /* Keep individual paragraphs and small blocks together */
   .prose > p,
-  .prose > h2,
-  details,
-  div[class*="bg-secondary/30"][class*="p-4"] {
+  .prose > h2 {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Keep headings with their following content */
+  /* Headings */
   h1, h2, h3, h4, h5, h6 {
     color: #111 !important;
     break-after: avoid !important;
     page-break-after: avoid !important;
-    orphans: 3;
-    widows: 3;
   }
 
   h2 {
-    font-size: 14pt !important;
+    font-size: 13pt !important;
     font-weight: 700 !important;
-    margin-top: 16px !important;
-    margin-bottom: 8px !important;
+    margin-top: 8px !important;
+    margin-bottom: 4px !important;
   }
 
   p {
     color: #222 !important;
-    font-size: 11pt !important;
-    line-height: 1.7 !important;
-    orphans: 4;
-    widows: 4;
-  }
-
-  /* Prevent summary content sections from breaking */
-  div + h2,
-  h2 + div,
-  h2 + p {
-    break-before: avoid !important;
-    page-break-before: avoid !important;
-  }
-
-  /* Each summary section as a block */
-  div[class*="space-y"] > div {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
   }
 
   img {
-    max-width: 60% !important;
+    max-width: 50% !important;
     height: auto !important;
     break-inside: avoid;
   }
