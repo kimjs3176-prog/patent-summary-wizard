@@ -422,7 +422,7 @@ export function PptGenerator({
             );
             if (imgDataUrl) {
               currentSlide.addImage({
-                data: imgDataUrl, x: 6.8, y: currentY, w: 2.4, h: 1.9,
+                data: imgDataUrl, x: 6.5, y: currentY, w: 2.88, h: 2.28,
                 rounding: true,
               });
             }
@@ -489,12 +489,12 @@ export function PptGenerator({
           );
           if (imgDataUrl) {
             currentSlide.addImage({
-              data: imgDataUrl, x: 6.8, y: 1.15, w: 2.5, h: 2.0,
+              data: imgDataUrl, x: 6.5, y: 1.15, w: 3.0, h: 2.4,
               rounding: true,
             });
             // Image caption
             currentSlide.addText("【대표 도면】", {
-              x: 6.8, y: 3.2, w: 2.5, h: 0.25,
+              x: 6.5, y: 3.6, w: 3.0, h: 0.25,
               fontSize: 7, fontFace: "맑은 고딕", color: C.textMuted, align: "center",
             });
           }

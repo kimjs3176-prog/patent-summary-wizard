@@ -257,7 +257,7 @@ export function PdfGenerator({
 
       yPosition += 22;
 
-      // ===== 1. PATENT INFO =====
+      // ===== 1. PATENT INFO + COMMERCIALIZATION SCORE (merged) =====
       if (patentData) {
         const title = patentData.titleKo || patentData.title || "정보 없음";
         const infoItems: { label: string; value: string }[] = [];
@@ -268,156 +268,132 @@ export function PdfGenerator({
 
         pdf.setFontSize(12);
         const titleLines = pdf.splitTextToSize(title, contentWidth - 14);
-        const titleH = Math.min(titleLines.length, 2) * 5.5;
+        const titleH = Math.min(titleLines.length, 2) * 5;
         const rowCount = Math.ceil(infoItems.length / 4);
-        const cardH = 20 + titleH + rowCount * 16;
+
+        const hasScore = commercializationScore != null && commercializationDetails;
+        const hasAnalysis = hasScore && !!commercializationDetails.analysis;
+        let analysisH = 0;
+        if (hasAnalysis) {
+          pdf.setFontSize(7.5);
+          const aLines = pdf.splitTextToSize(commercializationDetails.analysis, contentWidth - 18);
+          analysisH = 6 + aLines.length * 3;
+        }
+        const scoreBlockH = hasScore ? 38 + (hasAnalysis ? analysisH : 0) : 0;
+        const cardH = 16 + titleH + rowCount * 14 + (hasScore ? 3 + scoreBlockH : 0);
 
         checkNewPage(cardH + 2);
         drawCard(margin, yPosition, contentWidth, cardH);
         const cx = margin + 5;
-        let cy = yPosition + 5;
+        let cy = yPosition + 4;
 
-        pdf.setFontSize(11);
+        pdf.setFontSize(10);
         pdf.setTextColor(...THEME.text);
-        pdf.text("📄 특허 정보", cx, cy + 3.5);
-        cy += 7;
-
+        pdf.text("📄 특허 정보", cx, cy + 3);
+        cy += 6;
         pdf.setDrawColor(...THEME.border);
         pdf.setLineWidth(0.2);
         pdf.line(cx, cy, margin + contentWidth - 5, cy);
-        cy += 4;
+        cy += 3;
 
-        // Title
-        pdf.setFontSize(11);
+        pdf.setFontSize(10);
         pdf.setTextColor(...THEME.text);
         for (let i = 0; i < Math.min(titleLines.length, 2); i++) {
-          pdf.text(titleLines[i] + (i === 0 && titleLines.length > 2 ? "..." : ""), cx, cy + 3.5);
-          cy += 5;
+          pdf.text(titleLines[i] + (i === 0 && titleLines.length > 2 ? "..." : ""), cx, cy + 3);
+          cy += 4.5;
         }
         cy += 1;
 
-        // Info grid (4 columns for compactness)
         const colCount = Math.min(infoItems.length, 4);
         const subW = (contentWidth - 12) / colCount;
         infoItems.forEach((item, idx) => {
           const col = idx % 4;
           const row = Math.floor(idx / 4);
           const sx = cx + col * (subW + 0.5);
-          const sy = cy + row * 15;
-          drawSubCard(sx, sy, subW - 1, 13);
-          pdf.setFontSize(6.5);
+          const sy = cy + row * 13;
+          drawSubCard(sx, sy, subW - 1, 11);
+          pdf.setFontSize(6);
           pdf.setTextColor(...THEME.textMuted);
-          pdf.text(item.label, sx + 2.5, sy + 4.5);
-          pdf.setFontSize(8);
+          pdf.text(item.label, sx + 2.5, sy + 4);
+          pdf.setFontSize(7.5);
           pdf.setTextColor(...THEME.text);
           const valLines = pdf.splitTextToSize(item.value, subW - 7);
-          pdf.text(valLines[0], sx + 2.5, sy + 9.5);
+          pdf.text(valLines[0], sx + 2.5, sy + 8.5);
         });
+        cy += rowCount * 13 + 1;
+
+        if (hasScore) {
+          pdf.setDrawColor(...THEME.border);
+          pdf.setLineWidth(0.15);
+          pdf.line(cx, cy, margin + contentWidth - 5, cy);
+          cy += 3;
+
+          const scoreColor = getScoreColorRgb(commercializationScore!);
+          pdf.setFontSize(9);
+          pdf.setTextColor(...THEME.textMuted);
+          pdf.text("✨ AI 기술사업화점수", cx, cy + 3);
+
+          const scoreStr = String(commercializationScore);
+          pdf.setFontSize(20);
+          pdf.setTextColor(...scoreColor);
+          pdf.text(scoreStr, cx + 50, cy + 4);
+          const sw = pdf.getTextWidth(scoreStr);
+          pdf.setFontSize(8);
+          pdf.setTextColor(...THEME.textMuted);
+          pdf.text("/ 100", cx + 50 + sw + 1.5, cy + 4);
+
+          pdf.setFontSize(12);
+          pdf.setTextColor(...scoreColor);
+          pdf.text(getGradeLabel(commercializationScore!), cx + 80, cy + 2);
+          pdf.setFontSize(7);
+          pdf.text(getScoreLabel(commercializationScore!), cx + 80, cy + 6);
+          cy += 9;
+
+          drawProgressBar(cx, cy, contentWidth - 12, 2, commercializationScore!, scoreColor);
+          cy += 4;
+
+          const ssubW = (contentWidth - 14) / 3;
+          const subScores = [
+            { label: "기술성", score: commercializationDetails!.technologyScore },
+            { label: "시장성", score: commercializationDetails!.marketScore },
+            { label: "사업성", score: commercializationDetails!.businessScore },
+          ];
+          subScores.forEach((item, idx) => {
+            const sx = cx + idx * (ssubW + 1);
+            drawSubCard(sx, cy, ssubW - 0.5, 14);
+            pdf.setFontSize(6);
+            pdf.setTextColor(...THEME.textMuted);
+            pdf.text(item.label, sx + 2.5, cy + 4);
+            const sc = getScoreColorRgb(item.score);
+            pdf.setFontSize(10);
+            pdf.setTextColor(...sc);
+            pdf.text(String(item.score), sx + 2.5, cy + 9.5);
+            const numW = pdf.getTextWidth(String(item.score));
+            pdf.setFontSize(6);
+            pdf.setTextColor(...THEME.textMuted);
+            pdf.text("점", sx + 2.5 + numW + 1, cy + 9.5);
+            drawProgressBar(sx + 2.5, cy + 11.5, ssubW - 6, 1.2, item.score, sc);
+          });
+          cy += 16;
+
+          if (hasAnalysis) {
+            drawSubCard(cx, cy, contentWidth - 12, analysisH);
+            pdf.setFontSize(6);
+            pdf.setTextColor(...THEME.textMuted);
+            pdf.text("AI 분석 의견", cx + 2.5, cy + 3.5);
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(...THEME.textBody);
+            const aLines = pdf.splitTextToSize(commercializationDetails!.analysis, contentWidth - 18);
+            for (let i = 0; i < aLines.length; i++) {
+              pdf.text(aLines[i], cx + 2.5, cy + 7 + i * 3);
+            }
+          }
+        }
 
         yPosition += cardH + 4;
       }
 
-      // ===== 2. COMMERCIALIZATION SCORE =====
-      if (commercializationScore != null && commercializationDetails) {
-        const hasAnalysis = !!commercializationDetails.analysis;
-        let analysisH = 0;
-        if (hasAnalysis) {
-          pdf.setFontSize(8);
-          const aLines = pdf.splitTextToSize(commercializationDetails.analysis, contentWidth - 18);
-          analysisH = 7 + aLines.length * 3.2;
-        }
-        const scoreCardH = 55 + (hasAnalysis ? analysisH : 0);
 
-        checkNewPage(scoreCardH + 2);
-        drawCard(margin, yPosition, contentWidth, scoreCardH);
-        const cx = margin + 5;
-        let cy = yPosition + 5;
-
-        // Header
-        pdf.setFontSize(10);
-        pdf.setTextColor(...THEME.text);
-        pdf.text("✨ AI 기술사업화점수", cx, cy + 3.5);
-        pdf.setFontSize(6.5);
-        pdf.setTextColor(...THEME.textMuted);
-        pdf.text("Technology Commercialization Score", cx + 46, cy + 3.5);
-        cy += 7;
-        pdf.setDrawColor(...THEME.border);
-        pdf.setLineWidth(0.2);
-        pdf.line(cx, cy, margin + contentWidth - 5, cy);
-        cy += 4;
-
-        // Main score - FIX: proper width calculation to avoid overlap
-        const scoreColor = getScoreColorRgb(commercializationScore);
-        const scoreStr = String(commercializationScore);
-
-        pdf.setFontSize(24);
-        pdf.setTextColor(...scoreColor);
-        pdf.text(scoreStr, cx + 2, cy + 8);
-        const scoreW = pdf.getTextWidth(scoreStr);
-
-        pdf.setFontSize(10);
-        pdf.setTextColor(...THEME.textMuted);
-        pdf.text("/ 100", cx + 2 + scoreW + 2, cy + 8);
-
-        // Grade - positioned far right to avoid overlap
-        const gradeX = cx + 55;
-        pdf.setFontSize(16);
-        pdf.setTextColor(...scoreColor);
-        pdf.text(getGradeLabel(commercializationScore), gradeX, cy + 5);
-        pdf.setFontSize(8);
-        pdf.text(getScoreLabel(commercializationScore), gradeX, cy + 10);
-
-        cy += 13;
-
-        // Progress bar
-        drawProgressBar(cx, cy, contentWidth - 12, 2.5, commercializationScore, scoreColor);
-        cy += 5;
-
-        // Sub-scores
-        const subW = (contentWidth - 14) / 3;
-        const subScores = [
-          { label: "기술성", score: commercializationDetails.technologyScore },
-          { label: "시장성", score: commercializationDetails.marketScore },
-          { label: "사업성", score: commercializationDetails.businessScore },
-        ];
-        subScores.forEach((item, idx) => {
-          const sx = cx + idx * (subW + 1);
-          drawSubCard(sx, cy, subW - 0.5, 16);
-
-          pdf.setFontSize(6.5);
-          pdf.setTextColor(...THEME.textMuted);
-          pdf.text(item.label, sx + 2.5, cy + 4.5);
-
-          const sc = getScoreColorRgb(item.score);
-          pdf.setFontSize(11);
-          pdf.setTextColor(...sc);
-          pdf.text(String(item.score), sx + 2.5, cy + 10.5);
-
-          const numW = pdf.getTextWidth(String(item.score));
-          pdf.setFontSize(6.5);
-          pdf.setTextColor(...THEME.textMuted);
-          pdf.text("점", sx + 2.5 + numW + 1, cy + 10.5);
-
-          drawProgressBar(sx + 2.5, cy + 13, subW - 6, 1.5, item.score, sc);
-        });
-        cy += 19;
-
-        // Analysis
-        if (hasAnalysis) {
-          drawSubCard(cx, cy, contentWidth - 12, analysisH);
-          pdf.setFontSize(6.5);
-          pdf.setTextColor(...THEME.textMuted);
-          pdf.text("AI 분석 의견", cx + 2.5, cy + 4);
-          pdf.setFontSize(8);
-          pdf.setTextColor(...THEME.textBody);
-          const aLines = pdf.splitTextToSize(commercializationDetails.analysis, contentWidth - 18);
-          for (let i = 0; i < aLines.length; i++) {
-            pdf.text(aLines[i], cx + 2.5, cy + 8 + i * 3.2);
-          }
-        }
-
-        yPosition += scoreCardH + 4;
-      }
 
       // ===== 3. AI SUMMARY (no header box, content starts directly) =====
 
@@ -432,8 +408,8 @@ export function PdfGenerator({
         const img = await loadImageForPdf(patentData.representativeImage);
         if (!img) return;
 
-        const imgW = 55;
-        const imgH = 42;
+        const imgW = 66;
+        const imgH = 50;
         checkNewPage(imgH + 8);
 
         const imgX = (pageWidth - imgW) / 2;
