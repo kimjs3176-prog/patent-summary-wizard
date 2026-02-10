@@ -169,7 +169,7 @@ export function PatentSummary({
                 <img
                   src={proxied}
                   alt="대표 도면"
-                  className="w-72 md:w-80 h-auto max-h-96 object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md"
+                  className="w-[345px] md:w-[384px] h-auto max-h-[460px] object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md"
                   loading="lazy"
                   decoding="async"
                   onError={(e) => {
