@@ -25,7 +25,15 @@ serve(async (req) => {
   }
 
   try {
-    const { patentNumber, patentData } = await req.json();
+    // Basic input validation
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(
+        JSON.stringify({ error: "잘못된 요청입니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { patentNumber, patentData } = body;
 
     if (!patentNumber) {
       return new Response(
@@ -166,7 +174,7 @@ ${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오
   } catch (error) {
     console.error("summarize-patent error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "알 수 없는 오류" }),
+      JSON.stringify({ error: "서버 오류가 발생했습니다." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
