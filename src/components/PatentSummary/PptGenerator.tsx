@@ -528,31 +528,37 @@ export function PptGenerator({
       // Claims Slide
       // =====================================================
       if (patentData?.claims && patentData.claims.length > 0) {
-        const cs = pptx.addSlide();
-        addSlideHeader(cs, pptx, `📑 청구항 (${patentData.claims.length}개)`);
-        addDecoStripe(cs, pptx);
+        let claimSlide = pptx.addSlide();
+        addSlideHeader(claimSlide, pptx, `📑 청구항 (${patentData.claims.length}개)`);
+        addDecoStripe(claimSlide, pptx);
 
         let cy = 1.15;
-        const maxClaims = Math.min(patentData.claims.length, 5);
-        for (let j = 0; j < maxClaims; j++) {
-          if (cy > 4.4) break;
-          const claimText = patentData.claims[j].length > 180
-            ? patentData.claims[j].substring(0, 180) + "..."
-            : patentData.claims[j];
+        let claimPage = 1;
+        for (let j = 0; j < patentData.claims.length; j++) {
+          const claimText = patentData.claims[j];
+          const claimH = Math.max(0.4, Math.ceil(claimText.length / 70) * 0.28);
+
+          // If this claim won't fit, start a new slide
+          if (cy + claimH + 0.4 > 4.8) {
+            claimPage++;
+            claimSlide = pptx.addSlide();
+            addSlideHeader(claimSlide, pptx, `📑 청구항 (계속 ${claimPage})`);
+            addDecoStripe(claimSlide, pptx);
+            cy = 1.15;
+          }
 
           // Claim number badge
-          cs.addShape(pptx.ShapeType.roundRect, {
+          claimSlide.addShape(pptx.ShapeType.roundRect, {
             x: 0.5, y: cy, w: 0.6, h: 0.25,
             fill: { color: C.midGreen }, rectRadius: 0.04,
           });
-          cs.addText(`${j + 1}`, {
+          claimSlide.addText(`${j + 1}`, {
             x: 0.5, y: cy, w: 0.6, h: 0.25,
             fontSize: 8, fontFace: "맑은 고딕", color: C.white,
             align: "center", valign: "middle", bold: true,
           });
 
-          const claimH = Math.max(0.4, estimateHeight(claimText));
-          cs.addText(claimText, {
+          claimSlide.addText(claimText, {
             x: 1.2, y: cy, w: 8.3, h: claimH,
             fontSize: 9, fontFace: "맑은 고딕", color: C.text,
             wrap: true, valign: "top", lineSpacingMultiple: 1.2,

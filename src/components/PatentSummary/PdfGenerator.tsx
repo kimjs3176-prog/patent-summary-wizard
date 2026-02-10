@@ -279,7 +279,7 @@ export function PdfGenerator({
           const aLines = pdf.splitTextToSize(commercializationDetails.analysis, contentWidth - 18);
           analysisH = 6 + aLines.length * 3;
         }
-        const scoreBlockH = hasScore ? 38 + (hasAnalysis ? analysisH : 0) : 0;
+        const scoreBlockH = hasScore ? 32 + (hasAnalysis ? analysisH : 0) : 0;
         const cardH = 16 + titleH + rowCount * 14 + (hasScore ? 3 + scoreBlockH : 0);
 
         checkNewPage(cardH + 2);
@@ -347,10 +347,7 @@ export function PdfGenerator({
           pdf.text(getGradeLabel(commercializationScore!), cx + 80, cy + 2);
           pdf.setFontSize(7);
           pdf.text(getScoreLabel(commercializationScore!), cx + 80, cy + 6);
-          cy += 9;
-
-          drawProgressBar(cx, cy, contentWidth - 12, 2, commercializationScore!, scoreColor);
-          cy += 4;
+          cy += 11;
 
           const ssubW = (contentWidth - 14) / 3;
           const subScores = [
