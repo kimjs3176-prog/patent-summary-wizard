@@ -17,6 +17,40 @@ export function PatentInput({
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
 
+  // Auto-format patent number as user types
+  const formatPatentNumber = (value: string): string => {
+    // Only format if it looks like a patent number (digits, possibly with existing hyphens)
+    const digitsOnly = value.replace(/[^0-9]/g, "");
+    
+    // If input has non-digit non-hyphen chars (Korean etc.), return as-is
+    if (value.replace(/[-\s]/g, "").length !== digitsOnly.length && digitsOnly.length < 7) {
+      return value;
+    }
+    
+    // 7-digit registration: 10-0000000
+    if (digitsOnly.length >= 9 && digitsOnly.length <= 10 && digitsOnly.startsWith("10")) {
+      return `10-${digitsOnly.slice(2)}`;
+    }
+    if (digitsOnly.length === 7) {
+      return `10-${digitsOnly}`;
+    }
+    
+    // 13-digit application: 10-YYYY-NNNNNNN (1020210123456)
+    if (digitsOnly.length >= 11 && digitsOnly.startsWith("10")) {
+      const year = digitsOnly.slice(2, 6);
+      const num = digitsOnly.slice(6);
+      return `10-${year}-${num}`;
+    }
+    
+    return value;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    const formatted = formatPatentNumber(raw);
+    setInputValue(formatted);
+  };
+
   // 특허번호 형식 감지: 10-으로 시작하거나 KR로 시작하거나 순수 숫자
   const isPatentNumber = (value: string): boolean => {
     const trimmed = value.trim();
@@ -80,7 +114,7 @@ export function PatentInput({
               <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                 <FileText className="h-5 w-5 text-muted-foreground" />
               </div>
-              <input type="text" placeholder="특허번호를 입력하세요 (예: 1020210123456)" value={inputValue} onChange={e => setInputValue(e.target.value)} className="w-full h-14 pl-14 pr-5 text-base bg-secondary/50 border-2 border-border/50 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:bg-secondary/80 focus:shadow-[0_0_0_4px_hsla(85,50%,40%,0.15)]" disabled={isProcessing} />
+              <input type="text" placeholder="특허번호를 입력하세요 (예: 1020210123456)" value={inputValue} onChange={handleInputChange} className="w-full h-14 pl-14 pr-5 text-base bg-secondary/50 border-2 border-border/50 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:bg-secondary/80 focus:shadow-[0_0_0_4px_hsla(85,50%,40%,0.15)]" disabled={isProcessing} />
             </div>
             <Button type="submit" disabled={!inputValue.trim() || isProcessing} className="h-14 px-8 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 rounded-2xl whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none">
               {isProcessing ? <span className="flex items-center gap-2">

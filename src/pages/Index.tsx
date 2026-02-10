@@ -138,11 +138,18 @@ const Index = () => {
             </section>
 
             {/* Input Section */}
-            <section className="mb-12 animate-fade-up" style={{
+            <section className="mb-4 animate-fade-up" style={{
           animationDelay: "0.2s"
         }}>
               <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
             </section>
+
+            {/* Search History Section - compact, right below input */}
+            {history.length > 0 && keywordResults.length === 0 && <section className="mb-12 max-w-2xl mx-auto animate-fade-up" style={{
+          animationDelay: "0.25s"
+        }}>
+                <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
+              </section>}
 
             {/* Keyword Search Results Section */}
             {keywordResults.length > 0 && <section className="mb-12 animate-fade-up" style={{
@@ -153,13 +160,6 @@ const Index = () => {
 
             {/* RDA Latest Patents Section */}
             <RdaLatestPatents onPatentSelect={handleSubmit} />
-
-            {/* Search History Section - at bottom */}
-            {history.length > 0 && keywordResults.length === 0 && <section className="mt-12 max-w-2xl mx-auto animate-fade-up" style={{
-          animationDelay: "0.4s"
-        }}>
-                <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
-              </section>}
           </> : <>
             {/* Loading State */}
             {isFetching && <div className="text-center mb-8 animate-fade-up">

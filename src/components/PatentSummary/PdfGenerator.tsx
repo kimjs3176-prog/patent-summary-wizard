@@ -253,7 +253,7 @@ export function PdfGenerator({
           pdf.text(valLines[0], sx + 2.5, sy + 9.5);
         });
 
-        yPosition += cardH + 3;
+        yPosition += cardH + 4;
       }
 
       // ===== 2. COMMERCIALIZATION SCORE =====
@@ -355,7 +355,7 @@ export function PdfGenerator({
           }
         }
 
-        yPosition += scoreCardH + 3;
+        yPosition += scoreCardH + 4;
       }
 
       // ===== 3. AI SUMMARY (no header box, content starts directly) =====
@@ -494,31 +494,38 @@ export function PdfGenerator({
         yPosition += trlCardH + 3;
       };
 
+      // Lines that duplicate patent number info already shown in 특허정보 card
+      const isDuplicatePatentInfo = (text: string): boolean => {
+        return (
+          /등록번호[는:\s]/.test(text) || /출원번호[는:\s]/.test(text) ||
+          text.includes("발명의 명칭은") || text.includes("출원인/권리자는") ||
+          text.includes("출원일/등록일은") || text.includes("발명자는") ||
+          // Also skip lines that just contain the patent number itself
+          (displayNumber && text.includes(displayNumber))
+        );
+      };
+
       for (let li = 0; li < lines.length; li++) {
         const line = lines[li];
         if (line.startsWith("## 특허 기본 정보")) { skipSection = true; continue; }
         if (skipSection && line.startsWith("## ")) skipSection = false;
         if (skipSection) continue;
 
-        if (
-          line.includes("등록번호는") || line.includes("출원번호는") ||
-          line.includes("발명의 명칭은") || line.includes("출원인/권리자는") ||
-          line.includes("출원일/등록일은") || line.includes("발명자는")
-        ) continue;
+        if (isDuplicatePatentInfo(line)) continue;
 
         const cleanLine = line.replace(/\*\*/g, "").replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "");
 
         if (line.startsWith("## ")) {
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, "");
           if (sectionTitle === "특허 기본 정보") { skipSection = true; continue; }
-          // Skip the "AI 종합 요약" header box (yellow highlighted in screenshot)
+          // Skip the "AI 종합 요약" header box
           if (sectionTitle.includes("AI 종합") || sectionTitle.includes("종합 요약") || sectionTitle.includes("종합요약")) continue;
 
           // Estimate header + first body paragraph height to prevent orphan headers
           const bodyPreview = estimateBodyHeight(lines, li + 1, 11, pageWidth - margin - margin - 7, 1.7);
           const neededForSection = 12 + bodyPreview;
           checkNewPage(neededForSection);
-          yPosition += 5;
+          yPosition += 6;
 
           // Small green accent dot
           pdf.setFillColor(...THEME.primary);
@@ -527,13 +534,13 @@ export function PdfGenerator({
           pdf.setFontSize(12);
           pdf.setTextColor(...THEME.primary);
           pdf.text(sectionTitle, margin + 5, yPosition);
-          yPosition += 7;
+          yPosition += 7.5;
 
           if (sectionTitle === "발명의 요약") await insertImage();
           if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("상용화 전망")) insertTrl();
         } else if (cleanLine.trim()) {
           addWrappedText(cleanLine, 11, THEME.textBody, 1.7);
-          yPosition += 1;
+          yPosition += 1.5;
         }
       }
 

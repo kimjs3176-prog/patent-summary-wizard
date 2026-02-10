@@ -10,7 +10,7 @@ export interface SearchHistoryItem {
 }
 
 const STORAGE_KEY = "patent-search-history";
-const MAX_HISTORY_ITEMS = 10;
+const MAX_HISTORY_ITEMS = 6;
 
 export function useSearchHistory() {
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
