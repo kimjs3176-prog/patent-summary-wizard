@@ -103,8 +103,6 @@ export function PatentInput({
       handleKeywordSearch(value);
     }
   };
-  const examplePatents = ["10-1234567", "10-2023-0012345", "10-0987654"];
-  const exampleKeywords = ["제빵", "농기계", "스마트팜"];
   const isProcessing = isLoading || isSearchingKeyword;
   return <div className="w-full max-w-2xl mx-auto">
       <div className="glass-effect rounded-3xl p-8 md:p-10">
@@ -114,7 +112,7 @@ export function PatentInput({
               <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                 <FileText className="h-5 w-5 text-muted-foreground" />
               </div>
-              <input type="text" placeholder="특허번호를 입력하세요 (예: 1020210123456)" value={inputValue} onChange={handleInputChange} className="w-full h-14 pl-14 pr-5 text-base bg-secondary/50 border-2 border-border/50 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:bg-secondary/80 focus:shadow-[0_0_0_4px_hsla(85,50%,40%,0.15)]" disabled={isProcessing} />
+              <input type="text" placeholder="특허등록번호 출원번호 또는 관심 키워드를 입력하세요" value={inputValue} onChange={handleInputChange} className="w-full h-14 pl-14 pr-5 text-base bg-secondary/50 border-2 border-border/50 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:bg-secondary/80 focus:shadow-[0_0_0_4px_hsla(85,50%,40%,0.15)]" disabled={isProcessing} />
             </div>
             <Button type="submit" disabled={!inputValue.trim() || isProcessing} className="h-14 px-8 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 rounded-2xl whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none">
               {isProcessing ? <span className="flex items-center gap-2">
@@ -127,15 +125,6 @@ export function PatentInput({
             </Button>
           </div>
         </form>
-
-        <div className="mt-6 flex-wrap gap-2 items-center justify-center flex flex-row border-none">
-          {examplePatents.map(patent => <button key={patent} type="button" onClick={() => setInputValue(patent)} className="px-4 py-2 text-sm rounded-full bg-secondary/50 border border-border/50 text-muted-foreground hover:bg-primary/20 hover:border-primary/50 hover:text-foreground hover:-translate-y-0.5 transition-all duration-300">
-              {patent}
-            </button>)}
-          {exampleKeywords.map(keyword => <button key={keyword} type="button" onClick={() => setInputValue(keyword)} className="px-4 py-2 text-sm rounded-full bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 hover:border-accent/50 hover:-translate-y-0.5 transition-all duration-300">
-              {keyword}
-            </button>)}
-        </div>
       </div>
     </div>;
 }

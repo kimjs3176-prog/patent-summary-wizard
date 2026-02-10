@@ -137,19 +137,19 @@ const Index = () => {
               </p>
             </section>
 
-            {/* Input Section */}
+            {/* Input Section + Search History */}
             <section className="mb-4 animate-fade-up" style={{
           animationDelay: "0.2s"
         }}>
-              <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
+              <div className="w-full max-w-2xl mx-auto space-y-3">
+                <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
+                {history.length > 0 && keywordResults.length === 0 && (
+                  <div className="px-2">
+                    <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
+                  </div>
+                )}
+              </div>
             </section>
-
-            {/* Search History Section - compact, right below input */}
-            {history.length > 0 && keywordResults.length === 0 && <section className="mb-12 max-w-2xl mx-auto animate-fade-up" style={{
-          animationDelay: "0.25s"
-        }}>
-                <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
-              </section>}
 
             {/* Keyword Search Results Section */}
             {keywordResults.length > 0 && <section className="mb-12 animate-fade-up" style={{
