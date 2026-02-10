@@ -1,9 +1,10 @@
 import { useRef, useState, useEffect } from "react";
-import { FileText, Copy, Check, Share2, Printer } from "lucide-react";
+import { FileText, Copy, Check, Share2, Printer, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps } from "./types";
 import { PdfGenerator } from "./PdfGenerator";
+import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
@@ -289,6 +290,13 @@ export function PatentSummary({
                   patentNumber={patentNumber}
                   patentData={patentData}
                   printRef={printRef}
+                  commercializationDetails={commercializationDetails}
+                  commercializationScore={commercializationScore}
+                />
+                <PptGenerator
+                  content={content}
+                  patentNumber={patentNumber}
+                  patentData={patentData}
                   commercializationDetails={commercializationDetails}
                   commercializationScore={commercializationScore}
                 />
