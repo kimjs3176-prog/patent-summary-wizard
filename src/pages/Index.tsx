@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { RdaLatestPatents } from "@/components/RdaLatestPatents";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 const Index = () => {
   const {
     isLoading,
@@ -31,11 +31,33 @@ const Index = () => {
   // Keyword search state
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
+  const initialLoadDone = useRef(false);
 
-  // Handle patent search with history saving
-  const handleSubmit = async (patentNumber: string) => {
+  // Auto-search from URL param on first load
+  useEffect(() => {
+    if (initialLoadDone.current) return;
+    initialLoadDone.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const patentParam = params.get("patent");
+    if (patentParam) {
+      handleSubmitInternal(patentParam);
+    }
+  }, []);
+
+  // Update URL when viewing a patent
+  const updateUrl = (patentNum?: string) => {
+    if (patentNum) {
+      window.history.replaceState(null, "", `?patent=${encodeURIComponent(patentNum)}`);
+    } else {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  };
+
+  // Internal submit handler
+  const handleSubmitInternal = async (patentNumber: string) => {
     setKeywordResults([]);
     setSearchedKeyword("");
+    updateUrl(patentNumber);
     const result = await generateSummary(patentNumber);
     if (result && result.patentData) {
       addToHistory({
@@ -47,10 +69,16 @@ const Index = () => {
     }
   };
 
+  // Handle patent search with history saving
+  const handleSubmit = async (patentNumber: string) => {
+    await handleSubmitInternal(patentNumber);
+  };
+
   // Handle selecting from history
   const handleHistorySelect = (item: SearchHistoryItem) => {
     setKeywordResults([]);
     setSearchedKeyword("");
+    updateUrl(item.patentNumber);
     loadFromHistory(item);
   };
 
@@ -85,7 +113,7 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Patent Summary</p>
             </div>
           </div>
-          {(summary || isLoading) && <Button variant="outline" size="sm" onClick={reset} className="border-border/50 bg-card/50 hover:bg-card text-foreground">
+          {(summary || isLoading) && <Button variant="outline" size="sm" onClick={() => { updateUrl(); reset(); }} className="border-border/50 bg-card/50 hover:bg-card text-foreground">
               새로운 특허 검색
             </Button>}
         </div>

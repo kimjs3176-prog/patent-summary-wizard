@@ -66,7 +66,9 @@ export function PatentSummary({
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
+    // Build shareable URL with patent number
+    const baseUrl = window.location.origin + window.location.pathname;
+    const url = `${baseUrl}?patent=${encodeURIComponent(patentNumber)}`;
     
     if (navigator.share) {
       try {
@@ -77,15 +79,12 @@ export function PatentSummary({
         });
         toast.success("공유되었습니다");
       } catch (error) {
-        // User cancelled or error occurred
         if ((error as Error).name !== 'AbortError') {
-          // Fallback to clipboard
           await navigator.clipboard.writeText(url);
           toast.success("링크가 클립보드에 복사되었습니다");
         }
       }
     } else {
-      // Fallback for browsers that don't support Web Share API
       await navigator.clipboard.writeText(url);
       toast.success("링크가 클립보드에 복사되었습니다");
     }
