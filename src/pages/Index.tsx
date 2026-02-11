@@ -113,8 +113,8 @@ const Index = () => {
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-foreground">특허요약</h1>
-              <p className="text-xs text-muted-foreground">Patent Summary</p>
+              <h1 className="font-bold text-lg text-foreground">농식품분야 특허 AI 기술요약 서비스</h1>
+              <p className="text-xs text-muted-foreground">Agri-Food Patent AI Summary Service</p>
             </div>
           </div>
           {(summary || isLoading) && <Button variant="outline" size="sm" onClick={() => { updateUrl(); reset(); }} className="border-border/50 bg-card/50 hover:bg-card text-foreground">
@@ -133,8 +133,8 @@ const Index = () => {
               </div>
               
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground mb-6 leading-tight">
-                농식품 특허{' '}
-                <span className="gradient-text">AI 요약</span>{' '}
+                농식품분야 특허{' '}
+                <span className="gradient-text">AI 기술요약</span>{' '}
                 서비스      
               </h2>
               
@@ -194,7 +194,8 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-border/50 mt-auto relative z-10">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground space-y-1">
+          <p>본 서비스는 지식재산처/한국특허정보원의 공공데이터를 활용하여 제작되었습니다</p>
           <p>KIPRIS(한국특허정보원) 데이터 연동 • AI 기반 특허 분석</p>
         </div>
       </footer>

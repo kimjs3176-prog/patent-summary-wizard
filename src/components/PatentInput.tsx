@@ -112,7 +112,7 @@ export function PatentInput({
               <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                 <FileText className="h-5 w-5 text-muted-foreground" />
               </div>
-              <input type="text" placeholder="특허등록번호 출원번호 또는 관심 키워드를 입력하세요" value={inputValue} onChange={handleInputChange} className="w-full h-14 pl-14 pr-5 text-base bg-secondary/50 border-2 border-border/50 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:bg-secondary/80 focus:shadow-[0_0_0_4px_hsla(85,50%,40%,0.15)]" disabled={isProcessing} />
+              <input type="text" placeholder="특허등록번호 출원번호 또는 관심 키워드를 입력하세요" value={inputValue} onChange={handleInputChange} className="w-full h-14 pl-14 pr-5 text-sm md:text-base bg-secondary/50 border-2 border-border/50 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground placeholder:text-xs placeholder:md:text-sm focus:border-primary focus:bg-secondary/80 focus:shadow-[0_0_0_4px_hsla(174,100%,33%,0.15)]" disabled={isProcessing} />
             </div>
             <Button type="submit" disabled={!inputValue.trim() || isProcessing} className="h-14 px-8 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 rounded-2xl whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none">
               {isProcessing ? <span className="flex items-center gap-2">

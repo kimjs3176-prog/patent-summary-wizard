@@ -18,7 +18,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 150 20% 15%;
 
-    --primary: 150 45% 35%;
+    --primary: 174 100% 33%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 150 15% 90%;
@@ -35,30 +35,30 @@
 
     --border: 150 15% 80%;
     --input: 150 15% 80%;
-    --ring: 150 45% 35%;
+    --ring: 174 100% 33%;
 
     --radius: 1rem;
 
     /* Custom design tokens - Agricultural theme */
     --gradient-bg: linear-gradient(135deg, hsl(160 30% 92%) 0%, hsl(140 25% 88%) 30%, hsl(180 20% 90%) 70%, hsl(200 25% 92%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(150 45% 35%) 0%, hsl(170 40% 30%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(150 45% 35%), hsl(35 70% 50%));
+    --gradient-primary: linear-gradient(135deg, hsl(174 100% 33%) 0%, hsl(180 80% 28%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(174 100% 33%), hsl(35 70% 50%));
     --gradient-glow: radial-gradient(circle at 20% 50%, hsla(160 40% 70% / 0.2) 0%, transparent 50%),
                      radial-gradient(circle at 80% 80%, hsla(200 35% 75% / 0.15) 0%, transparent 50%);
     --shadow-sm: 0 1px 3px 0 hsla(150 20% 20% / 0.06);
     --shadow-md: 0 4px 12px -2px hsla(150 20% 20% / 0.08);
     --shadow-lg: 0 20px 50px hsla(150 20% 20% / 0.1);
     --shadow-card: 0 8px 30px hsla(150 20% 20% / 0.08);
-    --shadow-glow: 0 8px 24px hsla(150 45% 35% / 0.15);
+    --shadow-glow: 0 8px 24px hsla(174 100% 33% / 0.15);
 
     --sidebar-background: 150 20% 97%;
     --sidebar-foreground: 150 20% 15%;
-    --sidebar-primary: 150 45% 35%;
+    --sidebar-primary: 174 100% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 150 15% 92%;
     --sidebar-accent-foreground: 150 20% 15%;
     --sidebar-border: 150 15% 80%;
-    --sidebar-ring: 150 45% 35%;
+    --sidebar-ring: 174 100% 33%;
   }
 
   .dark {
