@@ -32,7 +32,7 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
   if (popular.length === 0) return null;
 
   return (
-    <div className="w-full max-w-xs">
+    <div className="w-full lg:max-w-xs">
       <div className="glass-effect rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-4 h-4 text-accent" />

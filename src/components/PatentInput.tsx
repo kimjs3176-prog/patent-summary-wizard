@@ -105,7 +105,7 @@ export function PatentInput({
   };
   const isProcessing = isLoading || isSearchingKeyword;
   return <div className="w-full max-w-2xl mx-auto">
-      <div className="glass-effect rounded-3xl p-8 md:p-10">
+      <div className="glass-effect rounded-2xl md:rounded-3xl p-4 md:p-8 lg:p-10">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col md:flex-row gap-3 items-stretch">
             <div className="relative flex-1">

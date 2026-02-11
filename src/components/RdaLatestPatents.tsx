@@ -51,8 +51,8 @@ export function RdaLatestPatents({ onPatentSelect }: RdaLatestPatentsProps) {
 
   if (isLoading) {
     return (
-      <section className="max-w-5xl mx-auto mt-16">
-        <div className="flex items-center justify-center gap-3 py-12">
+    <section className="max-w-5xl mx-auto mt-8 md:mt-16">
+        <div className="flex items-center justify-center gap-3 py-8 md:py-12">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
           <span className="text-muted-foreground">농촌진흥청 최신 특허 로딩 중...</span>
         </div>
@@ -65,23 +65,23 @@ export function RdaLatestPatents({ onPatentSelect }: RdaLatestPatentsProps) {
   }
 
   return (
-    <section className="max-w-5xl mx-auto mt-16">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-white" />
+    <section className="max-w-5xl mx-auto mt-8 md:mt-16">
+      <div className="flex items-center gap-2.5 md:gap-3 mb-5 md:mb-8">
+        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+          <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-foreground">농촌진흥청 최신 특허</h3>
-          <p className="text-sm text-muted-foreground">대한민국(농촌진흥청장) 출원 특허</p>
+          <h3 className="text-base md:text-xl font-bold text-foreground">농촌진흥청 최신 특허</h3>
+          <p className="text-xs md:text-sm text-muted-foreground">대한민국(농촌진흥청장) 출원 특허</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {patents.map((patent, index) => (
           <button
             key={patent.patentId}
             onClick={() => onPatentSelect(patent.patentId)}
-            className="group p-5 rounded-2xl glass-effect text-left hover:shadow-glow transition-all duration-300 animate-slide-in border border-border/50 hover:border-primary/50"
+            className="group p-4 md:p-5 rounded-xl md:rounded-2xl glass-effect text-left hover:shadow-glow transition-all duration-300 animate-slide-in border border-border/50 hover:border-primary/50"
             style={{ animationDelay: `${0.1 + index * 0.05}s` }}
           >
             <div className="flex items-start gap-3 mb-3">
