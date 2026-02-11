@@ -107,14 +107,14 @@ const Index = () => {
   return <div className="min-h-screen relative z-10">
       {/* Header */}
       <header className="w-full border-b border-border/50 bg-card/30 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-              <FileText className="w-5 h-5 text-white" />
+        <div className="container mx-auto px-3 md:px-4 py-3 md:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20 flex-shrink-0">
+              <FileText className="w-4 h-4 md:w-5 md:h-5 text-white" />
             </div>
-            <div>
-              <h1 className="font-bold text-lg text-foreground">농식품분야 특허 AI 기술요약 서비스</h1>
-              <p className="text-xs text-muted-foreground">Agri-Food Patent AI Summary Service</p>
+            <div className="min-w-0">
+              <h1 className="font-bold text-sm md:text-lg text-foreground truncate">농식품분야 특허 AI 기술요약 서비스</h1>
+              <p className="text-[10px] md:text-xs text-muted-foreground hidden sm:block">Agri-Food Patent AI Summary Service</p>
             </div>
           </div>
           {(summary || isLoading) && <Button variant="outline" size="sm" onClick={() => { updateUrl(); reset(); }} className="border-border/50 bg-card/50 hover:bg-card text-foreground">
@@ -123,25 +123,25 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-16">
+      <main className="container mx-auto px-4 py-8 md:py-16">
         {!summary && !isLoading ? <>
             {/* Hero Section */}
-            <section className="text-center max-w-3xl mx-auto mb-16 animate-fade-down">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 text-accent mb-8 border border-accent/30 animate-pulse-subtle">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-sm font-medium">KIPRIS 특허 데이터 연동</span>
+            <section className="text-center max-w-3xl mx-auto mb-8 md:mb-16 animate-fade-down">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent/20 text-accent mb-5 md:mb-8 border border-accent/30 animate-pulse-subtle">
+                <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                <span className="text-xs md:text-sm font-medium">KIPRIS 특허 데이터 연동</span>
               </div>
               
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground mb-6 leading-tight">
+              <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-foreground mb-4 md:mb-6 leading-tight">
                 농식품분야 특허<br />
                 <span className="gradient-text">AI 기술요약</span>{' '}
                 서비스      
               </h2>
               
-              <p className="text-lg text-muted-foreground font-light tracking-wide">
+              <p className="text-sm md:text-lg text-muted-foreground font-light tracking-wide">
                 농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다
               </p>
-              <p className="text-lg text-muted-foreground font-light tracking-wide mt-1">
+              <p className="text-sm md:text-lg text-muted-foreground font-light tracking-wide mt-1">
                 기술 이전 받고 싶은 특허정보나 키워드를 입력하세요
               </p>
             </section>
@@ -150,8 +150,8 @@ const Index = () => {
             <section className="mb-4 animate-fade-up" style={{
           animationDelay: "0.2s"
         }}>
-              <div className="w-full max-w-4xl mx-auto flex gap-6 items-start justify-center">
-                <div className="flex-1 max-w-2xl space-y-3">
+              <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 items-center lg:items-start justify-center">
+                <div className="w-full flex-1 max-w-2xl space-y-3">
                   <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
                   {history.length > 0 && keywordResults.length === 0 && (
                     <div className="px-2">
@@ -159,7 +159,7 @@ const Index = () => {
                     </div>
                   )}
                 </div>
-                <div className="hidden lg:block flex-shrink-0">
+                <div className="w-full lg:w-auto lg:flex-shrink-0">
                   <PopularSearches onPatentSelect={handleSubmit} />
                 </div>
               </div>
@@ -197,7 +197,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-border/50 mt-auto relative z-10">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground space-y-1">
+        <div className="container mx-auto px-4 py-4 md:py-6 text-center text-xs md:text-sm text-muted-foreground space-y-1">
           <p>본 서비스는 지식재산처/한국특허정보원의 공공데이터를 활용하여 제작되었습니다</p>
           <p>KIPRIS(한국특허정보원) 데이터 연동 • AI 기반 특허 분석</p>
         </div>
