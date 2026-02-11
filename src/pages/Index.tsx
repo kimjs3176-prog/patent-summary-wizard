@@ -133,13 +133,16 @@ const Index = () => {
               </div>
               
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground mb-6 leading-tight">
-                농식품분야 특허{' '}
+                농식품분야 특허<br />
                 <span className="gradient-text">AI 기술요약</span>{' '}
                 서비스      
               </h2>
               
               <p className="text-lg text-muted-foreground font-light tracking-wide">
-                 농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다
+                농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다
+              </p>
+              <p className="text-lg text-muted-foreground font-light tracking-wide mt-1">
+                기술 이전 받고 싶은 특허정보나 키워드를 입력하세요
               </p>
             </section>
 
