@@ -133,20 +133,37 @@ serve(async (req) => {
   }
 
   try {
-    const { patentNumber } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(
+        JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { patentNumber } = body;
 
-    if (!patentNumber) {
+    if (!patentNumber || typeof patentNumber !== "string") {
       return new Response(
         JSON.stringify({ success: false, error: "특허 번호를 입력해주세요." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Input validation: length and character restrictions
+    const trimmedNumber = patentNumber.trim();
+    if (trimmedNumber.length > 50 || !/^[0-9-]+$/.test(trimmedNumber)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "유효하지 않은 특허 번호 형식입니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
     if (!KIPRIS_API_KEY) {
+      console.error("[CONFIG] KIPRIS_API_KEY not configured");
       return new Response(
-        JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "서비스 일시적 오류입니다. 잠시 후 다시 시도해주세요." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -190,10 +207,10 @@ serve(async (req) => {
       searchText.includes("INVALID REQUEST") ||
       searchText.includes("<resultCode>10</resultCode>")) {
       const errorMsg = searchText.match(/<resultMsg>([^<]+)<\/resultMsg>/)?.[1] || "API 오류";
-      console.error("KIPRIS API error:", errorMsg);
+      console.error("[UPSTREAM] KIPRIS API error:", errorMsg);
       return new Response(
-        JSON.stringify({ success: false, error: "KIPRIS API 오류: " + errorMsg }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "외부 서비스 연동 중 오류가 발생했습니다." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -459,7 +476,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("fetch-patent error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : "알 수 없는 오류" }),
+      JSON.stringify({ success: false, error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
