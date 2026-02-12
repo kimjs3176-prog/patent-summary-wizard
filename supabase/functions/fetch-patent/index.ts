@@ -258,7 +258,14 @@ serve(async (req) => {
         classifications: getFieldFromXml(itemXml, "ipcNumber") ? [getFieldFromXml(itemXml, "ipcNumber")!] : [],
         // bigDrawing 우선 사용 (고해상도), 없으면 drawing 사용
         representativeImage: getFieldFromXml(itemXml, "bigDrawing") || getFieldFromXml(itemXml, "drawing"),
-        images: [],
+        images: (() => {
+          const big = getFieldFromXml(itemXml, "bigDrawing");
+          const small = getFieldFromXml(itemXml, "drawing");
+          const imgs: string[] = [];
+          if (big && big.startsWith("http")) imgs.push(big);
+          if (small && small.startsWith("http") && small !== big) imgs.push(small);
+          return imgs;
+        })(),
       };
 
       // 2차 상세 조회: 청구항(claims) 확보
@@ -310,6 +317,8 @@ serve(async (req) => {
           const allBigDrawings = getFieldsFromXml(detailText, "bigDrawing").filter(u => u.startsWith("http"));
           const allDrawings = getFieldsFromXml(detailText, "drawing").filter(u => u.startsWith("http"));
           
+          console.log("Detail API drawings found - bigDrawing:", allBigDrawings.length, "drawing:", allDrawings.length);
+          
           // 고해상도 우선, 없으면 일반 도면 사용
           const allImages = allBigDrawings.length > 0 ? allBigDrawings : allDrawings;
           
@@ -317,16 +326,8 @@ serve(async (req) => {
             patentData.representativeImage = allImages[0];
             // 중복 제거 후 최대 3개
             patentData.images = [...new Set(allImages)].slice(0, 3);
-          } else {
-            // fallback: 단일 도면
-            const detailedBigDrawing = getFieldFromXml(detailText, "bigDrawing");
-            const detailedDrawing = getFieldFromXml(detailText, "drawing");
-            const bestDrawing = detailedBigDrawing || detailedDrawing;
-            if (bestDrawing && bestDrawing.startsWith("http")) {
-              patentData.representativeImage = bestDrawing;
-              patentData.images = [bestDrawing];
-            }
           }
+          // detail API에 도면이 없으면 search API에서 가져온 이미지 유지
         } else {
           console.warn("Detail API returned error or empty payload");
         }
