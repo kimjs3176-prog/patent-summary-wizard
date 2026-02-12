@@ -37,21 +37,44 @@ serve(async (req) => {
   }
 
   try {
-    const { keyword } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(
+        JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { keyword } = body;
 
-    // 한글자도 검색 가능하도록 수정
-    if (!keyword || keyword.trim().length < 1) {
+    // Validate keyword: type, length, allowed characters
+    if (!keyword || typeof keyword !== "string" || keyword.trim().length < 1) {
       return new Response(
         JSON.stringify({ success: false, error: "검색어를 1자 이상 입력해주세요." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    if (keyword.length > 100) {
+      return new Response(
+        JSON.stringify({ success: false, error: "검색어는 100자 이내로 입력해주세요." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Only allow Korean, alphanumeric, spaces, hyphens
+    if (!/^[\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-(),.]+$/u.test(keyword.trim())) {
+      return new Response(
+        JSON.stringify({ success: false, error: "검색어에 허용되지 않는 문자가 포함되어 있습니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
     if (!KIPRIS_API_KEY) {
+      console.error("[CONFIG] KIPRIS_API_KEY not configured");
       return new Response(
-        JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "서비스 일시적 오류입니다. 잠시 후 다시 시도해주세요." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -191,7 +214,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("search-patents error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : "알 수 없는 오류" }),
+      JSON.stringify({ success: false, error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
