@@ -67,9 +67,14 @@ export function PatentSummary({
   };
 
   const handleShare = async () => {
-    // Build shareable URL with patent number
-    const baseUrl = window.location.origin + window.location.pathname;
-    const url = `${baseUrl}?patent=${encodeURIComponent(patentNumber)}`;
+    // Build shareable URL with patent number - always use published URL for public access
+    const publishedOrigin = "https://atipsum.lovable.app";
+    const currentOrigin = window.location.origin;
+    // Use published URL so recipients don't need Lovable login
+    const baseOrigin = currentOrigin.includes("-preview--") || currentOrigin.includes("lovableproject.com")
+      ? publishedOrigin
+      : currentOrigin;
+    const url = `${baseOrigin}/?patent=${encodeURIComponent(patentNumber)}`;
     
     if (navigator.share) {
       try {
