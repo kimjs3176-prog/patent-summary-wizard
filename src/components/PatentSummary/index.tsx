@@ -157,12 +157,40 @@ export function PatentSummary({
           </h2>
         );
         
-        // Insert representative image AFTER "발명의 요약" section header
-        if (sectionTitle === "발명의 요약" && patentData?.representativeImage) {
+        // Insert representative images AFTER "발명의 요약" section header (up to 3)
+        if (sectionTitle === "발명의 요약" && patentData?.images && patentData.images.length > 0) {
+          const imagesToShow = patentData.images.slice(0, 3);
+          const isSingle = imagesToShow.length === 1;
+          
+          elements.push(
+            <div key={`imgs-${index}`} className={`my-6 ${isSingle ? 'flex justify-center' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'}`}>
+              {imagesToShow.map((imgUrl, imgIdx) => {
+                const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(imgUrl)}`;
+                return (
+                  <div key={imgIdx} className="text-center">
+                    <img
+                      src={proxied}
+                      alt={`도면 ${imgIdx + 1}`}
+                      className={`${isSingle ? 'w-[345px] md:w-[384px]' : 'w-full'} h-auto max-h-[400px] object-contain rounded-2xl border border-border/50 bg-white/90 mx-auto shadow-md`}
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {isSingle ? '【대표 도면】' : `【도면 ${imgIdx + 1}】`}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        } else if (sectionTitle === "발명의 요약" && patentData?.representativeImage) {
+          // Fallback: single representative image
           const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(
             patentData.representativeImage
           )}`;
-
           elements.push(
             <div key={`img-${index}`} className="my-6 flex justify-center">
               <div className="text-center">

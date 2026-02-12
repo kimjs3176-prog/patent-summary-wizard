@@ -258,6 +258,7 @@ serve(async (req) => {
         classifications: getFieldFromXml(itemXml, "ipcNumber") ? [getFieldFromXml(itemXml, "ipcNumber")!] : [],
         // bigDrawing 우선 사용 (고해상도), 없으면 drawing 사용
         representativeImage: getFieldFromXml(itemXml, "bigDrawing") || getFieldFromXml(itemXml, "drawing"),
+        images: [],
       };
 
       // 2차 상세 조회: 청구항(claims) 확보
@@ -305,12 +306,26 @@ serve(async (req) => {
             patentData.claims = claims.slice(0, 50); // 과도한 길이 방지
           }
 
-          // 상세 응답에서 bigDrawing(고해상도) 우선, 없으면 drawing 사용
-          const detailedBigDrawing = getFieldFromXml(detailText, "bigDrawing");
-          const detailedDrawing = getFieldFromXml(detailText, "drawing");
-          const bestDrawing = detailedBigDrawing || detailedDrawing;
-          if (bestDrawing && bestDrawing.startsWith("http")) {
-            patentData.representativeImage = bestDrawing;
+          // 상세 응답에서 모든 도면 수집 (최대 3개)
+          const allBigDrawings = getFieldsFromXml(detailText, "bigDrawing").filter(u => u.startsWith("http"));
+          const allDrawings = getFieldsFromXml(detailText, "drawing").filter(u => u.startsWith("http"));
+          
+          // 고해상도 우선, 없으면 일반 도면 사용
+          const allImages = allBigDrawings.length > 0 ? allBigDrawings : allDrawings;
+          
+          if (allImages.length > 0) {
+            patentData.representativeImage = allImages[0];
+            // 중복 제거 후 최대 3개
+            patentData.images = [...new Set(allImages)].slice(0, 3);
+          } else {
+            // fallback: 단일 도면
+            const detailedBigDrawing = getFieldFromXml(detailText, "bigDrawing");
+            const detailedDrawing = getFieldFromXml(detailText, "drawing");
+            const bestDrawing = detailedBigDrawing || detailedDrawing;
+            if (bestDrawing && bestDrawing.startsWith("http")) {
+              patentData.representativeImage = bestDrawing;
+              patentData.images = [bestDrawing];
+            }
           }
         } else {
           console.warn("Detail API returned error or empty payload");
