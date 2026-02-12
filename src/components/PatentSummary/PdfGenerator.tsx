@@ -50,13 +50,13 @@ const THEME = {
   bg: [255, 255, 255] as [number, number, number],
   cardBg: [240, 248, 243] as [number, number, number],
   cardBgLight: [232, 243, 237] as [number, number, number],
-  primary: [38, 120, 80] as [number, number, number],
+  primary: [0, 120, 90] as [number, number, number],
   accent: [200, 135, 40] as [number, number, number],
-  text: [20, 30, 25] as [number, number, number],
-  textMuted: [90, 110, 100] as [number, number, number],
-  textBody: [30, 40, 35] as [number, number, number],
+  text: [15, 20, 18] as [number, number, number],
+  textMuted: [80, 100, 90] as [number, number, number],
+  textBody: [25, 32, 28] as [number, number, number],
   border: [195, 215, 205] as [number, number, number],
-  headerGreen: [28, 100, 70] as [number, number, number],
+  headerGreen: [0, 140, 130] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
 };
 
@@ -400,27 +400,32 @@ export function PdfGenerator({
       let imageInserted = false;
       let trlInserted = false;
 
-      const insertImage = async () => {
-        if (!patentData?.representativeImage || imageInserted) return;
-        const img = await loadImageForPdf(patentData.representativeImage);
-        if (!img) return;
+      const insertImages = async () => {
+        if (imageInserted) return;
+        const imagesToUse = patentData?.images?.slice(0, 3) || (patentData?.representativeImage ? [patentData.representativeImage] : []);
+        if (imagesToUse.length === 0) return;
 
-        const imgW = 66;
-        const imgH = 50;
-        checkNewPage(imgH + 8);
+        for (let i = 0; i < imagesToUse.length; i++) {
+          const img = await loadImageForPdf(imagesToUse[i]);
+          if (!img) continue;
 
-        const imgX = (pageWidth - imgW) / 2;
-        pdf.setDrawColor(...THEME.border);
-        pdf.setLineWidth(0.25);
-        pdf.roundedRect(imgX - 1.5, yPosition - 0.5, imgW + 3, imgH + 1, 1.5, 1.5, "D");
-        pdf.addImage(img.dataUrl, img.format, imgX, yPosition, imgW, imgH);
-        yPosition += imgH + 3;
+          const imgW = imagesToUse.length === 1 ? 66 : 52;
+          const imgH = imagesToUse.length === 1 ? 50 : 40;
+          checkNewPage(imgH + 10);
 
-        pdf.setFontSize(6.5);
-        pdf.setTextColor(...THEME.textMuted);
-        const cap = "【대표 도면】";
-        pdf.text(cap, (pageWidth - pdf.getTextWidth(cap)) / 2, yPosition);
-        yPosition += 7;
+          const imgX = (pageWidth - imgW) / 2;
+          pdf.setDrawColor(...THEME.border);
+          pdf.setLineWidth(0.25);
+          pdf.roundedRect(imgX - 1.5, yPosition - 0.5, imgW + 3, imgH + 1, 1.5, 1.5, "D");
+          pdf.addImage(img.dataUrl, img.format, imgX, yPosition, imgW, imgH);
+          yPosition += imgH + 3;
+
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(...THEME.textMuted);
+          const cap = imagesToUse.length === 1 ? "【대표 도면】" : `【도면 ${i + 1}】`;
+          pdf.text(cap, (pageWidth - pdf.getTextWidth(cap)) / 2, yPosition);
+          yPosition += 5;
+        }
         imageInserted = true;
       };
 
@@ -576,7 +581,7 @@ export function PdfGenerator({
           
           yPosition += 8.5;
 
-          if (sectionTitle === "발명의 요약") await insertImage();
+          if (sectionTitle === "발명의 요약") await insertImages();
           if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("상용화 전망")) {
             yPosition += 3;
             insertTrl();
