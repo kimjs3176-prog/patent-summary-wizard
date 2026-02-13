@@ -21,6 +21,7 @@ const Index = () => {
     patentData,
     relatedPatents,
     generateSummary,
+    regenerateSummaryWithMode,
     loadFromHistory,
     reset
   } = usePatentSummary();
@@ -189,7 +190,7 @@ const Index = () => {
 
             {/* Summary Section */}
             <section className="mb-8">
-              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} />
+              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} onAnalysisModeChange={regenerateSummaryWithMode} />
             </section>
 
             {/* Loading Input for new search during streaming */}

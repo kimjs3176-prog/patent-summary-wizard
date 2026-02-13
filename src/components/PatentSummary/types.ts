@@ -36,6 +36,7 @@ export interface PatentSummaryProps {
   patentData?: PatentData | null;
   relatedPatents?: RelatedPatent[];
   onRelatedPatentClick?: (patentNumber: string) => void;
+  onAnalysisModeChange?: (mode: "summary" | "detailed") => void;
 }
 
 export interface PatentIndices {
