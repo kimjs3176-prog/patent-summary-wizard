@@ -36,9 +36,17 @@ serve(async (req) => {
     }
     const { patentNumber, patentData } = body;
 
-    if (!patentNumber || !patentData) {
+    if (!patentNumber || typeof patentNumber !== "string" || !patentData) {
       return new Response(
         JSON.stringify({ error: "특허 정보가 필요합니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const trimmedPatent = patentNumber.trim();
+    if (trimmedPatent.length > 50 || !/^[0-9-]+$/.test(trimmedPatent)) {
+      return new Response(
+        JSON.stringify({ error: "유효하지 않은 특허 번호 형식입니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
