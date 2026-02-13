@@ -16,12 +16,14 @@ export function PatentSummary({
   patentData,
   relatedPatents = [],
   onRelatedPatentClick,
+  onAnalysisModeChange,
 }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const [commercializationScore, setCommercializationScore] = useState<number | null>(null);
   const [commercializationDetails, setCommercializationDetails] = useState<CommercializationDetails | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState<"summary" | "detailed">("summary");
 
   // Fetch commercialization score when patent data is available
   useEffect(() => {
@@ -98,6 +100,12 @@ export function PatentSummary({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleModeChange = (mode: "summary" | "detailed") => {
+    if (mode === analysisMode || isStreaming) return;
+    setAnalysisMode(mode);
+    onAnalysisModeChange?.(mode);
   };
 
 
@@ -320,8 +328,16 @@ export function PatentSummary({
             )}
             {patentData.publicationDate && (
               <div className="bg-secondary/30 p-4 rounded-xl border border-border/50 hover-lift animate-scale-in stagger-4">
-                <div className="text-xs text-muted-foreground mb-1 font-medium">공개일</div>
+                <div className="text-xs text-muted-foreground mb-1 font-medium">
+                  {patentData.registrationNumber ? '등록일' : '공개일'}
+                </div>
                 <div className="text-sm text-foreground font-medium">{patentData.publicationDate}</div>
+              </div>
+            )}
+            {patentData.classifications && patentData.classifications.length > 0 && (
+              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50 hover-lift animate-scale-in stagger-5 sm:col-span-2 lg:col-span-1">
+                <div className="text-xs text-muted-foreground mb-1 font-medium">IPC 코드</div>
+                <div className="text-sm text-foreground font-medium">{patentData.classifications.join(', ')}</div>
               </div>
             )}
           </div>
@@ -354,7 +370,33 @@ export function PatentSummary({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Analysis Mode Toggle */}
+            {!isStreaming && content && onAnalysisModeChange && (
+              <div className="flex items-center bg-secondary/50 rounded-lg p-0.5 border border-border/50">
+                <button
+                  onClick={() => handleModeChange("summary")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    analysisMode === "summary"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  요약분석
+                </button>
+                <button
+                  onClick={() => handleModeChange("detailed")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    analysisMode === "detailed"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  상세분석
+                </button>
+              </div>
+            )}
+
             {!isStreaming && content && (
               <>
                 <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
