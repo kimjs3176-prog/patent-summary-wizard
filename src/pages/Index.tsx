@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { RdaLatestPatents } from "@/components/RdaLatestPatents";
+import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useState, useEffect, useRef } from "react";
@@ -127,9 +128,9 @@ const Index = () => {
         {!summary && !isLoading ? <>
             {/* Hero Section */}
             <section className="text-center max-w-3xl mx-auto mb-10 md:mb-16 animate-fade-down">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent/20 text-accent mb-6 md:mb-8 border border-accent/30 animate-pulse-subtle">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 text-primary mb-6 md:mb-8 border border-primary/20 animate-pulse-subtle">
                 <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                <span className="text-xs md:text-sm font-medium">KIPRIS 특허 데이터 연동</span>
+                <span className="text-xs md:text-sm font-semibold">KIPRIS 특허 데이터 연동</span>
               </div>
               
               <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-foreground mb-5 md:mb-7 leading-[1.25] md:leading-tight tracking-tight">
@@ -138,10 +139,10 @@ const Index = () => {
                 서비스      
               </h2>
               
-              <p className="text-base md:text-xl text-muted-foreground font-light tracking-wide leading-relaxed">
+              <p className="text-base md:text-xl text-muted-foreground font-normal tracking-wide leading-relaxed">
                 농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다
               </p>
-              <p className="text-sm md:text-base text-muted-foreground/70 font-light tracking-wide mt-2">
+              <p className="text-sm md:text-base text-muted-foreground/80 font-normal tracking-wide mt-2">
                 기술 이전 받고 싶은 특허정보나 키워드를 입력하세요
               </p>
             </section>
@@ -174,6 +175,9 @@ const Index = () => {
 
             {/* RDA Latest Patents Section */}
             <RdaLatestPatents onPatentSelect={handleSubmit} />
+
+            {/* Technology Transfer Guide Infographic */}
+            <TechTransferGuide />
           </> : <>
             {/* Loading State */}
             {isFetching && <div className="text-center mb-8 animate-fade-up">
