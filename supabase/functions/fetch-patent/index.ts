@@ -214,8 +214,9 @@ serve(async (req) => {
       );
     }
 
-    // Parse XML response - find first item
-    const itemMatch = searchText.match(/<item>([\s\S]*?)<\/item>/);
+    // Parse XML response - find all items (공개/등록 등 여러 건이 있을 수 있음)
+    const allSearchItems = [...searchText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const itemMatch = allSearchItems.length > 0 ? searchText.match(/<item>([\s\S]*?)<\/item>/) : null;
 
     // Small XML helpers (CDATA 우선)
     const getFieldFromXml = (xml: string, field: string): string | undefined => {
@@ -274,14 +275,29 @@ serve(async (req) => {
         registrationNumber,
         classifications: getFieldFromXml(itemXml, "ipcNumber") ? [getFieldFromXml(itemXml, "ipcNumber")!] : [],
         // bigDrawing(고해상도) 우선, drawing(저해상도)은 fallback만
-        // bigDrawing과 drawing은 동일 도면의 해상도 차이이므로 중복 포함하지 않음
         representativeImage: getFieldFromXml(itemXml, "bigDrawing") || getFieldFromXml(itemXml, "drawing"),
+        // 검색 결과의 모든 항목(공개/등록)에서 고해상도 도면 수집
         images: (() => {
-          const big = getFieldFromXml(itemXml, "bigDrawing");
-          const small = getFieldFromXml(itemXml, "drawing");
-          // 고해상도만 사용, 없으면 저해상도 fallback (동일 도면이므로 둘 다 넣지 않음)
-          const img = (big && big.startsWith("http")) ? big : (small && small.startsWith("http")) ? small : null;
-          return img ? [img] : [];
+          const collected: string[] = [];
+          for (const si of allSearchItems) {
+            const siXml = si[1];
+            const big = getFieldFromXml(siXml, "bigDrawing");
+            const small = getFieldFromXml(siXml, "drawing");
+            const bestUrl = (big && big.startsWith("http")) ? big : (small && small.startsWith("http")) ? small : null;
+            if (bestUrl && !collected.includes(bestUrl)) {
+              collected.push(bestUrl);
+            }
+            if (collected.length >= 3) break;
+          }
+          // fallback: 현재 항목에서라도 1개는 확보
+          if (collected.length === 0) {
+            const big = getFieldFromXml(itemXml, "bigDrawing");
+            const small = getFieldFromXml(itemXml, "drawing");
+            const img = (big && big.startsWith("http")) ? big : (small && small.startsWith("http")) ? small : null;
+            if (img) collected.push(img);
+          }
+          console.log("Search API drawings collected from all items:", collected.length);
+          return collected;
         })(),
       };
 
@@ -331,13 +347,17 @@ serve(async (req) => {
           }
 
           // 상세 응답에서 모든 도면 수집
-          // bigDrawing = 고해상도, drawing = 저해상도 (동일 도면의 해상도 차이)
-          // 각 item의 bigDrawing을 우선 사용하고, 없는 item만 drawing fallback
           const detailItems = [...detailText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-          
           console.log("Detail API items found:", detailItems.length);
           
           const uniqueImages: string[] = [];
+          // 기존 search API에서 수집한 이미지를 베이스로 시작
+          if (patentData.images) {
+            for (const img of patentData.images) {
+              if (!uniqueImages.includes(img)) uniqueImages.push(img);
+            }
+          }
+          
           for (const dItem of detailItems) {
             const dXml = dItem[1];
             const bigUrl = getFieldFromXml(dXml, "bigDrawing");
@@ -349,18 +369,60 @@ serve(async (req) => {
             if (uniqueImages.length >= 3) break;
           }
           
-          console.log("Detail API unique high-res drawings:", uniqueImages.length);
+          console.log("Combined unique drawings after detail API:", uniqueImages.length);
           
           if (uniqueImages.length > 0) {
             patentData.representativeImage = uniqueImages[0];
             patentData.images = uniqueImages;
           }
-          // detail API에 도면이 없으면 search API에서 가져온 이미지 유지
         } else {
           console.warn("Detail API returned error or empty payload");
         }
       } catch (detailErr) {
         console.error("Error fetching patent detail (claims):", detailErr);
+      }
+
+      // 3차: 도면이 1개 이하인 경우, 출원번호 기반 추가 검색으로 보충
+      if ((patentData.images?.length || 0) < 2 && applicationNumber) {
+        try {
+          const suppUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+          suppUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+          suppUrl.searchParams.set("astrtCont", "");
+          suppUrl.searchParams.set("inventionTitle", "");
+          suppUrl.searchParams.set("applicationNumber", applicationNumber);
+          suppUrl.searchParams.set("pageNo", "1");
+          suppUrl.searchParams.set("numOfRows", "10");
+          suppUrl.searchParams.set("patent", "true");
+          suppUrl.searchParams.set("utility", "true");
+
+          console.log("Supplementary drawing search by applicationNumber");
+          const suppRes = await fetchWithRetry(suppUrl.toString());
+          const suppText = await suppRes.text();
+
+          if (suppRes.ok && !suppText.includes("<successYN>N</successYN>")) {
+            const suppItems = [...suppText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+            console.log("Supplementary search items found:", suppItems.length);
+
+            const existingImages = patentData.images || [];
+            for (const si of suppItems) {
+              const siXml = si[1];
+              const big = getFieldFromXml(siXml, "bigDrawing");
+              const small = getFieldFromXml(siXml, "drawing");
+              const bestUrl = (big && big.startsWith("http")) ? big : (small && small.startsWith("http")) ? small : null;
+              if (bestUrl && !existingImages.includes(bestUrl)) {
+                existingImages.push(bestUrl);
+              }
+              if (existingImages.length >= 3) break;
+            }
+            patentData.images = existingImages;
+            if (existingImages.length > 0 && !patentData.representativeImage) {
+              patentData.representativeImage = existingImages[0];
+            }
+            console.log("Total drawings after supplementary search:", existingImages.length);
+          }
+        } catch (suppErr) {
+          console.error("Supplementary drawing search error:", suppErr);
+        }
       }
     }
 
