@@ -35,9 +35,25 @@ serve(async (req) => {
     }
     const { patentNumber, patentData, analysisMode = "summary" } = body;
 
-    if (!patentNumber) {
+    if (!patentNumber || typeof patentNumber !== "string") {
       return new Response(
         JSON.stringify({ error: "특허 등록번호를 입력해주세요." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const trimmedPatent = patentNumber.trim();
+    if (trimmedPatent.length > 50 || !/^[0-9-]+$/.test(trimmedPatent)) {
+      return new Response(
+        JSON.stringify({ error: "유효하지 않은 특허 번호 형식입니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate analysisMode
+    if (analysisMode && !["summary", "detailed"].includes(analysisMode)) {
+      return new Response(
+        JSON.stringify({ error: "잘못된 분석 모드입니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

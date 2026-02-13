@@ -172,7 +172,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("rda-latest-patents error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : "알 수 없는 오류" }),
+      JSON.stringify({ success: false, error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
