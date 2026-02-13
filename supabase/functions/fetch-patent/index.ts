@@ -273,15 +273,15 @@ serve(async (req) => {
         applicationNumber,
         registrationNumber,
         classifications: getFieldFromXml(itemXml, "ipcNumber") ? [getFieldFromXml(itemXml, "ipcNumber")!] : [],
-        // bigDrawing 우선 사용 (고해상도), 없으면 drawing 사용
+        // bigDrawing(고해상도) 우선, drawing(저해상도)은 fallback만
+        // bigDrawing과 drawing은 동일 도면의 해상도 차이이므로 중복 포함하지 않음
         representativeImage: getFieldFromXml(itemXml, "bigDrawing") || getFieldFromXml(itemXml, "drawing"),
         images: (() => {
           const big = getFieldFromXml(itemXml, "bigDrawing");
           const small = getFieldFromXml(itemXml, "drawing");
-          const imgs: string[] = [];
-          if (big && big.startsWith("http")) imgs.push(big);
-          if (small && small.startsWith("http") && small !== big) imgs.push(small);
-          return imgs;
+          // 고해상도만 사용, 없으면 저해상도 fallback (동일 도면이므로 둘 다 넣지 않음)
+          const img = (big && big.startsWith("http")) ? big : (small && small.startsWith("http")) ? small : null;
+          return img ? [img] : [];
         })(),
       };
 
@@ -330,19 +330,30 @@ serve(async (req) => {
             patentData.claims = claims.slice(0, 50); // 과도한 길이 방지
           }
 
-          // 상세 응답에서 모든 도면 수집 (최대 3개)
-          const allBigDrawings = getFieldsFromXml(detailText, "bigDrawing").filter(u => u.startsWith("http"));
-          const allDrawings = getFieldsFromXml(detailText, "drawing").filter(u => u.startsWith("http"));
+          // 상세 응답에서 모든 도면 수집
+          // bigDrawing = 고해상도, drawing = 저해상도 (동일 도면의 해상도 차이)
+          // 각 item의 bigDrawing을 우선 사용하고, 없는 item만 drawing fallback
+          const detailItems = [...detailText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
           
-          console.log("Detail API drawings found - bigDrawing:", allBigDrawings.length, "drawing:", allDrawings.length);
+          console.log("Detail API items found:", detailItems.length);
           
-          // 고해상도 우선, 없으면 일반 도면 사용
-          const allImages = allBigDrawings.length > 0 ? allBigDrawings : allDrawings;
+          const uniqueImages: string[] = [];
+          for (const dItem of detailItems) {
+            const dXml = dItem[1];
+            const bigUrl = getFieldFromXml(dXml, "bigDrawing");
+            const smallUrl = getFieldFromXml(dXml, "drawing");
+            const bestUrl = (bigUrl && bigUrl.startsWith("http")) ? bigUrl : (smallUrl && smallUrl.startsWith("http")) ? smallUrl : null;
+            if (bestUrl && !uniqueImages.includes(bestUrl)) {
+              uniqueImages.push(bestUrl);
+            }
+            if (uniqueImages.length >= 3) break;
+          }
           
-          if (allImages.length > 0) {
-            patentData.representativeImage = allImages[0];
-            // 중복 제거 후 최대 3개
-            patentData.images = [...new Set(allImages)].slice(0, 3);
+          console.log("Detail API unique high-res drawings:", uniqueImages.length);
+          
+          if (uniqueImages.length > 0) {
+            patentData.representativeImage = uniqueImages[0];
+            patentData.images = uniqueImages;
           }
           // detail API에 도면이 없으면 search API에서 가져온 이미지 유지
         } else {
