@@ -98,14 +98,23 @@ serve(async (req) => {
     }
 
     // Validate response is actually an image
+    // KIPRIS fileToss.jsp may return generic content-types like "application/octet-stream"
+    // or even "text/html" for valid images, so we allow those through if from allowed domains
     const contentType = upstream.headers.get("content-type") || "";
-    if (!contentType.startsWith("image/")) {
+    const isImageContentType = contentType.startsWith("image/");
+    const isOctetStream = contentType.includes("application/octet-stream");
+    const isKiprisFileToss = url.includes("fileToss.jsp");
+    
+    if (!isImageContentType && !isOctetStream && !isKiprisFileToss) {
       await upstream.body?.cancel();
       return new Response(JSON.stringify({ success: false, error: "Response is not an image" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    
+    // If content-type is not image, default to image/png for KIPRIS sources
+    const resolvedContentType = isImageContentType ? contentType : "image/png";
 
     const cacheControl = upstream.headers.get("cache-control") || "public, max-age=86400";
 
@@ -113,7 +122,7 @@ serve(async (req) => {
       status: 200,
       headers: {
         ...corsHeaders,
-        "Content-Type": contentType,
+        "Content-Type": resolvedContentType,
         "Cache-Control": cacheControl,
       },
     });
