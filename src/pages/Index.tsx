@@ -148,20 +148,23 @@ const Index = () => {
               </p>
             </section>
 
-            {/* Input Section + Search History */}
+            {/* Input Section: 최근검색 - 검색창 - 인기검색 */}
             <section className="mb-4 animate-fade-up" style={{
           animationDelay: "0.2s"
         }}>
-              <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 items-center lg:items-start justify-center">
-                <div className="w-full flex-1 max-w-2xl space-y-3">
+              <div className="w-full max-w-5xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-5 items-stretch justify-center">
+                {/* 최근검색 (left) */}
+                {history.length > 0 && keywordResults.length === 0 && (
+                  <div className="w-full lg:w-auto lg:flex-shrink-0 order-1 lg:order-1">
+                    <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
+                  </div>
+                )}
+                {/* 검색창 (center) */}
+                <div className="w-full flex-1 max-w-2xl order-first lg:order-2 mx-auto">
                   <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
-                  {history.length > 0 && keywordResults.length === 0 && (
-                    <div className="px-2">
-                      <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
-                    </div>
-                  )}
                 </div>
-                <div className="w-full lg:w-auto lg:flex-shrink-0">
+                {/* 인기검색 (right) */}
+                <div className="w-full lg:w-auto lg:flex-shrink-0 order-3">
                   <PopularSearches onPatentSelect={handleSubmit} />
                 </div>
               </div>
