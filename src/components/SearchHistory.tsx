@@ -19,24 +19,26 @@ export function SearchHistory({
 
   return (
     <div className="w-full lg:max-w-xs">
-      <div className="glass-effect rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-4 md:p-5 border border-border/60 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold text-foreground">최근 검색 특허</span>
+            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <History className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <span className="text-sm font-bold text-foreground">최근 검색</span>
           </div>
           {history.length > 1 && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onClear}
-              className="text-[10px] text-muted-foreground hover:text-primary hover:bg-primary/10 h-5 px-2"
+              className="text-[10px] text-muted-foreground hover:text-primary hover:bg-primary/10 h-6 px-2 rounded-lg"
             >
               전체삭제
             </Button>
           )}
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           {history.slice(0, 5).map((item, idx) => {
             const title =
               item.patentData?.title || item.patentData?.titleKo || "";
@@ -46,16 +48,16 @@ export function SearchHistory({
               <button
                 key={item.patentNumber}
                 onClick={() => onSelect(item)}
-                className="w-full text-left p-2.5 rounded-xl hover:bg-secondary/50 transition-colors group flex items-start gap-2.5"
+                className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-primary/5 transition-all duration-200 group flex items-start gap-2.5"
                 title={`${displayNum} ${title}`}
               >
                 <span
-                  className={`flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-xs font-bold ${
+                  className={`flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold mt-0.5 ${
                     idx === 0
-                      ? "bg-primary/20 text-primary"
+                      ? "bg-primary/15 text-primary"
                       : idx === 1
-                      ? "bg-accent/15 text-accent"
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-accent/12 text-accent"
+                      : "bg-muted/80 text-muted-foreground"
                   }`}
                 >
                   {idx + 1}
@@ -64,7 +66,7 @@ export function SearchHistory({
                   <p className="text-xs font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug">
                     {title || displayNum}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                     {displayNum}
                   </p>
                 </div>
