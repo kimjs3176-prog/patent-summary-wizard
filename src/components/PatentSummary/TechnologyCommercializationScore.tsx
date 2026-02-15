@@ -22,17 +22,17 @@ interface TechnologyCommercializationScoreProps {
 }
 
 function getScoreColor(value: number): string {
-  if (value >= 80) return "text-accent";
-  if (value >= 60) return "text-blue-400";
-  if (value >= 40) return "text-amber-400";
-  return "text-red-400";
+  if (value >= 80) return "text-emerald-500";
+  if (value >= 60) return "text-blue-500";
+  if (value >= 40) return "text-amber-500";
+  return "text-red-500";
 }
 
 function getScoreBgColor(value: number): string {
-  if (value >= 80) return "bg-accent";
-  if (value >= 60) return "bg-blue-400";
-  if (value >= 40) return "bg-amber-400";
-  return "bg-red-400";
+  if (value >= 80) return "bg-emerald-500";
+  if (value >= 60) return "bg-blue-500";
+  if (value >= 40) return "bg-amber-500";
+  return "bg-red-500";
 }
 
 function getScoreLabel(value: number): string {
@@ -113,7 +113,7 @@ export function TechnologyCommercializationScore({
     return (
       <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in trl-print-section" style={{ animationDelay: '0.12s' }}>
         <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center text-xl">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-primary flex items-center justify-center text-xl">
             📊
           </div>
           <div>
@@ -125,7 +125,7 @@ export function TechnologyCommercializationScore({
         <TrlChart estimatedTrl={details.trl} />
         
         {details.trlReason && (
-          <div className="mt-4 p-4 rounded-xl bg-accent/10 border border-accent/20">
+          <div className="mt-4 p-4 rounded-xl bg-secondary/50 border border-border/50">
             <p className="text-xs text-muted-foreground mb-1 font-medium">TRL 추정 근거</p>
             <p className="text-sm text-foreground/80 leading-relaxed">{details.trlReason}</p>
           </div>
