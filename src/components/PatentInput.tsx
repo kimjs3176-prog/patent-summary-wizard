@@ -10,17 +10,13 @@ interface PatentInputProps {
   onKeywordSearch?: (results: KeywordSearchResult[], keyword: string) => void;
 }
 
-export function PatentInput({
-  onSubmit,
-  isLoading,
-  onKeywordSearch
-}: PatentInputProps) {
+export function PatentInput({ onSubmit, isLoading, onKeywordSearch }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
 
   const formatPatentNumber = (value: string): string => {
     const digitsOnly = value.replace(/[^0-9]/g, "");
-    if (value.replace(/[-\s]/g, "").length !== digitsOnly.length && digitsOnly.length < 7) {
+    if (value.replace(/[-\\s]/g, "").length !== digitsOnly.length && digitsOnly.length < 7) {
       return value;
     }
     if (digitsOnly.length >= 9 && digitsOnly.length <= 10 && digitsOnly.startsWith("10")) {
@@ -97,42 +93,43 @@ export function PatentInput({
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <div className="bg-card rounded-2xl md:rounded-3xl p-5 md:p-8 border border-border/60 shadow-md">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-3 items-stretch">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <FileText className="h-4.5 w-4.5 text-muted-foreground/60" />
-              </div>
-              <input
-                type="text"
-                placeholder="특허등록번호 출원번호 또는 관심 키워드를 입력하세요"
-                value={inputValue}
-                onChange={handleInputChange}
-                className="w-full h-14 pl-12 pr-5 text-sm md:text-base bg-secondary/40 border border-border/50 rounded-xl text-foreground outline-none transition-all duration-200 placeholder:text-muted-foreground/60 placeholder:text-xs placeholder:md:text-sm focus:border-primary/60 focus:bg-secondary/60 focus:shadow-[0_0_0_3px_hsla(174,72%,30%,0.1)]"
-                disabled={isProcessing}
-              />
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="flex flex-col md:flex-row gap-3 items-stretch">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </div>
-            <Button
-              type="submit"
-              disabled={!inputValue.trim() || isProcessing}
-              className="h-14 px-8 text-base font-bold bg-gradient-to-r from-primary to-primary/85 hover:from-primary/90 hover:to-primary/75 text-primary-foreground shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 rounded-xl whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {isProcessing ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  {isSearchingKeyword ? "검색 중..." : "요약 중..."}
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Search className="w-4 h-4" />
-                  {inputValue.trim() && !isPatentNumber(inputValue.trim()) ? "검색하기" : "요약하기"}
-                </span>
-              )}
-            </Button>
+            <input
+              type="text"
+              placeholder="특허등록번호, 출원번호 또는 키워드 입력"
+              value={inputValue}
+              onChange={handleInputChange}
+              className="w-full h-12 pl-11 pr-4 text-sm bg-secondary/50 border border-border rounded-xl text-foreground outline-none transition-all duration-200 placeholder:text-muted-foreground/60 focus:border-foreground/30 focus:bg-secondary/70 focus:ring-2 focus:ring-foreground/5"
+              disabled={isProcessing}
+            />
           </div>
-        </form>
-      </div>
+          <Button
+            type="submit"
+            disabled={!inputValue.trim() || isProcessing}
+            className="h-12 px-6 text-sm font-semibold bg-foreground hover:bg-foreground/90 text-background rounded-xl transition-all duration-200 disabled:opacity-40"
+          >
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                {isSearchingKeyword ? "검색 중..." : "요약 중..."}
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                {inputValue.trim() && !isPatentNumber(inputValue.trim()) ? "검색" : "요약"}
+              </span>
+            )}
+          </Button>
+        </div>
+        <p className="text-center text-xs text-muted-foreground">
+          특허번호(예: 10-2920574) 또는 키워드를 입력하세요
+        </p>
+      </form>
     </div>
   );
 }

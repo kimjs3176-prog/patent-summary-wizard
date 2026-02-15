@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface RdaPatent {
   patentId: string;
@@ -31,7 +31,6 @@ export function RdaLatestPatents({ onPatentSelect }: RdaLatestPatentsProps) {
             },
           }
         );
-
         const result = await response.json();
         if (result.success && result.patents) {
           setPatents(result.patents);
@@ -45,35 +44,27 @@ export function RdaLatestPatents({ onPatentSelect }: RdaLatestPatentsProps) {
         setIsLoading(false);
       }
     };
-
     fetchRdaPatents();
   }, []);
 
   if (isLoading) {
     return (
-      <section className="max-w-5xl mx-auto mt-8 md:mt-14">
-        <div className="flex items-center justify-center gap-3 py-8 md:py-10">
-          <Loader2 className="w-5 h-5 text-primary animate-spin" />
+      <section className="max-w-5xl mx-auto mt-10 md:mt-16">
+        <div className="flex items-center justify-center gap-3 py-10">
+          <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
           <span className="text-sm text-muted-foreground">농촌진흥청 최신 특허 로딩 중...</span>
         </div>
       </section>
     );
   }
 
-  if (error || patents.length === 0) {
-    return null;
-  }
+  if (error || patents.length === 0) return null;
 
   return (
-    <section className="max-w-5xl mx-auto mt-8 md:mt-14">
-      <div className="flex items-center gap-2.5 mb-5 md:mb-6">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent/80 to-primary/80 flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-primary-foreground" />
-        </div>
-        <div>
-          <h3 className="text-base md:text-lg font-bold text-foreground">농촌진흥청 최신 특허</h3>
-          <p className="text-[11px] md:text-xs text-muted-foreground">대한민국(농촌진흥청장) 출원 특허</p>
-        </div>
+    <section className="max-w-5xl mx-auto mt-10 md:mt-16">
+      <div className="mb-6">
+        <h3 className="text-lg md:text-xl font-semibold text-foreground">농촌진흥청 최신 특허</h3>
+        <p className="text-xs text-muted-foreground mt-1">대한민국(농촌진흥청장) 출원 특허</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
@@ -81,35 +72,33 @@ export function RdaLatestPatents({ onPatentSelect }: RdaLatestPatentsProps) {
           <button
             key={patent.patentId}
             onClick={() => onPatentSelect(patent.patentId)}
-            className="group p-4 md:p-5 rounded-xl bg-card/90 backdrop-blur-sm text-left border border-border/50 hover:border-primary/40 hover:shadow-md transition-all duration-200 animate-slide-in"
-            style={{ animationDelay: `${0.08 + index * 0.04}s` }}
+            className="group p-4 md:p-5 rounded-2xl bg-secondary/40 text-left border border-border/50 hover:bg-secondary/70 hover:border-border transition-all duration-200 animate-fade-up"
+            style={{ animationDelay: `${0.05 + index * 0.03}s` }}
           >
             <div className="flex items-start gap-3 mb-3">
               {patent.thumbnail ? (
                 <img
                   src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(patent.thumbnail)}`}
                   alt=""
-                  className="w-12 h-12 rounded-lg object-cover bg-secondary/50 flex-shrink-0"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
+                  className="w-11 h-11 rounded-lg object-cover bg-muted flex-shrink-0"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : (
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl">🌱</span>
+                <div className="w-11 h-11 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">🌱</span>
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <span className="inline-block px-2 py-0.5 text-[10px] font-medium rounded-md bg-accent/10 text-accent mb-1">
+                <span className="inline-block px-2 py-0.5 text-[10px] font-medium rounded-md bg-muted text-muted-foreground mb-1">
                   {patent.patentId}
                 </span>
-                <h4 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                <h4 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
                   {patent.title}
                 </h4>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground/80">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="truncate max-w-[60%]">{patent.applicant}</span>
               <span>{patent.applicationDate}</span>
             </div>

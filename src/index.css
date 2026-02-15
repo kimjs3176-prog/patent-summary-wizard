@@ -2,108 +2,107 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Playfair+Display:wght@700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap');
 
-/* 농식품 특허 AI 요약 서비스 - Agricultural Green Theme
-   자연과 농산업을 연상시키는 그린/어스톤 테마 */
+/* Apple-style Clean White Design System */
 
 @layer base {
   :root {
-    --background: 150 25% 96%;
-    --foreground: 160 30% 12%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
 
     --card: 0 0% 100%;
-    --card-foreground: 160 30% 12%;
+    --card-foreground: 0 0% 7%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 160 30% 12%;
+    --popover-foreground: 0 0% 7%;
 
-    --primary: 174 72% 30%;
+    --primary: 210 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 18% 91%;
-    --secondary-foreground: 160 30% 12%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 7%;
 
-    --muted: 150 12% 89%;
-    --muted-foreground: 160 10% 42%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 35 75% 48%;
-    --accent-foreground: 160 30% 10%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 7%;
 
-    --destructive: 0 65% 50%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 18% 82%;
-    --input: 150 18% 82%;
-    --ring: 174 72% 30%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 210 100% 50%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Custom design tokens - Agricultural theme */
-    --gradient-bg: linear-gradient(160deg, hsl(210 30% 96%) 0%, hsl(180 20% 95%) 30%, hsl(155 18% 94%) 60%, hsl(200 25% 96%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(174 72% 30%) 0%, hsl(165 60% 26%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(174 72% 30%), hsl(35 75% 48%));
-    --gradient-hero: linear-gradient(135deg, hsl(174 50% 40%) 0%, hsl(190 45% 55%) 40%, hsl(35 60% 65%) 100%);
-    --gradient-glow: radial-gradient(ellipse 60% 50% at 15% 40%, hsla(190 45% 70% / 0.12) 0%, transparent 60%),
-                     radial-gradient(ellipse 50% 60% at 85% 70%, hsla(174 35% 60% / 0.08) 0%, transparent 55%);
-    --shadow-sm: 0 1px 3px 0 hsla(210 15% 30% / 0.05);
-    --shadow-md: 0 4px 14px -3px hsla(210 15% 30% / 0.08);
-    --shadow-lg: 0 20px 50px hsla(210 15% 30% / 0.08);
-    --shadow-card: 0 2px 12px hsla(210 15% 30% / 0.06), 0 0 0 1px hsla(210 15% 30% / 0.04);
-    --shadow-glow: 0 8px 28px hsla(174 72% 30% / 0.12);
+    /* Apple-style tokens */
+    --gradient-bg: 0 0% 100%;
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 7%) 0%, hsl(0 0% 18%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 50%) 0%, hsl(210 100% 42%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(210 100% 50%), hsl(265 85% 55%));
+    --gradient-glow: none;
+    --shadow-sm: 0 1px 2px 0 hsla(0 0% 0% / 0.04);
+    --shadow-md: 0 4px 12px -2px hsla(0 0% 0% / 0.06);
+    --shadow-lg: 0 12px 40px -8px hsla(0 0% 0% / 0.1);
+    --shadow-card: 0 1px 3px hsla(0 0% 0% / 0.04), 0 0 0 1px hsla(0 0% 0% / 0.03);
+    --shadow-glow: 0 8px 30px hsla(210 100% 50% / 0.08);
 
-    --sidebar-background: 150 20% 97%;
-    --sidebar-foreground: 150 20% 15%;
-    --sidebar-primary: 174 100% 33%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 7%;
+    --sidebar-primary: 210 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 15% 92%;
-    --sidebar-accent-foreground: 150 20% 15%;
-    --sidebar-border: 150 15% 80%;
-    --sidebar-ring: 174 100% 33%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 210 100% 50%;
   }
 
   .dark {
-    --background: 150 20% 12%;
-    --foreground: 150 10% 95%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 96%;
 
-    --card: 150 18% 15%;
-    --card-foreground: 150 10% 95%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 150 18% 15%;
-    --popover-foreground: 150 10% 95%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 150 45% 45%;
+    --primary: 210 100% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 15% 20%;
-    --secondary-foreground: 150 10% 95%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 150 12% 18%;
-    --muted-foreground: 150 5% 60%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 35 70% 50%;
-    --accent-foreground: 150 20% 10%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 96%;
 
-    --destructive: 0 65% 50%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 10% 25%;
-    --input: 150 10% 25%;
-    --ring: 150 45% 45%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 210 100% 55%;
 
-    --gradient-bg: linear-gradient(135deg, hsl(150 20% 10%) 0%, hsl(160 18% 13%) 50%, hsl(170 15% 15%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(150 45% 45%) 0%, hsl(170 40% 35%) 100%);
-    --shadow-card: 0 20px 60px hsla(0 0% 0% / 0.4);
-    --shadow-glow: 0 12px 32px hsla(150 45% 45% / 0.3);
+    --gradient-bg: 0 0% 7%;
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 0%) 0%, hsl(0 0% 12%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 55%) 0%, hsl(210 100% 42%) 100%);
+    --shadow-card: 0 1px 3px hsla(0 0% 0% / 0.3);
+    --shadow-glow: 0 8px 30px hsla(210 100% 55% / 0.15);
 
-    --sidebar-background: 150 20% 8%;
-    --sidebar-foreground: 150 10% 95%;
-    --sidebar-primary: 150 45% 45%;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 210 100% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 15% 14%;
-    --sidebar-accent-foreground: 150 10% 95%;
-    --sidebar-border: 150 10% 25%;
-    --sidebar-ring: 150 45% 45%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 210 100% 55%;
   }
 }
 
@@ -113,28 +112,20 @@
   }
 
   body {
-    @apply text-foreground antialiased;
-    font-family: 'Noto Sans KR', system-ui, sans-serif;
-    background: var(--gradient-bg);
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     min-height: 100vh;
-    position: relative;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--gradient-glow);
-    pointer-events: none;
-    z-index: 0;
+    display: none;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Noto Sans KR', system-ui, sans-serif;
-    @apply font-bold tracking-tight;
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    @apply font-semibold tracking-tight;
   }
 }
 
@@ -147,24 +138,21 @@
   }
 
   .glass-effect {
-    background: hsla(0 0% 100% / 0.85);
-    backdrop-filter: blur(16px);
-    border: 1px solid hsla(210 20% 80% / 0.5);
+    @apply bg-card border border-border;
     box-shadow: var(--shadow-card);
   }
 
   .card-gradient {
-    background: hsla(0 0% 100% / 0.75);
-    backdrop-filter: blur(12px);
+    @apply bg-card;
   }
 
   .hero-gradient {
     background: var(--gradient-hero);
-    border-radius: 1.5rem;
+    border-radius: 1.25rem;
   }
 
   .animate-fade-up {
-    animation: fadeUp 0.8s ease-out forwards;
+    animation: fadeUp 0.6s ease-out forwards;
   }
 
   .animate-fade-in {
@@ -172,7 +160,7 @@
   }
 
   .animate-fade-down {
-    animation: fadeDown 0.8s ease-out forwards;
+    animation: fadeDown 0.6s ease-out forwards;
   }
 
   .animate-slide-in {
@@ -184,14 +172,14 @@
   }
 
   .animate-scale-in {
-    animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 
   .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
   .hover-lift:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
 
@@ -202,25 +190,13 @@
 }
 
 @keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeDown {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
@@ -229,14 +205,8 @@
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes pulseSoft {
@@ -245,21 +215,15 @@
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-/* Print-optimized styles for A4 layout */
+/* Print styles */
 @media print {
   @page {
     size: A4;
@@ -275,17 +239,6 @@
     print-color-adjust: exact;
   }
 
-  body::before {
-    display: none !important;
-  }
-
-  /* Remove all padding/margin from layout containers */
-  header, main, footer {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Hide header, footer, buttons, non-printable elements */
   header, footer, button, .no-print,
   [class*="search"], [class*="Search"],
   [class*="history"], [class*="History"],
@@ -293,7 +246,6 @@
     display: none !important;
   }
 
-  /* Hide claims, related patents sections entirely */
   .claims-section,
   .related-patents-section,
   [class*="related"], [class*="Related"],
@@ -301,13 +253,6 @@
     display: none !important;
   }
 
-  /* Hide decorative icon boxes in print */
-  .glass-effect .w-12.h-12,
-  .glass-effect .w-10.h-10 {
-    display: none !important;
-  }
-
-  /* Reset glass effects for print */
   .glass-effect {
     background: white !important;
     backdrop-filter: none !important;
@@ -316,114 +261,25 @@
     border-radius: 4px !important;
     padding: 8px 10px !important;
     margin-bottom: 6px !important;
-    overflow: visible !important;
   }
 
-  /* Remove rounded-3xl in print */
-  [class*="rounded-3xl"] {
-    border-radius: 4px !important;
-  }
-
-  /* Kill min-height on summary content */
-  .glass-effect [class*="min-h-"] {
-    min-height: 0 !important;
-  }
-
-  /* Reduce inner spacing */
-  .glass-effect .mb-5,
-  .glass-effect .mb-6 { margin-bottom: 4px !important; }
-  .glass-effect .pb-5 { padding-bottom: 4px !important; }
-  .glass-effect .mt-5,
-  .glass-effect .mt-6 { margin-top: 4px !important; }
-  .glass-effect .p-8,
-  .glass-effect .md\:p-8 { padding: 6px 8px !important; }
-
-  /* The bg-secondary/30 header bar inside AI summary card */
-  [class*="bg-secondary/30"][class*="border-b"] {
-    padding: 6px 10px !important;
-    background: #f5f5f5 !important;
-  }
-
-  /* Section spacing */
-  .space-y-6 > * + * {
-    margin-top: 6px !important;
-  }
-
-  /* Container padding removal */
   .container {
     padding: 0 !important;
     max-width: 100% !important;
   }
 
-  /* Allow cards to split across pages */
-  .glass-effect {
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
-  /* Sub-cards stay together */
-  div[class*="bg-secondary/30"][class*="rounded-xl"] {
-    break-inside: avoid !important;
-  }
-
-  .prose > p,
-  .prose > h2 {
-    break-inside: avoid !important;
-  }
-
-  /* Headings */
   h1, h2, h3, h4, h5, h6 {
     color: #111 !important;
     break-after: avoid !important;
   }
 
-  h2 {
-    font-size: 11pt !important;
-    font-weight: 700 !important;
-    margin-top: 10px !important;
-    margin-bottom: 5px !important;
-  }
+  h2 { font-size: 11pt !important; font-weight: 700 !important; margin-top: 10px !important; margin-bottom: 5px !important; }
+  h3 { font-size: 10pt !important; margin-top: 0 !important; margin-bottom: 0 !important; }
+  p { color: #222 !important; font-size: 9.5pt !important; line-height: 1.6 !important; margin-bottom: 4px !important; }
 
-  h3 {
-    font-size: 10pt !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-  }
+  img { max-width: 100% !important; height: auto !important; break-inside: avoid; }
 
-  p {
-    color: #222 !important;
-    font-size: 9.5pt !important;
-    line-height: 1.6 !important;
-    margin-bottom: 4px !important;
-    padding-top: 1px !important;
-    padding-bottom: 1px !important;
-  }
+  .trl-print-section { break-inside: avoid !important; }
 
-  img {
-    max-width: 100% !important;
-    height: auto !important;
-    break-inside: avoid;
-  }
-
-  /* TRL section: keep together on one page */
-  .trl-print-section {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  [class*="bg-accent"],
-  [class*="bg-secondary"],
-  [class*="bg-primary"] {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  [class*="text-muted-foreground"] {
-    color: #555 !important;
-  }
-
-  /* Animate classes: disable in print */
-  [class*="animate-"] {
-    animation: none !important;
-  }
+  [class*="animate-"] { animation: none !important; }
 }
