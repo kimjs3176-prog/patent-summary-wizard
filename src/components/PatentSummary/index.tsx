@@ -288,7 +288,7 @@ export function PatentSummary({
                   ? `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`
                   : appNum;
                 return (
-                  <div className="inline-block px-4 py-2 bg-accent/20 text-accent rounded-lg text-sm font-medium">
+                  <div className="inline-block px-4 py-2 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium">
                     출원번호: {formatted}
                   </div>
                 );
@@ -297,7 +297,7 @@ export function PatentSummary({
             })()}
             {/* 등록번호도 출원번호도 없는 경우 fallback */}
             {!patentData.registrationNumber && !patentData.applicationNumber && (
-              <div className="inline-block px-4 py-2 bg-accent/20 text-accent rounded-lg text-sm font-medium">
+              <div className="inline-block px-4 py-2 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium">
                 {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
               </div>
             )}
