@@ -83,7 +83,7 @@ export function PdfGenerator({
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 12;
+      const margin = 14;
       const contentWidth = pageWidth - margin * 2;
       let yPosition = margin;
 
@@ -136,8 +136,8 @@ export function PdfGenerator({
         }
       };
 
-      const addWrappedText = (text: string, fontSize: number, color: [number, number, number], lineHeight = 1.7, indentX = margin + 5) => {
-        const maxW = pageWidth - indentX - margin - 2;
+      const addWrappedText = (text: string, fontSize: number, color: [number, number, number], lineHeight = 1.6, indentX = margin + 4) => {
+        const maxW = pageWidth - indentX - margin - 3;
         const lhMm = fontSize * 0.352778 * lineHeight;
         
         // Parse bold segments: split by **text**
@@ -195,7 +195,6 @@ export function PdfGenerator({
           for (const ls of lineSegments) {
             pdf.setFontSize(fontSize);
             pdf.setTextColor(...(ls.bold ? THEME.text : color));
-            // jsPDF doesn't support true bold with custom fonts, use darker color for emphasis
             pdf.text(ls.text, xPos, yPosition);
             xPos += pdf.getTextWidth(ls.text);
           }
@@ -232,15 +231,15 @@ export function PdfGenerator({
 
       // ===== HEADER BAR =====
       pdf.setFillColor(...THEME.headerGreen);
-      pdf.roundedRect(margin, yPosition, contentWidth, 18, 2.5, 2.5, "F");
+      pdf.roundedRect(margin, yPosition, contentWidth, 16, 2.5, 2.5, "F");
 
-      pdf.setFontSize(12);
+      pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("농식품 특허 요약서", margin + 6, yPosition + 7.5);
+      pdf.text("농식품 특허 요약서", margin + 5, yPosition + 6.5);
 
-      pdf.setFontSize(6.5);
+      pdf.setFontSize(6);
       pdf.setTextColor(200, 225, 210);
-      pdf.text("Agri-Food Patent Summary Report", margin + 6, yPosition + 12.5);
+      pdf.text("Agri-Food Patent Summary Report", margin + 5, yPosition + 11);
 
       const isApp = patentData?.searchType === "application";
       const displayNumber = isApp
@@ -248,14 +247,14 @@ export function PdfGenerator({
         : patentData?.displayNumber || patentNumber;
       const numberLabel = isApp ? "출원번호" : "등록번호";
 
-      pdf.setFontSize(6.5);
+      pdf.setFontSize(6);
       pdf.setTextColor(200, 225, 210);
-      pdf.text(numberLabel, pageWidth - margin - pdf.getTextWidth(numberLabel) - 4, yPosition + 7.5);
-      pdf.setFontSize(8.5);
+      pdf.text(numberLabel, pageWidth - margin - pdf.getTextWidth(numberLabel) - 4, yPosition + 6.5);
+      pdf.setFontSize(8);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(displayNumber, pageWidth - margin - pdf.getTextWidth(displayNumber) - 4, yPosition + 12.5);
+      pdf.text(displayNumber, pageWidth - margin - pdf.getTextWidth(displayNumber) - 4, yPosition + 11);
 
-      yPosition += 22;
+      yPosition += 20;
 
       // ===== 1. PATENT INFO + COMMERCIALIZATION SCORE (merged) =====
       if (patentData) {
@@ -266,128 +265,128 @@ export function PdfGenerator({
         if (patentData.filingDate) infoItems.push({ label: "출원일", value: patentData.filingDate });
         if (patentData.publicationDate) infoItems.push({ label: "공개일", value: patentData.publicationDate });
 
-        pdf.setFontSize(12);
-        const titleLines = pdf.splitTextToSize(title, contentWidth - 14);
-        const titleH = Math.min(titleLines.length, 2) * 5;
+        pdf.setFontSize(11);
+        const titleLines = pdf.splitTextToSize(title, contentWidth - 12);
+        const titleH = Math.min(titleLines.length, 2) * 4.5;
         const rowCount = Math.ceil(infoItems.length / 4);
 
         const hasScore = commercializationScore != null && commercializationDetails;
         const hasAnalysis = hasScore && !!commercializationDetails.analysis;
         let analysisH = 0;
         if (hasAnalysis) {
-          pdf.setFontSize(7.5);
-          const aLines = pdf.splitTextToSize(commercializationDetails.analysis, contentWidth - 18);
-          analysisH = 6 + aLines.length * 3;
+          pdf.setFontSize(7);
+          const aLines = pdf.splitTextToSize(commercializationDetails.analysis, contentWidth - 16);
+          analysisH = 5 + aLines.length * 2.8;
         }
-        const scoreBlockH = hasScore ? 32 + (hasAnalysis ? analysisH : 0) : 0;
-        const cardH = 16 + titleH + rowCount * 14 + (hasScore ? 3 + scoreBlockH : 0);
+        const scoreBlockH = hasScore ? 28 + (hasAnalysis ? analysisH : 0) : 0;
+        const cardH = 14 + titleH + rowCount * 12 + (hasScore ? 3 + scoreBlockH : 0);
 
         checkNewPage(cardH + 2);
         drawCard(margin, yPosition, contentWidth, cardH);
-        const cx = margin + 5;
-        let cy = yPosition + 4;
+        const cx = margin + 4;
+        let cy = yPosition + 3.5;
 
-        pdf.setFontSize(10);
+        pdf.setFontSize(9);
         pdf.setTextColor(...THEME.text);
         pdf.text("📄 특허 정보", cx, cy + 3);
-        cy += 6;
+        cy += 5;
         pdf.setDrawColor(...THEME.border);
         pdf.setLineWidth(0.2);
-        pdf.line(cx, cy, margin + contentWidth - 5, cy);
-        cy += 3;
+        pdf.line(cx, cy, margin + contentWidth - 4, cy);
+        cy += 2.5;
 
-        pdf.setFontSize(10);
+        pdf.setFontSize(9.5);
         pdf.setTextColor(...THEME.text);
         for (let i = 0; i < Math.min(titleLines.length, 2); i++) {
           pdf.text(titleLines[i] + (i === 0 && titleLines.length > 2 ? "..." : ""), cx, cy + 3);
-          cy += 4.5;
+          cy += 4;
         }
         cy += 1;
 
         const colCount = Math.min(infoItems.length, 4);
-        const subW = (contentWidth - 12) / colCount;
+        const subW = (contentWidth - 10) / colCount;
         infoItems.forEach((item, idx) => {
           const col = idx % 4;
           const row = Math.floor(idx / 4);
-          const sx = cx + col * (subW + 0.5);
-          const sy = cy + row * 13;
-          drawSubCard(sx, sy, subW - 1, 11);
-          pdf.setFontSize(6);
+          const sx = cx + col * (subW + 0.3);
+          const sy = cy + row * 11;
+          drawSubCard(sx, sy, subW - 1, 9.5);
+          pdf.setFontSize(5.5);
           pdf.setTextColor(...THEME.textMuted);
-          pdf.text(item.label, sx + 2.5, sy + 4);
-          pdf.setFontSize(7.5);
+          pdf.text(item.label, sx + 2, sy + 3.5);
+          pdf.setFontSize(7);
           pdf.setTextColor(...THEME.text);
-          const valLines = pdf.splitTextToSize(item.value, subW - 7);
-          pdf.text(valLines[0], sx + 2.5, sy + 8.5);
+          const valLines = pdf.splitTextToSize(item.value, subW - 6);
+          pdf.text(valLines[0], sx + 2, sy + 7.5);
         });
-        cy += rowCount * 13 + 1;
+        cy += rowCount * 11 + 1;
 
         if (hasScore) {
           pdf.setDrawColor(...THEME.border);
           pdf.setLineWidth(0.15);
-          pdf.line(cx, cy, margin + contentWidth - 5, cy);
-          cy += 3;
+          pdf.line(cx, cy, margin + contentWidth - 4, cy);
+          cy += 2.5;
 
           const scoreColor = getScoreColorRgb(commercializationScore!);
-          pdf.setFontSize(9);
+          pdf.setFontSize(8);
           pdf.setTextColor(...THEME.textMuted);
           pdf.text("✨ AI 기술사업화점수", cx, cy + 3);
 
           const scoreStr = String(commercializationScore);
-          pdf.setFontSize(20);
+          pdf.setFontSize(18);
           pdf.setTextColor(...scoreColor);
-          pdf.text(scoreStr, cx + 50, cy + 4);
+          pdf.text(scoreStr, cx + 45, cy + 3.5);
           const sw = pdf.getTextWidth(scoreStr);
-          pdf.setFontSize(8);
-          pdf.setTextColor(...THEME.textMuted);
-          pdf.text("/ 100", cx + 50 + sw + 1.5, cy + 4);
-
-          pdf.setFontSize(12);
-          pdf.setTextColor(...scoreColor);
-          pdf.text(getGradeLabel(commercializationScore!), cx + 80, cy + 2);
           pdf.setFontSize(7);
-          pdf.text(getScoreLabel(commercializationScore!), cx + 80, cy + 6);
-          cy += 11;
+          pdf.setTextColor(...THEME.textMuted);
+          pdf.text("/ 100", cx + 45 + sw + 1, cy + 3.5);
 
-          const ssubW = (contentWidth - 14) / 3;
+          pdf.setFontSize(11);
+          pdf.setTextColor(...scoreColor);
+          pdf.text(getGradeLabel(commercializationScore!), cx + 72, cy + 1.5);
+          pdf.setFontSize(6.5);
+          pdf.text(getScoreLabel(commercializationScore!), cx + 72, cy + 5.5);
+          cy += 9;
+
+          const ssubW = (contentWidth - 12) / 3;
           const subScores = [
             { label: "기술성", score: commercializationDetails!.technologyScore },
             { label: "시장성", score: commercializationDetails!.marketScore },
             { label: "사업성", score: commercializationDetails!.businessScore },
           ];
           subScores.forEach((item, idx) => {
-            const sx = cx + idx * (ssubW + 1);
-            drawSubCard(sx, cy, ssubW - 0.5, 14);
-            pdf.setFontSize(6);
+            const sx = cx + idx * (ssubW + 0.5);
+            drawSubCard(sx, cy, ssubW - 1, 12);
+            pdf.setFontSize(5.5);
             pdf.setTextColor(...THEME.textMuted);
-            pdf.text(item.label, sx + 2.5, cy + 4);
+            pdf.text(item.label, sx + 2, cy + 3.5);
             const sc = getScoreColorRgb(item.score);
-            pdf.setFontSize(10);
+            pdf.setFontSize(9);
             pdf.setTextColor(...sc);
-            pdf.text(String(item.score), sx + 2.5, cy + 9.5);
+            pdf.text(String(item.score), sx + 2, cy + 8.5);
             const numW = pdf.getTextWidth(String(item.score));
-            pdf.setFontSize(6);
+            pdf.setFontSize(5.5);
             pdf.setTextColor(...THEME.textMuted);
-            pdf.text("점", sx + 2.5 + numW + 1, cy + 9.5);
-            drawProgressBar(sx + 2.5, cy + 11.5, ssubW - 6, 1.2, item.score, sc);
+            pdf.text("점", sx + 2 + numW + 0.8, cy + 8.5);
+            drawProgressBar(sx + 2, cy + 10, ssubW - 5.5, 1, item.score, sc);
           });
-          cy += 16;
+          cy += 14;
 
           if (hasAnalysis) {
-            drawSubCard(cx, cy, contentWidth - 12, analysisH);
-            pdf.setFontSize(6);
+            drawSubCard(cx, cy, contentWidth - 10, analysisH);
+            pdf.setFontSize(5.5);
             pdf.setTextColor(...THEME.textMuted);
-            pdf.text("AI 분석 의견", cx + 2.5, cy + 3.5);
-            pdf.setFontSize(7.5);
+            pdf.text("AI 분석 의견", cx + 2, cy + 3);
+            pdf.setFontSize(7);
             pdf.setTextColor(...THEME.textBody);
-            const aLines = pdf.splitTextToSize(commercializationDetails!.analysis, contentWidth - 18);
+            const aLines = pdf.splitTextToSize(commercializationDetails!.analysis, contentWidth - 16);
             for (let i = 0; i < aLines.length; i++) {
-              pdf.text(aLines[i], cx + 2.5, cy + 7 + i * 3);
+              pdf.text(aLines[i], cx + 2, cy + 6 + i * 2.8);
             }
           }
         }
 
-        yPosition += cardH + 4;
+        yPosition += cardH + 3;
       }
 
 
@@ -405,26 +404,47 @@ export function PdfGenerator({
         const imagesToUse = patentData?.images?.slice(0, 3) || (patentData?.representativeImage ? [patentData.representativeImage] : []);
         if (imagesToUse.length === 0) return;
 
-        for (let i = 0; i < imagesToUse.length; i++) {
-          const img = await loadImageForPdf(imagesToUse[i]);
-          if (!img) continue;
+        // If multiple images, lay them out side by side
+        if (imagesToUse.length > 1) {
+          const imgH = 38;
+          const gap = 3;
+          const totalW = contentWidth - 4;
+          const imgW = (totalW - gap * (imagesToUse.length - 1)) / imagesToUse.length;
+          checkNewPage(imgH + 8);
 
-          const imgW = imagesToUse.length === 1 ? 66 : 52;
-          const imgH = imagesToUse.length === 1 ? 50 : 40;
-          checkNewPage(imgH + 10);
-
-          const imgX = (pageWidth - imgW) / 2;
-          pdf.setDrawColor(...THEME.border);
-          pdf.setLineWidth(0.25);
-          pdf.roundedRect(imgX - 1.5, yPosition - 0.5, imgW + 3, imgH + 1, 1.5, 1.5, "D");
-          pdf.addImage(img.dataUrl, img.format, imgX, yPosition, imgW, imgH);
-          yPosition += imgH + 3;
-
-          pdf.setFontSize(6.5);
+          for (let i = 0; i < imagesToUse.length; i++) {
+            const img = await loadImageForPdf(imagesToUse[i]);
+            if (!img) continue;
+            const imgX = margin + 2 + i * (imgW + gap);
+            pdf.setDrawColor(...THEME.border);
+            pdf.setLineWidth(0.2);
+            pdf.roundedRect(imgX - 0.5, yPosition - 0.5, imgW + 1, imgH + 1, 1.5, 1.5, "D");
+            pdf.addImage(img.dataUrl, img.format, imgX, yPosition, imgW, imgH);
+          }
+          yPosition += imgH + 2;
+          pdf.setFontSize(6);
           pdf.setTextColor(...THEME.textMuted);
-          const cap = imagesToUse.length === 1 ? "【대표 도면】" : `【도면 ${i + 1}】`;
+          const cap = "【특허 도면】";
           pdf.text(cap, (pageWidth - pdf.getTextWidth(cap)) / 2, yPosition);
-          yPosition += 5;
+          yPosition += 4;
+        } else {
+          const img = await loadImageForPdf(imagesToUse[0]);
+          if (img) {
+            const imgW = 60;
+            const imgH = 45;
+            checkNewPage(imgH + 8);
+            const imgX = (pageWidth - imgW) / 2;
+            pdf.setDrawColor(...THEME.border);
+            pdf.setLineWidth(0.2);
+            pdf.roundedRect(imgX - 1, yPosition - 0.5, imgW + 2, imgH + 1, 1.5, 1.5, "D");
+            pdf.addImage(img.dataUrl, img.format, imgX, yPosition, imgW, imgH);
+            yPosition += imgH + 2;
+            pdf.setFontSize(6);
+            pdf.setTextColor(...THEME.textMuted);
+            const cap = "【대표 도면】";
+            pdf.text(cap, (pageWidth - pdf.getTextWidth(cap)) / 2, yPosition);
+            yPosition += 4;
+          }
         }
         imageInserted = true;
       };
@@ -437,48 +457,48 @@ export function PdfGenerator({
         const hasTrlReason = !!commercializationDetails.trlReason;
         let reasonH = 0;
         if (hasTrlReason) {
-          pdf.setFontSize(8);
-          const rLines = pdf.splitTextToSize(commercializationDetails.trlReason!, contentWidth - 18);
-          reasonH = 7 + rLines.length * 3.2;
+          pdf.setFontSize(7);
+          const rLines = pdf.splitTextToSize(commercializationDetails.trlReason!, contentWidth - 16);
+          reasonH = 6 + rLines.length * 2.8;
         }
-        const trlCardH = 44 + (hasTrlReason ? reasonH : 0);
+        const trlCardH = 38 + (hasTrlReason ? reasonH : 0);
 
         checkNewPage(trlCardH + 3);
         drawCard(margin, yPosition, contentWidth, trlCardH);
-        const cx = margin + 5;
-        let cy = yPosition + 5;
+        const cx = margin + 4;
+        let cy = yPosition + 4;
 
-        pdf.setFontSize(10);
+        pdf.setFontSize(9);
         pdf.setTextColor(...THEME.text);
-        pdf.text("📊 기술성숙도 (TRL)", cx, cy + 3.5);
-        pdf.setFontSize(6.5);
+        pdf.text("📊 기술성숙도 (TRL)", cx, cy + 3);
+        pdf.setFontSize(6);
         pdf.setTextColor(...THEME.textMuted);
-        pdf.text("Technology Readiness Level", cx + 44, cy + 3.5);
-        cy += 7;
+        pdf.text("Technology Readiness Level", cx + 40, cy + 3);
+        cy += 6;
 
         pdf.setDrawColor(...THEME.border);
         pdf.setLineWidth(0.2);
-        pdf.line(cx, cy, margin + contentWidth - 5, cy);
-        cy += 4;
+        pdf.line(cx, cy, margin + contentWidth - 4, cy);
+        cy += 3.5;
 
         // TRL badge
         const trlColor: [number, number, number] = trl <= 3 ? [156, 39, 176] : trl <= 6 ? [251, 191, 36] : [74, 222, 128];
         pdf.setFillColor(...trlColor);
-        pdf.roundedRect(cx, cy, 8, 8, 1.5, 1.5, "F");
-        pdf.setFontSize(12);
+        pdf.roundedRect(cx, cy, 7, 7, 1.5, 1.5, "F");
+        pdf.setFontSize(11);
         pdf.setTextColor(255, 255, 255);
-        pdf.text(String(trl), cx + 2.5, cy + 6);
+        pdf.text(String(trl), cx + 2, cy + 5.2);
 
-        pdf.setFontSize(9);
+        pdf.setFontSize(8.5);
         pdf.setTextColor(...THEME.text);
-        pdf.text(`TRL ${trl} - ${getTrlStageLabel(trl)}`, cx + 11, cy + 4);
-        pdf.setFontSize(6.5);
+        pdf.text(`TRL ${trl} - ${getTrlStageLabel(trl)}`, cx + 10, cy + 3.5);
+        pdf.setFontSize(6);
         pdf.setTextColor(...THEME.textMuted);
-        pdf.text(`상용화까지 ${9 - trl} 단계`, cx + 11, cy + 8);
-        cy += 11;
+        pdf.text(`상용화까지 ${9 - trl} 단계`, cx + 10, cy + 7);
+        cy += 9;
 
         // Progress segments
-        const segBarW = contentWidth - 12;
+        const segBarW = contentWidth - 10;
         const segW = segBarW / 9;
         for (let i = 1; i <= 9; i++) {
           const sx = cx + (i - 1) * segW;
@@ -486,12 +506,12 @@ export function PdfGenerator({
           if (i <= 3) pdf.setFillColor(active ? 156 : 230, active ? 39 : 232, active ? 176 : 230);
           else if (i <= 6) pdf.setFillColor(active ? 251 : 230, active ? 191 : 232, active ? 36 : 230);
           else pdf.setFillColor(active ? 74 : 230, active ? 222 : 232, active ? 128 : 230);
-          pdf.roundedRect(sx, cy, segW - 0.6, 3.5, 0.8, 0.8, "F");
-          pdf.setFontSize(4.5);
+          pdf.roundedRect(sx, cy, segW - 0.5, 3, 0.6, 0.6, "F");
+          pdf.setFontSize(4);
           pdf.setTextColor(active ? 255 : 160, active ? 255 : 160, active ? 255 : 160);
-          pdf.text(String(i), sx + segW / 2 - 0.8, cy + 2.6);
+          pdf.text(String(i), sx + segW / 2 - 0.7, cy + 2.2);
         }
-        cy += 5;
+        cy += 4;
 
         // Stage labels
         const stageW = segBarW / 3;
@@ -504,33 +524,33 @@ export function PdfGenerator({
           const sx = cx + idx * stageW;
           if (s.active) {
             pdf.setFillColor(...s.color);
-            pdf.roundedRect(sx, cy, stageW - 1.5, 6, 1.2, 1.2, "F");
-            pdf.setFontSize(5.5);
+            pdf.roundedRect(sx, cy, stageW - 1, 5, 1, 1, "F");
+            pdf.setFontSize(5);
             pdf.setTextColor(255, 255, 255);
           } else {
             pdf.setFillColor(240, 242, 240);
-            pdf.roundedRect(sx, cy, stageW - 1.5, 6, 1.2, 1.2, "F");
-            pdf.setFontSize(5.5);
+            pdf.roundedRect(sx, cy, stageW - 1, 5, 1, 1, "F");
+            pdf.setFontSize(5);
             pdf.setTextColor(...THEME.textMuted);
           }
-          pdf.text(`${s.label} ${s.range}`, sx + 1.5, cy + 4.2);
+          pdf.text(`${s.label} ${s.range}`, sx + 1.5, cy + 3.5);
         });
-        cy += 8;
+        cy += 7;
 
         if (hasTrlReason) {
-          drawSubCard(cx, cy, contentWidth - 12, reasonH);
-          pdf.setFontSize(6.5);
+          drawSubCard(cx, cy, contentWidth - 10, reasonH);
+          pdf.setFontSize(6);
           pdf.setTextColor(...THEME.textMuted);
-          pdf.text("TRL 추정 근거", cx + 2.5, cy + 4);
-          pdf.setFontSize(8);
+          pdf.text("TRL 추정 근거", cx + 2, cy + 3.5);
+          pdf.setFontSize(7);
           pdf.setTextColor(...THEME.textBody);
-          const rLines = pdf.splitTextToSize(commercializationDetails.trlReason!, contentWidth - 18);
+          const rLines = pdf.splitTextToSize(commercializationDetails.trlReason!, contentWidth - 16);
           for (let i = 0; i < rLines.length; i++) {
-            pdf.text(rLines[i], cx + 2.5, cy + 8 + i * 3.2);
+            pdf.text(rLines[i], cx + 2, cy + 7 + i * 2.8);
           }
         }
 
-        yPosition += trlCardH + 6;
+        yPosition += trlCardH + 4;
       };
 
       // Lines that duplicate patent number info already shown in 특허정보 card
@@ -557,38 +577,35 @@ export function PdfGenerator({
         if (line.startsWith("## ")) {
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, "");
           if (sectionTitle === "특허 기본 정보") { skipSection = true; continue; }
-          // Skip the "AI 종합 요약" header box
           if (sectionTitle.includes("AI 종합") || sectionTitle.includes("종합 요약") || sectionTitle.includes("종합요약")) continue;
 
-          // Estimate header + first body paragraph height to prevent orphan headers
-          const bodyPreview = estimateBodyHeight(lines, li + 1, 11, pageWidth - margin - margin - 7, 1.7);
-          const neededForSection = 14 + bodyPreview;
+          const bodyPreview = estimateBodyHeight(lines, li + 1, 9.5, pageWidth - margin - margin - 6, 1.6);
+          const neededForSection = 12 + bodyPreview;
           checkNewPage(neededForSection);
-          yPosition += 7;
+          yPosition += 5;
 
-          // Section accent bar (rounded pill shape)
+          // Section accent bar
           pdf.setFillColor(...THEME.primary);
-          pdf.roundedRect(margin + 2, yPosition - 3.5, 2, 5.5, 0.8, 0.8, "F");
+          pdf.roundedRect(margin + 2, yPosition - 3, 1.8, 5, 0.6, 0.6, "F");
 
-          pdf.setFontSize(12);
+          pdf.setFontSize(10.5);
           pdf.setTextColor(...THEME.primary);
-          pdf.text(sectionTitle, margin + 5.5, yPosition);
+          pdf.text(sectionTitle, margin + 5, yPosition);
           
-          // Subtle underline below section title
           pdf.setDrawColor(...THEME.border);
           pdf.setLineWidth(0.15);
-          pdf.line(margin + 5.5, yPosition + 1.5, margin + 5.5 + Math.min(pdf.getTextWidth(sectionTitle), contentWidth - 10), yPosition + 1.5);
+          pdf.line(margin + 5, yPosition + 1.2, margin + 5 + Math.min(pdf.getTextWidth(sectionTitle), contentWidth - 8), yPosition + 1.2);
           
-          yPosition += 8.5;
+          yPosition += 7;
 
           if (sectionTitle === "발명의 요약") await insertImages();
           if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("상용화 전망")) {
-            yPosition += 3;
+            yPosition += 2;
             insertTrl();
           }
         } else if (cleanLine.trim()) {
-          addWrappedText(cleanLine, 11, THEME.textBody, 1.7);
-          yPosition += 2;
+          addWrappedText(cleanLine, 9.5, THEME.textBody, 1.6);
+          yPosition += 1.5;
         }
       }
 
