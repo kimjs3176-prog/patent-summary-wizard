@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react";
+import { FileText, Search, Sparkles } from "lucide-react";
 import { PatentInput } from "@/components/PatentInput";
 import { PatentSummary } from "@/components/PatentSummary/index";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
@@ -115,46 +115,98 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 md:px-6 py-10 md:py-16">
+      <main className="container mx-auto px-4 md:px-6 py-8 md:py-12">
         {!summary && !isLoading ? (
           <>
-            {/* Hero */}
-            <section className="text-center max-w-3xl mx-auto mb-12 md:mb-16 animate-fade-down">
-              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-5 leading-[1.15] tracking-tight">
-                농식품분야 특허<br />
-                <span className="gradient-text">AI 기술요약</span> 서비스
-              </h2>
-              <p className="text-base md:text-lg text-muted-foreground font-normal leading-relaxed max-w-md mx-auto">
-                농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다
-              </p>
-            </section>
+            {/* Bento Grid Layout */}
+            <div className="max-w-6xl mx-auto">
+              {/* Row 1: Hero (left, tall) + Search (right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-4 md:mb-5">
+                {/* Hero - spans 2 cols */}
+                <div className="lg:col-span-2 bento-card bg-foreground text-background p-8 md:p-10 flex flex-col justify-between min-h-[280px] animate-fade-up">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-background/10 text-xs font-medium mb-6">
+                      <Sparkles className="w-3 h-3" />
+                      AI 기반 특허 분석
+                    </div>
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold leading-[1.15] tracking-tight mb-4">
+                      농식품분야 특허<br />
+                      AI 기술요약<br />
+                      서비스
+                    </h2>
+                  </div>
+                  <p className="text-sm text-background/60 leading-relaxed">
+                    농식품 분야 특허를 AI가 자동으로<br className="hidden md:block" />
+                    분석하고 요약합니다
+                  </p>
+                </div>
 
-            {/* Search Section */}
-            <section className="mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-              <div className="w-full max-w-5xl mx-auto flex flex-col lg:flex-row gap-5 lg:gap-6 items-start justify-center">
+                {/* Search Card - spans 3 cols */}
+                <div className="lg:col-span-3 bento-card bg-secondary/30 p-6 md:p-8 flex flex-col justify-center animate-fade-up" style={{ animationDelay: "0.05s" }}>
+                  <div className="flex items-center gap-2 mb-5">
+                    <Search className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-foreground">특허 검색</span>
+                  </div>
+                  <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
+                </div>
+              </div>
+
+              {/* Keyword Results */}
+              {keywordResults.length > 0 && (
+                <div className="mb-4 md:mb-5 animate-fade-up">
+                  <KeywordSearchResults results={keywordResults} keyword={searchedKeyword} onPatentSelect={handleKeywordPatentSelect} onClose={handleClearKeywordResults} isLoading={isLoading} />
+                </div>
+              )}
+
+              {/* Row 2: Recent + Popular + Feature card */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mb-4 md:mb-5">
+                {/* Recent Searches */}
                 {history.length > 0 && keywordResults.length === 0 && (
-                  <div className="w-full lg:w-auto lg:flex-shrink-0 order-1 lg:order-1">
+                  <div className="bento-card bg-secondary/30 p-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
                     <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
                   </div>
                 )}
-                <div className="w-full flex-1 max-w-2xl order-first lg:order-2 mx-auto">
-                  <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
-                </div>
-                <div className="w-full lg:w-auto lg:flex-shrink-0 order-3">
+
+                {/* Popular Searches */}
+                <div className="bento-card bg-secondary/30 p-0 animate-fade-up" style={{ animationDelay: "0.15s" }}>
                   <PopularSearches onPatentSelect={handleSubmit} />
                 </div>
+
+                {/* Info Card */}
+                <div className="bento-card bg-gradient-to-br from-primary/5 to-primary/10 border-primary/10 p-6 md:p-8 flex flex-col justify-between animate-fade-up" style={{ animationDelay: "0.2s" }}>
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                      <FileText className="w-5 h-5 text-primary" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-foreground mb-2">특허번호로 바로 검색</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      등록번호(10-XXXXXXX) 또는 출원번호를 입력하면 AI가 자동으로 특허를 분석하고 기술요약을 생성합니다.
+                    </p>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {["10-2920574", "10-2887680"].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => handleSubmit(num)}
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </section>
 
-            {/* Keyword Results */}
-            {keywordResults.length > 0 && (
-              <section className="mb-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-                <KeywordSearchResults results={keywordResults} keyword={searchedKeyword} onPatentSelect={handleKeywordPatentSelect} onClose={handleClearKeywordResults} isLoading={isLoading} />
-              </section>
-            )}
+              {/* Row 3: RDA Latest Patents (full width bento) */}
+              <div className="bento-card bg-secondary/30 p-0 mb-4 md:mb-5 animate-fade-up" style={{ animationDelay: "0.25s" }}>
+                <RdaLatestPatents onPatentSelect={handleSubmit} />
+              </div>
 
-            <RdaLatestPatents onPatentSelect={handleSubmit} />
-            <TechTransferGuide />
+              {/* Row 4: Tech Transfer Guide (full width bento) */}
+              <div className="bento-card bg-secondary/30 p-0 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+                <TechTransferGuide />
+              </div>
+            </div>
           </>
         ) : (
           <>

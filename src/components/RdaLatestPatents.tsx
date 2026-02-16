@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sprout } from "lucide-react";
 
 interface RdaPatent {
   patentId: string;
@@ -49,62 +49,63 @@ export function RdaLatestPatents({ onPatentSelect }: RdaLatestPatentsProps) {
 
   if (isLoading) {
     return (
-      <section className="max-w-5xl mx-auto mt-10 md:mt-16">
-        <div className="flex items-center justify-center gap-3 py-10">
+      <div className="p-6 md:p-8">
+        <div className="flex items-center justify-center gap-3 py-8">
           <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
           <span className="text-sm text-muted-foreground">농촌진흥청 최신 특허 로딩 중...</span>
         </div>
-      </section>
+      </div>
     );
   }
 
   if (error || patents.length === 0) return null;
 
   return (
-    <section className="max-w-5xl mx-auto mt-10 md:mt-16">
-      <div className="mb-6">
-        <h3 className="text-lg md:text-xl font-semibold text-foreground">농촌진흥청 최신 특허</h3>
-        <p className="text-xs text-muted-foreground mt-1">대한민국(농촌진흥청장) 출원 특허</p>
+    <div className="p-6 md:p-8">
+      <div className="flex items-center gap-2.5 mb-6">
+        <Sprout className="w-4 h-4 text-muted-foreground" />
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">농촌진흥청 최신 특허</h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">대한민국(농촌진흥청장) 출원 특허</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {patents.map((patent, index) => (
           <button
             key={patent.patentId}
             onClick={() => onPatentSelect(patent.patentId)}
-            className="group p-4 md:p-5 rounded-2xl bg-secondary/40 text-left border border-border/50 hover:bg-secondary/70 hover:border-border transition-all duration-200 animate-fade-up"
-            style={{ animationDelay: `${0.05 + index * 0.03}s` }}
+            className="group p-4 rounded-xl bg-background/60 hover:bg-background text-left border border-border/30 hover:border-border/60 transition-all duration-200"
           >
-            <div className="flex items-start gap-3 mb-3">
+            <div className="flex items-start gap-3 mb-2.5">
               {patent.thumbnail ? (
                 <img
                   src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(patent.thumbnail)}`}
                   alt=""
-                  className="w-11 h-11 rounded-lg object-cover bg-muted flex-shrink-0"
+                  className="w-10 h-10 rounded-lg object-cover bg-muted flex-shrink-0"
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : (
-                <div className="w-11 h-11 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg">🌱</span>
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  <span className="text-base">🌱</span>
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <span className="inline-block px-2 py-0.5 text-[10px] font-medium rounded-md bg-muted text-muted-foreground mb-1">
                   {patent.patentId}
                 </span>
-                <h4 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                <h4 className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
                   {patent.title}
                 </h4>
               </div>
             </div>
-
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span className="truncate max-w-[60%]">{patent.applicant}</span>
               <span>{patent.applicationDate}</span>
             </div>
           </button>
         ))}
       </div>
-    </section>
+    </div>
   );
 }
