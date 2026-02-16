@@ -1,4 +1,4 @@
-import { Search, FileEdit, ClipboardCheck, Stamp, Handshake, Wallet } from "lucide-react";
+import { Search, FileEdit, ClipboardCheck, Stamp, Handshake, Wallet, BookOpen } from "lucide-react";
 
 const steps = [
   { num: 1, icon: Search, title: "이전 기술 탐색", desc: "KIPRIS, NATI 등에서 관심 기술을 검색하고 유망기술 자료집을 참고하세요." },
@@ -11,42 +11,35 @@ const steps = [
 
 export function TechTransferGuide() {
   return (
-    <section className="max-w-5xl mx-auto mt-16 md:mt-24 mb-8">
-      <div className="text-center mb-10 md:mb-14">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-          기술이전 절차 안내
-        </p>
-        <h3 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
-          국가직무발명특허 <span className="gradient-text">기술이전</span>이란?
-        </h3>
-        <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
-          국가공무원의 직무발명에 따라 국가 명의로 출원하여 등록된 권리(특허)를
-          <br className="hidden md:block" />
-          <strong className="text-foreground font-medium">'실시권 허락(라이센싱 계약)'</strong>의 형태로 이전하는 것
-        </p>
+    <div className="p-6 md:p-8">
+      <div className="flex items-center gap-2.5 mb-2">
+        <BookOpen className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-semibold text-foreground">기술이전 절차 안내</span>
       </div>
+      <p className="text-xs text-muted-foreground mb-6 ml-6.5">
+        국가직무발명특허의 실시권 허락(라이센싱 계약) 절차
+      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {steps.map((step) => {
           const Icon = step.icon;
           return (
             <div
               key={step.num}
-              className="group rounded-2xl p-5 md:p-6 bg-secondary/40 border border-border/50 hover:bg-secondary/70 hover:border-border transition-all duration-200 animate-fade-up"
-              style={{ animationDelay: `${0.06 * step.num}s` }}
+              className="group rounded-xl p-4 bg-background/60 border border-border/30 hover:bg-background hover:border-border/60 transition-all duration-200"
             >
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3">
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
                     <Icon className="w-4 h-4 text-background" />
                   </div>
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
                     {step.num}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold text-foreground mb-1">{step.title}</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+                  <h4 className="text-xs font-semibold text-foreground mb-1">{step.title}</h4>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">{step.desc}</p>
                 </div>
               </div>
             </div>
@@ -54,13 +47,13 @@ export function TechTransferGuide() {
         })}
       </div>
 
-      <p className="text-center mt-6 text-xs text-muted-foreground">
+      <p className="text-center mt-5 text-[11px] text-muted-foreground">
         자세한 내용은{" "}
         <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">NATI</a>
         {" "}또는{" "}
         <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">KIPRIS</a>
         를 참고하세요.
       </p>
-    </section>
+    </div>
   );
 }
