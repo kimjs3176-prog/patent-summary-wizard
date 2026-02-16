@@ -151,16 +151,6 @@
     border-radius: 1.25rem;
   }
 
-  .bento-card {
-    @apply rounded-2xl md:rounded-3xl border border-border/40 overflow-hidden;
-    box-shadow: var(--shadow-card);
-    transition: box-shadow 0.3s ease, border-color 0.3s ease;
-  }
-  .bento-card:hover {
-    box-shadow: var(--shadow-md);
-    border-color: hsl(var(--border));
-  }
-
   .animate-fade-up {
     animation: fadeUp 0.6s ease-out forwards;
   }
