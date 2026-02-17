@@ -12,6 +12,7 @@ import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useState, useEffect, useRef } from "react";
+import heroBg from "@/assets/hero-bg.png";
 
 const Index = () => {
   const {
@@ -119,12 +120,22 @@ const Index = () => {
         {!summary && !isLoading ? (
           <>
             {/* Hero */}
-            <section className="text-center max-w-3xl mx-auto mb-12 md:mb-16 animate-fade-down">
-              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-5 leading-[1.15] tracking-tight">
+            <section className="text-center max-w-3xl mx-auto mb-12 md:mb-16 animate-fade-down relative">
+              <div
+                className="absolute inset-0 -mx-16 -my-10 pointer-events-none opacity-[0.09]"
+                style={{
+                  backgroundImage: `url(${heroBg})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  filter: 'blur(1px)',
+                }}
+              />
+              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-5 leading-[1.15] tracking-tight relative z-10">
                 농식품분야 특허<br />
                 <span className="gradient-text">AI 기술요약</span> 서비스
               </h2>
-              <p className="text-base md:text-lg text-muted-foreground font-normal leading-relaxed max-w-md mx-auto">
+              <p className="text-base md:text-lg text-muted-foreground font-normal leading-relaxed max-w-md mx-auto relative z-10">
                 농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다
               </p>
             </section>
