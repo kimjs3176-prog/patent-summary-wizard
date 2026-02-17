@@ -132,18 +132,18 @@ const Index = () => {
             {/* Search Section */}
             <section className="mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
               <div className="w-full max-w-5xl mx-auto flex flex-col lg:flex-row gap-5 lg:gap-6 items-start justify-center">
-                {history.length > 0 && keywordResults.length === 0 && (
-                  <div className="w-full lg:w-auto lg:flex-shrink-0 order-1 lg:order-1">
-                    <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
-                  </div>
-                )}
-                <div className="w-full flex-1 max-w-2xl order-first lg:order-2 mx-auto">
+                <div className="w-full flex-1 max-w-2xl mx-auto">
                   <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
                 </div>
-                <div className="w-full lg:w-auto lg:flex-shrink-0 order-3">
+                <div className="w-full lg:w-auto lg:flex-shrink-0">
                   <PopularSearches onPatentSelect={handleSubmit} />
                 </div>
               </div>
+              {history.length > 0 && keywordResults.length === 0 && (
+                <div className="w-full max-w-2xl mx-auto mt-5">
+                  <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
+                </div>
+              )}
             </section>
 
             {/* Keyword Results */}
