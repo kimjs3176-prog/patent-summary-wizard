@@ -83,12 +83,12 @@ export function PdfGenerator({
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 14;
+      const margin = 16;
       const contentWidth = pageWidth - margin * 2;
       let yPosition = margin;
 
       const checkNewPage = (neededHeight: number) => {
-        if (yPosition + neededHeight > pageHeight - margin - 8) {
+        if (yPosition + neededHeight > pageHeight - margin - 12) {
           pdf.addPage();
           yPosition = margin;
           return true;
@@ -113,7 +113,7 @@ export function PdfGenerator({
         return Math.min(h, 30); // cap at 30mm for lookahead
       };
 
-      const drawCard = (x: number, y: number, w: number, h: number, r = 2.5) => {
+      const drawCard = (x: number, y: number, w: number, h: number, r = 3) => {
         pdf.setFillColor(...THEME.cardBg);
         pdf.setDrawColor(...THEME.border);
         pdf.setLineWidth(0.25);
@@ -124,7 +124,7 @@ export function PdfGenerator({
         pdf.setFillColor(...THEME.cardBgLight);
         pdf.setDrawColor(...THEME.border);
         pdf.setLineWidth(0.2);
-        pdf.roundedRect(x, y, w, h, 1.5, 1.5, "FD");
+        pdf.roundedRect(x, y, w, h, 2, 2, "FD");
       };
 
       const drawProgressBar = (x: number, y: number, w: number, h: number, pct: number, color: [number, number, number]) => {
@@ -136,8 +136,8 @@ export function PdfGenerator({
         }
       };
 
-      const addWrappedText = (text: string, fontSize: number, color: [number, number, number], lineHeight = 1.6, indentX = margin + 4) => {
-        const maxW = pageWidth - indentX - margin - 3;
+      const addWrappedText = (text: string, fontSize: number, color: [number, number, number], lineHeight = 1.7, indentX = margin + 5) => {
+        const maxW = pageWidth - indentX - margin - 5;
         const lhMm = fontSize * 0.352778 * lineHeight;
         
         // Parse bold segments: split by **text**
@@ -231,15 +231,15 @@ export function PdfGenerator({
 
       // ===== HEADER BAR =====
       pdf.setFillColor(...THEME.headerGreen);
-      pdf.roundedRect(margin, yPosition, contentWidth, 16, 2.5, 2.5, "F");
+      pdf.roundedRect(margin, yPosition, contentWidth, 18, 3, 3, "F");
 
-      pdf.setFontSize(11);
+      pdf.setFontSize(12);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("농식품 특허 요약서", margin + 5, yPosition + 6.5);
+      pdf.text("농식품 특허 요약서", margin + 6, yPosition + 7.5);
 
-      pdf.setFontSize(6);
+      pdf.setFontSize(6.5);
       pdf.setTextColor(200, 225, 210);
-      pdf.text("Agri-Food Patent Summary Report", margin + 5, yPosition + 11);
+      pdf.text("Agri-Food Patent Summary Report", margin + 6, yPosition + 12.5);
 
       const isApp = patentData?.searchType === "application";
       const displayNumber = isApp
@@ -249,12 +249,12 @@ export function PdfGenerator({
 
       pdf.setFontSize(6);
       pdf.setTextColor(200, 225, 210);
-      pdf.text(numberLabel, pageWidth - margin - pdf.getTextWidth(numberLabel) - 4, yPosition + 6.5);
-      pdf.setFontSize(8);
+      pdf.text(numberLabel, pageWidth - margin - pdf.getTextWidth(numberLabel) - 6, yPosition + 7.5);
+      pdf.setFontSize(8.5);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(displayNumber, pageWidth - margin - pdf.getTextWidth(displayNumber) - 4, yPosition + 11);
+      pdf.text(displayNumber, pageWidth - margin - pdf.getTextWidth(displayNumber) - 6, yPosition + 12.5);
 
-      yPosition += 20;
+      yPosition += 24;
 
       // ===== 1. PATENT INFO + COMMERCIALIZATION SCORE (merged) =====
       if (patentData) {
@@ -267,65 +267,65 @@ export function PdfGenerator({
 
         pdf.setFontSize(11);
         const titleLines = pdf.splitTextToSize(title, contentWidth - 12);
-        const titleH = Math.min(titleLines.length, 2) * 4.5;
+        const titleH = Math.min(titleLines.length, 2) * 5;
         const rowCount = Math.ceil(infoItems.length / 4);
 
         const hasScore = commercializationScore != null && commercializationDetails;
         const hasAnalysis = hasScore && !!commercializationDetails.analysis;
         let analysisH = 0;
         if (hasAnalysis) {
-          pdf.setFontSize(7);
-          const aLines = pdf.splitTextToSize(commercializationDetails.analysis, contentWidth - 16);
-          analysisH = 5 + aLines.length * 2.8;
+          pdf.setFontSize(7.5);
+          const aLines = pdf.splitTextToSize(commercializationDetails.analysis, contentWidth - 20);
+          analysisH = 7 + aLines.length * 3.2;
         }
-        const scoreBlockH = hasScore ? 28 + (hasAnalysis ? analysisH : 0) : 0;
-        const cardH = 14 + titleH + rowCount * 12 + (hasScore ? 3 + scoreBlockH : 0);
+        const scoreBlockH = hasScore ? 32 + (hasAnalysis ? analysisH : 0) : 0;
+        const cardH = 18 + titleH + rowCount * 14 + (hasScore ? 5 + scoreBlockH : 0);
 
-        checkNewPage(cardH + 2);
+        checkNewPage(cardH + 4);
         drawCard(margin, yPosition, contentWidth, cardH);
-        const cx = margin + 4;
-        let cy = yPosition + 3.5;
+        const cx = margin + 6;
+        let cy = yPosition + 5;
 
         pdf.setFontSize(9);
         pdf.setTextColor(...THEME.text);
         pdf.text("📄 특허 정보", cx, cy + 3);
-        cy += 5;
+        cy += 6;
         pdf.setDrawColor(...THEME.border);
         pdf.setLineWidth(0.2);
-        pdf.line(cx, cy, margin + contentWidth - 4, cy);
-        cy += 2.5;
+        pdf.line(cx, cy, margin + contentWidth - 6, cy);
+        cy += 4;
 
         pdf.setFontSize(9.5);
         pdf.setTextColor(...THEME.text);
         for (let i = 0; i < Math.min(titleLines.length, 2); i++) {
           pdf.text(titleLines[i] + (i === 0 && titleLines.length > 2 ? "..." : ""), cx, cy + 3);
-          cy += 4;
+          cy += 5;
         }
-        cy += 1;
+        cy += 3;
 
         const colCount = Math.min(infoItems.length, 4);
-        const subW = (contentWidth - 10) / colCount;
+        const subW = (contentWidth - 14) / colCount;
         infoItems.forEach((item, idx) => {
           const col = idx % 4;
           const row = Math.floor(idx / 4);
-          const sx = cx + col * (subW + 0.3);
-          const sy = cy + row * 11;
-          drawSubCard(sx, sy, subW - 1, 9.5);
+          const sx = cx + col * (subW + 0.5);
+          const sy = cy + row * 13;
+          drawSubCard(sx, sy, subW - 1.5, 11);
           pdf.setFontSize(5.5);
           pdf.setTextColor(...THEME.textMuted);
-          pdf.text(item.label, sx + 2, sy + 3.5);
+          pdf.text(item.label, sx + 3, sy + 4);
           pdf.setFontSize(7);
           pdf.setTextColor(...THEME.text);
-          const valLines = pdf.splitTextToSize(item.value, subW - 6);
-          pdf.text(valLines[0], sx + 2, sy + 7.5);
+          const valLines = pdf.splitTextToSize(item.value, subW - 8);
+          pdf.text(valLines[0], sx + 3, sy + 8.5);
         });
-        cy += rowCount * 11 + 1;
+        cy += rowCount * 13 + 2;
 
         if (hasScore) {
           pdf.setDrawColor(...THEME.border);
           pdf.setLineWidth(0.15);
-          pdf.line(cx, cy, margin + contentWidth - 4, cy);
-          cy += 2.5;
+          pdf.line(cx, cy, margin + contentWidth - 6, cy);
+          cy += 4;
 
           const scoreColor = getScoreColorRgb(commercializationScore!);
           pdf.setFontSize(8);
@@ -346,47 +346,47 @@ export function PdfGenerator({
           pdf.text(getGradeLabel(commercializationScore!), cx + 72, cy + 1.5);
           pdf.setFontSize(6.5);
           pdf.text(getScoreLabel(commercializationScore!), cx + 72, cy + 5.5);
-          cy += 9;
+          cy += 11;
 
-          const ssubW = (contentWidth - 12) / 3;
+          const ssubW = (contentWidth - 16) / 3;
           const subScores = [
             { label: "기술성", score: commercializationDetails!.technologyScore },
             { label: "시장성", score: commercializationDetails!.marketScore },
             { label: "사업성", score: commercializationDetails!.businessScore },
           ];
           subScores.forEach((item, idx) => {
-            const sx = cx + idx * (ssubW + 0.5);
-            drawSubCard(sx, cy, ssubW - 1, 12);
-            pdf.setFontSize(5.5);
+            const sx = cx + idx * (ssubW + 1);
+            drawSubCard(sx, cy, ssubW - 0.5, 14);
+            pdf.setFontSize(6);
             pdf.setTextColor(...THEME.textMuted);
-            pdf.text(item.label, sx + 2, cy + 3.5);
+            pdf.text(item.label, sx + 3, cy + 4.5);
             const sc = getScoreColorRgb(item.score);
             pdf.setFontSize(9);
             pdf.setTextColor(...sc);
-            pdf.text(String(item.score), sx + 2, cy + 8.5);
+            pdf.text(String(item.score), sx + 3, cy + 10);
             const numW = pdf.getTextWidth(String(item.score));
             pdf.setFontSize(5.5);
             pdf.setTextColor(...THEME.textMuted);
-            pdf.text("점", sx + 2 + numW + 0.8, cy + 8.5);
-            drawProgressBar(sx + 2, cy + 10, ssubW - 5.5, 1, item.score, sc);
+            pdf.text("점", sx + 3 + numW + 1, cy + 10);
+            drawProgressBar(sx + 3, cy + 11.5, ssubW - 7, 1.2, item.score, sc);
           });
-          cy += 14;
+          cy += 17;
 
           if (hasAnalysis) {
-            drawSubCard(cx, cy, contentWidth - 10, analysisH);
-            pdf.setFontSize(5.5);
+            drawSubCard(cx, cy, contentWidth - 14, analysisH);
+            pdf.setFontSize(6);
             pdf.setTextColor(...THEME.textMuted);
-            pdf.text("AI 분석 의견", cx + 2, cy + 3);
-            pdf.setFontSize(7);
+            pdf.text("AI 분석 의견", cx + 3, cy + 4);
+            pdf.setFontSize(7.5);
             pdf.setTextColor(...THEME.textBody);
-            const aLines = pdf.splitTextToSize(commercializationDetails!.analysis, contentWidth - 16);
+            const aLines = pdf.splitTextToSize(commercializationDetails!.analysis, contentWidth - 20);
             for (let i = 0; i < aLines.length; i++) {
-              pdf.text(aLines[i], cx + 2, cy + 6 + i * 2.8);
+              pdf.text(aLines[i], cx + 3, cy + 8 + i * 3.2);
             }
           }
         }
 
-        yPosition += cardH + 3;
+        yPosition += cardH + 5;
       }
 
 
@@ -457,16 +457,16 @@ export function PdfGenerator({
         const hasTrlReason = !!commercializationDetails.trlReason;
         let reasonH = 0;
         if (hasTrlReason) {
-          pdf.setFontSize(7);
-          const rLines = pdf.splitTextToSize(commercializationDetails.trlReason!, contentWidth - 16);
-          reasonH = 6 + rLines.length * 2.8;
+          pdf.setFontSize(7.5);
+          const rLines = pdf.splitTextToSize(commercializationDetails.trlReason!, contentWidth - 20);
+          reasonH = 8 + rLines.length * 3.2;
         }
-        const trlCardH = 38 + (hasTrlReason ? reasonH : 0);
+        const trlCardH = 42 + (hasTrlReason ? reasonH : 0);
 
-        checkNewPage(trlCardH + 3);
+        checkNewPage(trlCardH + 5);
         drawCard(margin, yPosition, contentWidth, trlCardH);
-        const cx = margin + 4;
-        let cy = yPosition + 4;
+        const cx = margin + 6;
+        let cy = yPosition + 5;
 
         pdf.setFontSize(9);
         pdf.setTextColor(...THEME.text);
@@ -474,12 +474,12 @@ export function PdfGenerator({
         pdf.setFontSize(6);
         pdf.setTextColor(...THEME.textMuted);
         pdf.text("Technology Readiness Level", cx + 40, cy + 3);
-        cy += 6;
+        cy += 7;
 
         pdf.setDrawColor(...THEME.border);
         pdf.setLineWidth(0.2);
-        pdf.line(cx, cy, margin + contentWidth - 4, cy);
-        cy += 3.5;
+        pdf.line(cx, cy, margin + contentWidth - 6, cy);
+        cy += 5;
 
         // TRL badge
         const trlColor: [number, number, number] = trl <= 3 ? [156, 39, 176] : trl <= 6 ? [251, 191, 36] : [74, 222, 128];
@@ -495,7 +495,7 @@ export function PdfGenerator({
         pdf.setFontSize(6);
         pdf.setTextColor(...THEME.textMuted);
         pdf.text(`상용화까지 ${9 - trl} 단계`, cx + 10, cy + 7);
-        cy += 9;
+        cy += 11;
 
         // Progress segments
         const segBarW = contentWidth - 10;
@@ -511,7 +511,7 @@ export function PdfGenerator({
           pdf.setTextColor(active ? 255 : 160, active ? 255 : 160, active ? 255 : 160);
           pdf.text(String(i), sx + segW / 2 - 0.7, cy + 2.2);
         }
-        cy += 4;
+        cy += 5;
 
         // Stage labels
         const stageW = segBarW / 3;
@@ -535,22 +535,22 @@ export function PdfGenerator({
           }
           pdf.text(`${s.label} ${s.range}`, sx + 1.5, cy + 3.5);
         });
-        cy += 7;
+        cy += 8;
 
         if (hasTrlReason) {
-          drawSubCard(cx, cy, contentWidth - 10, reasonH);
+          drawSubCard(cx, cy, contentWidth - 14, reasonH);
           pdf.setFontSize(6);
           pdf.setTextColor(...THEME.textMuted);
-          pdf.text("TRL 추정 근거", cx + 2, cy + 3.5);
-          pdf.setFontSize(7);
+          pdf.text("TRL 추정 근거", cx + 3, cy + 4);
+          pdf.setFontSize(7.5);
           pdf.setTextColor(...THEME.textBody);
-          const rLines = pdf.splitTextToSize(commercializationDetails.trlReason!, contentWidth - 16);
+          const rLines = pdf.splitTextToSize(commercializationDetails.trlReason!, contentWidth - 20);
           for (let i = 0; i < rLines.length; i++) {
-            pdf.text(rLines[i], cx + 2, cy + 7 + i * 2.8);
+            pdf.text(rLines[i], cx + 3, cy + 8.5 + i * 3.2);
           }
         }
 
-        yPosition += trlCardH + 4;
+        yPosition += trlCardH + 6;
       };
 
       // Lines that duplicate patent number info already shown in 특허정보 card
@@ -579,33 +579,33 @@ export function PdfGenerator({
           if (sectionTitle === "특허 기본 정보") { skipSection = true; continue; }
           if (sectionTitle.includes("AI 종합") || sectionTitle.includes("종합 요약") || sectionTitle.includes("종합요약")) continue;
 
-          const bodyPreview = estimateBodyHeight(lines, li + 1, 9.5, pageWidth - margin - margin - 6, 1.6);
-          const neededForSection = 12 + bodyPreview;
+          const bodyPreview = estimateBodyHeight(lines, li + 1, 9.5, pageWidth - margin - margin - 8, 1.7);
+          const neededForSection = 14 + bodyPreview;
           checkNewPage(neededForSection);
-          yPosition += 5;
+          yPosition += 7;
 
           // Section accent bar
           pdf.setFillColor(...THEME.primary);
-          pdf.roundedRect(margin + 2, yPosition - 3, 1.8, 5, 0.6, 0.6, "F");
+          pdf.roundedRect(margin + 3, yPosition - 3, 2, 5.5, 0.7, 0.7, "F");
 
           pdf.setFontSize(10.5);
           pdf.setTextColor(...THEME.primary);
-          pdf.text(sectionTitle, margin + 5, yPosition);
+          pdf.text(sectionTitle, margin + 7, yPosition);
           
           pdf.setDrawColor(...THEME.border);
           pdf.setLineWidth(0.15);
-          pdf.line(margin + 5, yPosition + 1.2, margin + 5 + Math.min(pdf.getTextWidth(sectionTitle), contentWidth - 8), yPosition + 1.2);
+          pdf.line(margin + 7, yPosition + 1.5, margin + 7 + Math.min(pdf.getTextWidth(sectionTitle), contentWidth - 10), yPosition + 1.5);
           
-          yPosition += 7;
+          yPosition += 8;
 
           if (sectionTitle === "발명의 요약") await insertImages();
           if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("상용화 전망")) {
-            yPosition += 2;
+            yPosition += 3;
             insertTrl();
           }
         } else if (cleanLine.trim()) {
-          addWrappedText(cleanLine, 9.5, THEME.textBody, 1.6);
-          yPosition += 1.5;
+          addWrappedText(cleanLine, 9.5, THEME.textBody, 1.7);
+          yPosition += 2;
         }
       }
 
@@ -617,13 +617,13 @@ export function PdfGenerator({
 
       // Disclaimer
       {
-        checkNewPage(6);
-        yPosition += 1;
+        checkNewPage(8);
+        yPosition += 3;
         pdf.setFontSize(6.5);
         pdf.setTextColor(...THEME.textMuted);
         const disc = "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음";
         pdf.text(disc, (pageWidth - pdf.getTextWidth(disc)) / 2, yPosition);
-        yPosition += 4;
+        yPosition += 5;
       }
 
       // Footer
