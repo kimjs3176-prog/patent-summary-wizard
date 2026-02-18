@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,10 +14,8 @@ interface RdaPatent {
   thumbnail?: string;
 }
 
-// 농촌진흥청 관련 출원인 식별
 const RDA_KEYWORDS = ["농촌진흥청", "농촌진흥청장"];
 
-// 카테고리별 검색 키워드
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "식품·가공": ["식품", "가공", "발효", "저장"],
   "기능성·바이오": ["기능성", "추출물", "유용성분", "바이오"],
@@ -26,16 +25,13 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "병해충·환경": ["병해충", "방제", "토양", "환경"],
 };
 
-// 날짜 포맷팅: 20231015 -> 2023.10.15
 function formatDate(dateStr: string): string {
   if (!dateStr || dateStr.length !== 8) return dateStr;
   return `${dateStr.slice(0, 4)}.${dateStr.slice(4, 6)}.${dateStr.slice(6, 8)}`;
 }
 
-// Retry fetch with exponential backoff
 async function fetchWithRetry(url: string, maxRetries = 3, initialDelay = 1000): Promise<Response> {
   let lastError: Error | null = null;
-  
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await fetch(url);
@@ -43,22 +39,18 @@ async function fetchWithRetry(url: string, maxRetries = 3, initialDelay = 1000):
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(`Fetch attempt ${attempt + 1}/${maxRetries} failed:`, lastError.message);
-      
       const isRetryable = lastError.message.includes('Connection reset') ||
                           lastError.message.includes('connection error') ||
                           lastError.message.includes('timeout');
-      
-      if (!isRetryable || attempt === maxRetries - 1) {
-        throw lastError;
-      }
-      
+      if (!isRetryable || attempt === maxRetries - 1) throw lastError;
       const delay = initialDelay * Math.pow(2, attempt) + Math.random() * 500;
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
   throw lastError || new Error('Fetch failed after retries');
 }
+
+const CACHE_TTL_HOURS = 6;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -66,6 +58,36 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 1) Check cache first
+    const { data: cachedRows } = await supabase
+      .from("rda_patents_cache")
+      .select("category, patents, fetched_at");
+
+    if (cachedRows && cachedRows.length > 0) {
+      const oldestFetch = cachedRows.reduce((min, r) => {
+        const t = new Date(r.fetched_at).getTime();
+        return t < min ? t : min;
+      }, Date.now());
+      const ageHours = (Date.now() - oldestFetch) / (1000 * 60 * 60);
+
+      if (ageHours < CACHE_TTL_HOURS) {
+        console.log(`Returning cached data (age: ${ageHours.toFixed(1)}h)`);
+        const categories: Record<string, RdaPatent[]> = {};
+        for (const row of cachedRows) {
+          categories[row.category] = row.patents as RdaPatent[];
+        }
+        return new Response(
+          JSON.stringify({ success: true, categories }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // 2) Fetch fresh data from KIPRIS
     const KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
     if (!KIPRIS_API_KEY) {
       return new Response(
@@ -76,17 +98,13 @@ serve(async (req) => {
 
     console.log("Fetching RDA patents by categories...");
 
-    // 카테고리별로 특허 수집
     const categoryResults: Record<string, RdaPatent[]> = {};
-
-    // 무작위로 3개 카테고리 선택
     const categoryEntries = Object.entries(CATEGORY_KEYWORDS);
     const shuffledCategories = [...categoryEntries].sort(() => Math.random() - 0.5);
     const selectedCategories = shuffledCategories.slice(0, 3);
 
     for (const [category, keywords] of selectedCategories) {
       const categoryPatents: RdaPatent[] = [];
-      // 카테고리에서 키워드 1개 무작위 선택
       const keyword = keywords[Math.floor(Math.random() * keywords.length)];
 
       const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
@@ -112,7 +130,6 @@ serve(async (req) => {
         }
 
         const itemMatches = [...searchText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-
         const getField = (xml: string, field: string): string | undefined => {
           const cdataMatch = xml.match(new RegExp(`<${field}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${field}>`, "i"));
           if (cdataMatch) return cdataMatch[1].trim();
@@ -160,16 +177,40 @@ serve(async (req) => {
         console.error(`Error searching keyword ${keyword}:`, err);
       }
 
-      // 카테고리당 최대 3개 무작위 선택
       const shuffled = categoryPatents.sort(() => Math.random() - 0.5);
       categoryResults[category] = shuffled.slice(0, 3);
       console.log(`[${category}] Selected ${categoryResults[category].length} patents`);
     }
 
-    // 빈 카테고리 제거
+    // Filter empty categories
     const filteredResults: Record<string, RdaPatent[]> = {};
     for (const [cat, pats] of Object.entries(categoryResults)) {
       if (pats.length > 0) filteredResults[cat] = pats;
+    }
+
+    // 3) Save to cache if we got results
+    if (Object.keys(filteredResults).length > 0) {
+      // Clear old cache and insert new
+      await supabase.from("rda_patents_cache").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      const rows = Object.entries(filteredResults).map(([category, patents]) => ({
+        category,
+        patents,
+        fetched_at: new Date().toISOString(),
+      }));
+      await supabase.from("rda_patents_cache").upsert(rows, { onConflict: "category" });
+      console.log(`Cached ${rows.length} categories`);
+    } else if (cachedRows && cachedRows.length > 0) {
+      // API failed but we have stale cache - return it
+      console.log("API returned no results, returning stale cache");
+      const categories: Record<string, RdaPatent[]> = {};
+      for (const row of cachedRows) {
+        categories[row.category] = row.patents as RdaPatent[];
+      }
+      return new Response(
+        JSON.stringify({ success: true, categories }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     console.log(`Returning ${Object.keys(filteredResults).length} categories`);

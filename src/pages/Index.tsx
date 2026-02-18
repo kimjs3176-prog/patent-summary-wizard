@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { RdaLatestPatents } from "@/components/RdaLatestPatents";
+import { FeaturedPatents } from "@/components/FeaturedPatents";
 import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
@@ -153,6 +154,7 @@ const Index = () => {
               </section>
             )}
 
+            <FeaturedPatents onPatentSelect={handleSubmit} />
             <RdaLatestPatents onPatentSelect={handleSubmit} />
             <TechTransferGuide />
           </>

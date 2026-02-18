@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.rda-latest-patents]
 verify_jwt = false
+
+[functions.manage-featured-patents]
+verify_jwt = false
