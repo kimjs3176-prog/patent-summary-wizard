@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      featured_patents: {
+        Row: {
+          category: string | null
+          contact_info: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          patent_number: string
+          recommendation_reason: string | null
+          thumbnail_url: string | null
+          title: string
+          transfer_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          contact_info?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          patent_number: string
+          recommendation_reason?: string | null
+          thumbnail_url?: string | null
+          title: string
+          transfer_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          contact_info?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          patent_number?: string
+          recommendation_reason?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          transfer_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patent_search_stats: {
         Row: {
           created_at: string
@@ -38,6 +86,27 @@ export type Database = {
           patent_number?: string
           patent_title?: string | null
           search_count?: number
+        }
+        Relationships: []
+      }
+      rda_patents_cache: {
+        Row: {
+          category: string
+          fetched_at: string
+          id: string
+          patents: Json
+        }
+        Insert: {
+          category: string
+          fetched_at?: string
+          id?: string
+          patents?: Json
+        }
+        Update: {
+          category?: string
+          fetched_at?: string
+          id?: string
+          patents?: Json
         }
         Relationships: []
       }
