@@ -208,8 +208,15 @@ serve(async (req) => {
       searchText.includes("<resultCode>10</resultCode>")) {
       const errorMsg = searchText.match(/<resultMsg>([^<]+)<\/resultMsg>/)?.[1] || "API 오류";
       console.error("[UPSTREAM] KIPRIS API error:", errorMsg);
+      
+      // Distinguish quota exceeded from other errors
+      const isQuotaExceeded = errorMsg.includes("월") && (errorMsg.includes("호출") || errorMsg.includes("Exceeds"));
+      const userMessage = isQuotaExceeded
+        ? "KIPRIS API 월간 호출 한도를 초과했습니다. 다음 달에 다시 시도해주세요."
+        : "외부 서비스 연동 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      
       return new Response(
-        JSON.stringify({ success: false, error: "외부 서비스 연동 중 오류가 발생했습니다." }),
+        JSON.stringify({ success: false, error: userMessage }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
