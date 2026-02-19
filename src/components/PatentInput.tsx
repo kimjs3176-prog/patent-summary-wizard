@@ -14,29 +14,8 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch }: PatentInpu
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
 
-  const formatPatentNumber = (value: string): string => {
-    const digitsOnly = value.replace(/[^0-9]/g, "");
-    if (value.replace(/[-\\s]/g, "").length !== digitsOnly.length && digitsOnly.length < 7) {
-      return value;
-    }
-    if (digitsOnly.length >= 9 && digitsOnly.length <= 10 && digitsOnly.startsWith("10")) {
-      return `10-${digitsOnly.slice(2)}`;
-    }
-    if (digitsOnly.length === 7) {
-      return `10-${digitsOnly}`;
-    }
-    if (digitsOnly.length >= 11 && digitsOnly.startsWith("10")) {
-      const year = digitsOnly.slice(2, 6);
-      const num = digitsOnly.slice(6);
-      return `10-${year}-${num}`;
-    }
-    return value;
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    const formatted = formatPatentNumber(raw);
-    setInputValue(formatted);
+    setInputValue(e.target.value);
   };
 
   const isPatentNumber = (value: string): boolean => {

@@ -1,5 +1,4 @@
-import { Clock, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { SearchHistoryItem } from "@/hooks/useSearchHistory";
 
 interface SearchHistoryProps {
@@ -13,54 +12,56 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
   if (history.length === 0) return null;
 
   return (
-    <div className="w-full lg:max-w-xs">
-      <div className="rounded-2xl p-4 md:p-5 bg-secondary/50 border border-border/50">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs font-semibold text-foreground">최근 검색</span>
-          </div>
-          {history.length > 1 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClear}
-              className="text-[10px] text-muted-foreground hover:text-foreground h-6 px-2 rounded-lg"
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-xs font-semibold text-muted-foreground">최근 검색</span>
+        {history.length > 1 && (
+          <button
+            onClick={onClear}
+            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            전체삭제
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        {history.slice(0, 6).map((item) => {
+          const title = item.patentData?.title || item.patentData?.titleKo || "";
+          const displayNum = item.patentData?.displayNumber || item.patentNumber;
+          const thumbnailUrl = item.patentData?.representativeImage;
+
+          return (
+            <button
+              key={item.patentNumber}
+              onClick={() => onSelect(item)}
+              className="group relative p-3 rounded-xl bg-secondary/50 border border-border/50 hover:border-foreground/20 hover:bg-secondary transition-all duration-200 text-left"
+              title={`${displayNum} ${title}`}
             >
-              전체삭제
-            </Button>
-          )}
-        </div>
-        <div className="space-y-0.5">
-          {history.slice(0, 5).map((item, idx) => {
-            const title = item.patentData?.title || item.patentData?.titleKo || "";
-            const displayNum = item.patentData?.displayNumber || item.patentNumber;
-            return (
               <button
-                key={item.patentNumber}
-                onClick={() => onSelect(item)}
-                className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-background transition-colors group flex items-start gap-2.5"
-                title={`${displayNum} ${title}`}
+                className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive z-10"
+                onClick={(e) => { e.stopPropagation(); onRemove(item.patentNumber); }}
               >
-                <span className="flex-shrink-0 w-5 h-5 rounded-md bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground mt-0.5">
-                  {idx + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug">
-                    {title || displayNum}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{displayNum}</p>
-                </div>
-                <button
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive flex-shrink-0 mt-0.5"
-                  onClick={(e) => { e.stopPropagation(); onRemove(item.patentNumber); }}
-                >
-                  <X className="w-3 h-3" />
-                </button>
+                <X className="w-3 h-3" />
               </button>
-            );
-          })}
-        </div>
+              {thumbnailUrl ? (
+                <img
+                  src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(thumbnailUrl)}`}
+                  alt=""
+                  className="w-full aspect-square rounded-lg object-cover bg-muted mb-2"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              ) : (
+                <div className="w-full aspect-square rounded-lg bg-muted/50 mb-2 flex items-center justify-center">
+                  <span className="text-lg text-muted-foreground/40">📄</span>
+                </div>
+              )}
+              <p className="text-[11px] font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                {title || displayNum}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{displayNum}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
