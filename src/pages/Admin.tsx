@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video } from "lucide-react";
 import { toast } from "sonner";
 
 interface FeaturedPatent {
@@ -67,6 +67,7 @@ const Admin = () => {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORY_OPTIONS);
+  const [techVideos, setTechVideos] = useState<{ title: string; url: string }[]>([]);
 
   const apiCall = async (action: string, data?: Record<string, unknown>) => {
     const res = await fetch(
@@ -97,6 +98,12 @@ const Admin = () => {
           try {
             const cats = JSON.parse(settingsResult.settings.tech_categories);
             if (Array.isArray(cats) && cats.length > 0) setCategoryOptions(cats);
+          } catch {}
+        }
+        if (settingsResult.settings?.tech_videos) {
+          try {
+            const vids = JSON.parse(settingsResult.settings.tech_videos);
+            if (Array.isArray(vids)) setTechVideos(vids);
           } catch {}
         }
       }
@@ -199,7 +206,7 @@ const Admin = () => {
 
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
-    const settingsToSave = { ...siteSettings, tech_categories: JSON.stringify(categoryOptions) };
+    const settingsToSave = { ...siteSettings, tech_categories: JSON.stringify(categoryOptions), tech_videos: JSON.stringify(techVideos) };
     const result = await apiCall("update-settings", settingsToSave);
     if (result.success) {
       toast.success("홈페이지 설정이 저장되었습니다.");
@@ -481,8 +488,40 @@ const Admin = () => {
                 <p className="text-[10px] text-muted-foreground mt-1.5">카테고리를 수정하면 아래 '설정 저장'을 눌러야 반영됩니다</p>
               </div>
 
+              {/* Video Management */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> 기술소개영상 관리 (최대 3개)</h3>
+                <div className="space-y-2 mb-3">
+                  {techVideos.map((v, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Input
+                        placeholder="영상 제목"
+                        value={v.title}
+                        onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, title: e.target.value } : item))}
+                        className="flex-1"
+                      />
+                      <Input
+                        placeholder="YouTube URL"
+                        value={v.url}
+                        onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, url: e.target.value } : item))}
+                        className="flex-1"
+                      />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive" onClick={() => setTechVideos(prev => prev.filter((_, i) => i !== idx))}>
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                {techVideos.length < 3 && (
+                  <Button variant="outline" size="sm" onClick={() => setTechVideos(prev => [...prev, { title: "", url: "" }])}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> 영상 추가
+                  </Button>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-1.5">유튜브 링크를 입력하면 메인 페이지에 썸네일 카드로 표시됩니다</p>
+              </div>
+
               <Button onClick={() => {
-                setSiteSettings(s => ({ ...s, tech_categories: JSON.stringify(categoryOptions) }));
+                setSiteSettings(s => ({ ...s, tech_categories: JSON.stringify(categoryOptions), tech_videos: JSON.stringify(techVideos) }));
                 handleSaveSettings();
               }} disabled={isSavingSettings} className="w-full mt-4">
                 {isSavingSettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
