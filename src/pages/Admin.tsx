@@ -24,7 +24,7 @@ interface FeaturedPatent {
   updated_at: string;
 }
 
-const CATEGORY_OPTIONS = ["식품·가공", "기능성·바이오", "작물·재배", "농기계·스마트팜", "축산·수산", "병해충·환경"];
+const DEFAULT_CATEGORY_OPTIONS = ["기계설비용품", "기능성소재", "식품", "재배생육", "환경·에너지", "기타", "잠재기술"];
 
 const EMPTY_FORM = {
   patent_number: "",
@@ -66,6 +66,7 @@ const Admin = () => {
   const [isFetchingPatent, setIsFetchingPatent] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORY_OPTIONS);
 
   const apiCall = async (action: string, data?: Record<string, unknown>) => {
     const res = await fetch(
@@ -87,11 +88,17 @@ const Admin = () => {
     setIsLoading(true);
     const result = await apiCall("list");
     if (result.success) {
-      setIsAuthenticated(true);
       setPatents(result.patents || []);
-      // Load site settings too
       const settingsResult = await apiCall("list-settings");
-      if (settingsResult.success) setSiteSettings(settingsResult.settings || {});
+      if (settingsResult.success) {
+        setSiteSettings(settingsResult.settings || {});
+        if (settingsResult.settings?.tech_categories) {
+          try {
+            const cats = JSON.parse(settingsResult.settings.tech_categories);
+            if (Array.isArray(cats) && cats.length > 0) setCategoryOptions(cats);
+          } catch {}
+        }
+      }
     } else {
       toast.error("비밀번호가 올바르지 않습니다.");
     }
@@ -191,7 +198,8 @@ const Admin = () => {
 
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
-    const result = await apiCall("update-settings", siteSettings);
+    const settingsToSave = { ...siteSettings, tech_categories: JSON.stringify(categoryOptions) };
+    const result = await apiCall("update-settings", settingsToSave);
     if (result.success) {
       toast.success("홈페이지 설정이 저장되었습니다.");
     } else {
@@ -283,7 +291,7 @@ const Admin = () => {
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">카테고리</label>
                     <div className="flex flex-wrap gap-1.5 mb-1">
-                      {CATEGORY_OPTIONS.map(cat => (
+                      {categoryOptions.map(cat => (
                         <button
                           key={cat}
                           onClick={() => setForm(f => ({ ...f, category: f.category === cat ? "" : cat }))}
@@ -427,7 +435,55 @@ const Admin = () => {
                   )}
                 </div>
               ))}
-              <Button onClick={handleSaveSettings} disabled={isSavingSettings} className="w-full mt-4">
+
+              {/* Category Management */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">기술분류 카테고리 관리</h3>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {categoryOptions.map((cat, idx) => (
+                    <div key={idx} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-secondary border border-border/50">
+                      <span>{cat}</span>
+                      <button
+                        onClick={() => setCategoryOptions(prev => prev.filter((_, i) => i !== idx))}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="새 카테고리명 입력"
+                    id="new-category-input"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && !categoryOptions.includes(val)) {
+                          setCategoryOptions(prev => [...prev, val]);
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }}
+                  />
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const input = document.getElementById("new-category-input") as HTMLInputElement;
+                    const val = input?.value.trim();
+                    if (val && !categoryOptions.includes(val)) {
+                      setCategoryOptions(prev => [...prev, val]);
+                      input.value = "";
+                    }
+                  }}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> 추가
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5">카테고리를 수정하면 아래 '설정 저장'을 눌러야 반영됩니다</p>
+              </div>
+
+              <Button onClick={() => {
+                setSiteSettings(s => ({ ...s, tech_categories: JSON.stringify(categoryOptions) }));
+                handleSaveSettings();
+              }} disabled={isSavingSettings} className="w-full mt-4">
                 {isSavingSettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 설정 저장
               </Button>
