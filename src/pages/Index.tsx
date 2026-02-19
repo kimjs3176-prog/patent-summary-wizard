@@ -9,6 +9,7 @@ import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { FeaturedPatents } from "@/components/FeaturedPatents";
 import { TechTransferGuide } from "@/components/TechTransferGuide";
+import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -142,7 +143,7 @@ const Index = () => {
                 </div>
               </div>
               {history.length > 0 && keywordResults.length === 0 &&
-            <div className="w-full max-w-2xl mx-auto mt-5">
+            <div className="w-full max-w-5xl mx-auto mt-5">
                   <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
                 </div>
             }
@@ -159,6 +160,13 @@ const Index = () => {
             onPatentSelect={handleSubmit}
             sectionTitle={settings.featured_section_title}
             sectionSubtitle={settings.featured_section_subtitle} />
+
+            <TechVideoSection videos={(() => {
+              try {
+                const parsed = JSON.parse(settings.tech_videos || "[]");
+                return Array.isArray(parsed) ? parsed : [];
+              } catch { return []; }
+            })()} />
 
             <TechTransferGuide />
           </> :

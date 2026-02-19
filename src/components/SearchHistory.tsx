@@ -24,7 +24,7 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
           </button>
         )}
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
         {history.slice(0, 6).map((item) => {
           const title = item.patentData?.title || item.patentData?.titleKo || "";
           const displayNum = item.patentData?.displayNumber || item.patentNumber;
@@ -34,7 +34,7 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
             <button
               key={item.patentNumber}
               onClick={() => onSelect(item)}
-              className="group relative flex-shrink-0 w-[130px] rounded-2xl border border-border/60 bg-background hover:border-foreground/20 hover:shadow-sm transition-all duration-200 text-left overflow-hidden"
+              className="group relative rounded-2xl border border-border/60 bg-background hover:border-foreground/20 hover:shadow-sm transition-all duration-200 text-left overflow-hidden"
               title={`${displayNum} ${title}`}
             >
               <button
