@@ -28,8 +28,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate action
-    const validActions = ["list", "create", "update", "delete"];
+    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings"];
     if (!action || !validActions.includes(action)) {
       return new Response(
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
@@ -37,6 +36,82 @@ serve(async (req) => {
       );
     }
 
+    // ========== Site Settings ==========
+    if (action === "list-settings") {
+      const { data: settings, error } = await supabase
+        .from("site_settings")
+        .select("*");
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      for (const s of settings || []) map[s.key] = s.value || "";
+      return new Response(
+        JSON.stringify({ success: true, settings: map }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "update-settings") {
+      if (!data || typeof data !== "object") {
+        return new Response(
+          JSON.stringify({ success: false, error: "설정 데이터가 필요합니다." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      for (const [key, value] of Object.entries(data)) {
+        if (typeof key !== "string" || key.length > 100) continue;
+        const val = typeof value === "string" ? value.slice(0, 2000) : "";
+        await supabase
+          .from("site_settings")
+          .upsert({ key, value: val, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      }
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== Fetch patent info from KIPRIS ==========
+    if (action === "fetch-patent-info") {
+      if (!data?.patent_number) {
+        return new Response(
+          JSON.stringify({ success: false, error: "특허번호가 필요합니다." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Call fetch-patent edge function internally
+      const fetchRes = await fetch(`${supabaseUrl}/functions/v1/fetch-patent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ patentNumber: data.patent_number }),
+      });
+      const fetchResult = await fetchRes.json();
+
+      if (fetchResult.success && fetchResult.patentData) {
+        const pd = fetchResult.patentData;
+        return new Response(
+          JSON.stringify({
+            success: true,
+            patentInfo: {
+              title: pd.titleKo || pd.title || "",
+              thumbnail_url: pd.representativeImage || (pd.images?.[0]) || "",
+              applicant: pd.applicant || pd.assignee || "",
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: false, error: "특허 정보를 가져올 수 없습니다." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== Featured Patents CRUD ==========
     if (action === "list") {
       const { data: patents, error } = await supabase
         .from("featured_patents")
@@ -58,7 +133,6 @@ serve(async (req) => {
         );
       }
 
-      // Validate lengths
       if (data.patent_number.length > 50 || data.title.length > 500) {
         return new Response(
           JSON.stringify({ success: false, error: "입력값이 너무 깁니다." }),

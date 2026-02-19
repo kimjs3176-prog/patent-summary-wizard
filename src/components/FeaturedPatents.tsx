@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Star, ChevronRight, ArrowRight } from "lucide-react";
+import { Star, ArrowRight, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,11 +19,24 @@ interface FeaturedPatent {
 
 interface FeaturedPatentsProps {
   onPatentSelect: (patentNumber: string) => void;
+  sectionTitle?: string;
+  sectionSubtitle?: string;
 }
 
-export function FeaturedPatents({ onPatentSelect }: FeaturedPatentsProps) {
+const CATEGORY_EMOJI: Record<string, string> = {
+  "식품·가공": "🍚",
+  "기능성·바이오": "🧬",
+  "작물·재배": "🌾",
+  "농기계·스마트팜": "🚜",
+  "축산·수산": "🐄",
+  "병해충·환경": "🌿",
+  "전체": "⭐",
+};
+
+export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle }: FeaturedPatentsProps) {
   const [patents, setPatents] = useState<FeaturedPatent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("전체");
 
   useEffect(() => {
     const fetchFeatured = async () => {
@@ -46,25 +59,73 @@ export function FeaturedPatents({ onPatentSelect }: FeaturedPatentsProps) {
     fetchFeatured();
   }, []);
 
-  if (isLoading || patents.length === 0) return null;
+  if (isLoading) {
+    return (
+      <section className="max-w-5xl mx-auto mt-10 md:mt-16">
+        <div className="flex items-center justify-center gap-3 py-10">
+          <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+          <span className="text-sm text-muted-foreground">이달의 특허 로딩 중...</span>
+        </div>
+      </section>
+    );
+  }
+
+  if (patents.length === 0) return null;
+
+  // Build category list
+  const categories = ["전체", ...Array.from(new Set(patents.map(p => p.category).filter(Boolean) as string[]))];
+  const filteredPatents = activeTab === "전체" ? patents : patents.filter(p => p.category === activeTab);
 
   return (
     <section className="max-w-5xl mx-auto mt-10 md:mt-16 animate-fade-up">
       <div className="mb-5 flex items-center gap-2">
         <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
         <div>
-          <h3 className="text-lg md:text-xl font-semibold text-foreground">이달의 특허 · 기술이전 추천</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">농식품 분야 기술이전 추천 특허</p>
+          <h3 className="text-lg md:text-xl font-semibold text-foreground">
+            {sectionTitle || "이달의 특허 · 기술이전 추천"}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {sectionSubtitle || "농식품 분야 기술이전 추천 특허"}
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {patents.map((patent, index) => (
+      {/* Category Tabs */}
+      {categories.length > 2 && (
+        <div className="flex flex-wrap gap-2 mb-5">
+          {categories.map((cat) => {
+            const count = cat === "전체" ? patents.length : patents.filter(p => p.category === cat).length;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveTab(cat)}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-200 border ${
+                  activeTab === cat
+                    ? "bg-foreground text-background border-foreground shadow-sm"
+                    : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <span>{CATEGORY_EMOJI[cat] || "📋"}</span>
+                <span>{cat}</span>
+                <Badge variant="secondary" className={`ml-1 px-1.5 py-0 text-[10px] h-4 ${
+                  activeTab === cat ? "bg-background/20 text-background border-0" : ""
+                }`}>
+                  {count}
+                </Badge>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Patent Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        {filteredPatents.map((patent, index) => (
           <button
             key={patent.id}
             onClick={() => onPatentSelect(patent.patent_number)}
-            className="group p-5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10 text-left border border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md transition-all duration-200 animate-fade-up"
-            style={{ animationDelay: `${0.05 + index * 0.05}s` }}
+            className="group p-4 md:p-5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10 text-left border border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md transition-all duration-200 animate-fade-up"
+            style={{ animationDelay: `${0.05 + index * 0.03}s` }}
           >
             <div className="flex items-start gap-3 mb-3">
               {patent.thumbnail_url ? (
