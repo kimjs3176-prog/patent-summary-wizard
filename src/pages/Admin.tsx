@@ -88,6 +88,7 @@ const Admin = () => {
     setIsLoading(true);
     const result = await apiCall("list");
     if (result.success) {
+      setIsAuthenticated(true);
       setPatents(result.patents || []);
       const settingsResult = await apiCall("list-settings");
       if (settingsResult.success) {
