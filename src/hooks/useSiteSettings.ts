@@ -1,0 +1,47 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export type SiteSettings = Record<string, string>;
+
+const DEFAULT_SETTINGS: SiteSettings = {
+  hero_title: "농식품분야 특허",
+  hero_title_accent: "AI 기술요약",
+  hero_title_suffix: "서비스",
+  hero_description: "농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다",
+  header_title: "농식품분야 특허 AI 기술요약",
+  header_subtitle: "Agri-Food Patent AI Summary",
+  footer_line1: "본 서비스는 지식재산처/한국특허정보원의 공공데이터를 활용하여 제작되었습니다",
+  footer_line2: "KIPRIS(한국특허정보원) 데이터 연동 · AI 기반 특허 분석",
+  primary_color: "#00aba2",
+  featured_section_title: "이달의 특허 · 기술이전 추천",
+  featured_section_subtitle: "농식품 분야 기술이전 추천 특허",
+};
+
+export function useSiteSettings() {
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("site_settings")
+          .select("key, value");
+        if (!error && data) {
+          const map: SiteSettings = { ...DEFAULT_SETTINGS };
+          for (const row of data) {
+            if (row.key && row.value) map[row.key] = row.value;
+          }
+          setSettings(map);
+        }
+      } catch {
+        // use defaults
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
+  return { settings, isLoading };
+}

@@ -7,11 +7,11 @@ import { SearchHistory } from "@/components/SearchHistory";
 import { Button } from "@/components/ui/button";
 import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
-import { RdaLatestPatents } from "@/components/RdaLatestPatents";
 import { FeaturedPatents } from "@/components/FeaturedPatents";
 import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useState, useEffect, useRef } from "react";
 
 const Index = () => {
@@ -21,6 +21,7 @@ const Index = () => {
     loadFromHistory, reset
   } = usePatentSummary();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
+  const { settings } = useSiteSettings();
 
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
@@ -96,10 +97,10 @@ const Index = () => {
             </div>
             <div className="min-w-0">
               <h1 className="font-semibold text-sm md:text-base text-foreground tracking-tight">
-                농식품분야 특허 AI 기술요약
+                {settings.header_title}
               </h1>
               <p className="text-[10px] md:text-xs text-muted-foreground hidden sm:block">
-                Agri-Food Patent AI Summary
+                {settings.header_subtitle}
               </p>
             </div>
           </div>
@@ -122,11 +123,11 @@ const Index = () => {
             {/* Hero */}
             <section className="text-center max-w-3xl mx-auto mb-12 md:mb-16 animate-fade-down">
               <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-5 leading-[1.15] tracking-tight">
-                농식품분야 특허<br />
-                <span className="gradient-text">AI 기술요약</span> 서비스
+                {settings.hero_title}<br />
+                <span className="gradient-text">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
               <p className="text-base md:text-lg text-muted-foreground font-normal leading-relaxed max-w-md mx-auto">
-                농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다
+                {settings.hero_description}
               </p>
             </section>
 
@@ -154,8 +155,11 @@ const Index = () => {
               </section>
             )}
 
-            <FeaturedPatents onPatentSelect={handleSubmit} />
-            <RdaLatestPatents onPatentSelect={handleSubmit} />
+            <FeaturedPatents
+              onPatentSelect={handleSubmit}
+              sectionTitle={settings.featured_section_title}
+              sectionSubtitle={settings.featured_section_subtitle}
+            />
             <TechTransferGuide />
           </>
         ) : (
@@ -185,8 +189,8 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 mt-auto">
         <div className="container mx-auto px-4 py-6 md:py-8 text-center text-xs text-muted-foreground space-y-1">
-          <p>본 서비스는 지식재산처/한국특허정보원의 공공데이터를 활용하여 제작되었습니다</p>
-          <p>KIPRIS(한국특허정보원) 데이터 연동 · AI 기반 특허 분석</p>
+          <p>{settings.footer_line1}</p>
+          <p>{settings.footer_line2}</p>
         </div>
       </footer>
     </div>
