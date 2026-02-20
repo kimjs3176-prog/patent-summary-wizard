@@ -98,7 +98,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch }: PatentInpu
                 {isSearchingKeyword ? "검색 중..." : "요약 중..."}
               </span> :
 
-            <span className="flex items-center gap-2 font-sans text-center font-bold text-xl">
+            <span className="flex items-center gap-2 font-sans text-center font-bold text-base">
                 <Search className="w-4 h-4" />
                 {inputValue.trim() && !isPatentNumber(inputValue.trim()) ? "검색" : "요약"}
               </span>
