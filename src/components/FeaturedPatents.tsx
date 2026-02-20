@@ -34,6 +34,18 @@ const CATEGORY_EMOJI: Record<string, string> = {
   "전체": "⭐",
 };
 
+const CATEGORY_COLORS: Record<string, { from: string; to: string; border: string; hoverBorder: string; badge: string; badgeText: string; reason: string }> = {
+  "기계설비용품": { from: "from-slate-50/80", to: "to-zinc-50/50", border: "border-slate-200/50", hoverBorder: "hover:border-slate-300", badge: "bg-slate-100 dark:bg-slate-900/40", badgeText: "text-slate-700 dark:text-slate-300", reason: "bg-slate-50 dark:bg-slate-950/30 text-slate-700 dark:text-slate-400" },
+  "기능성소재": { from: "from-purple-50/80", to: "to-violet-50/50", border: "border-purple-200/50", hoverBorder: "hover:border-purple-300", badge: "bg-purple-100 dark:bg-purple-900/40", badgeText: "text-purple-700 dark:text-purple-300", reason: "bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400" },
+  "식품": { from: "from-orange-50/80", to: "to-red-50/50", border: "border-orange-200/50", hoverBorder: "hover:border-orange-300", badge: "bg-orange-100 dark:bg-orange-900/40", badgeText: "text-orange-700 dark:text-orange-300", reason: "bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400" },
+  "재배생육": { from: "from-green-50/80", to: "to-emerald-50/50", border: "border-green-200/50", hoverBorder: "hover:border-green-300", badge: "bg-green-100 dark:bg-green-900/40", badgeText: "text-green-700 dark:text-green-300", reason: "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400" },
+  "환경·에너지": { from: "from-teal-50/80", to: "to-cyan-50/50", border: "border-teal-200/50", hoverBorder: "hover:border-teal-300", badge: "bg-teal-100 dark:bg-teal-900/40", badgeText: "text-teal-700 dark:text-teal-300", reason: "bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400" },
+  "잠재기술": { from: "from-blue-50/80", to: "to-indigo-50/50", border: "border-blue-200/50", hoverBorder: "hover:border-blue-300", badge: "bg-blue-100 dark:bg-blue-900/40", badgeText: "text-blue-700 dark:text-blue-300", reason: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400" },
+  "기타": { from: "from-gray-50/80", to: "to-stone-50/50", border: "border-gray-200/50", hoverBorder: "hover:border-gray-300", badge: "bg-gray-100 dark:bg-gray-900/40", badgeText: "text-gray-700 dark:text-gray-300", reason: "bg-gray-50 dark:bg-gray-950/30 text-gray-700 dark:text-gray-400" },
+};
+
+const DEFAULT_COLORS = { from: "from-amber-50/80", to: "to-orange-50/50", border: "border-amber-200/50", hoverBorder: "hover:border-amber-300", badge: "bg-amber-100 dark:bg-amber-900/40", badgeText: "text-amber-700 dark:text-amber-300", reason: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400" };
+
 export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle }: FeaturedPatentsProps) {
   const [patents, setPatents] = useState<FeaturedPatent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -121,11 +133,13 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
 
       {/* Patent Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-        {filteredPatents.map((patent, index) => (
+        {filteredPatents.map((patent, index) => {
+          const colors = CATEGORY_COLORS[patent.category || ""] || DEFAULT_COLORS;
+          return (
           <button
             key={patent.id}
             onClick={() => onPatentSelect(patent.patent_number)}
-            className="group p-4 md:p-5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10 text-left border border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md transition-all duration-200 animate-fade-up"
+            className={`group p-4 md:p-5 rounded-2xl bg-gradient-to-br ${colors.from} ${colors.to} dark:from-zinc-900/20 dark:to-zinc-800/10 text-left border ${colors.border} dark:border-zinc-700/30 ${colors.hoverBorder} dark:hover:border-zinc-600 hover:shadow-md transition-all duration-200 animate-fade-up`}
             style={{ animationDelay: `${0.05 + index * 0.03}s` }}
           >
             <div className="flex items-start gap-3 mb-3">
@@ -137,13 +151,13 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : (
-                <div className="w-14 h-14 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                  <Star className="w-6 h-6 text-amber-500" />
+                <div className={`w-14 h-14 rounded-xl ${colors.badge} flex items-center justify-center flex-shrink-0`}>
+                  <Star className="w-6 h-6 text-muted-foreground" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="inline-block px-2 py-0.5 text-[10px] font-medium rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                  <span className={`inline-block px-2 py-0.5 text-[10px] font-medium rounded-md ${colors.badge} ${colors.badgeText}`}>
                     {patent.patent_number}
                   </span>
                   {patent.category && (
@@ -152,7 +166,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
                     </Badge>
                   )}
                 </div>
-                <h4 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors leading-snug">
+                <h4 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-foreground/80 transition-colors leading-snug">
                   {patent.title}
                 </h4>
               </div>
@@ -165,7 +179,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
             )}
 
             {patent.recommendation_reason && (
-              <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 mb-2 line-clamp-2">
+              <div className={`text-xs ${colors.reason} rounded-lg px-3 py-2 mb-2 line-clamp-2`}>
                 💡 {patent.recommendation_reason}
               </div>
             )}
@@ -181,10 +195,11 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
                   <span className="truncate max-w-[150px]">{patent.contact_info}</span>
                 )}
               </div>
-              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-amber-600" />
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
             </div>
           </button>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

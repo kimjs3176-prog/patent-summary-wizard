@@ -88,7 +88,12 @@ serve(async (req) => {
     }
 
     // 2) Fetch fresh data from KIPRIS
-    const KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
+    // Try site_settings first, then env
+    let KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
+    try {
+      const { data: row } = await supabase.from("site_settings").select("value").eq("key", "kipris_api_key").maybeSingle();
+      if (row?.value) KIPRIS_API_KEY = row.value;
+    } catch {}
     if (!KIPRIS_API_KEY) {
       return new Response(
         JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),
