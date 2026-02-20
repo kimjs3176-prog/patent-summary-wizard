@@ -53,6 +53,7 @@ const SETTINGS_FIELDS = [
   { key: "footer_line1", label: "푸터 1줄", placeholder: "본 서비스는..." },
   { key: "footer_line2", label: "푸터 2줄", placeholder: "KIPRIS 데이터 연동..." },
   { key: "primary_color", label: "메인 컬러 (HEX)", placeholder: "#00aba2" },
+  { key: "kipris_api_key", label: "KIPRIS API 키", placeholder: "API 키를 입력하세요", isSecret: true },
 ];
 
 const Admin = () => {
@@ -436,6 +437,7 @@ const Admin = () => {
                     </div>
                   ) : (
                     <Input
+                      type={(field as any).isSecret ? "password" : "text"}
                       value={siteSettings[field.key] || ""}
                       onChange={e => setSiteSettings(s => ({ ...s, [field.key]: e.target.value }))}
                       placeholder={field.placeholder}

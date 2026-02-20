@@ -69,7 +69,14 @@ serve(async (req) => {
       );
     }
 
-    const KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
+    // Try site_settings first, then env
+    let KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
+    try {
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data: row } = await sb.from("site_settings").select("value").eq("key", "kipris_api_key").maybeSingle();
+      if (row?.value) KIPRIS_API_KEY = row.value;
+    } catch {}
     if (!KIPRIS_API_KEY) {
       console.error("[CONFIG] KIPRIS_API_KEY not configured");
       return new Response(

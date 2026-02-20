@@ -1,4 +1,5 @@
 import { FileText } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { PatentInput } from "@/components/PatentInput";
 import { PatentSummary } from "@/components/PatentSummary/index";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
@@ -161,12 +162,20 @@ const Index = () => {
             sectionTitle={settings.featured_section_title}
             sectionSubtitle={settings.featured_section_subtitle} />
 
+            <div className="max-w-5xl mx-auto mt-10 md:mt-14 mb-2">
+              <Separator className="bg-border/60" />
+            </div>
+
             <TechVideoSection videos={(() => {
             try {
               const parsed = JSON.parse(settings.tech_videos || "[]");
               return Array.isArray(parsed) ? parsed : [];
             } catch {return [];}
           })()} />
+
+            <div className="max-w-5xl mx-auto mt-2 mb-2">
+              <Separator className="bg-border/60" />
+            </div>
 
             <TechTransferGuide />
           </> :
