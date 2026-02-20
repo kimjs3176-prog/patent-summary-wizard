@@ -15,7 +15,7 @@ export default {
   	extend: {
   		fontFamily: {
   			sans: [
-  				'Outfit',
+  				'Manrope',
   				'ui-sans-serif',
   				'system-ui',
   				'sans-serif',
@@ -31,7 +31,7 @@ export default {
   				'sans-serif'
   			],
   			serif: [
-  				'Libre Baskerville',
+  				'Lora',
   				'ui-serif',
   				'Georgia',
   				'Cambria',
@@ -40,7 +40,7 @@ export default {
   				'serif'
   			],
   			mono: [
-  				'JetBrains Mono',
+  				'IBM Plex Mono',
   				'ui-monospace',
   				'SFMono-Regular',
   				'Menlo',
@@ -102,8 +102,8 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		boxShadow: {
-  			'card': 'var(--shadow-card)',
-  			'glow': 'var(--shadow-glow)'
+  			card: 'var(--shadow-card)',
+  			glow: 'var(--shadow-glow)'
   		},
   		keyframes: {
   			'accordion-down': {
@@ -122,7 +122,7 @@ export default {
   					height: '0'
   				}
   			},
-  			'shimmer': {
+  			shimmer: {
   				'0%': {
   					backgroundPosition: '-200% 0'
   				},
@@ -134,7 +134,7 @@ export default {
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-  			'shimmer': 'shimmer 2s linear infinite'
+  			shimmer: 'shimmer 2s linear infinite'
   		}
   	}
   },
