@@ -127,7 +127,7 @@ const Index = () => {
                 {settings.hero_title}<br />
                 <span className="gradient-text">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-base md:text-lg text-muted-foreground font-normal leading-relaxed max-w-md mx-auto">
+              <p className="md:text-lg text-muted-foreground font-normal leading-relaxed max-w-md mx-auto text-sm">
                 {settings.hero_description}
               </p>
             </section>
@@ -162,11 +162,11 @@ const Index = () => {
             sectionSubtitle={settings.featured_section_subtitle} />
 
             <TechVideoSection videos={(() => {
-              try {
-                const parsed = JSON.parse(settings.tech_videos || "[]");
-                return Array.isArray(parsed) ? parsed : [];
-              } catch { return []; }
-            })()} />
+            try {
+              const parsed = JSON.parse(settings.tech_videos || "[]");
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {return [];}
+          })()} />
 
             <TechTransferGuide />
           </> :
