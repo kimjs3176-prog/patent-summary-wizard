@@ -310,6 +310,8 @@
     border-radius: 4px !important;
     padding: 8px 10px !important;
     margin-bottom: 6px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   .container {
@@ -320,15 +322,42 @@
   h1, h2, h3, h4, h5, h6 {
     color: #111 !important;
     break-after: avoid !important;
+    page-break-after: avoid !important;
   }
 
-  h2 { font-size: 11pt !important; font-weight: 700 !important; margin-top: 10px !important; margin-bottom: 5px !important; }
+  h2 {
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    margin-top: 10px !important;
+    margin-bottom: 5px !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
   h3 { font-size: 10pt !important; margin-top: 0 !important; margin-bottom: 0 !important; }
-  p { color: #222 !important; font-size: 9.5pt !important; line-height: 1.6 !important; margin-bottom: 4px !important; }
+  p {
+    color: #222 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.6 !important;
+    margin-bottom: 4px !important;
+    orphans: 3;
+    widows: 3;
+  }
 
-  img { max-width: 100% !important; height: auto !important; break-inside: avoid; }
+  img { max-width: 100% !important; height: auto !important; break-inside: avoid !important; page-break-inside: avoid !important; }
 
-  .trl-print-section { break-inside: avoid !important; }
+  .prose > h2 + p,
+  .prose > h2 + div {
+    break-before: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  /* Keep info grid cards together */
+  .grid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .trl-print-section { break-inside: avoid !important; page-break-inside: avoid !important; }
 
   [class*="animate-"] { animation: none !important; }
 }
