@@ -56,17 +56,20 @@
 
     --radius: 0.375rem;
 
-    /* Apple-style tokens */
+    /* Glossy & Ambient Design System */
     --gradient-bg: 0 0% 100%;
     --gradient-hero: linear-gradient(135deg, hsl(0 0% 7%) 0%, hsl(0 0% 18%) 100%);
     --gradient-primary: linear-gradient(135deg, hsl(210 100% 50%) 0%, hsl(210 100% 42%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(210 100% 50%), hsl(265 85% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(174 100% 32%), hsl(210 100% 50%));
     --gradient-glow: none;
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-card: 0 1px 3px hsla(0 0% 0% / 0.04), 0 0 0 1px hsla(0 0% 0% / 0.03);
-    --shadow-glow: 0 8px 30px hsla(210 100% 50% / 0.08);
+    --gradient-glossy: linear-gradient(180deg, hsl(0 0% 100% / 0.9) 0%, hsl(0 0% 100% / 0.4) 100%);
+    --gradient-ambient: radial-gradient(ellipse at 20% 0%, hsl(174 60% 90% / 0.35) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, hsl(210 80% 92% / 0.3) 0%, transparent 50%);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.04);
+    --shadow-md: 0 2px 8px -2px hsl(0 0% 0% / 0.08), 0 1px 3px -1px hsl(0 0% 0% / 0.04);
+    --shadow-lg: 0 4px 16px -4px hsl(0 0% 0% / 0.1), 0 2px 6px -2px hsl(0 0% 0% / 0.05);
+    --shadow-card: 0 1px 4px hsl(0 0% 0% / 0.04), 0 0 0 1px hsl(0 0% 0% / 0.03), inset 0 1px 0 hsl(0 0% 100% / 0.6);
+    --shadow-glow: 0 8px 40px hsl(174 60% 50% / 0.08), 0 2px 12px hsl(210 80% 50% / 0.06);
+    --shadow-glossy: 0 2px 12px hsl(0 0% 0% / 0.06), 0 0 0 1px hsl(0 0% 0% / 0.02), inset 0 1px 0 hsl(0 0% 100% / 0.8), inset 0 -1px 0 hsl(0 0% 0% / 0.02);
 
     --sidebar-background: 72 43% 95%;
     --sidebar-foreground: 265 4% 12.9%;
@@ -187,8 +190,32 @@
   }
 
   .glass-effect {
-    @apply bg-card border border-border;
-    box-shadow: var(--shadow-card);
+    @apply bg-card/80 border border-border/60 backdrop-blur-sm;
+    box-shadow: var(--shadow-glossy);
+  }
+
+  .glossy-card {
+    @apply bg-card/90 border border-border/40 backdrop-blur-sm;
+    background-image: var(--gradient-glossy);
+    box-shadow: var(--shadow-glossy);
+  }
+
+  .ambient-glow {
+    position: relative;
+  }
+  .ambient-glow::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: var(--gradient-ambient);
+    z-index: -1;
+    opacity: 0.7;
+    filter: blur(20px);
+    transition: opacity 0.4s ease;
+  }
+  .ambient-glow:hover::before {
+    opacity: 1;
   }
 
   .card-gradient {
@@ -225,10 +252,10 @@
   }
 
   .hover-lift {
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
   }
   .hover-lift:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     box-shadow: var(--shadow-lg);
   }
 

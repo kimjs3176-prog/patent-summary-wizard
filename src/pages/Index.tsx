@@ -89,12 +89,19 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Ambient background blobs */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[hsl(174_60%_90%/0.2)] blur-[100px]" />
+        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-[hsl(210_80%_92%/0.15)] blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-[hsl(174_40%_85%/0.1)] blur-[80px]" />
+      </div>
+
       {/* Header */}
-      <header className="w-full bg-background/80 backdrop-blur-xl sticky top-0 z-50 border-b border-border/50">
+      <header className="w-full bg-background/60 backdrop-blur-xl sticky top-0 z-50 border-b border-border/30">
         <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center shadow-md">
               <FileText className="w-4.5 h-4.5 text-background" />
             </div>
             <div className="min-w-0">
@@ -111,7 +118,7 @@ const Index = () => {
             variant="outline"
             size="sm"
             onClick={() => {updateUrl();reset();}}
-            className="rounded-full text-xs h-8 px-4">
+            className="rounded-full text-xs h-8 px-4 glossy-card">
 
               새로운 검색
             </Button>
@@ -119,7 +126,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 md:px-6 py-10 md:py-16">
+      <main className="container mx-auto px-4 md:px-6 py-10 md:py-16 relative z-10">
         {!summary && !isLoading ?
         <>
             {/* Hero */}
@@ -204,7 +211,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 mt-auto">
+      <footer className="border-t border-border/30 mt-auto relative z-10">
         <div className="container mx-auto px-4 py-6 md:py-8 text-center text-xs text-muted-foreground space-y-1">
           <p>{settings.footer_line1}</p>
           <p>{settings.footer_line2}</p>

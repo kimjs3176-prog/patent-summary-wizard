@@ -36,7 +36,8 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative rounded-2xl overflow-hidden border border-border/60 bg-background hover:border-foreground/20 hover:shadow-md transition-all duration-200">
+              className="group relative rounded-2xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-sm hover:border-foreground/15 hover:shadow-lg transition-all duration-300"
+              style={{ boxShadow: 'var(--shadow-glossy)' }}>
 
               <div className="aspect-video bg-muted/30 flex items-center justify-center overflow-hidden relative">
                 {thumbnail ?
