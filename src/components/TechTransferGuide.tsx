@@ -32,8 +32,8 @@ export function TechTransferGuide() {
           return (
             <div
               key={step.num}
-              className="group rounded-2xl p-5 md:p-6 bg-secondary/40 border border-border/50 hover:bg-secondary/70 hover:border-border transition-all duration-200 animate-fade-up"
-              style={{ animationDelay: `${0.06 * step.num}s` }}
+              className="group rounded-2xl p-5 md:p-6 bg-card/80 backdrop-blur-sm border border-border/30 hover:bg-card hover:border-border/50 hover:shadow-lg transition-all duration-300 animate-fade-up"
+              style={{ animationDelay: `${0.06 * step.num}s`, boxShadow: 'var(--shadow-glossy)' }}
             >
               <div className="flex items-start gap-4">
                 <div className="relative flex-shrink-0">

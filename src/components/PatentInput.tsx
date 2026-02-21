@@ -83,14 +83,15 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch }: PatentInpu
               placeholder="특허등록번호, 출원번호 또는 키워드 입력"
               value={inputValue}
               onChange={handleInputChange}
-              className="w-full h-12 pl-11 pr-4 text-sm bg-secondary/50 border border-border rounded-xl text-foreground outline-none transition-all duration-200 placeholder:text-muted-foreground/60 focus:border-foreground/30 focus:bg-secondary/70 focus:ring-2 focus:ring-foreground/5 px-[159px] my-0"
+              className="w-full h-12 pl-11 pr-4 text-sm bg-card/80 backdrop-blur-sm border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground/60 focus:border-foreground/20 focus:bg-card focus:ring-2 focus:ring-foreground/5 focus:shadow-[0_0_20px_hsl(174_60%_50%/0.08)] px-[159px] my-0"
+              style={{ boxShadow: 'var(--shadow-glossy)' }}
               disabled={isProcessing} />
 
           </div>
           <Button
             type="submit"
             disabled={!inputValue.trim() || isProcessing}
-            className="h-12 px-6 text-sm font-semibold bg-foreground hover:bg-foreground/90 text-background rounded-xl transition-all duration-200 disabled:opacity-40">
+            className="h-12 px-6 text-sm font-semibold bg-foreground hover:bg-foreground/90 text-background rounded-2xl transition-all duration-300 disabled:opacity-40 shadow-md hover:shadow-lg">
 
             {isProcessing ?
             <span className="flex items-center gap-2">

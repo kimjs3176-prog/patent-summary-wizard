@@ -31,7 +31,7 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
 
   return (
     <div className="w-full lg:max-w-xs">
-      <div className="rounded-2xl p-4 md:p-5 bg-secondary/50 border-border/50 border">
+      <div className="rounded-2xl p-4 md:p-5 glossy-card">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold text-foreground">인기 검색</span>
