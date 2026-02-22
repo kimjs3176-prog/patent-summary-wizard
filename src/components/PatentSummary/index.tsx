@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, type LucideIcon } from "lucide-react";
+import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps } from "./types";
@@ -8,6 +8,7 @@ import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
+import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 
 export function PatentSummary({
   content,
@@ -24,6 +25,8 @@ export function PatentSummary({
   const [commercializationDetails, setCommercializationDetails] = useState<CommercializationDetails | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisMode, setAnalysisMode] = useState<"summary" | "detailed">("summary");
+  const { isFavorite, toggleFavorite } = useFavoritePatents();
+  const patentIsFavorite = patentNumber ? isFavorite(patentNumber) : false;
 
   // Fetch commercialization score when patent data is available
   useEffect(() => {
@@ -410,6 +413,26 @@ export function PatentSummary({
                 <Button variant="outline" size="sm" onClick={handleShare} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
                   <Share2 className="w-4 h-4" />
                   공유
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!patentData) return;
+                    toggleFavorite({
+                      patentNumber,
+                      patentData,
+                      commercializationScore,
+                      commercializationDetails,
+                      summary: content,
+                      addedAt: new Date().toISOString(),
+                    });
+                    toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
+                  }}
+                  className={`gap-2 border-border/50 ${patentIsFavorite ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100" : "bg-card/50 hover:bg-card text-foreground"}`}
+                >
+                  <Heart className={`w-4 h-4 ${patentIsFavorite ? "fill-current" : ""}`} />
+                  {patentIsFavorite ? "담김" : "담기"}
                 </Button>
                 <PdfGenerator
                   content={content}
