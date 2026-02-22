@@ -162,8 +162,8 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
         <div
           className={`p-2 rounded-lg ${
             estimatedTrl <= 3
-              ? "bg-destructive/20 text-destructive"
-              : "bg-muted/50 text-muted-foreground"
+              ? "bg-destructive/20 text-destructive font-semibold"
+              : "bg-muted/50 text-foreground/60"
           }`}
         >
           <p className="font-semibold">기초연구</p>
@@ -172,8 +172,8 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
         <div
           className={`p-2 rounded-lg ${
             estimatedTrl >= 4 && estimatedTrl <= 6
-              ? "bg-accent/20 text-accent"
-              : "bg-muted/50 text-muted-foreground"
+              ? "bg-amber-500/20 text-amber-700 dark:text-amber-400 font-semibold"
+              : "bg-muted/50 text-foreground/60"
           }`}
         >
           <p className="font-semibold">개발/실증</p>
@@ -182,8 +182,8 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
         <div
           className={`p-2 rounded-lg ${
             estimatedTrl >= 7
-              ? "bg-primary/20 text-primary"
-              : "bg-muted/50 text-muted-foreground"
+              ? "bg-primary/20 text-primary font-semibold"
+              : "bg-muted/50 text-foreground/60"
           }`}
         >
           <p className="font-semibold">상용화</p>

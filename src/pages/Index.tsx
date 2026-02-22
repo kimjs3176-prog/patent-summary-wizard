@@ -117,14 +117,12 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {favorites.length > 0 && (
-              <Link to="/compare">
-                <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5">
-                  <GitCompareArrows className="w-3.5 h-3.5" />
-                  비교 ({favorites.length})
-                </Button>
-              </Link>
-            )}
+            <Link to="/compare">
+              <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5">
+                <Heart className="w-3.5 h-3.5" />
+                관심특허{favorites.length > 0 ? ` (${favorites.length})` : ""}
+              </Button>
+            </Link>
             {(summary || isLoading) &&
             <Button
               variant="outline"

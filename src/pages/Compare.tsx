@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, X, GitCompareArrows } from "lucide-react";
+import { ArrowLeft, X, Heart, GitCompareArrows, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFavoritePatents, FavoritePatent } from "@/hooks/useFavoritePatents";
 
@@ -36,7 +36,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
 }
 
 export default function Compare() {
-  const { favorites } = useFavoritePatents();
+  const { favorites, removeFavorite } = useFavoritePatents();
   const [selected, setSelected] = useState<string[]>([]);
 
   const selectedPatents = useMemo(
@@ -72,8 +72,8 @@ export default function Compare() {
             </Button>
           </Link>
           <div className="flex items-center gap-2">
-            <GitCompareArrows className="w-5 h-5 text-primary" />
-            <h1 className="font-semibold text-base text-foreground">특허 비교</h1>
+            <Heart className="w-5 h-5 text-primary" />
+            <h1 className="font-semibold text-base text-foreground">관심특허</h1>
           </div>
         </div>
       </header>
@@ -86,31 +86,48 @@ export default function Compare() {
           </div>
         ) : (
           <>
-            {/* Selection */}
+            {/* Favorite Patents List */}
             <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-3">비교할 특허 선택 (최대 4개)</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">관심특허 목록</h2>
+                <p className="text-xs text-muted-foreground">비교할 특허를 선택하세요 (최대 4개)</p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {favorites.map((f) => {
                   const isSelected = selected.includes(f.patentNumber);
                   return (
-                    <button
+                    <div
                       key={f.patentNumber}
-                      onClick={() => toggleSelect(f.patentNumber)}
-                      className={`text-left p-4 rounded-2xl border transition-all ${
+                      className={`relative text-left p-4 rounded-2xl border transition-all ${
                         isSelected
                           ? "border-primary bg-primary/5 shadow-sm"
                           : "border-border/50 bg-card/50 hover:border-border"
-                      } ${!isSelected && selected.length >= 4 ? "opacity-40 cursor-not-allowed" : ""}`}
-                      disabled={!isSelected && selected.length >= 4}
+                      } ${!isSelected && selected.length >= 4 ? "opacity-40" : ""}`}
                     >
-                      <p className="text-xs text-muted-foreground mb-1">{f.patentNumber}</p>
-                      <p className="text-sm font-medium line-clamp-2">{f.patentData.titleKo || f.patentData.title || "제목 없음"}</p>
-                      {f.commercializationScore != null && (
-                        <span className={`text-xs font-bold mt-1 inline-block ${getScoreColor(f.commercializationScore)}`}>
-                          사업화 {f.commercializationScore}점
-                        </span>
-                      )}
-                    </button>
+                      <div className="flex items-start justify-between gap-2">
+                        <button
+                          onClick={() => toggleSelect(f.patentNumber)}
+                          disabled={!isSelected && selected.length >= 4}
+                          className="flex-1 text-left"
+                        >
+                          <p className="text-xs text-muted-foreground mb-1">{f.patentNumber}</p>
+                          <p className="text-sm font-medium line-clamp-2">{f.patentData.titleKo || f.patentData.title || "제목 없음"}</p>
+                          {f.commercializationScore != null && (
+                            <span className={`text-xs font-bold mt-1 inline-block ${getScoreColor(f.commercializationScore)}`}>
+                              사업화 {f.commercializationScore}점
+                            </span>
+                          )}
+                        </button>
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <Link to={`/?patent=${encodeURIComponent(f.patentNumber)}`} className="text-xs text-primary hover:underline">
+                            요약서
+                          </Link>
+                          <button onClick={() => removeFavorite(f.patentNumber)} className="text-muted-foreground hover:text-destructive">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -148,11 +165,15 @@ export default function Compare() {
                           <td key={p.patentNumber} className="p-3 text-sm border-b border-border/30">{p.patentData.assignee || "-"}</td>
                         ))}
                       </tr>
-                      {/* 발명자 */}
+                      {/* 대표도면 */}
                       <tr>
-                        <td className="p-3 text-xs font-medium text-muted-foreground border-b border-border/30">발명자</td>
+                        <td className="p-3 text-xs font-medium text-muted-foreground border-b border-border/30">대표도면</td>
                         {selectedPatents.map((p) => (
-                          <td key={p.patentNumber} className="p-3 text-sm border-b border-border/30">{p.patentData.inventors?.join(", ") || "-"}</td>
+                          <td key={p.patentNumber} className="p-3 border-b border-border/30">
+                            {p.patentData.representativeImage ? (
+                              <img src={p.patentData.representativeImage} alt="대표도면" className="w-full max-w-[180px] h-auto rounded-lg border border-border/30" />
+                            ) : <span className="text-sm text-muted-foreground">-</span>}
+                          </td>
                         ))}
                       </tr>
                       {/* 출원일 */}
