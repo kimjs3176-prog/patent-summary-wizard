@@ -1,4 +1,5 @@
-import { FileText } from "lucide-react";
+import { FileText, GitCompareArrows, Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import { PatentInput } from "@/components/PatentInput";
 import { PatentSummary } from "@/components/PatentSummary/index";
@@ -14,6 +15,7 @@ import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useState, useEffect, useRef } from "react";
 
 const Index = () => {
@@ -24,6 +26,7 @@ const Index = () => {
   } = usePatentSummary();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { settings } = useSiteSettings();
+  const { favorites } = useFavoritePatents();
 
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
@@ -113,16 +116,25 @@ const Index = () => {
               </p>
             </div>
           </div>
-          {(summary || isLoading) &&
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {updateUrl();reset();}}
-            className="rounded-full text-xs h-8 px-4 glossy-card">
-
-              새로운 검색
-            </Button>
-          }
+          <div className="flex items-center gap-2">
+            {favorites.length > 0 && (
+              <Link to="/compare">
+                <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5">
+                  <GitCompareArrows className="w-3.5 h-3.5" />
+                  비교 ({favorites.length})
+                </Button>
+              </Link>
+            )}
+            {(summary || isLoading) &&
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {updateUrl();reset();}}
+              className="rounded-full text-xs h-8 px-4 glossy-card">
+                새로운 검색
+              </Button>
+            }
+          </div>
         </div>
       </header>
 
