@@ -39,29 +39,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { patentNumber, patentData, analysisMode = "summary" } = body;
-
-    if (!patentNumber || typeof patentNumber !== "string") {
-      return new Response(
-        JSON.stringify({ error: "특허 등록번호를 입력해주세요." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const trimmedPatent = patentNumber.trim();
-    if (trimmedPatent.length > 50 || !/^[0-9-]+$/.test(trimmedPatent)) {
-      return new Response(
-        JSON.stringify({ error: "유효하지 않은 특허 번호 형식입니다." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (analysisMode && !["summary", "detailed"].includes(analysisMode)) {
-      return new Response(
-        JSON.stringify({ error: "잘못된 분석 모드입니다." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { patentNumber, patentData } = body;
 
     // Check cache first
     try {
@@ -70,11 +48,11 @@ serve(async (req) => {
         .from("patent_ai_cache")
         .select("summary_content")
         .eq("patent_number", trimmedPatent)
-        .eq("analysis_mode", analysisMode)
+        .eq("analysis_mode", "detailed")
         .maybeSingle();
 
       if (cached?.summary_content) {
-        console.log(`[CACHE HIT] ${trimmedPatent} / ${analysisMode}`);
+        console.log(`[CACHE HIT] ${trimmedPatent}`);
         const content = cached.summary_content;
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
@@ -108,9 +86,7 @@ serve(async (req) => {
       );
     }
 
-    const isDetailed = analysisMode === "detailed";
-
-    // Build compact patent context - minimize token usage
+    // Build patent context
     let patentContext = "";
     if (patentData) {
       const data = patentData as PatentData;
@@ -123,21 +99,17 @@ serve(async (req) => {
       patentContext = parts.join("\n");
 
       if (data.abstract) {
-        const abstractLimit = isDetailed ? 750 : 500;
-        patentContext += `\n\n초록:\n${data.abstract.substring(0, abstractLimit)}`;
+        patentContext += `\n\n초록:\n${data.abstract.substring(0, 750)}`;
       }
       if (data.claims?.length) {
-        const claimCount = isDetailed ? 3 : 2;
-        const claimLen = isDetailed ? 300 : 200;
-        patentContext += `\n\n청구항:\n${data.claims.slice(0, claimCount).map((c, i) => `${i + 1}. ${c.substring(0, claimLen)}`).join("\n")}`;
+        patentContext += `\n\n청구항:\n${data.claims.slice(0, 3).map((c, i) => `${i + 1}. ${c.substring(0, 300)}`).join("\n")}`;
       }
-      if (isDetailed && data.description) {
+      if (data.description) {
         patentContext += `\n\n설명(일부):\n${data.description.substring(0, 500)}`;
       }
     }
 
-    const systemPrompt = isDetailed
-      ? `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
+    const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
 규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 핵심어 **볼드**, 섹션은 ## 사용.
 정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성 필수.
 
@@ -149,27 +121,7 @@ serve(async (req) => {
 ## 농산업 활용 특장점 - 스마트팜/정밀농업 등 구체적 활용 시나리오와 기대 효과 서술
 ## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 기술 완성도와 상용화 경로를 정성적으로 설명
 
-각 섹션 5~7문장 상세 서술. 기술적 깊이와 실용적 인사이트를 균형있게 포함.`
-      : `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 요약서 작성.
-규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 핵심어 **볼드**, 섹션은 ## 사용.
-정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성.
-
-섹션:
-## 기술 분야 - IPC 해석, 산업 분야/응용 영역
-## 발명의 요약 - 배경→한계→과제→해결법→원리→효과 순
-## 기술적 특징 - 핵심 구성요소 역할/원리/차별점
-## 시장동향 - 시장 동향/성장 추세, 경쟁 기술, 정책/규제
-## 농산업 활용 특장점 - 구체적 활용 시나리오, 스마트팜/정밀농업 등
-## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 정성적 설명
-
-각 섹션 2~3문장 압축 (기술적 특징만 3~4문장).`;
-
-    const userMessage = patentData
-      ? `분석:\n${patentContext}`
-      : `특허 ${patentNumber} 요약서 작성.`;
-
-    const model = isDetailed ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
-    const maxTokens = isDetailed ? 2200 : 900;
+각 섹션 5~7문장 상세 서술. 기술적 깊이와 실용적 인사이트를 균형있게 포함.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -178,13 +130,13 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model,
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
         stream: true,
-        max_tokens: maxTokens,
+        max_tokens: 3000,
       }),
     });
 
@@ -225,10 +177,10 @@ serve(async (req) => {
               const supabase = getSupabaseClient();
               await supabase.from("patent_ai_cache").upsert({
                 patent_number: trimmedPatent,
-                analysis_mode: analysisMode,
+                analysis_mode: "detailed",
                 summary_content: fullContent,
               }, { onConflict: "patent_number,analysis_mode" });
-              console.log(`[CACHE SAVED] ${trimmedPatent} / ${analysisMode}`);
+              console.log(`[CACHE SAVED] ${trimmedPatent}`);
             } catch (saveErr) {
               console.error("Cache save error:", saveErr);
             }

@@ -17,15 +17,14 @@ export function PatentSummary({
   patentData,
   relatedPatents = [],
   onRelatedPatentClick,
-  onAnalysisModeChange,
-  featureFlags = { pdfEnabled: true, pptEnabled: true, analysisModeEnabled: true },
+  featureFlags = { pdfEnabled: true, pptEnabled: true },
 }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const [commercializationScore, setCommercializationScore] = useState<number | null>(null);
   const [commercializationDetails, setCommercializationDetails] = useState<CommercializationDetails | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisMode, setAnalysisMode] = useState<"summary" | "detailed">("summary");
+  
   const { isFavorite, toggleFavorite } = useFavoritePatents();
   const patentIsFavorite = patentNumber ? isFavorite(patentNumber) : false;
 
@@ -46,7 +45,7 @@ export function PatentSummary({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ patentNumber, patentData, analysisMode }),
+            body: JSON.stringify({ patentNumber, patentData }),
           }
         );
 
@@ -106,11 +105,7 @@ export function PatentSummary({
     window.print();
   };
 
-  const handleModeChange = (mode: "summary" | "detailed") => {
-    if (mode === analysisMode || isStreaming) return;
-    setAnalysisMode(mode);
-    onAnalysisModeChange?.(mode);
-  };
+  
 
 
   // MD 다운로드 기능 및 Google Patents 링크 기능 제거 (요청사항)
@@ -375,31 +370,7 @@ export function PatentSummary({
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Analysis Mode Toggle */}
-            {featureFlags.analysisModeEnabled && !isStreaming && content && onAnalysisModeChange && (
-              <div className="flex items-center bg-secondary/50 rounded-lg p-0.5 border border-border/50">
-                <button
-                  onClick={() => handleModeChange("summary")}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                    analysisMode === "summary"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  요약분석
-                </button>
-                <button
-                  onClick={() => handleModeChange("detailed")}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                    analysisMode === "detailed"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  상세분석
-                </button>
-              </div>
-            )}
+            
 
             {!isStreaming && content && (
               <>

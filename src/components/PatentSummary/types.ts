@@ -32,7 +32,6 @@ export interface RelatedPatent {
 export interface FeatureFlags {
   pdfEnabled: boolean;
   pptEnabled: boolean;
-  analysisModeEnabled: boolean;
 }
 
 export interface PatentSummaryProps {
@@ -42,7 +41,6 @@ export interface PatentSummaryProps {
   patentData?: PatentData | null;
   relatedPatents?: RelatedPatent[];
   onRelatedPatentClick?: (patentNumber: string) => void;
-  onAnalysisModeChange?: (mode: "summary" | "detailed") => void;
   featureFlags?: FeatureFlags;
 }
 

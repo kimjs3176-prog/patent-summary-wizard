@@ -453,7 +453,6 @@ const Admin = () => {
                   {[
                     { key: "feature_pdf", label: "PDF 내보내기", desc: "특허 요약서를 PDF로 다운로드하는 기능" },
                     { key: "feature_ppt", label: "PPT 내보내기", desc: "특허 요약서를 PPT로 다운로드하는 기능" },
-                    { key: "feature_analysis_mode", label: "요약/상세 분석 전환", desc: "요약분석↔상세분석 모드 전환 기능" },
                   ].map(feat => {
                     const isOn = siteSettings[feat.key] !== "false";
                     return (
