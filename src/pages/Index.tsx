@@ -16,7 +16,7 @@ import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 const Index = () => {
   const {
@@ -30,6 +30,7 @@ const Index = () => {
 
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
+  const [analysisMode, setAnalysisMode] = useState<"summary" | "detailed">("detailed");
   const initialLoadDone = useRef(false);
 
   useEffect(() => {
@@ -90,6 +91,14 @@ const Index = () => {
     setKeywordResults([]);
     setSearchedKeyword("");
   };
+
+  const handleSwitchMode = useCallback((mode: "summary" | "detailed") => {
+    if (mode === analysisMode) return;
+    setAnalysisMode(mode);
+    regenerateSummaryWithMode(mode);
+  }, [analysisMode, regenerateSummaryWithMode]);
+
+
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -208,7 +217,7 @@ const Index = () => {
           }
 
             <section className="mb-8">
-              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} />
+              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} onSwitchMode={handleSwitchMode} currentMode={analysisMode} />
             </section>
 
             {isLoading && !isFetching &&

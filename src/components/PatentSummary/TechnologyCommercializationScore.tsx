@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
 
@@ -54,15 +53,8 @@ function getGradeLabel(value: number): string {
 }
 
 function SubScoreCard({ label, score, reason }: { label: string; score: number; reason?: string }) {
-  const [showReason, setShowReason] = useState(false);
-
   return (
-    <div
-      className="relative p-3 sm:p-4 rounded-2xl bg-secondary/30 border border-border/50 cursor-pointer transition-all hover:bg-secondary/50"
-      onMouseEnter={() => setShowReason(true)}
-      onMouseLeave={() => setShowReason(false)}
-      onTouchStart={() => setShowReason((v) => !v)}
-    >
+    <div className="p-3 sm:p-4 rounded-2xl bg-secondary/30 border border-border/50">
       <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 font-medium">{label}</p>
       <div className="flex items-end gap-1">
         <span className={`text-xl sm:text-2xl font-bold ${getScoreColor(score)}`}>
@@ -77,7 +69,7 @@ function SubScoreCard({ label, score, reason }: { label: string; score: number; 
         />
       </div>
       {reason && (
-        <div className={`mt-2 text-[11px] sm:text-xs text-foreground/70 leading-relaxed transition-all ${showReason ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 overflow-hidden sm:max-h-0 sm:opacity-0'}`}>
+        <div className="mt-2 text-[11px] sm:text-xs text-foreground/70 leading-relaxed">
           {reason}
         </div>
       )}
