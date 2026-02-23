@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface FeaturedPatent {
@@ -445,6 +445,39 @@ const Admin = () => {
                   )}
                 </div>
               ))}
+
+              {/* Feature Toggles */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">기능 활성화/비활성화</h3>
+                <div className="space-y-3">
+                  {[
+                    { key: "feature_pdf", label: "PDF 내보내기", desc: "특허 요약서를 PDF로 다운로드하는 기능" },
+                    { key: "feature_ppt", label: "PPT 내보내기", desc: "특허 요약서를 PPT로 다운로드하는 기능" },
+                    { key: "feature_analysis_mode", label: "요약/상세 분석 전환", desc: "요약분석↔상세분석 모드 전환 기능" },
+                  ].map(feat => {
+                    const isOn = siteSettings[feat.key] !== "false";
+                    return (
+                      <div key={feat.key} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/30">
+                        <div>
+                          <p className="text-sm font-medium">{feat.label}</p>
+                          <p className="text-[11px] text-muted-foreground">{feat.desc}</p>
+                        </div>
+                        <button
+                          onClick={() => setSiteSettings(s => ({ ...s, [feat.key]: isOn ? "false" : "true" }))}
+                          className="flex-shrink-0"
+                        >
+                          {isOn ? (
+                            <ToggleRight className="w-8 h-8 text-primary" />
+                          ) : (
+                            <ToggleLeft className="w-8 h-8 text-muted-foreground" />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5">변경 후 아래 '설정 저장'을 눌러야 반영됩니다</p>
+              </div>
 
               {/* Category Management */}
               <div className="pt-4 border-t border-border/50">

@@ -15,6 +15,9 @@ const DEFAULT_SETTINGS: SiteSettings = {
   primary_color: "#00aba2",
   featured_section_title: "이달의 특허 · 기술이전 추천",
   featured_section_subtitle: "농식품 분야 기술이전 추천 특허",
+  feature_pdf: "true",
+  feature_ppt: "true",
+  feature_analysis_mode: "true",
 };
 
 export function useSiteSettings() {

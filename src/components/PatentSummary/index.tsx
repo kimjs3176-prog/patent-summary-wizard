@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { PatentSummaryProps } from "./types";
+import { PatentSummaryProps, FeatureFlags } from "./types";
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
@@ -18,6 +18,7 @@ export function PatentSummary({
   relatedPatents = [],
   onRelatedPatentClick,
   onAnalysisModeChange,
+  featureFlags = { pdfEnabled: true, pptEnabled: true, analysisModeEnabled: true },
 }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -375,7 +376,7 @@ export function PatentSummary({
 
           <div className="flex items-center gap-3 flex-wrap">
             {/* Analysis Mode Toggle */}
-            {!isStreaming && content && onAnalysisModeChange && (
+            {featureFlags.analysisModeEnabled && !isStreaming && content && onAnalysisModeChange && (
               <div className="flex items-center bg-secondary/50 rounded-lg p-0.5 border border-border/50">
                 <button
                   onClick={() => handleModeChange("summary")}
@@ -434,21 +435,25 @@ export function PatentSummary({
                   <Heart className={`w-4 h-4 ${patentIsFavorite ? "fill-current" : ""}`} />
                   {patentIsFavorite ? "담김" : "담기"}
                 </Button>
-                <PdfGenerator
-                  content={content}
-                  patentNumber={patentNumber}
-                  patentData={patentData}
-                  printRef={printRef}
-                  commercializationDetails={commercializationDetails}
-                  commercializationScore={commercializationScore}
-                />
-                <PptGenerator
-                  content={content}
-                  patentNumber={patentNumber}
-                  patentData={patentData}
-                  commercializationDetails={commercializationDetails}
-                  commercializationScore={commercializationScore}
-                />
+                {featureFlags.pdfEnabled && (
+                  <PdfGenerator
+                    content={content}
+                    patentNumber={patentNumber}
+                    patentData={patentData}
+                    printRef={printRef}
+                    commercializationDetails={commercializationDetails}
+                    commercializationScore={commercializationScore}
+                  />
+                )}
+                {featureFlags.pptEnabled && (
+                  <PptGenerator
+                    content={content}
+                    patentNumber={patentNumber}
+                    patentData={patentData}
+                    commercializationDetails={commercializationDetails}
+                    commercializationScore={commercializationScore}
+                  />
+                )}
               </>
             )}
           </div>
