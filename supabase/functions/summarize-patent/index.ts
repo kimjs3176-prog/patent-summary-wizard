@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,13 +20,18 @@ interface PatentData {
   description?: string;
 }
 
+function getSupabaseClient() {
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  return createClient(url, key);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Basic input validation
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return new Response(
@@ -50,12 +56,49 @@ serve(async (req) => {
       );
     }
 
-    // Validate analysisMode
     if (analysisMode && !["summary", "detailed"].includes(analysisMode)) {
       return new Response(
         JSON.stringify({ error: "잘못된 분석 모드입니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Check cache first
+    try {
+      const supabase = getSupabaseClient();
+      const { data: cached } = await supabase
+        .from("patent_ai_cache")
+        .select("summary_content")
+        .eq("patent_number", trimmedPatent)
+        .eq("analysis_mode", analysisMode)
+        .maybeSingle();
+
+      if (cached?.summary_content) {
+        console.log(`[CACHE HIT] ${trimmedPatent} / ${analysisMode}`);
+        // Return cached content as SSE stream
+        const content = cached.summary_content;
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            // Send in chunks to simulate streaming
+            const chunkSize = 50;
+            for (let i = 0; i < content.length; i += chunkSize) {
+              const chunk = content.slice(i, i + chunkSize);
+              const sseData = JSON.stringify({
+                choices: [{ delta: { content: chunk } }],
+              });
+              controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+            }
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          },
+        });
+        return new Response(stream, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
+    } catch (cacheErr) {
+      console.error("Cache read error (continuing without cache):", cacheErr);
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -67,7 +110,6 @@ serve(async (req) => {
       );
     }
 
-    // Build context from patent data
     let patentContext = "";
     if (patentData) {
       const data = patentData as PatentData;
@@ -183,7 +225,52 @@ ${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오
       );
     }
 
-    return new Response(response.body, {
+    // Intercept stream to collect full content for caching
+    const reader = response.body!.getReader();
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let fullContent = "";
+
+    const stream = new ReadableStream({
+      async pull(controller) {
+        const { done, value } = await reader.read();
+        if (done) {
+          controller.close();
+          // Save to cache after stream completes
+          if (fullContent.length > 0) {
+            try {
+              const supabase = getSupabaseClient();
+              await supabase.from("patent_ai_cache").upsert({
+                patent_number: trimmedPatent,
+                analysis_mode: analysisMode,
+                summary_content: fullContent,
+              }, { onConflict: "patent_number,analysis_mode" });
+              console.log(`[CACHE SAVED] ${trimmedPatent} / ${analysisMode}`);
+            } catch (saveErr) {
+              console.error("Cache save error:", saveErr);
+            }
+          }
+          return;
+        }
+
+        // Parse SSE chunks to extract content for caching
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line.slice(6).trim() !== "[DONE]") {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) fullContent += content;
+            } catch { /* ignore parse errors */ }
+          }
+        }
+
+        controller.enqueue(value);
+      },
+    });
+
+    return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {

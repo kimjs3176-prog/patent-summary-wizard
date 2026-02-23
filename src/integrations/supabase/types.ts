@@ -62,6 +62,78 @@ export type Database = {
         }
         Relationships: []
       }
+      patent_ai_cache: {
+        Row: {
+          analysis_mode: string
+          created_at: string
+          id: string
+          patent_number: string
+          summary_content: string
+        }
+        Insert: {
+          analysis_mode?: string
+          created_at?: string
+          id?: string
+          patent_number: string
+          summary_content: string
+        }
+        Update: {
+          analysis_mode?: string
+          created_at?: string
+          id?: string
+          patent_number?: string
+          summary_content?: string
+        }
+        Relationships: []
+      }
+      patent_score_cache: {
+        Row: {
+          analysis: string | null
+          business_reason: string | null
+          business_score: number
+          created_at: string
+          id: string
+          market_reason: string | null
+          market_score: number
+          patent_number: string
+          technology_reason: string | null
+          technology_score: number
+          total_score: number
+          trl: number
+          trl_reason: string | null
+        }
+        Insert: {
+          analysis?: string | null
+          business_reason?: string | null
+          business_score: number
+          created_at?: string
+          id?: string
+          market_reason?: string | null
+          market_score: number
+          patent_number: string
+          technology_reason?: string | null
+          technology_score: number
+          total_score: number
+          trl?: number
+          trl_reason?: string | null
+        }
+        Update: {
+          analysis?: string | null
+          business_reason?: string | null
+          business_score?: number
+          created_at?: string
+          id?: string
+          market_reason?: string | null
+          market_score?: number
+          patent_number?: string
+          technology_reason?: string | null
+          technology_score?: number
+          total_score?: number
+          trl?: number
+          trl_reason?: string | null
+        }
+        Relationships: []
+      }
       patent_search_stats: {
         Row: {
           created_at: string
