@@ -49,7 +49,6 @@ serve(async (req) => {
     }
 
     const trimmedPatent = patentNumber.trim();
-    const analysisMode = body.analysisMode === "summary" ? "summary" : "detailed";
     if (trimmedPatent.length > 50 || !/^[0-9-]+$/.test(trimmedPatent)) {
       return new Response(
         JSON.stringify({ error: "유효하지 않은 특허 번호 형식입니다." }),
@@ -64,7 +63,7 @@ serve(async (req) => {
         .from("patent_ai_cache")
         .select("summary_content")
         .eq("patent_number", trimmedPatent)
-        .eq("analysis_mode", analysisMode)
+        .eq("analysis_mode", "detailed")
         .maybeSingle();
 
       if (cached?.summary_content) {
@@ -125,23 +124,15 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = analysisMode === "summary"
-      ? `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 핵심 요약서 작성.
-규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 핵심어 **볼드**, 섹션은 ## 사용.
+    const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
+규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 섹션은 ## 사용.
 정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성 필수.
 
-섹션:
-## 기술 분야 - 핵심 기술영역과 응용 분야를 2~3문장으로 요약
-## 발명의 요약 - 기술과제와 핵심 해결수단을 3~4문장으로 압축
-## 기술적 특징 - 핵심 차별점 2~3가지를 간결하게 서술
-## 시장동향 - 2024년 이후 시장 규모/성장률 핵심 수치 중심으로 2~3문장
-## 농산업 활용 특장점 - 핵심 활용 시나리오 1~2개를 간결하게 서술
-## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 상용화 가능성을 2~3문장으로 요약
-
-각 섹션 2~4문장으로 핵심만 간결하게 서술.`
-      : `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
-규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 핵심어 **볼드**, 섹션은 ## 사용.
-정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성 필수.
+**볼드 처리 규칙 (매우 중요!):**
+- 각 섹션에서 핵심 기술 용어, 고유명사, 수치 데이터, 핵심 키워드를 반드시 **볼드**로 표기
+- 예시: **스마트팜**, **연평균 성장률 12.5%**, **딥러닝 기반 영상 분석**, **정밀농업**
+- 한 문장 내에 1~3개의 핵심어를 볼드 처리하되, 과도한 볼드는 지양
+- 문장 전체를 볼드하지 말 것. 핵심 단어/구만 볼드 처리
 
 섹션별 상세 지침:
 ## 기술 분야 - IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 구체적으로 서술
@@ -170,7 +161,7 @@ serve(async (req) => {
           { role: "user", content: userMessage },
         ],
         stream: true,
-        max_tokens: analysisMode === "summary" ? 1500 : 3000,
+        max_tokens: 3000,
       }),
     });
 
@@ -211,7 +202,7 @@ serve(async (req) => {
               const supabase = getSupabaseClient();
               await supabase.from("patent_ai_cache").upsert({
                 patent_number: trimmedPatent,
-                analysis_mode: analysisMode,
+                analysis_mode: "detailed",
                 summary_content: fullContent,
               }, { onConflict: "patent_number,analysis_mode" });
               console.log(`[CACHE SAVED] ${trimmedPatent}`);

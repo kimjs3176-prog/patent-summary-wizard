@@ -10,11 +10,6 @@ import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 
-export interface PatentSummaryExtendedProps extends PatentSummaryProps {
-  onSwitchMode?: (mode: "summary" | "detailed") => void;
-  currentMode?: "summary" | "detailed";
-}
-
 export function PatentSummary({
   content,
   patentNumber,
@@ -23,9 +18,7 @@ export function PatentSummary({
   relatedPatents = [],
   onRelatedPatentClick,
   featureFlags = { pdfEnabled: true, pptEnabled: true },
-  onSwitchMode,
-  currentMode = "detailed",
-}: PatentSummaryExtendedProps) {
+}: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const [commercializationScore, setCommercializationScore] = useState<number | null>(null);
@@ -168,7 +161,7 @@ export function PatentSummary({
         }
         const IconComp = getSectionIcon(sectionTitle);
         elements.push(
-          <h2 key={index} className="text-xl font-semibold text-primary mt-6 mb-3 first:mt-0 flex items-center gap-2.5">
+          <h2 key={index} className="text-xl font-semibold text-primary mt-8 mb-3 first:mt-0 flex items-center gap-2.5">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
               <IconComp className="w-4.5 h-4.5" />
             </span>
@@ -206,7 +199,6 @@ export function PatentSummary({
             </div>
           );
         } else if (sectionTitle === "발명의 요약" && patentData?.representativeImage) {
-          // Fallback: single representative image
           const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(
             patentData.representativeImage
           )}`;
@@ -229,13 +221,16 @@ export function PatentSummary({
           );
         }
       } else if (cleanLine.trim()) {
-        // Parse bold text (**text**)
-        const parts = cleanLine.split(/(\*\*[^*]+\*\*)/g);
+        // Enhanced bold text parsing: **text**, __text__, and partial bold within sentences
+        const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
         elements.push(
-          <p key={index} className="text-foreground/80 leading-relaxed mb-2">
+          <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
             {parts.map((part, i) => {
-              if (part.startsWith('**') && part.endsWith('**')) {
-                return <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
+              if ((part.startsWith('**') && part.endsWith('**'))) {
+                return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+              }
+              if ((part.startsWith('__') && part.endsWith('__'))) {
+                return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
               }
               return part;
             })}
@@ -258,14 +253,14 @@ export function PatentSummary({
       />
 
       {/* Main Summary Container */}
-      <div className="space-y-6">
+      <div className="space-y-5">
       {patentData && (
-        <div className="mb-6 glass-effect rounded-3xl p-8 animate-slide-in">
-          <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+        <div className="mb-5 glass-effect rounded-2xl p-6 md:p-7 animate-slide-in">
+          <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-border/40">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg">
               📄
             </div>
-            <div className="card-title text-xl font-bold text-foreground">특허 정보</div>
+            <div className="card-title text-lg font-bold text-foreground">특허 정보</div>
           </div>
           
           <div className="flex flex-wrap gap-2 mb-3">
@@ -294,7 +289,7 @@ export function PatentSummary({
                   ? `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`
                   : appNum;
                 return (
-                  <div className="inline-block px-4 py-2 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium">
+                  <div className="inline-block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium">
                     출원번호: {formatted}
                   </div>
                 );
@@ -303,7 +298,7 @@ export function PatentSummary({
             })()}
             {/* 등록번호도 출원번호도 없는 경우 fallback */}
             {!patentData.registrationNumber && !patentData.applicationNumber && (
-              <div className="inline-block px-4 py-2 bg-amber-500/15 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium">
+              <div className="inline-block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium">
                 {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
               </div>
             )}
@@ -368,56 +363,38 @@ export function PatentSummary({
       )}
 
       {/* 3. AI Summary Card */}
-      <div className="glass-effect rounded-3xl overflow-hidden animate-slide-in" style={{ animationDelay: '0.1s' }}>
+      <div className="glass-effect rounded-2xl overflow-hidden animate-slide-in" style={{ animationDelay: '0.1s' }}>
         {/* Header */}
-         <div className="bg-secondary/30 border-b border-border/50 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+         <div className="bg-secondary/20 border-b border-border/40 px-5 py-3.5 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg">
               🤖
             </div>
             <div>
-              <h3 className="font-bold text-lg text-foreground">AI 종합 요약</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="font-bold text-base text-foreground">AI 종합 요약</h3>
+              <p className="text-xs text-muted-foreground">
                 {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Summary/Detailed Toggle */}
-            {!isStreaming && content && onSwitchMode && (
-              <div className="inline-flex items-center rounded-lg border border-border/50 bg-card/50 p-0.5">
-                <button
-                  onClick={() => onSwitchMode("detailed")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${currentMode === "detailed" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  상세
-                </button>
-                <button
-                  onClick={() => onSwitchMode("summary")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${currentMode === "summary" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  요약
-                </button>
-              </div>
-            )}
-
+          <div className="flex items-center gap-1.5 flex-wrap">
             {!isStreaming && content && (
               <>
-                <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground">
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? "복사됨" : "복사"}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
-                  <Printer className="w-4 h-4" />
+                <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground">
+                  <Printer className="w-3.5 h-3.5" />
                   인쇄
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleShare} className="gap-2 border-border/50 bg-card/50 hover:bg-card text-foreground">
-                  <Share2 className="w-4 h-4" />
+                <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground">
+                  <Share2 className="w-3.5 h-3.5" />
                   공유
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
                     if (!patentData) return;
@@ -431,9 +408,9 @@ export function PatentSummary({
                     });
                     toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
                   }}
-                  className={`gap-2 border-border/50 ${patentIsFavorite ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100" : "bg-card/50 hover:bg-card text-foreground"}`}
+                  className={`gap-1.5 text-xs h-8 ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  <Heart className={`w-4 h-4 ${patentIsFavorite ? "fill-current" : ""}`} />
+                  <Heart className={`w-3.5 h-3.5 ${patentIsFavorite ? "fill-current" : ""}`} />
                   {patentIsFavorite ? "담김" : "담기"}
                 </Button>
                 {featureFlags.pdfEnabled && (
@@ -461,27 +438,27 @@ export function PatentSummary({
         </div>
 
         {/* Content */}
-        <div className="p-6 md:p-8 min-h-[400px]">
+        <div className="px-5 py-6 md:px-7 md:py-8 min-h-[350px]">
           {content ? (
             <div className="prose max-w-none">
               {renderMarkdown(content)}
               {isStreaming && (
-                <span className="inline-block w-2 h-5 bg-primary animate-pulse-subtle ml-1" />
+                <span className="inline-block w-1.5 h-5 bg-primary/60 animate-pulse-subtle ml-0.5 rounded-full" />
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <FileText className="w-8 h-8" />
+            <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
+              <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+                <FileText className="w-7 h-7" />
               </div>
-              <p>요약서가 여기에 표시됩니다</p>
+              <p className="text-sm">요약서가 여기에 표시됩니다</p>
             </div>
           )}
         </div>
 
         {/* Disclaimer */}
-        <div className="mt-4 px-6 pb-2">
-          <p className="text-xs text-muted-foreground italic text-center">
+        <div className="px-5 pb-4">
+          <p className="text-[11px] text-muted-foreground/70 italic text-center">
             ※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음
           </p>
         </div>
