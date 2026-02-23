@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface FeaturedPatent {
@@ -41,6 +41,18 @@ const EMPTY_FORM = {
 
 type SiteSettings = Record<string, string>;
 
+interface CacheItem {
+  id: string;
+  patent_number: string;
+  created_at: string;
+}
+
+interface CacheCounts {
+  data: number;
+  ai: number;
+  score: number;
+}
+
 const SETTINGS_FIELDS = [
   { key: "header_title", label: "헤더 타이틀", placeholder: "농식품분야 특허 AI 기술요약" },
   { key: "header_subtitle", label: "헤더 서브타이틀", placeholder: "Agri-Food Patent AI Summary" },
@@ -69,7 +81,11 @@ const Admin = () => {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORY_OPTIONS);
   const [techVideos, setTechVideos] = useState<{ title: string; url: string }[]>([]);
-
+  const [cacheCounts, setCacheCounts] = useState<CacheCounts>({ data: 0, ai: 0, score: 0 });
+  const [cacheItems, setCacheItems] = useState<CacheItem[]>([]);
+  const [cacheLoading, setCacheLoading] = useState(false);
+  const [cachePage, setCachePage] = useState(0);
+  const [selectedCacheIds, setSelectedCacheIds] = useState<Set<string>>(new Set());
   const apiCall = async (action: string, data?: Record<string, unknown>) => {
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-featured-patents`,
@@ -217,6 +233,45 @@ const Admin = () => {
     setIsSavingSettings(false);
   };
 
+  const loadCache = async (page = 0) => {
+    setCacheLoading(true);
+    const result = await apiCall("list-cache", { page });
+    if (result.success) {
+      setCacheCounts(result.counts);
+      setCacheItems(result.items || []);
+      setCachePage(page);
+      setSelectedCacheIds(new Set());
+    }
+    setCacheLoading(false);
+  };
+
+  const handleDeleteCache = async () => {
+    if (selectedCacheIds.size === 0) return;
+    if (!confirm(`선택한 ${selectedCacheIds.size}건의 캐시를 삭제하시겠습니까? (관련 AI요약/점수 캐시도 함께 삭제됩니다)`)) return;
+    setCacheLoading(true);
+    const result = await apiCall("delete-cache", { ids: Array.from(selectedCacheIds) });
+    if (result.success) {
+      toast.success(`${result.deleted}건 삭제 완료`);
+      await loadCache(cachePage);
+    } else {
+      toast.error("삭제 실패");
+    }
+    setCacheLoading(false);
+  };
+
+  const handleDeleteAllCache = async () => {
+    if (!confirm("전체 캐시를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
+    setCacheLoading(true);
+    const result = await apiCall("delete-all-cache");
+    if (result.success) {
+      toast.success("전체 캐시 삭제 완료");
+      await loadCache(0);
+    } else {
+      toast.error("삭제 실패");
+    }
+    setCacheLoading(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -263,6 +318,9 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 gap-1.5">
               <Settings className="w-3.5 h-3.5" /> 홈페이지 관리
+            </TabsTrigger>
+            <TabsTrigger value="cache" className="flex-1 gap-1.5" onClick={() => loadCache(0)}>
+              <Database className="w-3.5 h-3.5" /> 캐시 관리
             </TabsTrigger>
           </TabsList>
 
@@ -561,6 +619,115 @@ const Admin = () => {
                 {isSavingSettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 설정 저장
               </Button>
+            </div>
+          </TabsContent>
+
+          {/* ===== Cache Tab ===== */}
+          <TabsContent value="cache">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-sm">KIPRIS 데이터 캐시 현황</h2>
+                <Button variant="outline" size="sm" onClick={() => loadCache(cachePage)} disabled={cacheLoading}>
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1 ${cacheLoading ? "animate-spin" : ""}`} /> 새로고침
+                </Button>
+              </div>
+
+              {/* Summary cards */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "특허 원본 데이터", count: cacheCounts.data },
+                  { label: "AI 요약 캐시", count: cacheCounts.ai },
+                  { label: "사업화 점수 캐시", count: cacheCounts.score },
+                ].map(item => (
+                  <Card key={item.label} className="p-3 text-center">
+                    <p className="text-2xl font-bold">{item.count}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{item.label}</p>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteCache}
+                  disabled={selectedCacheIds.size === 0 || cacheLoading}
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> 선택 삭제 ({selectedCacheIds.size})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteAllCache}
+                  disabled={cacheLoading || cacheCounts.data === 0}
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> 전체 삭제
+                </Button>
+              </div>
+
+              {/* Cache list */}
+              {cacheItems.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  {cacheLoading ? "로딩 중..." : "캐시된 데이터가 없습니다."}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 px-3 py-2 text-[11px] text-muted-foreground border-b border-border/50">
+                    <input
+                      type="checkbox"
+                      checked={selectedCacheIds.size === cacheItems.length && cacheItems.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCacheIds(new Set(cacheItems.map(i => i.id)));
+                        } else {
+                          setSelectedCacheIds(new Set());
+                        }
+                      }}
+                    />
+                    <span className="flex-1">특허번호</span>
+                    <span>캐시 일시</span>
+                  </div>
+                  {cacheItems.map(item => (
+                    <div key={item.id} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary/30 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedCacheIds.has(item.id)}
+                        onChange={(e) => {
+                          const next = new Set(selectedCacheIds);
+                          if (e.target.checked) next.add(item.id);
+                          else next.delete(item.id);
+                          setSelectedCacheIds(next);
+                        }}
+                      />
+                      <span className="flex-1 text-sm font-mono">{item.patent_number}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {new Date(item.created_at).toLocaleDateString("ko-KR")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {cacheCounts.data > 20 && (
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <Button variant="outline" size="sm" disabled={cachePage === 0 || cacheLoading} onClick={() => loadCache(cachePage - 1)}>
+                    이전
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {cachePage + 1} / {Math.ceil(cacheCounts.data / 20)}
+                  </span>
+                  <Button variant="outline" size="sm" disabled={(cachePage + 1) * 20 >= cacheCounts.data || cacheLoading} onClick={() => loadCache(cachePage + 1)}>
+                    다음
+                  </Button>
+                </div>
+              )}
+
+              <p className="text-[10px] text-muted-foreground">
+                캐시 삭제 시 해당 특허의 AI 요약과 사업화 점수 캐시도 함께 삭제됩니다. 다음 검색 시 KIPRIS API에서 새로 가져옵니다.
+              </p>
             </div>
           </TabsContent>
         </Tabs>

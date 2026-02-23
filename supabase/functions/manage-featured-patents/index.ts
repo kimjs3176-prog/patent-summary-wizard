@@ -28,7 +28,7 @@ serve(async (req) => {
       );
     }
 
-    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings"];
+    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache"];
     if (!action || !validActions.includes(action)) {
       return new Response(
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
@@ -107,6 +107,75 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: false, error: "특허 정보를 가져올 수 없습니다." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== Cache Management ==========
+    if (action === "list-cache") {
+      const { count: dataCount } = await supabase
+        .from("patent_data_cache")
+        .select("*", { count: "exact", head: true });
+      const { count: aiCount } = await supabase
+        .from("patent_ai_cache")
+        .select("*", { count: "exact", head: true });
+      const { count: scoreCount } = await supabase
+        .from("patent_score_cache")
+        .select("*", { count: "exact", head: true });
+
+      const page = typeof data?.page === "number" ? data.page : 0;
+      const pageSize = 20;
+      const { data: cacheItems, error } = await supabase
+        .from("patent_data_cache")
+        .select("id, patent_number, created_at")
+        .order("created_at", { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({
+          success: true,
+          counts: { data: dataCount || 0, ai: aiCount || 0, score: scoreCount || 0 },
+          items: cacheItems || [],
+          page,
+          pageSize,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "delete-cache") {
+      if (!data?.ids || !Array.isArray(data.ids)) {
+        return new Response(
+          JSON.stringify({ success: false, error: "삭제할 항목 ID가 필요합니다." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // Delete from all cache tables by patent_number
+      const { data: items } = await supabase
+        .from("patent_data_cache")
+        .select("patent_number")
+        .in("id", data.ids);
+      const numbers = (items || []).map((i: any) => i.patent_number);
+
+      const { error: e1 } = await supabase.from("patent_data_cache").delete().in("id", data.ids);
+      if (numbers.length > 0) {
+        await supabase.from("patent_ai_cache").delete().in("patent_number", numbers);
+        await supabase.from("patent_score_cache").delete().in("patent_number", numbers);
+      }
+      if (e1) throw e1;
+      return new Response(
+        JSON.stringify({ success: true, deleted: data.ids.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "delete-all-cache") {
+      await supabase.from("patent_data_cache").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("patent_ai_cache").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase.from("patent_score_cache").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      return new Response(
+        JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
