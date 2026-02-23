@@ -10,6 +10,11 @@ import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 
+export interface PatentSummaryExtendedProps extends PatentSummaryProps {
+  onSwitchMode?: (mode: "summary" | "detailed") => void;
+  currentMode?: "summary" | "detailed";
+}
+
 export function PatentSummary({
   content,
   patentNumber,
@@ -18,7 +23,9 @@ export function PatentSummary({
   relatedPatents = [],
   onRelatedPatentClick,
   featureFlags = { pdfEnabled: true, pptEnabled: true },
-}: PatentSummaryProps) {
+  onSwitchMode,
+  currentMode = "detailed",
+}: PatentSummaryExtendedProps) {
   const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const [commercializationScore, setCommercializationScore] = useState<number | null>(null);
@@ -306,38 +313,44 @@ export function PatentSummary({
             <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
           )}
           
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-5 text-sm">
+          <div className="mt-5 px-3 py-2 rounded-xl bg-secondary/40 border border-border/40 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             {patentData.assignee && (
-              <span className="inline-flex items-center gap-1.5 animate-scale-in stagger-1">
-                <span className="text-muted-foreground font-medium">출원인</span>
-                <span className="text-foreground font-semibold">{patentData.assignee}</span>
-              </span>
-            )}
-            {patentData.assignee && (patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-              <span className="text-border hidden sm:inline">|</span>
+              <>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-muted-foreground text-xs">출원인</span>
+                  <span className="text-foreground font-medium text-xs">{patentData.assignee}</span>
+                </span>
+                {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
+                  <span className="text-border">|</span>
+                )}
+              </>
             )}
             {patentData.filingDate && (
-              <span className="inline-flex items-center gap-1.5 animate-scale-in stagger-2">
-                <span className="text-muted-foreground font-medium">출원일</span>
-                <span className="text-foreground font-semibold">{patentData.filingDate}</span>
-              </span>
-            )}
-            {patentData.filingDate && (patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-              <span className="text-border hidden sm:inline">|</span>
+              <>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-muted-foreground text-xs">출원일</span>
+                  <span className="text-foreground font-medium text-xs">{patentData.filingDate}</span>
+                </span>
+                {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
+                  <span className="text-border">|</span>
+                )}
+              </>
             )}
             {patentData.publicationDate && (
-              <span className="inline-flex items-center gap-1.5 animate-scale-in stagger-3">
-                <span className="text-muted-foreground font-medium">{patentData.registrationNumber ? '등록일' : '공개일'}</span>
-                <span className="text-foreground font-semibold">{patentData.publicationDate}</span>
-              </span>
-            )}
-            {patentData.publicationDate && patentData.classifications && patentData.classifications.length > 0 && (
-              <span className="text-border hidden sm:inline">|</span>
+              <>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-muted-foreground text-xs">{patentData.registrationNumber ? '등록일' : '공개일'}</span>
+                  <span className="text-foreground font-medium text-xs">{patentData.publicationDate}</span>
+                </span>
+                {patentData.classifications && patentData.classifications.length > 0 && (
+                  <span className="text-border">|</span>
+                )}
+              </>
             )}
             {patentData.classifications && patentData.classifications.length > 0 && (
-              <span className="inline-flex items-center gap-1.5 animate-scale-in stagger-4">
-                <span className="text-muted-foreground font-medium">IPC</span>
-                <span className="text-foreground font-semibold truncate max-w-[300px]">{patentData.classifications.join(', ')}</span>
+              <span className="inline-flex items-center gap-1 min-w-0">
+                <span className="text-muted-foreground text-xs whitespace-nowrap">IPC</span>
+                <span className="text-foreground font-medium text-xs truncate">{patentData.classifications.join(', ')}</span>
               </span>
             )}
           </div>
@@ -357,7 +370,7 @@ export function PatentSummary({
       {/* 3. AI Summary Card */}
       <div className="glass-effect rounded-3xl overflow-hidden animate-slide-in" style={{ animationDelay: '0.1s' }}>
         {/* Header */}
-        <div className="bg-secondary/30 border-b border-border/50 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
+         <div className="bg-secondary/30 border-b border-border/50 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
               🤖
@@ -371,7 +384,23 @@ export function PatentSummary({
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            
+            {/* Summary/Detailed Toggle */}
+            {!isStreaming && content && onSwitchMode && (
+              <div className="inline-flex items-center rounded-lg border border-border/50 bg-card/50 p-0.5">
+                <button
+                  onClick={() => onSwitchMode("detailed")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${currentMode === "detailed" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  상세
+                </button>
+                <button
+                  onClick={() => onSwitchMode("summary")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${currentMode === "summary" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  요약
+                </button>
+              </div>
+            )}
 
             {!isStreaming && content && (
               <>
