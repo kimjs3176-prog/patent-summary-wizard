@@ -53,7 +53,7 @@ const Index = () => {
     setKeywordResults([]);
     setSearchedKeyword("");
     updateUrl(patentNumber);
-    const result = await generateSummary(patentNumber);
+    const result = await generateSummary(patentNumber, analysisMode);
     if (result && result.patentData) {
       addToHistory({
         patentNumber,
@@ -136,7 +136,7 @@ const Index = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {updateUrl();reset();}}
+              onClick={() => {updateUrl();reset();setAnalysisMode("detailed");}}
               className="rounded-full text-xs h-8 px-4 glossy-card">
                 새로운 검색
               </Button>

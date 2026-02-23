@@ -10,7 +10,7 @@ export function usePatentSummary() {
   const [patentData, setPatentData] = useState<PatentData | null>(null);
   const [relatedPatents, setRelatedPatents] = useState<RelatedPatent[]>([]);
 
-  const generateSummary = useCallback(async (patentNumber: string, analysisMode: "summary" | "detailed" = "summary") => {
+  const generateSummary = useCallback(async (patentNumber: string, analysisMode: "summary" | "detailed" = "detailed") => {
     setIsLoading(true);
     setIsFetching(true);
     setSummary("");
