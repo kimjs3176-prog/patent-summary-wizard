@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,13 +21,18 @@ interface PatentData {
   description?: string;
 }
 
+function getSupabaseClient() {
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  return createClient(url, key);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Basic input validation
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return new Response(
@@ -51,6 +57,40 @@ serve(async (req) => {
       );
     }
 
+    // Check cache first
+    try {
+      const supabase = getSupabaseClient();
+      const { data: cached } = await supabase
+        .from("patent_score_cache")
+        .select("*")
+        .eq("patent_number", trimmedPatent)
+        .maybeSingle();
+
+      if (cached) {
+        console.log(`[CACHE HIT] score for ${trimmedPatent}`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            score: cached.total_score,
+            details: {
+              technologyScore: cached.technology_score,
+              marketScore: cached.market_score,
+              businessScore: cached.business_score,
+              analysis: cached.analysis,
+              trl: cached.trl,
+              trlReason: cached.trl_reason || "",
+              technologyReason: cached.technology_reason || "",
+              marketReason: cached.market_reason || "",
+              businessReason: cached.business_reason || "",
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch (cacheErr) {
+      console.error("Cache read error (continuing):", cacheErr);
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error("[CONFIG] LOVABLE_API_KEY not configured");
@@ -62,7 +102,6 @@ serve(async (req) => {
 
     const data = patentData as PatentData;
     
-    // Calculate years since filing for TRL adjustment
     const filingDateStr = data.filingDate;
     let yearsSinceFiling = 0;
     if (filingDateStr) {
@@ -209,13 +248,33 @@ totalScore = round(기술성 × 0.35 + 시장성 × 0.35 + 사업성 × 0.30)
       throw new Error("AI 응답이 비어있습니다.");
     }
 
-    // Parse JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
     }
 
     const scores = JSON.parse(jsonMatch[0]);
+
+    // Save to cache
+    try {
+      const supabase = getSupabaseClient();
+      await supabase.from("patent_score_cache").upsert({
+        patent_number: trimmedPatent,
+        total_score: scores.totalScore,
+        technology_score: scores.technologyScore,
+        market_score: scores.marketScore,
+        business_score: scores.businessScore,
+        trl: scores.trl || 5,
+        trl_reason: scores.trlReason || "",
+        analysis: scores.analysis || "",
+        technology_reason: scores.technologyReason || "",
+        market_reason: scores.marketReason || "",
+        business_reason: scores.businessReason || "",
+      }, { onConflict: "patent_number" });
+      console.log(`[CACHE SAVED] score for ${trimmedPatent}`);
+    } catch (saveErr) {
+      console.error("Cache save error:", saveErr);
+    }
 
     return new Response(
       JSON.stringify({
