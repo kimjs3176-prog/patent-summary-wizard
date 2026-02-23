@@ -80,6 +80,9 @@ export function usePatentSummary() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 402) {
+          throw new Error("AI 서비스 크레딧이 일시적으로 소진되었습니다. 잠시 후 다시 시도해 주세요.");
+        }
         throw new Error(errorData.error || "요약서 생성에 실패했습니다.");
       }
 
@@ -180,6 +183,9 @@ export function usePatentSummary() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 402) {
+          throw new Error("AI 서비스 크레딧이 일시적으로 소진되었습니다. 잠시 후 다시 시도해 주세요.");
+        }
         throw new Error(errorData.error || "요약서 생성에 실패했습니다.");
       }
 
