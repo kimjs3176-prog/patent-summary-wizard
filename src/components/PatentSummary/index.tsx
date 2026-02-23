@@ -306,38 +306,39 @@ export function PatentSummary({
             <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
           )}
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-5 text-sm">
             {patentData.assignee && (
-              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50 hover-lift animate-scale-in stagger-1">
-                <div className="text-xs text-muted-foreground mb-1 font-medium">출원인</div>
-                <div className="text-sm text-foreground font-medium">{patentData.assignee}</div>
-              </div>
+              <span className="inline-flex items-center gap-1.5 animate-scale-in stagger-1">
+                <span className="text-muted-foreground font-medium">출원인</span>
+                <span className="text-foreground font-semibold">{patentData.assignee}</span>
+              </span>
             )}
-            {patentData.inventors && patentData.inventors.length > 0 && (
-              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50 hover-lift animate-scale-in stagger-2">
-                <div className="text-xs text-muted-foreground mb-1 font-medium">발명자</div>
-                <div className="text-sm text-foreground font-medium">{patentData.inventors.join(', ')}</div>
-              </div>
+            {patentData.assignee && (patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
+              <span className="text-border hidden sm:inline">|</span>
             )}
             {patentData.filingDate && (
-              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50 hover-lift animate-scale-in stagger-3">
-                <div className="text-xs text-muted-foreground mb-1 font-medium">출원일</div>
-                <div className="text-sm text-foreground font-medium">{patentData.filingDate}</div>
-              </div>
+              <span className="inline-flex items-center gap-1.5 animate-scale-in stagger-2">
+                <span className="text-muted-foreground font-medium">출원일</span>
+                <span className="text-foreground font-semibold">{patentData.filingDate}</span>
+              </span>
+            )}
+            {patentData.filingDate && (patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
+              <span className="text-border hidden sm:inline">|</span>
             )}
             {patentData.publicationDate && (
-              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50 hover-lift animate-scale-in stagger-4">
-                <div className="text-xs text-muted-foreground mb-1 font-medium">
-                  {patentData.registrationNumber ? '등록일' : '공개일'}
-                </div>
-                <div className="text-sm text-foreground font-medium">{patentData.publicationDate}</div>
-              </div>
+              <span className="inline-flex items-center gap-1.5 animate-scale-in stagger-3">
+                <span className="text-muted-foreground font-medium">{patentData.registrationNumber ? '등록일' : '공개일'}</span>
+                <span className="text-foreground font-semibold">{patentData.publicationDate}</span>
+              </span>
+            )}
+            {patentData.publicationDate && patentData.classifications && patentData.classifications.length > 0 && (
+              <span className="text-border hidden sm:inline">|</span>
             )}
             {patentData.classifications && patentData.classifications.length > 0 && (
-              <div className="bg-secondary/30 p-4 rounded-xl border border-border/50 hover-lift animate-scale-in stagger-5 sm:col-span-2 lg:col-span-1">
-                <div className="text-xs text-muted-foreground mb-1 font-medium">IPC 코드</div>
-                <div className="text-sm text-foreground font-medium">{patentData.classifications.join(', ')}</div>
-              </div>
+              <span className="inline-flex items-center gap-1.5 animate-scale-in stagger-4">
+                <span className="text-muted-foreground font-medium">IPC</span>
+                <span className="text-foreground font-semibold truncate max-w-[300px]">{patentData.classifications.join(', ')}</span>
+              </span>
             )}
           </div>
         </div>

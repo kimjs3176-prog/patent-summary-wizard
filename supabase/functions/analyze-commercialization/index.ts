@@ -141,7 +141,7 @@ TRL(1-9): 개념특허→2~3, 실험데이터→4~5, 시제품→5~6, 상용단�
 경과보정: 3~5년+1, 6~10년+2, 11년~+2~3 (최대9)
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"80~120자 상세근거","analysis":"120~180자 종합평가","technologyReason":"50~80자 상세근거","marketReason":"50~80자 상세근거","businessReason":"50~80자 상세근거"}`
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"100~150자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"180~250자 종합평가: 기술적 차별성, 시장 적용 가능성, 사업화 전략을 종합적으로 분석","technologyReason":"80~120자: 청구항 구성의 독창성, 실시예 구체성, 선행기술 대비 기술적 진보성을 상세 분석","marketReason":"80~120자: 목표시장 규모와 성장성, 경쟁기술 대비 차별적 우위, 다분야 확장 가능성을 상세 분석","businessReason":"80~120자: 기술구현 난이도, 라이선싱 전략, 규제 환경, 투자회수 시나리오를 상세 분석"}`
       : `특허 기술사업화 평가 전문가. JSON으로만 응답.
 
 평가기준(0-100):
@@ -155,10 +155,10 @@ TRL(1-9): 개념특허→2~3, 실험데이터→4~5, 시제품→5~6, 상용→7
 경과보정: 3~5년+1, 6~10년+2, 11년~+2~3 (최대9)
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"60~80자","analysis":"80~120자","technologyReason":"30자이내","marketReason":"30자이내","businessReason":"30자이내"}`;
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"80~100자 근거","analysis":"120~160자 종합평가","technologyReason":"60~80자 상세근거","marketReason":"60~80자 상세근거","businessReason":"60~80자 상세근거"}`;
 
     const scoreModel = isDetailedScore ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
-    const scoreMaxTokens = isDetailedScore ? 600 : 400;
+    const scoreMaxTokens = isDetailedScore ? 900 : 600;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
