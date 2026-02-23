@@ -121,19 +121,36 @@ serve(async (req) => {
       patentContext = parts.join("\n");
 
       if (data.abstract) {
-        // Truncate abstract to 500 chars max
-        patentContext += `\n\n초록:\n${data.abstract.substring(0, 500)}`;
+        const abstractLimit = isDetailed ? 750 : 500;
+        patentContext += `\n\n초록:\n${data.abstract.substring(0, abstractLimit)}`;
       }
       if (data.claims?.length) {
-        // Only first 2 claims, truncated
-        patentContext += `\n\n청구항:\n${data.claims.slice(0, 2).map((c, i) => `${i + 1}. ${c.substring(0, 200)}`).join("\n")}`;
+        const claimCount = isDetailed ? 3 : 2;
+        const claimLen = isDetailed ? 300 : 200;
+        patentContext += `\n\n청구항:\n${data.claims.slice(0, claimCount).map((c, i) => `${i + 1}. ${c.substring(0, claimLen)}`).join("\n")}`;
       }
-      // Skip description entirely to save tokens
+      if (isDetailed && data.description) {
+        patentContext += `\n\n설명(일부):\n${data.description.substring(0, 500)}`;
+      }
     }
 
     const isDetailed = analysisMode === "detailed";
 
-    const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 요약서 작성.
+    const systemPrompt = isDetailed
+      ? `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
+규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 핵심어 **볼드**, 섹션은 ## 사용.
+정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성 필수.
+
+섹션별 상세 지침:
+## 기술 분야 - IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 구체적으로 서술
+## 발명의 요약 - 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과를 논리적으로 연결하여 상세 서술
+## 기술적 특징 - 핵심 구성요소별 역할, 작동원리, 기존 기술 대비 차별점을 구체적으로 분석
+## 시장동향 - 국내외 시장 규모/성장률(KRW 단위), 경쟁기술 현황, 정책/규제 동향. 시장규모 추정근거 명시
+## 농산업 활용 특장점 - 스마트팜/정밀농업 등 구체적 활용 시나리오와 기대 효과 서술
+## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 기술 완성도와 상용화 경로를 정성적으로 설명
+
+각 섹션 5~7문장 상세 서술. 기술적 깊이와 실용적 인사이트를 균형있게 포함.`
+      : `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 요약서 작성.
 규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 핵심어 **볼드**, 섹션은 ## 사용.
 정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성.
 
@@ -145,11 +162,14 @@ serve(async (req) => {
 ## 농산업 활용 특장점 - 구체적 활용 시나리오, 스마트팜/정밀농업 등
 ## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 정성적 설명
 
-${isDetailed ? "각 섹션 4~6문장 상세 서술." : "각 섹션 2~3문장 압축 (기술적 특징만 3~4문장)."}`;
+각 섹션 2~3문장 압축 (기술적 특징만 3~4문장).`;
 
     const userMessage = patentData
       ? `분석:\n${patentContext}`
       : `특허 ${patentNumber} 요약서 작성.`;
+
+    const model = isDetailed ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
+    const maxTokens = isDetailed ? 2200 : 900;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -158,13 +178,13 @@ ${isDetailed ? "각 섹션 4~6문장 상세 서술." : "각 섹션 2~3문장 압
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
         stream: true,
-        max_tokens: isDetailed ? 1500 : 900,
+        max_tokens: maxTokens,
       }),
     });
 

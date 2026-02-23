@@ -110,17 +110,39 @@ serve(async (req) => {
       }
     }
 
-    // Compact patent context
-    const patentContext = `번호: ${data.patentNumber || patentNumber}
+    // Detect if detailed mode (check body for analysisMode)
+    const isDetailedScore = body.analysisMode === "detailed";
+
+    // Patent context - richer for detailed
+    const abstractLimit = isDetailedScore ? 450 : 300;
+    let patentContext = `번호: ${data.patentNumber || patentNumber}
 명칭: ${data.titleKo || data.title || "없음"}
 출원인: ${data.assignee || "없음"}
 IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
 청구항수: ${data.claims?.length || 0}
 경과연수: ${yearsSinceFiling}년
-초록: ${(data.abstract || "없음").substring(0, 300)}`;
+초록: ${(data.abstract || "없음").substring(0, abstractLimit)}`;
+    if (isDetailedScore && data.claims?.length) {
+      patentContext += `\n대표청구항: ${data.claims[0].substring(0, 200)}`;
+    }
 
-    // Compressed system prompt
-    const systemPrompt = `특허 기술사업화 평가 전문가. JSON으로만 응답.
+    // System prompt - richer for detailed mode
+    const systemPrompt = isDetailedScore
+      ? `특허 기술사업화 평가 전문가. JSON으로만 응답.
+
+평가기준(0-100):
+1.기술성(35%): 청구항 깊이/범위, IPC 특이성, 실시예/실험데이터 유무, 선행기술 대비 진보성. 단순개념55~65, 실시예65~78, 실험데이터75~85, 독창+실증85~95
+2.시장성(35%): 목표시장 규모/성장성, 기존기술 대비 차별적 경쟁력, 다분야 범용성, 수요처 다양성
+3.사업성(30%): 기술구현 난이도/소요기간, 라이선싱/기술이전 용이성, 인허가/규제장벽, 투자회수 가능성
+총점=기술×0.35+시장×0.35+사업×0.30 (반올림)
+세항목 최고-최저 차이 8점이상 필수.
+
+TRL(1-9): 개념특허→2~3, 실험데이터→4~5, 시제품→5~6, 상용단계→7~8
+경과보정: 3~5년+1, 6~10년+2, 11년~+2~3 (최대9)
+
+JSON형식:
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"80~120자 상세근거","analysis":"120~180자 종합평가","technologyReason":"50~80자 상세근거","marketReason":"50~80자 상세근거","businessReason":"50~80자 상세근거"}`
+      : `특허 기술사업화 평가 전문가. JSON으로만 응답.
 
 평가기준(0-100):
 1.기술성(35%): 청구항 깊이, IPC 특이성, 실시예 유무. 단순개념55~65, 실시예65~78, 실험데이터75~85, 독창+실증85~95
@@ -135,6 +157,9 @@ TRL(1-9): 개념특허→2~3, 실험데이터→4~5, 시제품→5~6, 상용→7
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"60~80자","analysis":"80~120자","technologyReason":"30자이내","marketReason":"30자이내","businessReason":"30자이내"}`;
 
+    const scoreModel = isDetailedScore ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
+    const scoreMaxTokens = isDetailedScore ? 600 : 400;
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -142,13 +167,13 @@ JSON형식:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: scoreModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: patentContext },
         ],
         temperature: 0.3,
-        max_tokens: 400,
+        max_tokens: scoreMaxTokens,
       }),
     });
 
