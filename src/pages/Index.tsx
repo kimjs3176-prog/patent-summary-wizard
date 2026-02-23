@@ -1,5 +1,6 @@
-import { FileText, GitCompareArrows, Heart } from "lucide-react";
+import { FileText, GitCompareArrows, Heart, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { PatentInput } from "@/components/PatentInput";
 import { PatentSummary } from "@/components/PatentSummary/index";
@@ -127,13 +128,23 @@ const Index = () => {
               </Button>
             </Link>
             {(summary || isLoading) &&
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {updateUrl();reset();}}
-              className="rounded-full text-xs h-8 px-3.5 glossy-card">
-                새로운 검색
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {updateUrl();reset();}}
+                className="rounded-full text-xs h-8 px-3.5 glossy-card">
+                  새로운 검색
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {updateUrl();reset();clearHistory();toast.success("검색 기록이 초기화되었습니다");}}
+                className="rounded-full text-xs h-8 px-3.5 glossy-card gap-1">
+                  <RotateCcw className="w-3 h-3" />
+                  초기화
+              </Button>
+            </>
             }
           </div>
         </div>
