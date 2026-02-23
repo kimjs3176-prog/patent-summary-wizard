@@ -75,12 +75,10 @@ serve(async (req) => {
 
       if (cached?.summary_content) {
         console.log(`[CACHE HIT] ${trimmedPatent} / ${analysisMode}`);
-        // Return cached content as SSE stream
         const content = cached.summary_content;
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
-            // Send in chunks to simulate streaming
             const chunkSize = 50;
             for (let i = 0; i < content.length; i += chunkSize) {
               const chunk = content.slice(i, i + chunkSize);
@@ -110,83 +108,48 @@ serve(async (req) => {
       );
     }
 
+    // Build compact patent context - minimize token usage
     let patentContext = "";
     if (patentData) {
       const data = patentData as PatentData;
-      patentContext = `
-실제 특허 데이터:
-- 등록번호/공개번호: ${data.patentNumber || patentNumber}
-- 발명의 명칭: ${data.title || "정보 없음"}
-- 출원번호: ${data.applicationNumber || "정보 없음"}
-- 출원인/권리자: ${data.assignee || "정보 없음"}
-- 발명자: ${data.inventors?.join(", ") || "정보 없음"}
-- 출원일: ${data.filingDate || "정보 없음"}
-- 공개일/등록일: ${data.publicationDate || "정보 없음"}
-- 기술 분류: ${data.classifications?.join(", ") || "정보 없음"}
+      const parts: string[] = [];
+      parts.push(`번호: ${data.patentNumber || patentNumber}`);
+      if (data.title) parts.push(`명칭: ${data.title}`);
+      if (data.assignee) parts.push(`출원인: ${data.assignee}`);
+      if (data.filingDate) parts.push(`출원일: ${data.filingDate}`);
+      if (data.classifications?.length) parts.push(`IPC: ${data.classifications.slice(0, 3).join(", ")}`);
+      patentContext = parts.join("\n");
 
-초록:
-${data.abstract || "정보 없음"}
-
-${data.claims && data.claims.length > 0 ? `주요 청구항:\n${data.claims.slice(0, 5).map((c, i) => `${i + 1}. ${c}`).join("\n")}` : ""}
-
-${data.description ? `상세 설명 (일부):\n${data.description.substring(0, 2000)}...` : ""}
-`;
+      if (data.abstract) {
+        // Truncate abstract to 500 chars max
+        patentContext += `\n\n초록:\n${data.abstract.substring(0, 500)}`;
+      }
+      if (data.claims?.length) {
+        // Only first 2 claims, truncated
+        patentContext += `\n\n청구항:\n${data.claims.slice(0, 2).map((c, i) => `${i + 1}. ${c.substring(0, 200)}`).join("\n")}`;
+      }
+      // Skip description entirely to save tokens
     }
 
     const isDetailed = analysisMode === "detailed";
 
-    const baseInstructions = `당신은 한국 특허 문서를 심층 분석하는 기술 전문가입니다.
-${patentData ? "아래 제공된 실제 특허 데이터를 기반으로" : "특허 등록번호를 기반으로"} 기술 분석 보고서를 작성하세요.
+    const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 요약서 작성.
+규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 핵심어 **볼드**, 섹션은 ## 사용.
+정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성.
 
-[핵심 원칙]
-1. 분석적 재구성: Abstract/Claims를 그대로 복사하지 말고 핵심 원리를 추출하여 재구성하세요.
-2. 정보 부재 시: "정보 없음"으로 명시하세요.
+섹션:
+## 기술 분야 - IPC 해석, 산업 분야/응용 영역
+## 발명의 요약 - 배경→한계→과제→해결법→원리→효과 순
+## 기술적 특징 - 핵심 구성요소 역할/원리/차별점
+## 시장동향 - 시장 동향/성장 추세, 경쟁 기술, 정책/규제
+## 농산업 활용 특장점 - 구체적 활용 시나리오, 스마트팜/정밀농업 등
+## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 정성적 설명
 
-[서식 규칙]
-- 별도의 제목, 작성일, 분석 전문가 등의 헤더 절대 포함 금지
-- "특허 기본 정보" 섹션 절대 포함 금지
-- 말머리표(-, •), 숫자 번호(1. 2. 3.) 절대 사용 금지
-- 핵심 기술명과 중요 문구는 **볼드** 강조
-- 섹션 제목만 ## 사용, 나머지는 일반 텍스트`;
+${isDetailed ? "각 섹션 4~6문장 상세 서술." : "각 섹션 2~3문장 압축 (기술적 특징만 3~4문장)."}`;
 
-    const sectionDefinitions = `
-## 기술 분야
-IPC/CPC 분류(${patentData?.classifications?.join(", ") || "정보 없음"})를 해석하여 해당 기술의 산업 분야와 핵심 응용 영역을 설명하세요.
-
-## 발명의 요약
-기술 배경 → 종래 기술의 한계 → 핵심 기술 과제 → 해결 접근법 → 기술 원리 → 기대 효과 순으로 요약문을 작성하세요. Abstract를 단순 복사하지 말고 분석적으로 재구성하세요.
-
-## 기술적 특징
-핵심 구성요소별로 역할, 작동 원리, 상호작용 메커니즘, 종래 기술 대비 차별점을 분석하세요. 기술적 인과관계와 설계 의도를 명확히 서술하세요.
-
-## 시장동향
-해당 기술이 속한 산업 분야의 국내외 시장 동향과 성장 추세를 분석하세요. 국내 시장규모를 원화 기준으로 제시할 수 있는 경우에만 규모와 그 추정 근거(출처, 산출 방식 등)를 함께 명시하세요. 신뢰할 만한 시장규모 데이터가 없다면 시장규모 수치는 생략하고 정성적 시장 동향만 서술하세요. 주요 경쟁 기술 동향과 정책·규제 환경 변화, 글로벌 시장 진출 가능성을 분석하세요.
-
-## 농산업 활용 특장점
-실제 산업 현장에서의 구체적 활용 시나리오를 제시하고, 농산업(스마트팜, 정밀농업, 농기계, 유통/저장, 센서/IoT, 친환경 농법 등) 적용 시 특장점을 분석하세요. 직접 관련이 없으면 융합 가능성과 응용 방안을 제시하세요.
-
-## 기술 성숙도 및 상용화 전망
-중요: TRL 숫자(예: "TRL 4")는 절대 언급 금지. 현재 개발 단계를 정성적으로 설명하고, 상용화까지의 핵심 과제, 필요 투자, 예상 기간, 시장 진입 전략을 서술하세요.`;
-
-    const summaryPrompt = `${baseInstructions}
-- 각 섹션은 2~3문장으로 압축 (기술적 특징만 3~4문장 허용)
-- 집약적 분석: 서술형 나열을 지양하고, 핵심 기술 포인트를 압축적으로 전달하세요.
-${sectionDefinitions}
-
-${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오지 못했습니다. 일반적인 형식으로 예시 요약서를 생성합니다."}`;
-
-    const detailedPrompt = `${baseInstructions}
-- 각 섹션은 4~6문장으로 상세하게 서술
-- 상세 분석: 각 섹션에서 충분한 기술적 깊이와 배경을 제공하세요.
-${sectionDefinitions}
-
-${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오지 못했습니다. 일반적인 형식으로 예시 요약서를 생성합니다."}`;
-
-    const systemPrompt = isDetailed ? detailedPrompt : summaryPrompt;
-
-    const userMessage = patentData 
-      ? `다음 특허 데이터를 분석하여 1페이지 요약서를 작성해주세요:\n${patentContext}`
-      : `한국 특허 등록번호 ${patentNumber}에 대한 1페이지 요약서를 작성해주세요.`;
+    const userMessage = patentData
+      ? `분석:\n${patentContext}`
+      : `특허 ${patentNumber} 요약서 작성.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -195,12 +158,13 @@ ${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
         stream: true,
+        max_tokens: isDetailed ? 1500 : 900,
       }),
     });
 
@@ -236,7 +200,6 @@ ${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오
         const { done, value } = await reader.read();
         if (done) {
           controller.close();
-          // Save to cache after stream completes
           if (fullContent.length > 0) {
             try {
               const supabase = getSupabaseClient();
@@ -253,7 +216,6 @@ ${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오
           return;
         }
 
-        // Parse SSE chunks to extract content for caching
         const text = decoder.decode(value, { stream: true });
         const lines = text.split("\n");
         for (const line of lines) {
@@ -262,7 +224,7 @@ ${patentData ? "" : "참고: 특허 데이터베이스에서 정보를 가져오
               const parsed = JSON.parse(line.slice(6));
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) fullContent += content;
-            } catch { /* ignore parse errors */ }
+            } catch { /* ignore */ }
           }
         }
 
