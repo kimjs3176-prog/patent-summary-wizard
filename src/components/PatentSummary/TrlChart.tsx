@@ -55,7 +55,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
         <div className="flex items-center gap-3">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black"
-            style={{ backgroundColor: getTrlColor(estimatedTrl), color: '#fff' }}
+            style={{ backgroundColor: getTrlColor(estimatedTrl), color: '#1a1a1a' }}
           >
             {estimatedTrl}
           </div>
