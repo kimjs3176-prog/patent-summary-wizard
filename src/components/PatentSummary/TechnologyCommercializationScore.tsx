@@ -58,26 +58,26 @@ function SubScoreCard({ label, score, reason }: { label: string; score: number; 
 
   return (
     <div
-      className="relative p-4 rounded-2xl bg-secondary/30 border border-border/50 cursor-pointer transition-all hover:bg-secondary/50"
+      className="relative p-3 sm:p-4 rounded-2xl bg-secondary/30 border border-border/50 cursor-pointer transition-all hover:bg-secondary/50"
       onMouseEnter={() => setShowReason(true)}
       onMouseLeave={() => setShowReason(false)}
       onTouchStart={() => setShowReason((v) => !v)}
     >
-      <p className="text-xs text-muted-foreground mb-2 font-medium">{label}</p>
+      <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 font-medium">{label}</p>
       <div className="flex items-end gap-1">
-        <span className={`text-2xl font-bold ${getScoreColor(score)}`}>
+        <span className={`text-xl sm:text-2xl font-bold ${getScoreColor(score)}`}>
           {score}
         </span>
-        <span className="text-xs text-muted-foreground mb-1">점</span>
+        <span className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">점</span>
       </div>
-      <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
+      <div className="w-full h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden mt-1.5 sm:mt-2">
         <div
           className={`h-full ${getScoreBgColor(score)}`}
           style={{ width: `${score}%` }}
         />
       </div>
-      {showReason && reason && (
-        <div className="absolute left-0 right-0 -bottom-1 translate-y-full z-20 p-3 rounded-xl bg-card border border-border shadow-lg text-xs text-foreground/80 leading-relaxed animate-fade-in">
+      {reason && (
+        <div className={`mt-2 text-[11px] sm:text-xs text-foreground/70 leading-relaxed transition-all ${showReason ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 overflow-hidden sm:max-h-0 sm:opacity-0'}`}>
           {reason}
         </div>
       )}
@@ -136,37 +136,37 @@ export function TechnologyCommercializationScore({
 
   // Show commercialization score section (without TRL)
   return (
-    <div className="mb-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in">
-      <div className="flex items-center gap-3 mb-6 pb-5 border-b border-border/50">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+    <div className="mb-6 glass-effect rounded-3xl p-4 sm:p-6 md:p-8 animate-slide-in">
+      <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 sm:pb-5 border-b border-border/50">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg sm:text-xl">
           ✨
         </div>
         <div>
-          <h4 className="font-bold text-lg text-foreground">AI 기술사업화점수</h4>
-          <p className="text-sm text-muted-foreground">Technology Commercialization Score</p>
+          <h4 className="font-bold text-base sm:text-lg text-foreground">AI 기술사업화점수</h4>
+          <p className="text-xs sm:text-sm text-muted-foreground">Technology Commercialization Score</p>
         </div>
       </div>
 
       {/* Main Score */}
-      <div className="flex items-center gap-6 mb-6">
-        <div className="flex items-end gap-2">
-          <span className={`text-6xl font-black ${getScoreColor(score)}`}>
+      <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div className="flex items-end gap-1.5 sm:gap-2">
+          <span className={`text-4xl sm:text-6xl font-black ${getScoreColor(score)}`}>
             {score}
           </span>
-          <span className="text-muted-foreground text-xl mb-2">/ 100</span>
+          <span className="text-muted-foreground text-base sm:text-xl mb-1 sm:mb-2">/ 100</span>
         </div>
-        <div className="flex flex-col gap-1">
-          <span className={`text-3xl font-black ${getScoreColor(score)}`}>
+        <div className="flex flex-col gap-0.5 sm:gap-1">
+          <span className={`text-2xl sm:text-3xl font-black ${getScoreColor(score)}`}>
             {getGradeLabel(score)}
           </span>
-          <span className={`text-base font-semibold ${getScoreColor(score)}`}>
+          <span className={`text-sm sm:text-base font-semibold ${getScoreColor(score)}`}>
             {getScoreLabel(score)}
           </span>
         </div>
       </div>
 
       {/* Sub-scores */}
-      <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-5">
         {[
           { label: "기술성", score: details.technologyScore, reason: details.technologyReason },
           { label: "시장성", score: details.marketScore, reason: details.marketReason },
@@ -178,9 +178,9 @@ export function TechnologyCommercializationScore({
 
       {/* Analysis */}
       {details.analysis && (
-        <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">AI 분석 의견</p>
-          <p className="text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
+        <div className="p-3 sm:p-4 rounded-2xl bg-secondary/30 border border-border/50">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 font-medium">AI 분석 의견</p>
+          <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
         </div>
       )}
     </div>

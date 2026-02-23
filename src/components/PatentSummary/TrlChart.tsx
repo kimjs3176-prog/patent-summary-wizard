@@ -101,7 +101,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
       </div>
 
       {/* TRL Area Chart */}
-      <div className="h-40 mt-4">
+      <div className="h-32 sm:h-40 mt-4">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
@@ -158,7 +158,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
       </div>
 
       {/* TRL Stage Description */}
-      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center text-[10px] sm:text-xs">
         <div
           className={`p-2 rounded-lg ${
             estimatedTrl <= 3
