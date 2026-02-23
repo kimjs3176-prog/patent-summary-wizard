@@ -158,13 +158,40 @@ serve(async (req) => {
       );
     }
 
+    // Supabase client 초기화
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    // ★ 캐시 확인: patent_data_cache에서 먼저 조회 (30일 이내)
+    const { data: cached } = await sb
+      .from("patent_data_cache")
+      .select("patent_data, related_patents, created_at")
+      .eq("patent_number", trimmedNumber)
+      .maybeSingle();
+
+    if (cached) {
+      const cacheAge = Date.now() - new Date(cached.created_at).getTime();
+      const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30일
+      if (cacheAge < CACHE_TTL) {
+        console.log("Cache HIT for patent:", trimmedNumber);
+        return new Response(
+          JSON.stringify({ success: true, data: cached.patent_data, relatedPatents: cached.related_patents }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else {
+        console.log("Cache EXPIRED for patent:", trimmedNumber);
+        // 만료된 캐시 삭제
+        await sb.from("patent_data_cache").delete().eq("patent_number", trimmedNumber);
+      }
+    } else {
+      console.log("Cache MISS for patent:", trimmedNumber);
+    }
+
     // Try site_settings first, then env
     let KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
     try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-      const sb = createClient(supabaseUrl, supabaseKey);
       const { data: row } = await sb.from("site_settings").select("value").eq("key", "kipris_api_key").maybeSingle();
       if (row?.value) KIPRIS_API_KEY = row.value;
     } catch {}
@@ -177,7 +204,7 @@ serve(async (req) => {
     }
 
     const parsed = parsePatentNumber(patentNumber);
-    console.log("Fetching patent:", patentNumber, "->", parsed);
+    console.log("Fetching patent from KIPRIS:", patentNumber, "->", parsed);
 
     let patentData: PatentData = {
       displayNumber: parsed.displayNumber,
@@ -557,6 +584,19 @@ serve(async (req) => {
     }
     
     console.log("Final related patents count:", relatedPatents.length);
+
+    // ★ 캐시 저장: KIPRIS에서 가져온 데이터를 DB에 저장
+    try {
+      await sb.from("patent_data_cache").upsert({
+        patent_number: trimmedNumber,
+        patent_data: patentData,
+        related_patents: relatedPatents,
+        created_at: new Date().toISOString(),
+      }, { onConflict: "patent_number" });
+      console.log("Patent data cached for:", trimmedNumber);
+    } catch (cacheErr) {
+      console.error("Failed to cache patent data:", cacheErr);
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: patentData, relatedPatents }),

@@ -86,6 +86,30 @@ export type Database = {
         }
         Relationships: []
       }
+      patent_data_cache: {
+        Row: {
+          created_at: string
+          id: string
+          patent_data: Json
+          patent_number: string
+          related_patents: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          patent_data?: Json
+          patent_number: string
+          related_patents?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          patent_data?: Json
+          patent_number?: string
+          related_patents?: Json
+        }
+        Relationships: []
+      }
       patent_score_cache: {
         Row: {
           analysis: string | null
