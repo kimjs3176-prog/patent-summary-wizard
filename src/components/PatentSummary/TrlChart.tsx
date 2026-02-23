@@ -54,8 +54,8 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black text-white"
-            style={{ backgroundColor: getTrlColor(estimatedTrl) }}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black"
+            style={{ backgroundColor: getTrlColor(estimatedTrl), color: '#fff' }}
           >
             {estimatedTrl}
           </div>
@@ -63,7 +63,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
             <p className="text-lg font-bold text-foreground">
               TRL {estimatedTrl} - {currentTrlInfo?.label}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-foreground/60">
               {getTrlStage(estimatedTrl)}
             </p>
           </div>
@@ -162,7 +162,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
         <div
           className={`p-2 rounded-lg ${
             estimatedTrl <= 3
-              ? "bg-destructive/20 text-destructive font-semibold"
+              ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold"
               : "bg-muted/50 text-foreground/60"
           }`}
         >
@@ -172,7 +172,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
         <div
           className={`p-2 rounded-lg ${
             estimatedTrl >= 4 && estimatedTrl <= 6
-              ? "bg-amber-500/20 text-amber-700 dark:text-amber-400 font-semibold"
+              ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-semibold"
               : "bg-muted/50 text-foreground/60"
           }`}
         >
@@ -182,7 +182,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
         <div
           className={`p-2 rounded-lg ${
             estimatedTrl >= 7
-              ? "bg-primary/20 text-primary font-semibold"
+              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-semibold"
               : "bg-muted/50 text-foreground/60"
           }`}
         >
