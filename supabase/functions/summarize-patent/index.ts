@@ -41,6 +41,21 @@ serve(async (req) => {
     }
     const { patentNumber, patentData } = body;
 
+    if (!patentNumber || typeof patentNumber !== "string") {
+      return new Response(
+        JSON.stringify({ error: "특허 등록번호를 입력해주세요." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const trimmedPatent = patentNumber.trim();
+    if (trimmedPatent.length > 50 || !/^[0-9-]+$/.test(trimmedPatent)) {
+      return new Response(
+        JSON.stringify({ error: "유효하지 않은 특허 번호 형식입니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Check cache first
     try {
       const supabase = getSupabaseClient();
@@ -122,6 +137,10 @@ serve(async (req) => {
 ## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 기술 완성도와 상용화 경로를 정성적으로 설명
 
 각 섹션 5~7문장 상세 서술. 기술적 깊이와 실용적 인사이트를 균형있게 포함.`;
+
+    const userMessage = patentData
+      ? `분석:\n${patentContext}`
+      : `특허 ${patentNumber} 요약서 작성.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
