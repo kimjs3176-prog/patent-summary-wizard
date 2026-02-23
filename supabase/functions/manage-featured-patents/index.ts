@@ -90,8 +90,8 @@ serve(async (req) => {
       });
       const fetchResult = await fetchRes.json();
 
-      if (fetchResult.success && fetchResult.patentData) {
-        const pd = fetchResult.patentData;
+      if (fetchResult.success && fetchResult.data) {
+        const pd = fetchResult.data;
         return new Response(
           JSON.stringify({
             success: true,
