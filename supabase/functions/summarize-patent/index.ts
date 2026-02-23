@@ -108,6 +108,8 @@ serve(async (req) => {
       );
     }
 
+    const isDetailed = analysisMode === "detailed";
+
     // Build compact patent context - minimize token usage
     let patentContext = "";
     if (patentData) {
@@ -133,8 +135,6 @@ serve(async (req) => {
         patentContext += `\n\n설명(일부):\n${data.description.substring(0, 500)}`;
       }
     }
-
-    const isDetailed = analysisMode === "detailed";
 
     const systemPrompt = isDetailed
       ? `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
