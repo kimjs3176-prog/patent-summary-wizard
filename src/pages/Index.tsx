@@ -16,12 +16,12 @@ import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const Index = () => {
   const {
     isLoading, isFetching, summary, currentPatent, patentData,
-    relatedPatents, generateSummary, regenerateSummaryWithMode,
+    relatedPatents, generateSummary,
     loadFromHistory, reset
   } = usePatentSummary();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
@@ -30,7 +30,7 @@ const Index = () => {
 
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
-  const [analysisMode, setAnalysisMode] = useState<"summary" | "detailed">("detailed");
+  
   const initialLoadDone = useRef(false);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ const Index = () => {
     setKeywordResults([]);
     setSearchedKeyword("");
     updateUrl(patentNumber);
-    const result = await generateSummary(patentNumber, analysisMode);
+    const result = await generateSummary(patentNumber);
     if (result && result.patentData) {
       addToHistory({
         patentNumber,
@@ -92,42 +92,36 @@ const Index = () => {
     setSearchedKeyword("");
   };
 
-  const handleSwitchMode = useCallback((mode: "summary" | "detailed") => {
-    if (mode === analysisMode) return;
-    setAnalysisMode(mode);
-    regenerateSummaryWithMode(mode);
-  }, [analysisMode, regenerateSummaryWithMode]);
-
 
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Ambient background blobs */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[hsl(174_60%_90%/0.2)] blur-[100px]" />
-        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-[hsl(210_80%_92%/0.15)] blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-[hsl(174_40%_85%/0.1)] blur-[80px]" />
+        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-[hsl(174_60%_90%/0.18)] blur-[120px]" />
+        <div className="absolute -bottom-32 -right-32 w-[450px] h-[450px] rounded-full bg-[hsl(210_80%_92%/0.12)] blur-[120px]" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[350px] h-[350px] rounded-full bg-[hsl(174_40%_85%/0.08)] blur-[100px]" />
       </div>
 
       {/* Header */}
-      <header className="w-full bg-background/60 backdrop-blur-xl sticky top-0 z-50 border-b border-border/30">
-        <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center shadow-md">
-              <FileText className="w-4.5 h-4.5 text-background" />
+      <header className="w-full bg-background/70 backdrop-blur-2xl sticky top-0 z-50 border-b border-border/20">
+        <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center shadow-sm">
+              <FileText className="w-4 h-4 text-background" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-semibold text-sm md:text-base text-foreground tracking-tight">
+              <h1 className="font-semibold text-sm text-foreground tracking-tight leading-tight">
                 {settings.header_title}
               </h1>
-              <p className="text-[10px] md:text-xs text-muted-foreground hidden sm:block">
+              <p className="text-[10px] text-muted-foreground hidden sm:block leading-tight">
                 {settings.header_subtitle}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Link to="/compare">
-              <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5">
+              <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-3.5 glossy-card gap-1.5">
                 <Heart className="w-3.5 h-3.5" />
                 관심특허{favorites.length > 0 ? ` (${favorites.length})` : ""}
               </Button>
@@ -136,8 +130,8 @@ const Index = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {updateUrl();reset();setAnalysisMode("detailed");}}
-              className="rounded-full text-xs h-8 px-4 glossy-card">
+              onClick={() => {updateUrl();reset();}}
+              className="rounded-full text-xs h-8 px-3.5 glossy-card">
                 새로운 검색
               </Button>
             }
@@ -145,16 +139,16 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 md:px-6 py-10 md:py-16 relative z-10">
+      <main className="container mx-auto px-4 md:px-6 py-8 md:py-14 relative z-10">
         {!summary && !isLoading ?
         <>
             {/* Hero */}
-            <section className="text-center max-w-3xl mx-auto mb-12 md:mb-16 animate-fade-down">
-              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 md:mb-5 leading-[1.15] tracking-tight">
+            <section className="text-center max-w-2xl mx-auto mb-10 md:mb-14 animate-fade-down">
+              <h2 className="text-3xl md:text-[2.75rem] lg:text-5xl font-bold text-foreground mb-3 md:mb-4 leading-[1.12] tracking-tight">
                 {settings.hero_title}<br />
                 <span className="gradient-text">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="md:text-lg text-muted-foreground font-normal leading-relaxed max-w-md mx-auto text-sm">
+              <p className="text-sm md:text-base text-muted-foreground font-normal leading-relaxed max-w-md mx-auto">
                 {settings.hero_description}
               </p>
             </section>
@@ -217,7 +211,7 @@ const Index = () => {
           }
 
             <section className="mb-8">
-              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} onSwitchMode={handleSwitchMode} currentMode={analysisMode} />
+              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} />
             </section>
 
             {isLoading && !isFetching &&

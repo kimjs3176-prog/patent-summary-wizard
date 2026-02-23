@@ -10,7 +10,7 @@ export function usePatentSummary() {
   const [patentData, setPatentData] = useState<PatentData | null>(null);
   const [relatedPatents, setRelatedPatents] = useState<RelatedPatent[]>([]);
 
-  const generateSummary = useCallback(async (patentNumber: string, analysisMode: "summary" | "detailed" = "detailed") => {
+  const generateSummary = useCallback(async (patentNumber: string) => {
     setIsLoading(true);
     setIsFetching(true);
     setSummary("");
@@ -73,7 +73,6 @@ export function usePatentSummary() {
           body: JSON.stringify({ 
             patentNumber,
             patentData: fetchedPatentData,
-            analysisMode,
           }),
         }
       );
@@ -157,82 +156,7 @@ export function usePatentSummary() {
     setCurrentPatent(historyItem.patentNumber);
   }, []);
 
-  const regenerateSummaryWithMode = useCallback(async (mode: "summary" | "detailed") => {
-    if (!currentPatent || !patentData) return;
-    setIsLoading(true);
-    setSummary("");
 
-    try {
-      toast.info(mode === "detailed" ? "상세 분석을 생성 중..." : "요약 분석을 생성 중...");
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-patent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ 
-            patentNumber: currentPatent,
-            patentData,
-            analysisMode: mode,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 402) {
-          throw new Error("AI 서비스 크레딧이 일시적으로 소진되었습니다. 잠시 후 다시 시도해 주세요.");
-        }
-        throw new Error(errorData.error || "요약서 생성에 실패했습니다.");
-      }
-
-      if (!response.body) throw new Error("스트리밍 응답을 받을 수 없습니다.");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let fullContent = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              fullContent += content;
-              setSummary(fullContent);
-            }
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
-      }
-
-      toast.success("분석이 완료되었습니다!");
-    } catch (error) {
-      console.error("Regenerate summary error:", error);
-      toast.error(error instanceof Error ? error.message : "오류가 발생했습니다.");
-      setSummary("");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPatent, patentData]);
 
   const reset = useCallback(() => {
     setSummary("");
@@ -249,7 +173,6 @@ export function usePatentSummary() {
     patentData,
     relatedPatents,
     generateSummary,
-    regenerateSummaryWithMode,
     loadFromHistory,
     reset,
   };
