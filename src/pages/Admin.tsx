@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface FeaturedPatent {
@@ -86,6 +86,27 @@ const Admin = () => {
   const [cacheLoading, setCacheLoading] = useState(false);
   const [cachePage, setCachePage] = useState(0);
   const [selectedCacheIds, setSelectedCacheIds] = useState<Set<string>>(new Set());
+
+  // Summary customization state
+  const DEFAULT_SECTION_TITLES: Record<string, string> = {
+    "기술 분야": "기술 분야",
+    "발명의 요약": "발명의 요약",
+    "기술적 특징": "기술적 특징",
+    "시장동향": "시장동향",
+    "농산업 활용 특장점": "농산업 활용 특장점",
+    "기술 성숙도 및 상용화 전망": "기술 성숙도 및 상용화 전망",
+  };
+  const DEFAULT_VISIBLE_SECTIONS: Record<string, boolean> = {
+    commercialization: true,
+    trl: true,
+    claims: true,
+    relatedPatents: true,
+  };
+  const [summaryTitles, setSummaryTitles] = useState<Record<string, string>>(DEFAULT_SECTION_TITLES);
+  const [summaryDisclaimer, setSummaryDisclaimer] = useState("※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음");
+  const [summaryVisibleSections, setSummaryVisibleSections] = useState<Record<string, boolean>>(DEFAULT_VISIBLE_SECTIONS);
+  const [summaryAiPromptExtra, setSummaryAiPromptExtra] = useState("");
+  const [isSavingSummarySettings, setIsSavingSummarySettings] = useState(false);
   const apiCall = async (action: string, data?: Record<string, unknown>) => {
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-featured-patents`,
@@ -122,6 +143,19 @@ const Admin = () => {
             const vids = JSON.parse(settingsResult.settings.tech_videos);
             if (Array.isArray(vids)) setTechVideos(vids);
           } catch {}
+        }
+        // Load summary customization settings
+        if (settingsResult.settings?.summary_section_titles) {
+          try { setSummaryTitles(JSON.parse(settingsResult.settings.summary_section_titles)); } catch {}
+        }
+        if (settingsResult.settings?.summary_disclaimer) {
+          setSummaryDisclaimer(settingsResult.settings.summary_disclaimer);
+        }
+        if (settingsResult.settings?.summary_visible_sections) {
+          try { setSummaryVisibleSections(JSON.parse(settingsResult.settings.summary_visible_sections)); } catch {}
+        }
+        if (settingsResult.settings?.summary_ai_prompt_extra) {
+          setSummaryAiPromptExtra(settingsResult.settings.summary_ai_prompt_extra);
         }
       }
     } else {
@@ -272,6 +306,23 @@ const Admin = () => {
     setCacheLoading(false);
   };
 
+  const handleSaveSummarySettings = async () => {
+    setIsSavingSummarySettings(true);
+    const settingsToSave: Record<string, string> = {
+      summary_section_titles: JSON.stringify(summaryTitles),
+      summary_disclaimer: summaryDisclaimer,
+      summary_visible_sections: JSON.stringify(summaryVisibleSections),
+      summary_ai_prompt_extra: summaryAiPromptExtra,
+    };
+    const result = await apiCall("update-settings", settingsToSave);
+    if (result.success) {
+      toast.success("요약서 설정이 저장되었습니다.");
+    } else {
+      toast.error("설정 저장 실패");
+    }
+    setIsSavingSummarySettings(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -318,6 +369,9 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 gap-1.5">
               <Settings className="w-3.5 h-3.5" /> 홈페이지 관리
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="flex-1 gap-1.5">
+              <FileText className="w-3.5 h-3.5" /> 요약서 관리
             </TabsTrigger>
             <TabsTrigger value="cache" className="flex-1 gap-1.5" onClick={() => loadCache(0)}>
               <Database className="w-3.5 h-3.5" /> 캐시 관리
@@ -618,6 +672,86 @@ const Admin = () => {
               }} disabled={isSavingSettings} className="w-full mt-4">
                 {isSavingSettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 설정 저장
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* ===== Summary Customization Tab ===== */}
+          <TabsContent value="summary">
+            <div className="space-y-6">
+              <h2 className="font-semibold text-sm">요약서 레이아웃 · 텍스트 관리</h2>
+
+              {/* Section Titles */}
+              <div>
+                <h3 className="font-semibold text-sm mb-3">섹션 제목 수정</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">AI 요약서의 각 섹션 제목을 변경합니다</p>
+                <div className="space-y-2">
+                  {Object.entries(summaryTitles).map(([key, val]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-48 flex-shrink-0 truncate" title={key}>{key}</span>
+                      <Input
+                        value={val}
+                        onChange={e => setSummaryTitles(prev => ({ ...prev, [key]: e.target.value }))}
+                        placeholder={key}
+                        className="flex-1"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Disclaimer */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">면책 조항 문구</h3>
+                <Input
+                  value={summaryDisclaimer}
+                  onChange={e => setSummaryDisclaimer(e.target.value)}
+                  placeholder="※ 본 분석은..."
+                />
+              </div>
+
+              {/* Section Visibility */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">섹션 표시/숨김</h3>
+                <div className="space-y-3">
+                  {[
+                    { key: "commercialization", label: "기술사업화 점수", desc: "종합 점수, 기술성·시장성·사업성 카드" },
+                    { key: "trl", label: "TRL 차트", desc: "기술 성숙도(TRL) 차트 섹션" },
+                    { key: "claims", label: "청구항", desc: "특허 청구항 접기/펼치기 섹션" },
+                    { key: "relatedPatents", label: "관련 특허", desc: "유사 특허 추천 섹션" },
+                  ].map(item => {
+                    const isOn = summaryVisibleSections[item.key] !== false;
+                    return (
+                      <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/30">
+                        <div>
+                          <p className="text-sm font-medium">{item.label}</p>
+                          <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                        </div>
+                        <button onClick={() => setSummaryVisibleSections(prev => ({ ...prev, [item.key]: !isOn }))} className="flex-shrink-0">
+                          {isOn ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted-foreground" />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* AI Prompt Extra */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">AI 요약 프롬프트 커스터마이징</h3>
+                <p className="text-[10px] text-muted-foreground mb-2">기본 프롬프트에 추가할 지시사항을 입력하세요. 분석 관점이나 강조할 내용을 지정할 수 있습니다.</p>
+                <Textarea
+                  value={summaryAiPromptExtra}
+                  onChange={e => setSummaryAiPromptExtra(e.target.value)}
+                  placeholder="예: 바이오 분야 특허는 임상 단계를 포함하여 분석해 주세요. 시장 규모 분석 시 글로벌 시장 데이터를 우선적으로 활용하세요."
+                  rows={5}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1.5">⚠️ 프롬프트 변경 후 기존 AI 캐시를 삭제해야 새 프롬프트가 적용됩니다</p>
+              </div>
+
+              <Button onClick={handleSaveSummarySettings} disabled={isSavingSummarySettings} className="w-full mt-4">
+                {isSavingSummarySettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                요약서 설정 저장
               </Button>
             </div>
           </TabsContent>

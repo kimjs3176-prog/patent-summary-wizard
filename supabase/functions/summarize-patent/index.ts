@@ -124,6 +124,22 @@ serve(async (req) => {
       }
     }
 
+    // Read custom prompt additions from site_settings
+    let customPromptExtra = "";
+    try {
+      const supabase = getSupabaseClient();
+      const { data: promptSetting } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "summary_ai_prompt_extra")
+        .maybeSingle();
+      if (promptSetting?.value) {
+        customPromptExtra = promptSetting.value;
+      }
+    } catch (e) {
+      console.error("Failed to read custom prompt setting:", e);
+    }
+
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
 규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 섹션은 ## 사용.
 정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성 필수.
@@ -142,7 +158,7 @@ serve(async (req) => {
 ## 농산업 활용 특장점 - 스마트팜/정밀농업 등 구체적 활용 시나리오와 기대 효과 서술
 ## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 기술 완성도와 상용화 경로를 정성적으로 설명
 
-각 섹션 5~7문장 상세 서술. 기술적 깊이와 실용적 인사이트를 균형있게 포함.`;
+각 섹션 5~7문장 상세 서술. 기술적 깊이와 실용적 인사이트를 균형있게 포함.${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
 
     const userMessage = patentData
       ? `분석:\n${patentContext}`
