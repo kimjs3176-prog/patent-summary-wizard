@@ -17,7 +17,7 @@ import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 const Index = () => {
   const {
@@ -28,6 +28,10 @@ const Index = () => {
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { settings } = useSiteSettings();
   const { favorites } = useFavoritePatents();
+
+  const homepageVisible = useMemo(() => {
+    try { return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {}; } catch { return {}; }
+  }, [settings.homepage_visible_sections]);
 
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
@@ -170,9 +174,11 @@ const Index = () => {
                 <div className="w-full flex-1 max-w-2xl mx-auto">
                   <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} />
                 </div>
-                <div className="w-full lg:w-auto lg:flex-shrink-0">
-                  <PopularSearches onPatentSelect={handleSubmit} />
-                </div>
+                {homepageVisible.popularSearches !== false && (
+                  <div className="w-full lg:w-auto lg:flex-shrink-0">
+                    <PopularSearches onPatentSelect={handleSubmit} />
+                  </div>
+                )}
               </div>
               {history.length > 0 && keywordResults.length === 0 &&
             <div className="w-full max-w-5xl mx-auto mt-5">
@@ -188,27 +194,34 @@ const Index = () => {
               </section>
           }
 
-            <FeaturedPatents
-            onPatentSelect={handleSubmit}
-            sectionTitle={settings.featured_section_title}
-            sectionSubtitle={settings.featured_section_subtitle} />
+            {homepageVisible.featuredPatents !== false && (
+              <FeaturedPatents
+                onPatentSelect={handleSubmit}
+                sectionTitle={settings.featured_section_title}
+                sectionSubtitle={settings.featured_section_subtitle} />
+            )}
 
             <div className="max-w-5xl mx-auto mt-10 md:mt-14 mb-2">
               <Separator className="bg-border/60" />
             </div>
 
-            <TechVideoSection videos={(() => {
-            try {
-              const parsed = JSON.parse(settings.tech_videos || "[]");
-              return Array.isArray(parsed) ? parsed : [];
-            } catch {return [];}
-          })()} />
+            {homepageVisible.techVideos !== false && (
+              <TechVideoSection videos={(() => {
+                try {
+                  const parsed = JSON.parse(settings.tech_videos || "[]");
+                  return Array.isArray(parsed) ? parsed : [];
+                } catch {return [];}
+              })()} />
+            )}
 
-            <div className="max-w-5xl mx-auto mt-2 mb-2">
-              <Separator className="bg-border/60" />
-            </div>
-
-            <TechTransferGuide />
+            {homepageVisible.techTransferGuide !== false && (
+              <>
+                <div className="max-w-5xl mx-auto mt-2 mb-2">
+                  <Separator className="bg-border/60" />
+                </div>
+                <TechTransferGuide />
+              </>
+            )}
           </> :
 
         <>

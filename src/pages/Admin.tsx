@@ -64,7 +64,6 @@ const SETTINGS_FIELDS = [
   { key: "featured_section_subtitle", label: "이달의 특허 섹션 부제목", placeholder: "농식품 분야 기술이전 추천 특허" },
   { key: "footer_line1", label: "푸터 1줄", placeholder: "본 서비스는..." },
   { key: "footer_line2", label: "푸터 2줄", placeholder: "KIPRIS 데이터 연동..." },
-  { key: "primary_color", label: "메인 컬러 (HEX)", placeholder: "#00aba2" },
   { key: "kipris_api_key", label: "KIPRIS API 키", placeholder: "API 키를 입력하세요", isSecret: true },
 ];
 
@@ -87,6 +86,15 @@ const Admin = () => {
   const [cachePage, setCachePage] = useState(0);
   const [selectedCacheIds, setSelectedCacheIds] = useState<Set<string>>(new Set());
 
+  // Homepage section visibility
+  const DEFAULT_HOMEPAGE_SECTIONS: Record<string, boolean> = {
+    featuredPatents: true,
+    techVideos: true,
+    techTransferGuide: true,
+    popularSearches: true,
+  };
+  const [homepageVisibleSections, setHomepageVisibleSections] = useState<Record<string, boolean>>(DEFAULT_HOMEPAGE_SECTIONS);
+
   // Summary customization state
   const DEFAULT_SECTION_TITLES: Record<string, string> = {
     "기술 분야": "기술 분야",
@@ -102,11 +110,27 @@ const Admin = () => {
     claims: true,
     relatedPatents: true,
   };
+  const DEFAULT_CARD_ICONS: Record<string, string> = {
+    patentInfo: "📄",
+    aiSummary: "🤖",
+    claims: "📑",
+  };
+  const DEFAULT_INFO_LABELS: Record<string, string> = {
+    registrationNumber: "등록번호",
+    applicationNumber: "출원번호",
+    assignee: "출원인",
+    filingDate: "출원일",
+    publicationDate: "등록일",
+    ipc: "IPC",
+  };
   const [summaryTitles, setSummaryTitles] = useState<Record<string, string>>(DEFAULT_SECTION_TITLES);
   const [summaryDisclaimer, setSummaryDisclaimer] = useState("※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음");
   const [summaryVisibleSections, setSummaryVisibleSections] = useState<Record<string, boolean>>(DEFAULT_VISIBLE_SECTIONS);
   const [summaryAiPromptExtra, setSummaryAiPromptExtra] = useState("");
+  const [summaryCardIcons, setSummaryCardIcons] = useState<Record<string, string>>(DEFAULT_CARD_ICONS);
+  const [summaryInfoLabels, setSummaryInfoLabels] = useState<Record<string, string>>(DEFAULT_INFO_LABELS);
   const [isSavingSummarySettings, setIsSavingSummarySettings] = useState(false);
+  const [newSectionKey, setNewSectionKey] = useState("");
   const apiCall = async (action: string, data?: Record<string, unknown>) => {
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-featured-patents`,
@@ -156,6 +180,15 @@ const Admin = () => {
         }
         if (settingsResult.settings?.summary_ai_prompt_extra) {
           setSummaryAiPromptExtra(settingsResult.settings.summary_ai_prompt_extra);
+        }
+        if (settingsResult.settings?.summary_card_icons) {
+          try { setSummaryCardIcons(JSON.parse(settingsResult.settings.summary_card_icons)); } catch {}
+        }
+        if (settingsResult.settings?.summary_info_labels) {
+          try { setSummaryInfoLabels(JSON.parse(settingsResult.settings.summary_info_labels)); } catch {}
+        }
+        if (settingsResult.settings?.homepage_visible_sections) {
+          try { setHomepageVisibleSections(JSON.parse(settingsResult.settings.homepage_visible_sections)); } catch {}
         }
       }
     } else {
@@ -257,7 +290,12 @@ const Admin = () => {
 
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
-    const settingsToSave = { ...siteSettings, tech_categories: JSON.stringify(categoryOptions), tech_videos: JSON.stringify(techVideos) };
+    const settingsToSave = {
+      ...siteSettings,
+      tech_categories: JSON.stringify(categoryOptions),
+      tech_videos: JSON.stringify(techVideos),
+      homepage_visible_sections: JSON.stringify(homepageVisibleSections),
+    };
     const result = await apiCall("update-settings", settingsToSave);
     if (result.success) {
       toast.success("홈페이지 설정이 저장되었습니다.");
@@ -313,6 +351,8 @@ const Admin = () => {
       summary_disclaimer: summaryDisclaimer,
       summary_visible_sections: JSON.stringify(summaryVisibleSections),
       summary_ai_prompt_extra: summaryAiPromptExtra,
+      summary_card_icons: JSON.stringify(summaryCardIcons),
+      summary_info_labels: JSON.stringify(summaryInfoLabels),
     };
     const result = await apiCall("update-settings", settingsToSave);
     if (result.success) {
@@ -534,29 +574,43 @@ const Admin = () => {
               {SETTINGS_FIELDS.map(field => (
                 <div key={field.key}>
                   <label className="text-xs text-muted-foreground mb-1 block">{field.label}</label>
-                  {field.key === "primary_color" ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={siteSettings[field.key] || ""}
-                        onChange={e => setSiteSettings(s => ({ ...s, [field.key]: e.target.value }))}
-                        placeholder={field.placeholder}
-                        className="flex-1"
-                      />
-                      <div
-                        className="w-8 h-8 rounded-lg border border-border"
-                        style={{ backgroundColor: siteSettings[field.key] || field.placeholder }}
-                      />
-                    </div>
-                  ) : (
-                    <Input
-                      type={(field as any).isSecret ? "password" : "text"}
-                      value={siteSettings[field.key] || ""}
-                      onChange={e => setSiteSettings(s => ({ ...s, [field.key]: e.target.value }))}
-                      placeholder={field.placeholder}
-                    />
-                  )}
+                  <Input
+                    type={(field as any).isSecret ? "password" : "text"}
+                    value={siteSettings[field.key] || ""}
+                    onChange={e => setSiteSettings(s => ({ ...s, [field.key]: e.target.value }))}
+                    placeholder={field.placeholder}
+                  />
                 </div>
               ))}
+
+              {/* Color Settings */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">🎨 컬러 설정</h3>
+                <div className="space-y-3">
+                  {[
+                    { key: "primary_color", label: "메인 컬러 (히어로 그라데이션)", placeholder: "#00aba2" },
+                    { key: "accent_color", label: "액센트 컬러 (강조 요소)", placeholder: "#3b82f6" },
+                  ].map(color => (
+                    <div key={color.key}>
+                      <label className="text-xs text-muted-foreground mb-1 block">{color.label}</label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={siteSettings[color.key] || ""}
+                          onChange={e => setSiteSettings(s => ({ ...s, [color.key]: e.target.value }))}
+                          placeholder={color.placeholder}
+                          className="flex-1"
+                        />
+                        <input
+                          type="color"
+                          value={siteSettings[color.key] || color.placeholder}
+                          onChange={e => setSiteSettings(s => ({ ...s, [color.key]: e.target.value }))}
+                          className="w-10 h-10 rounded-lg border border-border cursor-pointer p-0.5"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* Feature Toggles */}
               <div className="pt-4 border-t border-border/50">
@@ -577,17 +631,38 @@ const Admin = () => {
                           onClick={() => setSiteSettings(s => ({ ...s, [feat.key]: isOn ? "false" : "true" }))}
                           className="flex-shrink-0"
                         >
-                          {isOn ? (
-                            <ToggleRight className="w-8 h-8 text-primary" />
-                          ) : (
-                            <ToggleLeft className="w-8 h-8 text-muted-foreground" />
-                          )}
+                          {isOn ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted-foreground" />}
                         </button>
                       </div>
                     );
                   })}
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1.5">변경 후 아래 '설정 저장'을 눌러야 반영됩니다</p>
+              </div>
+
+              {/* Homepage Section Visibility */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">홈페이지 섹션 표시/숨김</h3>
+                <div className="space-y-3">
+                  {[
+                    { key: "featuredPatents", label: "이달의 특허", desc: "기술이전 추천 특허 카드 섹션" },
+                    { key: "techVideos", label: "기술소개 영상", desc: "유튜브 영상 카드 섹션" },
+                    { key: "techTransferGuide", label: "기술이전 가이드", desc: "기술이전 절차 안내 섹션" },
+                    { key: "popularSearches", label: "인기 검색 특허", desc: "자주 검색되는 특허 버튼" },
+                  ].map(item => {
+                    const isOn = homepageVisibleSections[item.key] !== false;
+                    return (
+                      <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/30">
+                        <div>
+                          <p className="text-sm font-medium">{item.label}</p>
+                          <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                        </div>
+                        <button onClick={() => setHomepageVisibleSections(prev => ({ ...prev, [item.key]: !isOn }))} className="flex-shrink-0">
+                          {isOn ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted-foreground" />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Category Management */}
@@ -597,41 +672,27 @@ const Admin = () => {
                   {categoryOptions.map((cat, idx) => (
                     <div key={idx} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-secondary border border-border/50">
                       <span>{cat}</span>
-                      <button
-                        onClick={() => setCategoryOptions(prev => prev.filter((_, i) => i !== idx))}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
+                      <button onClick={() => setCategoryOptions(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-destructive">
                         <X className="w-3 h-3" />
                       </button>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <Input
-                    placeholder="새 카테고리명 입력"
-                    id="new-category-input"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value.trim();
-                        if (val && !categoryOptions.includes(val)) {
-                          setCategoryOptions(prev => [...prev, val]);
-                          (e.target as HTMLInputElement).value = "";
-                        }
-                      }
-                    }}
-                  />
+                  <Input placeholder="새 카테고리명 입력" id="new-category-input" onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value.trim();
+                      if (val && !categoryOptions.includes(val)) { setCategoryOptions(prev => [...prev, val]); (e.target as HTMLInputElement).value = ""; }
+                    }
+                  }} />
                   <Button variant="outline" size="sm" onClick={() => {
                     const input = document.getElementById("new-category-input") as HTMLInputElement;
                     const val = input?.value.trim();
-                    if (val && !categoryOptions.includes(val)) {
-                      setCategoryOptions(prev => [...prev, val]);
-                      input.value = "";
-                    }
+                    if (val && !categoryOptions.includes(val)) { setCategoryOptions(prev => [...prev, val]); input.value = ""; }
                   }}>
                     <Plus className="w-3.5 h-3.5 mr-1" /> 추가
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1.5">카테고리를 수정하면 아래 '설정 저장'을 눌러야 반영됩니다</p>
               </div>
 
               {/* Video Management */}
@@ -640,21 +701,9 @@ const Admin = () => {
                 <div className="space-y-2 mb-3">
                   {techVideos.map((v, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <Input
-                        placeholder="영상 제목"
-                        value={v.title}
-                        onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, title: e.target.value } : item))}
-                        className="flex-1"
-                      />
-                      <Input
-                        placeholder="YouTube URL"
-                        value={v.url}
-                        onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, url: e.target.value } : item))}
-                        className="flex-1"
-                      />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive" onClick={() => setTechVideos(prev => prev.filter((_, i) => i !== idx))}>
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
+                      <Input placeholder="영상 제목" value={v.title} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, title: e.target.value } : item))} className="flex-1" />
+                      <Input placeholder="YouTube URL" value={v.url} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, url: e.target.value } : item))} className="flex-1" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive" onClick={() => setTechVideos(prev => prev.filter((_, i) => i !== idx))}><X className="w-3.5 h-3.5" /></Button>
                     </div>
                   ))}
                 </div>
@@ -663,7 +712,6 @@ const Admin = () => {
                     <Plus className="w-3.5 h-3.5 mr-1" /> 영상 추가
                   </Button>
                 )}
-                <p className="text-[10px] text-muted-foreground mt-1.5">유튜브 링크를 입력하면 메인 페이지에 썸네일 카드로 표시됩니다</p>
               </div>
 
               <Button onClick={() => {
@@ -681,18 +729,98 @@ const Admin = () => {
             <div className="space-y-6">
               <h2 className="font-semibold text-sm">요약서 레이아웃 · 텍스트 관리</h2>
 
-              {/* Section Titles */}
+              {/* Section Titles with Add/Delete */}
               <div>
-                <h3 className="font-semibold text-sm mb-3">섹션 제목 수정</h3>
-                <p className="text-[10px] text-muted-foreground mb-3">AI 요약서의 각 섹션 제목을 변경합니다</p>
+                <h3 className="font-semibold text-sm mb-3">섹션 제목 수정 · 추가/삭제</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">AI 요약서의 각 섹션 제목을 변경하거나 새 섹션을 추가할 수 있습니다</p>
                 <div className="space-y-2">
                   {Object.entries(summaryTitles).map(([key, val]) => (
                     <div key={key} className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground w-48 flex-shrink-0 truncate" title={key}>{key}</span>
+                      <span className="text-xs text-muted-foreground w-40 flex-shrink-0 truncate" title={key}>{key}</span>
                       <Input
                         value={val}
                         onChange={e => setSummaryTitles(prev => ({ ...prev, [key]: e.target.value }))}
                         placeholder={key}
+                        className="flex-1"
+                      />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive" onClick={() => {
+                        setSummaryTitles(prev => {
+                          const next = { ...prev };
+                          delete next[key];
+                          return next;
+                        });
+                      }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Input
+                    placeholder="새 섹션 원본 제목 (예: 지식재산 전략)"
+                    value={newSectionKey}
+                    onChange={e => setNewSectionKey(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && newSectionKey.trim()) {
+                        setSummaryTitles(prev => ({ ...prev, [newSectionKey.trim()]: newSectionKey.trim() }));
+                        setNewSectionKey("");
+                      }
+                    }}
+                  />
+                  <Button variant="outline" size="sm" onClick={() => {
+                    if (newSectionKey.trim()) {
+                      setSummaryTitles(prev => ({ ...prev, [newSectionKey.trim()]: newSectionKey.trim() }));
+                      setNewSectionKey("");
+                    }
+                  }}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> 추가
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5">왼쪽은 AI가 생성하는 원래 제목, 오른쪽은 표시할 제목입니다</p>
+              </div>
+
+              {/* Card Icons */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">카드 아이콘 (이모지)</h3>
+                <div className="space-y-2">
+                  {[
+                    { key: "patentInfo", label: "특허 정보 카드" },
+                    { key: "aiSummary", label: "AI 요약 카드" },
+                    { key: "claims", label: "청구항 카드" },
+                  ].map(item => (
+                    <div key={item.key} className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-40 flex-shrink-0">{item.label}</span>
+                      <Input
+                        value={summaryCardIcons[item.key] || ""}
+                        onChange={e => setSummaryCardIcons(prev => ({ ...prev, [item.key]: e.target.value }))}
+                        placeholder="이모지 입력"
+                        className="w-20"
+                      />
+                      <span className="text-2xl">{summaryCardIcons[item.key] || ""}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Patent Info Labels */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">특허 정보 라벨 수정</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">특허 정보 카드에 표시되는 라벨 텍스트를 변경합니다</p>
+                <div className="space-y-2">
+                  {[
+                    { key: "registrationNumber", label: "등록번호" },
+                    { key: "applicationNumber", label: "출원번호" },
+                    { key: "assignee", label: "출원인" },
+                    { key: "filingDate", label: "출원일" },
+                    { key: "publicationDate", label: "등록일/공개일" },
+                    { key: "ipc", label: "IPC" },
+                  ].map(item => (
+                    <div key={item.key} className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-40 flex-shrink-0">{item.label}</span>
+                      <Input
+                        value={summaryInfoLabels[item.key] || ""}
+                        onChange={e => setSummaryInfoLabels(prev => ({ ...prev, [item.key]: e.target.value }))}
+                        placeholder={item.label}
                         className="flex-1"
                       />
                     </div>
@@ -739,11 +867,11 @@ const Admin = () => {
               {/* AI Prompt Extra */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">AI 요약 프롬프트 커스터마이징</h3>
-                <p className="text-[10px] text-muted-foreground mb-2">기본 프롬프트에 추가할 지시사항을 입력하세요. 분석 관점이나 강조할 내용을 지정할 수 있습니다.</p>
+                <p className="text-[10px] text-muted-foreground mb-2">기본 프롬프트에 추가할 지시사항을 입력하세요.</p>
                 <Textarea
                   value={summaryAiPromptExtra}
                   onChange={e => setSummaryAiPromptExtra(e.target.value)}
-                  placeholder="예: 바이오 분야 특허는 임상 단계를 포함하여 분석해 주세요. 시장 규모 분석 시 글로벌 시장 데이터를 우선적으로 활용하세요."
+                  placeholder="예: 바이오 분야 특허는 임상 단계를 포함하여 분석해 주세요."
                   rows={5}
                 />
                 <p className="text-[10px] text-muted-foreground mt-1.5">⚠️ 프롬프트 변경 후 기존 AI 캐시를 삭제해야 새 프롬프트가 적용됩니다</p>

@@ -39,6 +39,14 @@ export function PatentSummary({
     try { return settings.summary_visible_sections ? JSON.parse(settings.summary_visible_sections) : {}; } catch { return {}; }
   }, [settings.summary_visible_sections]);
 
+  const cardIcons = useMemo(() => {
+    try { return settings.summary_card_icons ? JSON.parse(settings.summary_card_icons) : {}; } catch { return {}; }
+  }, [settings.summary_card_icons]);
+
+  const infoLabels = useMemo(() => {
+    try { return settings.summary_info_labels ? JSON.parse(settings.summary_info_labels) : {}; } catch { return {}; }
+  }, [settings.summary_info_labels]);
+
   const disclaimerText = settings.summary_disclaimer || "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음";
 
   // Fetch commercialization score when patent data is available
@@ -272,7 +280,7 @@ export function PatentSummary({
         <div className="mb-5 glass-effect rounded-2xl p-6 md:p-7 animate-slide-in">
           <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-border/40">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg">
-              📄
+              {cardIcons.patentInfo || "📄"}
             </div>
             <div className="card-title text-lg font-bold text-foreground">특허 정보</div>
           </div>
@@ -288,7 +296,7 @@ export function PatentSummary({
                   : patentData.displayNumber || regNum;
                 return (
                   <div className="inline-block px-4 py-2 bg-primary/15 text-primary rounded-lg text-sm font-medium">
-                    등록번호: {formatted}
+                    {infoLabels.registrationNumber || "등록번호"}: {formatted}
                   </div>
                 );
               }
@@ -304,7 +312,7 @@ export function PatentSummary({
                   : appNum;
                 return (
                   <div className="inline-block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-sm font-medium">
-                    출원번호: {formatted}
+                    {infoLabels.applicationNumber || "출원번호"}: {formatted}
                   </div>
                 );
               }
@@ -326,7 +334,7 @@ export function PatentSummary({
             {patentData.assignee && (
               <>
                 <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                  <span className="text-muted-foreground text-xs">출원인</span>
+                  <span className="text-muted-foreground text-xs">{infoLabels.assignee || "출원인"}</span>
                   <span className="text-foreground font-medium text-xs">{patentData.assignee}</span>
                 </span>
                 {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
@@ -337,7 +345,7 @@ export function PatentSummary({
             {patentData.filingDate && (
               <>
                 <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                  <span className="text-muted-foreground text-xs">출원일</span>
+                  <span className="text-muted-foreground text-xs">{infoLabels.filingDate || "출원일"}</span>
                   <span className="text-foreground font-medium text-xs">{patentData.filingDate}</span>
                 </span>
                 {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
@@ -348,7 +356,7 @@ export function PatentSummary({
             {patentData.publicationDate && (
               <>
                 <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                  <span className="text-muted-foreground text-xs">{patentData.registrationNumber ? '등록일' : '공개일'}</span>
+                  <span className="text-muted-foreground text-xs">{patentData.registrationNumber ? (infoLabels.publicationDate || '등록일') : '공개일'}</span>
                   <span className="text-foreground font-medium text-xs">{patentData.publicationDate}</span>
                 </span>
                 {patentData.classifications && patentData.classifications.length > 0 && (
@@ -358,7 +366,7 @@ export function PatentSummary({
             )}
             {patentData.classifications && patentData.classifications.length > 0 && (
               <span className="inline-flex items-center gap-1 min-w-0">
-                <span className="text-muted-foreground text-xs whitespace-nowrap">IPC</span>
+                <span className="text-muted-foreground text-xs whitespace-nowrap">{infoLabels.ipc || "IPC"}</span>
                 <span className="text-foreground font-medium text-xs truncate">{patentData.classifications.join(', ')}</span>
               </span>
             )}
@@ -382,7 +390,7 @@ export function PatentSummary({
          <div className="bg-secondary/20 border-b border-border/40 px-5 py-3.5 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg">
-              🤖
+              {cardIcons.aiSummary || "🤖"}
             </div>
             <div>
               <h3 className="font-bold text-base text-foreground">AI 종합 요약</h3>
@@ -493,7 +501,7 @@ export function PatentSummary({
         <div className="claims-section mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.15s' }}>
           <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
-              📑
+              {cardIcons.claims || "📑"}
             </div>
             <div>
               <h3 className="font-bold text-lg text-foreground">청구항</h3>
