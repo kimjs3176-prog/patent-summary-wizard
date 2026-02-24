@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export function PatentSummary({
   content,
@@ -27,6 +28,18 @@ export function PatentSummary({
   
   const { isFavorite, toggleFavorite } = useFavoritePatents();
   const patentIsFavorite = patentNumber ? isFavorite(patentNumber) : false;
+  const { settings } = useSiteSettings();
+
+  // Parse summary customization settings
+  const sectionTitles = useMemo(() => {
+    try { return settings.summary_section_titles ? JSON.parse(settings.summary_section_titles) : {}; } catch { return {}; }
+  }, [settings.summary_section_titles]);
+
+  const visibleSections = useMemo(() => {
+    try { return settings.summary_visible_sections ? JSON.parse(settings.summary_visible_sections) : {}; } catch { return {}; }
+  }, [settings.summary_visible_sections]);
+
+  const disclaimerText = settings.summary_disclaimer || "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음";
 
   // Fetch commercialization score when patent data is available
   useEffect(() => {
@@ -160,12 +173,13 @@ export function PatentSummary({
           return;
         }
         const IconComp = getSectionIcon(sectionTitle);
+        const displayTitle = sectionTitles[sectionTitle] || sectionTitle;
         elements.push(
           <h2 key={index} className="text-xl font-semibold text-primary mt-8 mb-3 first:mt-0 flex items-center gap-2.5">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
               <IconComp className="w-4.5 h-4.5" />
             </span>
-            {sectionTitle}
+            {displayTitle}
           </h2>
         );
         
@@ -353,7 +367,7 @@ export function PatentSummary({
       )}
 
       {/* 2. Technology Commercialization Score */}
-      {patentData && (
+      {patentData && visibleSections.commercialization !== false && (
         <TechnologyCommercializationScore 
           score={commercializationScore}
           isLoading={isAnalyzing}
@@ -459,13 +473,13 @@ export function PatentSummary({
         {/* Disclaimer */}
         <div className="px-5 pb-4">
           <p className="text-[11px] text-muted-foreground/70 italic text-center">
-            ※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음
+            {disclaimerText}
           </p>
         </div>
       </div>
 
       {/* 4. TRL Section (Technology Maturity) */}
-      {patentData && commercializationDetails && (
+      {patentData && commercializationDetails && visibleSections.trl !== false && (
         <TechnologyCommercializationScore 
           score={commercializationScore}
           isLoading={false}
@@ -475,7 +489,7 @@ export function PatentSummary({
       )}
 
       {/* 5. Claims Card */}
-      {patentData?.claims && patentData.claims.length > 0 && (
+      {visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
         <div className="claims-section mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in" style={{ animationDelay: '0.15s' }}>
           <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
@@ -507,7 +521,9 @@ export function PatentSummary({
       </div>
 
       {/* 6. Related Patents Section */}
-      <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
+      {visibleSections.relatedPatents !== false && (
+        <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
+      )}
     </div>
   );
 }

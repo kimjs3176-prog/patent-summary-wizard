@@ -18,6 +18,10 @@ const DEFAULT_SETTINGS: SiteSettings = {
   feature_pdf: "true",
   feature_ppt: "true",
   feature_analysis_mode: "true",
+  summary_disclaimer: "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음",
+  summary_section_titles: "",
+  summary_visible_sections: "",
+  summary_ai_prompt_extra: "",
 };
 
 export function useSiteSettings() {
