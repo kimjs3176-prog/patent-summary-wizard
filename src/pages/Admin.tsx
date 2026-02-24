@@ -64,6 +64,8 @@ const SETTINGS_FIELDS = [
   { key: "featured_section_subtitle", label: "이달의 특허 섹션 부제목", placeholder: "농식품 분야 기술이전 추천 특허" },
   { key: "footer_line1", label: "푸터 1줄", placeholder: "본 서비스는..." },
   { key: "footer_line2", label: "푸터 2줄", placeholder: "KIPRIS 데이터 연동..." },
+  { key: "search_placeholder", label: "검색창 예시 텍스트", placeholder: "관심 키워드 또는 특허 등록번호, 출원번호를 입력하세요" },
+  { key: "search_helper_text", label: "검색창 안내 텍스트", placeholder: "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요" },
   { key: "kipris_api_key", label: "KIPRIS API 키", placeholder: "API 키를 입력하세요", isSecret: true },
 ];
 

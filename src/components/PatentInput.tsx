@@ -8,9 +8,11 @@ interface PatentInputProps {
   onSubmit: (patentNumber: string) => void;
   isLoading: boolean;
   onKeywordSearch?: (results: KeywordSearchResult[], keyword: string) => void;
+  placeholder?: string;
+  helperText?: string;
 }
 
-export function PatentInput({ onSubmit, isLoading, onKeywordSearch }: PatentInputProps) {
+export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
 
@@ -85,7 +87,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch }: PatentInpu
               onChange={handleInputChange}
               className="w-full h-12 pl-11 pr-4 text-sm bg-card/80 backdrop-blur-sm border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground/60 focus:border-foreground/20 focus:bg-card focus:ring-2 focus:ring-foreground/5 focus:shadow-[0_0_20px_hsl(174_60%_50%/0.08)] px-[159px] my-0"
               style={{ boxShadow: 'var(--shadow-glossy)' }}
-              disabled={isProcessing} placeholder="\uAD00\uC2EC \uD0A4\uC6CC\uB4DC \uB610\uB294 \uD2B9\uD5C8 \uB4F1\uB85D\uBC88\uD638, \uCD9C\uC6D0\uBC88\uD638\uB97C \uC785\uB825\uD558\uC138\uC694" />
+              disabled={isProcessing} placeholder={placeholder || "관심 키워드 또는 특허 등록번호, 출원번호를 입력하세요"} />
 
           </div>
           <Button
@@ -106,8 +108,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch }: PatentInpu
             }
           </Button>
         </div>
-        <p className="text-center text-card-foreground text-sm">관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요
-
+        <p className="text-center text-card-foreground text-sm">{helperText || "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요"}
         </p>
       </form>
     </div>);
