@@ -31,7 +31,7 @@ const Index = () => {
 
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
-  
+
   const initialLoadDone = useRef(false);
 
   useEffect(() => {
@@ -159,7 +159,7 @@ const Index = () => {
                 {settings.hero_title}<br />
                 <span className="gradient-text">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-sm md:text-base text-muted-foreground font-normal leading-relaxed max-w-md mx-auto">
+              <p className="text-sm md:text-base font-normal leading-relaxed max-w-md mx-auto text-popover-foreground">
                 {settings.hero_description}
               </p>
             </section>
