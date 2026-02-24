@@ -1,13 +1,13 @@
 import { Search, FileEdit, ClipboardCheck, Stamp, Handshake, Wallet } from "lucide-react";
 
 const steps = [
-  { num: 1, icon: Search, title: "이전 기술 탐색", desc: "KIPRIS, NATI 등에서 관심 기술을 검색하고 유망기술 자료집을 참고하세요." },
-  { num: 2, icon: FileEdit, title: "기술이전 신청서 제출", desc: "NATI 사이트에서 신청서를 작성하고 필요 서류를 첨부하세요." },
-  { num: 3, icon: ClipboardCheck, title: "신청서 검토 및 접수", desc: "서류 수정·보완 사항 발생 시 개별통보 후 재접수합니다." },
-  { num: 4, icon: Stamp, title: "신청서 결재", desc: "발명자·발명기관·특허청의 기술이전 사항을 검토합니다." },
-  { num: 5, icon: Handshake, title: "계약 체결", desc: "기술이전 승인 및 전자계약을 체결합니다." },
-  { num: 6, icon: Wallet, title: "정산/실시료 납부", desc: "계약기간 종료 후 회계법인 통해 기술료를 정산 및 납부합니다." },
-];
+{ num: 1, icon: Search, title: "이전 기술 탐색", desc: "KIPRIS, NATI 등에서 관심 기술을 검색하고 유망기술 자료집을 참고하세요." },
+{ num: 2, icon: FileEdit, title: "기술이전 신청서 제출", desc: "NATI 사이트에서 신청서를 작성하고 필요 서류를 첨부하세요." },
+{ num: 3, icon: ClipboardCheck, title: "신청서 검토 및 접수", desc: "서류 수정·보완 사항 발생 시 개별통보 후 재접수합니다." },
+{ num: 4, icon: Stamp, title: "신청서 결재", desc: "발명자·발명기관·특허청의 기술이전 사항을 검토합니다." },
+{ num: 5, icon: Handshake, title: "계약 체결", desc: "기술이전 승인 및 전자계약을 체결합니다." },
+{ num: 6, icon: Wallet, title: "정산/실시료 납부", desc: "계약기간 종료 후 회계법인 통해 기술료를 정산 및 납부합니다." }];
+
 
 export function TechTransferGuide() {
   return (
@@ -33,8 +33,8 @@ export function TechTransferGuide() {
             <div
               key={step.num}
               className="group rounded-2xl p-5 md:p-6 bg-card/80 backdrop-blur-sm border border-border/30 hover:bg-card hover:border-border/50 hover:shadow-lg transition-all duration-300 animate-fade-up"
-              style={{ animationDelay: `${0.06 * step.num}s`, boxShadow: 'var(--shadow-glossy)' }}
-            >
+              style={{ animationDelay: `${0.06 * step.num}s`, boxShadow: 'var(--shadow-glossy)' }}>
+
               <div className="flex items-start gap-4">
                 <div className="relative flex-shrink-0">
                   <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
@@ -46,11 +46,11 @@ export function TechTransferGuide() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-semibold text-foreground mb-1">{step.title}</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+                  <p className="text-xs leading-relaxed text-primary">{step.desc}</p>
                 </div>
               </div>
-            </div>
-          );
+            </div>);
+
         })}
       </div>
 
@@ -61,6 +61,6 @@ export function TechTransferGuide() {
         <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">KIPRIS</a>
         를 참고하세요.
       </p>
-    </section>
-  );
+    </section>);
+
 }
