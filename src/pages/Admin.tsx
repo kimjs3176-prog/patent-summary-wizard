@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -897,7 +898,28 @@ const Admin = () => {
                       </button>
                     ))}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">현재 설정: {summaryMaxTokens} tokens · ⚠️ 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
+                  <div className="flex items-center gap-3 mt-3">
+                    <Slider
+                      value={[summaryMaxTokens]}
+                      onValueChange={([v]) => setSummaryMaxTokens(v)}
+                      min={500}
+                      max={8000}
+                      step={100}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      value={summaryMaxTokens}
+                      onChange={e => {
+                        const v = parseInt(e.target.value, 10);
+                        if (!isNaN(v) && v >= 500 && v <= 8000) setSummaryMaxTokens(v);
+                      }}
+                      className="w-24 text-center"
+                      min={500}
+                      max={8000}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">현재 설정: {summaryMaxTokens} tokens (500~8000) · ⚠️ 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
                 </div>
               </div>
 
