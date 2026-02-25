@@ -138,12 +138,18 @@ export default function Compare() {
               <section className="animate-fade-up">
                 <h2 className="text-lg font-semibold mb-4">비교 결과</h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                  <table className="w-full border-collapse table-fixed">
+                    <colgroup>
+                      <col className="w-28 md:w-32" />
+                      {selectedPatents.map((p) => (
+                        <col key={p.patentNumber} />
+                      ))}
+                    </colgroup>
                     <thead>
                       <tr>
-                        <th className="text-left text-xs text-muted-foreground font-medium p-3 border-b border-border/50 w-32">항목</th>
+                        <th className="text-left text-xs text-muted-foreground font-medium p-3 border-b border-border/50">항목</th>
                         {selectedPatents.map((p) => (
-                          <th key={p.patentNumber} className="text-left p-3 border-b border-border/50 min-w-[200px]">
+                          <th key={p.patentNumber} className="text-left p-3 border-b border-border/50">
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <p className="text-xs text-muted-foreground">{p.patentNumber}</p>
