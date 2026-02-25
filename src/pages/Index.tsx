@@ -163,7 +163,7 @@ const Index = () => {
                 {settings.hero_title}<br />
                 <span className="gradient-text">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-sm md:text-base font-normal leading-relaxed max-w-md mx-auto text-popover-foreground">
+              <p className="text-sm md:text-base font-normal leading-relaxed max-w-md mx-auto text-muted-foreground">
                 {settings.hero_description}
               </p>
             </section>
