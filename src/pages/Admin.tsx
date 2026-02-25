@@ -133,6 +133,7 @@ const Admin = () => {
   const [summaryInfoLabels, setSummaryInfoLabels] = useState<Record<string, string>>(DEFAULT_INFO_LABELS);
   const [isSavingSummarySettings, setIsSavingSummarySettings] = useState(false);
   const [newSectionKey, setNewSectionKey] = useState("");
+  const [summaryMaxTokens, setSummaryMaxTokens] = useState(3000);
   const apiCall = async (action: string, data?: Record<string, unknown>) => {
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-featured-patents`,
@@ -191,6 +192,10 @@ const Admin = () => {
         }
         if (settingsResult.settings?.homepage_visible_sections) {
           try { setHomepageVisibleSections(JSON.parse(settingsResult.settings.homepage_visible_sections)); } catch {}
+        }
+        if (settingsResult.settings?.summary_max_tokens) {
+          const v = parseInt(settingsResult.settings.summary_max_tokens, 10);
+          if (!isNaN(v)) setSummaryMaxTokens(v);
         }
       }
     } else {
@@ -355,6 +360,7 @@ const Admin = () => {
       summary_ai_prompt_extra: summaryAiPromptExtra,
       summary_card_icons: JSON.stringify(summaryCardIcons),
       summary_info_labels: JSON.stringify(summaryInfoLabels),
+      summary_max_tokens: String(summaryMaxTokens),
     };
     const result = await apiCall("update-settings", settingsToSave);
     if (result.success) {
@@ -863,6 +869,35 @@ const Admin = () => {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Summary Length */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">요약 결과 분량 조절</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">AI 요약서의 결과 텍스트 분량을 조절합니다. 값이 클수록 더 상세한 요약이 생성됩니다.</p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    {[
+                      { label: "간략", value: 1500, desc: "핵심만 간략히" },
+                      { label: "보통", value: 3000, desc: "기본 분량" },
+                      { label: "상세", value: 5000, desc: "풍부한 분석" },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setSummaryMaxTokens(opt.value)}
+                        className={`flex-1 p-3 rounded-lg border text-center transition-colors ${
+                          summaryMaxTokens === opt.value
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border/50 bg-secondary/20 text-muted-foreground hover:bg-secondary/40"
+                        }`}
+                      >
+                        <p className="text-sm font-medium">{opt.label}</p>
+                        <p className="text-[10px] mt-0.5">{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">현재 설정: {summaryMaxTokens} tokens · ⚠️ 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
                 </div>
               </div>
 
