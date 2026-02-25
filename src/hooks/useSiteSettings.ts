@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   summary_ai_prompt_extra: "",
   summary_card_icons: "",
   summary_info_labels: "",
+  summary_max_tokens: "3000",
   search_placeholder: "관심 키워드 또는 특허 등록번호, 출원번호를 입력하세요",
   search_helper_text: "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요",
 };

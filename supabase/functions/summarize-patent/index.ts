@@ -124,21 +124,33 @@ serve(async (req) => {
       }
     }
 
-    // Read custom prompt additions from site_settings
+    // Read custom prompt additions and max tokens from site_settings
     let customPromptExtra = "";
+    let maxTokens = 3000;
     try {
       const supabase = getSupabaseClient();
-      const { data: promptSetting } = await supabase
+      const { data: settings } = await supabase
         .from("site_settings")
-        .select("value")
-        .eq("key", "summary_ai_prompt_extra")
-        .maybeSingle();
-      if (promptSetting?.value) {
-        customPromptExtra = promptSetting.value;
+        .select("key, value")
+        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens"]);
+      if (settings) {
+        for (const row of settings) {
+          if (row.key === "summary_ai_prompt_extra" && row.value) {
+            customPromptExtra = row.value;
+          }
+          if (row.key === "summary_max_tokens" && row.value) {
+            const parsed = parseInt(row.value, 10);
+            if (!isNaN(parsed) && parsed >= 500 && parsed <= 8000) {
+              maxTokens = parsed;
+            }
+          }
+        }
       }
     } catch (e) {
-      console.error("Failed to read custom prompt setting:", e);
+      console.error("Failed to read custom settings:", e);
     }
+
+    const lengthInstruction = maxTokens <= 2000 ? "\n분량: 각 섹션 2~3문장으로 핵심만 간략히 서술." : maxTokens >= 4000 ? "\n분량: 각 섹션 7~10문장으로 풍부하고 상세하게 서술." : "\n분량: 각 섹션 5~7문장 상세 서술.";
 
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
 규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 섹션은 ## 사용.
@@ -158,7 +170,7 @@ serve(async (req) => {
 ## 농산업 활용 특장점 - 스마트팜/정밀농업 등 구체적 활용 시나리오와 기대 효과 서술
 ## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 기술 완성도와 상용화 경로를 정성적으로 설명
 
-각 섹션 5~7문장 상세 서술. 기술적 깊이와 실용적 인사이트를 균형있게 포함.${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
+기술적 깊이와 실용적 인사이트를 균형있게 포함.${lengthInstruction}${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
 
     const userMessage = patentData
       ? `분석:\n${patentContext}`
@@ -177,7 +189,7 @@ serve(async (req) => {
           { role: "user", content: userMessage },
         ],
         stream: true,
-        max_tokens: 3000,
+        max_tokens: maxTokens,
       }),
     });
 
