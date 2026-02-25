@@ -85,7 +85,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
 
               value={inputValue}
               onChange={handleInputChange}
-              className="w-full h-12 pl-11 pr-4 text-sm bg-card/80 backdrop-blur-sm border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground/60 focus:border-foreground/20 focus:bg-card focus:ring-2 focus:ring-foreground/5 focus:shadow-[0_0_20px_hsl(174_60%_50%/0.08)] px-[159px] my-0"
+              className="w-full h-12 pl-11 pr-4 text-sm bg-card/80 backdrop-blur-sm border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground/60 focus:border-foreground/20 focus:bg-card focus:ring-2 focus:ring-foreground/5 focus:shadow-[0_0_20px_hsl(174_60%_50%/0.08)]"
               style={{ boxShadow: 'var(--shadow-glossy)' }}
               disabled={isProcessing} placeholder={placeholder || "관심 키워드 또는 특허 등록번호, 출원번호를 입력하세요"} />
 
@@ -108,7 +108,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             }
           </Button>
         </div>
-        <p className="text-center text-card-foreground text-sm">{helperText || "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요"}
+        <p className="text-center text-muted-foreground text-xs">{helperText || "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요"}
         </p>
       </form>
     </div>);

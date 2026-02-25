@@ -11,7 +11,7 @@ const steps = [
 
 export function TechTransferGuide() {
   return (
-    <section className="max-w-5xl mx-auto mt-16 md:mt-24 mb-8">
+    <section className="max-w-5xl mx-auto mt-10 md:mt-14 mb-8">
       <div className="text-center mb-10 md:mb-14">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
           기술이전 절차 안내
@@ -46,7 +46,7 @@ export function TechTransferGuide() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-semibold text-foreground mb-1">{step.title}</h4>
-                  <p className="text-xs leading-relaxed text-primary">{step.desc}</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">{step.desc}</p>
                 </div>
               </div>
             </div>);
