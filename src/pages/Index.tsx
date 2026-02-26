@@ -30,7 +30,7 @@ const Index = () => {
   const { favorites } = useFavoritePatents();
 
   const homepageVisible = useMemo(() => {
-    try { return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {}; } catch { return {}; }
+    try {return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {};} catch {return {};}
   }, [settings.homepage_visible_sections]);
 
   const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
@@ -163,7 +163,7 @@ const Index = () => {
                 {settings.hero_title}<br />
                 <span className="gradient-text">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-sm md:text-base font-normal leading-relaxed max-w-md mx-auto text-muted-foreground">
+              <p className="text-sm md:text-base font-normal leading-relaxed max-w-md mx-auto text-black">
                 {settings.hero_description}
               </p>
             </section>
@@ -174,11 +174,11 @@ const Index = () => {
                 <div className="w-full flex-1 max-w-2xl mx-auto">
                   <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} />
                 </div>
-                {homepageVisible.popularSearches !== false && (
-                  <div className="w-full lg:w-auto lg:flex-shrink-0">
+                {homepageVisible.popularSearches !== false &&
+              <div className="w-full lg:w-auto lg:flex-shrink-0">
                     <PopularSearches onPatentSelect={handleSubmit} />
                   </div>
-                )}
+              }
               </div>
               {history.length > 0 && keywordResults.length === 0 &&
             <div className="w-full max-w-5xl mx-auto mt-5">
@@ -194,34 +194,34 @@ const Index = () => {
               </section>
           }
 
-            {homepageVisible.featuredPatents !== false && (
-              <FeaturedPatents
-                onPatentSelect={handleSubmit}
-                sectionTitle={settings.featured_section_title}
-                sectionSubtitle={settings.featured_section_subtitle} />
-            )}
+            {homepageVisible.featuredPatents !== false &&
+          <FeaturedPatents
+            onPatentSelect={handleSubmit}
+            sectionTitle={settings.featured_section_title}
+            sectionSubtitle={settings.featured_section_subtitle} />
+          }
 
             <div className="max-w-5xl mx-auto mt-10 md:mt-14 mb-2">
               <Separator className="bg-border/60" />
             </div>
 
-            {homepageVisible.techVideos !== false && (
-              <TechVideoSection videos={(() => {
-                try {
-                  const parsed = JSON.parse(settings.tech_videos || "[]");
-                  return Array.isArray(parsed) ? parsed : [];
-                } catch {return [];}
-              })()} />
-            )}
+            {homepageVisible.techVideos !== false &&
+          <TechVideoSection videos={(() => {
+            try {
+              const parsed = JSON.parse(settings.tech_videos || "[]");
+              return Array.isArray(parsed) ? parsed : [];
+            } catch {return [];}
+          })()} />
+          }
 
-            {homepageVisible.techTransferGuide !== false && (
-              <>
+            {homepageVisible.techTransferGuide !== false &&
+          <>
                 <div className="max-w-5xl mx-auto mt-2 mb-2">
                   <Separator className="bg-border/60" />
                 </div>
                 <TechTransferGuide />
               </>
-            )}
+          }
           </> :
 
         <>
