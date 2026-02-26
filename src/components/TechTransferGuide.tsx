@@ -46,7 +46,7 @@ export function TechTransferGuide() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-semibold text-foreground mb-1">{step.title}</h4>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{step.desc}</p>
+                  <p className="text-xs leading-relaxed text-black">{step.desc}</p>
                 </div>
               </div>
             </div>);
