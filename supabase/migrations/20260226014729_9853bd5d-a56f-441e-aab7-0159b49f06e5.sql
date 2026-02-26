@@ -1,0 +1,1 @@
+DELETE FROM patent_ai_cache WHERE patent_number = '10-2628545';
