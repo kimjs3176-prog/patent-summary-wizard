@@ -108,7 +108,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             }
           </Button>
         </div>
-        <p className="text-center text-muted-foreground text-xs">{helperText || "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요"}
+        <p className="text-center text-black text-sm">{helperText || "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요"}
         </p>
       </form>
     </div>);
