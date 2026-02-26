@@ -175,11 +175,38 @@ export function PatentSummary({
         .replace(/^\s*\d+\.\s+/, '');
 
       if (line.startsWith("## ")) {
-        const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
+        const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '').trim();
         if (sectionTitle === "특허 기본 정보") {
           skipSection = true;
           return;
         }
+
+        // Known section titles (short headings). If the text after ## is too long,
+        // it's likely a paragraph mistakenly starting with ## — render as body text.
+        const knownSections = ["기술 분야", "발명의 요약", "기술적 특징", "시장동향", "농산업 활용 특장점", "기술 성숙도 및 상용화 전망"];
+        const isKnownSection = knownSections.some(s => sectionTitle === s || sectionTitle.startsWith(s));
+        const isLikelyHeading = isKnownSection || sectionTitle.length <= 30;
+
+        if (!isLikelyHeading) {
+          // Treat as paragraph text (strip the leading ##)
+          const bodyText = line.replace(/^##\s*/, '');
+          const parts = bodyText.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+          elements.push(
+            <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
+              {parts.map((part, i) => {
+                if ((part.startsWith('**') && part.endsWith('**'))) {
+                  return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+                }
+                if ((part.startsWith('__') && part.endsWith('__'))) {
+                  return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+                }
+                return part;
+              })}
+            </p>
+          );
+          return;
+        }
+
         const IconComp = getSectionIcon(sectionTitle);
         const displayTitle = sectionTitles[sectionTitle] || sectionTitle;
         elements.push(
