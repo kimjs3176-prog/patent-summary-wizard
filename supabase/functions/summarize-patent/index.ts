@@ -216,14 +216,25 @@ serve(async (req) => {
 
     // Intercept stream to collect full content for caching
     const reader = response.body!.getReader();
-    const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     let fullContent = "";
+    let sseBuffer = ""; // Buffer to handle SSE lines split across chunks
 
     const stream = new ReadableStream({
       async pull(controller) {
         const { done, value } = await reader.read();
         if (done) {
+          // Process any remaining buffered data
+          if (sseBuffer.trim()) {
+            const remaining = sseBuffer.trim();
+            if (remaining.startsWith("data: ") && remaining.slice(6).trim() !== "[DONE]") {
+              try {
+                const parsed = JSON.parse(remaining.slice(6));
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) fullContent += content;
+              } catch { /* ignore */ }
+            }
+          }
           controller.close();
           if (fullContent.length > 0) {
             try {
@@ -233,7 +244,7 @@ serve(async (req) => {
                 analysis_mode: "detailed",
                 summary_content: fullContent,
               }, { onConflict: "patent_number,analysis_mode" });
-              console.log(`[CACHE SAVED] ${trimmedPatent}`);
+              console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
             } catch (saveErr) {
               console.error("Cache save error:", saveErr);
             }
@@ -242,14 +253,24 @@ serve(async (req) => {
         }
 
         const text = decoder.decode(value, { stream: true });
-        const lines = text.split("\n");
-        for (const line of lines) {
+        sseBuffer += text;
+
+        // Process complete lines only (split by double newline for SSE)
+        let newlineIndex: number;
+        while ((newlineIndex = sseBuffer.indexOf("\n")) !== -1) {
+          const line = sseBuffer.slice(0, newlineIndex).replace(/\r$/, "");
+          sseBuffer = sseBuffer.slice(newlineIndex + 1);
+
           if (line.startsWith("data: ") && line.slice(6).trim() !== "[DONE]") {
             try {
               const parsed = JSON.parse(line.slice(6));
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) fullContent += content;
-            } catch { /* ignore */ }
+            } catch {
+              // Incomplete JSON - put it back and wait for more data
+              sseBuffer = line + "\n" + sseBuffer;
+              break;
+            }
           }
         }
 
