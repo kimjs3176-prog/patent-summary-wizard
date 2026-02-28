@@ -1,5 +1,8 @@
 import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
+import { useMemo } from "react";
 
 export interface CommercializationDetails {
   technologyScore: number;
@@ -20,6 +23,26 @@ interface TechnologyCommercializationScoreProps {
   showTrlOnly?: boolean;
 }
 
+function useScoreConfig(): ScoreConfig {
+  const { settings } = useSiteSettings();
+  return useMemo(() => {
+    if (settings.score_settings) {
+      try { return { ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settings.score_settings) }; } catch {}
+    }
+    return DEFAULT_SCORE_CONFIG;
+  }, [settings.score_settings]);
+}
+
+function useTrlConfig(): TrlConfig {
+  const { settings } = useSiteSettings();
+  return useMemo(() => {
+    if (settings.trl_settings) {
+      try { return { ...DEFAULT_TRL_CONFIG, ...JSON.parse(settings.trl_settings) }; } catch {}
+    }
+    return DEFAULT_TRL_CONFIG;
+  }, [settings.trl_settings]);
+}
+
 function getScoreColor(value: number): string {
   if (value >= 80) return "text-emerald-500";
   if (value >= 60) return "text-blue-500";
@@ -34,22 +57,20 @@ function getScoreBgColor(value: number): string {
   return "bg-red-500";
 }
 
-function getScoreLabel(value: number): string {
-  if (value >= 90) return "매우 우수";
-  if (value >= 80) return "우수";
-  if (value >= 70) return "양호";
-  if (value >= 60) return "보통";
-  if (value >= 50) return "미흡";
-  return "개선 필요";
+function getScoreLabel(value: number, grades: ScoreConfig["grades"]): string {
+  const sorted = [...grades].sort((a, b) => b.min - a.min);
+  for (const g of sorted) {
+    if (value >= g.min) return g.label;
+  }
+  return sorted[sorted.length - 1]?.label || "";
 }
 
-function getGradeLabel(value: number): string {
-  if (value >= 90) return "S";
-  if (value >= 80) return "A";
-  if (value >= 70) return "B";
-  if (value >= 60) return "C";
-  if (value >= 50) return "D";
-  return "F";
+function getGradeLabel(value: number, grades: ScoreConfig["grades"]): string {
+  const sorted = [...grades].sort((a, b) => b.min - a.min);
+  for (const g of sorted) {
+    if (value >= g.min) return g.grade;
+  }
+  return sorted[sorted.length - 1]?.grade || "";
 }
 
 function SubScoreCard({ label, score, reason }: { label: string; score: number; reason?: string }) {
@@ -83,6 +104,9 @@ export function TechnologyCommercializationScore({
   details,
   showTrlOnly = false
 }: TechnologyCommercializationScoreProps) {
+  const scoreConfig = useScoreConfig();
+  const trlConfig = useTrlConfig();
+
   if (isLoading && !showTrlOnly) {
     return (
       <div className="mb-6 glass-effect rounded-3xl p-8">
@@ -109,12 +133,12 @@ export function TechnologyCommercializationScore({
             📊
           </div>
           <div>
-            <h4 className="font-bold text-lg text-foreground">기술성숙도 (TRL)</h4>
-            <p className="text-sm text-muted-foreground">Technology Readiness Level</p>
+            <h4 className="font-bold text-lg text-foreground">{trlConfig.cardTitle}</h4>
+            <p className="text-sm text-muted-foreground">{trlConfig.cardSubtitle}</p>
           </div>
         </div>
         
-        <TrlChart estimatedTrl={details.trl} />
+        <TrlChart estimatedTrl={details.trl} trlConfig={trlConfig} />
         
         {details.trlReason && (
           <div className="mt-4 p-4 rounded-xl bg-secondary/50 border border-border/50">
@@ -126,6 +150,12 @@ export function TechnologyCommercializationScore({
     );
   }
 
+  const subItems = [
+    { label: scoreConfig.subLabels.technology, score: details.technologyScore, reason: details.technologyReason },
+    { label: scoreConfig.subLabels.market, score: details.marketScore, reason: details.marketReason },
+    { label: scoreConfig.subLabels.business, score: details.businessScore, reason: details.businessReason },
+  ];
+
   // Show commercialization score section (without TRL)
   return (
     <div className="mb-6 glass-effect rounded-3xl p-4 sm:p-6 md:p-8 animate-slide-in">
@@ -134,8 +164,8 @@ export function TechnologyCommercializationScore({
           ✨
         </div>
         <div>
-          <h4 className="font-bold text-base sm:text-lg text-foreground">AI 기술사업화점수</h4>
-          <p className="text-xs sm:text-sm text-muted-foreground">Technology Commercialization Score</p>
+          <h4 className="font-bold text-base sm:text-lg text-foreground">{scoreConfig.cardTitle}</h4>
+          <p className="text-xs sm:text-sm text-muted-foreground">{scoreConfig.cardSubtitle}</p>
         </div>
       </div>
 
@@ -149,21 +179,17 @@ export function TechnologyCommercializationScore({
         </div>
         <div className="flex flex-col gap-0.5 sm:gap-1">
           <span className={`text-2xl sm:text-3xl font-black ${getScoreColor(score)}`}>
-            {getGradeLabel(score)}
+            {getGradeLabel(score, scoreConfig.grades)}
           </span>
           <span className={`text-sm sm:text-base font-semibold ${getScoreColor(score)}`}>
-            {getScoreLabel(score)}
+            {getScoreLabel(score, scoreConfig.grades)}
           </span>
         </div>
       </div>
 
       {/* Sub-scores */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-5">
-        {[
-          { label: "기술성", score: details.technologyScore, reason: details.technologyReason },
-          { label: "시장성", score: details.marketScore, reason: details.marketReason },
-          { label: "사업성", score: details.businessScore, reason: details.businessReason },
-        ].map((item) => (
+        {subItems.map((item) => (
           <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} />
         ))}
       </div>

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 
 interface FeaturedPatent {
   id: string;
@@ -135,6 +136,8 @@ const Admin = () => {
   const [isSavingSummarySettings, setIsSavingSummarySettings] = useState(false);
   const [newSectionKey, setNewSectionKey] = useState("");
   const [summaryMaxTokens, setSummaryMaxTokens] = useState(3000);
+  const [scoreConfig, setScoreConfig] = useState<ScoreConfig>(DEFAULT_SCORE_CONFIG);
+  const [trlConfig, setTrlConfig] = useState<TrlConfig>(DEFAULT_TRL_CONFIG);
   const apiCall = async (action: string, data?: Record<string, unknown>) => {
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-featured-patents`,
@@ -197,6 +200,12 @@ const Admin = () => {
         if (settingsResult.settings?.summary_max_tokens) {
           const v = parseInt(settingsResult.settings.summary_max_tokens, 10);
           if (!isNaN(v)) setSummaryMaxTokens(v);
+        }
+        if (settingsResult.settings?.score_settings) {
+          try { setScoreConfig({ ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settingsResult.settings.score_settings) }); } catch {}
+        }
+        if (settingsResult.settings?.trl_settings) {
+          try { setTrlConfig({ ...DEFAULT_TRL_CONFIG, ...JSON.parse(settingsResult.settings.trl_settings) }); } catch {}
         }
       }
     } else {
@@ -362,6 +371,8 @@ const Admin = () => {
       summary_card_icons: JSON.stringify(summaryCardIcons),
       summary_info_labels: JSON.stringify(summaryInfoLabels),
       summary_max_tokens: String(summaryMaxTokens),
+      score_settings: JSON.stringify(scoreConfig),
+      trl_settings: JSON.stringify(trlConfig),
     };
     const result = await apiCall("update-settings", settingsToSave);
     if (result.success) {
@@ -921,6 +932,17 @@ const Admin = () => {
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2">현재 설정: {summaryMaxTokens} tokens (500~8000) · ⚠️ 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
                 </div>
+              </div>
+
+              {/* Score & TRL Settings */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">기술사업화점수 · TRL 관리</h3>
+                <ScoreTrlSettings
+                  scoreConfig={scoreConfig}
+                  trlConfig={trlConfig}
+                  onScoreConfigChange={setScoreConfig}
+                  onTrlConfigChange={setTrlConfig}
+                />
               </div>
 
               {/* AI Prompt Extra */}
