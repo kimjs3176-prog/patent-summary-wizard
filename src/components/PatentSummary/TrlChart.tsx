@@ -8,22 +8,12 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { DEFAULT_TRL_CONFIG, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 
 interface TrlChartProps {
   estimatedTrl: number;
+  trlConfig?: TrlConfig;
 }
-
-const TRL_LABELS = [
-  { level: 1, label: "기초연구", description: "기본 원리 관찰 및 보고" },
-  { level: 2, label: "기술개념", description: "기술 개념 및 응용 정립" },
-  { level: 3, label: "개념검증", description: "핵심 기능의 분석적/실험적 증명" },
-  { level: 4, label: "실험실검증", description: "실험실 환경에서 기술 검증" },
-  { level: 5, label: "유사환경검증", description: "유사 환경에서 기술 검증" },
-  { level: 6, label: "시제품개발", description: "시제품의 유사 환경 시연" },
-  { level: 7, label: "운영환경시연", description: "실제 운영 환경에서 시연" },
-  { level: 8, label: "시스템완성", description: "시스템 완성 및 검증" },
-  { level: 9, label: "상용화", description: "실제 운영 환경에서 성공적 검증" },
-];
 
 function getTrlColor(level: number): string {
   if (level <= 3) return "hsl(var(--destructive))";
@@ -31,22 +21,26 @@ function getTrlColor(level: number): string {
   return "hsl(var(--primary))";
 }
 
-function getTrlStage(level: number): string {
-  if (level <= 3) return "기초연구 단계";
-  if (level <= 6) return "개발/실증 단계";
-  return "상용화 준비 단계";
+function getTrlStage(level: number, stages: TrlConfig["stages"]): string {
+  if (level <= 3) return `${stages[0]?.name || "기초연구"} 단계`;
+  if (level <= 6) return `${stages[1]?.name || "개발/실증"} 단계`;
+  return `${stages[2]?.name || "상용화"} 준비 단계`;
 }
 
-export function TrlChart({ estimatedTrl }: TrlChartProps) {
+export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
+  const config = trlConfig || DEFAULT_TRL_CONFIG;
+  const levels = config.levels;
+  const stages = config.stages;
+
   const chartData = useMemo(() => {
-    return TRL_LABELS.map((item) => ({
+    return levels.map((item) => ({
       ...item,
       value: item.level <= estimatedTrl ? item.level * 11.1 : 0,
       current: item.level === estimatedTrl,
     }));
-  }, [estimatedTrl]);
+  }, [estimatedTrl, levels]);
 
-  const currentTrlInfo = TRL_LABELS.find((t) => t.level === estimatedTrl);
+  const currentTrlInfo = levels.find((t) => t.level === estimatedTrl);
 
   return (
     <div className="space-y-4">
@@ -64,7 +58,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
               TRL {estimatedTrl} - {currentTrlInfo?.label}
             </p>
             <p className="text-sm text-foreground/60">
-              {getTrlStage(estimatedTrl)}
+              {getTrlStage(estimatedTrl, stages)}
             </p>
           </div>
         </div>
@@ -79,7 +73,7 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
       {/* TRL Progress Bar */}
       <div className="relative">
         <div className="flex gap-1">
-          {TRL_LABELS.map((item) => (
+          {levels.map((item) => (
             <div
               key={item.level}
               className="flex-1 h-3 rounded-full transition-all duration-500"
@@ -130,12 +124,12 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(value: number, name: string, props: any) => {
-                const item = TRL_LABELS[props.payload.level - 1];
+              formatter={(_value: number, _name: string, props: any) => {
+                const item = levels[props.payload.level - 1];
                 return [item?.description || "", `TRL ${props.payload.level}`];
               }}
               labelFormatter={(label) => {
-                const item = TRL_LABELS[label - 1];
+                const item = levels[Number(label) - 1];
                 return item?.label || "";
               }}
             />
@@ -166,8 +160,8 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
               : "bg-muted/50 text-foreground/60"
           }`}
         >
-          <p className="font-semibold">기초연구</p>
-          <p>TRL 1-3</p>
+          <p className="font-semibold">{stages[0]?.name || "기초연구"}</p>
+          <p>{stages[0]?.range || "TRL 1-3"}</p>
         </div>
         <div
           className={`p-2 rounded-lg ${
@@ -176,8 +170,8 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
               : "bg-muted/50 text-foreground/60"
           }`}
         >
-          <p className="font-semibold">개발/실증</p>
-          <p>TRL 4-6</p>
+          <p className="font-semibold">{stages[1]?.name || "개발/실증"}</p>
+          <p>{stages[1]?.range || "TRL 4-6"}</p>
         </div>
         <div
           className={`p-2 rounded-lg ${
@@ -186,8 +180,8 @@ export function TrlChart({ estimatedTrl }: TrlChartProps) {
               : "bg-muted/50 text-foreground/60"
           }`}
         >
-          <p className="font-semibold">상용화</p>
-          <p>TRL 7-9</p>
+          <p className="font-semibold">{stages[2]?.name || "상용화"}</p>
+          <p>{stages[2]?.range || "TRL 7-9"}</p>
         </div>
       </div>
     </div>
