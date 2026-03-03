@@ -34,7 +34,7 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
             <button
               key={item.patentNumber}
               onClick={() => onSelect(item)}
-              className="group relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm hover:border-foreground/15 hover:shadow-md transition-all duration-300 text-left overflow-hidden"
+              className="group relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm hover:border-foreground/15 hover:shadow-md transition-all duration-300 text-left overflow-hidden card-interactive btn-press"
               style={{ boxShadow: 'var(--shadow-glossy)' }}
               title={`${displayNum} ${title}`}
             >

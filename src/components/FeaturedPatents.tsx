@@ -112,7 +112,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
               <button
                 key={cat}
                 onClick={() => setActiveTab(cat)}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-200 border ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-200 border btn-press badge-pop ${
                   activeTab === cat
                     ? "bg-foreground text-background border-foreground shadow-sm"
                     : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary hover:text-foreground"
@@ -139,7 +139,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
           <button
             key={patent.id}
             onClick={() => onPatentSelect(patent.patent_number)}
-            className={`group p-4 md:p-5 rounded-2xl bg-gradient-to-br ${colors.from} ${colors.to} dark:from-zinc-900/20 dark:to-zinc-800/10 text-left border ${colors.border} dark:border-zinc-700/30 ${colors.hoverBorder} dark:hover:border-zinc-600 hover:shadow-lg backdrop-blur-sm transition-all duration-300 animate-fade-up`}
+            className={`group p-4 md:p-5 rounded-2xl bg-gradient-to-br ${colors.from} ${colors.to} dark:from-zinc-900/20 dark:to-zinc-800/10 text-left border ${colors.border} dark:border-zinc-700/30 ${colors.hoverBorder} dark:hover:border-zinc-600 hover:shadow-lg backdrop-blur-sm transition-all duration-300 animate-fade-up card-interactive btn-press`}
             style={{ animationDelay: `${0.05 + index * 0.03}s`, boxShadow: 'var(--shadow-glossy)' }}
           >
             <div className="flex items-start gap-3 mb-3">
@@ -195,7 +195,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
                   <span className="truncate max-w-[150px]">{patent.contact_info}</span>
                 )}
               </div>
-              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground arrow-slide" />
             </div>
           </button>
           );

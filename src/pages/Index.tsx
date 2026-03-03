@@ -112,7 +112,7 @@ const Index = () => {
       <header className="w-full bg-background/70 backdrop-blur-2xl sticky top-0 z-50 border-b border-border/20">
         <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center shadow-sm icon-bounce cursor-pointer">
               <FileText className="w-4 h-4 text-background" />
             </div>
             <div className="min-w-0">
@@ -126,7 +126,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-2">
             <Link to="/compare">
-              <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-3.5 glossy-card gap-1.5">
+              <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-3.5 glossy-card gap-1.5 btn-press">
                 <Heart className="w-3.5 h-3.5" />
                 관심특허{favorites.length > 0 ? ` (${favorites.length})` : ""}
               </Button>
@@ -137,14 +137,14 @@ const Index = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => {updateUrl();reset();}}
-                className="rounded-full text-xs h-8 px-3.5 glossy-card">
+                className="rounded-full text-xs h-8 px-3.5 glossy-card btn-press">
                   새로운 검색
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {updateUrl();reset();clearHistory();toast.success("검색 기록이 초기화되었습니다");}}
-                className="rounded-full text-xs h-8 px-3.5 glossy-card gap-1">
+                className="rounded-full text-xs h-8 px-3.5 glossy-card gap-1 btn-press">
                   <RotateCcw className="w-3 h-3" />
                   초기화
               </Button>
@@ -161,7 +161,7 @@ const Index = () => {
             <section className="text-center max-w-2xl mx-auto mb-10 md:mb-14 animate-fade-down">
               <h2 className="text-3xl md:text-[2.75rem] lg:text-5xl font-bold text-foreground mb-3 md:mb-4 leading-[1.12] tracking-tight">
                 {settings.hero_title}<br />
-                <span className="gradient-text">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
+                <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
               <p className="text-sm md:text-base font-normal leading-relaxed max-w-md mx-auto text-black">
                 {settings.hero_description}
