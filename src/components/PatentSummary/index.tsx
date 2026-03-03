@@ -168,8 +168,8 @@ export function PatentSummary({
         const defaultTitle = sectionTitles["기술 분야"] || "기술 분야";
         const IconComp = getSectionIcon("기술 분야");
         elements.push(
-          <h2 key={`auto-tech-${currentIndex}`} className="text-xl font-semibold text-primary mt-8 mb-3 first:mt-0 flex items-center gap-2.5">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
+          <h2 key={`auto-tech-${currentIndex}`} className="text-xl font-bold mt-8 mb-3 first:mt-0 flex items-center gap-2.5" style={{ color: 'hsl(210 100% 40%)' }}>
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg shrink-0" style={{ background: 'hsl(210 100% 94%)', color: 'hsl(210 100% 40%)' }}>
               <IconComp className="w-4.5 h-4.5" />
             </span>
             {defaultTitle}
@@ -233,8 +233,8 @@ export function PatentSummary({
         const IconComp = getSectionIcon(rawTitle);
         const displayTitle = sectionTitles[rawTitle] || rawTitle;
         elements.push(
-          <h2 key={index} className="text-xl font-semibold text-primary mt-8 mb-3 first:mt-0 flex items-center gap-2.5">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
+          <h2 key={index} className="text-xl font-bold mt-8 mb-3 first:mt-0 flex items-center gap-2.5" style={{ color: 'hsl(210 100% 40%)' }}>
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg shrink-0" style={{ background: 'hsl(210 100% 94%)', color: 'hsl(210 100% 40%)' }}>
               <IconComp className="w-4.5 h-4.5" />
             </span>
             {displayTitle}
@@ -531,8 +531,8 @@ export function PatentSummary({
         </div>
 
         {/* Disclaimer */}
-        <div className="px-5 pb-4">
-          <p className="text-[11px] text-muted-foreground/70 italic text-center">
+        <div className="px-5 pb-5">
+          <p className="text-xs font-bold text-foreground text-center leading-relaxed">
             {disclaimerText}
           </p>
         </div>
