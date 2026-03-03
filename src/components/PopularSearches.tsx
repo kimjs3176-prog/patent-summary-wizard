@@ -41,9 +41,9 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
           <button
             key={item.patent_number}
             onClick={() => onPatentSelect(item.patent_number)}
-            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-background transition-colors group flex items-start gap-2.5">
+            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-background transition-all duration-200 group flex items-start gap-2.5 btn-press">
 
-              <span className="flex-shrink-0 w-5 h-5 rounded-md bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground mt-0.5">
+              <span className="flex-shrink-0 w-5 h-5 rounded-md bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground mt-0.5 num-highlight">
                 {idx + 1}
               </span>
               <div className="flex-1 min-w-0">
