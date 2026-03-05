@@ -434,78 +434,115 @@
     page-break-inside: avoid !important;
   }
 
-  /* Force patent-info + score + TRL onto the same page */
+  /* Compact first-page group for print */
   .print-first-page-group {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+    margin-bottom: 0 !important;
   }
 
   .print-first-page-group .glass-effect {
     padding: 4px 8px !important;
-    margin-bottom: 3px !important;
+    margin-bottom: 2px !important;
   }
 
   .print-first-page-group h2,
   .print-first-page-group h4 {
     font-size: 10pt !important;
-    margin-top: 2px !important;
-    margin-bottom: 2px !important;
+    margin-top: 1px !important;
+    margin-bottom: 1px !important;
   }
 
   .print-first-page-group .text-xl,
   .print-first-page-group .text-2xl,
   .print-first-page-group .text-3xl,
   .print-first-page-group .text-4xl {
-    font-size: 14pt !important;
+    font-size: 13pt !important;
   }
 
   .print-first-page-group .text-lg {
-    font-size: 10pt !important;
+    font-size: 9.5pt !important;
   }
 
+  .print-first-page-group .p-3,
   .print-first-page-group .p-4,
   .print-first-page-group .p-5,
   .print-first-page-group .p-6,
   .print-first-page-group .md\:p-8 {
-    padding: 4px 8px !important;
+    padding: 3px 6px !important;
   }
 
+  .print-first-page-group .mb-3,
   .print-first-page-group .mb-4,
   .print-first-page-group .mb-5,
   .print-first-page-group .mb-6 {
-    margin-bottom: 2px !important;
+    margin-bottom: 1px !important;
   }
 
+  .print-first-page-group .pb-3,
   .print-first-page-group .pb-4,
   .print-first-page-group .pb-5 {
-    padding-bottom: 2px !important;
+    padding-bottom: 1px !important;
   }
 
+  .print-first-page-group .gap-2,
   .print-first-page-group .gap-3,
   .print-first-page-group .gap-4,
   .print-first-page-group .gap-5 {
-    gap: 4px !important;
+    gap: 2px !important;
   }
 
   .print-first-page-group .space-y-3 > * + * {
-    margin-top: 3px !important;
+    margin-top: 2px !important;
   }
 
+  .print-first-page-group .mt-3,
   .print-first-page-group .mt-4,
   .print-first-page-group .mt-6 {
-    margin-top: 3px !important;
+    margin-top: 2px !important;
+  }
+
+  /* TRL chart: aggressively compact */
+  .print-first-page-group .trl-print-section {
+    margin-top: 2px !important;
+    padding: 3px 6px !important;
   }
 
   .print-first-page-group .recharts-wrapper {
-    max-height: 80px !important;
+    max-height: 60px !important;
+  }
+
+  .print-first-page-group .recharts-responsive-container {
+    max-height: 60px !important;
+    min-height: unset !important;
+  }
+
+  /* TRL reason box compact */
+  .print-first-page-group .trl-print-section .rounded-xl {
+    padding: 2px 6px !important;
+    margin-top: 2px !important;
+  }
+
+  .print-first-page-group .trl-print-section .text-sm {
+    font-size: 8pt !important;
+    line-height: 1.3 !important;
   }
 
   .print-first-page-group .w-9,
   .print-first-page-group .w-10,
   .print-first-page-group .w-12 {
-    width: 20px !important;
-    height: 20px !important;
-    font-size: 10px !important;
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 9px !important;
+  }
+
+  .print-first-page-group .rounded-3xl {
+    border-radius: 4px !important;
+  }
+
+  .print-first-page-group .border-b {
+    padding-bottom: 1px !important;
+    margin-bottom: 1px !important;
   }
 
   .container {
