@@ -36,6 +36,15 @@ export interface PdfLayoutConfig {
   watermark_text: string;
   watermark_opacity: number;
   watermark_enabled: boolean;
+  // Section text colors
+  section_colors: {
+    patentInfo: string;
+    commercialization: string;
+    trl: string;
+    aiSummary: string;
+    claims: string;
+    relatedPatents: string;
+  };
 }
 
 export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
@@ -60,6 +69,14 @@ export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
   watermark_text: "",
   watermark_opacity: 0.08,
   watermark_enabled: false,
+  section_colors: {
+    patentInfo: "#1a65c8",
+    commercialization: "#00785a",
+    trl: "#059669",
+    aiSummary: "#1a65c8",
+    claims: "#7c3aed",
+    relatedPatents: "#0891b2",
+  },
 };
 
 interface PdfLayoutSettingsProps {
@@ -480,6 +497,40 @@ export function PdfLayoutSettings({ apiCall, initialConfig }: PdfLayoutSettingsP
               <Textarea value={config.disclaimer_text} onChange={e => update("disclaimer_text", e.target.value)} rows={2} />
             </div>
           )}
+        </div>
+      </Card>
+
+      {/* Section Text Colors */}
+      <Card className="p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">섹션별 텍스트 색상</h3>
+        <p className="text-[10px] text-muted-foreground">각 섹션 제목 및 강조색을 개별적으로 설정합니다</p>
+        <div className="grid gap-3">
+          {[
+            { key: "patentInfo" as const, label: "특허 정보" },
+            { key: "commercialization" as const, label: "AI 기술사업화 점수" },
+            { key: "trl" as const, label: "기술성숙도(TRL)" },
+            { key: "aiSummary" as const, label: "AI 종합 요약" },
+            { key: "claims" as const, label: "청구항" },
+            { key: "relatedPatents" as const, label: "유사특허" },
+          ].map(item => (
+            <div key={item.key} className="flex items-center justify-between py-1">
+              <span className="text-sm">{item.label}</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={config.section_colors[item.key]}
+                  onChange={e => update("section_colors", { ...config.section_colors, [item.key]: e.target.value })}
+                  className="w-8 h-6 rounded border cursor-pointer"
+                />
+                <Input
+                  value={config.section_colors[item.key]}
+                  onChange={e => update("section_colors", { ...config.section_colors, [item.key]: e.target.value })}
+                  className="w-24 text-xs h-7"
+                  placeholder="#000000"
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
     </div>
