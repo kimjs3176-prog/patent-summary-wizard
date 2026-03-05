@@ -315,63 +315,137 @@ export function PdfGenerator({
         yPosition += 4;
       }
 
-      // ===== COMMERCIALIZATION SCORE (web-like card) =====
+      // ===== COMMERCIALIZATION SCORE (web-like horizontal layout) =====
       if (cfg.show_commercialization && commercializationScore != null && commercializationDetails) {
-        checkNewPage(55);
-        const scoreCardY = yPosition;
-        
-        // Card background
-        drawRoundedRect(margin, scoreCardY, contentWidth, 50, 3, THEME.cardBg, THEME.border);
-        
-        // Header
-        pdf.setFontSize(9);
-        pdf.setTextColor(...accentColor);
-        pdf.text("✨ AI 기술사업화 점수", margin + 5, scoreCardY + 6);
-        
-        // Main score
         const scoreColor = getScoreColor(commercializationScore);
-        pdf.setFontSize(24);
-        pdf.setTextColor(...scoreColor);
-        pdf.text(String(commercializationScore), margin + 5, scoreCardY + 18);
-        pdf.setFontSize(10);
-        pdf.setTextColor(...THEME.textMuted);
-        pdf.text("/ 100", margin + 5 + pdf.getTextWidth(String(commercializationScore)) + 2, scoreCardY + 18);
-        
-        // Grade
-        pdf.setFontSize(16);
-        pdf.setTextColor(...scoreColor);
         const grade = getGradeLabel(commercializationScore);
-        pdf.text(grade, margin + 50, scoreCardY + 16);
 
-        // Sub-scores (vertical layout matching web)
         const subScores = [
-          { label: "기술성", score: commercializationDetails.technologyScore },
-          { label: "시장성", score: commercializationDetails.marketScore },
-          { label: "사업성", score: commercializationDetails.businessScore },
+          { label: "기술성", score: commercializationDetails.technologyScore, reason: commercializationDetails.technologyReason },
+          { label: "시장성", score: commercializationDetails.marketScore, reason: commercializationDetails.marketReason },
+          { label: "사업성", score: commercializationDetails.businessScore, reason: commercializationDetails.businessReason },
         ];
-        
-        let subY = scoreCardY + 24;
+
+        // --- Pre-calculate right column height to determine card height ---
+        const rightColX = margin + 62;
+        const rightColW = contentWidth - 67;
+        let rightColH = 0;
+        // Sub-score reasons
         for (const sub of subScores) {
-          const subColor = getScoreColor(sub.score);
-          // Label
+          if (sub.reason) {
+            rightColH += 5; // label
+            pdf.setFontSize(7);
+            const reasonLines = pdf.splitTextToSize(sub.reason, rightColW - 6);
+            rightColH += reasonLines.length * 3.2 + 4;
+          }
+        }
+        // Analysis text
+        if (commercializationDetails.analysis) {
+          rightColH += 5; // label
           pdf.setFontSize(7);
-          pdf.setTextColor(...THEME.textMuted);
-          pdf.text(sub.label, margin + 5, subY);
-          // Score
-          pdf.setFontSize(9);
-          pdf.setTextColor(...subColor);
-          pdf.text(`${sub.score}점`, margin + 20, subY);
-          // Progress bar
-          const barX = margin + 35;
-          const barW = contentWidth - 45;
-          pdf.setFillColor(230, 230, 230);
-          pdf.roundedRect(barX, subY - 2.5, barW, 3, 1.5, 1.5, "F");
-          pdf.setFillColor(...subColor);
-          pdf.roundedRect(barX, subY - 2.5, barW * (sub.score / 100), 3, 1.5, 1.5, "F");
-          subY += 7;
+          const analysisLines = pdf.splitTextToSize(commercializationDetails.analysis, rightColW - 6);
+          rightColH += analysisLines.length * 3.2 + 4;
         }
 
-        yPosition = scoreCardY + 54;
+        // Left column height: header(8) + score(12) + 3 sub-scores(3*8=24) + padding
+        const leftColH = 8 + 14 + 3 * 9 + 4;
+        const cardContentH = Math.max(leftColH, rightColH) + 14; // +14 for header + padding
+        
+        checkNewPage(cardContentH + 4);
+        const scoreCardY = yPosition;
+
+        // Card background with top accent border (matching web style)
+        drawRoundedRect(margin, scoreCardY, contentWidth, cardContentH, 3, THEME.cardBg, THEME.border);
+        pdf.setFillColor(...accentColor);
+        pdf.roundedRect(margin, scoreCardY, contentWidth, 1.2, 0, 0, "F");
+
+        // Header row
+        pdf.setFontSize(9);
+        pdf.setTextColor(...accentColor);
+        pdf.text("✨ AI 기술사업화 점수", margin + 5, scoreCardY + 7);
+        
+        const leftStartY = scoreCardY + 12;
+        const leftW = 55;
+
+        // --- Left column: Score + Grade + Sub-score bars ---
+        // Main score & grade in a compact row
+        pdf.setFontSize(20);
+        pdf.setTextColor(...scoreColor);
+        pdf.text(String(commercializationScore), margin + 5, leftStartY + 7);
+        const scoreTextW = pdf.getTextWidth(String(commercializationScore));
+        pdf.setFontSize(8);
+        pdf.setTextColor(...THEME.textMuted);
+        pdf.text("/ 100", margin + 5 + scoreTextW + 1.5, leftStartY + 7);
+        
+        // Grade badge
+        pdf.setFontSize(12);
+        pdf.setTextColor(...scoreColor);
+        const gradeX = margin + 5 + scoreTextW + pdf.getTextWidth("/ 100") + 6;
+        pdf.text(grade, gradeX, leftStartY + 7);
+
+        // Sub-score bars (compact vertical list)
+        let subY = leftStartY + 14;
+        for (const sub of subScores) {
+          const subColor = getScoreColor(sub.score);
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(...THEME.textMuted);
+          pdf.text(sub.label, margin + 5, subY);
+          pdf.setFontSize(7.5);
+          pdf.setTextColor(...subColor);
+          pdf.text(`${sub.score}`, margin + 18, subY);
+          pdf.setFontSize(6);
+          pdf.setTextColor(...THEME.textMuted);
+          pdf.text("점", margin + 18 + pdf.getTextWidth(`${sub.score}`) + 0.5, subY);
+          // Progress bar
+          const barX = margin + 28;
+          const barW = leftW - 28 + margin;
+          pdf.setFillColor(225, 228, 232);
+          pdf.roundedRect(barX, subY - 2, barW, 2.5, 1, 1, "F");
+          pdf.setFillColor(...subColor);
+          pdf.roundedRect(barX, subY - 2, barW * (sub.score / 100), 2.5, 1, 1, "F");
+          subY += 8;
+        }
+
+        // --- Right column: Evaluation reasons ---
+        // Vertical divider line
+        const dividerX = margin + leftW + 3;
+        pdf.setDrawColor(...THEME.border);
+        pdf.setLineWidth(0.2);
+        pdf.line(dividerX, scoreCardY + 10, dividerX, scoreCardY + cardContentH - 4);
+
+        let rY = leftStartY + 2;
+        for (const sub of subScores) {
+          if (!sub.reason) continue;
+          pdf.setFontSize(7);
+          pdf.setTextColor(...accentColor);
+          pdf.text(`${sub.label} 평가`, rightColX + 3, rY);
+          rY += 4;
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(...THEME.textBody);
+          const reasonLines = pdf.splitTextToSize(sub.reason, rightColW - 6);
+          for (const rl of reasonLines) {
+            if (rY > scoreCardY + cardContentH - 4) break;
+            pdf.text(rl, rightColX + 3, rY);
+            rY += 3.2;
+          }
+          rY += 2;
+        }
+        if (commercializationDetails.analysis) {
+          pdf.setFontSize(7);
+          pdf.setTextColor(...accentColor);
+          pdf.text("AI 종합 의견", rightColX + 3, rY);
+          rY += 4;
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(...THEME.textBody);
+          const analysisLines = pdf.splitTextToSize(commercializationDetails.analysis, rightColW - 6);
+          for (const al of analysisLines) {
+            if (rY > scoreCardY + cardContentH - 4) break;
+            pdf.text(al, rightColX + 3, rY);
+            rY += 3.2;
+          }
+        }
+
+        yPosition = scoreCardY + cardContentH + 4;
       }
 
       // ===== AI SUMMARY CONTENT =====
