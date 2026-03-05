@@ -382,6 +382,8 @@ export function PatentSummary({
 
       {/* Main Summary Container */}
       <div className="space-y-3">
+      {/* Group: patent info + score + TRL — should fit on one print page */}
+      <div className="print-first-page-group space-y-3">
       {patentData && (
         <div className="glass-effect rounded-2xl p-5 md:p-6 border-t-[3px] transition-all duration-300 hover:shadow-lg" style={{ borderTopColor: 'hsl(210 100% 50%)', animation: 'scaleIn 0.4s ease-out forwards', animationDelay: '0.05s', opacity: 0 }}>
           <div className="flex items-center gap-2.5 mb-3 pb-3 border-b border-border/40">
@@ -424,7 +426,6 @@ export function PatentSummary({
               }
               return null;
             })()}
-            {/* 등록번호도 출원번호도 없는 경우 fallback */}
             {!patentData.registrationNumber && !patentData.applicationNumber && (
               <div className="inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'hsl(210 100% 94%)', color: 'hsl(210 100% 35%)', border: '1px solid hsl(210 80% 85%)' }}>
                  {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
@@ -499,6 +500,7 @@ export function PatentSummary({
           showTrlOnly={true}
         />
       )}
+      </div>{/* end print-first-page-group */}
 
       {/* 4. AI 종합 요약 */}
       {content && (
