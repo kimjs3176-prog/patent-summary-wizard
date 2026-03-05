@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   search_helper_text: "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요",
   score_settings: "",
   trl_settings: "",
+  pdf_layout_config: "",
 };
 
 export function useSiteSettings() {
