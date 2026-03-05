@@ -159,7 +159,7 @@ export function TechnologyCommercializationScore({
   // Show commercialization score section (without TRL)
   return (
     <div className="mb-6 glass-effect rounded-3xl p-4 sm:p-6 md:p-8 animate-slide-in">
-      <div className="flex items-center gap-3 mb-4 sm:mb-5 pb-4 sm:pb-5 border-b border-border/50">
+      <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 sm:pb-5 border-b border-border/50">
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg sm:text-xl">
           ✨
         </div>
@@ -169,58 +169,38 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Horizontal layout: Score left, Analysis right */}
-      <div className="flex flex-col lg:flex-row gap-4 sm:gap-5">
-        {/* Left: Score summary */}
-        <div className="lg:w-[280px] shrink-0 space-y-3">
-          {/* Main Score compact */}
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/30 border border-border/50">
-            <div className="flex items-end gap-1">
-              <span className={`text-3xl sm:text-4xl font-black ${getScoreColor(score)}`}>
-                {score}
-              </span>
-              <span className="text-muted-foreground text-sm mb-0.5">/ 100</span>
-            </div>
-            <div className="flex flex-col">
-              <span className={`text-lg sm:text-xl font-black ${getScoreColor(score)}`}>
-                {getGradeLabel(score, scoreConfig.grades)}
-              </span>
-              <span className={`text-xs font-semibold ${getScoreColor(score)}`}>
-                {getScoreLabel(score, scoreConfig.grades)}
-              </span>
-            </div>
-          </div>
-
-          {/* Sub-scores vertical */}
-          {subItems.map((item) => (
-            <div key={item.label} className="p-3 rounded-xl bg-secondary/30 border border-border/50">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-muted-foreground font-medium">{item.label}</span>
-                <span className={`text-lg font-bold ${getScoreColor(item.score)}`}>{item.score}<span className="text-[10px] text-muted-foreground ml-0.5">점</span></span>
-              </div>
-              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                <div className={`h-full ${getScoreBgColor(item.score)}`} style={{ width: `${item.score}%` }} />
-              </div>
-            </div>
-          ))}
+      {/* Main Score */}
+      <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div className="flex items-end gap-1.5 sm:gap-2">
+          <span className={`text-4xl sm:text-6xl font-black ${getScoreColor(score)}`}>
+            {score}
+          </span>
+          <span className="text-muted-foreground text-base sm:text-xl mb-1 sm:mb-2">/ 100</span>
         </div>
-
-        {/* Right: Reasons & Analysis */}
-        <div className="flex-1 space-y-3">
-          {subItems.map((item) => item.reason && (
-            <div key={`reason-${item.label}`} className="p-3 sm:p-4 rounded-xl bg-secondary/20 border border-border/40">
-              <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 font-semibold">{item.label} 평가</p>
-              <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">{item.reason}</p>
-            </div>
-          ))}
-          {details.analysis && (
-            <div className="p-3 sm:p-4 rounded-xl bg-secondary/30 border border-border/50">
-              <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 font-semibold">AI 종합 의견</p>
-              <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
-            </div>
-          )}
+        <div className="flex flex-col gap-0.5 sm:gap-1">
+          <span className={`text-2xl sm:text-3xl font-black ${getScoreColor(score)}`}>
+            {getGradeLabel(score, scoreConfig.grades)}
+          </span>
+          <span className={`text-sm sm:text-base font-semibold ${getScoreColor(score)}`}>
+            {getScoreLabel(score, scoreConfig.grades)}
+          </span>
         </div>
       </div>
+
+      {/* Sub-scores */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-5">
+        {subItems.map((item) => (
+          <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} />
+        ))}
+      </div>
+
+      {/* Analysis */}
+      {details.analysis && (
+        <div className="p-3 sm:p-4 rounded-2xl bg-secondary/30 border border-border/50">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 font-medium">AI 분석 의견</p>
+          <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
+        </div>
+      )}
     </div>
   );
 }

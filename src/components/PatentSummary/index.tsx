@@ -322,7 +322,7 @@ export function PatentSummary({
 
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-up">
-      {/* Printable Content (Hidden) */}
+      {/* Printable Content (Hidden) - Legacy, kept for compatibility */}
       <PrintableContent
         ref={printRef}
         content={content}
@@ -330,67 +330,15 @@ export function PatentSummary({
         patentData={patentData}
       />
 
-      {/* Action Buttons Bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 print:hidden" style={{ animation: 'fadeUp 0.4s ease-out forwards' }}>
-        {patentNumber && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (patentData) {
-                toggleFavorite({ patentNumber, patentData, addedAt: new Date().toISOString() });
-              }
-            }}
-            className="gap-1.5 rounded-xl text-xs transition-all duration-200 hover:scale-[1.03] active:scale-95"
-          >
-            <Heart className={`w-3.5 h-3.5 transition-colors ${patentIsFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-            {patentIsFavorite ? '관심특허 해제' : '관심특허'}
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 rounded-xl text-xs transition-all duration-200 hover:scale-[1.03] active:scale-95">
-          <Printer className="w-3.5 h-3.5" /> 인쇄
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleShare} className="gap-1.5 rounded-xl text-xs transition-all duration-200 hover:scale-[1.03] active:scale-95">
-          <Share2 className="w-3.5 h-3.5" /> 공유
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 rounded-xl text-xs transition-all duration-200 hover:scale-[1.03] active:scale-95">
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? '복사됨' : '복사'}
-        </Button>
-        <div className="flex-1" />
-        {featureFlags.pdfEnabled && (
-          <PdfGenerator
-            content={content}
-            patentNumber={patentNumber}
-            patentData={patentData}
-            printRef={printRef}
-            commercializationDetails={commercializationDetails}
-            commercializationScore={commercializationScore}
-            layoutConfig={pdfLayoutConfig}
-          />
-        )}
-        {featureFlags.pptEnabled && (
-          <PptGenerator
-            content={content}
-            patentNumber={patentNumber}
-            patentData={patentData}
-            commercializationDetails={commercializationDetails}
-            commercializationScore={commercializationScore}
-          />
-        )}
-      </div>
-
       {/* Main Summary Container */}
-      <div className="space-y-3">
-      {/* Group: patent info + score + TRL — should fit on one print page */}
-      <div className="print-first-page-group space-y-3">
+      <div className="space-y-5">
       {patentData && (
-        <div className="glass-effect rounded-2xl p-5 md:p-6 border-t-[3px] transition-all duration-300 hover:shadow-lg" style={{ borderTopColor: 'hsl(210 100% 50%)', animation: 'scaleIn 0.4s ease-out forwards', animationDelay: '0.05s', opacity: 0 }}>
-          <div className="flex items-center gap-2.5 mb-3 pb-3 border-b border-border/40">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base" style={{ background: 'linear-gradient(135deg, hsl(210 100% 50%), hsl(220 90% 42%))', color: 'white' }}>
+        <div className="mb-5 glass-effect rounded-2xl p-6 md:p-7 animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(210 100% 50%)' }}>
+          <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-border/40">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, hsl(210 100% 50%), hsl(220 90% 42%))', color: 'white' }}>
               {cardIcons.patentInfo || "📄"}
             </div>
-            <div className="card-title text-base font-bold" style={{ color: 'hsl(210 100% 35%)' }}>특허 정보</div>
+            <div className="card-title text-lg font-bold" style={{ color: 'hsl(210 100% 35%)' }}>특허 정보</div>
           </div>
           
           <div className="flex flex-wrap gap-2 mb-3">
@@ -426,6 +374,7 @@ export function PatentSummary({
               }
               return null;
             })()}
+            {/* 등록번호도 출원번호도 없는 경우 fallback */}
             {!patentData.registrationNumber && !patentData.applicationNumber && (
               <div className="inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'hsl(210 100% 94%)', color: 'hsl(210 100% 35%)', border: '1px solid hsl(210 80% 85%)' }}>
                  {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
@@ -434,10 +383,10 @@ export function PatentSummary({
           </div>
           
           {patentData.titleKo && (
-            <h2 className="text-xl font-bold text-foreground mb-3 leading-tight">{patentData.titleKo}</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
           )}
           
-          <div className="mt-3 px-3 py-2 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ background: 'hsl(220 30% 96%)', border: '1px solid hsl(220 20% 90%)' }}>
+          <div className="mt-5 px-4 py-2.5 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ background: 'hsl(220 30% 96%)', border: '1px solid hsl(220 20% 90%)' }}>
             {patentData.assignee && (
               <>
                 <span className="inline-flex items-center gap-1 whitespace-nowrap">
@@ -491,7 +440,110 @@ export function PatentSummary({
         />
       )}
 
-      {/* 3. TRL Section (Technology Maturity) */}
+      {/* 3. AI Summary Card */}
+       <div className="glass-effect rounded-2xl overflow-hidden animate-slide-in border-t-[3px]" style={{ animationDelay: '0.1s', borderTopColor: 'hsl(174 60% 40%)' }}>
+        {/* Header */}
+         <div className="border-b px-5 py-3.5 flex items-center justify-between flex-wrap gap-3" style={{ background: 'linear-gradient(135deg, hsl(174 40% 96%), hsl(210 40% 96%))', borderColor: 'hsl(174 30% 88%)' }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, hsl(174 60% 40%), hsl(210 80% 45%))', color: 'white' }}>
+              {cardIcons.aiSummary || "🤖"}
+            </div>
+            <div>
+              <h3 className="font-bold text-base" style={{ color: 'hsl(174 50% 30%)' }}>AI 종합 요약</h3>
+              <p className="text-xs text-muted-foreground">
+                {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {!isStreaming && content && (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground">
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? "복사됨" : "복사"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground">
+                  <Printer className="w-3.5 h-3.5" />
+                  인쇄
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground">
+                  <Share2 className="w-3.5 h-3.5" />
+                  공유
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (!patentData) return;
+                    toggleFavorite({
+                      patentNumber,
+                      patentData,
+                      commercializationScore,
+                      commercializationDetails,
+                      summary: content,
+                      addedAt: new Date().toISOString(),
+                    });
+                    toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
+                  }}
+                  className={`gap-1.5 text-xs h-8 ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${patentIsFavorite ? "fill-current" : ""}`} />
+                  {patentIsFavorite ? "담김" : "담기"}
+                </Button>
+                {featureFlags.pdfEnabled && (
+                  <PdfGenerator
+                    content={content}
+                    patentNumber={patentNumber}
+                    patentData={patentData}
+                    printRef={printRef}
+                    commercializationDetails={commercializationDetails}
+                    commercializationScore={commercializationScore}
+                    layoutConfig={pdfLayoutConfig}
+                  />
+                )}
+                {featureFlags.pptEnabled && (
+                  <PptGenerator
+                    content={content}
+                    patentNumber={patentNumber}
+                    patentData={patentData}
+                    commercializationDetails={commercializationDetails}
+                    commercializationScore={commercializationScore}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-5 py-6 md:px-7 md:py-8 min-h-[350px]">
+          {content ? (
+            <div className="prose max-w-none">
+              {renderMarkdown(content)}
+              {isStreaming && (
+                <span className="inline-block w-1.5 h-5 bg-primary/60 animate-pulse-subtle ml-0.5 rounded-full" />
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
+              <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+                <FileText className="w-7 h-7" />
+              </div>
+              <p className="text-sm">요약서가 여기에 표시됩니다</p>
+            </div>
+          )}
+        </div>
+
+        {/* Disclaimer */}
+        <div className="mx-5 mb-5 px-4 py-3 rounded-xl" style={{ background: 'hsl(40 80% 95%)', border: '1px solid hsl(40 60% 85%)' }}>
+          <p className="text-xs font-bold text-center leading-relaxed" style={{ color: 'hsl(40 50% 25%)' }}>
+            ⚠️ {disclaimerText}
+          </p>
+        </div>
+      </div>
+
+      {/* 4. TRL Section (Technology Maturity) */}
       {patentData && commercializationDetails && visibleSections.trl !== false && (
         <TechnologyCommercializationScore 
           score={commercializationScore}
@@ -500,52 +552,28 @@ export function PatentSummary({
           showTrlOnly={true}
         />
       )}
-      </div>{/* end print-first-page-group */}
-
-      {/* 4. AI 종합 요약 */}
-      {content && (
-        <div className="glass-effect rounded-2xl p-5 md:p-6 border-t-[3px] transition-all duration-300 hover:shadow-lg" style={{ borderTopColor: 'hsl(210 100% 50%)', animation: 'scaleIn 0.45s ease-out forwards', animationDelay: '0.15s', opacity: 0 }}>
-          <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-border/50">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ background: 'linear-gradient(135deg, hsl(210 100% 50%), hsl(220 90% 42%))', color: 'white' }}>
-              {cardIcons.aiSummary || "🤖"}
-            </div>
-            <div>
-              <h3 className="font-bold text-base" style={{ color: 'hsl(210 100% 35%)' }}>AI 종합 요약</h3>
-              <p className="text-xs text-muted-foreground">특허 명세서 기반 AI 분석</p>
-            </div>
-          </div>
-          <div className="prose prose-sm max-w-none">
-            {renderMarkdown(content)}
-          </div>
-          {/* 면책 조항 */}
-          <div className="mt-4 p-3 rounded-xl flex items-start gap-2" style={{ background: 'hsl(45 100% 94%)', border: '1px solid hsl(45 80% 80%)' }}>
-            <span className="text-base shrink-0">⚠️</span>
-            <p className="text-[11px] font-bold text-foreground/90 leading-relaxed">{disclaimerText}</p>
-          </div>
-        </div>
-      )}
 
       {/* 5. Claims Card */}
       {visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
-        <div className="claims-section glass-effect rounded-2xl p-5 md:p-6 border-t-[3px] transition-all duration-300 hover:shadow-lg" style={{ borderTopColor: 'hsl(260 60% 55%)', animation: 'scaleIn 0.45s ease-out forwards', animationDelay: '0.2s', opacity: 0 }}>
-          <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-border/50">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base" style={{ background: 'linear-gradient(135deg, hsl(260 60% 55%), hsl(280 50% 45%))', color: 'white' }}>
+        <div className="claims-section mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ animationDelay: '0.15s', borderTopColor: 'hsl(260 60% 55%)' }}>
+          <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl" style={{ background: 'linear-gradient(135deg, hsl(260 60% 55%), hsl(280 50% 45%))', color: 'white' }}>
               {cardIcons.claims || "📑"}
             </div>
             <div>
-              <h3 className="font-bold text-base" style={{ color: 'hsl(260 50% 40%)' }}>청구항</h3>
-              <p className="text-xs text-muted-foreground">{patentData.claims.length}개</p>
+              <h3 className="font-bold text-lg" style={{ color: 'hsl(260 50% 40%)' }}>청구항</h3>
+              <p className="text-sm text-muted-foreground">{patentData.claims.length}개</p>
             </div>
           </div>
 
           <details>
-            <summary className="cursor-pointer select-none text-sm font-semibold text-foreground/90 hover:text-foreground transition-colors">
+            <summary className="cursor-pointer select-none text-sm font-semibold text-foreground/90 hover:text-foreground">
               청구항 내용 펼치기/접기
             </summary>
-            <div className="mt-3 space-y-2">
+            <div className="mt-4 space-y-3">
               {patentData.claims.map((c, idx) => (
-                <div key={idx} className="p-3 rounded-xl border" style={{ background: 'hsl(260 30% 97%)', borderColor: 'hsl(260 20% 90%)' }}>
-                  <div className="text-[10px] text-muted-foreground mb-1">청구항 {idx + 1}</div>
+                <div key={idx} className="p-4 rounded-2xl border" style={{ background: 'hsl(260 30% 97%)', borderColor: 'hsl(260 20% 90%)' }}>
+                  <div className="text-xs text-muted-foreground mb-2">청구항 {idx + 1}</div>
                   <div className="text-sm text-foreground/85 leading-relaxed">{c}</div>
                 </div>
               ))}

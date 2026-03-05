@@ -392,18 +392,18 @@
   to { box-shadow: 0 0 12px 3px hsl(174 60% 50% / 0.12), var(--shadow-glossy); }
 }
 
-/* Print styles — target ≤ 3 pages */
+/* Print styles */
 @media print {
   @page {
     size: A4;
-    margin: 5mm 7mm;
+    margin: 6mm 8mm;
   }
 
   body {
     background: white !important;
     color: #111 !important;
-    font-size: 9pt !important;
-    line-height: 1.45 !important;
+    font-size: 10pt !important;
+    line-height: 1.55 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -422,224 +422,18 @@
     display: none !important;
   }
 
-  /* --- Global card reset --- */
   .glass-effect {
     background: white !important;
     backdrop-filter: none !important;
     border: 1px solid #ddd !important;
     box-shadow: none !important;
-    border-radius: 3px !important;
-    padding: 4px 7px !important;
-    margin-bottom: 3px !important;
-  }
-
-  .rounded-3xl, .rounded-2xl, .rounded-xl {
-    border-radius: 3px !important;
-  }
-
-  /* --- First-page group (특허정보 + 점수 + TRL) --- */
-  .print-first-page-group {
+    border-radius: 4px !important;
+    padding: 8px 10px !important;
+    margin-bottom: 6px !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    margin-bottom: 0 !important;
   }
 
-  .print-first-page-group .glass-effect {
-    padding: 3px 6px !important;
-    margin-bottom: 1px !important;
-  }
-
-  .print-first-page-group h2,
-  .print-first-page-group h4 {
-    font-size: 9.5pt !important;
-    margin: 1px 0 !important;
-  }
-
-  .print-first-page-group .text-xl,
-  .print-first-page-group .text-2xl,
-  .print-first-page-group .text-3xl,
-  .print-first-page-group .text-4xl {
-    font-size: 12pt !important;
-  }
-
-  .print-first-page-group .text-lg {
-    font-size: 9pt !important;
-  }
-
-  .print-first-page-group .text-base {
-    font-size: 8.5pt !important;
-  }
-
-  .print-first-page-group .p-3,
-  .print-first-page-group .p-4,
-  .print-first-page-group .p-5,
-  .print-first-page-group .p-6,
-  .print-first-page-group .md\:p-8,
-  .print-first-page-group .sm\:p-4,
-  .print-first-page-group .sm\:p-6 {
-    padding: 2px 5px !important;
-  }
-
-  .print-first-page-group .mb-3,
-  .print-first-page-group .mb-4,
-  .print-first-page-group .mb-5,
-  .print-first-page-group .mb-6 {
-    margin-bottom: 1px !important;
-  }
-
-  .print-first-page-group .pb-3,
-  .print-first-page-group .pb-4,
-  .print-first-page-group .pb-5 {
-    padding-bottom: 1px !important;
-  }
-
-  .print-first-page-group .gap-1,
-  .print-first-page-group .gap-1\.5,
-  .print-first-page-group .gap-2,
-  .print-first-page-group .gap-3,
-  .print-first-page-group .gap-4,
-  .print-first-page-group .gap-5,
-  .print-first-page-group .sm\:gap-2,
-  .print-first-page-group .sm\:gap-5 {
-    gap: 1px !important;
-  }
-
-  .print-first-page-group .space-y-3 > * + *,
-  .print-first-page-group .space-y-4 > * + * {
-    margin-top: 1px !important;
-  }
-
-  .print-first-page-group .mt-3,
-  .print-first-page-group .mt-4,
-  .print-first-page-group .mt-6 {
-    margin-top: 1px !important;
-  }
-
-  /* TRL chart: hidden in print to save space */
-  .print-first-page-group .recharts-wrapper,
-  .print-first-page-group .recharts-responsive-container {
-    display: none !important;
-  }
-
-  /* TRL section compact */
-  .print-first-page-group .trl-print-section {
-    margin-top: 1px !important;
-    padding: 2px 5px !important;
-  }
-
-  .print-first-page-group .trl-print-section .rounded-xl {
-    padding: 2px 5px !important;
-    margin-top: 1px !important;
-  }
-
-  .print-first-page-group .trl-print-section .text-sm {
-    font-size: 7.5pt !important;
-    line-height: 1.3 !important;
-  }
-
-  /* Icon sizes in first-page group */
-  .print-first-page-group .w-9,
-  .print-first-page-group .w-10,
-  .print-first-page-group .w-12,
-  .print-first-page-group .w-14,
-  .print-first-page-group .sm\:w-12 {
-    width: 16px !important;
-    height: 16px !important;
-    font-size: 8px !important;
-  }
-
-  .print-first-page-group .h-3 {
-    height: 3px !important;
-  }
-
-  .print-first-page-group .h-1\.5,
-  .print-first-page-group .sm\:h-2 {
-    height: 2px !important;
-  }
-
-  .print-first-page-group .border-b {
-    padding-bottom: 1px !important;
-    margin-bottom: 1px !important;
-  }
-
-  /* TRL progress bar labels */
-  .print-first-page-group .text-\[10px\] {
-    font-size: 6pt !important;
-  }
-
-  /* TRL stage grid */
-  .print-first-page-group .grid-cols-3 {
-    gap: 1px !important;
-  }
-
-  .print-first-page-group .grid-cols-3 > div {
-    padding: 1px 3px !important;
-    font-size: 6.5pt !important;
-  }
-
-  /* Sub-score cards compact */
-  .print-first-page-group .lg\:w-\[280px\] {
-    width: 200px !important;
-    min-width: 200px !important;
-  }
-
-  /* --- AI 종합 요약 section --- */
-  .prose {
-    font-size: 8.5pt !important;
-    line-height: 1.4 !important;
-  }
-
-  .prose h2 {
-    font-size: 9.5pt !important;
-    font-weight: 700 !important;
-    margin-top: 6px !important;
-    margin-bottom: 2px !important;
-  }
-
-  .prose p {
-    font-size: 8.5pt !important;
-    line-height: 1.4 !important;
-    margin-bottom: 2px !important;
-    orphans: 3;
-    widows: 3;
-  }
-
-  .prose .w-8 {
-    width: 14px !important;
-    height: 14px !important;
-  }
-
-  /* Images in AI summary — compact */
-  .prose img,
-  img {
-    max-width: 45% !important;
-    max-height: 160px !important;
-    height: auto !important;
-    break-inside: avoid !important;
-  }
-
-  .prose .grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 4px !important;
-  }
-
-  .prose .my-6 {
-    margin-top: 4px !important;
-    margin-bottom: 4px !important;
-  }
-
-  /* Disclaimer compact */
-  .prose + div {
-    padding: 2px 5px !important;
-    margin-top: 2px !important;
-  }
-
-  .prose + div p {
-    font-size: 7pt !important;
-    line-height: 1.3 !important;
-  }
-
-  /* --- Global typography --- */
   .container {
     padding: 0 !important;
     max-width: 100% !important;
@@ -652,37 +446,38 @@
   }
 
   h2 {
-    font-size: 9.5pt !important;
+    font-size: 11pt !important;
     font-weight: 700 !important;
-    margin-top: 6px !important;
-    margin-bottom: 2px !important;
+    margin-top: 10px !important;
+    margin-bottom: 5px !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
   }
-
-  h3 {
-    font-size: 9pt !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-  }
-
+  h3 { font-size: 10pt !important; margin-top: 0 !important; margin-bottom: 0 !important; }
   p {
     color: #222 !important;
-    font-size: 8.5pt !important;
-    line-height: 1.4 !important;
-    margin-bottom: 2px !important;
+    font-size: 9.5pt !important;
+    line-height: 1.6 !important;
+    margin-bottom: 4px !important;
     orphans: 3;
     widows: 3;
   }
 
-  .space-y-3 > * + * {
-    margin-top: 2px !important;
+  img { max-width: 100% !important; height: auto !important; break-inside: avoid !important; page-break-inside: avoid !important; }
+
+  .prose > h2 + p,
+  .prose > h2 + div {
+    break-before: avoid !important;
+    page-break-before: avoid !important;
   }
 
-  .trl-print-section {
+  /* Keep info grid cards together */
+  .grid {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  [class*="animate-"] {
-    animation: none !important;
-  }
+  .trl-print-section { break-inside: avoid !important; page-break-inside: avoid !important; }
+
+  [class*="animate-"] { animation: none !important; }
 }
