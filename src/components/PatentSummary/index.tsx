@@ -39,6 +39,10 @@ export function PatentSummary({
     try { return settings.summary_visible_sections ? JSON.parse(settings.summary_visible_sections) : {}; } catch { return {}; }
   }, [settings.summary_visible_sections]);
 
+  const pdfLayoutConfig = useMemo(() => {
+    try { return settings.pdf_layout_config ? JSON.parse(settings.pdf_layout_config) : undefined; } catch { return undefined; }
+  }, [settings.pdf_layout_config]);
+
   const cardIcons = useMemo(() => {
     try { return settings.summary_card_icons ? JSON.parse(settings.summary_card_icons) : {}; } catch { return {}; }
   }, [settings.summary_card_icons]);
@@ -495,6 +499,7 @@ export function PatentSummary({
                     printRef={printRef}
                     commercializationDetails={commercializationDetails}
                     commercializationScore={commercializationScore}
+                    layoutConfig={pdfLayoutConfig}
                   />
                 )}
                 {featureFlags.pptEnabled && (

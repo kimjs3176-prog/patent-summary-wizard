@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText, FileDown } from "lucide-react";
+import { PdfLayoutSettings, DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 import { toast } from "sonner";
 import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 
@@ -138,6 +139,7 @@ const Admin = () => {
   const [summaryMaxTokens, setSummaryMaxTokens] = useState(3000);
   const [scoreConfig, setScoreConfig] = useState<ScoreConfig>(DEFAULT_SCORE_CONFIG);
   const [trlConfig, setTrlConfig] = useState<TrlConfig>(DEFAULT_TRL_CONFIG);
+  const [pdfLayoutConfig, setPdfLayoutConfig] = useState<PdfLayoutConfig>(DEFAULT_PDF_CONFIG);
   const apiCall = async (action: string, data?: Record<string, unknown>) => {
     const res = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-featured-patents`,
@@ -206,6 +208,9 @@ const Admin = () => {
         }
         if (settingsResult.settings?.trl_settings) {
           try { setTrlConfig({ ...DEFAULT_TRL_CONFIG, ...JSON.parse(settingsResult.settings.trl_settings) }); } catch {}
+        }
+        if (settingsResult.settings?.pdf_layout_config) {
+          try { setPdfLayoutConfig({ ...DEFAULT_PDF_CONFIG, ...JSON.parse(settingsResult.settings.pdf_layout_config) }); } catch {}
         }
       }
     } else {
@@ -433,8 +438,11 @@ const Admin = () => {
             <TabsTrigger value="summary" className="flex-1 gap-1.5">
               <FileText className="w-3.5 h-3.5" /> 요약서 관리
             </TabsTrigger>
+            <TabsTrigger value="pdf" className="flex-1 gap-1.5">
+              <FileDown className="w-3.5 h-3.5" /> PDF
+            </TabsTrigger>
             <TabsTrigger value="cache" className="flex-1 gap-1.5" onClick={() => loadCache(0)}>
-              <Database className="w-3.5 h-3.5" /> 캐시 관리
+              <Database className="w-3.5 h-3.5" /> 캐시
             </TabsTrigger>
           </TabsList>
 
@@ -1072,6 +1080,11 @@ const Admin = () => {
                 캐시 삭제 시 해당 특허의 AI 요약과 사업화 점수 캐시도 함께 삭제됩니다. 다음 검색 시 KIPRIS API에서 새로 가져옵니다.
               </p>
             </div>
+        </TabsContent>
+
+          {/* ===== PDF Layout Tab ===== */}
+          <TabsContent value="pdf">
+            <PdfLayoutSettings apiCall={apiCall} initialConfig={pdfLayoutConfig} />
           </TabsContent>
         </Tabs>
       </main>

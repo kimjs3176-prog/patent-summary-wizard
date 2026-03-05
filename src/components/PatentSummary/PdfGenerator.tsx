@@ -5,6 +5,7 @@ import jsPDF from "jspdf";
 import { PatentData } from "./types";
 import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
 import { CommercializationDetails } from "./TechnologyCommercializationScore";
+import { DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 
 interface PdfGeneratorProps {
   content: string;
@@ -13,7 +14,13 @@ interface PdfGeneratorProps {
   printRef: React.RefObject<HTMLDivElement | null>;
   commercializationDetails?: CommercializationDetails | null;
   commercializationScore?: number | null;
+  layoutConfig?: PdfLayoutConfig;
 }
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  const h = hex.replace("#", "");
+  return [parseInt(h.substring(0, 2), 16), parseInt(h.substring(2, 4), 16), parseInt(h.substring(4, 6), 16)];
+};
 
 const THEME = {
   bg: [255, 255, 255] as [number, number, number],
@@ -30,7 +37,9 @@ export function PdfGenerator({
   content,
   patentNumber,
   patentData,
+  layoutConfig,
 }: PdfGeneratorProps) {
+  const cfg = { ...DEFAULT_PDF_CONFIG, ...layoutConfig };
   const handlePdfDownload = async () => {
     if (!content) {
       toast.error("PDF 생성에 실패했습니다.");
@@ -47,9 +56,11 @@ export function PdfGenerator({
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 18;
+      const margin = cfg.page_margin;
       const contentWidth = pageWidth - margin * 2;
       let yPosition = margin;
+      const headerColor = hexToRgb(cfg.header_bg_color);
+      const accentColor = hexToRgb(cfg.section_accent_color);
 
       const checkNewPage = (neededHeight: number) => {
         if (yPosition + neededHeight > pageHeight - margin - 10) {
@@ -163,16 +174,16 @@ export function PdfGenerator({
       };
 
       // ===== HEADER BAR =====
-      pdf.setFillColor(...THEME.headerGreen);
+      pdf.setFillColor(...headerColor);
       pdf.roundedRect(margin, yPosition, contentWidth, 18, 3, 3, "F");
 
       pdf.setFontSize(12);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("농식품 특허 요약서", margin + 6, yPosition + 7.5);
+      pdf.text(cfg.header_title, margin + 6, yPosition + 7.5);
 
       pdf.setFontSize(6.5);
       pdf.setTextColor(200, 225, 210);
-      pdf.text("Agri-Food Patent Summary Report", margin + 6, yPosition + 12.5);
+      pdf.text(cfg.header_subtitle, margin + 6, yPosition + 12.5);
 
       const isApp = patentData?.searchType === "application";
       const displayNumber = isApp
@@ -190,7 +201,7 @@ export function PdfGenerator({
       yPosition += 24;
 
       // ===== PATENT TITLE & META (inline, no card box) =====
-      if (patentData) {
+      if (patentData && cfg.show_patent_meta) {
         const title = patentData.titleKo || patentData.title || "";
         if (title) {
           pdf.setFontSize(11);
@@ -308,20 +319,20 @@ export function PdfGenerator({
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, "");
           if (sectionTitle === "특허 기본 정보") { skipSection = true; continue; }
           if (sectionTitle.includes("AI 종합") || sectionTitle.includes("종합 요약") || sectionTitle.includes("종합요약")) continue;
-          // Skip TRL-related sections in PDF
-          if (sectionTitle.includes("기술성숙도") || sectionTitle.includes("TRL")) continue;
+          // Skip TRL-related sections in PDF based on config
+          if (!cfg.show_trl && (sectionTitle.includes("기술성숙도") || sectionTitle.includes("TRL"))) continue;
 
-          const bodyPreview = estimateBodyHeight(lines, li + 1, 9.5, pageWidth - margin * 2 - 6, 1.7);
+          const bodyPreview = estimateBodyHeight(lines, li + 1, cfg.body_font_size, pageWidth - margin * 2 - 6, cfg.line_height);
           const neededForSection = 14 + bodyPreview;
           checkNewPage(neededForSection);
           yPosition += 6;
 
           // Section accent bar
-          pdf.setFillColor(...THEME.primary);
+          pdf.setFillColor(...accentColor);
           pdf.roundedRect(margin, yPosition - 3, 2.5, 6, 0.8, 0.8, "F");
 
-          pdf.setFontSize(10.5);
-          pdf.setTextColor(...THEME.primary);
+          pdf.setFontSize(cfg.section_title_size);
+          pdf.setTextColor(...accentColor);
           pdf.text(sectionTitle, margin + 5, yPosition);
 
           pdf.setDrawColor(...THEME.border);
@@ -330,20 +341,20 @@ export function PdfGenerator({
 
           yPosition += 7;
 
-          if (sectionTitle === "발명의 요약") await insertImages();
+          if (sectionTitle === "발명의 요약" && cfg.show_patent_images) await insertImages();
         } else if (cleanLine.trim()) {
-          addWrappedText(cleanLine, 9.5, THEME.textBody, 1.7);
+          addWrappedText(cleanLine, cfg.body_font_size, THEME.textBody, cfg.line_height);
           yPosition += 1.5;
         }
       }
 
       // Disclaimer
-      {
+      if (cfg.show_disclaimer) {
         checkNewPage(8);
         yPosition += 4;
         pdf.setFontSize(6.5);
         pdf.setTextColor(...THEME.textMuted);
-        const disc = "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음";
+        const disc = cfg.disclaimer_text;
         pdf.text(disc, (pageWidth - pdf.getTextWidth(disc)) / 2, yPosition);
         yPosition += 5;
       }
@@ -358,11 +369,15 @@ export function PdfGenerator({
         pdf.line(margin, fy - 2, pageWidth - margin, fy - 2);
         pdf.setFontSize(6);
         pdf.setTextColor(...THEME.textMuted);
-        pdf.text("© 농식품 특허 요약 서비스 | AI 기반 특허 분석", margin, fy);
-        const dateText = `생성일: ${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}`;
-        pdf.text(dateText, pageWidth - margin - pdf.getTextWidth(dateText), fy);
-        const pg = `${i} / ${totalPages}`;
-        pdf.text(pg, (pageWidth - pdf.getTextWidth(pg)) / 2, fy);
+        pdf.text(cfg.footer_text, margin, fy);
+        if (cfg.footer_show_date) {
+          const dateText = `생성일: ${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}`;
+          pdf.text(dateText, pageWidth - margin - pdf.getTextWidth(dateText), fy);
+        }
+        if (cfg.footer_show_page) {
+          const pg = `${i} / ${totalPages}`;
+          pdf.text(pg, (pageWidth - pdf.getTextWidth(pg)) / 2, fy);
+        }
       }
 
       pdf.save(`특허요약_${patentNumber}.pdf`);
