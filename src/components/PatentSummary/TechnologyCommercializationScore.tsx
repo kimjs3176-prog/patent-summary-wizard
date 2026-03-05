@@ -187,8 +187,8 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Sub-scores */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-5">
+      {/* Sub-scores - vertical layout */}
+      <div className="grid grid-cols-1 gap-3 mb-4 sm:mb-5">
         {subItems.map((item) => (
           <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} />
         ))}
