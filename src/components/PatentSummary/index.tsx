@@ -440,7 +440,7 @@ export function PatentSummary({
         />
       )}
 
-      {/* 3. TRL Section (Technology Maturity) - moved before AI summary */}
+      {/* 3. TRL Section (Technology Maturity) */}
       {patentData && commercializationDetails && visibleSections.trl !== false && (
         <TechnologyCommercializationScore 
           score={commercializationScore}
@@ -448,6 +448,29 @@ export function PatentSummary({
           details={commercializationDetails}
           showTrlOnly={true}
         />
+      )}
+
+      {/* 4. AI 종합 요약 */}
+      {content && (
+        <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ animationDelay: '0.1s', borderTopColor: 'hsl(210 100% 50%)' }}>
+          <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl" style={{ background: 'linear-gradient(135deg, hsl(210 100% 50%), hsl(220 90% 42%))', color: 'white' }}>
+              {cardIcons.aiSummary || "🤖"}
+            </div>
+            <div>
+              <h3 className="font-bold text-lg" style={{ color: 'hsl(210 100% 35%)' }}>AI 종합 요약</h3>
+              <p className="text-sm text-muted-foreground">특허 명세서 기반 AI 분석</p>
+            </div>
+          </div>
+          <div className="prose prose-sm max-w-none">
+            {renderMarkdown(content)}
+          </div>
+          {/* 면책 조항 */}
+          <div className="mt-6 p-4 rounded-xl flex items-start gap-2" style={{ background: 'hsl(45 100% 94%)', border: '1px solid hsl(45 80% 80%)' }}>
+            <span className="text-lg shrink-0">⚠️</span>
+            <p className="text-xs font-bold text-foreground/90 leading-relaxed">{disclaimerText}</p>
+          </div>
+        </div>
       )}
 
       {/* 5. Claims Card */}
