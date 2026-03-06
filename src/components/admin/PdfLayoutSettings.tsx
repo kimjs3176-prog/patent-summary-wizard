@@ -179,6 +179,27 @@ export function PdfLayoutSettings({ apiCall, initialConfig }: PdfLayoutSettingsP
         </div>
       </Card>
 
+      {/* Patent Info Band Settings */}
+      <Card className="p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">특허정보 밴드</h3>
+        <div className="grid gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">배경색</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={config.meta_bg_color} onChange={e => update("meta_bg_color", e.target.value)} className="w-10 h-8 rounded border cursor-pointer" />
+              <Input value={config.meta_bg_color} onChange={e => update("meta_bg_color", e.target.value)} className="flex-1" placeholder="#e6f3ff" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">좌측 강조바 색상</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={config.meta_accent_color} onChange={e => update("meta_accent_color", e.target.value)} className="w-10 h-8 rounded border cursor-pointer" />
+              <Input value={config.meta_accent_color} onChange={e => update("meta_accent_color", e.target.value)} className="flex-1" placeholder="#3278c8" />
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Section Visibility */}
       <Card className="p-4 space-y-3">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">섹션 표시 여부</h3>
