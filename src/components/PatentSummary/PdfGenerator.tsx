@@ -216,8 +216,9 @@ export function PdfGenerator({
         const metaAccent = hexToRgb(cfg.meta_accent_color || "#3278c8");
         
         // Measure content height first
-        let innerH = 4; // top padding
-        const titleLines = title ? pdf.splitTextToSize(title, contentWidth - 10) : [];
+        let innerH = 6; // top padding
+        pdf.setFontSize(11.5);
+        const titleLines = title ? pdf.splitTextToSize(title, contentWidth - 14) : [];
         const titleLineCount = Math.min(titleLines.length, 2);
         if (title) innerH += titleLineCount * 5.5 + 3;
 
