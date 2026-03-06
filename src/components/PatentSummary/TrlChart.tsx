@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { DEFAULT_TRL_CONFIG, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 
 interface TrlChartProps {
@@ -5,22 +6,10 @@ interface TrlChartProps {
   trlConfig?: TrlConfig;
 }
 
-function getStageColor(level: number): { bg: string; text: string; glow: string } {
-  if (level <= 3) return { 
-    bg: "bg-red-500", 
-    text: "text-red-600 dark:text-red-400",
-    glow: "shadow-red-500/30"
-  };
-  if (level <= 6) return { 
-    bg: "bg-amber-500", 
-    text: "text-amber-600 dark:text-amber-400",
-    glow: "shadow-amber-500/30"
-  };
-  return { 
-    bg: "bg-emerald-500", 
-    text: "text-emerald-600 dark:text-emerald-400",
-    glow: "shadow-emerald-500/30"
-  };
+function getStageColor(level: number): { text: string } {
+  if (level <= 3) return { text: "text-red-600 dark:text-red-400" };
+  if (level <= 6) return { text: "text-amber-600 dark:text-amber-400" };
+  return { text: "text-emerald-600 dark:text-emerald-400" };
 }
 
 function getTrlStage(level: number, stages: TrlConfig["stages"]): string {
@@ -36,6 +25,7 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
   const currentTrlInfo = levels.find((t) => t.level === estimatedTrl);
   const colors = getStageColor(estimatedTrl);
   const progress = (estimatedTrl / 9) * 100;
+  const [hoveredLevel, setHoveredLevel] = useState<number | null>(null);
 
   return (
     <div className="space-y-5">
@@ -43,7 +33,10 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg ${colors.bg} ${colors.glow}`}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg"
+            style={{
+              background: `linear-gradient(135deg, hsl(${120 + (estimatedTrl - 1) * 5}, 60%, ${65 - estimatedTrl * 3}%), hsl(${130 + (estimatedTrl - 1) * 5}, 70%, ${55 - estimatedTrl * 3}%))`,
+            }}
           >
             {estimatedTrl}
           </div>
@@ -64,36 +57,60 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
         </div>
       </div>
 
-      {/* Continuous Progress Bar */}
+      {/* Gradient Progress Bar */}
       <div className="relative">
-        <div className="h-3 rounded-full bg-muted/40 overflow-hidden backdrop-blur-sm">
+        <div className="h-3.5 rounded-full bg-muted/40 overflow-hidden">
           <div
-            className={`h-full rounded-full ${colors.bg} transition-all duration-700 ease-out relative overflow-hidden`}
-            style={{ width: `${progress}%` }}
+            className="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+            style={{
+              width: `${progress}%`,
+              background: "linear-gradient(90deg, #fca5a5 0%, #fbbf24 30%, #34d399 60%, #059669 100%)",
+            }}
           >
-            {/* Glossy shine effect */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
           </div>
         </div>
 
-        {/* Level markers */}
+        {/* Level markers with tooltip */}
         <div className="relative mt-2 flex justify-between px-0">
           {levels.map((item) => {
             const isActive = item.level <= estimatedTrl;
             const isCurrent = item.level === estimatedTrl;
+            const showTooltip = hoveredLevel === item.level || (isCurrent && hoveredLevel === null);
+
             return (
-              <div key={item.level} className="flex flex-col items-center" style={{ width: `${100/9}%` }}>
+              <div
+                key={item.level}
+                className="relative flex flex-col items-center cursor-pointer"
+                style={{ width: `${100 / 9}%` }}
+                onMouseEnter={() => setHoveredLevel(item.level)}
+                onMouseLeave={() => setHoveredLevel(null)}
+              >
+                {/* Tooltip */}
+                {showTooltip && (
+                  <div className="absolute bottom-full mb-2 z-10 pointer-events-none">
+                    <div className="bg-popover text-popover-foreground border border-border shadow-lg rounded-lg px-3 py-2 text-[10px] whitespace-nowrap">
+                      <p className="font-bold text-xs">{item.label}</p>
+                      <p className="text-muted-foreground mt-0.5">{item.description}</p>
+                      {isCurrent && (
+                        <p className="text-primary font-semibold mt-1">← 현재 단계</p>
+                      )}
+                    </div>
+                    <div className="w-2 h-2 bg-popover border-r border-b border-border rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1" />
+                  </div>
+                )}
+
                 <div
-                  className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${
+                  className={`w-2 h-2 rounded-full transition-all duration-500 ${
                     isCurrent
-                      ? `${colors.bg} ring-2 ring-offset-1 ring-offset-background ring-current scale-150`
+                      ? "bg-emerald-500 ring-2 ring-offset-1 ring-offset-background ring-emerald-400 scale-[1.8]"
                       : isActive
-                        ? `${colors.bg} opacity-60`
+                        ? "bg-foreground/40"
                         : "bg-muted-foreground/20"
                   }`}
                 />
                 <span
-                  className={`text-[9px] mt-1 transition-all ${
+                  className={`text-[9px] mt-1.5 transition-all ${
                     isCurrent
                       ? `font-bold ${colors.text}`
                       : isActive
