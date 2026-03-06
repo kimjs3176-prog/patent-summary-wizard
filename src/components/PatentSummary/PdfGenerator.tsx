@@ -216,8 +216,9 @@ export function PdfGenerator({
         const metaAccent = hexToRgb(cfg.meta_accent_color || "#3278c8");
         
         // Measure content height first
-        let innerH = 4; // top padding
-        const titleLines = title ? pdf.splitTextToSize(title, contentWidth - 10) : [];
+        let innerH = 6; // top padding
+        pdf.setFontSize(11.5);
+        const titleLines = title ? pdf.splitTextToSize(title, contentWidth - 14) : [];
         const titleLineCount = Math.min(titleLines.length, 2);
         if (title) innerH += titleLineCount * 5.5 + 3;
 
@@ -231,11 +232,11 @@ export function PdfGenerator({
         if (metaParts.length > 0) {
           pdf.setFontSize(7.5);
           const metaText = metaParts.join("  |  ");
-          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 10);
+          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 14);
           metaLineCount = metaLines.length;
           innerH += 4 + metaLineCount * 3.5;
         }
-        innerH += 2; // minimal bottom padding
+        innerH += 3; // bottom padding
 
         const cardStartY = yPosition;
         const metaCardH = innerH;
@@ -248,7 +249,7 @@ export function PdfGenerator({
         pdf.setFillColor(...metaAccent);
         pdf.rect(margin, yPosition, 2.5, metaCardH, "F");
 
-        yPosition += 4; // top padding
+        yPosition += 6; // top padding
         
         if (title) {
           pdf.setFontSize(11.5);
