@@ -1,13 +1,4 @@
 import { useMemo } from "react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
 import { DEFAULT_TRL_CONFIG, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 
 interface TrlChartProps {
