@@ -45,6 +45,8 @@ export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
   page_margin: 18,
   section_title_size: 10.5,
   section_accent_color: "#00785a",
+  meta_bg_color: "#e6f3ff",
+  meta_accent_color: "#3278c8",
   show_patent_images: true,
   show_patent_meta: true,
   show_claims: true,
