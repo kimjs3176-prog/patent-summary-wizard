@@ -352,7 +352,11 @@ export function PdfGenerator({
 
           pdf.setFontSize(cfg.section_title_size);
           pdf.setTextColor(...accentColor);
-          pdf.text(sectionTitle, margin + 6, yPosition + 0.5);
+          // Simulate bold by drawing text twice with slight x-offset
+          const titleX = margin + 6;
+          const titleY = yPosition + 0.5;
+          pdf.text(sectionTitle, titleX, titleY);
+          pdf.text(sectionTitle, titleX + 0.2, titleY);
 
           yPosition += sectionHeaderH + 3;
 
