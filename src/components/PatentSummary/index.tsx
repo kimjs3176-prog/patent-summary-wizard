@@ -97,8 +97,10 @@ export function PatentSummary({
   };
 
   const handleShare = async () => {
+    // Build shareable URL with patent number - always use published URL for public access
     const publishedOrigin = "https://atipsum.lovable.app";
     const currentOrigin = window.location.origin;
+    // Use published URL so recipients don't need Lovable login
     const baseOrigin = currentOrigin.includes("-preview--") || currentOrigin.includes("lovableproject.com")
       ? publishedOrigin
       : currentOrigin;
@@ -127,6 +129,11 @@ export function PatentSummary({
   const handlePrint = () => {
     window.print();
   };
+
+  
+
+
+  // MD 다운로드 기능 및 Google Patents 링크 기능 제거 (요청사항)
 
   const sectionIconMap: [RegExp, LucideIcon][] = [
     [/요약|개요|소개/, Lightbulb],
@@ -158,6 +165,7 @@ export function PatentSummary({
     let skipSection = false;
     let hasRenderedFirstSection = false;
 
+    // Helper: auto-insert "기술 분야" heading if first content line is not a proper section header
     const maybeInsertTechFieldHeader = (currentIndex: number) => {
       if (!hasRenderedFirstSection) {
         hasRenderedFirstSection = true;
@@ -188,6 +196,7 @@ export function PatentSummary({
         .replace(/^\s*[-•]\s+/, '')
         .replace(/^\s*\d+\.\s+/, '');
 
+      // Handle ## or ### lines (with or without space after hashes)
       const hashMatch = line.match(/^(#{2,3})\s*(.*)/);
       if (hashMatch) {
         const rawTitle = hashMatch[2].replace(/\*\*/g, '').trim();
@@ -196,11 +205,14 @@ export function PatentSummary({
           return;
         }
 
+        // Known section titles (short headings). If the text after ## is too long,
+        // it's likely a paragraph mistakenly starting with ## — render as body text.
         const knownSections = ["기술 분야", "발명의 요약", "기술적 특징", "시장동향", "농산업 활용 특장점", "기술 성숙도 및 상용화 전망"];
         const isKnownSection = knownSections.some(s => rawTitle === s || rawTitle.startsWith(s));
         const isLikelyHeading = isKnownSection || rawTitle.length <= 30;
 
         if (!isLikelyHeading) {
+          // It's a paragraph starting with ## — auto-insert "기술 분야" header if needed
           maybeInsertTechFieldHeader(index);
           const bodyText = hashMatch[2];
           const parts = bodyText.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
@@ -233,6 +245,7 @@ export function PatentSummary({
           </h2>
         );
         
+        // Insert representative images AFTER "발명의 요약" section header (up to 3)
         if (rawTitle === "발명의 요약" && patentData?.images && patentData.images.length > 0) {
           const imagesToShow = patentData.images.slice(0, 3);
           const isSingle = imagesToShow.length === 1;
@@ -284,7 +297,9 @@ export function PatentSummary({
           );
         }
       } else if (cleanLine.trim()) {
+        // If body text appears before any section header, auto-insert "기술 분야"
         maybeInsertTechFieldHeader(index);
+        // Enhanced bold text parsing: **text**, __text__, and partial bold within sentences
         const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
         elements.push(
           <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
@@ -305,16 +320,9 @@ export function PatentSummary({
     return elements;
   };
 
-  // A4 page style
-  const a4PageStyle = {
-    maxWidth: '210mm',
-    minHeight: '297mm',
-    margin: '0 auto 2rem auto',
-  };
-
   return (
-    <div className="w-full mx-auto animate-fade-up">
-      {/* Printable Content (Hidden) */}
+    <div className="w-full max-w-4xl mx-auto animate-fade-up">
+      {/* Printable Content (Hidden) - Legacy, kept for compatibility */}
       <PrintableContent
         ref={printRef}
         content={content}
@@ -322,9 +330,9 @@ export function PatentSummary({
         patentData={patentData}
       />
 
-      {/* Action Bar */}
+      {/* Action Bar - Top */}
       {!isStreaming && content && (
-        <div className="flex items-center justify-end gap-1.5 flex-wrap mb-1" style={{ maxWidth: '210mm', margin: '0 auto 0.25rem auto' }}>
+        <div className="flex items-center justify-end gap-1.5 flex-wrap mb-1">
           <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground">
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? "복사됨" : "복사"}
@@ -380,194 +388,172 @@ export function PatentSummary({
         </div>
       )}
 
-      {/* ===== PAGE 1: 특허정보 + 기술사업화점수 + TRL ===== */}
-      <div
-        className="a4-page bg-background rounded-2xl shadow-lg border border-border/30 p-6 md:p-8 flex flex-col"
-        style={a4PageStyle}
-      >
-        <div className="space-y-5 flex-1">
-          {/* 1. Patent Info */}
-          {patentData && (
-            <div className="glass-effect rounded-2xl p-6 md:p-7 animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(210 100% 50%)' }}>
-              <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-border/40">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, hsl(210 100% 50%), hsl(220 90% 42%))', color: 'white' }}>
-                  {cardIcons.patentInfo || "📄"}
-                </div>
-                <div className="card-title text-lg font-bold" style={{ color: 'hsl(210 100% 35%)' }}>특허 정보</div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mb-3">
-                {(() => {
-                  const regNum = patentData.registrationNumber;
-                  if (regNum) {
-                    const cleanNum = regNum.replace(/[^0-9]/g, "");
-                    const formatted = cleanNum.length >= 9 && cleanNum.startsWith("10")
-                      ? `10-${cleanNum.slice(2, 9)}`
-                      : patentData.displayNumber || regNum;
-                    return (
-                      <div className="inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'hsl(210 100% 94%)', color: 'hsl(210 100% 35%)', border: '1px solid hsl(210 80% 85%)' }}>
-                        {infoLabels.registrationNumber || "등록번호"}: {formatted}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-                {(() => {
-                  const appNum = patentData.applicationNumber;
-                  if (appNum) {
-                    const cleanNum = appNum.replace(/[^0-9]/g, "");
-                    const formatted = cleanNum.length >= 11 && cleanNum.startsWith("10")
-                      ? `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`
-                      : appNum;
-                    return (
-                      <div className="inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'hsl(174 60% 92%)', color: 'hsl(174 60% 28%)', border: '1px solid hsl(174 50% 80%)' }}>
-                        {infoLabels.applicationNumber || "출원번호"}: {formatted}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-                {!patentData.registrationNumber && !patentData.applicationNumber && (
+      <div className="space-y-5">
+      {patentData && (
+        <div className="mb-5 glass-effect rounded-2xl p-6 md:p-7 animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(210 100% 50%)' }}>
+          <div className="flex items-center gap-2.5 mb-4 pb-4 border-b border-border/40">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, hsl(210 100% 50%), hsl(220 90% 42%))', color: 'white' }}>
+              {cardIcons.patentInfo || "📄"}
+            </div>
+            <div className="card-title text-lg font-bold" style={{ color: 'hsl(210 100% 35%)' }}>특허 정보</div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 mb-3">
+            {/* 등록번호 표시 */}
+            {(() => {
+              const regNum = patentData.registrationNumber;
+              if (regNum) {
+                const cleanNum = regNum.replace(/[^0-9]/g, "");
+                const formatted = cleanNum.length >= 9 && cleanNum.startsWith("10")
+                  ? `10-${cleanNum.slice(2, 9)}`
+                  : patentData.displayNumber || regNum;
+                return (
                   <div className="inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'hsl(210 100% 94%)', color: 'hsl(210 100% 35%)', border: '1px solid hsl(210 80% 85%)' }}>
-                     {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
-                   </div>
-                )}
-              </div>
-              
-              {patentData.titleKo && (
-                <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
-              )}
-              
-              <div className="mt-5 px-4 py-2.5 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ background: 'hsl(220 30% 96%)', border: '1px solid hsl(220 20% 90%)' }}>
-                {patentData.assignee && (
-                  <>
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                      <span className="text-muted-foreground text-xs">{infoLabels.assignee || "출원인"}</span>
-                      <span className="text-foreground font-medium text-xs">{patentData.assignee}</span>
-                    </span>
-                    {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-                      <span className="text-border">|</span>
-                    )}
-                  </>
-                )}
-                {patentData.filingDate && (
-                  <>
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                      <span className="text-muted-foreground text-xs">{infoLabels.filingDate || "출원일"}</span>
-                      <span className="text-foreground font-medium text-xs">{patentData.filingDate}</span>
-                    </span>
-                    {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-                      <span className="text-border">|</span>
-                    )}
-                  </>
-                )}
-                {patentData.publicationDate && (
-                  <>
-                    <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                      <span className="text-muted-foreground text-xs">{patentData.registrationNumber ? (infoLabels.publicationDate || '등록일') : '공개일'}</span>
-                      <span className="text-foreground font-medium text-xs">{patentData.publicationDate}</span>
-                    </span>
-                    {patentData.classifications && patentData.classifications.length > 0 && (
-                      <span className="text-border">|</span>
-                    )}
-                  </>
-                )}
-                {patentData.classifications && patentData.classifications.length > 0 && (
-                  <span className="inline-flex items-center gap-1 min-w-0">
-                    <span className="text-muted-foreground text-xs whitespace-nowrap">{infoLabels.ipc || "IPC"}</span>
-                    <span className="text-foreground font-medium text-xs truncate">{patentData.classifications.join(', ')}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 2. Technology Commercialization Score */}
-          {patentData && visibleSections.commercialization !== false && (
-            <TechnologyCommercializationScore 
-              score={commercializationScore}
-              isLoading={isAnalyzing}
-              details={commercializationDetails}
-              showTrlOnly={false}
-            />
-          )}
-
-          {/* 3. TRL Section (moved to Page 1) */}
-          {patentData && commercializationDetails && visibleSections.trl !== false && (
-            <TechnologyCommercializationScore 
-              score={commercializationScore}
-              isLoading={false}
-              details={commercializationDetails}
-              showTrlOnly={true}
-            />
-          )}
-        </div>
-
-        {/* Page 1 footer */}
-        <div className="pt-4 mt-auto text-center border-t border-border/30">
-          <span className="text-xs text-muted-foreground">— 1 / 2 —</span>
-        </div>
-      </div>
-
-      {/* ===== PAGE 2: AI 종합 요약 ===== */}
-      <div
-        className="a4-page bg-background rounded-2xl shadow-lg border border-border/30 p-6 md:p-8 flex flex-col"
-        style={a4PageStyle}
-      >
-        <div className="space-y-5 flex-1">
-          <div className="glass-effect rounded-2xl overflow-hidden animate-slide-in border-t-[3px]" style={{ animationDelay: '0.1s', borderTopColor: 'hsl(174 60% 40%)' }}>
-            {/* Header */}
-            <div className="border-b px-5 py-3.5 flex items-center justify-between flex-wrap gap-3" style={{ background: 'linear-gradient(135deg, hsl(174 40% 96%), hsl(210 40% 96%))', borderColor: 'hsl(174 30% 88%)' }}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, hsl(174 60% 40%), hsl(210 80% 45%))', color: 'white' }}>
-                  {cardIcons.aiSummary || "🤖"}
-                </div>
-                <div>
-                  <h3 className="font-bold text-base" style={{ color: 'hsl(174 50% 30%)' }}>AI 종합 요약</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="px-5 py-6 md:px-7 md:py-8">
-              {content ? (
-                <div className="prose max-w-none">
-                  {renderMarkdown(content)}
-                  {isStreaming && (
-                    <span className="inline-block w-1.5 h-5 bg-primary/60 animate-pulse-subtle ml-0.5 rounded-full" />
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
-                  <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center mb-3">
-                    <FileText className="w-7 h-7" />
+                    {infoLabels.registrationNumber || "등록번호"}: {formatted}
                   </div>
-                  <p className="text-sm">요약서가 여기에 표시됩니다</p>
-                </div>
-              )}
-            </div>
+                );
+              }
+              return null;
+            })()}
+            {/* 출원번호 표시 */}
+            {(() => {
+              const appNum = patentData.applicationNumber;
+              if (appNum) {
+                const cleanNum = appNum.replace(/[^0-9]/g, "");
+                const formatted = cleanNum.length >= 11 && cleanNum.startsWith("10")
+                  ? `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`
+                  : appNum;
+                return (
+                  <div className="inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'hsl(174 60% 92%)', color: 'hsl(174 60% 28%)', border: '1px solid hsl(174 50% 80%)' }}>
+                    {infoLabels.applicationNumber || "출원번호"}: {formatted}
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            {/* 등록번호도 출원번호도 없는 경우 fallback */}
+            {!patentData.registrationNumber && !patentData.applicationNumber && (
+              <div className="inline-block px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'hsl(210 100% 94%)', color: 'hsl(210 100% 35%)', border: '1px solid hsl(210 80% 85%)' }}>
+                 {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
+               </div>
+            )}
+          </div>
+          
+          {patentData.titleKo && (
+            <h2 className="text-2xl font-bold text-foreground mb-4 leading-tight">{patentData.titleKo}</h2>
+          )}
+          
+          <div className="mt-5 px-4 py-2.5 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ background: 'hsl(220 30% 96%)', border: '1px solid hsl(220 20% 90%)' }}>
+            {patentData.assignee && (
+              <>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-muted-foreground text-xs">{infoLabels.assignee || "출원인"}</span>
+                  <span className="text-foreground font-medium text-xs">{patentData.assignee}</span>
+                </span>
+                {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
+                  <span className="text-border">|</span>
+                )}
+              </>
+            )}
+            {patentData.filingDate && (
+              <>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-muted-foreground text-xs">{infoLabels.filingDate || "출원일"}</span>
+                  <span className="text-foreground font-medium text-xs">{patentData.filingDate}</span>
+                </span>
+                {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
+                  <span className="text-border">|</span>
+                )}
+              </>
+            )}
+            {patentData.publicationDate && (
+              <>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-muted-foreground text-xs">{patentData.registrationNumber ? (infoLabels.publicationDate || '등록일') : '공개일'}</span>
+                  <span className="text-foreground font-medium text-xs">{patentData.publicationDate}</span>
+                </span>
+                {patentData.classifications && patentData.classifications.length > 0 && (
+                  <span className="text-border">|</span>
+                )}
+              </>
+            )}
+            {patentData.classifications && patentData.classifications.length > 0 && (
+              <span className="inline-flex items-center gap-1 min-w-0">
+                <span className="text-muted-foreground text-xs whitespace-nowrap">{infoLabels.ipc || "IPC"}</span>
+                <span className="text-foreground font-medium text-xs truncate">{patentData.classifications.join(', ')}</span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
-            {/* Disclaimer */}
-            <div className="mx-5 mb-5 px-4 py-3 rounded-xl" style={{ background: 'hsl(40 80% 95%)', border: '1px solid hsl(40 60% 85%)' }}>
-              <p className="text-xs font-bold text-center leading-relaxed" style={{ color: 'hsl(40 50% 25%)' }}>
-                ⚠️ {disclaimerText}
+      {/* 2. Technology Commercialization Score */}
+      {patentData && visibleSections.commercialization !== false && (
+        <TechnologyCommercializationScore 
+          score={commercializationScore}
+          isLoading={isAnalyzing}
+          details={commercializationDetails}
+          showTrlOnly={false}
+        />
+      )}
+
+      {/* 3. AI Summary Card */}
+       <div className="glass-effect rounded-2xl overflow-hidden animate-slide-in border-t-[3px]" style={{ animationDelay: '0.1s', borderTopColor: 'hsl(174 60% 40%)' }}>
+        {/* Header */}
+         <div className="border-b px-5 py-3.5 flex items-center justify-between flex-wrap gap-3" style={{ background: 'linear-gradient(135deg, hsl(174 40% 96%), hsl(210 40% 96%))', borderColor: 'hsl(174 30% 88%)' }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, hsl(174 60% 40%), hsl(210 80% 45%))', color: 'white' }}>
+              {cardIcons.aiSummary || "🤖"}
+            </div>
+            <div>
+              <h3 className="font-bold text-base" style={{ color: 'hsl(174 50% 30%)' }}>AI 종합 요약</h3>
+              <p className="text-xs text-muted-foreground">
+                {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Page 2 footer */}
-        <div className="pt-4 mt-auto text-center border-t border-border/30">
-          <span className="text-xs text-muted-foreground">— 2 / 2 —</span>
+        {/* Content */}
+        <div className="px-5 py-6 md:px-7 md:py-8 min-h-[350px]">
+          {content ? (
+            <div className="prose max-w-none">
+              {renderMarkdown(content)}
+              {isStreaming && (
+                <span className="inline-block w-1.5 h-5 bg-primary/60 animate-pulse-subtle ml-0.5 rounded-full" />
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
+              <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+                <FileText className="w-7 h-7" />
+              </div>
+              <p className="text-sm">요약서가 여기에 표시됩니다</p>
+            </div>
+          )}
+        </div>
+
+        {/* Disclaimer */}
+        <div className="mx-5 mb-5 px-4 py-3 rounded-xl" style={{ background: 'hsl(40 80% 95%)', border: '1px solid hsl(40 60% 85%)' }}>
+          <p className="text-xs font-bold text-center leading-relaxed" style={{ color: 'hsl(40 50% 25%)' }}>
+            ⚠️ {disclaimerText}
+          </p>
         </div>
       </div>
 
-      {/* Claims (outside A4 pages, expandable) */}
+      {/* 4. TRL Section (Technology Maturity) */}
+      {patentData && commercializationDetails && visibleSections.trl !== false && (
+        <TechnologyCommercializationScore 
+          score={commercializationScore}
+          isLoading={false}
+          details={commercializationDetails}
+          showTrlOnly={true}
+        />
+      )}
+
+      {/* 5. Claims Card */}
       {visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
-        <div className="claims-section glass-effect rounded-3xl p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ animationDelay: '0.15s', borderTopColor: 'hsl(260 60% 55%)', maxWidth: '210mm', margin: '0 auto 2rem auto' }}>
+        <div className="claims-section mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ animationDelay: '0.15s', borderTopColor: 'hsl(260 60% 55%)' }}>
           <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl" style={{ background: 'linear-gradient(135deg, hsl(260 60% 55%), hsl(280 50% 45%))', color: 'white' }}>
               {cardIcons.claims || "📑"}
@@ -594,11 +580,12 @@ export function PatentSummary({
         </div>
       )}
 
-      {/* Related Patents */}
+      {/* End of Summary Container for PDF/Print capture */}
+      </div>
+
+      {/* 6. Related Patents Section */}
       {visibleSections.relatedPatents !== false && (
-        <div style={{ maxWidth: '210mm', margin: '0 auto' }}>
-          <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
-        </div>
+        <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
       )}
     </div>
   );

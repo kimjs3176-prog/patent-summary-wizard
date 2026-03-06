@@ -392,17 +392,6 @@
   to { box-shadow: 0 0 12px 3px hsl(174 60% 50% / 0.12), var(--shadow-glossy); }
 }
 
-/* A4 page styling for screen */
-.a4-page {
-  page-break-after: always;
-  break-after: page;
-}
-
-.a4-page:last-of-type {
-  page-break-after: auto;
-  break-after: auto;
-}
-
 /* Print styles */
 @media print {
   @page {
@@ -431,23 +420,6 @@
   [class*="related"], [class*="Related"],
   [class*="claim"], [class*="Claim"] {
     display: none !important;
-  }
-
-  .a4-page {
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    min-height: auto !important;
-    max-width: 100% !important;
-    page-break-after: always !important;
-    break-after: page !important;
-  }
-
-  .a4-page:last-of-type {
-    page-break-after: auto !important;
-    break-after: auto !important;
   }
 
   .glass-effect {
@@ -499,6 +471,7 @@
     page-break-before: avoid !important;
   }
 
+  /* Keep info grid cards together */
   .grid {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
