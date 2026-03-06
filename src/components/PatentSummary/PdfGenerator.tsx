@@ -249,7 +249,7 @@ export function PdfGenerator({
         pdf.setFillColor(...metaAccent);
         pdf.rect(margin, yPosition, 2.5, metaCardH, "F");
 
-        yPosition += 4; // top padding
+        yPosition += 6; // top padding
         
         if (title) {
           pdf.setFontSize(11.5);
