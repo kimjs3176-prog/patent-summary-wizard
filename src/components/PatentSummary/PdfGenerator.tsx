@@ -212,34 +212,52 @@ export function PdfGenerator({
       // ===== PATENT TITLE & META (card style) =====
       if (patentData && cfg.show_patent_meta) {
         const title = patentData.titleKo || patentData.title || "";
+        const metaBg = hexToRgb(cfg.meta_bg_color || "#e6f3ff");
+        const metaAccent = hexToRgb(cfg.meta_accent_color || "#3278c8");
         
-        // Light background card for patent info
-        const metaCardH = title ? 28 : 18;
-        pdf.setFillColor(230, 243, 255);
-        pdf.setDrawColor(190, 215, 240);
-        pdf.setLineWidth(0.3);
-        pdf.roundedRect(margin, yPosition, contentWidth, metaCardH, 2, 2, "FD");
-        
-        // Accent left bar
-        pdf.setFillColor(50, 120, 200);
-        pdf.rect(margin, yPosition, 2.5, metaCardH, "F");
-        
-        if (title) {
-          pdf.setFontSize(11.5);
-          pdf.setTextColor(...THEME.text);
-          const titleLines = pdf.splitTextToSize(title, contentWidth - 10);
-          for (let i = 0; i < Math.min(titleLines.length, 2); i++) {
-            pdf.text(titleLines[i] + (i === 0 && titleLines.length > 2 ? "..." : ""), margin + 6, yPosition + 6 + i * 5.5);
-          }
-          yPosition += Math.min(titleLines.length, 2) * 5.5 + 3;
-        }
+        // Measure content height first
+        let innerH = 4; // top padding
+        const titleLines = title ? pdf.splitTextToSize(title, contentWidth - 10) : [];
+        const titleLineCount = Math.min(titleLines.length, 2);
+        if (title) innerH += titleLineCount * 5.5 + 3;
 
-        // Compact inline metadata
         const metaParts: string[] = [];
         if (patentData.assignee) metaParts.push(`출원인: ${patentData.assignee}`);
         if (patentData.inventors?.length) metaParts.push(`발명자: ${patentData.inventors.join(", ")}`);
         if (patentData.filingDate) metaParts.push(`출원일: ${patentData.filingDate}`);
         if (patentData.publicationDate) metaParts.push(`${patentData.registrationNumber ? '등록일' : '공개일'}: ${patentData.publicationDate}`);
+
+        let metaLineCount = 0;
+        if (metaParts.length > 0) {
+          pdf.setFontSize(7.5);
+          const metaText = metaParts.join("  |  ");
+          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 10);
+          metaLineCount = metaLines.length;
+          innerH += 4 + metaLineCount * 3.5;
+        }
+        innerH += 2; // minimal bottom padding
+
+        const cardStartY = yPosition;
+        const metaCardH = innerH;
+        pdf.setFillColor(...metaBg);
+        pdf.setDrawColor(190, 215, 240);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, yPosition, contentWidth, metaCardH, 2, 2, "FD");
+        
+        // Accent left bar
+        pdf.setFillColor(...metaAccent);
+        pdf.rect(margin, yPosition, 2.5, metaCardH, "F");
+
+        yPosition += 4; // top padding
+        
+        if (title) {
+          pdf.setFontSize(11.5);
+          pdf.setTextColor(...THEME.text);
+          for (let i = 0; i < titleLineCount; i++) {
+            pdf.text(titleLines[i] + (i === 0 && titleLines.length > 2 ? "..." : ""), margin + 6, yPosition + 2 + i * 5.5);
+          }
+          yPosition += titleLineCount * 5.5 + 3;
+        }
 
         if (metaParts.length > 0) {
           pdf.setFontSize(7.5);
@@ -252,7 +270,8 @@ export function PdfGenerator({
           }
         }
 
-        yPosition += 12;
+        // Jump to card bottom + external margin
+        yPosition = cardStartY + metaCardH + 6;
       }
 
       // ===== AI SUMMARY CONTENT =====
