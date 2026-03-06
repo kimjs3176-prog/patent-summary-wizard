@@ -341,19 +341,20 @@ export function PdfGenerator({
           yPosition += 5;
 
           // Section header with background band
-          const sectionHeaderH = 8;
+          const sectionHeaderH = 9;
+          const bandY = yPosition - 4.5;
           pdf.setFillColor(THEME.sectionBg[0], THEME.sectionBg[1], THEME.sectionBg[2]);
-          pdf.roundedRect(margin, yPosition - 4, contentWidth, sectionHeaderH, 1.5, 1.5, "F");
+          pdf.roundedRect(margin, bandY, contentWidth, sectionHeaderH, 1.5, 1.5, "F");
           
           // Section accent bar (left)
           pdf.setFillColor(...accentColor);
-          pdf.roundedRect(margin, yPosition - 4, 2.5, sectionHeaderH, 0.8, 0.8, "F");
+          pdf.roundedRect(margin, bandY, 2.5, sectionHeaderH, 0.8, 0.8, "F");
 
           pdf.setFontSize(cfg.section_title_size);
           pdf.setTextColor(...accentColor);
-          pdf.text(sectionTitle, margin + 6, yPosition);
+          pdf.text(sectionTitle, margin + 6, yPosition + 0.5);
 
-          yPosition += 7;
+          yPosition += sectionHeaderH + 3;
 
           if (sectionTitle === "발명의 요약" && cfg.show_patent_images) await insertImages();
         } else if (cleanLine.trim()) {
