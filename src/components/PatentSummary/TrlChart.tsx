@@ -94,63 +94,6 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
         </div>
       </div>
 
-      {/* TRL Area Chart */}
-      <div className="h-32 sm:h-40 mt-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="trlGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="level"
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-              axisLine={{ stroke: "hsl(var(--border))" }}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-              axisLine={false}
-              tickLine={false}
-              domain={[0, 100]}
-              tickFormatter={(v) => `${v}%`}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
-                fontSize: "12px",
-              }}
-              formatter={(_value: number, _name: string, props: any) => {
-                const item = levels[props.payload.level - 1];
-                return [item?.description || "", `TRL ${props.payload.level}`];
-              }}
-              labelFormatter={(label) => {
-                const item = levels[Number(label) - 1];
-                return item?.label || "";
-              }}
-            />
-            <ReferenceLine
-              x={estimatedTrl}
-              stroke="hsl(var(--accent))"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-            />
-            <Area
-              type="stepAfter"
-              dataKey="value"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              fill="url(#trlGradient)"
-              animationDuration={1000}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
       {/* TRL Stage Description */}
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center text-[10px] sm:text-xs">
         <div
