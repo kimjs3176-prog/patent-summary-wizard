@@ -232,11 +232,11 @@ export function PdfGenerator({
         if (metaParts.length > 0) {
           pdf.setFontSize(7.5);
           const metaText = metaParts.join("  |  ");
-          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 10);
+          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 14);
           metaLineCount = metaLines.length;
           innerH += 4 + metaLineCount * 3.5;
         }
-        innerH += 2; // minimal bottom padding
+        innerH += 3; // bottom padding
 
         const cardStartY = yPosition;
         const metaCardH = innerH;
