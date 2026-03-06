@@ -19,6 +19,9 @@ export interface PdfLayoutConfig {
   page_margin: number;
   section_title_size: number;
   section_accent_color: string;
+  // Patent info band
+  meta_bg_color: string;
+  meta_accent_color: string;
   // Sections visibility
   show_patent_images: boolean;
   show_patent_meta: boolean;
