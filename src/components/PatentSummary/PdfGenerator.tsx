@@ -215,13 +215,13 @@ export function PdfGenerator({
         
         // Light background card for patent info
         const metaCardH = title ? 28 : 18;
-        pdf.setFillColor(...THEME.metaBg);
-        pdf.setDrawColor(...THEME.border);
+        pdf.setFillColor(230, 243, 255);
+        pdf.setDrawColor(190, 215, 240);
         pdf.setLineWidth(0.3);
         pdf.roundedRect(margin, yPosition, contentWidth, metaCardH, 2, 2, "FD");
         
         // Accent left bar
-        pdf.setFillColor(...accentColor);
+        pdf.setFillColor(50, 120, 200);
         pdf.rect(margin, yPosition, 2.5, metaCardH, "F");
         
         if (title) {
@@ -252,7 +252,7 @@ export function PdfGenerator({
           }
         }
 
-        yPosition += 8;
+        yPosition += 12;
       }
 
       // ===== AI SUMMARY CONTENT =====
