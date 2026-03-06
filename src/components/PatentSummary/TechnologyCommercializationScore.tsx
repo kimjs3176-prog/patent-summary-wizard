@@ -127,13 +127,13 @@ export function TechnologyCommercializationScore({
     if (!details.trl) return null;
     
     return (
-      <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in trl-print-section" style={{ animationDelay: '0.12s' }}>
+      <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in trl-print-section border-t-[3px]" style={{ animationDelay: '0.12s', borderTopColor: 'hsl(160 70% 40%)' }}>
         <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-primary flex items-center justify-center text-xl">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl" style={{ background: 'linear-gradient(135deg, hsl(160 70% 45%), hsl(170 60% 35%))', color: 'white' }}>
             📊
           </div>
           <div>
-            <h4 className="font-bold text-lg text-foreground">{trlConfig.cardTitle}</h4>
+            <h4 className="font-bold text-lg" style={{ color: 'hsl(160 60% 30%)' }}>{trlConfig.cardTitle}</h4>
             <p className="text-sm text-muted-foreground">{trlConfig.cardSubtitle}</p>
           </div>
         </div>
@@ -158,13 +158,13 @@ export function TechnologyCommercializationScore({
 
   // Show commercialization score section (without TRL)
   return (
-    <div className="mb-6 glass-effect rounded-3xl p-4 sm:p-6 md:p-8 animate-slide-in">
+    <div className="mb-6 glass-effect rounded-3xl p-4 sm:p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(25 90% 55%)' }}>
       <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 sm:pb-5 border-b border-border/50">
-        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg sm:text-xl">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55%), hsl(35 85% 50%))', color: 'white' }}>
           ✨
         </div>
         <div>
-          <h4 className="font-bold text-base sm:text-lg text-foreground">{scoreConfig.cardTitle}</h4>
+          <h4 className="font-bold text-base sm:text-lg" style={{ color: 'hsl(25 70% 35%)' }}>{scoreConfig.cardTitle}</h4>
           <p className="text-xs sm:text-sm text-muted-foreground">{scoreConfig.cardSubtitle}</p>
         </div>
       </div>

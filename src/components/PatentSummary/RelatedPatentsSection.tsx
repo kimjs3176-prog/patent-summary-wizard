@@ -28,16 +28,16 @@ export function RelatedPatentsSection({ relatedPatents, onPatentClick }: Related
 
   return (
     <div
-      className="related-patents-section mt-6 glass-effect rounded-3xl overflow-hidden animate-slide-in"
-      style={{ animationDelay: "0.2s" }}
+      className="related-patents-section mt-6 glass-effect rounded-3xl overflow-hidden animate-slide-in border-t-[3px]"
+      style={{ animationDelay: "0.2s", borderTopColor: 'hsl(220 70% 50%)' }}
     >
-      <div className="bg-secondary/30 border-b border-border/50 px-6 py-4">
+      <div className="border-b border-border/50 px-6 py-4" style={{ background: 'linear-gradient(135deg, hsl(220 50% 96%), hsl(230 40% 95%))' }}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xl">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl" style={{ background: 'linear-gradient(135deg, hsl(220 70% 50%), hsl(240 60% 45%))', color: 'white' }}>
             🔗
           </div>
           <div>
-            <h3 className="font-bold text-lg text-foreground">유사 특허</h3>
+            <h3 className="font-bold text-lg" style={{ color: 'hsl(220 60% 35%)' }}>유사 특허</h3>
             <p className="text-sm text-muted-foreground">{relatedPatents.length}건의 관련 특허</p>
           </div>
         </div>
