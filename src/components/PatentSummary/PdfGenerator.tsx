@@ -25,12 +25,14 @@ const hexToRgb = (hex: string): [number, number, number] => {
 const THEME = {
   bg: [255, 255, 255] as [number, number, number],
   primary: [0, 120, 90] as [number, number, number],
-  text: [15, 20, 18] as [number, number, number],
-  textMuted: [80, 100, 90] as [number, number, number],
-  textBody: [25, 32, 28] as [number, number, number],
-  border: [195, 215, 205] as [number, number, number],
+  text: [30, 35, 40] as [number, number, number],
+  textMuted: [110, 120, 130] as [number, number, number],
+  textBody: [40, 45, 50] as [number, number, number],
+  border: [210, 220, 230] as [number, number, number],
   headerGreen: [0, 140, 130] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
+  sectionBg: [245, 248, 252] as [number, number, number],
+  metaBg: [240, 245, 250] as [number, number, number],
 };
 
 export function PdfGenerator({
@@ -174,16 +176,23 @@ export function PdfGenerator({
       };
 
       // ===== HEADER BAR =====
+      const headerH = 20;
       pdf.setFillColor(...headerColor);
-      pdf.roundedRect(margin, yPosition, contentWidth, 18, 3, 3, "F");
+      pdf.roundedRect(margin, yPosition, contentWidth, headerH, 3, 3, "F");
+      // Subtle darker bottom strip
+      pdf.setFillColor(headerColor[0] * 0.85, headerColor[1] * 0.85, headerColor[2] * 0.85);
+      pdf.rect(margin, yPosition + headerH - 3, contentWidth, 3, "F");
+      // Bottom corners fix
+      pdf.setFillColor(...headerColor);
+      pdf.roundedRect(margin, yPosition, contentWidth, headerH, 3, 3, "F");
 
-      pdf.setFontSize(12);
+      pdf.setFontSize(13);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(cfg.header_title, margin + 6, yPosition + 7.5);
+      pdf.text(cfg.header_title, margin + 7, yPosition + 8.5);
 
-      pdf.setFontSize(6.5);
-      pdf.setTextColor(200, 225, 210);
-      pdf.text(cfg.header_subtitle, margin + 6, yPosition + 12.5);
+      pdf.setFontSize(7);
+      pdf.setTextColor(220, 240, 230);
+      pdf.text(cfg.header_subtitle, margin + 7, yPosition + 13.5);
 
       const isApp = patentData?.searchType === "application";
       const displayNumber = isApp
@@ -191,28 +200,38 @@ export function PdfGenerator({
         : patentData?.displayNumber || patentNumber;
       const numberLabel = isApp ? "출원번호" : "등록번호";
 
-      pdf.setFontSize(6);
-      pdf.setTextColor(200, 225, 210);
-      pdf.text(numberLabel, pageWidth - margin - pdf.getTextWidth(numberLabel) - 6, yPosition + 7.5);
-      pdf.setFontSize(8.5);
+      pdf.setFontSize(6.5);
+      pdf.setTextColor(200, 230, 215);
+      pdf.text(numberLabel, pageWidth - margin - pdf.getTextWidth(numberLabel) - 7, yPosition + 8);
+      pdf.setFontSize(9);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(displayNumber, pageWidth - margin - pdf.getTextWidth(displayNumber) - 6, yPosition + 12.5);
+      pdf.text(displayNumber, pageWidth - margin - pdf.getTextWidth(displayNumber) - 7, yPosition + 13.5);
 
-      yPosition += 24;
+      yPosition += headerH + 6;
 
-      // ===== PATENT TITLE & META (inline, no card box) =====
+      // ===== PATENT TITLE & META (card style) =====
       if (patentData && cfg.show_patent_meta) {
         const title = patentData.titleKo || patentData.title || "";
+        
+        // Light background card for patent info
+        const metaCardH = title ? 28 : 18;
+        pdf.setFillColor(...THEME.metaBg);
+        pdf.setDrawColor(...THEME.border);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, yPosition, contentWidth, metaCardH, 2, 2, "FD");
+        
+        // Accent left bar
+        pdf.setFillColor(...accentColor);
+        pdf.rect(margin, yPosition, 2.5, metaCardH, "F");
+        
         if (title) {
-          pdf.setFontSize(11);
+          pdf.setFontSize(11.5);
           pdf.setTextColor(...THEME.text);
-          const titleLines = pdf.splitTextToSize(title, contentWidth - 4);
+          const titleLines = pdf.splitTextToSize(title, contentWidth - 10);
           for (let i = 0; i < Math.min(titleLines.length, 2); i++) {
-            checkNewPage(6);
-            pdf.text(titleLines[i] + (i === 0 && titleLines.length > 2 ? "..." : ""), margin + 2, yPosition);
-            yPosition += 5.5;
+            pdf.text(titleLines[i] + (i === 0 && titleLines.length > 2 ? "..." : ""), margin + 6, yPosition + 6 + i * 5.5);
           }
-          yPosition += 1;
+          yPosition += Math.min(titleLines.length, 2) * 5.5 + 3;
         }
 
         // Compact inline metadata
@@ -226,20 +245,14 @@ export function PdfGenerator({
           pdf.setFontSize(7.5);
           pdf.setTextColor(...THEME.textMuted);
           const metaText = metaParts.join("  |  ");
-          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 4);
+          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 10);
           for (const ml of metaLines) {
-            checkNewPage(4);
-            pdf.text(ml, margin + 2, yPosition);
+            pdf.text(ml, margin + 6, yPosition + 4);
             yPosition += 3.5;
           }
         }
 
-        // Thin separator line
-        yPosition += 2;
-        pdf.setDrawColor(...THEME.border);
-        pdf.setLineWidth(0.3);
-        pdf.line(margin, yPosition, margin + contentWidth, yPosition);
-        yPosition += 6;
+        yPosition += 8;
       }
 
       // ===== AI SUMMARY CONTENT =====
@@ -325,19 +338,20 @@ export function PdfGenerator({
           const bodyPreview = estimateBodyHeight(lines, li + 1, cfg.body_font_size, pageWidth - margin * 2 - 6, cfg.line_height);
           const neededForSection = 14 + bodyPreview;
           checkNewPage(neededForSection);
-          yPosition += 6;
+          yPosition += 5;
 
-          // Section accent bar
+          // Section header with background band
+          const sectionHeaderH = 8;
+          pdf.setFillColor(THEME.sectionBg[0], THEME.sectionBg[1], THEME.sectionBg[2]);
+          pdf.roundedRect(margin, yPosition - 4, contentWidth, sectionHeaderH, 1.5, 1.5, "F");
+          
+          // Section accent bar (left)
           pdf.setFillColor(...accentColor);
-          pdf.roundedRect(margin, yPosition - 3, 2.5, 6, 0.8, 0.8, "F");
+          pdf.roundedRect(margin, yPosition - 4, 2.5, sectionHeaderH, 0.8, 0.8, "F");
 
           pdf.setFontSize(cfg.section_title_size);
           pdf.setTextColor(...accentColor);
-          pdf.text(sectionTitle, margin + 5, yPosition);
-
-          pdf.setDrawColor(...THEME.border);
-          pdf.setLineWidth(0.15);
-          pdf.line(margin + 5, yPosition + 1.5, margin + 5 + Math.min(pdf.getTextWidth(sectionTitle), contentWidth - 8), yPosition + 1.5);
+          pdf.text(sectionTitle, margin + 6, yPosition);
 
           yPosition += 7;
 
@@ -348,25 +362,33 @@ export function PdfGenerator({
         }
       }
 
-      // Disclaimer
+      // Disclaimer with background
       if (cfg.show_disclaimer) {
-        checkNewPage(8);
-        yPosition += 4;
+        checkNewPage(12);
+        yPosition += 6;
+        const discH = 8;
+        pdf.setFillColor(255, 248, 230);
+        pdf.setDrawColor(240, 220, 180);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, yPosition - 4, contentWidth, discH, 1.5, 1.5, "FD");
         pdf.setFontSize(6.5);
-        pdf.setTextColor(...THEME.textMuted);
-        const disc = cfg.disclaimer_text;
-        pdf.text(disc, (pageWidth - pdf.getTextWidth(disc)) / 2, yPosition);
-        yPosition += 5;
+        pdf.setTextColor(140, 110, 50);
+        const disc = `⚠ ${cfg.disclaimer_text}`;
+        pdf.text(disc, (pageWidth - pdf.getTextWidth(disc)) / 2, yPosition + 0.5);
+        yPosition += discH + 2;
       }
 
       // Footer on all pages
       const totalPages = pdf.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
-        const fy = pageHeight - 7;
+        const fy = pageHeight - 6;
+        // Footer background strip
+        pdf.setFillColor(THEME.sectionBg[0], THEME.sectionBg[1], THEME.sectionBg[2]);
+        pdf.rect(0, fy - 5, pageWidth, 12, "F");
         pdf.setDrawColor(...THEME.border);
         pdf.setLineWidth(0.2);
-        pdf.line(margin, fy - 2, pageWidth - margin, fy - 2);
+        pdf.line(margin, fy - 3, pageWidth - margin, fy - 3);
         pdf.setFontSize(6);
         pdf.setTextColor(...THEME.textMuted);
         pdf.text(cfg.footer_text, margin, fy);
