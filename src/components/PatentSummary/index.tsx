@@ -172,12 +172,17 @@ export function PatentSummary({
         const defaultTitle = sectionTitles["기술 분야"] || "기술 분야";
         const IconComp = getSectionIcon("기술 분야");
         elements.push(
-          <h2 key={`auto-tech-${currentIndex}`} className="text-xl font-bold mt-8 mb-3 first:mt-0 flex items-center gap-2.5" style={{ color: 'hsl(210 100% 40%)' }}>
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg shrink-0" style={{ background: 'hsl(210 100% 94%)', color: 'hsl(210 100% 40%)' }}>
-              <IconComp className="w-4.5 h-4.5" />
-            </span>
-            {defaultTitle}
-          </h2>
+          <div key={`auto-tech-${currentIndex}`} className="mt-9 mb-4 first:mt-0">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl shrink-0 shadow-sm" style={{ background: 'linear-gradient(135deg, hsl(210 100% 94%), hsl(210 80% 90%))', color: 'hsl(210 100% 40%)' }}>
+                <IconComp className="w-[18px] h-[18px]" />
+              </span>
+              <h2 className="text-xl font-bold tracking-tight" style={{ color: 'hsl(210 80% 30%)' }}>
+                {defaultTitle}
+              </h2>
+            </div>
+            <div className="mt-2.5 h-px" style={{ background: 'linear-gradient(90deg, hsl(210 60% 88%), transparent 80%)' }} />
+          </div>
         );
       }
     };
