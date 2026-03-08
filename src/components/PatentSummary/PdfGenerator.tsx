@@ -478,7 +478,7 @@ export function PdfGenerator({
 
           // ── Modern section header ──
           const sectionHeaderH = 10;
-          const bandY = yPosition - 4.5;
+          const bandY = yPosition;
 
           // Clean background band with subtle gradient
           pdf.setFillColor(...THEME.surfaceLight);
@@ -486,36 +486,40 @@ export function PdfGenerator({
 
           // Accent left edge — rounded pill
           pdf.setFillColor(...accentColor);
-          pdf.roundedRect(margin + 0.5, bandY + 1.5, 2, sectionHeaderH - 3, 1, 1, "F");
+          pdf.roundedRect(margin + 0.5, bandY + 2, 2, sectionHeaderH - 4, 1, 1, "F");
 
           // Section number — modern circular badge
           const badgeX = margin + 7;
-          const badgeY = bandY + sectionHeaderH / 2;
+          const badgeCY = bandY + sectionHeaderH / 2;
           const badgeR = 3.2;
 
-          // Badge with subtle gradient feel
+          // Badge fill
           pdf.setFillColor(...accentColor);
-          pdf.circle(badgeX, badgeY, badgeR, "F");
+          pdf.circle(badgeX, badgeCY, badgeR, "F");
           // Inner highlight
           pdf.setFillColor(...lerpColor(accentColor, [255, 255, 255], 0.2));
-          pdf.circle(badgeX - 0.3, badgeY - 0.3, badgeR * 0.7, "F");
+          pdf.circle(badgeX - 0.3, badgeCY - 0.3, badgeR * 0.7, "F");
           pdf.setFillColor(...accentColor);
-          pdf.circle(badgeX, badgeY, badgeR - 0.3, "F");
+          pdf.circle(badgeX, badgeCY, badgeR - 0.3, "F");
 
+          // Badge number — vertically centered
           pdf.setFontSize(6.5);
           pdf.setTextColor(255, 255, 255);
           const numStr = String(sectionIndex);
-          pdf.text(numStr, badgeX - pdf.getTextWidth(numStr) / 2, badgeY + 1.2);
+          const numW = pdf.getTextWidth(numStr);
+          const numFontH = 6.5 * 0.352778; // font size in mm
+          pdf.text(numStr, badgeX - numW / 2, badgeCY + numFontH * 0.35);
 
-          // Section title
+          // Section title — baseline aligned with badge center
           const titleX = margin + 13;
-          const titleY = yPosition + 0.8;
+          const titleFontH = cfg.section_title_size * 0.352778;
+          const titleY = badgeCY + titleFontH * 0.35;
           pdf.setFontSize(cfg.section_title_size);
           pdf.setTextColor(...accentColor);
           pdf.text(sectionTitle, titleX, titleY);
           pdf.text(sectionTitle, titleX + 0.16, titleY); // faux bold
 
-          yPosition += sectionHeaderH + 3;
+          yPosition = bandY + sectionHeaderH + 3;
 
           if (sectionTitle === "발명의 요약" && cfg.show_patent_images) await insertImages();
         } else if (cleanLine.trim()) {
@@ -549,21 +553,26 @@ export function PdfGenerator({
         pdf.setFillColor(...THEME.amber);
         pdf.roundedRect(margin, dY, 2.5, discH, 1, 1, "F");
 
-        // Warning icon circle
+        // Warning icon circle — vertically centered in card
         const iconX = margin + 7;
-        const iconY = dY + discH / 2;
+        const iconCY = dY + discH / 2;
         pdf.setFillColor(...lerpColor(THEME.amber, [255, 255, 255], 0.5));
-        pdf.circle(iconX, iconY, 2, "F");
-        pdf.setFontSize(5.5);
+        pdf.circle(iconX, iconCY, 2, "F");
+        pdf.setFontSize(6);
         pdf.setTextColor(...THEME.amber);
-        pdf.text("!", iconX - 0.5, iconY + 1);
+        const exclW = pdf.getTextWidth("!");
+        const exclFontH = 6 * 0.352778;
+        pdf.text("!", iconX - exclW / 2, iconCY + exclFontH * 0.35);
 
+        // Disclaimer text — vertically centered in card
         pdf.setFontSize(7);
         pdf.setTextColor(130, 100, 40);
         const disc = cfg.disclaimer_text;
         const discLines = pdf.splitTextToSize(disc, contentWidth - 16);
+        const discTextH = discLines.length * 3.5;
+        const discTextStartY = dY + (discH - discTextH) / 2 + 3.5 * 0.7;
         for (let i = 0; i < discLines.length; i++) {
-          pdf.text(discLines[i], margin + 12, dY + 4 + i * 3.5);
+          pdf.text(discLines[i], margin + 12, discTextStartY + i * 3.5);
         }
         yPosition = dY + discH + 3;
       }
@@ -585,14 +594,17 @@ export function PdfGenerator({
         pdf.setLineWidth(0.3);
         pdf.line(margin, fy - 5, pageWidth - margin, fy - 5);
 
-        // Accent dot before footer text
-        pdf.setFillColor(...accentColor);
-        pdf.circle(margin + 1, fy - 0.5, 0.6, "F");
-
         // Footer text
         pdf.setFontSize(6);
         pdf.setTextColor(...THEME.textMuted);
-        pdf.text(cfg.footer_text, margin + 3.5, fy);
+        const footerTextY = fy;
+
+        // Accent dot — aligned to text vertical center
+        const footerFontH = 6 * 0.352778;
+        pdf.setFillColor(...accentColor);
+        pdf.circle(margin + 1, footerTextY - footerFontH * 0.35, 0.6, "F");
+
+        pdf.text(cfg.footer_text, margin + 3.5, footerTextY);
 
         if (cfg.footer_show_date) {
           const dateText = `${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}`;
