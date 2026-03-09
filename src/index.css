@@ -570,20 +570,20 @@
 
   [class*="animate-"] { animation: none !important; }
 
-  /* AI Summary & TRL sections — tighter print padding */
+  /* AI Summary section — slightly more print padding */
   .ai-summary-print-section > div {
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
   }
   .ai-summary-print-section p {
-    margin-bottom: 2px !important;
-    line-height: 1.45 !important;
+    margin-bottom: 4px !important;
+    line-height: 1.55 !important;
   }
   .ai-summary-print-section h2 {
-    margin-top: 6px !important;
-    margin-bottom: 3px !important;
+    margin-top: 10px !important;
+    margin-bottom: 5px !important;
   }
 
   .trl-print-section {
