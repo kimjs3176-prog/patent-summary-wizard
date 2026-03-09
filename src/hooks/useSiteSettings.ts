@@ -33,6 +33,9 @@ const DEFAULT_SETTINGS: SiteSettings = {
   trl_settings: "",
   pdf_layout_config: "",
   print_sections: "",
+  chatbot_title: "Patent Chat Aid",
+  chatbot_width: "440",
+  chatbot_height: "92",
 };
 
 export function useSiteSettings() {

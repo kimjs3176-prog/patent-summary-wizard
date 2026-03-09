@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText, FileDown, Printer, KeyRound } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText, FileDown, Printer, KeyRound, MessageCircle } from "lucide-react";
 import { PdfLayoutSettings, DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 import { toast } from "sonner";
 import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
@@ -800,6 +800,46 @@ const Admin = () => {
                     <Plus className="w-3.5 h-3.5 mr-1" /> 영상 추가
                   </Button>
                 )}
+              </div>
+
+              {/* Chatbot Settings */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> 챗봇 설정</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">챗봇 창 이름</label>
+                    <Input
+                      value={siteSettings.chatbot_title || "Patent Chat Aid"}
+                      onChange={e => setSiteSettings(s => ({ ...s, chatbot_title: e.target.value }))}
+                      placeholder="Patent Chat Aid"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">창 가로 크기 (px)</label>
+                      <Input
+                        type="number"
+                        value={siteSettings.chatbot_width || "440"}
+                        onChange={e => setSiteSettings(s => ({ ...s, chatbot_width: e.target.value }))}
+                        placeholder="440"
+                        min={300}
+                        max={600}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">창 세로 크기 (vh)</label>
+                      <Input
+                        type="number"
+                        value={siteSettings.chatbot_height || "92"}
+                        onChange={e => setSiteSettings(s => ({ ...s, chatbot_height: e.target.value }))}
+                        placeholder="92"
+                        min={50}
+                        max={95}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">가로: 300~600px, 세로: 50~95vh (화면 대비 비율)</p>
+                </div>
               </div>
 
               <Button onClick={() => {
