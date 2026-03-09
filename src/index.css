@@ -569,4 +569,34 @@
   }
 
   [class*="animate-"] { animation: none !important; }
+
+  /* AI Summary & TRL sections — tighter print padding */
+  .ai-summary-print-section > div {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .ai-summary-print-section p {
+    margin-bottom: 2px !important;
+    line-height: 1.45 !important;
+  }
+  .ai-summary-print-section h2 {
+    margin-top: 6px !important;
+    margin-bottom: 3px !important;
+  }
+
+  .trl-print-section {
+    padding: 5px 6px !important;
+  }
+  .trl-print-section > div {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+  .trl-print-section p {
+    margin-bottom: 2px !important;
+    line-height: 1.45 !important;
+  }
 }
