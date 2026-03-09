@@ -28,27 +28,34 @@ const lerpColor = (a: [number, number, number], b: [number, number, number], t: 
   Math.round(a[2] + (b[2] - a[2]) * t),
 ];
 
-// 2024-2025 modern PDF color palette — muted, sophisticated tones
+// 2025 Modern PDF Design System — Bold, Clean, Sophisticated
 const THEME = {
   bg: [255, 255, 255] as [number, number, number],
-  // Deep charcoal for primary text — modern & readable
-  text: [22, 27, 34] as [number, number, number],
-  textSecondary: [80, 90, 105] as [number, number, number],
-  textMuted: [140, 150, 165] as [number, number, number],
-  textBody: [40, 48, 58] as [number, number, number],
-  // Subtle warm gray borders
-  border: [225, 228, 235] as [number, number, number],
-  borderLight: [240, 242, 248] as [number, number, number],
+  // Rich ink black for premium typography
+  text: [15, 23, 42] as [number, number, number],
+  textSecondary: [71, 85, 105] as [number, number, number],
+  textMuted: [148, 163, 184] as [number, number, number],
+  textBody: [30, 41, 59] as [number, number, number],
+  // Soft neutral borders
+  border: [226, 232, 240] as [number, number, number],
+  borderLight: [241, 245, 249] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
-  // Very light blue-gray for section backgrounds
-  surfaceLight: [248, 250, 254] as [number, number, number],
-  surfaceMuted: [243, 245, 250] as [number, number, number],
-  // Accent — modern teal
-  accent: [0, 140, 130] as [number, number, number],
-  accentLight: [230, 248, 246] as [number, number, number],
-  // Warm amber for disclaimer
+  // Elevated surface tones
+  surfaceLight: [248, 250, 252] as [number, number, number],
+  surfaceMuted: [241, 245, 249] as [number, number, number],
+  surfaceWarm: [254, 252, 251] as [number, number, number],
+  // Modern indigo accent — 2025 trend
+  accent: [79, 70, 229] as [number, number, number],
+  accentLight: [238, 242, 255] as [number, number, number],
+  accentDark: [55, 48, 163] as [number, number, number],
+  // Secondary accent — emerald
+  secondary: [16, 185, 129] as [number, number, number],
+  secondaryLight: [236, 253, 245] as [number, number, number],
+  // Warm amber for alerts
   amber: [245, 158, 11] as [number, number, number],
   amberBg: [255, 251, 235] as [number, number, number],
+  // Subtle rose for highlights
+  rose: [244, 63, 94] as [number, number, number],
 };
 
 export function PdfGenerator({
