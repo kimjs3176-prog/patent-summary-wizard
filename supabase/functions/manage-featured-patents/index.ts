@@ -12,6 +12,7 @@ const hashPassword = async (password: string) => {
   return Array.from(new Uint8Array(hashBuffer))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
