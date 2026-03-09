@@ -489,6 +489,12 @@ const Admin = () => {
             <TabsTrigger value="summary" className="flex-1 gap-1.5">
               <FileText className="w-3.5 h-3.5" /> 요약서 관리
             </TabsTrigger>
+            <TabsTrigger value="print" className="flex-1 gap-1.5">
+              <Printer className="w-3.5 h-3.5" /> 인쇄
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex-1 gap-1.5">
+              <KeyRound className="w-3.5 h-3.5" /> 보안
+            </TabsTrigger>
             <TabsTrigger value="pdf" className="flex-1 gap-1.5">
               <FileDown className="w-3.5 h-3.5" /> PDF
             </TabsTrigger>
