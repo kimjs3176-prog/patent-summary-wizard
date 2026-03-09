@@ -101,7 +101,7 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
         {/* Level markers with cursor-following tooltip */}
         <div 
           ref={containerRef}
-          className="relative mt-3 flex justify-between"
+          className="relative mt-3 flex justify-between trl-level-markers"
           onMouseMove={(e) => {
             if (containerRef.current) {
               const rect = containerRef.current.getBoundingClientRect();
