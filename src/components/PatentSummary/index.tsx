@@ -521,7 +521,7 @@ export function PatentSummary({
       )}
 
       {/* 3. AI Summary Card — 2025 Glass morphism */}
-      <div className="relative rounded-2xl overflow-hidden animate-slide-in surface-elevated" style={{ animationDelay: '0.1s' }}>
+      <div className="relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:break-before-page" style={{ animationDelay: '0.1s' }}>
         {/* Top accent gradient band */}
         <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(160 84% 39%), hsl(174 60% 40%), hsl(200 80% 50%))' }} />
         
@@ -585,7 +585,7 @@ export function PatentSummary({
 
       {/* 5. Claims Card — 2025 Purple accent */}
       {visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
-        <div className="relative rounded-2xl overflow-hidden animate-slide-in surface-elevated" style={{ animationDelay: '0.15s' }}>
+        <div className="relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:hidden" style={{ animationDelay: '0.15s' }}>
           {/* Top accent gradient band */}
           <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(262 83% 58%), hsl(280 68% 56%), hsl(300 60% 55%))' }} />
           
