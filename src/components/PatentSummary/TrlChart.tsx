@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { DEFAULT_TRL_CONFIG, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 
 interface TrlChartProps {
@@ -26,6 +26,8 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
   const colors = getStageColor(estimatedTrl);
   const progress = (estimatedTrl / 9) * 100;
   const [hoveredLevel, setHoveredLevel] = useState<number | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="space-y-5">
@@ -71,12 +73,20 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
           </div>
         </div>
 
-        {/* Level markers with tooltip */}
-        <div className="relative mt-2 flex justify-between px-0">
+        {/* Level markers with cursor-following tooltip */}
+        <div 
+          ref={containerRef}
+          className="relative mt-2 flex justify-between px-0"
+          onMouseMove={(e) => {
+            if (containerRef.current) {
+              const rect = containerRef.current.getBoundingClientRect();
+              setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+            }
+          }}
+        >
           {levels.map((item) => {
             const isActive = item.level <= estimatedTrl;
             const isCurrent = item.level === estimatedTrl;
-            const showTooltip = hoveredLevel === item.level || (isCurrent && hoveredLevel === null);
 
             return (
               <div
@@ -86,20 +96,6 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
                 onMouseEnter={() => setHoveredLevel(item.level)}
                 onMouseLeave={() => setHoveredLevel(null)}
               >
-                {/* Tooltip */}
-                {showTooltip && (
-                  <div className="absolute bottom-full mb-2 z-10 pointer-events-none">
-                    <div className="bg-popover text-popover-foreground border border-border shadow-lg rounded-lg px-3 py-2 text-[10px] whitespace-nowrap">
-                      <p className="font-bold text-xs">{item.label}</p>
-                      <p className="text-muted-foreground mt-0.5">{item.description}</p>
-                      {isCurrent && (
-                        <p className="text-primary font-semibold mt-1">← 현재 단계</p>
-                      )}
-                    </div>
-                    <div className="w-2 h-2 bg-popover border-r border-b border-border rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1" />
-                  </div>
-                )}
-
                 <div
                   className={`w-2 h-2 rounded-full transition-all duration-500 ${
                     isCurrent
@@ -123,6 +119,27 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
               </div>
             );
           })}
+
+          {/* Cursor-following tooltip */}
+          {hoveredLevel !== null && containerRef.current && (
+            <div
+              className="fixed z-50 pointer-events-none"
+              style={{
+                left: containerRef.current.getBoundingClientRect().left + mousePos.x,
+                top: containerRef.current.getBoundingClientRect().top + mousePos.y - 10,
+                transform: 'translate(-50%, -100%)',
+              }}
+            >
+              <div className="bg-popover text-popover-foreground border border-border shadow-lg rounded-lg px-3 py-2 text-[10px] whitespace-nowrap">
+                <p className="font-bold text-xs">{levels.find(l => l.level === hoveredLevel)?.label}</p>
+                <p className="text-muted-foreground mt-0.5">{levels.find(l => l.level === hoveredLevel)?.description}</p>
+                {hoveredLevel === estimatedTrl && (
+                  <p className="text-primary font-semibold mt-1">← 현재 단계</p>
+                )}
+              </div>
+              <div className="w-2 h-2 bg-popover border-r border-b border-border rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1" />
+            </div>
+          )}
         </div>
       </div>
 
