@@ -416,16 +416,16 @@ export function PatentSummary({
         </div>
       )}
 
-      <div className="space-y-8">
+      <div className="space-y-7">
       {/* 1. Patent Info Card — 2025 Elevated Style */}
       {patentData && (
         <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated ${printSections.patentInfo === false ? "print:hidden" : ""}`}>
           {/* Top accent gradient band */}
           <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(239 84% 67%), hsl(262 83% 58%), hsl(280 68% 56%))' }} />
           
-          <div className="p-6 md:p-8">
+          <div className="p-5 md:p-7">
             {/* Card header with icon */}
-            <div className="flex items-center gap-3.5 mb-6">
+            <div className="flex items-center gap-3.5 mb-5">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-md" style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))', color: 'white' }}>
                 {cardIcons.patentInfo || "📄"}
               </div>
@@ -544,7 +544,7 @@ export function PatentSummary({
         <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(160 84% 39%), hsl(174 60% 40%), hsl(200 80% 50%))' }} />
         
         {/* Header */}
-        <div className="px-6 md:px-8 py-5 flex items-center justify-between flex-wrap gap-3" style={{ background: 'linear-gradient(180deg, hsl(160 30% 97%), hsl(0 0% 100%))' }}>
+        <div className="px-5 md:px-7 py-4 flex items-center justify-between flex-wrap gap-3" style={{ background: 'linear-gradient(180deg, hsl(160 30% 97%), hsl(0 0% 100%))' }}>
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-md" style={{ background: 'linear-gradient(135deg, hsl(160 84% 39%), hsl(200 80% 50%))', color: 'white' }}>
               {cardIcons.aiSummary || "🤖"}
@@ -559,10 +559,10 @@ export function PatentSummary({
         </div>
 
         {/* Subtle separator */}
-        <div className="mx-6 md:mx-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, hsl(160 30% 88%), transparent)' }} />
+        <div className="mx-5 md:mx-7 h-px" style={{ background: 'linear-gradient(90deg, transparent, hsl(160 30% 88%), transparent)' }} />
 
         {/* Content */}
-        <div className="px-6 py-8 md:px-8 md:py-10 min-h-[350px]">
+        <div className="px-5 py-7 md:px-7 md:py-9 min-h-[350px]">
           {content ? (
             <div className="prose max-w-none">
               {renderMarkdown(content)}
@@ -582,7 +582,7 @@ export function PatentSummary({
 
         {/* Disclaimer — Warm accent box */}
         {printSections.disclaimer !== false && (
-          <div className="mx-6 md:mx-8 mb-6">
+          <div className="mx-5 md:mx-7 mb-5">
             <div className="flex items-center gap-3.5 px-5 py-4 rounded-xl" style={{ background: 'linear-gradient(135deg, hsl(38 92% 95%), hsl(38 70% 92%))', border: '1px solid hsl(38 60% 85%)' }}>
               <span className="text-base shrink-0 leading-none">⚠️</span>
               <p className="text-xs font-semibold leading-relaxed" style={{ color: 'hsl(38 50% 25%)' }}>
@@ -609,8 +609,8 @@ export function PatentSummary({
           {/* Top accent gradient band */}
           <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(262 83% 58%), hsl(280 68% 56%), hsl(300 60% 55%))' }} />
           
-          <div className="p-6 md:p-8">
-            <div className="flex items-center gap-3.5 mb-6">
+          <div className="p-5 md:p-7">
+            <div className="flex items-center gap-3.5 mb-5">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-md" style={{ background: 'linear-gradient(135deg, hsl(262 83% 58%), hsl(280 68% 56%))', color: 'white' }}>
                 {cardIcons.claims || "📑"}
               </div>
