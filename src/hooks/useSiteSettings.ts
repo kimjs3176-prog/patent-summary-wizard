@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   trl_settings: "",
   pdf_layout_config: "",
   print_sections: "",
+};
 
 export function useSiteSettings() {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);

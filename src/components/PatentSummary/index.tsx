@@ -53,6 +53,23 @@ export function PatentSummary({
 
   const disclaimerText = settings.summary_disclaimer || "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음";
 
+  const printSections = useMemo(() => {
+    const defaults = {
+      patentInfo: true,
+      commercialization: true,
+      aiSummary: true,
+      trl: true,
+      claims: false,
+      relatedPatents: false,
+      disclaimer: true,
+    };
+    try {
+      return settings.print_sections ? { ...defaults, ...JSON.parse(settings.print_sections) } : defaults;
+    } catch {
+      return defaults;
+    }
+  }, [settings.print_sections]);
+
   // Fetch commercialization score when patent data is available
   useEffect(() => {
     const analyzeCommercialization = async () => {
@@ -401,7 +418,7 @@ export function PatentSummary({
       <div className="space-y-8">
       {/* 1. Patent Info Card — 2025 Elevated Style */}
       {patentData && (
-        <div className="relative rounded-2xl overflow-hidden animate-slide-in surface-elevated">
+        <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated ${printSections.patentInfo === false ? "print:hidden" : ""}`}>
           {/* Top accent gradient band */}
           <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(239 84% 67%), hsl(262 83% 58%), hsl(280 68% 56%))' }} />
           
