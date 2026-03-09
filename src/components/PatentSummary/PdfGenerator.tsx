@@ -204,7 +204,7 @@ export function PdfGenerator({
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  HEADER — 2025 Bold Gradient Bar  ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      const headerH = 30;
+      const headerH = 24;
       const hY = yPosition;
 
       // Modern gradient — deep indigo to purple shift
@@ -261,21 +261,21 @@ export function PdfGenerator({
       pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
 
       // Bold title — large and prominent
-      pdf.setFontSize(17);
+      pdf.setFontSize(14);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(cfg.header_title, margin + 10, hY + 12);
-      pdf.text(cfg.header_title, margin + 10.18, hY + 12); // faux bold
-      pdf.text(cfg.header_title, margin + 10.09, hY + 12); // extra weight
+      pdf.text(cfg.header_title, margin + 8, hY + 10);
+      pdf.text(cfg.header_title, margin + 8.18, hY + 10);
+      pdf.text(cfg.header_title, margin + 8.09, hY + 10);
 
       // Subtitle with pill badge style
-      pdf.setFontSize(7);
+      pdf.setFontSize(6.5);
       pdf.setGState(new (pdf as any).GState({ opacity: 0.25 }));
       pdf.setFillColor(255, 255, 255);
-      const subW = pdf.getTextWidth(cfg.header_subtitle) + 8;
-      pdf.roundedRect(margin + 9, hY + 16, subW, 5.5, 2.5, 2.5, "F");
+      const subW = pdf.getTextWidth(cfg.header_subtitle) + 7;
+      pdf.roundedRect(margin + 7, hY + 13, subW, 5, 2.5, 2.5, "F");
       pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
       pdf.setTextColor(...lerpColor(gradStart, [255, 255, 255], 0.9));
-      pdf.text(cfg.header_subtitle, margin + 13, hY + 20);
+      pdf.text(cfg.header_subtitle, margin + 10.5, hY + 16.5);
 
       // Patent number section — right side with modern layout
       const isApp = patentData?.searchType === "application";
@@ -287,29 +287,27 @@ export function PdfGenerator({
       // Status indicator dot
       const dotColor = isApp ? THEME.amber : THEME.secondary;
       pdf.setFillColor(...dotColor);
-      pdf.circle(pageWidth - margin - 9, hY + 9, 2, "F");
-      // Glow effect
+      pdf.circle(pageWidth - margin - 9, hY + 7, 1.8, "F");
       pdf.setGState(new (pdf as any).GState({ opacity: 0.3 }));
-      pdf.circle(pageWidth - margin - 9, hY + 9, 3.5, "F");
+      pdf.circle(pageWidth - margin - 9, hY + 7, 3, "F");
       pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
 
-      pdf.setFontSize(6);
+      pdf.setFontSize(5.5);
       pdf.setTextColor(...lerpColor(gradStart, [255, 255, 255], 0.6));
       const nlW = pdf.getTextWidth(numberLabel);
-      pdf.text(numberLabel, pageWidth - margin - nlW - 13, hY + 10);
+      pdf.text(numberLabel, pageWidth - margin - nlW - 13, hY + 8);
 
-      pdf.setFontSize(10);
+      pdf.setFontSize(9);
       pdf.setTextColor(255, 255, 255);
       const dnW = pdf.getTextWidth(displayNumber);
-      pdf.text(displayNumber, pageWidth - margin - dnW - 9, hY + 17);
-      pdf.text(displayNumber, pageWidth - margin - dnW - 8.88, hY + 17); // faux bold
+      pdf.text(displayNumber, pageWidth - margin - dnW - 9, hY + 14);
+      pdf.text(displayNumber, pageWidth - margin - dnW - 8.88, hY + 14);
 
-      // Decorative line separator
       pdf.setDrawColor(...lerpColor(gradStart, [255, 255, 255], 0.2));
       pdf.setLineWidth(0.3);
-      pdf.line(pageWidth - margin - Math.max(dnW, nlW) - 13, hY + 12, pageWidth - margin - 9, hY + 12);
+      pdf.line(pageWidth - margin - Math.max(dnW, nlW) - 13, hY + 10, pageWidth - margin - 9, hY + 10);
 
-      yPosition = hY + headerH + 10;
+      yPosition = hY + headerH + 6;
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  PATENT TITLE & META — modern card     ██
@@ -319,11 +317,11 @@ export function PdfGenerator({
         const metaAccent = hexToRgb(cfg.meta_accent_color || "#3278c8");
 
         // Calculate card height
-        let innerH = 8;
+        let innerH = 5;
         pdf.setFontSize(11.5);
         const titleLines = title ? pdf.splitTextToSize(title, contentWidth - 18) : [];
         const titleLineCount = Math.min(titleLines.length, 2);
-        if (title) innerH += titleLineCount * 5.5 + 2;
+        if (title) innerH += titleLineCount * 5 + 1;
 
         const metaParts: string[] = [];
         if (patentData.assignee) metaParts.push(`출원인: ${patentData.assignee}`);
@@ -334,10 +332,10 @@ export function PdfGenerator({
         if (metaParts.length > 0) {
           pdf.setFontSize(7.5);
           const metaText = metaParts.join("  ·  ");
-          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 18);
-          innerH += 6 + metaLines.length * 3.8;
+          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 16);
+          innerH += 4 + metaLines.length * 3.5;
         }
-        innerH += 4;
+        innerH += 2;
 
         const cardStartY = yPosition;
         const metaCardH = innerH;
@@ -367,18 +365,18 @@ export function PdfGenerator({
         pdf.setFillColor(...lerpColor(metaAccent, [0, 0, 0], 0.15));
         pdf.rect(margin, yPosition + barSegH * 2, barW, barSegH + 1, "F");
 
-        yPosition += 7;
+        yPosition += 5;
 
         // Title
         if (title) {
-          pdf.setFontSize(11.5);
+          pdf.setFontSize(10.5);
           pdf.setTextColor(...THEME.text);
           for (let i = 0; i < titleLineCount; i++) {
             const tLine = titleLines[i] + (i === 0 && titleLines.length > 2 ? "…" : "");
-            pdf.text(tLine, margin + 8, yPosition + 2 + i * 5.5);
-            pdf.text(tLine, margin + 8.12, yPosition + 2 + i * 5.5); // faux bold
+            pdf.text(tLine, margin + 7, yPosition + 1.5 + i * 5);
+            pdf.text(tLine, margin + 7.12, yPosition + 1.5 + i * 5);
           }
-          yPosition += titleLineCount * 5.5 + 2;
+          yPosition += titleLineCount * 5 + 1;
         }
 
         // Dotted divider
@@ -386,21 +384,21 @@ export function PdfGenerator({
           pdf.setDrawColor(...THEME.border);
           pdf.setLineWidth(0.15);
           pdf.setLineDashPattern([0.8, 0.8], 0);
-          pdf.line(margin + 8, yPosition + 1, margin + contentWidth - 7, yPosition + 1);
+          pdf.line(margin + 7, yPosition + 0.5, margin + contentWidth - 6, yPosition + 0.5);
           pdf.setLineDashPattern([], 0);
-          yPosition += 5;
+          yPosition += 3.5;
 
-          pdf.setFontSize(7.5);
+          pdf.setFontSize(7);
           pdf.setTextColor(...THEME.textSecondary);
           const metaText = metaParts.join("  ·  ");
-          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 18);
+          const metaLines = pdf.splitTextToSize(metaText, contentWidth - 16);
           for (const ml of metaLines) {
-            pdf.text(ml, margin + 8, yPosition);
-            yPosition += 3.8;
+            pdf.text(ml, margin + 7, yPosition);
+            yPosition += 3.5;
           }
         }
 
-        yPosition = cardStartY + metaCardH + 8;
+        yPosition = cardStartY + metaCardH + 5;
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
