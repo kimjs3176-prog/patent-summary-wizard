@@ -502,9 +502,10 @@ export function PdfGenerator({
 
         if (line.startsWith("## ")) {
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, "");
-          if (sectionTitle === "특허 기본 정보") { skipSection = true; continue; }
+        if (sectionTitle === "특허 기본 정보") { skipSection = true; continue; }
           if (sectionTitle.includes("AI 종합") || sectionTitle.includes("종합 요약") || sectionTitle.includes("종합요약")) continue;
           if (!cfg.show_trl && (sectionTitle.includes("기술성숙도") || sectionTitle.includes("TRL"))) continue;
+          if (!cfg.show_claims && (sectionTitle.includes("청구항") || sectionTitle.includes("특허 청구"))) { skipSection = true; continue; }
 
           const bodyPreview = estimateBodyHeight(lines, li + 1, cfg.body_font_size, pageWidth - margin * 2 - 8, cfg.line_height);
           const neededForSection = 18 + bodyPreview;
