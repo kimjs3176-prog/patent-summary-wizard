@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { DEFAULT_TRL_CONFIG, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 
 interface TrlChartProps {
@@ -26,6 +26,8 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
   const colors = getStageColor(estimatedTrl);
   const progress = (estimatedTrl / 9) * 100;
   const [hoveredLevel, setHoveredLevel] = useState<number | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="space-y-5">
