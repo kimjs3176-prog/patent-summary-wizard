@@ -67,32 +67,21 @@ const SUB_COLORS = [
   { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 55% / 0.08)', icon: '💼' },
 ];
 
-function SubScoreCard({ label, score, reason, colorIndex }: { label: string; score: number; reason?: string; colorIndex: number }) {
+function SubScoreCard({ label, reason, colorIndex }: { label: string; reason?: string; colorIndex: number }) {
   const c = SUB_COLORS[colorIndex] || SUB_COLORS[0];
+  if (!reason) return null;
   return (
     <div
-      className="p-3 sm:p-4 rounded-xl border border-border/40 transition-shadow hover:shadow-sm"
+      className="p-3 sm:p-4 rounded-xl border border-border/40"
       style={{ background: c.bg }}
     >
       <div className="flex items-center gap-2 mb-2">
         <span className="text-base">{c.icon}</span>
         <p className="text-xs text-muted-foreground font-semibold">{label}</p>
       </div>
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-lg font-bold" style={{ color: c.stroke }}>{score}</span>
-        <span className="text-[10px] text-muted-foreground">/ 100</span>
-      </div>
-      <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'hsl(220 14% 94%)' }}>
-        <div
-          className="h-full rounded-full transition-all duration-700 ease-out"
-          style={{ width: `${score}%`, background: c.stroke }}
-        />
-      </div>
-      {reason && (
-        <p className="text-[11px] text-foreground/65 leading-relaxed line-clamp-4 mt-2.5">
-          {reason}
-        </p>
-      )}
+      <p className="text-[11px] text-foreground/65 leading-relaxed line-clamp-4">
+        {reason}
+      </p>
     </div>
   );
 }
@@ -187,10 +176,10 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Sub-scores with mini gauges */}
+      {/* Sub-score reasons */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-5">
         {subItems.map((item, idx) => (
-          <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} colorIndex={idx} />
+          <SubScoreCard key={item.label} label={item.label} reason={item.reason} colorIndex={idx} />
         ))}
       </div>
 
