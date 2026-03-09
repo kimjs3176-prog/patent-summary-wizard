@@ -228,6 +228,9 @@ const Admin = () => {
         if (settingsResult.settings?.pdf_layout_config) {
           try { setPdfLayoutConfig({ ...DEFAULT_PDF_CONFIG, ...JSON.parse(settingsResult.settings.pdf_layout_config) }); } catch {}
         }
+        if (settingsResult.settings?.print_sections) {
+          try { setPrintSections({ ...DEFAULT_PRINT_SECTIONS, ...JSON.parse(settingsResult.settings.print_sections) }); } catch {}
+        }
       }
     } else {
       toast.error("비밀번호가 올바르지 않습니다.");
