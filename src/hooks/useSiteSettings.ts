@@ -36,6 +36,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   chatbot_title: "Patent Chat Aid",
   chatbot_width: "440",
   chatbot_height: "92",
+  chatbot_visible: "true",
 };
 
 export function useSiteSettings() {
