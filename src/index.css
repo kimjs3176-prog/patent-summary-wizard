@@ -542,16 +542,15 @@
     ring: none !important;
   }
 
-  /* Level numbers - force visible */
-  .trl-print-section .mt-3.flex.justify-between span {
+  /* Level numbers via dedicated class */
+  .trl-level-markers span {
     color: #374151 !important;
     font-size: 9px !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
 
-  /* Current level number bold */
-  .trl-print-section .mt-3.flex.justify-between span[class*="font-bold"] {
+  .trl-level-markers span[class*="font-bold"] {
     color: #059669 !important;
     font-weight: 700 !important;
   }
