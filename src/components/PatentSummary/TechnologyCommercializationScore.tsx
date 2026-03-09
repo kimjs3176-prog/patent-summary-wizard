@@ -75,24 +75,24 @@ function getGradeLabel(value: number, grades: ScoreConfig["grades"]): string {
 
 function SubScoreCard({ label, score, reason }: { label: string; score: number; reason?: string }) {
   return (
-    <div className="p-3 sm:p-4 rounded-2xl bg-secondary/30 border border-border/50">
-      <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 font-medium">{label}</p>
-      <div className="flex items-end gap-1">
-        <span className={`text-xl sm:text-2xl font-bold ${getScoreColor(score)}`}>
+    <div className="p-4 sm:p-5 rounded-xl bg-slate-50/80 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-700/50">
+      <p className="text-xs text-muted-foreground mb-2 font-medium">{label}</p>
+      <div className="flex items-baseline gap-0.5 mb-3">
+        <span className={`text-2xl sm:text-3xl font-bold ${getScoreColor(score)}`}>
           {score}
         </span>
-        <span className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">점</span>
+        <span className="text-xs text-muted-foreground">점</span>
       </div>
-      <div className="w-full h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden mt-1.5 sm:mt-2">
+      <div className="w-full h-1 bg-slate-200/80 dark:bg-slate-700/50 rounded-full overflow-hidden mb-3">
         <div
-          className={`h-full ${getScoreBgColor(score)}`}
+          className={`h-full rounded-full ${getScoreBgColor(score)}`}
           style={{ width: `${score}%` }}
         />
       </div>
       {reason && (
-        <div className="mt-2 text-[11px] sm:text-xs text-foreground/70 leading-relaxed">
+        <p className="text-xs text-foreground/70 leading-relaxed line-clamp-5">
           {reason}
-        </div>
+        </p>
       )}
     </div>
   );
