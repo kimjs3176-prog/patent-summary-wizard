@@ -1,5 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
+import { ScoreRadarChart } from "./ScoreRadarChart";
+import { GradeScale } from "./GradeScale";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
