@@ -67,20 +67,30 @@ const SUB_COLORS = [
   { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 55% / 0.08)', icon: '💼' },
 ];
 
+function renderBoldText(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold text-foreground/85">{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 function SubScoreCard({ label, reason, colorIndex }: { label: string; reason?: string; colorIndex: number }) {
   const c = SUB_COLORS[colorIndex] || SUB_COLORS[0];
   if (!reason) return null;
   return (
     <div
-      className="p-3 sm:p-4 rounded-xl border border-border/40"
+      className="p-3.5 sm:p-5 rounded-xl border border-border/40"
       style={{ background: c.bg }}
     >
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2.5">
         <span className="text-base">{c.icon}</span>
         <p className="text-xs text-muted-foreground font-semibold">{label}</p>
       </div>
-      <p className="text-[11px] text-foreground/65 leading-relaxed line-clamp-4">
-        {reason}
+      <p className="text-xs sm:text-[13px] text-foreground/70 leading-[1.75] sm:leading-[1.8]">
+        {renderBoldText(reason)}
       </p>
     </div>
   );
