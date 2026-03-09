@@ -447,8 +447,8 @@
     border: 1px solid #ddd !important;
     box-shadow: none !important;
     border-radius: 4px !important;
-    padding: 8px 10px !important;
-    margin-bottom: 6px !important;
+    padding: 6px 8px !important;
+    margin-bottom: 5px !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
@@ -467,8 +467,8 @@
   h2 {
     font-size: 11pt !important;
     font-weight: 700 !important;
-    margin-top: 10px !important;
-    margin-bottom: 5px !important;
+    margin-top: 8px !important;
+    margin-bottom: 4px !important;
     break-after: avoid !important;
     page-break-after: avoid !important;
   }
@@ -476,8 +476,8 @@
   p {
     color: #222 !important;
     font-size: 9.5pt !important;
-    line-height: 1.6 !important;
-    margin-bottom: 4px !important;
+    line-height: 1.55 !important;
+    margin-bottom: 3px !important;
     orphans: 3;
     widows: 3;
   }

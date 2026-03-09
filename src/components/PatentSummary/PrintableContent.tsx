@@ -99,8 +99,8 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
           <div
             style={{
               borderBottom: "3px solid #1e3a5f",
-              paddingBottom: "12px",
-              marginBottom: "16px",
+              paddingBottom: "10px",
+              marginBottom: "14px",
             }}
           >
             <div
@@ -167,8 +167,8 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
               backgroundColor: "#f8fafc",
               border: "1px solid #e2e8f0",
               borderRadius: "6px",
-              padding: "12px",
-              marginBottom: "16px",
+              padding: "10px",
+              marginBottom: "14px",
               fontSize: "10px",
             }}
           >
@@ -220,9 +220,9 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
         {printSections?.footer !== false && (
           <div
             style={{
-              marginTop: "20px",
+              marginTop: "16px",
               borderTop: "1px solid #e2e8f0",
-              paddingTop: "10px",
+              paddingTop: "8px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
