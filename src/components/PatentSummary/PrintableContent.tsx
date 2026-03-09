@@ -5,10 +5,11 @@ interface PrintableContentProps {
   content: string;
   patentNumber: string;
   patentData?: PatentData | null;
+  printSections?: Record<string, boolean>;
 }
 
 export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps>(
-  ({ content, patentNumber, patentData }, ref) => {
+  ({ content, patentNumber, patentData, printSections }, ref) => {
     const renderMarkdown = (text: string) => {
       const lines = text.split("\n");
       const elements: JSX.Element[] = [];
@@ -94,71 +95,73 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
         }}
       >
         {/* Header */}
-        <div
-          style={{
-            borderBottom: "3px solid #1e3a5f",
-            paddingBottom: "12px",
-            marginBottom: "16px",
-          }}
-        >
+        {printSections?.header !== false && (
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
+              borderBottom: "3px solid #1e3a5f",
+              paddingBottom: "12px",
+              marginBottom: "16px",
             }}
           >
-            <div>
-              <h1
-                style={{
-                  fontSize: "22px",
-                  fontWeight: 700,
-                  color: "#1e3a5f",
-                  margin: 0,
-                }}
-              >
-                특허 요약서
-              </h1>
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: "#6b7280",
-                  marginTop: "2px",
-                }}
-              >
-                Patent Summary Report
-              </p>
-            </div>
             <div
               style={{
-                textAlign: "right",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
               }}
             >
-              <p
+              <div>
+                <h1
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: 700,
+                    color: "#1e3a5f",
+                    margin: 0,
+                  }}
+                >
+                  특허 요약서
+                </h1>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b7280",
+                    marginTop: "2px",
+                  }}
+                >
+                  Patent Summary Report
+                </p>
+              </div>
+              <div
                 style={{
-                  fontSize: "10px",
-                  color: "#6b7280",
-                  margin: 0,
+                  textAlign: "right",
                 }}
               >
-                {numberLabel}
-              </p>
-              <p
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  color: "#1e3a5f",
-                  margin: 0,
-                }}
-              >
-                {displayNumber}
-              </p>
+                <p
+                  style={{
+                    fontSize: "10px",
+                    color: "#6b7280",
+                    margin: 0,
+                  }}
+                >
+                  {numberLabel}
+                </p>
+                <p
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#1e3a5f",
+                    margin: 0,
+                  }}
+                >
+                  {displayNumber}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Patent Info - Non-descriptive format */}
-        {patentData && (
+        {printSections?.patentInfo !== false && patentData && (
           <div
             style={{
               backgroundColor: "#f8fafc",
@@ -211,26 +214,28 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
         )}
 
         {/* Content */}
-        <div>{renderMarkdown(content)}</div>
+        {printSections?.aiSummary !== false && <div>{renderMarkdown(content)}</div>}
 
         {/* Footer */}
-        <div
-          style={{
-            marginTop: "20px",
-            borderTop: "1px solid #e2e8f0",
-            paddingTop: "10px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            fontSize: "9px",
-            color: "#9ca3af",
-          }}
-        >
-          <span>© 특허요약 서비스 | AI 기반 특허 분석</span>
-          <span>
-            생성일: {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
-          </span>
-        </div>
+        {printSections?.footer !== false && (
+          <div
+            style={{
+              marginTop: "20px",
+              borderTop: "1px solid #e2e8f0",
+              paddingTop: "10px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: "9px",
+              color: "#9ca3af",
+            }}
+          >
+            <span>© 특허요약 서비스 | AI 기반 특허 분석</span>
+            <span>
+              생성일: {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
+            </span>
+          </div>
+        )}
       </div>
     );
   }

@@ -6,6 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const hashPassword = async (password: string) => {
+  const encoded = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,16 +27,29 @@ serve(async (req) => {
     const body = await req.json();
     const { action, password, data } = body;
 
-    // Verify admin password
+    // Verify admin password (DB override 우선, 없으면 환경변수 사용)
     const adminPassword = Deno.env.get("ADMIN_PASSWORD");
-    if (!adminPassword || password !== adminPassword) {
+    const { data: adminCredential } = await supabase
+      .from("admin_credentials")
+      .select("password_hash")
+      .eq("id", 1)
+      .maybeSingle();
+
+    const submittedPassword = typeof password === "string" ? password : "";
+    const submittedHash = submittedPassword ? await hashPassword(submittedPassword) : "";
+
+    const isAuthorized = adminCredential?.password_hash
+      ? submittedHash === adminCredential.password_hash
+      : !!adminPassword && submittedPassword === adminPassword;
+
+    if (!isAuthorized) {
       return new Response(
         JSON.stringify({ success: false, error: "인증 실패" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache"];
+    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password"];
     if (!action || !validActions.includes(action)) {
       return new Response(
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
@@ -174,6 +195,30 @@ serve(async (req) => {
       await supabase.from("patent_data_cache").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("patent_ai_cache").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       await supabase.from("patent_score_cache").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== Password Management ==========
+    if (action === "change-password") {
+      const newPassword = typeof data?.new_password === "string" ? data.new_password.trim() : "";
+
+      if (newPassword.length < 4 || newPassword.length > 100) {
+        return new Response(
+          JSON.stringify({ success: false, error: "비밀번호는 4~100자여야 합니다." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const password_hash = await hashPassword(newPassword);
+      const { error } = await supabase
+        .from("admin_credentials")
+        .upsert({ id: 1, password_hash, updated_at: new Date().toISOString() }, { onConflict: "id" });
+
+      if (error) throw error;
+
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
