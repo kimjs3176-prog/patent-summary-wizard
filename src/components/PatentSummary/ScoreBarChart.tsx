@@ -26,15 +26,13 @@ export function ScoreBarChart({ technologyScore, marketScore, businessScore, lab
           <span className="text-xs font-semibold text-foreground/80 w-[52px] shrink-0 truncate">{item.label}</span>
           <div className="flex-1 h-7 rounded-full overflow-hidden relative" style={{ background: item.bg }}>
             <div
-              className="h-full rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${item.score}%`, background: item.stroke }}
-            />
-            <span
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold"
-              style={{ color: item.score > 60 ? 'white' : item.stroke }}
+              className="h-full rounded-full transition-all duration-700 ease-out flex items-center justify-end pr-2"
+              style={{ width: `${Math.max(item.score, 15)}%`, background: item.stroke }}
             >
-              {item.score}점
-            </span>
+              <span className="text-[11px] font-bold text-white whitespace-nowrap">
+                {item.score}점
+              </span>
+            </div>
           </div>
         </div>
       ))}
