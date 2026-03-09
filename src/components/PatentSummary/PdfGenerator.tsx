@@ -28,27 +28,34 @@ const lerpColor = (a: [number, number, number], b: [number, number, number], t: 
   Math.round(a[2] + (b[2] - a[2]) * t),
 ];
 
-// 2024-2025 modern PDF color palette — muted, sophisticated tones
+// 2025 Modern PDF Design System — Bold, Clean, Sophisticated
 const THEME = {
   bg: [255, 255, 255] as [number, number, number],
-  // Deep charcoal for primary text — modern & readable
-  text: [22, 27, 34] as [number, number, number],
-  textSecondary: [80, 90, 105] as [number, number, number],
-  textMuted: [140, 150, 165] as [number, number, number],
-  textBody: [40, 48, 58] as [number, number, number],
-  // Subtle warm gray borders
-  border: [225, 228, 235] as [number, number, number],
-  borderLight: [240, 242, 248] as [number, number, number],
+  // Rich ink black for premium typography
+  text: [15, 23, 42] as [number, number, number],
+  textSecondary: [71, 85, 105] as [number, number, number],
+  textMuted: [148, 163, 184] as [number, number, number],
+  textBody: [30, 41, 59] as [number, number, number],
+  // Soft neutral borders
+  border: [226, 232, 240] as [number, number, number],
+  borderLight: [241, 245, 249] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
-  // Very light blue-gray for section backgrounds
-  surfaceLight: [248, 250, 254] as [number, number, number],
-  surfaceMuted: [243, 245, 250] as [number, number, number],
-  // Accent — modern teal
-  accent: [0, 140, 130] as [number, number, number],
-  accentLight: [230, 248, 246] as [number, number, number],
-  // Warm amber for disclaimer
+  // Elevated surface tones
+  surfaceLight: [248, 250, 252] as [number, number, number],
+  surfaceMuted: [241, 245, 249] as [number, number, number],
+  surfaceWarm: [254, 252, 251] as [number, number, number],
+  // Modern indigo accent — 2025 trend
+  accent: [79, 70, 229] as [number, number, number],
+  accentLight: [238, 242, 255] as [number, number, number],
+  accentDark: [55, 48, 163] as [number, number, number],
+  // Secondary accent — emerald
+  secondary: [16, 185, 129] as [number, number, number],
+  secondaryLight: [236, 253, 245] as [number, number, number],
+  // Warm amber for alerts
   amber: [245, 158, 11] as [number, number, number],
   amberBg: [255, 251, 235] as [number, number, number],
+  // Subtle rose for highlights
+  rose: [244, 63, 94] as [number, number, number],
 };
 
 export function PdfGenerator({
@@ -195,82 +202,114 @@ export function PdfGenerator({
       };
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  HEADER — full-bleed modern bar  ██
+      // ██  HEADER — 2025 Bold Gradient Bar  ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      const headerH = 26;
+      const headerH = 30;
       const hY = yPosition;
 
-      // Multi-layer gradient simulation (12 strips)
-      const darkEnd = lerpColor(headerColor, [10, 15, 25], 0.35);
-      const stripCount = 16;
+      // Modern gradient — deep indigo to purple shift
+      const gradStart = headerColor;
+      const gradMid = lerpColor(headerColor, THEME.accentDark, 0.4);
+      const gradEnd = lerpColor(headerColor, [30, 27, 75], 0.6);
+      
+      const stripCount = 20;
       for (let i = 0; i < stripCount; i++) {
         const t = i / (stripCount - 1);
-        const c = lerpColor(headerColor, darkEnd, t * t); // easeIn curve
+        // Smooth cubic easing for gradient
+        const eased = t * t * (3 - 2 * t);
+        const c = i < stripCount / 2 
+          ? lerpColor(gradStart, gradMid, eased * 2)
+          : lerpColor(gradMid, gradEnd, (eased - 0.5) * 2);
         pdf.setFillColor(...c);
         const sy = hY + (headerH * i) / stripCount;
-        const sh = headerH / stripCount + 0.3;
-        if (i === 0) {
-          pdf.roundedRect(margin, sy, contentWidth, sh, 4, 4, "F");
-        } else {
+        const sh = headerH / stripCount + 0.4;
+        pdf.rect(margin, sy, contentWidth, sh, "F");
+      }
+
+      // Clean rounded corners overlay
+      pdf.setFillColor(...gradStart);
+      pdf.roundedRect(margin, hY, contentWidth, headerH, 5, 5, "F");
+      
+      // Re-apply gradient with rounded mask
+      for (let i = 0; i < stripCount; i++) {
+        const t = i / (stripCount - 1);
+        const eased = t * t * (3 - 2 * t);
+        const c = i < stripCount / 2 
+          ? lerpColor(gradStart, gradMid, eased * 2)
+          : lerpColor(gradMid, gradEnd, (eased - 0.5) * 2);
+        pdf.setFillColor(...c);
+        const sy = hY + (headerH * i) / stripCount;
+        const sh = headerH / stripCount + 0.4;
+        // Clip to rounded rect area
+        if (i >= 1 && i < stripCount - 1) {
           pdf.rect(margin, sy, contentWidth, sh, "F");
         }
       }
-      // Clean rounded rect on top
-      pdf.setFillColor(...headerColor);
-      pdf.roundedRect(margin, hY, contentWidth, headerH, 4, 4, "F");
-      // Bottom gradient overlay
-      for (let i = 0; i < 6; i++) {
-        const t = i / 5;
-        pdf.setFillColor(...lerpColor(headerColor, darkEnd, t * 0.5));
-        pdf.rect(margin, hY + headerH - 8 + i * 1.4, contentWidth, 1.6, "F");
-      }
 
-      // Subtle top edge highlight
-      pdf.setFillColor(...lerpColor(headerColor, [255, 255, 255], 0.2));
-      pdf.roundedRect(margin + 0.5, hY + 0.5, contentWidth - 1, 1, 0.5, 0.5, "F");
-
-      // Geometric decorative element — subtle circles
-      pdf.setGState(new (pdf as any).GState({ opacity: 0.08 }));
+      // Glassmorphism highlight — top edge shine
+      pdf.setGState(new (pdf as any).GState({ opacity: 0.15 }));
       pdf.setFillColor(255, 255, 255);
-      pdf.circle(pageWidth - margin - 12, hY + headerH / 2, 18, "F");
-      pdf.circle(pageWidth - margin - 5, hY + 6, 8, "F");
+      pdf.roundedRect(margin + 1, hY + 1, contentWidth - 2, 3, 1.5, 1.5, "F");
       pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
 
-      // Title
-      pdf.setFontSize(15);
+      // Abstract geometric patterns — floating orbs
+      pdf.setGState(new (pdf as any).GState({ opacity: 0.06 }));
+      pdf.setFillColor(255, 255, 255);
+      pdf.circle(pageWidth - margin - 15, hY + headerH * 0.4, 22, "F");
+      pdf.circle(pageWidth - margin - 8, hY + 5, 10, "F");
+      pdf.circle(margin + 18, hY + headerH - 5, 8, "F");
+      pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+
+      // Bold title — large and prominent
+      pdf.setFontSize(17);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(cfg.header_title, margin + 9, hY + 10.5);
-      pdf.text(cfg.header_title, margin + 9.15, hY + 10.5); // faux bold
+      pdf.text(cfg.header_title, margin + 10, hY + 12);
+      pdf.text(cfg.header_title, margin + 10.18, hY + 12); // faux bold
+      pdf.text(cfg.header_title, margin + 10.09, hY + 12); // extra weight
 
-      // Subtitle
-      pdf.setFontSize(7.5);
-      pdf.setTextColor(...lerpColor(headerColor, [255, 255, 255], 0.7));
-      pdf.text(cfg.header_subtitle, margin + 9, hY + 16);
+      // Subtitle with pill badge style
+      pdf.setFontSize(7);
+      pdf.setGState(new (pdf as any).GState({ opacity: 0.25 }));
+      pdf.setFillColor(255, 255, 255);
+      const subW = pdf.getTextWidth(cfg.header_subtitle) + 8;
+      pdf.roundedRect(margin + 9, hY + 16, subW, 5.5, 2.5, 2.5, "F");
+      pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+      pdf.setTextColor(...lerpColor(gradStart, [255, 255, 255], 0.9));
+      pdf.text(cfg.header_subtitle, margin + 13, hY + 20);
 
-      // Patent number — right aligned, modern pill style
+      // Patent number section — right side with modern layout
       const isApp = patentData?.searchType === "application";
       const displayNumber = isApp
         ? patentData?.applicationNumber || patentData?.displayNumber || patentNumber
         : patentData?.displayNumber || patentNumber;
       const numberLabel = isApp ? "출원번호" : "등록번호";
 
-      pdf.setFontSize(6);
-      pdf.setTextColor(...lerpColor(headerColor, [255, 255, 255], 0.55));
-      const nlW = pdf.getTextWidth(numberLabel);
-      pdf.text(numberLabel, pageWidth - margin - nlW - 9, hY + 10);
+      // Status indicator dot
+      const dotColor = isApp ? THEME.amber : THEME.secondary;
+      pdf.setFillColor(...dotColor);
+      pdf.circle(pageWidth - margin - 9, hY + 9, 2, "F");
+      // Glow effect
+      pdf.setGState(new (pdf as any).GState({ opacity: 0.3 }));
+      pdf.circle(pageWidth - margin - 9, hY + 9, 3.5, "F");
+      pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
 
-      pdf.setFontSize(9);
+      pdf.setFontSize(6);
+      pdf.setTextColor(...lerpColor(gradStart, [255, 255, 255], 0.6));
+      const nlW = pdf.getTextWidth(numberLabel);
+      pdf.text(numberLabel, pageWidth - margin - nlW - 13, hY + 10);
+
+      pdf.setFontSize(10);
       pdf.setTextColor(255, 255, 255);
       const dnW = pdf.getTextWidth(displayNumber);
-      pdf.text(displayNumber, pageWidth - margin - dnW - 9, hY + 15);
-      pdf.text(displayNumber, pageWidth - margin - dnW - 8.85, hY + 15); // faux bold
+      pdf.text(displayNumber, pageWidth - margin - dnW - 9, hY + 17);
+      pdf.text(displayNumber, pageWidth - margin - dnW - 8.88, hY + 17); // faux bold
 
-      // Thin separator line between label and number
-      pdf.setDrawColor(...lerpColor(headerColor, [255, 255, 255], 0.25));
-      pdf.setLineWidth(0.2);
-      pdf.line(pageWidth - margin - dnW - 9, hY + 11.5, pageWidth - margin - 9, hY + 11.5);
+      // Decorative line separator
+      pdf.setDrawColor(...lerpColor(gradStart, [255, 255, 255], 0.2));
+      pdf.setLineWidth(0.3);
+      pdf.line(pageWidth - margin - Math.max(dnW, nlW) - 13, hY + 12, pageWidth - margin - 9, hY + 12);
 
-      yPosition = hY + headerH + 8;
+      yPosition = hY + headerH + 10;
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  PATENT TITLE & META — modern card     ██
@@ -476,50 +515,75 @@ export function PdfGenerator({
 
           sectionIndex++;
 
-          // ── Modern section header ──
-          const sectionHeaderH = 10;
+          // ── 2025 Modern Section Header — Bold & Clean ──
+          const sectionHeaderH = 11;
           const bandY = yPosition;
 
-          // Clean background band with subtle gradient
-          pdf.setFillColor(...THEME.surfaceLight);
-          pdf.roundedRect(margin, bandY, contentWidth, sectionHeaderH, 2.5, 2.5, "F");
+          // Subtle shadow layer
+          pdf.setFillColor(200, 205, 215);
+          pdf.setGState(new (pdf as any).GState({ opacity: 0.12 }));
+          pdf.roundedRect(margin + 0.5, bandY + 0.8, contentWidth, sectionHeaderH, 3, 3, "F");
+          pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
 
-          // Accent left edge — rounded pill
+          // Main background band — clean white with border
+          pdf.setFillColor(255, 255, 255);
+          pdf.setDrawColor(...THEME.border);
+          pdf.setLineWidth(0.25);
+          pdf.roundedRect(margin, bandY, contentWidth, sectionHeaderH, 3, 3, "FD");
+
+          // Bold left accent bar — thicker, more prominent
+          const accentBarW = 4;
           pdf.setFillColor(...accentColor);
-          pdf.roundedRect(margin + 0.5, bandY + 2, 2, sectionHeaderH - 4, 1, 1, "F");
+          pdf.roundedRect(margin, bandY, accentBarW, sectionHeaderH, 2, 2, "F");
+          // Gradient fade on accent bar
+          pdf.setFillColor(...lerpColor(accentColor, THEME.white, 0.15));
+          pdf.rect(margin + accentBarW - 1, bandY, 1, sectionHeaderH, "F");
 
-          // Section number — modern circular badge
-          const badgeX = margin + 7;
+          // Section number — modern square badge with rounded corners
+          const badgeSize = 5.5;
+          const badgeX = margin + 9;
           const badgeCY = bandY + sectionHeaderH / 2;
-          const badgeR = 3.2;
+          const badgeY = badgeCY - badgeSize / 2;
 
-          // Badge fill
+          // Badge shadow
+          pdf.setFillColor(180, 185, 200);
+          pdf.setGState(new (pdf as any).GState({ opacity: 0.2 }));
+          pdf.roundedRect(badgeX + 0.3, badgeY + 0.4, badgeSize, badgeSize, 1.5, 1.5, "F");
+          pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+
+          // Badge fill with gradient
           pdf.setFillColor(...accentColor);
-          pdf.circle(badgeX, badgeCY, badgeR, "F");
+          pdf.roundedRect(badgeX, badgeY, badgeSize, badgeSize, 1.5, 1.5, "F");
           // Inner highlight
-          pdf.setFillColor(...lerpColor(accentColor, [255, 255, 255], 0.2));
-          pdf.circle(badgeX - 0.3, badgeCY - 0.3, badgeR * 0.7, "F");
-          pdf.setFillColor(...accentColor);
-          pdf.circle(badgeX, badgeCY, badgeR - 0.3, "F");
+          pdf.setFillColor(...lerpColor(accentColor, THEME.white, 0.2));
+          pdf.roundedRect(badgeX + 0.4, badgeY + 0.4, badgeSize - 0.8, badgeSize * 0.4, 0.8, 0.8, "F");
 
-          // Badge number — vertically centered
-          pdf.setFontSize(6.5);
+          // Badge number — bold and centered
+          pdf.setFontSize(7);
           pdf.setTextColor(255, 255, 255);
           const numStr = String(sectionIndex);
           const numW = pdf.getTextWidth(numStr);
-          const numFontH = 6.5 * 0.352778; // font size in mm
-          pdf.text(numStr, badgeX - numW / 2, badgeCY + numFontH * 0.35);
+          const numFontH = 7 * 0.352778;
+          pdf.text(numStr, badgeX + badgeSize / 2 - numW / 2, badgeCY + numFontH * 0.35);
+          pdf.text(numStr, badgeX + badgeSize / 2 - numW / 2 + 0.1, badgeCY + numFontH * 0.35); // faux bold
 
-          // Section title — baseline aligned with badge center
-          const titleX = margin + 13;
-          const titleFontH = cfg.section_title_size * 0.352778;
+          // Section title — larger, bolder
+          const titleX = margin + 18;
+          const titleFontH = (cfg.section_title_size + 1) * 0.352778;
           const titleY = badgeCY + titleFontH * 0.35;
-          pdf.setFontSize(cfg.section_title_size);
-          pdf.setTextColor(...accentColor);
+          pdf.setFontSize(cfg.section_title_size + 1);
+          pdf.setTextColor(...THEME.text);
           pdf.text(sectionTitle, titleX, titleY);
-          pdf.text(sectionTitle, titleX + 0.16, titleY); // faux bold
+          pdf.text(sectionTitle, titleX + 0.18, titleY); // faux bold
+          pdf.text(sectionTitle, titleX + 0.09, titleY); // extra weight
 
-          yPosition = bandY + sectionHeaderH + 3;
+          // Subtle decorative line extending from title
+          const titleW = pdf.getTextWidth(sectionTitle);
+          pdf.setDrawColor(...THEME.borderLight);
+          pdf.setLineWidth(0.4);
+          pdf.line(titleX + titleW + 5, badgeCY, margin + contentWidth - 8, badgeCY);
+
+          yPosition = bandY + sectionHeaderH + 4;
 
           if (sectionTitle === "발명의 요약" && cfg.show_patent_images) await insertImages();
         } else if (cleanLine.trim()) {
@@ -529,102 +593,118 @@ export function PdfGenerator({
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  DISCLAIMER — amber callout      ██
+      // ██  DISCLAIMER — Modern Alert Card   ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       if (cfg.show_disclaimer) {
-        checkNewPage(16);
-        yPosition += 10;
-        const discH = 10;
+        checkNewPage(18);
+        yPosition += 12;
+        const discH = 12;
         const dY = yPosition - 4;
 
-        // Soft shadow
-        pdf.setFillColor(240, 235, 215);
-        pdf.setGState(new (pdf as any).GState({ opacity: 0.3 }));
-        pdf.roundedRect(margin + 0.5, dY + 0.5, contentWidth, discH, 2.5, 2.5, "F");
+        // Layered shadow for depth
+        pdf.setFillColor(250, 240, 210);
+        pdf.setGState(new (pdf as any).GState({ opacity: 0.4 }));
+        pdf.roundedRect(margin + 0.8, dY + 1, contentWidth, discH, 3, 3, "F");
+        pdf.setGState(new (pdf as any).GState({ opacity: 0.2 }));
+        pdf.setFillColor(245, 230, 190);
+        pdf.roundedRect(margin + 1.2, dY + 1.5, contentWidth, discH, 3, 3, "F");
         pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
 
-        // Background
+        // Main background with border
         pdf.setFillColor(...THEME.amberBg);
-        pdf.setDrawColor(235, 215, 170);
-        pdf.setLineWidth(0.25);
-        pdf.roundedRect(margin, dY, contentWidth, discH, 2.5, 2.5, "FD");
+        pdf.setDrawColor(240, 210, 150);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(margin, dY, contentWidth, discH, 3, 3, "FD");
 
-        // Left amber accent bar
+        // Bold left accent bar
         pdf.setFillColor(...THEME.amber);
-        pdf.roundedRect(margin, dY, 2.5, discH, 1, 1, "F");
+        pdf.roundedRect(margin, dY, 3.5, discH, 1.5, 1.5, "F");
 
-        // Warning icon circle — vertically centered in card
-        const iconX = margin + 7;
+        // Warning icon — modern rounded square
+        const iconSize = 5;
+        const iconX = margin + 8;
         const iconCY = dY + discH / 2;
-        pdf.setFillColor(...lerpColor(THEME.amber, [255, 255, 255], 0.5));
-        pdf.circle(iconX, iconCY, 2, "F");
-        pdf.setFontSize(6);
+        const iconY = iconCY - iconSize / 2;
+
+        pdf.setFillColor(...lerpColor(THEME.amber, THEME.white, 0.4));
+        pdf.roundedRect(iconX, iconY, iconSize, iconSize, 1.5, 1.5, "F");
+        pdf.setFontSize(8);
         pdf.setTextColor(...THEME.amber);
         const exclW = pdf.getTextWidth("!");
-        const exclFontH = 6 * 0.352778;
-        pdf.text("!", iconX - exclW / 2, iconCY + exclFontH * 0.35);
+        const exclFontH = 8 * 0.352778;
+        pdf.text("!", iconX + iconSize / 2 - exclW / 2, iconCY + exclFontH * 0.35);
+        pdf.text("!", iconX + iconSize / 2 - exclW / 2 + 0.08, iconCY + exclFontH * 0.35); // faux bold
 
-        // Disclaimer text — vertically centered in card
-        pdf.setFontSize(7);
-        pdf.setTextColor(130, 100, 40);
+        // Disclaimer text — well centered
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(140, 100, 30);
         const disc = cfg.disclaimer_text;
-        const discLines = pdf.splitTextToSize(disc, contentWidth - 16);
-        const discTextH = discLines.length * 3.5;
-        const discTextStartY = dY + (discH - discTextH) / 2 + 3.5 * 0.7;
+        const discLines = pdf.splitTextToSize(disc, contentWidth - 20);
+        const discTextH = discLines.length * 3.8;
+        const discTextStartY = dY + (discH - discTextH) / 2 + 3.8 * 0.75;
         for (let i = 0; i < discLines.length; i++) {
-          pdf.text(discLines[i], margin + 12, discTextStartY + i * 3.5);
+          pdf.text(discLines[i], margin + 16, discTextStartY + i * 3.8);
         }
-        yPosition = dY + discH + 3;
+        yPosition = dY + discH + 4;
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  FOOTER — modern minimal style   ██
+      // ██  FOOTER — 2025 Clean Minimal      ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       const totalPages = pdf.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
-        const fy = pageHeight - 8;
+        const fy = pageHeight - 9;
 
-        // Clean footer background
-        pdf.setFillColor(...THEME.surfaceLight);
-        pdf.rect(0, fy - 5, pageWidth, 15, "F");
+        // Subtle footer background gradient
+        const footerGradH = 12;
+        for (let g = 0; g < 6; g++) {
+          const t = g / 5;
+          pdf.setFillColor(...lerpColor(THEME.white, THEME.surfaceLight, t * 0.8));
+          pdf.rect(0, fy - footerGradH + g * 2, pageWidth, 2.5, "F");
+        }
 
-        // Top accent line — thin gradient
-        pdf.setDrawColor(...lerpColor(accentColor, THEME.border, 0.6));
-        pdf.setLineWidth(0.3);
-        pdf.line(margin, fy - 5, pageWidth - margin, fy - 5);
+        // Top accent line — gradient fade
+        pdf.setDrawColor(...lerpColor(accentColor, THEME.border, 0.5));
+        pdf.setLineWidth(0.4);
+        pdf.line(margin, fy - 6, pageWidth - margin, fy - 6);
+
+        // Accent square marker
+        pdf.setFillColor(...accentColor);
+        pdf.roundedRect(margin, fy - 1.5, 3, 3, 0.8, 0.8, "F");
 
         // Footer text
-        pdf.setFontSize(6);
-        pdf.setTextColor(...THEME.textMuted);
-        const footerTextY = fy;
-
-        // Accent dot — aligned to text vertical center
-        const footerFontH = 6 * 0.352778;
-        pdf.setFillColor(...accentColor);
-        pdf.circle(margin + 1, footerTextY - footerFontH * 0.35, 0.6, "F");
-
-        pdf.text(cfg.footer_text, margin + 3.5, footerTextY);
+        pdf.setFontSize(6.5);
+        pdf.setTextColor(...THEME.textSecondary);
+        pdf.text(cfg.footer_text, margin + 5, fy + 1);
 
         if (cfg.footer_show_date) {
-          const dateText = `${new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}`;
-          pdf.text(dateText, pageWidth - margin - pdf.getTextWidth(dateText), fy);
+          const dateText = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+          pdf.setTextColor(...THEME.textMuted);
+          pdf.text(dateText, pageWidth - margin - pdf.getTextWidth(dateText), fy + 1);
         }
+
         if (cfg.footer_show_page) {
-          // Modern page number — accent colored current page
+          // Modern page indicator — bold current, muted total
           const pgText = `${i}`;
           const pgTotal = ` / ${totalPages}`;
           const pgTotalW = pdf.getTextWidth(pgTotal);
+          
+          pdf.setFontSize(8);
           const pgW = pdf.getTextWidth(pgText);
           const pgX = (pageWidth - pgW - pgTotalW) / 2;
 
-          pdf.setFontSize(7);
+          // Page number highlight background
+          pdf.setFillColor(...THEME.accentLight);
+          pdf.roundedRect(pgX - 2, fy - 2.5, pgW + 4, 6, 2, 2, "F");
+
           pdf.setTextColor(...accentColor);
-          pdf.text(pgText, pgX, fy);
-          pdf.text(pgText, pgX + 0.12, fy); // faux bold
-          pdf.setFontSize(6);
+          pdf.text(pgText, pgX, fy + 1);
+          pdf.text(pgText, pgX + 0.12, fy + 1); // faux bold
+          
+          pdf.setFontSize(6.5);
           pdf.setTextColor(...THEME.textMuted);
-          pdf.text(pgTotal, pgX + pgW, fy);
+          pdf.text(pgTotal, pgX + pgW + 0.5, fy + 1);
         }
       }
 
