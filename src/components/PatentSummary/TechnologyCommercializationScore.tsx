@@ -67,24 +67,6 @@ const SUB_COLORS = [
   { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 55% / 0.08)', icon: '💼' },
 ];
 
-function MiniGauge({ score, color }: { score: number; color: string }) {
-  const r = 18;
-  const sw = 3.5;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (score / 100) * circ;
-  return (
-    <svg width="48" height="48" viewBox="0 0 48 48" className="-rotate-90">
-      <circle cx="24" cy="24" r={r} fill="none" stroke="hsl(220 14% 96%)" strokeWidth={sw} />
-      <circle
-        cx="24" cy="24" r={r} fill="none"
-        stroke={color} strokeWidth={sw} strokeLinecap="round"
-        strokeDasharray={circ} strokeDashoffset={offset}
-        className="transition-all duration-700 ease-out"
-      />
-    </svg>
-  );
-}
-
 function SubScoreCard({ label, score, reason, colorIndex }: { label: string; score: number; reason?: string; colorIndex: number }) {
   const c = SUB_COLORS[colorIndex] || SUB_COLORS[0];
   return (
@@ -96,20 +78,18 @@ function SubScoreCard({ label, score, reason, colorIndex }: { label: string; sco
         <span className="text-base">{c.icon}</span>
         <p className="text-xs text-muted-foreground font-semibold">{label}</p>
       </div>
-      <div className="flex items-center gap-2 mb-2">
-        <div className="relative">
-          <MiniGauge score={score} color={c.stroke} />
-          <span
-            className="absolute inset-0 flex items-center justify-center text-[11px] font-bold rotate-0"
-            style={{ color: c.stroke }}
-          >
-            {score}
-          </span>
-        </div>
+      <div className="flex items-center gap-1.5 mb-2">
+        <span className="text-lg font-bold" style={{ color: c.stroke }}>{score}</span>
         <span className="text-[10px] text-muted-foreground">/ 100</span>
       </div>
+      <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'hsl(220 14% 94%)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{ width: `${score}%`, background: c.stroke }}
+        />
+      </div>
       {reason && (
-        <p className="text-[11px] text-foreground/65 leading-relaxed line-clamp-4">
+        <p className="text-[11px] text-foreground/65 leading-relaxed line-clamp-4 mt-2.5">
           {reason}
         </p>
       )}
