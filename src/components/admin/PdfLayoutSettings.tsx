@@ -44,7 +44,6 @@ export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
   page_margin: 18,
   section_title_size: 10.5,
   section_accent_color: "#00785a",
-  meta_bg_color: "#e6f3ff",
   meta_accent_color: "#3278c8",
   show_patent_images: true,
   show_patent_meta: true,
@@ -182,13 +181,6 @@ export function PdfLayoutSettings({ apiCall, initialConfig }: PdfLayoutSettingsP
       <Card className="p-4 space-y-3">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">특허정보 밴드</h3>
         <div className="grid gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">배경색</label>
-            <div className="flex items-center gap-2">
-              <input type="color" value={config.meta_bg_color} onChange={e => update("meta_bg_color", e.target.value)} className="w-10 h-8 rounded border cursor-pointer" />
-              <Input value={config.meta_bg_color} onChange={e => update("meta_bg_color", e.target.value)} className="flex-1" placeholder="#e6f3ff" />
-            </div>
-          </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">좌측 강조바 색상</label>
             <div className="flex items-center gap-2">
