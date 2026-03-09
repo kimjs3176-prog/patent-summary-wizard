@@ -101,22 +101,25 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Ambient background blobs */}
+      {/* 2025 Ambient background — Soft indigo/violet gradient orbs */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-[hsl(174_60%_90%/0.18)] blur-[120px]" />
-        <div className="absolute -bottom-32 -right-32 w-[450px] h-[450px] rounded-full bg-[hsl(210_80%_92%/0.12)] blur-[120px]" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[350px] h-[350px] rounded-full bg-[hsl(174_40%_85%/0.08)] blur-[100px]" />
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full blur-[140px]" style={{ background: 'radial-gradient(circle, hsl(239 84% 67% / 0.12) 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-40 -right-40 w-[550px] h-[550px] rounded-full blur-[140px]" style={{ background: 'radial-gradient(circle, hsl(280 68% 56% / 0.08) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-[120px]" style={{ background: 'radial-gradient(circle, hsl(262 83% 58% / 0.06) 0%, transparent 60%)' }} />
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'linear-gradient(hsl(220 13% 91%) 1px, transparent 1px), linear-gradient(90deg, hsl(220 13% 91%) 1px, transparent 1px)', backgroundSize: '64px 64px' }} />
       </div>
 
-      {/* Header */}
-      <header className="w-full bg-background/70 backdrop-blur-2xl sticky top-0 z-50 border-b border-border/20">
-        <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center shadow-sm icon-bounce cursor-pointer">
-              <FileText className="w-4 h-4 text-background" />
+      {/* Header — Refined glass morphism */}
+      <header className="w-full sticky top-0 z-50 backdrop-blur-2xl border-b" style={{ background: 'hsl(0 0% 100% / 0.85)', borderColor: 'hsl(220 13% 91% / 0.6)' }}>
+        <div className="container mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Logo with gradient accent */}
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md icon-bounce cursor-pointer" style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))' }}>
+              <FileText className="w-4.5 h-4.5 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-semibold text-sm text-foreground tracking-tight leading-tight">
+              <h1 className="font-bold text-sm text-foreground tracking-tight leading-tight">
                 {settings.header_title}
               </h1>
               <p className="text-[10px] text-muted-foreground hidden sm:block leading-tight">
@@ -126,7 +129,7 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-2">
             <Link to="/compare">
-              <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-3.5 glossy-card gap-1.5 btn-press">
+              <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 glossy-card gap-2 btn-press font-medium">
                 <Heart className="w-3.5 h-3.5" />
                 관심특허{favorites.length > 0 ? ` (${favorites.length})` : ""}
               </Button>
@@ -137,14 +140,14 @@ const Index = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => {updateUrl();reset();}}
-                className="rounded-full text-xs h-8 px-3.5 glossy-card btn-press">
+                className="rounded-full text-xs h-8 px-4 glossy-card btn-press font-medium">
                   새로운 검색
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {updateUrl();reset();clearHistory();toast.success("검색 기록이 초기화되었습니다");}}
-                className="rounded-full text-xs h-8 px-3.5 glossy-card gap-1 btn-press">
+                className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5 btn-press font-medium">
                   <RotateCcw className="w-3 h-3" />
                   초기화
               </Button>
@@ -157,13 +160,18 @@ const Index = () => {
       <main className="container mx-auto px-4 md:px-6 py-8 md:py-14 relative z-10">
         {!summary && !isLoading ?
         <>
-            {/* Hero */}
-            <section className="text-center max-w-2xl mx-auto mb-10 md:mb-14 animate-fade-down">
-              <h2 className="text-3xl md:text-[2.75rem] lg:text-5xl font-bold text-foreground mb-3 md:mb-4 leading-[1.12] tracking-tight">
+            {/* Hero — 2025 Bold Typography */}
+            <section className="text-center max-w-2xl mx-auto mb-12 md:mb-16 animate-fade-down">
+              {/* Subtle accent badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold" style={{ background: 'hsl(239 84% 67% / 0.08)', color: 'hsl(239 84% 50%)', border: '1px solid hsl(239 84% 67% / 0.15)' }}>
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'hsl(239 84% 67%)' }} />
+                AI 기반 특허 분석
+              </div>
+              <h2 className="text-3xl md:text-[2.75rem] lg:text-5xl font-extrabold text-foreground mb-4 md:mb-5 leading-[1.1] tracking-tight">
                 {settings.hero_title}<br />
                 <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-sm md:text-base font-normal leading-relaxed max-w-md mx-auto text-black">
+              <p className="text-sm md:text-base font-normal leading-relaxed max-w-lg mx-auto text-muted-foreground">
                 {settings.hero_description}
               </p>
             </section>
@@ -247,11 +255,17 @@ const Index = () => {
         }
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/30 mt-auto relative z-10">
-        <div className="container mx-auto px-4 py-6 md:py-8 text-center text-xs text-muted-foreground space-y-1">
-          <p>{settings.footer_line1}</p>
-          <p>{settings.footer_line2}</p>
+      {/* Footer — Clean modern style */}
+      <footer className="mt-auto relative z-10" style={{ borderTop: '1px solid hsl(220 13% 91% / 0.6)' }}>
+        <div className="container mx-auto px-4 py-8 md:py-10 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))' }}>
+              <FileText className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-xs font-semibold text-foreground">{settings.header_title}</span>
+          </div>
+          <p className="text-xs text-muted-foreground">{settings.footer_line1}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{settings.footer_line2}</p>
         </div>
       </footer>
     </div>);
