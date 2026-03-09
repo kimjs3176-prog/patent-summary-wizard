@@ -1,6 +1,6 @@
 import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
-import { ScoreRadarChart } from "./ScoreRadarChart";
+import { ScoreBarChart } from "./ScoreBarChart";
 import { CircularGauge } from "./CircularGauge";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
@@ -189,20 +189,22 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Infographic: Gauge + Radar side by side */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mb-6 py-2">
+      {/* Infographic: Gauge + Bar Chart */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6 py-2">
         <CircularGauge
           score={score}
           grade={getGradeLabel(score, scoreConfig.grades)}
           label={getScoreLabel(score, scoreConfig.grades)}
         />
-        <div className="hidden sm:block w-px h-40 bg-border/50" />
-        <ScoreRadarChart
-          technologyScore={details.technologyScore}
-          marketScore={details.marketScore}
-          businessScore={details.businessScore}
-          labels={scoreConfig.subLabels}
-        />
+        <div className="hidden sm:block w-px h-28 bg-border/50" />
+        <div className="flex-1 w-full">
+          <ScoreBarChart
+            technologyScore={details.technologyScore}
+            marketScore={details.marketScore}
+            businessScore={details.businessScore}
+            labels={scoreConfig.subLabels}
+          />
+        </div>
       </div>
 
       {/* Sub-scores with mini gauges */}
