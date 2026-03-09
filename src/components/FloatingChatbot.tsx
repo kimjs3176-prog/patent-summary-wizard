@@ -10,7 +10,7 @@ export const FloatingChatbot = () => {
     <>
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-5 z-[9999] w-[380px] h-[560px] max-w-[calc(100vw-2.5rem)] max-h-[calc(100vh-8rem)] rounded-2xl overflow-hidden shadow-2xl border border-border/60 animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-24 right-5 z-[9999] w-[400px] h-[85vh] max-w-[calc(100vw-2.5rem)] max-h-[calc(100vh-7rem)] rounded-2xl overflow-hidden shadow-2xl border border-border/60 animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className="flex items-center justify-between px-4 py-2.5 text-white" style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))' }}>
             <span className="text-sm font-semibold">Patent Chat Aid</span>
             <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-white/20 transition-colors">
