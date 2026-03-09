@@ -539,7 +539,7 @@ export function PatentSummary({
       )}
 
       {/* 3. AI Summary Card — 2025 Glass morphism */}
-      <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:break-before-page ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s' }}>
+      <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:break-before-page ai-summary-print-section ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s' }}>
         {/* Top accent gradient band */}
         <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(160 84% 39%), hsl(174 60% 40%), hsl(200 80% 50%))' }} />
         
