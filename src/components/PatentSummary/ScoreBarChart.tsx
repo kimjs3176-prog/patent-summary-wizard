@@ -19,17 +19,21 @@ export function ScoreBarChart({ technologyScore, marketScore, businessScore, lab
   ];
 
   return (
-    <div className="flex flex-col gap-3 w-full">
+    <div className="flex flex-col gap-2.5 sm:gap-3 w-full">
       {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-3">
-          <span className="text-sm shrink-0">{item.icon}</span>
-          <span className="text-xs font-semibold text-foreground/80 w-[52px] shrink-0 truncate">{item.label}</span>
-          <div className="flex-1 h-7 rounded-full overflow-hidden relative" style={{ background: item.bg }}>
+        <div key={item.label}>
+          {/* Label row - stacked on mobile for space */}
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-xs sm:text-sm shrink-0">{item.icon}</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-foreground/80 truncate">{item.label}</span>
+          </div>
+          {/* Bar */}
+          <div className="w-full h-6 sm:h-7 rounded-full overflow-hidden relative" style={{ background: item.bg }}>
             <div
               className="h-full rounded-full transition-all duration-700 ease-out flex items-center justify-end pr-2"
-              style={{ width: `${Math.max(item.score, 15)}%`, background: item.stroke }}
+              style={{ width: `${Math.max(item.score, 18)}%`, background: item.stroke }}
             >
-              <span className="text-[11px] font-bold text-white whitespace-nowrap">
+              <span className="text-[10px] sm:text-[11px] font-bold text-white whitespace-nowrap">
                 {item.score}점
               </span>
             </div>

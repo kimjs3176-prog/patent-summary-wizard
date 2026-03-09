@@ -156,27 +156,27 @@ export function TechnologyCommercializationScore({
 
   // Show commercialization score section
   return (
-    <div className="mb-6 glass-effect rounded-3xl p-4 sm:p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(25 90% 55%)' }}>
+    <div className="mb-6 glass-effect rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(25 90% 55%)' }}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-border/50">
-        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55%), hsl(35 85% 50%))', color: 'white' }}>
+      <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6 pb-3 sm:pb-5 border-b border-border/50">
+        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-base sm:text-xl" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55%), hsl(35 85% 50%))', color: 'white' }}>
           ✨
         </div>
         <div>
-          <h4 className="font-bold text-base sm:text-lg" style={{ color: 'hsl(25 70% 35%)' }}>{scoreConfig.cardTitle}</h4>
-          <p className="text-xs sm:text-sm text-muted-foreground">{scoreConfig.cardSubtitle}</p>
+          <h4 className="font-bold text-sm sm:text-lg" style={{ color: 'hsl(25 70% 35%)' }}>{scoreConfig.cardTitle}</h4>
+          <p className="text-[10px] sm:text-sm text-muted-foreground">{scoreConfig.cardSubtitle}</p>
         </div>
       </div>
 
-      {/* Infographic: Gauge + Bar Chart */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6 py-2">
+      {/* Infographic: Gauge + Bar Chart - horizontal on all sizes */}
+      <div className="flex items-center gap-3 sm:gap-6 mb-5 sm:mb-6">
         <CircularGauge
           score={score}
           grade={getGradeLabel(score, scoreConfig.grades)}
           label={getScoreLabel(score, scoreConfig.grades)}
         />
-        <div className="hidden sm:block w-px h-28 bg-border/50" />
-        <div className="flex-1 w-full">
+        <div className="w-px self-stretch bg-border/40 hidden sm:block" />
+        <div className="flex-1 min-w-0">
           <ScoreBarChart
             technologyScore={details.technologyScore}
             marketScore={details.marketScore}
@@ -187,7 +187,7 @@ export function TechnologyCommercializationScore({
       </div>
 
       {/* Sub-score reasons */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-5">
         {subItems.map((item, idx) => (
           <SubScoreCard key={item.label} label={item.label} reason={item.reason} colorIndex={idx} />
         ))}
@@ -195,12 +195,12 @@ export function TechnologyCommercializationScore({
 
       {/* Analysis */}
       {details.analysis && (
-        <div className="p-3 sm:p-4 rounded-2xl bg-secondary/30 border border-border/50">
+        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-secondary/30 border border-border/50">
           <div className="flex items-center gap-1.5 mb-1.5 sm:mb-2">
             <span className="text-xs">🤖</span>
             <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">AI 분석 의견</p>
           </div>
-          <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
+          <p className="text-xs sm:text-sm text-foreground/80 leading-[1.7] sm:leading-relaxed">{details.analysis}</p>
         </div>
       )}
     </div>
