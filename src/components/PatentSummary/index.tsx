@@ -564,8 +564,8 @@ export function PatentSummary({
 
         {/* Disclaimer — Warm accent box */}
         <div className="mx-6 md:mx-8 mb-6">
-          <div className="flex items-start gap-3.5 px-5 py-4 rounded-xl" style={{ background: 'linear-gradient(135deg, hsl(38 92% 95%), hsl(38 70% 92%))', border: '1px solid hsl(38 60% 85%)' }}>
-            <span className="text-lg mt-0.5 shrink-0">⚠️</span>
+          <div className="flex items-center gap-3.5 px-5 py-4 rounded-xl" style={{ background: 'linear-gradient(135deg, hsl(38 92% 95%), hsl(38 70% 92%))', border: '1px solid hsl(38 60% 85%)' }}>
+            <span className="text-base shrink-0 leading-none">⚠️</span>
             <p className="text-xs font-semibold leading-relaxed" style={{ color: 'hsl(38 50% 25%)' }}>
               {disclaimerText}
             </p>
