@@ -497,51 +497,75 @@
 
   .trl-print-section { break-inside: avoid !important; page-break-inside: avoid !important; }
 
-  /* TRL Chart print styles - ensure visibility */
-  .trl-print-section [class*="rounded-full"],
-  .trl-print-section [class*="bg-gradient"],
-  .trl-print-section [class*="bg-emerald"],
-  .trl-print-section [class*="bg-amber"],
-  .trl-print-section [class*="bg-red"] {
+  /* TRL Chart print - force all colors */
+  .trl-print-section * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
 
-  /* Progress bar visibility */
-  .trl-print-section .h-4 {
+  /* Hide interactive elements in print */
+  .trl-print-section [class*="animate-ping"],
+  .trl-print-section [class*="animate-pulse"],
+  .trl-print-section [class*="blur-lg"] {
+    display: none !important;
+  }
+
+  /* Progress bar track */
+  .trl-print-section .h-4.rounded-full {
     background: #e5e7eb !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    height: 14px !important;
   }
 
-  .trl-print-section .h-4 > div {
+  /* Progress bar fill */
+  .trl-print-section .h-4.rounded-full > div:first-child {
     background: linear-gradient(90deg, #f87171 0%, #facc15 35%, #4ade80 65%, #10b981 100%) !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
-  /* Level marker dots */
-  .trl-print-section [class*="w-2"][class*="h-2"],
-  .trl-print-section [class*="w-4"][class*="h-4"] {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    background-color: #10b981 !important;
+  /* TRL badge */
+  .trl-print-section .w-16.h-16 {
+    background: #10b981 !important;
   }
 
-  /* Level numbers */
-  .trl-print-section span[class*="text-[10px]"],
-  .trl-print-section span[class*="text-[9px]"] {
+  /* Level marker dots - all dots visible */
+  .trl-print-section .rounded-full[class*="w-2"] {
+    background-color: #9ca3af !important;
+    width: 8px !important;
+    height: 8px !important;
+  }
+
+  .trl-print-section .rounded-full[class*="w-4"] {
+    background: #10b981 !important;
+    width: 14px !important;
+    height: 14px !important;
+    box-shadow: none !important;
+    ring: none !important;
+  }
+
+  /* Level numbers via dedicated class */
+  .trl-level-markers span {
     color: #374151 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    font-size: 9px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
-  /* TRL badge number */
-  .trl-print-section .w-16.h-16,
-  .trl-print-section [class*="rounded-2xl"][class*="w-16"] {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  .trl-level-markers span[class*="font-bold"] {
+    color: #059669 !important;
+    font-weight: 700 !important;
+  }
+
+  /* TRL info text */
+  .trl-print-section .text-lg,
+  .trl-print-section .text-sm,
+  .trl-print-section .text-xs {
+    color: #1f2937 !important;
+  }
+
+  /* "상용화까지" box */
+  .trl-print-section .backdrop-blur-sm {
+    backdrop-filter: none !important;
+    background: #f3f4f6 !important;
   }
 
   [class*="animate-"] { animation: none !important; }
