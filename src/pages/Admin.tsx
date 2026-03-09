@@ -480,29 +480,31 @@ const Admin = () => {
 
       <main className="container mx-auto px-4 py-6 max-w-3xl">
         <Tabs defaultValue="patents">
-          <TabsList className="mb-6 w-full">
-            <TabsTrigger value="patents" className="flex-1 gap-1.5">
-              <Star className="w-3.5 h-3.5" /> 이달의 특허
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 gap-1.5">
-              <Settings className="w-3.5 h-3.5" /> 홈페이지 관리
-            </TabsTrigger>
-            <TabsTrigger value="summary" className="flex-1 gap-1.5">
-              <FileText className="w-3.5 h-3.5" /> 요약서 관리
-            </TabsTrigger>
-            <TabsTrigger value="print" className="flex-1 gap-1.5">
-              <Printer className="w-3.5 h-3.5" /> 인쇄
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex-1 gap-1.5">
-              <KeyRound className="w-3.5 h-3.5" /> 보안
-            </TabsTrigger>
-            <TabsTrigger value="pdf" className="flex-1 gap-1.5">
-              <FileDown className="w-3.5 h-3.5" /> PDF
-            </TabsTrigger>
-            <TabsTrigger value="cache" className="flex-1 gap-1.5" onClick={() => loadCache(0)}>
-              <Database className="w-3.5 h-3.5" /> 캐시
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 mb-6">
+            <TabsList className="w-max min-w-full sm:w-full">
+              <TabsTrigger value="patents" className="gap-1.5 text-xs sm:text-sm">
+                <Star className="w-3.5 h-3.5" /> <span className="hidden sm:inline">이달의 특허</span><span className="sm:hidden">특허</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-1.5 text-xs sm:text-sm">
+                <Settings className="w-3.5 h-3.5" /> <span className="hidden sm:inline">홈페이지 관리</span><span className="sm:hidden">홈</span>
+              </TabsTrigger>
+              <TabsTrigger value="summary" className="gap-1.5 text-xs sm:text-sm">
+                <FileText className="w-3.5 h-3.5" /> <span className="hidden sm:inline">요약서 관리</span><span className="sm:hidden">요약서</span>
+              </TabsTrigger>
+              <TabsTrigger value="print" className="gap-1.5 text-xs sm:text-sm">
+                <Printer className="w-3.5 h-3.5" /> <span className="hidden sm:inline">인쇄</span><span className="sm:hidden">인쇄</span>
+              </TabsTrigger>
+              <TabsTrigger value="pdf" className="gap-1.5 text-xs sm:text-sm">
+                <FileDown className="w-3.5 h-3.5" /> PDF
+              </TabsTrigger>
+              <TabsTrigger value="cache" className="gap-1.5 text-xs sm:text-sm" onClick={() => loadCache(0)}>
+                <Database className="w-3.5 h-3.5" /> <span className="hidden sm:inline">캐시</span><span className="sm:hidden">캐시</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="gap-1.5 text-xs sm:text-sm">
+                <KeyRound className="w-3.5 h-3.5" /> <span className="hidden sm:inline">보안</span><span className="sm:hidden">보안</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* ===== Patents Tab ===== */}
           <TabsContent value="patents">
