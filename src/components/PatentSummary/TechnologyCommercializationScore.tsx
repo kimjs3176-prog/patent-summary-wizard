@@ -1,7 +1,5 @@
 import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
-import { ScoreRadarChart } from "./ScoreRadarChart";
-import { GradeScale } from "./GradeScale";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
@@ -171,37 +169,22 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Main Score + Radar Chart */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
-          <div className="flex items-end gap-1.5 sm:gap-2">
-            <span className={`text-4xl sm:text-6xl font-black ${getScoreColor(score)}`}>
-              {score}
-            </span>
-            <span className="text-muted-foreground text-base sm:text-xl mb-1 sm:mb-2">/ 100</span>
-          </div>
-          <div className="flex flex-col gap-0.5 sm:gap-1">
-            <span className={`text-2xl sm:text-3xl font-black ${getScoreColor(score)}`}>
-              {getGradeLabel(score, scoreConfig.grades)}
-            </span>
-            <span className={`text-sm sm:text-base font-semibold ${getScoreColor(score)}`}>
-              {getScoreLabel(score, scoreConfig.grades)}
-            </span>
-          </div>
+      {/* Main Score */}
+      <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div className="flex items-end gap-1.5 sm:gap-2">
+          <span className={`text-4xl sm:text-6xl font-black ${getScoreColor(score)}`}>
+            {score}
+          </span>
+          <span className="text-muted-foreground text-base sm:text-xl mb-1 sm:mb-2">/ 100</span>
         </div>
-        <div className="flex-1 min-w-0">
-          <ScoreRadarChart
-            technologyScore={details.technologyScore}
-            marketScore={details.marketScore}
-            businessScore={details.businessScore}
-            labels={scoreConfig.subLabels}
-          />
+        <div className="flex flex-col gap-0.5 sm:gap-1">
+          <span className={`text-2xl sm:text-3xl font-black ${getScoreColor(score)}`}>
+            {getGradeLabel(score, scoreConfig.grades)}
+          </span>
+          <span className={`text-sm sm:text-base font-semibold ${getScoreColor(score)}`}>
+            {getScoreLabel(score, scoreConfig.grades)}
+          </span>
         </div>
-      </div>
-
-      {/* Grade Scale */}
-      <div className="mb-4 sm:mb-5 p-3 sm:p-4 rounded-xl bg-secondary/20 border border-border/30">
-        <GradeScale score={score} grades={scoreConfig.grades} />
       </div>
 
       {/* Sub-scores */}
