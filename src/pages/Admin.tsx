@@ -407,6 +407,38 @@ const Admin = () => {
     setIsSavingSummarySettings(false);
   };
 
+  const handleSavePrintSettings = async () => {
+    setIsSavingPrintSettings(true);
+    const result = await apiCall("update-settings", {
+      print_sections: JSON.stringify(printSections),
+    });
+    if (result.success) toast.success("인쇄 설정이 저장되었습니다.");
+    else toast.error("설정 저장 실패");
+    setIsSavingPrintSettings(false);
+  };
+
+  const handleChangePassword = async () => {
+    const next = newAdminPassword.trim();
+    if (next.length < 4 || next.length > 100) {
+      toast.error("비밀번호는 4~100자여야 합니다.");
+      return;
+    }
+    if (next !== confirmAdminPassword.trim()) {
+      toast.error("비밀번호 확인이 일치하지 않습니다.");
+      return;
+    }
+    setIsChangingPassword(true);
+    const result = await apiCall("change-password", { new_password: next });
+    if (result.success) {
+      toast.success("관리자 비밀번호가 변경되었습니다.");
+      setNewAdminPassword("");
+      setConfirmAdminPassword("");
+    } else {
+      toast.error(result.error || "변경 실패");
+    }
+    setIsChangingPassword(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
