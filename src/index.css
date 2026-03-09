@@ -432,11 +432,13 @@
     display: none !important;
   }
 
-  .claims-section,
-  .related-patents-section,
-  [class*="related"], [class*="Related"],
-  [class*="claim"], [class*="Claim"] {
+  .print\\:hidden {
     display: none !important;
+  }
+
+  .print\\:break-before-page {
+    break-before: page !important;
+    page-break-before: always !important;
   }
 
   .glass-effect {
