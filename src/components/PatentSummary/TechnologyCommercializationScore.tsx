@@ -45,20 +45,6 @@ function useTrlConfig(): TrlConfig {
   }, [settings.trl_settings]);
 }
 
-function getScoreColor(value: number): string {
-  if (value >= 80) return "text-emerald-500";
-  if (value >= 60) return "text-blue-500";
-  if (value >= 40) return "text-amber-500";
-  return "text-red-500";
-}
-
-function getScoreBgColor(value: number): string {
-  if (value >= 80) return "bg-emerald-500";
-  if (value >= 60) return "bg-blue-500";
-  if (value >= 40) return "bg-amber-500";
-  return "bg-red-500";
-}
-
 function getScoreLabel(value: number, grades: ScoreConfig["grades"]): string {
   const sorted = [...grades].sort((a, b) => b.min - a.min);
   for (const g of sorted) {
@@ -75,24 +61,55 @@ function getGradeLabel(value: number, grades: ScoreConfig["grades"]): string {
   return sorted[sorted.length - 1]?.grade || "";
 }
 
-function SubScoreCard({ label, score, reason }: { label: string; score: number; reason?: string }) {
+const SUB_COLORS = [
+  { stroke: 'hsl(217 91% 60%)', bg: 'hsl(217 91% 60% / 0.08)', icon: '🔬' },
+  { stroke: 'hsl(160 84% 39%)', bg: 'hsl(160 84% 39% / 0.08)', icon: '📈' },
+  { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 55% / 0.08)', icon: '💼' },
+];
+
+function MiniGauge({ score, color }: { score: number; color: string }) {
+  const r = 18;
+  const sw = 3.5;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (score / 100) * circ;
   return (
-    <div className="p-4 sm:p-5 rounded-xl bg-secondary/40 border border-border/40">
-      <p className="text-xs text-muted-foreground mb-2 font-medium">{label}</p>
-      <div className="flex items-baseline gap-0.5 mb-3">
-        <span className={`text-2xl sm:text-3xl font-bold ${getScoreColor(score)}`}>
-          {score}
-        </span>
-        <span className="text-xs text-muted-foreground">점</span>
+    <svg width="48" height="48" viewBox="0 0 48 48" className="-rotate-90">
+      <circle cx="24" cy="24" r={r} fill="none" stroke="hsl(220 14% 96%)" strokeWidth={sw} />
+      <circle
+        cx="24" cy="24" r={r} fill="none"
+        stroke={color} strokeWidth={sw} strokeLinecap="round"
+        strokeDasharray={circ} strokeDashoffset={offset}
+        className="transition-all duration-700 ease-out"
+      />
+    </svg>
+  );
+}
+
+function SubScoreCard({ label, score, reason, colorIndex }: { label: string; score: number; reason?: string; colorIndex: number }) {
+  const c = SUB_COLORS[colorIndex] || SUB_COLORS[0];
+  return (
+    <div
+      className="p-3 sm:p-4 rounded-xl border border-border/40 transition-shadow hover:shadow-sm"
+      style={{ background: c.bg }}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-base">{c.icon}</span>
+        <p className="text-xs text-muted-foreground font-semibold">{label}</p>
       </div>
-      <div className="w-full h-1 bg-muted/60 rounded-full overflow-hidden mb-3">
-        <div
-          className={`h-full rounded-full ${getScoreBgColor(score)}`}
-          style={{ width: `${score}%` }}
-        />
+      <div className="flex items-center gap-2 mb-2">
+        <div className="relative">
+          <MiniGauge score={score} color={c.stroke} />
+          <span
+            className="absolute inset-0 flex items-center justify-center text-[11px] font-bold rotate-0"
+            style={{ color: c.stroke }}
+          >
+            {score}
+          </span>
+        </div>
+        <span className="text-[10px] text-muted-foreground">/ 100</span>
       </div>
       {reason && (
-        <p className="text-xs text-foreground/70 leading-relaxed line-clamp-5">
+        <p className="text-[11px] text-foreground/65 leading-relaxed line-clamp-4">
           {reason}
         </p>
       )}
@@ -158,10 +175,11 @@ export function TechnologyCommercializationScore({
     { label: scoreConfig.subLabels.business, score: details.businessScore, reason: details.businessReason },
   ];
 
-  // Show commercialization score section (without TRL)
+  // Show commercialization score section
   return (
     <div className="mb-6 glass-effect rounded-3xl p-4 sm:p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(25 90% 55%)' }}>
-      <div className="flex items-center gap-3 mb-4 sm:mb-6 pb-4 sm:pb-5 border-b border-border/50">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-5 sm:mb-6 pb-4 sm:pb-5 border-b border-border/50">
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55%), hsl(35 85% 50%))', color: 'white' }}>
           ✨
         </div>
@@ -171,34 +189,36 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Infographic: Gauge + Radar */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 mb-6">
+      {/* Infographic: Gauge + Radar side by side */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mb-6 py-2">
         <CircularGauge
           score={score}
           grade={getGradeLabel(score, scoreConfig.grades)}
           label={getScoreLabel(score, scoreConfig.grades)}
         />
-        <div className="flex-1 w-full">
-          <ScoreRadarChart
-            technologyScore={details.technologyScore}
-            marketScore={details.marketScore}
-            businessScore={details.businessScore}
-            labels={scoreConfig.subLabels}
-          />
-        </div>
+        <div className="hidden sm:block w-px h-40 bg-border/50" />
+        <ScoreRadarChart
+          technologyScore={details.technologyScore}
+          marketScore={details.marketScore}
+          businessScore={details.businessScore}
+          labels={scoreConfig.subLabels}
+        />
       </div>
 
-      {/* Sub-scores */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-5">
-        {subItems.map((item) => (
-          <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} />
+      {/* Sub-scores with mini gauges */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-5">
+        {subItems.map((item, idx) => (
+          <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} colorIndex={idx} />
         ))}
       </div>
 
       {/* Analysis */}
       {details.analysis && (
         <div className="p-3 sm:p-4 rounded-2xl bg-secondary/30 border border-border/50">
-          <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2 font-medium">AI 분석 의견</p>
+          <div className="flex items-center gap-1.5 mb-1.5 sm:mb-2">
+            <span className="text-xs">🤖</span>
+            <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">AI 분석 의견</p>
+          </div>
           <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">{details.analysis}</p>
         </div>
       )}
