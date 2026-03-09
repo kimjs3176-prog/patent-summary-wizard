@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText, FileDown } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText, FileDown, Printer, KeyRound } from "lucide-react";
 import { PdfLayoutSettings, DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 import { toast } from "sonner";
 import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
@@ -120,6 +120,17 @@ const Admin = () => {
     aiSummary: "🤖",
     claims: "📑",
   };
+  const DEFAULT_PRINT_SECTIONS: Record<string, boolean> = {
+    patentInfo: true,
+    commercialization: true,
+    aiSummary: true,
+    trl: true,
+    claims: false,
+    relatedPatents: false,
+    disclaimer: true,
+    header: true,
+    footer: true,
+  };
   const DEFAULT_INFO_LABELS: Record<string, string> = {
     registrationNumber: "등록번호",
     applicationNumber: "출원번호",
@@ -137,6 +148,11 @@ const Admin = () => {
   const [isSavingSummarySettings, setIsSavingSummarySettings] = useState(false);
   const [newSectionKey, setNewSectionKey] = useState("");
   const [summaryMaxTokens, setSummaryMaxTokens] = useState(3000);
+  const [printSections, setPrintSections] = useState<Record<string, boolean>>(DEFAULT_PRINT_SECTIONS);
+  const [isSavingPrintSettings, setIsSavingPrintSettings] = useState(false);
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [scoreConfig, setScoreConfig] = useState<ScoreConfig>(DEFAULT_SCORE_CONFIG);
   const [trlConfig, setTrlConfig] = useState<TrlConfig>(DEFAULT_TRL_CONFIG);
   const [pdfLayoutConfig, setPdfLayoutConfig] = useState<PdfLayoutConfig>(DEFAULT_PDF_CONFIG);
