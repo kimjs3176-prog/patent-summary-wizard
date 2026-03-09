@@ -431,6 +431,7 @@ const Admin = () => {
     const result = await apiCall("change-password", { new_password: next });
     if (result.success) {
       toast.success("관리자 비밀번호가 변경되었습니다.");
+      setPassword(next);
       setNewAdminPassword("");
       setConfirmAdminPassword("");
     } else {
