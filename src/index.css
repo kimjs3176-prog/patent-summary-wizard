@@ -497,5 +497,52 @@
 
   .trl-print-section { break-inside: avoid !important; page-break-inside: avoid !important; }
 
+  /* TRL Chart print styles - ensure visibility */
+  .trl-print-section [class*="rounded-full"],
+  .trl-print-section [class*="bg-gradient"],
+  .trl-print-section [class*="bg-emerald"],
+  .trl-print-section [class*="bg-amber"],
+  .trl-print-section [class*="bg-red"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Progress bar visibility */
+  .trl-print-section .h-4 {
+    background: #e5e7eb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .trl-print-section .h-4 > div {
+    background: linear-gradient(90deg, #f87171 0%, #facc15 35%, #4ade80 65%, #10b981 100%) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Level marker dots */
+  .trl-print-section [class*="w-2"][class*="h-2"],
+  .trl-print-section [class*="w-4"][class*="h-4"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: #10b981 !important;
+  }
+
+  /* Level numbers */
+  .trl-print-section span[class*="text-[10px]"],
+  .trl-print-section span[class*="text-[9px]"] {
+    color: #374151 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* TRL badge number */
+  .trl-print-section .w-16.h-16,
+  .trl-print-section [class*="rounded-2xl"][class*="w-16"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   [class*="animate-"] { animation: none !important; }
 }
