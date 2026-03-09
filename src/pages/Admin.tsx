@@ -1030,6 +1030,74 @@ const Admin = () => {
             </div>
           </TabsContent>
 
+          {/* ===== Print Tab ===== */}
+          <TabsContent value="print">
+            <div className="space-y-4">
+              <h2 className="font-semibold text-sm">인쇄 요소 표시/숨김</h2>
+              <p className="text-[11px] text-muted-foreground">저장 후 인쇄 시 선택한 항목만 포함됩니다.</p>
+              <div className="space-y-3">
+                {[
+                  { key: "header", label: "인쇄 헤더", desc: "출력 상단 제목/번호 영역" },
+                  { key: "patentInfo", label: "특허 정보 카드", desc: "등록번호/출원인/날짜 정보" },
+                  { key: "commercialization", label: "사업화 점수", desc: "종합 점수 및 상세 분석" },
+                  { key: "aiSummary", label: "AI 종합 요약", desc: "본문 요약 텍스트 영역" },
+                  { key: "trl", label: "TRL 섹션", desc: "기술 성숙도 차트 영역" },
+                  { key: "claims", label: "청구항", desc: "청구항 카드(화면에는 항상 표시)" },
+                  { key: "relatedPatents", label: "관련 특허", desc: "추천 특허 리스트" },
+                  { key: "disclaimer", label: "면책 문구", desc: "요약 하단 주의 문구" },
+                  { key: "footer", label: "인쇄 푸터", desc: "생성일 및 하단 문구" },
+                ].map((item) => {
+                  const isOn = printSections[item.key] !== false;
+                  return (
+                    <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/30">
+                      <div>
+                        <p className="text-sm font-medium">{item.label}</p>
+                        <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                      </div>
+                      <button onClick={() => setPrintSections((prev) => ({ ...prev, [item.key]: !isOn }))} className="flex-shrink-0">
+                        {isOn ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted-foreground" />}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <Button onClick={handleSavePrintSettings} disabled={isSavingPrintSettings} className="w-full">
+                {isSavingPrintSettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                인쇄 설정 저장
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* ===== Security Tab ===== */}
+          <TabsContent value="security">
+            <Card className="p-5 space-y-4">
+              <h2 className="font-semibold text-sm">관리자 비밀번호 변경</h2>
+              <p className="text-[11px] text-muted-foreground">현재 로그인된 관리자 비밀번호를 새 비밀번호로 변경합니다.</p>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">새 비밀번호</label>
+                <Input
+                  type="password"
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  placeholder="4~100자 입력"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">새 비밀번호 확인</label>
+                <Input
+                  type="password"
+                  value={confirmAdminPassword}
+                  onChange={(e) => setConfirmAdminPassword(e.target.value)}
+                  placeholder="비밀번호를 다시 입력"
+                />
+              </div>
+              <Button onClick={handleChangePassword} disabled={isChangingPassword}>
+                {isChangingPassword ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <KeyRound className="w-4 h-4 mr-1" />}
+                비밀번호 변경
+              </Button>
+            </Card>
+          </TabsContent>
+
           {/* ===== Cache Tab ===== */}
           <TabsContent value="cache">
             <div className="space-y-4">
