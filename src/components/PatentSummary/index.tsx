@@ -528,7 +528,7 @@ export function PatentSummary({
       )}
 
       {/* 2. Technology Commercialization Score */}
-      {patentData && visibleSections.commercialization !== false && (
+      {patentData && visibleSections.commercialization !== false && printSections.commercialization !== false && (
         <TechnologyCommercializationScore 
           score={commercializationScore}
           isLoading={isAnalyzing}
