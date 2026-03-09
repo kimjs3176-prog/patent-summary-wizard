@@ -22,7 +22,6 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
   const gradientId = `gauge-gradient-${score}`;
   const glowId = `gauge-glow-${score}`;
 
-  // Generate tick marks
   const ticks = Array.from({ length: 40 }, (_, i) => {
     const angle = (i / 40) * 360 - 90;
     const rad = (angle * Math.PI) / 180;
@@ -39,8 +38,8 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
   });
 
   return (
-    <div className="flex flex-col items-center select-none">
-      <div className="relative w-[160px] h-[160px] sm:w-[180px] sm:h-[180px]">
+    <div className="flex flex-col items-center select-none shrink-0">
+      <div className="relative w-[130px] h-[130px] sm:w-[160px] sm:h-[160px] md:w-[180px] md:h-[180px]">
         <svg viewBox="0 0 128 128" className="w-full h-full -rotate-90">
           <defs>
             <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -58,7 +57,6 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
             </filter>
           </defs>
 
-          {/* Tick marks */}
           {ticks.map((t, i) => (
             <line
               key={i}
@@ -69,15 +67,8 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
             />
           ))}
 
-          {/* Background track */}
-          <circle
-            cx={cx} cy={cy} r={radius}
-            fill="none"
-            stroke="hsl(220 14% 96%)"
-            strokeWidth={stroke}
-          />
+          <circle cx={cx} cy={cy} r={radius} fill="none" stroke="hsl(220 14% 96%)" strokeWidth={stroke} />
 
-          {/* Progress arc with gradient + glow */}
           <circle
             cx={cx} cy={cy} r={radius}
             fill="none"
@@ -90,7 +81,6 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
             className="transition-all duration-1000 ease-out"
           />
 
-          {/* End dot */}
           {score > 0 && (() => {
             const angle = ((score / 100) * 360 - 90) * (Math.PI / 180);
             return (
@@ -106,24 +96,22 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
           })()}
         </svg>
 
-        {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: colors.start }}>
+          <span className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight" style={{ color: colors.start }}>
             {score}
           </span>
-          <span className="text-[10px] text-muted-foreground font-medium mt-0.5">/ 100점</span>
+          <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium mt-0.5">/ 100점</span>
         </div>
       </div>
 
-      {/* Grade badge */}
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:gap-2">
         <div
-          className="px-3 py-1 rounded-full text-white text-sm font-bold shadow-sm"
+          className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-white text-xs sm:text-sm font-bold shadow-sm"
           style={{ background: `linear-gradient(135deg, ${colors.start}, ${colors.end})` }}
         >
           {grade}
         </div>
-        <span className="text-sm font-semibold text-foreground/70">{label}</span>
+        <span className="text-xs sm:text-sm font-semibold text-foreground/70">{label}</span>
       </div>
     </div>
   );
