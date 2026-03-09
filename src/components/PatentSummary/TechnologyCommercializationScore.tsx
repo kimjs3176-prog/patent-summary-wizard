@@ -75,7 +75,7 @@ function getGradeLabel(value: number, grades: ScoreConfig["grades"]): string {
 
 function SubScoreCard({ label, score, reason }: { label: string; score: number; reason?: string }) {
   return (
-    <div className="p-4 sm:p-5 rounded-xl bg-slate-50/80 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-700/50">
+    <div className="p-4 sm:p-5 rounded-xl bg-secondary/40 border border-border/40">
       <p className="text-xs text-muted-foreground mb-2 font-medium">{label}</p>
       <div className="flex items-baseline gap-0.5 mb-3">
         <span className={`text-2xl sm:text-3xl font-bold ${getScoreColor(score)}`}>
@@ -83,7 +83,7 @@ function SubScoreCard({ label, score, reason }: { label: string; score: number; 
         </span>
         <span className="text-xs text-muted-foreground">점</span>
       </div>
-      <div className="w-full h-1 bg-slate-200/80 dark:bg-slate-700/50 rounded-full overflow-hidden mb-3">
+      <div className="w-full h-1 bg-muted/60 rounded-full overflow-hidden mb-3">
         <div
           className={`h-full rounded-full ${getScoreBgColor(score)}`}
           style={{ width: `${score}%` }}
