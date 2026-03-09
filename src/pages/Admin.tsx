@@ -806,6 +806,15 @@ const Admin = () => {
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> 챗봇 설정</h3>
                 <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/30">
+                    <div>
+                      <p className="text-sm font-medium">챗봇 아이콘 표시</p>
+                      <p className="text-[11px] text-muted-foreground">플로팅 챗봇 버튼을 홈페이지에 표시합니다</p>
+                    </div>
+                    <button onClick={() => setSiteSettings(s => ({ ...s, chatbot_visible: s.chatbot_visible === "false" ? "true" : "false" }))} className="flex-shrink-0">
+                      {siteSettings.chatbot_visible !== "false" ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted-foreground" />}
+                    </button>
+                  </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">챗봇 창 이름</label>
                     <Input
