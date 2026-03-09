@@ -605,7 +605,7 @@ export function PatentSummary({
 
       {/* 5. Claims Card — 2025 Purple accent */}
       {printSections.claims !== false && visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
-        <div className="relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:hidden" style={{ animationDelay: '0.15s' }}>
+        <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s' }}>
           {/* Top accent gradient band */}
           <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(262 83% 58%), hsl(280 68% 56%), hsl(300 60% 55%))' }} />
           
