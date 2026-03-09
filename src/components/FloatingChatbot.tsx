@@ -17,13 +17,15 @@ export const FloatingChatbot = () => {
               <X className="w-4 h-4" />
             </button>
           </div>
-          <iframe
-            src={CHATBOT_URL}
-            className="w-full bg-background"
-            style={{ height: 'calc(100% - 40px)', border: 'none' }}
-            title="Patent Chat Aid"
-            allow="microphone"
-          />
+          <div className="w-full bg-background overflow-hidden" style={{ height: 'calc(100% - 40px)' }}>
+            <iframe
+              src={CHATBOT_URL}
+              className="bg-background"
+              style={{ width: '111.1%', height: '111.1%', border: 'none', transform: 'scale(0.9)', transformOrigin: 'top left' }}
+              title="Patent Chat Aid"
+              allow="microphone"
+            />
+          </div>
         </div>
       )}
 
