@@ -93,7 +93,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
           <Button
             type="submit"
             disabled={!inputValue.trim() || isProcessing}
-            className="h-12 px-4 text-sm font-semibold bg-foreground hover:bg-foreground/90 text-background rounded-2xl transition-all duration-300 disabled:opacity-40 shadow-md hover:shadow-lg btn-press w-fit mx-auto">
+            className="h-12 px-12 text-sm font-semibold bg-foreground hover:bg-foreground/90 text-background rounded-2xl transition-all duration-300 disabled:opacity-40 shadow-md hover:shadow-lg btn-press">
 
             {isProcessing ?
             <span className="flex items-center gap-2">
