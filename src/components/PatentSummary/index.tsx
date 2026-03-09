@@ -355,6 +355,7 @@ export function PatentSummary({
         content={content}
         patentNumber={patentNumber}
         patentData={patentData}
+        printSections={printSections}
       />
 
       {/* Action Bar */}
@@ -538,7 +539,7 @@ export function PatentSummary({
       )}
 
       {/* 3. AI Summary Card — 2025 Glass morphism */}
-      <div className="relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:break-before-page" style={{ animationDelay: '0.1s' }}>
+      <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:break-before-page ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s' }}>
         {/* Top accent gradient band */}
         <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(160 84% 39%), hsl(174 60% 40%), hsl(200 80% 50%))' }} />
         
@@ -580,18 +581,20 @@ export function PatentSummary({
         </div>
 
         {/* Disclaimer — Warm accent box */}
-        <div className="mx-6 md:mx-8 mb-6">
-          <div className="flex items-center gap-3.5 px-5 py-4 rounded-xl" style={{ background: 'linear-gradient(135deg, hsl(38 92% 95%), hsl(38 70% 92%))', border: '1px solid hsl(38 60% 85%)' }}>
-            <span className="text-base shrink-0 leading-none">⚠️</span>
-            <p className="text-xs font-semibold leading-relaxed" style={{ color: 'hsl(38 50% 25%)' }}>
-              {disclaimerText}
-            </p>
+        {printSections.disclaimer !== false && (
+          <div className="mx-6 md:mx-8 mb-6">
+            <div className="flex items-center gap-3.5 px-5 py-4 rounded-xl" style={{ background: 'linear-gradient(135deg, hsl(38 92% 95%), hsl(38 70% 92%))', border: '1px solid hsl(38 60% 85%)' }}>
+              <span className="text-base shrink-0 leading-none">⚠️</span>
+              <p className="text-xs font-semibold leading-relaxed" style={{ color: 'hsl(38 50% 25%)' }}>
+                {disclaimerText}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 4. TRL Section */}
-      {patentData && commercializationDetails && visibleSections.trl !== false && (
+      {patentData && commercializationDetails && visibleSections.trl !== false && printSections.trl !== false && (
         <TechnologyCommercializationScore 
           score={commercializationScore}
           isLoading={false}
@@ -601,7 +604,7 @@ export function PatentSummary({
       )}
 
       {/* 5. Claims Card — 2025 Purple accent */}
-      {visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
+      {printSections.claims !== false && visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
         <div className="relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:hidden" style={{ animationDelay: '0.15s' }}>
           {/* Top accent gradient band */}
           <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(262 83% 58%), hsl(280 68% 56%), hsl(300 60% 55%))' }} />
@@ -641,7 +644,7 @@ export function PatentSummary({
       </div>
 
       {/* 6. Related Patents Section */}
-      {visibleSections.relatedPatents !== false && (
+      {printSections.relatedPatents !== false && visibleSections.relatedPatents !== false && (
         <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
       )}
     </div>
