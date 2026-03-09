@@ -1,5 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
+import { ScoreRadarChart } from "./ScoreRadarChart";
+import { CircularGauge } from "./CircularGauge";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
@@ -169,21 +171,20 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Main Score */}
-      <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="flex items-end gap-1.5 sm:gap-2">
-          <span className={`text-4xl sm:text-6xl font-black ${getScoreColor(score)}`}>
-            {score}
-          </span>
-          <span className="text-muted-foreground text-base sm:text-xl mb-1 sm:mb-2">/ 100</span>
-        </div>
-        <div className="flex flex-col gap-0.5 sm:gap-1">
-          <span className={`text-2xl sm:text-3xl font-black ${getScoreColor(score)}`}>
-            {getGradeLabel(score, scoreConfig.grades)}
-          </span>
-          <span className={`text-sm sm:text-base font-semibold ${getScoreColor(score)}`}>
-            {getScoreLabel(score, scoreConfig.grades)}
-          </span>
+      {/* Infographic: Gauge + Radar */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 mb-6">
+        <CircularGauge
+          score={score}
+          grade={getGradeLabel(score, scoreConfig.grades)}
+          label={getScoreLabel(score, scoreConfig.grades)}
+        />
+        <div className="flex-1 w-full">
+          <ScoreRadarChart
+            technologyScore={details.technologyScore}
+            marketScore={details.marketScore}
+            businessScore={details.businessScore}
+            labels={scoreConfig.subLabels}
+          />
         </div>
       </div>
 
