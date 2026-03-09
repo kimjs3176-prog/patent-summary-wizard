@@ -62,9 +62,9 @@ function getGradeLabel(value: number, grades: ScoreConfig["grades"]): string {
 }
 
 const SUB_COLORS = [
-  { stroke: 'hsl(217 91% 60%)', bg: 'hsl(217 91% 60% / 0.08)', icon: '🔬' },
-  { stroke: 'hsl(160 84% 39%)', bg: 'hsl(160 84% 39% / 0.08)', icon: '📈' },
-  { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 55% / 0.08)', icon: '💼' },
+  { stroke: 'hsl(217 91% 60%)', bg: 'hsl(217 91% 60% / 0.06)', border: 'hsl(217 91% 60% / 0.15)', icon: '🔬', scoreBg: 'hsl(217 91% 95%)' },
+  { stroke: 'hsl(160 84% 39%)', bg: 'hsl(160 84% 39% / 0.06)', border: 'hsl(160 84% 39% / 0.15)', icon: '📈', scoreBg: 'hsl(160 84% 95%)' },
+  { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 55% / 0.06)', border: 'hsl(25 90% 55% / 0.15)', icon: '💼', scoreBg: 'hsl(25 90% 95%)' },
 ];
 
 function renderBoldText(text: string) {
@@ -77,19 +77,28 @@ function renderBoldText(text: string) {
   });
 }
 
-function SubScoreCard({ label, reason, colorIndex }: { label: string; reason?: string; colorIndex: number }) {
+function SubScoreCard({ label, score, reason, colorIndex }: { label: string; score: number; reason?: string; colorIndex: number }) {
   const c = SUB_COLORS[colorIndex] || SUB_COLORS[0];
   if (!reason) return null;
   return (
     <div
-      className="p-3.5 sm:p-5 rounded-xl border border-border/40"
-      style={{ background: c.bg }}
+      className="p-3.5 sm:p-4 rounded-xl"
+      style={{ background: c.bg, border: `1px solid ${c.border}` }}
     >
-      <div className="flex items-center gap-2 mb-2.5">
-        <span className="text-base">{c.icon}</span>
-        <p className="text-xs text-muted-foreground font-semibold">{label}</p>
+      {/* Header with score */}
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">{c.icon}</span>
+          <p className="text-xs font-bold text-foreground/80">{label}</p>
+        </div>
+        <span
+          className="text-sm font-extrabold tabular-nums px-2 py-0.5 rounded-md"
+          style={{ color: c.stroke, background: c.scoreBg }}
+        >
+          {score}
+        </span>
       </div>
-      <p className="text-xs sm:text-[13px] text-foreground/70 leading-[1.75] sm:leading-[1.8]">
+      <p className="text-xs sm:text-[13px] text-foreground/65 leading-[1.75] sm:leading-[1.8]">
         {renderBoldText(reason)}
       </p>
     </div>
@@ -154,53 +163,67 @@ export function TechnologyCommercializationScore({
     { label: scoreConfig.subLabels.business, score: details.businessScore, reason: details.businessReason },
   ];
 
-  // Show commercialization score section
+  // Show commercialization score section — restructured layout:
+  // Row 1: Gauge + Bar Chart (visual summary)
+  // Row 2: Sub-score detail cards (reasoning)
+  // Row 3: AI analysis opinion
   return (
-    <div className="mb-6 glass-effect rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(25 90% 55%)' }}>
+    <div className="mb-6 glass-effect rounded-2xl sm:rounded-3xl overflow-hidden animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(25 90% 55%)' }}>
       {/* Header */}
-      <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6 pb-3 sm:pb-5 border-b border-border/50">
-        <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-base sm:text-xl" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55%), hsl(35 85% 50%))', color: 'white' }}>
-          ✨
-        </div>
-        <div>
-          <h4 className="font-bold text-sm sm:text-lg" style={{ color: 'hsl(25 70% 35%)' }}>{scoreConfig.cardTitle}</h4>
-          <p className="text-[10px] sm:text-sm text-muted-foreground">{scoreConfig.cardSubtitle}</p>
-        </div>
-      </div>
-
-      {/* Infographic: Gauge + Bar Chart - horizontal on all sizes */}
-      <div className="flex items-center gap-3 sm:gap-6 mb-5 sm:mb-6">
-        <CircularGauge
-          score={score}
-          grade={getGradeLabel(score, scoreConfig.grades)}
-          label={getScoreLabel(score, scoreConfig.grades)}
-        />
-        <div className="w-px self-stretch bg-border/40 hidden sm:block" />
-        <div className="flex-1 min-w-0">
-          <ScoreBarChart
-            technologyScore={details.technologyScore}
-            marketScore={details.marketScore}
-            businessScore={details.businessScore}
-            labels={scoreConfig.subLabels}
-          />
-        </div>
-      </div>
-
-      {/* Sub-score reasons */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-5">
-        {subItems.map((item, idx) => (
-          <SubScoreCard key={item.label} label={item.label} reason={item.reason} colorIndex={idx} />
-        ))}
-      </div>
-
-      {/* Analysis */}
-      {details.analysis && (
-        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-secondary/30 border border-border/50">
-          <div className="flex items-center gap-1.5 mb-1.5 sm:mb-2">
-            <span className="text-xs">🤖</span>
-            <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">AI 분석 의견</p>
+      <div className="px-4 sm:px-6 md:px-7 pt-4 sm:pt-5 md:pt-6 pb-3 sm:pb-4">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center text-base sm:text-xl" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55%), hsl(35 85% 50%))', color: 'white' }}>
+            ✨
           </div>
-          <p className="text-xs sm:text-sm text-foreground/80 leading-[1.7] sm:leading-relaxed">{details.analysis}</p>
+          <div>
+            <h4 className="font-bold text-sm sm:text-lg" style={{ color: 'hsl(25 70% 35%)' }}>{scoreConfig.cardTitle}</h4>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">{scoreConfig.cardSubtitle}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="mx-4 sm:mx-6 md:mx-7 h-px bg-border/40" />
+
+      {/* Section 1: Visual Score Summary — Gauge + Bar Chart */}
+      <div className="px-4 sm:px-6 md:px-7 py-4 sm:py-5">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <CircularGauge
+            score={score}
+            grade={getGradeLabel(score, scoreConfig.grades)}
+            label={getScoreLabel(score, scoreConfig.grades)}
+          />
+          <div className="w-px self-stretch bg-border/30 hidden sm:block" />
+          <div className="flex-1 min-w-0">
+            <ScoreBarChart
+              technologyScore={details.technologyScore}
+              marketScore={details.marketScore}
+              businessScore={details.businessScore}
+              labels={scoreConfig.subLabels}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Section 2: Detailed Reasoning Cards */}
+      <div className="px-4 sm:px-6 md:px-7 pb-3 sm:pb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
+          {subItems.map((item, idx) => (
+            <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} colorIndex={idx} />
+          ))}
+        </div>
+      </div>
+
+      {/* Section 3: AI Analysis Opinion */}
+      {details.analysis && (
+        <div className="px-4 sm:px-6 md:px-7 pb-4 sm:pb-5 md:pb-6">
+          <div className="p-3 sm:p-4 rounded-xl bg-secondary/30 border border-border/40">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="text-xs">🤖</span>
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-semibold">AI 분석 의견</p>
+            </div>
+            <p className="text-xs sm:text-sm text-foreground/75 leading-[1.7] sm:leading-relaxed">{details.analysis}</p>
+          </div>
         </div>
       )}
     </div>
