@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo } from "react";
-import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, type LucideIcon } from "lucide-react";
+import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, ExternalLink, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps, FeatureFlags } from "./types";
@@ -413,6 +413,12 @@ export function PatentSummary({
               commercializationScore={commercializationScore}
             />
           )}
+          <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" />
+              기술이전 신청
+            </Button>
+          </a>
         </div>
       )}
 
