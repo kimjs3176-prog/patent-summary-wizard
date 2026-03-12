@@ -25,8 +25,8 @@ export const AiHeroAnimation = () => {
     resize();
     window.addEventListener("resize", resize);
 
-    // Nodes
-    const NODE_COUNT = 28;
+    // Nodes - 10% increase for more visual impact
+    const NODE_COUNT = 31;
     interface Node {
       x: number; y: number; vx: number; vy: number;
       radius: number; phase: number; speed: number;
@@ -36,14 +36,14 @@ export const AiHeroAnimation = () => {
     const nodes: Node[] = Array.from({ length: NODE_COUNT }, () => ({
       x: Math.random() * rect.width,
       y: Math.random() * rect.height,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      radius: 2 + Math.random() * 3,
+      vx: (Math.random() - 0.5) * 0.38,
+      vy: (Math.random() - 0.5) * 0.38,
+      radius: 2.2 + Math.random() * 3.3,
       phase: Math.random() * Math.PI * 2,
-      speed: 0.3 + Math.random() * 0.7,
+      speed: 0.33 + Math.random() * 0.77,
     }));
 
-    const MAX_DIST = 140;
+    const MAX_DIST = 150;
     // primary indigo hsl(239 84% 67%) ≈ rgb(82, 82, 224)
     const PRIMARY_R = 82, PRIMARY_G = 82, PRIMARY_B = 224;
     // accent purple hsl(262 83% 58%) ≈ rgb(138, 43, 226)
