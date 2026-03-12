@@ -74,7 +74,7 @@ export const AiHeroAnimation = () => {
           const dy = nodes[i].y - nodes[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < MAX_DIST) {
-            const alpha = (1 - dist / MAX_DIST) * 0.25;
+            const alpha = (1 - dist / MAX_DIST) * 0.28;
             // Pulse along connection
             const pulse = 0.5 + 0.5 * Math.sin(t * 3 + i * 0.5);
             const r = Math.round(PRIMARY_R + (ACCENT_R - PRIMARY_R) * pulse);
