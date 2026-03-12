@@ -21,7 +21,8 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["favicon.ico", "fonts/NotoSansKR-VF.ttf"],
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,ttf}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
       manifest: {
         name: "농식품분야 특허 AI 기술요약",
