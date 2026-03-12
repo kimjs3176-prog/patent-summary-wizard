@@ -1,4 +1,5 @@
 import { FileText, GitCompareArrows, Heart, RotateCcw } from "lucide-react";
+import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
@@ -161,8 +162,11 @@ const Index = () => {
         {!summary && !isLoading ?
         <>
             {/* Hero — 2025 Bold Typography */}
-            <section className="text-center max-w-2xl mx-auto mb-12 md:mb-16 animate-fade-down">
-              {/* Subtle accent badge */}
+            <section className="text-center max-w-2xl mx-auto mb-12 md:mb-16 animate-fade-down relative">
+              {/* AI Neural Network Animation Background */}
+              <div className="absolute -inset-10 -z-10 overflow-hidden rounded-3xl">
+                <AiHeroAnimation />
+              </div>
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold" style={{ background: 'hsl(239 84% 67% / 0.08)', color: 'hsl(239 84% 50%)', border: '1px solid hsl(239 84% 67% / 0.15)' }}>
                 <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'hsl(239 84% 67%)' }} />
                 AI 기반 특허 분석
