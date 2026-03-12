@@ -1,4 +1,5 @@
 import { FileText, GitCompareArrows, Heart, RotateCcw } from "lucide-react";
+import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
