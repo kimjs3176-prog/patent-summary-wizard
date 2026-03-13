@@ -176,90 +176,13 @@ export function PatentSummary({
     return FileText;
   };
 
-  // Card section detection
-  const cardSectionPatterns = [/기술적\s*특징/, /농산업\s*활용/];
-  const isCardSection = (title: string) => cardSectionPatterns.some(p => p.test(title));
-
-  const cardColorSchemes = [
-    { bg: 'hsl(210 100% 95%)', border: 'hsl(210 80% 85%)', badge: 'hsl(210 100% 50%)', text: 'hsl(210 80% 30%)' },
-    { bg: 'hsl(150 60% 94%)', border: 'hsl(150 50% 82%)', badge: 'hsl(150 60% 40%)', text: 'hsl(150 50% 25%)' },
-    { bg: 'hsl(35 90% 94%)', border: 'hsl(35 80% 82%)', badge: 'hsl(35 90% 45%)', text: 'hsl(35 70% 28%)' },
-    { bg: 'hsl(270 60% 95%)', border: 'hsl(270 50% 85%)', badge: 'hsl(270 60% 50%)', text: 'hsl(270 50% 30%)' },
-  ];
-
-  const agriIcons = ['🌾', '🌿', '📦', '✨'];
-
-  // Parse a paragraph into { title, description } by extracting the first bold phrase as title
-  const parseCardItem = (line: string): { title: string; description: string } => {
-    const boldMatch = line.match(/\*\*([^*]+)\*\*/);
-    if (boldMatch) {
-      const title = boldMatch[1];
-      const description = line.replace(`**${title}**`, '').replace(/\*\*/g, '').replace(/^[\s:：\-–—]+/, '').trim();
-      return { title, description };
-    }
-    // Fallback: first sentence as title
-    const colonIdx = line.indexOf(':');
-    if (colonIdx > 0 && colonIdx < 30) {
-      return { title: line.slice(0, colonIdx).replace(/\*\*/g, '').trim(), description: line.slice(colonIdx + 1).replace(/\*\*/g, '').trim() };
-    }
-    return { title: '', description: line.replace(/\*\*/g, '').trim() };
-  };
-
-  const renderCardGrid = (items: string[], sectionType: 'tech' | 'agri', keyPrefix: string) => {
-    const isTech = sectionType === 'tech';
-    return (
-      <div key={keyPrefix} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 mb-2">
-        {items.map((item, idx) => {
-          const { title, description } = parseCardItem(item);
-          const colorScheme = cardColorSchemes[idx % cardColorSchemes.length];
-          return (
-            <div
-              key={`${keyPrefix}-${idx}`}
-              className="rounded-xl p-4 transition-all hover:shadow-md"
-              style={{
-                background: colorScheme.bg,
-                border: `1px solid ${colorScheme.border}`,
-              }}
-            >
-              <div className="flex items-start gap-3">
-                {isTech ? (
-                  <span
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shrink-0 shadow-sm"
-                    style={{ background: colorScheme.badge }}
-                  >
-                    {idx + 1}
-                  </span>
-                ) : (
-                  <span className="text-2xl shrink-0 mt-0.5">{agriIcons[idx % agriIcons.length]}</span>
-                )}
-                <div className="min-w-0">
-                  {title && (
-                    <h4 className="font-bold text-sm mb-1" style={{ color: colorScheme.text }}>
-                      {title}
-                    </h4>
-                  )}
-                  <p className="text-xs leading-relaxed text-foreground/75">
-                    {description || title}
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   const renderMarkdown = (text: string) => {
-    // Two-pass approach: group lines by section, then render
     const lines = text.split("\n");
     const elements: JSX.Element[] = [];
     let skipSection = false;
     let hasRenderedFirstSection = false;
-    let currentCardSection: 'tech' | 'agri' | null = null;
-    let cardBuffer: string[] = [];
-    let currentSectionKey = '';
 
+    // Helper: auto-insert "기술 분야" heading if first content line is not a proper section header
     const maybeInsertTechFieldHeader = (currentIndex: number) => {
       if (!hasRenderedFirstSection) {
         hasRenderedFirstSection = true;
@@ -281,34 +204,8 @@ export function PatentSummary({
       }
     };
 
-    const flushCardBuffer = () => {
-      if (cardBuffer.length > 0 && currentCardSection) {
-        elements.push(renderCardGrid(cardBuffer, currentCardSection, `cards-${currentSectionKey}`));
-        cardBuffer = [];
-      }
-      currentCardSection = null;
-    };
-
-    const renderBodyLine = (cleanLine: string, index: number) => {
-      const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
-      elements.push(
-        <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
-          {parts.map((part, i) => {
-            if ((part.startsWith('**') && part.endsWith('**'))) {
-              return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
-            }
-            if ((part.startsWith('__') && part.endsWith('__'))) {
-              return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
-            }
-            return part;
-          })}
-        </p>
-      );
-    };
-
     lines.forEach((line, index) => {
       if (line.startsWith("## 특허 기본 정보")) {
-        flushCardBuffer();
         skipSection = true;
         return;
       }
@@ -321,22 +218,23 @@ export function PatentSummary({
         .replace(/^\s*[-•]\s+/, '')
         .replace(/^\s*\d+\.\s+/, '');
 
+      // Handle ## or ### lines (with or without space after hashes)
       const hashMatch = line.match(/^(#{2,3})\s*(.*)/);
       if (hashMatch) {
-        // Flush any pending card buffer before starting a new section
-        flushCardBuffer();
-
         const rawTitle = hashMatch[2].replace(/\*\*/g, '').trim();
         if (rawTitle === "특허 기본 정보") {
           skipSection = true;
           return;
         }
 
+        // Known section titles (short headings). If the text after ## is too long,
+        // it's likely a paragraph mistakenly starting with ## — render as body text.
         const knownSections = ["기술 분야", "발명의 요약", "기술적 특징", "시장동향", "농산업 활용 특장점", "기술 성숙도 및 상용화 전망"];
         const isKnownSection = knownSections.some(s => rawTitle === s || rawTitle.startsWith(s));
         const isLikelyHeading = isKnownSection || rawTitle.length <= 30;
 
         if (!isLikelyHeading) {
+          // It's a paragraph starting with ## — auto-insert "기술 분야" header if needed
           maybeInsertTechFieldHeader(index);
           const bodyText = hashMatch[2];
           const parts = bodyText.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
@@ -357,15 +255,6 @@ export function PatentSummary({
         }
 
         hasRenderedFirstSection = true;
-
-        // Check if this is a card section
-        if (/기술적\s*특징/.test(rawTitle)) {
-          currentCardSection = 'tech';
-          currentSectionKey = `tech-${index}`;
-        } else if (/농산업\s*활용/.test(rawTitle)) {
-          currentCardSection = 'agri';
-          currentSectionKey = `agri-${index}`;
-        }
 
         const IconComp = getSectionIcon(rawTitle);
         const displayTitle = sectionTitles[rawTitle] || rawTitle;
@@ -435,18 +324,25 @@ export function PatentSummary({
           );
         }
       } else if (cleanLine.trim()) {
-        // If we're in a card section, buffer the line
-        if (currentCardSection) {
-          cardBuffer.push(cleanLine);
-        } else {
-          maybeInsertTechFieldHeader(index);
-          renderBodyLine(cleanLine, index);
-        }
+        // If body text appears before any section header, auto-insert "기술 분야"
+        maybeInsertTechFieldHeader(index);
+        // Enhanced bold text parsing: **text**, __text__, and partial bold within sentences
+        const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+        elements.push(
+          <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
+            {parts.map((part, i) => {
+              if ((part.startsWith('**') && part.endsWith('**'))) {
+                return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+              }
+              if ((part.startsWith('__') && part.endsWith('__'))) {
+                return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+              }
+              return part;
+            })}
+          </p>
+        );
       }
     });
-
-    // Flush any remaining card buffer
-    flushCardBuffer();
 
     return elements;
   };
