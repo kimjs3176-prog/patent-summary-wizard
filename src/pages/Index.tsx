@@ -106,7 +106,9 @@ const Index = () => {
         }
       );
       const result = await response.json();
+      console.log("[KeywordTagClick] result:", result);
       if (result.success && result.patents) {
+        console.log("[KeywordTagClick] Setting results:", result.patents.length);
         handleKeywordSearch(result.patents, keyword);
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if (result.patents.length === 0) toast.info("검색 결과가 없습니다.");
