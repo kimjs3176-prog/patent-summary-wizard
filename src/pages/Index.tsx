@@ -108,7 +108,13 @@ const Index = () => {
       const result = await response.json();
       if (result.success && result.patents) {
         handleKeywordSearch(result.patents, keyword);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll to keyword results section after a brief delay for render
+        setTimeout(() => {
+          const resultsSection = document.querySelector('[data-keyword-results]');
+          if (resultsSection) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
         if (result.patents.length === 0) toast.info("검색 결과가 없습니다.");
       } else {
         toast.error(result.error || "검색에 실패했습니다.");
@@ -232,7 +238,7 @@ const Index = () => {
 
             {/* Keyword Results */}
             {keywordResults.length > 0 &&
-          <section className="mb-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+          <section data-keyword-results className="mb-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
                 <KeywordSearchResults results={keywordResults} keyword={searchedKeyword} onPatentSelect={handleKeywordPatentSelect} onClose={handleClearKeywordResults} isLoading={isLoading} />
               </section>
           }
