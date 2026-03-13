@@ -87,6 +87,33 @@ const Index = () => {
     setSearchedKeyword(keyword);
   };
 
+  const handleKeywordTagClick = async (keyword: string) => {
+    try {
+      toast.info(`"${keyword}" 관련 특허를 검색 중...`);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-patents`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ keyword }),
+        }
+      );
+      const result = await response.json();
+      if (result.success && result.patents) {
+        handleKeywordSearch(result.patents, keyword);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (result.patents.length === 0) toast.info("검색 결과가 없습니다.");
+      } else {
+        toast.error(result.error || "검색에 실패했습니다.");
+      }
+    } catch {
+      toast.error("검색 중 오류가 발생했습니다.");
+    }
+  };
+
   const handleKeywordPatentSelect = (patentNumber: string) => {
     setKeywordResults([]);
     setSearchedKeyword("");
