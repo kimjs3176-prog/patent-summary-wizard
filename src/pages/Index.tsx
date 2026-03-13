@@ -88,6 +88,10 @@ const Index = () => {
   };
 
   const handleKeywordTagClick = async (keyword: string) => {
+    // Reset summary view first so keyword results page is shown
+    reset();
+    updateUrl();
+    
     try {
       toast.info(`"${keyword}" 관련 특허를 검색 중...`);
       const response = await fetch(
