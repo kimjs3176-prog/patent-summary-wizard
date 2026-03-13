@@ -531,37 +531,84 @@ export function PatentSummary({
               )}
             </div>
 
-            {/* Technology Keywords */}
+            {/* Technology Keywords — 사업분야/효능 기반 */}
             {(() => {
               const keywords: string[] = [];
-              if (patentData.titleKo) {
-                const title = patentData.titleKo;
-                const knownKw = ['항균', '항염', '항염증', '항산화', '항암', '항바이러스', '친환경', '고효율', '저비용', '자동화', '스마트', '나노', '바이오'];
-                knownKw.forEach(kw => { if (title.includes(kw)) keywords.push(kw); });
-                const nouns = title.match(/[가-힣]{2,5}/g) || [];
-                const stop = ['및', '이의', '위한', '관한', '대한', '방법', '장치', '시스템', '조성물', '포함하는', '이용한', '사용', '특징으로', '것을'];
-                nouns.forEach(n => { if (!stop.includes(n) && !keywords.includes(n) && keywords.length < 5) keywords.push(n); });
-              }
+              
+              // 1. IPC 분류 기반 사업분야/효능 키워드 (세분류 우선)
               if (patentData.classifications && patentData.classifications.length > 0) {
-                const ipcMap: Record<string, string> = {
-                  'A01': '농업', 'A23': '식품가공', 'A61': '의약', 'C12': '생명공학',
-                  'G06': '컴퓨팅', 'B01': '화학공정', 'C07': '유기화학', 'C08': '고분자',
-                  'H04': '통신', 'A23L': '식품', 'A01G': '원예', 'C12N': '미생물',
+                const ipcBusinessMap: Record<string, string> = {
+                  // A섹션: 농업·식품·의약
+                  'A23L': '건강식품', 'A23B': '식품보존', 'A23C': '유제품', 'A23D': '유지가공',
+                  'A23F': '음료제조', 'A23G': '과자제조', 'A23J': '단백질가공', 'A23K': '사료',
+                  'A23P': '식품성형', 'A01G': '스마트팜', 'A01H': '품종개량', 'A01K': '스마트축산',
+                  'A01N': '친환경농약', 'A01C': '정밀파종', 'A01D': '수확자동화',
+                  'A61K': '신약개발', 'A61P': '치료제', 'A61B': '의료진단', 'A61F': '의료기기',
+                  'A61L': '의료살균', 'A61Q': '화장품',
+                  // B섹션: 제조·가공
+                  'B01D': '분리정제', 'B01J': '촉매공정', 'B01F': '혼합기술', 'B02C': '분쇄가공',
+                  'B29C': '성형가공', 'B65B': '포장자동화', 'B09B': '폐기물처리',
+                  // C섹션: 화학·바이오
+                  'C12N': '미생물공학', 'C12P': '발효공정', 'C12G': '주류제조', 'C12Q': '바이오센서',
+                  'C07K': '펩타이드', 'C07D': '유기합성', 'C08L': '고분자소재',
+                  'C05G': '비료제조', 'C02F': '수처리',
+                  // G섹션: 정보·측정
+                  'G06F': 'AI·SW', 'G06N': '인공지능', 'G06Q': '스마트유통', 'G01N': '품질검사',
+                  'G16B': '바이오인포매틱스',
+                  // H섹션: 전기·전자
+                  'H04L': 'IoT통신', 'H04W': '무선네트워크',
+                  // 상위 분류 (폴백)
+                  'A23': '식품산업', 'A01': '농업기술', 'A61': '헬스케어', 'C12': '바이오산업',
+                  'C07': '의약화학', 'C08': '소재산업', 'G06': 'ICT융합', 'B01': '화학공정',
+                  'H04': 'IoT', 'G01': '센싱기술', 'B65': '스마트물류',
                 };
                 patentData.classifications.forEach(cls => {
                   const c = cls.replace(/\s/g, '');
-                  const k = ipcMap[c.slice(0, 4)] || ipcMap[c.slice(0, 3)];
+                  const k = ipcBusinessMap[c.slice(0, 4)] || ipcBusinessMap[c.slice(0, 3)];
                   if (k && !keywords.includes(k)) keywords.push(k);
                 });
               }
+
+              // 2. 제목 기반 효능/활용분야 키워드
+              if (patentData.titleKo) {
+                const title = patentData.titleKo;
+                const efficacyMap: [RegExp, string][] = [
+                  [/항균|살균|멸균/, '항균소재'], [/항염|소염/, '항염치료'], [/항산화/, '항산화식품'],
+                  [/항암|종양/, '항암치료'], [/항바이러스|항virus/, '감염병대응'],
+                  [/면역|immunity/, '면역증진'], [/혈당|당뇨/, '당뇨관리'],
+                  [/혈압|고혈압/, '혈압관리'], [/비만|체중|다이어트/, '체중관리'],
+                  [/치매|인지/, '인지기능개선'], [/피부|미용/, '기능성화장품'],
+                  [/발효|숙성/, '발효식품'], [/유산균|프로바이오/, '프로바이오틱스'],
+                  [/콜라겐|젤라틴/, '뷰티소재'], [/고령|노인|실버/, '실버푸드'],
+                  [/영양|건강/, '건강기능식품'], [/친환경|유기농|무농약/, '친환경농업'],
+                  [/스마트|자동|IoT|센서/, '스마트농업'], [/드론|무인/, '농업드론'],
+                  [/수경|양액/, '스마트재배'], [/저장|보관|신선/, '신선유통'],
+                  [/감자/, '감자가공'], [/쌀|미곡/, '쌀가공'], [/콩|대두/, '콩가공'],
+                  [/김치|발효채소/, '김치산업'], [/축산|육류|도축/, '축산가공'],
+                  [/수산|어류|해조/, '수산가공'], [/버섯|균사/, '버섯재배'],
+                  [/스무디|음료|주스/, '음료제조'], [/빵|제과|제빵/, '베이커리'],
+                  [/나노|마이크로/, '나노기술'], [/바이오|생물/, '바이오기술'],
+                  [/에너지|태양|풍력/, '신재생에너지'], [/폐기물|재활용/, '자원순환'],
+                ];
+                efficacyMap.forEach(([pattern, label]) => {
+                  if (pattern.test(title) && !keywords.includes(label)) keywords.push(label);
+                });
+              }
+
               const unique = [...new Set(keywords)].slice(0, 7);
               if (unique.length === 0) return null;
               return (
                 <div className="flex flex-wrap gap-1.5">
                   {unique.map((kw, i) => (
-                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium" style={{ background: `hsl(${210 + i * 25} 70% 95%)`, color: `hsl(${210 + i * 25} 60% 35%)`, border: `1px solid hsl(${210 + i * 25} 50% 88%)` }}>
+                    <button
+                      key={i}
+                      onClick={() => onKeywordClick?.(kw)}
+                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium transition-all hover:scale-105 hover:shadow-sm cursor-pointer"
+                      style={{ background: `hsl(${210 + i * 25} 70% 95%)`, color: `hsl(${210 + i * 25} 60% 35%)`, border: `1px solid hsl(${210 + i * 25} 50% 88%)` }}
+                      title={`"${kw}" 관련 특허 검색`}
+                    >
                       #{kw}
-                    </span>
+                    </button>
                   ))}
                 </div>
               );
