@@ -2,7 +2,11 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, ExternalLink, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { PatentSummaryProps, FeatureFlags } from "./types";
+import { PatentSummaryProps as BasePatentSummaryProps, FeatureFlags } from "./types";
+
+interface PatentSummaryProps extends BasePatentSummaryProps {
+  onKeywordClick?: (keyword: string) => void;
+}
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
