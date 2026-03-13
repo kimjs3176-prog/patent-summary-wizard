@@ -5,9 +5,10 @@ const BAR_COLORS = [
 ];
 
 const REFERENCE_LINES = [
-  { value: 25, label: '25' },
-  { value: 50, label: '50' },
-  { value: 75, label: '75' },
+  { value: 20, label: '20' },
+  { value: 40, label: '40' },
+  { value: 60, label: '60' },
+  { value: 80, label: '80' },
 ];
 
 interface ScoreBarChartProps {
@@ -69,8 +70,16 @@ export function ScoreBarChart({ technologyScore, marketScore, businessScore, lab
             </div>
             {/* Bar track */}
             <div className="w-full h-5 sm:h-6 rounded-lg overflow-hidden relative" style={{ background: item.bg }}>
+              {/* Score step lines inside track */}
+              {[20, 40, 60, 80].map((v) => (
+                <div
+                  key={v}
+                  className="absolute top-0 h-full w-px z-10"
+                  style={{ left: `${v}%`, background: 'hsl(0 0% 50% / 0.2)' }}
+                />
+              ))}
               <div
-                className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden z-20"
                 style={{ width: `${Math.max(item.score, 8)}%`, background: item.stroke }}
               >
                 {/* Glossy overlay */}
