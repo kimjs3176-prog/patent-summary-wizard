@@ -430,13 +430,13 @@ export function PatentSummary({
       )}
 
       <div className="space-y-7">
-      {/* 1. Patent Info Card — Compact 2025 Style */}
+      {/* 1. Patent Info Card — Compact 2-column layout */}
       {patentData && (
         <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated ${printSections.patentInfo === false ? "print:hidden" : ""}`}>
           <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(239 84% 67%), hsl(262 83% 58%), hsl(280 68% 56%))' }} />
           
           <div className="px-4 py-3.5 md:px-5 md:py-4">
-            {/* Header row: icon + title + number badges inline */}
+            {/* Header row */}
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-sm shrink-0" style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))', color: 'white' }}>
                 {cardIcons.patentInfo || "📄"}
@@ -492,131 +492,124 @@ export function PatentSummary({
               <h2 className="text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-tight">{patentData.titleKo}</h2>
             )}
             
-            {/* Meta info strip — compact */}
-            <div className="px-3.5 py-2.5 rounded-lg flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] mb-3" style={{ background: 'hsl(220 14% 96%)', border: '1px solid hsl(220 13% 91%)' }}>
-              {patentData.assignee && (
-                <>
-                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.assignee || "출원인"}</span>
-                    <span className="text-foreground font-semibold">{patentData.assignee}</span>
+            {/* 2-column layout: Meta info + Keywords side by side */}
+            <div className="flex flex-col md:flex-row gap-3">
+              {/* Left: Meta info strip */}
+              <div className="flex-1 min-w-0 px-3.5 py-2.5 rounded-lg flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]" style={{ background: 'hsl(220 14% 96%)', border: '1px solid hsl(220 13% 91%)' }}>
+                {patentData.assignee && (
+                  <>
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.assignee || "출원인"}</span>
+                      <span className="text-foreground font-semibold">{patentData.assignee}</span>
+                    </span>
+                    {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
+                      <span className="text-muted-foreground/30 text-xs">|</span>
+                    )}
+                  </>
+                )}
+                {patentData.filingDate && (
+                  <>
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.filingDate || "출원일"}</span>
+                      <span className="text-foreground font-medium">{patentData.filingDate}</span>
+                    </span>
+                    {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
+                      <span className="text-muted-foreground/30 text-xs">|</span>
+                    )}
+                  </>
+                )}
+                {patentData.publicationDate && (
+                  <>
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{patentData.registrationNumber ? (infoLabels.publicationDate || '등록일') : '공개일'}</span>
+                      <span className="text-foreground font-medium">{patentData.publicationDate}</span>
+                    </span>
+                    {patentData.classifications && patentData.classifications.length > 0 && (
+                      <span className="text-muted-foreground/30 text-xs">|</span>
+                    )}
+                  </>
+                )}
+                {patentData.classifications && patentData.classifications.length > 0 && (
+                  <span className="inline-flex items-center gap-1.5 min-w-0">
+                    <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap">{infoLabels.ipc || "IPC"}</span>
+                    <span className="text-foreground font-medium truncate">{patentData.classifications.join(', ')}</span>
                   </span>
-                  {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-                    <span className="text-muted-foreground/30 text-xs">|</span>
-                  )}
-                </>
-              )}
-              {patentData.filingDate && (
-                <>
-                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.filingDate || "출원일"}</span>
-                    <span className="text-foreground font-medium">{patentData.filingDate}</span>
-                  </span>
-                  {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-                    <span className="text-muted-foreground/30 text-xs">|</span>
-                  )}
-                </>
-              )}
-              {patentData.publicationDate && (
-                <>
-                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                    <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{patentData.registrationNumber ? (infoLabels.publicationDate || '등록일') : '공개일'}</span>
-                    <span className="text-foreground font-medium">{patentData.publicationDate}</span>
-                  </span>
-                  {patentData.classifications && patentData.classifications.length > 0 && (
-                    <span className="text-muted-foreground/30 text-xs">|</span>
-                  )}
-                </>
-              )}
-              {patentData.classifications && patentData.classifications.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 min-w-0">
-                  <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap">{infoLabels.ipc || "IPC"}</span>
-                  <span className="text-foreground font-medium truncate">{patentData.classifications.join(', ')}</span>
-                </span>
-              )}
+                )}
+              </div>
+
+              {/* Right: Technology Keywords */}
+              {(() => {
+                const keywords: string[] = [];
+                if (patentData.classifications && patentData.classifications.length > 0) {
+                  const ipcBusinessMap: Record<string, string> = {
+                    'A23L': '건강식품', 'A23B': '식품보존', 'A23C': '유제품', 'A23D': '유지가공',
+                    'A23F': '음료제조', 'A23G': '과자제조', 'A23J': '단백질가공', 'A23K': '사료',
+                    'A23P': '식품성형', 'A01G': '스마트팜', 'A01H': '품종개량', 'A01K': '스마트축산',
+                    'A01N': '친환경농약', 'A01C': '정밀파종', 'A01D': '수확자동화',
+                    'A61K': '신약개발', 'A61P': '치료제', 'A61B': '의료진단', 'A61F': '의료기기',
+                    'A61L': '의료살균', 'A61Q': '화장품',
+                    'B01D': '분리정제', 'B01J': '촉매공정', 'B01F': '혼합기술', 'B02C': '분쇄가공',
+                    'B29C': '성형가공', 'B65B': '포장자동화', 'B09B': '폐기물처리',
+                    'C12N': '미생물공학', 'C12P': '발효공정', 'C12G': '주류제조', 'C12Q': '바이오센서',
+                    'C07K': '펩타이드', 'C07D': '유기합성', 'C08L': '고분자소재',
+                    'C05G': '비료제조', 'C02F': '수처리',
+                    'G06F': 'AI·SW', 'G06N': '인공지능', 'G06Q': '스마트유통', 'G01N': '품질검사',
+                    'G16B': '바이오인포매틱스',
+                    'H04L': 'IoT통신', 'H04W': '무선네트워크',
+                    'A23': '식품산업', 'A01': '농업기술', 'A61': '헬스케어', 'C12': '바이오산업',
+                    'C07': '의약화학', 'C08': '소재산업', 'G06': 'ICT융합', 'B01': '화학공정',
+                    'H04': 'IoT', 'G01': '센싱기술', 'B65': '스마트물류',
+                  };
+                  patentData.classifications.forEach(cls => {
+                    const c = cls.replace(/\s/g, '');
+                    const k = ipcBusinessMap[c.slice(0, 4)] || ipcBusinessMap[c.slice(0, 3)];
+                    if (k && !keywords.includes(k)) keywords.push(k);
+                  });
+                }
+                if (patentData.titleKo) {
+                  const title = patentData.titleKo;
+                  const efficacyMap: [RegExp, string][] = [
+                    [/항균|살균|멸균/, '항균소재'], [/항염|소염/, '항염치료'], [/항산화/, '항산화식품'],
+                    [/항암|종양/, '항암치료'], [/항바이러스|항virus/, '감염병대응'],
+                    [/면역|immunity/, '면역증진'], [/혈당|당뇨/, '당뇨관리'],
+                    [/혈압|고혈압/, '혈압관리'], [/비만|체중|다이어트/, '체중관리'],
+                    [/치매|인지/, '인지기능개선'], [/피부|미용/, '기능성화장품'],
+                    [/발효|숙성/, '발효식품'], [/유산균|프로바이오/, '프로바이오틱스'],
+                    [/콜라겐|젤라틴/, '뷰티소재'], [/고령|노인|실버/, '실버푸드'],
+                    [/영양|건강/, '건강기능식품'], [/친환경|유기농|무농약/, '친환경농업'],
+                    [/스마트|자동|IoT|센서/, '스마트농업'], [/드론|무인/, '농업드론'],
+                    [/수경|양액/, '스마트재배'], [/저장|보관|신선/, '신선유통'],
+                    [/감자/, '감자가공'], [/쌀|미곡/, '쌀가공'], [/콩|대두/, '콩가공'],
+                    [/김치|발효채소/, '김치산업'], [/축산|육류|도축/, '축산가공'],
+                    [/수산|어류|해조/, '수산가공'], [/버섯|균사/, '버섯재배'],
+                    [/스무디|음료|주스/, '음료제조'], [/빵|제과|제빵/, '베이커리'],
+                    [/나노|마이크로/, '나노기술'], [/바이오|생물/, '바이오기술'],
+                    [/에너지|태양|풍력/, '신재생에너지'], [/폐기물|재활용/, '자원순환'],
+                  ];
+                  efficacyMap.forEach(([pattern, label]) => {
+                    if (pattern.test(title) && !keywords.includes(label)) keywords.push(label);
+                  });
+                }
+                const unique = [...new Set(keywords)].slice(0, 7);
+                if (unique.length === 0) return null;
+                return (
+                  <div className="shrink-0 flex flex-wrap items-center gap-1.5 md:max-w-[260px] content-center px-3 py-2 rounded-lg" style={{ background: 'hsl(250 30% 97%)', border: '1px solid hsl(250 20% 91%)' }}>
+                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">키워드</span>
+                    {unique.map((kw, i) => (
+                      <button
+                        key={i}
+                        onClick={() => onKeywordClick?.(kw)}
+                        className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium transition-all hover:scale-105 hover:shadow-sm cursor-pointer"
+                        style={{ background: `hsl(${210 + i * 25} 70% 95%)`, color: `hsl(${210 + i * 25} 60% 35%)`, border: `1px solid hsl(${210 + i * 25} 50% 88%)` }}
+                        title={`"${kw}" 관련 특허 검색`}
+                      >
+                        #{kw}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
-
-            {/* Technology Keywords — 사업분야/효능 기반 */}
-            {(() => {
-              const keywords: string[] = [];
-              
-              // 1. IPC 분류 기반 사업분야/효능 키워드 (세분류 우선)
-              if (patentData.classifications && patentData.classifications.length > 0) {
-                const ipcBusinessMap: Record<string, string> = {
-                  // A섹션: 농업·식품·의약
-                  'A23L': '건강식품', 'A23B': '식품보존', 'A23C': '유제품', 'A23D': '유지가공',
-                  'A23F': '음료제조', 'A23G': '과자제조', 'A23J': '단백질가공', 'A23K': '사료',
-                  'A23P': '식품성형', 'A01G': '스마트팜', 'A01H': '품종개량', 'A01K': '스마트축산',
-                  'A01N': '친환경농약', 'A01C': '정밀파종', 'A01D': '수확자동화',
-                  'A61K': '신약개발', 'A61P': '치료제', 'A61B': '의료진단', 'A61F': '의료기기',
-                  'A61L': '의료살균', 'A61Q': '화장품',
-                  // B섹션: 제조·가공
-                  'B01D': '분리정제', 'B01J': '촉매공정', 'B01F': '혼합기술', 'B02C': '분쇄가공',
-                  'B29C': '성형가공', 'B65B': '포장자동화', 'B09B': '폐기물처리',
-                  // C섹션: 화학·바이오
-                  'C12N': '미생물공학', 'C12P': '발효공정', 'C12G': '주류제조', 'C12Q': '바이오센서',
-                  'C07K': '펩타이드', 'C07D': '유기합성', 'C08L': '고분자소재',
-                  'C05G': '비료제조', 'C02F': '수처리',
-                  // G섹션: 정보·측정
-                  'G06F': 'AI·SW', 'G06N': '인공지능', 'G06Q': '스마트유통', 'G01N': '품질검사',
-                  'G16B': '바이오인포매틱스',
-                  // H섹션: 전기·전자
-                  'H04L': 'IoT통신', 'H04W': '무선네트워크',
-                  // 상위 분류 (폴백)
-                  'A23': '식품산업', 'A01': '농업기술', 'A61': '헬스케어', 'C12': '바이오산업',
-                  'C07': '의약화학', 'C08': '소재산업', 'G06': 'ICT융합', 'B01': '화학공정',
-                  'H04': 'IoT', 'G01': '센싱기술', 'B65': '스마트물류',
-                };
-                patentData.classifications.forEach(cls => {
-                  const c = cls.replace(/\s/g, '');
-                  const k = ipcBusinessMap[c.slice(0, 4)] || ipcBusinessMap[c.slice(0, 3)];
-                  if (k && !keywords.includes(k)) keywords.push(k);
-                });
-              }
-
-              // 2. 제목 기반 효능/활용분야 키워드
-              if (patentData.titleKo) {
-                const title = patentData.titleKo;
-                const efficacyMap: [RegExp, string][] = [
-                  [/항균|살균|멸균/, '항균소재'], [/항염|소염/, '항염치료'], [/항산화/, '항산화식품'],
-                  [/항암|종양/, '항암치료'], [/항바이러스|항virus/, '감염병대응'],
-                  [/면역|immunity/, '면역증진'], [/혈당|당뇨/, '당뇨관리'],
-                  [/혈압|고혈압/, '혈압관리'], [/비만|체중|다이어트/, '체중관리'],
-                  [/치매|인지/, '인지기능개선'], [/피부|미용/, '기능성화장품'],
-                  [/발효|숙성/, '발효식품'], [/유산균|프로바이오/, '프로바이오틱스'],
-                  [/콜라겐|젤라틴/, '뷰티소재'], [/고령|노인|실버/, '실버푸드'],
-                  [/영양|건강/, '건강기능식품'], [/친환경|유기농|무농약/, '친환경농업'],
-                  [/스마트|자동|IoT|센서/, '스마트농업'], [/드론|무인/, '농업드론'],
-                  [/수경|양액/, '스마트재배'], [/저장|보관|신선/, '신선유통'],
-                  [/감자/, '감자가공'], [/쌀|미곡/, '쌀가공'], [/콩|대두/, '콩가공'],
-                  [/김치|발효채소/, '김치산업'], [/축산|육류|도축/, '축산가공'],
-                  [/수산|어류|해조/, '수산가공'], [/버섯|균사/, '버섯재배'],
-                  [/스무디|음료|주스/, '음료제조'], [/빵|제과|제빵/, '베이커리'],
-                  [/나노|마이크로/, '나노기술'], [/바이오|생물/, '바이오기술'],
-                  [/에너지|태양|풍력/, '신재생에너지'], [/폐기물|재활용/, '자원순환'],
-                ];
-                efficacyMap.forEach(([pattern, label]) => {
-                  if (pattern.test(title) && !keywords.includes(label)) keywords.push(label);
-                });
-              }
-
-              const unique = [...new Set(keywords)].slice(0, 7);
-              if (unique.length === 0) return null;
-              return (
-                <div className="flex flex-wrap gap-1.5">
-                  {unique.map((kw, i) => (
-                    <button
-                      key={i}
-                      onClick={() => onKeywordClick?.(kw)}
-                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium transition-all hover:scale-105 hover:shadow-sm cursor-pointer"
-                      style={{ background: `hsl(${210 + i * 25} 70% 95%)`, color: `hsl(${210 + i * 25} 60% 35%)`, border: `1px solid hsl(${210 + i * 25} 50% 88%)` }}
-                      title={`"${kw}" 관련 특허 검색`}
-                    >
-                      #{kw}
-                    </button>
-                  ))}
-                </div>
-              );
-            })()}
           </div>
         </div>
       )}

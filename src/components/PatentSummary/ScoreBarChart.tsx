@@ -69,8 +69,16 @@ export function ScoreBarChart({ technologyScore, marketScore, businessScore, lab
             </div>
             {/* Bar track */}
             <div className="w-full h-5 sm:h-6 rounded-lg overflow-hidden relative" style={{ background: item.bg }}>
+              {/* Score step lines inside track */}
+              {[20, 40, 60, 80].map((v) => (
+                <div
+                  key={v}
+                  className="absolute top-0 h-full w-px z-10"
+                  style={{ left: `${v}%`, background: 'hsl(0 0% 50% / 0.2)' }}
+                />
+              ))}
               <div
-                className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden z-20"
                 style={{ width: `${Math.max(item.score, 8)}%`, background: item.stroke }}
               >
                 {/* Glossy overlay */}
