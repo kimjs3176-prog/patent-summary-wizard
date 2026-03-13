@@ -99,8 +99,8 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
           <div
             style={{
               borderBottom: "3px solid #1e3a5f",
-              paddingBottom: "10px",
-              marginBottom: "14px",
+              paddingBottom: "8px",
+              marginBottom: "10px",
             }}
           >
             <div
