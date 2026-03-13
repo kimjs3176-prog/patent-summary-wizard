@@ -425,113 +425,146 @@ export function PatentSummary({
       )}
 
       <div className="space-y-7">
-      {/* 1. Patent Info Card — 2025 Elevated Style */}
+      {/* 1. Patent Info Card — Compact 2025 Style */}
       {patentData && (
         <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated ${printSections.patentInfo === false ? "print:hidden" : ""}`}>
-          {/* Top accent gradient band */}
           <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(239 84% 67%), hsl(262 83% 58%), hsl(280 68% 56%))' }} />
           
-          <div className="p-5 md:p-7">
-            {/* Card header with icon */}
-            <div className="flex items-center gap-3.5 mb-5">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-md" style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))', color: 'white' }}>
+          <div className="px-4 py-3.5 md:px-5 md:py-4">
+            {/* Header row: icon + title + number badges inline */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-sm shrink-0" style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))', color: 'white' }}>
                 {cardIcons.patentInfo || "📄"}
               </div>
-              <div>
-                <div className="font-bold text-lg text-foreground">특허 정보</div>
-                <div className="text-[11px] text-muted-foreground mt-0.5 font-medium uppercase tracking-wider">Patent Information</div>
+              <div className="min-w-0">
+                <div className="font-bold text-base text-foreground leading-tight">특허 정보</div>
+                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Patent Information</div>
+              </div>
+              <div className="flex flex-wrap gap-1.5 ml-auto">
+                {(() => {
+                  const regNum = patentData.registrationNumber;
+                  if (regNum) {
+                    const cleanNum = regNum.replace(/[^0-9]/g, "");
+                    const formatted = cleanNum.length >= 9 && cleanNum.startsWith("10")
+                      ? `10-${cleanNum.slice(2, 9)}`
+                      : patentData.displayNumber || regNum;
+                    return (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold badge-pop" style={{ background: 'linear-gradient(135deg, hsl(239 84% 97%), hsl(239 70% 94%))', color: 'hsl(239 84% 40%)', border: '1px solid hsl(239 60% 88%)' }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(239 84% 67%)' }} />
+                        {infoLabels.registrationNumber || "등록번호"}: {formatted}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                {(() => {
+                  const appNum = patentData.applicationNumber;
+                  if (appNum) {
+                    const cleanNum = appNum.replace(/[^0-9]/g, "");
+                    const formatted = cleanNum.length >= 11 && cleanNum.startsWith("10")
+                      ? `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`
+                      : appNum;
+                    return (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold badge-pop" style={{ background: 'linear-gradient(135deg, hsl(262 70% 97%), hsl(262 60% 94%))', color: 'hsl(262 60% 40%)', border: '1px solid hsl(262 50% 88%)' }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(262 83% 58%)' }} />
+                        {infoLabels.applicationNumber || "출원번호"}: {formatted}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                {!patentData.registrationNumber && !patentData.applicationNumber && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold badge-pop" style={{ background: 'linear-gradient(135deg, hsl(239 84% 97%), hsl(239 70% 94%))', color: 'hsl(239 84% 40%)', border: '1px solid hsl(239 60% 88%)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'hsl(239 84% 67%)' }} />
+                    {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Number badges — Indigo accent */}
-            <div className="flex flex-wrap gap-2.5 mb-5">
-              {(() => {
-                const regNum = patentData.registrationNumber;
-                if (regNum) {
-                  const cleanNum = regNum.replace(/[^0-9]/g, "");
-                  const formatted = cleanNum.length >= 9 && cleanNum.startsWith("10")
-                    ? `10-${cleanNum.slice(2, 9)}`
-                    : patentData.displayNumber || regNum;
-                  return (
-                    <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm badge-pop" style={{ background: 'linear-gradient(135deg, hsl(239 84% 97%), hsl(239 70% 94%))', color: 'hsl(239 84% 40%)', border: '1px solid hsl(239 60% 88%)' }}>
-                      <span className="w-2 h-2 rounded-full" style={{ background: 'hsl(239 84% 67%)', boxShadow: '0 0 6px hsl(239 84% 67% / 0.5)' }} />
-                      {infoLabels.registrationNumber || "등록번호"}: {formatted}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              {(() => {
-                const appNum = patentData.applicationNumber;
-                if (appNum) {
-                  const cleanNum = appNum.replace(/[^0-9]/g, "");
-                  const formatted = cleanNum.length >= 11 && cleanNum.startsWith("10")
-                    ? `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`
-                    : appNum;
-                  return (
-                    <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm badge-pop" style={{ background: 'linear-gradient(135deg, hsl(262 70% 97%), hsl(262 60% 94%))', color: 'hsl(262 60% 40%)', border: '1px solid hsl(262 50% 88%)' }}>
-                      <span className="w-2 h-2 rounded-full" style={{ background: 'hsl(262 83% 58%)', boxShadow: '0 0 6px hsl(262 83% 58% / 0.5)' }} />
-                      {infoLabels.applicationNumber || "출원번호"}: {formatted}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              {!patentData.registrationNumber && !patentData.applicationNumber && (
-                <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm badge-pop" style={{ background: 'linear-gradient(135deg, hsl(239 84% 97%), hsl(239 70% 94%))', color: 'hsl(239 84% 40%)', border: '1px solid hsl(239 60% 88%)' }}>
-                  <span className="w-2 h-2 rounded-full" style={{ background: 'hsl(239 84% 67%)', boxShadow: '0 0 6px hsl(239 84% 67% / 0.5)' }} />
-                  {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
-                </div>
-              )}
-            </div>
             
-            {/* Title — Bold typography */}
+            {/* Title */}
             {patentData.titleKo && (
-              <h2 className="text-[22px] md:text-2xl font-bold text-foreground mb-6 leading-snug tracking-tight">{patentData.titleKo}</h2>
+              <h2 className="text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-tight">{patentData.titleKo}</h2>
             )}
             
-            {/* Meta info — Glass morphism strip */}
-            <div className="px-5 py-3.5 rounded-xl flex flex-wrap items-center gap-x-5 gap-y-2" style={{ background: 'hsl(220 14% 96%)', border: '1px solid hsl(220 13% 91%)' }}>
+            {/* Meta info strip — compact */}
+            <div className="px-3.5 py-2.5 rounded-lg flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] mb-3" style={{ background: 'hsl(220 14% 96%)', border: '1px solid hsl(220 13% 91%)' }}>
               {patentData.assignee && (
                 <>
-                  <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                     <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.assignee || "출원인"}</span>
-                    <span className="text-foreground font-semibold text-sm">{patentData.assignee}</span>
+                    <span className="text-foreground font-semibold">{patentData.assignee}</span>
                   </span>
                   {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-                    <span className="text-muted-foreground/40 text-xs">|</span>
+                    <span className="text-muted-foreground/30 text-xs">|</span>
                   )}
                 </>
               )}
               {patentData.filingDate && (
                 <>
-                  <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                     <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.filingDate || "출원일"}</span>
-                    <span className="text-foreground font-medium text-sm">{patentData.filingDate}</span>
+                    <span className="text-foreground font-medium">{patentData.filingDate}</span>
                   </span>
                   {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-                    <span className="text-muted-foreground/40 text-xs">|</span>
+                    <span className="text-muted-foreground/30 text-xs">|</span>
                   )}
                 </>
               )}
               {patentData.publicationDate && (
                 <>
-                  <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                     <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{patentData.registrationNumber ? (infoLabels.publicationDate || '등록일') : '공개일'}</span>
-                    <span className="text-foreground font-medium text-sm">{patentData.publicationDate}</span>
+                    <span className="text-foreground font-medium">{patentData.publicationDate}</span>
                   </span>
                   {patentData.classifications && patentData.classifications.length > 0 && (
-                    <span className="text-muted-foreground/40 text-xs">|</span>
+                    <span className="text-muted-foreground/30 text-xs">|</span>
                   )}
                 </>
               )}
               {patentData.classifications && patentData.classifications.length > 0 && (
-                <span className="inline-flex items-center gap-2 min-w-0">
+                <span className="inline-flex items-center gap-1.5 min-w-0">
                   <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap">{infoLabels.ipc || "IPC"}</span>
-                  <span className="text-foreground font-medium text-sm truncate">{patentData.classifications.join(', ')}</span>
+                  <span className="text-foreground font-medium truncate">{patentData.classifications.join(', ')}</span>
                 </span>
               )}
             </div>
+
+            {/* Technology Keywords */}
+            {(() => {
+              const keywords: string[] = [];
+              if (patentData.titleKo) {
+                const title = patentData.titleKo;
+                const knownKw = ['항균', '항염', '항염증', '항산화', '항암', '항바이러스', '친환경', '고효율', '저비용', '자동화', '스마트', '나노', '바이오'];
+                knownKw.forEach(kw => { if (title.includes(kw)) keywords.push(kw); });
+                const nouns = title.match(/[가-힣]{2,5}/g) || [];
+                const stop = ['및', '이의', '위한', '관한', '대한', '방법', '장치', '시스템', '조성물', '포함하는', '이용한', '사용', '특징으로', '것을'];
+                nouns.forEach(n => { if (!stop.includes(n) && !keywords.includes(n) && keywords.length < 5) keywords.push(n); });
+              }
+              if (patentData.classifications && patentData.classifications.length > 0) {
+                const ipcMap: Record<string, string> = {
+                  'A01': '농업', 'A23': '식품가공', 'A61': '의약', 'C12': '생명공학',
+                  'G06': '컴퓨팅', 'B01': '화학공정', 'C07': '유기화학', 'C08': '고분자',
+                  'H04': '통신', 'A23L': '식품', 'A01G': '원예', 'C12N': '미생물',
+                };
+                patentData.classifications.forEach(cls => {
+                  const c = cls.replace(/\s/g, '');
+                  const k = ipcMap[c.slice(0, 4)] || ipcMap[c.slice(0, 3)];
+                  if (k && !keywords.includes(k)) keywords.push(k);
+                });
+              }
+              const unique = [...new Set(keywords)].slice(0, 7);
+              if (unique.length === 0) return null;
+              return (
+                <div className="flex flex-wrap gap-1.5">
+                  {unique.map((kw, i) => (
+                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium" style={{ background: `hsl(${210 + i * 25} 70% 95%)`, color: `hsl(${210 + i * 25} 60% 35%)`, border: `1px solid hsl(${210 + i * 25} 50% 88%)` }}>
+                      #{kw}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
