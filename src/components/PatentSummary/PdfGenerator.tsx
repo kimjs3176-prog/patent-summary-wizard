@@ -203,53 +203,40 @@ export function PdfGenerator({
       };
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  COVER HEADER — Editorial Book Style    ██
+      // ██  COVER HEADER — Light & Clean Style     ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // Full-width deep navy band
-      const headerH = 32;
+      const headerH = 28;
       const hY = yPosition - 2;
 
-      // Solid elegant navy base
-      pdf.setFillColor(...THEME.navy);
+      // Light warm paper background
+      pdf.setFillColor(...THEME.paper);
       pdf.rect(0, 0, pageWidth, headerH + margin, "F");
 
-      // Subtle texture — horizontal fine lines
-      pdf.setGState(new (pdf as any).GState({ opacity: 0.04 }));
-      pdf.setDrawColor(255, 255, 255);
-      for (let i = 0; i < headerH + margin; i += 1.5) {
-        pdf.setLineWidth(0.1);
-        pdf.line(0, i, pageWidth, i);
-      }
-      pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+      // Single clean bottom border — navy thin line
+      pdf.setDrawColor(...THEME.navy);
+      pdf.setLineWidth(0.6);
+      pdf.line(margin, headerH + margin - 1, pageWidth - margin, headerH + margin - 1);
 
-      // Gold accent line at bottom of header
-      pdf.setFillColor(...THEME.gold);
-      pdf.rect(0, headerH + margin - 1.2, pageWidth, 1.2, "F");
-      // Subtle gold glow
-      pdf.setGState(new (pdf as any).GState({ opacity: 0.3 }));
-      pdf.setFillColor(...THEME.goldLight);
-      pdf.rect(0, headerH + margin - 2, pageWidth, 0.8, "F");
-      pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
+      // Left vertical accent bar — teal/green
+      const accentBarColor = hexToRgb(cfg.header_bg_color);
+      pdf.setFillColor(...accentBarColor);
+      pdf.rect(margin, hY + 5, 2, headerH - 6, "F");
 
-      // Left vertical gold accent bar
-      pdf.setFillColor(...THEME.gold);
-      pdf.rect(margin, hY + 6, 1.5, headerH - 8, "F");
-
-      // Main title
+      // Main title — dark navy on light background
       pdf.setFontSize(16);
-      pdf.setTextColor(255, 255, 255);
-      const titleX = margin + 7;
+      pdf.setTextColor(...THEME.navy);
+      const titleX = margin + 8;
       pdf.text(cfg.header_title, titleX, hY + 14);
       pdf.text(cfg.header_title, titleX + 0.15, hY + 14); // faux bold
       pdf.text(cfg.header_title, titleX + 0.07, hY + 14);
 
-      // Subtitle — refined serif feel
+      // Subtitle
       pdf.setFontSize(7.5);
-      pdf.setTextColor(...lerpColor(THEME.white, THEME.navy, 0.35));
+      pdf.setTextColor(...THEME.textMuted);
       pdf.text(cfg.header_subtitle, titleX, hY + 20);
 
-      // Patent number — right aligned, elegant
+      // Patent number — right aligned
       const isApp = patentData?.searchType === "application";
       const displayNumber = isApp
         ? patentData?.applicationNumber || patentData?.displayNumber || patentNumber
@@ -258,26 +245,26 @@ export function PdfGenerator({
 
       // Number label
       pdf.setFontSize(6);
-      pdf.setTextColor(...THEME.goldLight);
+      pdf.setTextColor(...THEME.textMuted);
       const nlW = pdf.getTextWidth(numberLabel);
       pdf.text(numberLabel, pageWidth - margin - nlW, hY + 11);
 
-      // Thin gold separator
-      pdf.setDrawColor(...THEME.gold);
-      pdf.setLineWidth(0.3);
+      // Thin separator
+      pdf.setDrawColor(...THEME.border);
+      pdf.setLineWidth(0.25);
       const sepStartX = pageWidth - margin - Math.max(nlW, pdf.getTextWidth(displayNumber)) - 2;
       pdf.line(sepStartX, hY + 13.5, pageWidth - margin, hY + 13.5);
 
-      // Number value — large and clear
+      // Number value
       pdf.setFontSize(11);
-      pdf.setTextColor(255, 255, 255);
+      pdf.setTextColor(...THEME.navy);
       const dnW = pdf.getTextWidth(displayNumber);
       pdf.text(displayNumber, pageWidth - margin - dnW, hY + 19);
       pdf.text(displayNumber, pageWidth - margin - dnW + 0.1, hY + 19);
 
-      // Date of generation — small
+      // Date
       pdf.setFontSize(5.5);
-      pdf.setTextColor(...lerpColor(THEME.white, THEME.navy, 0.5));
+      pdf.setTextColor(...THEME.textMuted);
       const genDate = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
       const gdW = pdf.getTextWidth(genDate);
       pdf.text(genDate, pageWidth - margin - gdW, hY + 24);
