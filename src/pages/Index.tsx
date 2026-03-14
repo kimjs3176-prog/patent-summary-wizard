@@ -86,16 +86,6 @@ const Index = () => {
     navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
   };
 
-  const handleKeywordPatentSelect = (patentNumber: string) => {
-    setKeywordResults([]);
-    setSearchedKeyword("");
-    handleSubmit(patentNumber);
-  };
-
-  const handleClearKeywordResults = () => {
-    setKeywordResults([]);
-    setSearchedKeyword("");
-  };
 
 
 
