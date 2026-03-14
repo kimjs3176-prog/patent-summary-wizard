@@ -169,12 +169,20 @@ serve(async (req) => {
             patentId = displayNumber;
           } else if (applicationNumber && applicationNumber.length >= 7) {
             const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
-            if (cleanNum.length >= 13 && cleanNum.startsWith("10")) {
+            // Standard Korean application number: 10 + 4-digit year + 7-digit serial = 13 digits
+            if (cleanNum.length === 13 && cleanNum.startsWith("10")) {
               const year = cleanNum.slice(2, 6);
-              const num = cleanNum.slice(6);
-              displayNumber = `10-${year}-${num}`;
+              const serial = cleanNum.slice(6); // 7 digits
+              displayNumber = `10-${year}-${serial}`;
+            } else if (cleanNum.length > 13 && cleanNum.startsWith("10")) {
+              // Truncate to standard 13-digit format
+              const year = cleanNum.slice(2, 6);
+              const serial = cleanNum.slice(6, 13);
+              displayNumber = `10-${year}-${serial}`;
             } else if (cleanNum.length >= 11) {
-              displayNumber = `10-${cleanNum.slice(0, 4)}-${cleanNum.slice(4)}`;
+              const year = cleanNum.slice(0, 4);
+              const serial = cleanNum.slice(4, 11);
+              displayNumber = `10-${year}-${serial}`;
             } else {
               displayNumber = `10-${cleanNum}`;
             }
