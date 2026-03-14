@@ -56,8 +56,6 @@ const Index = () => {
   };
 
   const handleSubmitInternal = async (patentNumber: string) => {
-    setKeywordResults([]);
-    setSearchedKeyword("");
     updateUrl(patentNumber);
     const result = await generateSummary(patentNumber);
     if (result && result.patentData) {
