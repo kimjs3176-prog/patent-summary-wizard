@@ -364,6 +364,8 @@ serve(async (req) => {
 
         console.log("Detail API response preview (first 2000):", detailText.substring(0, 2000));
         console.log("Detail API response preview (2000-4000):", detailText.substring(2000, 4000));
+        console.log("Detail API response preview (4000-6000):", detailText.substring(4000, 6000));
+        console.log("Detail API response preview (6000-8000):", detailText.substring(6000, 8000));
 
         if (detailRes.ok && !detailText.includes("<successYN>N</successYN>")) {
           // 청구항 태그는 응답 포맷에 따라 claim / claimText 등으로 다를 수 있어 폭넓게 파싱
