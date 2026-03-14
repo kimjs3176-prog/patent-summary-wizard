@@ -99,12 +99,23 @@ function parsePatentNumber(input: string): { searchNumber: string; displayNumber
     };
   }
   
-  // 출원번호 형식: 10-2023-0123456
+  // 출원번호 형식: 10-2023-0123456 (standard 7-digit serial)
   const appMatch = trimmed.match(/^10-(\d{4})-(\d{7})$/);
   if (appMatch) {
     return {
       searchNumber: `10${appMatch[1]}${appMatch[2]}`,
       displayNumber: trimmed,
+      searchType: 'application'
+    };
+  }
+  
+  // 출원번호 형식 (longer serial, e.g. 10-2019-840009315): truncate to 13-digit standard
+  const appMatchLong = trimmed.match(/^10-(\d{4})-(\d{7,})$/);
+  if (appMatchLong) {
+    const serial = appMatchLong[2].slice(0, 7);
+    return {
+      searchNumber: `10${appMatchLong[1]}${serial}`,
+      displayNumber: `10-${appMatchLong[1]}-${serial}`,
       searchType: 'application'
     };
   }
