@@ -123,19 +123,26 @@ const Index = () => {
         {!summary && !isLoading ? (
           <>
             {/* Hero */}
-            <section className="text-center max-w-2xl mx-auto mb-12 md:mb-16 animate-fade-down relative">
-              <div className="absolute -inset-10 -z-10 overflow-hidden rounded-3xl">
+            <section className="text-center max-w-3xl mx-auto mb-14 md:mb-20 animate-fade-down relative py-6 md:py-10">
+              {/* Neural network animation background */}
+              <div className="absolute -inset-16 -z-10 overflow-hidden rounded-[2rem]">
                 <AiHeroAnimation />
               </div>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold bg-primary/[0.08] text-primary border border-primary/15">
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-primary" />
+              {/* Radial glow behind heading */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full -z-10 blur-[100px] opacity-40" style={{ background: 'radial-gradient(ellipse, hsl(239 84% 67% / 0.3), transparent 70%)' }} />
+
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-6 text-xs font-semibold bg-primary/[0.08] text-primary border border-primary/15 shadow-sm backdrop-blur-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
                 AI 기반 특허 분석
               </div>
-              <h2 className="text-3xl md:text-[2.75rem] lg:text-5xl font-extrabold text-foreground mb-4 md:mb-5 leading-[1.1] tracking-tight">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-5 md:mb-6 leading-[1.08] tracking-tight">
                 {settings.hero_title}<br />
                 <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-sm md:text-base font-normal leading-relaxed max-w-lg mx-auto text-muted-foreground">
+              <p className="text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-xl mx-auto text-muted-foreground">
                 {settings.hero_description}
               </p>
             </section>
