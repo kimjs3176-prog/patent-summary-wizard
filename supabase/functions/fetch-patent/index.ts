@@ -389,8 +389,9 @@ serve(async (req) => {
             patentData.claims = claims.slice(0, 50); // 과도한 길이 방지
           }
 
-          // 발명자 정보 보강: 상세 API에서 더 정확한 발명자 정보 추출
+          // 발명자 정보 보강: 상세 API에서 발명자 정보 추출 시도
           const detailInventorName = getFieldFromXml(detailText, "inventorName");
+          console.log("Detail API inventorName field:", detailInventorName || "(not found)");
           if (detailInventorName) {
             const detailInventors = detailInventorName
               .split(/[,|;]/)
