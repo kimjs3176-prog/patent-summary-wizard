@@ -538,37 +538,10 @@ export function PdfGenerator({
           pdf.setFillColor(...lerpColor(accentColor, THEME.white, 0.15));
           pdf.rect(margin + accentBarW - 1, bandY, 1, sectionHeaderH, "F");
 
-          // Section number — modern square badge with rounded corners
-          const badgeSize = 5.5;
-          const badgeX = margin + 9;
-          const badgeCY = bandY + sectionHeaderH / 2;
-          const badgeY = badgeCY - badgeSize / 2;
-
-          // Badge shadow
-          pdf.setFillColor(180, 185, 200);
-          pdf.setGState(new (pdf as any).GState({ opacity: 0.2 }));
-          pdf.roundedRect(badgeX + 0.3, badgeY + 0.4, badgeSize, badgeSize, 1.5, 1.5, "F");
-          pdf.setGState(new (pdf as any).GState({ opacity: 1 }));
-
-          // Badge fill with gradient
-          pdf.setFillColor(...accentColor);
-          pdf.roundedRect(badgeX, badgeY, badgeSize, badgeSize, 1.5, 1.5, "F");
-          // Inner highlight
-          pdf.setFillColor(...lerpColor(accentColor, THEME.white, 0.2));
-          pdf.roundedRect(badgeX + 0.4, badgeY + 0.4, badgeSize - 0.8, badgeSize * 0.4, 0.8, 0.8, "F");
-
-          // Badge number — bold and centered
-          pdf.setFontSize(7);
-          pdf.setTextColor(255, 255, 255);
-          const numStr = String(sectionIndex);
-          const numW = pdf.getTextWidth(numStr);
-          const numFontH = 7 * 0.352778;
-          pdf.text(numStr, badgeX + badgeSize / 2 - numW / 2, badgeCY + numFontH * 0.35);
-          pdf.text(numStr, badgeX + badgeSize / 2 - numW / 2 + 0.1, badgeCY + numFontH * 0.35); // faux bold
-
-          // Section title — larger, bolder
-          const titleX = margin + 18;
+          // Section title — larger, bolder (no number badge)
+          const titleX = margin + 10;
           const titleFontH = (cfg.section_title_size + 1) * 0.352778;
+          const badgeCY = bandY + sectionHeaderH / 2;
           const titleY = badgeCY + titleFontH * 0.35;
           pdf.setFontSize(cfg.section_title_size + 1);
           pdf.setTextColor(...THEME.text);
