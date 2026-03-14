@@ -438,6 +438,49 @@ serve(async (req) => {
         console.error("Error fetching patent detail (claims):", detailErr);
       }
 
+      // 발명자 정보가 없는 경우, 별도 출원인/발명자 API 호출
+      if (!patentData.inventors || patentData.inventors.length === 0) {
+        try {
+          const appNumForInventor = applicationNumber || parsed.searchNumber.replace(/[^0-9]/g, "");
+          // applicantInfoSearchInfo API로 발명자 조회 시도
+          const inventorUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+          inventorUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+          inventorUrl.searchParams.set("astrtCont", "");
+          inventorUrl.searchParams.set("inventionTitle", "");
+          inventorUrl.searchParams.set("applicationNumber", appNumForInventor);
+          inventorUrl.searchParams.set("pageNo", "1");
+          inventorUrl.searchParams.set("numOfRows", "1");
+          inventorUrl.searchParams.set("patent", "true");
+          inventorUrl.searchParams.set("utility", "true");
+          inventorUrl.searchParams.set("descSort", "true");
+
+          console.log("Inventor search URL:", inventorUrl.toString().replace(KIPRIS_API_KEY, "***"));
+          const invRes = await fetchWithRetry(inventorUrl.toString());
+          const invText = await invRes.text();
+          
+          // 발명자 관련 필드 탐색
+          const inventorField = getFieldFromXml(invText, "inventorName") 
+            || getFieldFromXml(invText, "inventor");
+          console.log("Inventor API inventorName:", inventorField || "(not found)");
+          
+          // 응답 XML에서 발명자 관련 태그 패턴 탐색
+          const inventorTagMatch = invText.match(/<inventor[^>]*>([^<]*)<\/inventor[^>]*>/i);
+          console.log("Inventor tag match:", inventorTagMatch?.[0] || "(none)");
+          
+          if (inventorField) {
+            const inventors = inventorField
+              .split(/[,|;]/)
+              .map((n: string) => n.trim())
+              .filter((n: string) => n.length > 0);
+            if (inventors.length > 0) {
+              patentData.inventors = inventors;
+            }
+          }
+        } catch (invErr) {
+          console.error("Error fetching inventor info:", invErr);
+        }
+      }
+
       // 3차: 도면이 1개 이하인 경우, 출원번호 기반 추가 검색으로 보충
       if ((patentData.images?.length || 0) < 2 && applicationNumber) {
         try {
