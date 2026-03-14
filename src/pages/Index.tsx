@@ -20,6 +20,7 @@ import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useState, useEffect, useRef, useMemo } from "react";
 
 const Index = () => {
+  const navigate = useNavigate();
   const {
     isLoading, isFetching, summary, currentPatent, patentData,
     relatedPatents, generateSummary,
