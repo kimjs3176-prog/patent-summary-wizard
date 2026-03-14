@@ -1,0 +1,1 @@
+DELETE FROM patent_data_cache WHERE patent_number = '10-2020-0137663';
