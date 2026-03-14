@@ -32,11 +32,10 @@ const Index = () => {
   const { favorites } = useFavoritePatents();
 
   const homepageVisible = useMemo(() => {
-    try {return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {};} catch {return {};}
+    try { return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {}; } catch { return {}; }
   }, [settings.homepage_visible_sections]);
 
   const [keywordResults] = useState<KeywordSearchResult[]>([]);
-
   const initialLoadDone = useRef(false);
 
   const updateUrl = (patentNum?: string) => {
@@ -99,17 +98,19 @@ const Index = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {updateUrl();reset();}}
-            className="rounded-full text-xs h-8 px-4 glossy-card btn-press font-medium">
-              새로운 검색
+            onClick={() => { updateUrl(); reset(); }}
+            className="rounded-full text-xs h-8 px-4 glossy-card btn-press font-medium"
+          >
+            새로운 검색
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {updateUrl();reset();clearHistory();toast.success("검색 기록이 초기화되었습니다");}}
-            className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5 btn-press font-medium">
-              <RotateCcw className="w-3 h-3" />
-              초기화
+            onClick={() => { updateUrl(); reset(); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); }}
+            className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5 btn-press font-medium"
+          >
+            <RotateCcw className="w-3 h-3" />
+            초기화
           </Button>
         </>
       )}
@@ -126,8 +127,8 @@ const Index = () => {
               <div className="absolute -inset-10 -z-10 overflow-hidden rounded-3xl">
                 <AiHeroAnimation />
               </div>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold" style={{ background: 'hsl(239 84% 67% / 0.08)', color: 'hsl(239 84% 50%)', border: '1px solid hsl(239 84% 67% / 0.15)' }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'hsl(239 84% 67%)' }} />
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 text-xs font-semibold bg-primary/[0.08] text-primary border border-primary/15">
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-primary" />
                 AI 기반 특허 분석
               </div>
               <h2 className="text-3xl md:text-[2.75rem] lg:text-5xl font-extrabold text-foreground mb-4 md:mb-5 leading-[1.1] tracking-tight">
@@ -142,7 +143,7 @@ const Index = () => {
             {/* Search */}
             <section className="mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
               <div className="w-full max-w-5xl mx-auto flex-col gap-5 lg:gap-6 items-center justify-center flex lg:flex-row">
-                <div className="w-full flex-1 max-w-2xl mx-auto">
+                <div className="w-full lg:flex-1 lg:min-w-0 max-w-2xl mx-auto">
                   <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} />
                 </div>
                 {homepageVisible.popularSearches !== false && (
@@ -159,23 +160,30 @@ const Index = () => {
             </section>
 
             {homepageVisible.featuredPatents !== false && (
-              <FeaturedPatents
-                onPatentSelect={handleSubmit}
-                sectionTitle={settings.featured_section_title}
-                sectionSubtitle={settings.featured_section_subtitle} />
+              <>
+                <div className="max-w-5xl mx-auto mt-10 md:mt-14 mb-2">
+                  <Separator className="bg-border/60" />
+                </div>
+                <FeaturedPatents
+                  onPatentSelect={handleSubmit}
+                  sectionTitle={settings.featured_section_title}
+                  sectionSubtitle={settings.featured_section_subtitle}
+                />
+              </>
             )}
 
-            <div className="max-w-5xl mx-auto mt-10 md:mt-14 mb-2">
-              <Separator className="bg-border/60" />
-            </div>
-
             {homepageVisible.techVideos !== false && (
-              <TechVideoSection videos={(() => {
-                try {
-                  const parsed = JSON.parse(settings.tech_videos || "[]");
-                  return Array.isArray(parsed) ? parsed : [];
-                } catch {return [];}
-              })()} />
+              <>
+                <div className="max-w-5xl mx-auto mt-10 md:mt-14 mb-2">
+                  <Separator className="bg-border/60" />
+                </div>
+                <TechVideoSection videos={(() => {
+                  try {
+                    const parsed = JSON.parse(settings.tech_videos || "[]");
+                    return Array.isArray(parsed) ? parsed : [];
+                  } catch { return []; }
+                })()} />
+              </>
             )}
 
             {homepageVisible.techTransferGuide !== false && (

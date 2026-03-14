@@ -14,28 +14,30 @@ export const AiHeroAnimation = () => {
     if (!ctx) return;
 
     let animId: number;
+    let w = 0;
+    let h = 0;
     const dpr = window.devicePixelRatio || 1;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      w = rect.width;
+      h = rect.height;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
     window.addEventListener("resize", resize);
 
-    // Nodes - 10% increase for more visual impact
     const NODE_COUNT = 31;
     interface Node {
       x: number; y: number; vx: number; vy: number;
       radius: number; phase: number; speed: number;
     }
 
-    const rect = canvas.getBoundingClientRect();
     const nodes: Node[] = Array.from({ length: NODE_COUNT }, () => ({
-      x: Math.random() * rect.width,
-      y: Math.random() * rect.height,
+      x: Math.random() * w,
+      y: Math.random() * h,
       vx: (Math.random() - 0.5) * 0.38,
       vy: (Math.random() - 0.5) * 0.38,
       radius: 2.2 + Math.random() * 3.3,
@@ -44,20 +46,15 @@ export const AiHeroAnimation = () => {
     }));
 
     const MAX_DIST = 150;
-    // primary indigo hsl(239 84% 67%) ≈ rgb(82, 82, 224)
     const PRIMARY_R = 82, PRIMARY_G = 82, PRIMARY_B = 224;
-    // accent purple hsl(262 83% 58%) ≈ rgb(138, 43, 226)
     const ACCENT_R = 138, ACCENT_G = 43, ACCENT_B = 226;
 
     let t = 0;
 
     const draw = () => {
-      const w = canvas.getBoundingClientRect().width;
-      const h = canvas.getBoundingClientRect().height;
       ctx.clearRect(0, 0, w, h);
       t += 0.008;
 
-      // Update nodes
       for (const n of nodes) {
         n.x += n.vx;
         n.y += n.vy;
@@ -67,7 +64,6 @@ export const AiHeroAnimation = () => {
         n.y = Math.max(0, Math.min(h, n.y));
       }
 
-      // Draw connections
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x;
@@ -75,7 +71,6 @@ export const AiHeroAnimation = () => {
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < MAX_DIST) {
             const alpha = (1 - dist / MAX_DIST) * 0.28;
-            // Pulse along connection
             const pulse = 0.5 + 0.5 * Math.sin(t * 3 + i * 0.5);
             const r = Math.round(PRIMARY_R + (ACCENT_R - PRIMARY_R) * pulse);
             const g = Math.round(PRIMARY_G + (ACCENT_G - PRIMARY_G) * pulse);
@@ -87,7 +82,6 @@ export const AiHeroAnimation = () => {
             ctx.lineTo(nodes[j].x, nodes[j].y);
             ctx.stroke();
 
-            // Data particle traveling along edge
             if (alpha > 0.12 && Math.sin(t * 2 + j) > 0.3) {
               const progress = (Math.sin(t * nodes[j].speed * 2 + j) + 1) / 2;
               const px = nodes[i].x + (nodes[j].x - nodes[i].x) * progress;
@@ -101,10 +95,8 @@ export const AiHeroAnimation = () => {
         }
       }
 
-      // Draw nodes
       for (const n of nodes) {
         const pulse = 0.6 + 0.4 * Math.sin(t * n.speed * 2 + n.phase);
-        // Glow
         const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius * 4);
         grad.addColorStop(0, `rgba(${PRIMARY_R},${PRIMARY_G},${PRIMARY_B},${0.15 * pulse})`);
         grad.addColorStop(1, `rgba(${PRIMARY_R},${PRIMARY_G},${PRIMARY_B},0)`);
@@ -113,7 +105,6 @@ export const AiHeroAnimation = () => {
         ctx.arc(n.x, n.y, n.radius * 4, 0, Math.PI * 2);
         ctx.fill();
 
-        // Core
         ctx.fillStyle = `rgba(${PRIMARY_R},${PRIMARY_G},${PRIMARY_B},${0.5 + 0.3 * pulse})`;
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.radius * pulse, 0, Math.PI * 2);
