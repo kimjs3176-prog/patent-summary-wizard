@@ -598,11 +598,44 @@ export function PatentSummary({
                     [/스무디|음료|주스/, '음료제조'], [/빵|제과|제빵/, '베이커리'],
                     [/나노|마이크로/, '나노기술'], [/바이오|생물/, '바이오기술'],
                     [/에너지|태양|풍력/, '신재생에너지'], [/폐기물|재활용/, '자원순환'],
-                  ];
+                   ];
                   efficacyMap.forEach(([pattern, label]) => {
                     if (pattern.test(title) && !keywords.includes(label)) keywords.push(label);
                   });
+
+                  // Fallback: extract meaningful nouns from title if still < 5 keywords
+                  if (keywords.length < 5) {
+                    const titleFallbacks: [RegExp, string][] = [
+                      [/조성물/, '조성물'], [/제조/, '제조방법'], [/장치/, '장치개발'], [/시스템/, '시스템'],
+                      [/방법/, '공정기술'], [/센서/, '센서기술'], [/측정/, '측정분석'], [/검출/, '검출기술'],
+                      [/추출/, '추출정제'], [/코팅/, '코팅기술'], [/필름/, '필름소재'], [/복합/, '복합소재'],
+                      [/건조/, '건조기술'], [/가공/, '가공기술'], [/배양/, '배양기술'], [/정제/, '정제기술'],
+                      [/분석/, '분석기술'], [/진단/, '진단기술'], [/모니터링/, '모니터링'], [/제어/, '제어기술'],
+                      [/로봇/, '로봇기술'], [/영상|이미지/, '영상처리'], [/데이터/, '데이터분석'],
+                      [/네트워크|통신/, '통신기술'], [/플랫폼/, '플랫폼'], [/알고리즘/, '알고리즘'],
+                      [/합성/, '합성기술'], [/분리/, '분리기술'], [/저장/, '저장기술'], [/포장/, '포장기술'],
+                      [/살충|방제/, '병해충방제'], [/비료|시비/, '시비기술'], [/관개|관수/, '관수기술'],
+                      [/종자|씨앗/, '종자개발'], [/유전|게놈/, '유전공학'], [/효소/, '효소기술'],
+                    ];
+                    titleFallbacks.forEach(([pattern, label]) => {
+                      if (keywords.length < 7 && pattern.test(title) && !keywords.includes(label)) keywords.push(label);
+                    });
+                  }
                 }
+
+                // Additional fallback from IPC codes themselves if still < 5
+                if (keywords.length < 5 && patentData.classifications) {
+                  const genericIpcMap: Record<string, string> = {
+                    'A': '생활필수품', 'B': '처리조작', 'C': '화학·야금', 'D': '섬유·지류',
+                    'E': '건축', 'F': '기계공학', 'G': '물리학', 'H': '전기',
+                  };
+                  patentData.classifications.forEach(cls => {
+                    const section = cls.trim().charAt(0);
+                    const label = genericIpcMap[section];
+                    if (label && !keywords.includes(label) && keywords.length < 7) keywords.push(label);
+                  });
+                }
+
                 const unique = [...new Set(keywords)].slice(0, 7);
                 if (unique.length === 0) return null;
                 return (
