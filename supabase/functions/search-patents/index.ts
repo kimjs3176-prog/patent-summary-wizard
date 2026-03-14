@@ -102,14 +102,14 @@ serve(async (req) => {
 
     for (const org of AGRI_ORGANIZATIONS) {
       try {
-        // KIPRIS Plus API - 전체검색 (getAdvancedSearch)
+        // KIPRIS Plus API - 전체검색 (getAdvancedSearch) - 제목+초록 동시 검색
         const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
         searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
         searchUrl.searchParams.set("inventionTitle", searchKeyword);
         searchUrl.searchParams.set("applicant", org.id); // 출원인 코드로 필터링
         searchUrl.searchParams.set("astrtCont", "");
         searchUrl.searchParams.set("pageNo", "1");
-        searchUrl.searchParams.set("numOfRows", "20");
+        searchUrl.searchParams.set("numOfRows", "30");
         searchUrl.searchParams.set("sortSpec", "AD");
         searchUrl.searchParams.set("descSort", "true");
         searchUrl.searchParams.set("patent", "true");
