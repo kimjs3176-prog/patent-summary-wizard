@@ -1,6 +1,6 @@
 import { FileText, GitCompareArrows, Heart, RotateCcw } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { PatentInput } from "@/components/PatentInput";
@@ -9,7 +9,6 @@ import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
 import { SearchHistory } from "@/components/SearchHistory";
 import { Button } from "@/components/ui/button";
-import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { FeaturedPatents } from "@/components/FeaturedPatents";
 import { TechTransferGuide } from "@/components/TechTransferGuide";
