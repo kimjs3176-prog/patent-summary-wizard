@@ -492,10 +492,10 @@ export function PatentSummary({
               <h2 className="text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-tight">{patentData.titleKo}</h2>
             )}
             
-            {/* 2-column layout: Meta info + Keywords side by side */}
-            <div className="flex flex-col md:flex-row gap-3">
-              {/* Left: Meta info strip */}
-              <div className="flex-1 min-w-0 px-3.5 py-2.5 rounded-lg flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]" style={{ background: 'hsl(220 14% 96%)', border: '1px solid hsl(220 13% 91%)' }}>
+            {/* Stacked layout: Meta info (top) + Keywords (bottom) */}
+            <div className="flex flex-col gap-3">
+              {/* Top: Meta info strip */}
+              <div className="px-3.5 py-2.5 rounded-lg flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]" style={{ background: 'hsl(220 14% 96%)', border: '1px solid hsl(220 13% 91%)' }}>
                 {patentData.assignee && (
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
