@@ -74,8 +74,6 @@ const Index = () => {
   };
 
   const handleHistorySelect = (item: SearchHistoryItem) => {
-    setKeywordResults([]);
-    setSearchedKeyword("");
     updateUrl(item.patentNumber);
     loadFromHistory(item);
   };
