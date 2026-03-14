@@ -362,10 +362,22 @@ serve(async (req) => {
         const detailRes = await fetchWithRetry(detailUrl.toString());
         const detailText = await detailRes.text();
 
-        console.log("Detail API response preview (first 2000):", detailText.substring(0, 2000));
-        console.log("Detail API response preview (2000-4000):", detailText.substring(2000, 4000));
-        console.log("Detail API response preview (4000-6000):", detailText.substring(4000, 6000));
-        console.log("Detail API response preview (6000-8000):", detailText.substring(6000, 8000));
+        // 발명자 관련 태그 탐색을 위한 디버그 로그
+        const hasInventorInfo = detailText.includes("inventorInfo");
+        const hasApplicantInfo = detailText.includes("applicantInfo");
+        const hasInventorName = detailText.includes("inventorName");
+        console.log("Detail API contains: inventorInfo=", hasInventorInfo, "applicantInfo=", hasApplicantInfo, "inventorName=", hasInventorName);
+        console.log("Detail API total length:", detailText.length);
+        
+        // 발명자 관련 부분만 추출해서 로그
+        const invIdx = detailText.indexOf("inventor");
+        if (invIdx >= 0) {
+          console.log("Inventor section:", detailText.substring(Math.max(0, invIdx - 50), invIdx + 500));
+        }
+        const appIdx = detailText.indexOf("applicantInfo");
+        if (appIdx >= 0) {
+          console.log("Applicant section:", detailText.substring(Math.max(0, appIdx - 50), appIdx + 500));
+        }
 
         if (detailRes.ok && !detailText.includes("<successYN>N</successYN>")) {
           // 청구항 태그는 응답 포맷에 따라 claim / claimText 등으로 다를 수 있어 폭넓게 파싱
