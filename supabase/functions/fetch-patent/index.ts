@@ -362,22 +362,6 @@ serve(async (req) => {
         const detailRes = await fetchWithRetry(detailUrl.toString());
         const detailText = await detailRes.text();
 
-        // 발명자 관련 태그 탐색을 위한 디버그 로그
-        const hasInventorInfo = detailText.includes("inventorInfo");
-        const hasApplicantInfo = detailText.includes("applicantInfo");
-        const hasInventorName = detailText.includes("inventorName");
-        console.log("Detail API contains: inventorInfo=", hasInventorInfo, "applicantInfo=", hasApplicantInfo, "inventorName=", hasInventorName);
-        console.log("Detail API total length:", detailText.length);
-        
-        // 발명자 관련 부분만 추출해서 로그
-        const invIdx = detailText.indexOf("inventor");
-        if (invIdx >= 0) {
-          console.log("Inventor section:", detailText.substring(Math.max(0, invIdx - 50), invIdx + 500));
-        }
-        const appIdx = detailText.indexOf("applicantInfo");
-        if (appIdx >= 0) {
-          console.log("Applicant section:", detailText.substring(Math.max(0, appIdx - 50), appIdx + 500));
-        }
 
         if (detailRes.ok && !detailText.includes("<successYN>N</successYN>")) {
           // 청구항 태그는 응답 포맷에 따라 claim / claimText 등으로 다를 수 있어 폭넓게 파싱
@@ -403,19 +387,22 @@ serve(async (req) => {
           }
 
           if (claims.length > 0) {
-            patentData.claims = claims.slice(0, 50); // 과도한 길이 방지
+            patentData.claims = claims.slice(0, 50);
           }
 
-          // 발명자 정보 보강: 상세 API에서 발명자 정보 추출 시도
-          const detailInventorName = getFieldFromXml(detailText, "inventorName");
-          console.log("Detail API inventorName field:", detailInventorName || "(not found)");
-          if (detailInventorName) {
-            const detailInventors = detailInventorName
-              .split(/[,|;]/)
-              .map((n: string) => n.trim())
-              .filter((n: string) => n.length > 0);
-            if (detailInventors.length > 0) {
-              patentData.inventors = detailInventors;
+          // 발명자 정보: inventorInfoArray > inventorInfo > name 구조에서 추출
+          const inventorMatches = [...detailText.matchAll(/<inventorInfo>([\s\S]*?)<\/inventorInfo>/g)];
+          if (inventorMatches.length > 0) {
+            const inventors: string[] = [];
+            for (const m of inventorMatches) {
+              const nameMatch = m[1].match(/<name>([^<]+)<\/name>/);
+              if (nameMatch && nameMatch[1].trim()) {
+                inventors.push(nameMatch[1].trim());
+              }
+            }
+            if (inventors.length > 0) {
+              patentData.inventors = inventors;
+              console.log("Inventors extracted from detail API:", inventors.join(", "));
             }
           }
 
