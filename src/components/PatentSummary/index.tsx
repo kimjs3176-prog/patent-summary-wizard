@@ -509,7 +509,11 @@ export function PatentSummary({
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.inventors || "발명자"}</span>
-                      <span className="text-foreground font-medium">{patentData.inventors.join(', ')}</span>
+                      <span className="text-foreground font-medium">
+                        {patentData.inventors.length >= 5
+                          ? `${patentData.inventors.slice(0, 4).join(', ')} 등 ${patentData.inventors.length}명`
+                          : patentData.inventors.join(', ')}
+                      </span>
                     </span>
                     {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
                       <span className="text-muted-foreground/30 text-xs">|</span>
