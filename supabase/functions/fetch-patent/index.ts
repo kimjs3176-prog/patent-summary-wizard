@@ -362,6 +362,8 @@ serve(async (req) => {
         const detailRes = await fetchWithRetry(detailUrl.toString());
         const detailText = await detailRes.text();
 
+        console.log("Detail API response preview:", detailText.substring(0, 2000));
+
         if (detailRes.ok && !detailText.includes("<successYN>N</successYN>")) {
           // 청구항 태그는 응답 포맷에 따라 claim / claimText 등으로 다를 수 있어 폭넓게 파싱
           const claimCandidates = [
