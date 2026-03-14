@@ -82,9 +82,8 @@ const Index = () => {
     loadFromHistory(item);
   };
 
-  const handleKeywordSearch = (results: KeywordSearchResult[], keyword: string) => {
-    setKeywordResults(results);
-    setSearchedKeyword(keyword);
+  const handleKeywordSearch = (_results: KeywordSearchResult[], keyword: string) => {
+    navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
   };
 
   const handleKeywordTagClick = async (keyword: string) => {
