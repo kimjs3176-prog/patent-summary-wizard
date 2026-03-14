@@ -389,6 +389,18 @@ serve(async (req) => {
             patentData.claims = claims.slice(0, 50); // 과도한 길이 방지
           }
 
+          // 발명자 정보 보강: 상세 API에서 더 정확한 발명자 정보 추출
+          const detailInventorName = getFieldFromXml(detailText, "inventorName");
+          if (detailInventorName) {
+            const detailInventors = detailInventorName
+              .split(/[,|;]/)
+              .map((n: string) => n.trim())
+              .filter((n: string) => n.length > 0);
+            if (detailInventors.length > 0) {
+              patentData.inventors = detailInventors;
+            }
+          }
+
           // 상세 응답에서 모든 도면 수집
           const detailItems = [...detailText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
           console.log("Detail API items found:", detailItems.length);
