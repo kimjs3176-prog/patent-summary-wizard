@@ -1,6 +1,6 @@
 import { FileText, GitCompareArrows, Heart, RotateCcw } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { PatentInput } from "@/components/PatentInput";
@@ -9,7 +9,6 @@ import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
 import { SearchHistory } from "@/components/SearchHistory";
 import { Button } from "@/components/ui/button";
-import { KeywordSearchResults } from "@/components/KeywordSearchResults";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { FeaturedPatents } from "@/components/FeaturedPatents";
 import { TechTransferGuide } from "@/components/TechTransferGuide";
@@ -21,6 +20,7 @@ import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useState, useEffect, useRef, useMemo } from "react";
 
 const Index = () => {
+  const navigate = useNavigate();
   const {
     isLoading, isFetching, summary, currentPatent, patentData,
     relatedPatents, generateSummary,
@@ -34,8 +34,8 @@ const Index = () => {
     try {return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {};} catch {return {};}
   }, [settings.homepage_visible_sections]);
 
-  const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
-  const [searchedKeyword, setSearchedKeyword] = useState("");
+  // keyword state kept for compatibility but results now shown on /search page
+  const [keywordResults] = useState<KeywordSearchResult[]>([]);
 
   const initialLoadDone = useRef(false);
 
@@ -56,8 +56,6 @@ const Index = () => {
   };
 
   const handleSubmitInternal = async (patentNumber: string) => {
-    setKeywordResults([]);
-    setSearchedKeyword("");
     updateUrl(patentNumber);
     const result = await generateSummary(patentNumber);
     if (result && result.patentData) {
@@ -76,64 +74,18 @@ const Index = () => {
   };
 
   const handleHistorySelect = (item: SearchHistoryItem) => {
-    setKeywordResults([]);
-    setSearchedKeyword("");
     updateUrl(item.patentNumber);
     loadFromHistory(item);
   };
 
-  const handleKeywordSearch = (results: KeywordSearchResult[], keyword: string) => {
-    setKeywordResults(results);
-    setSearchedKeyword(keyword);
+  const handleKeywordSearch = (_results: KeywordSearchResult[], keyword: string) => {
+    navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
   };
 
-  const handleKeywordTagClick = async (keyword: string) => {
-    // Reset summary view first so keyword results page is shown
-    reset();
-    updateUrl();
-    
-    try {
-      toast.info(`"${keyword}" 관련 특허를 검색 중...`);
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-patents`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ keyword }),
-        }
-      );
-      const result = await response.json();
-      if (result.success && result.patents) {
-        handleKeywordSearch(result.patents, keyword);
-        // Scroll to keyword results section after a brief delay for render
-        setTimeout(() => {
-          const resultsSection = document.querySelector('[data-keyword-results]');
-          if (resultsSection) {
-            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 100);
-        if (result.patents.length === 0) toast.info("검색 결과가 없습니다.");
-      } else {
-        toast.error(result.error || "검색에 실패했습니다.");
-      }
-    } catch {
-      toast.error("검색 중 오류가 발생했습니다.");
-    }
+  const handleKeywordTagClick = (keyword: string) => {
+    navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
   };
 
-  const handleKeywordPatentSelect = (patentNumber: string) => {
-    setKeywordResults([]);
-    setSearchedKeyword("");
-    handleSubmit(patentNumber);
-  };
-
-  const handleClearKeywordResults = () => {
-    setKeywordResults([]);
-    setSearchedKeyword("");
-  };
 
 
 
@@ -236,12 +188,6 @@ const Index = () => {
             }
             </section>
 
-            {/* Keyword Results */}
-            {keywordResults.length > 0 &&
-          <section data-keyword-results className="mb-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-                <KeywordSearchResults results={keywordResults} keyword={searchedKeyword} onPatentSelect={handleKeywordPatentSelect} onClose={handleClearKeywordResults} isLoading={isLoading} />
-              </section>
-          }
 
             {homepageVisible.featuredPatents !== false &&
           <FeaturedPatents
