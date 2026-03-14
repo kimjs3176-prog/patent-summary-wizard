@@ -487,38 +487,51 @@ export function PdfGenerator({
       // ██  DISCLAIMER — Refined Alert Bar       ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       if (cfg.show_disclaimer) {
-        checkNewPage(18);
+        checkNewPage(22);
         yPosition += 10;
-        const discH = 11;
+
+        // Dynamically size the disclaimer box based on text length
+        pdf.setFontSize(8.5);
+        const disc = cfg.disclaimer_text;
+        const discMaxW = contentWidth - 20;
+        const discLines = pdf.splitTextToSize(disc, discMaxW);
+        const discLineH = 4.2;
+        const discPadY = 5;
+        const discH = Math.max(14, discLines.length * discLineH + discPadY * 2);
         const dY = yPosition - 3;
 
-        // Warm amber background with fine border
-        pdf.setFillColor(...THEME.goldBg);
-        pdf.setDrawColor(...THEME.goldLight);
-        pdf.setLineWidth(0.3);
-        pdf.roundedRect(margin, dY, contentWidth, discH, 2, 2, "FD");
+        // Clean white background with visible border
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(...THEME.border);
+        pdf.setLineWidth(0.4);
+        pdf.roundedRect(margin, dY, contentWidth, discH, 2.5, 2.5, "FD");
 
-        // Left gold accent bar
-        pdf.setFillColor(...THEME.gold);
-        pdf.rect(margin, dY, 2.5, discH, "F");
+        // Left accent bar — uses header accent color
+        const disclaimerAccent = hexToRgb(cfg.header_bg_color);
+        pdf.setFillColor(...disclaimerAccent);
+        pdf.rect(margin, dY, 3, discH, "F");
 
-        // Warning symbol — clean triangle
-        const iconX = margin + 8;
-        const iconCY = dY + discH / 2;
+        // "참고" label — bold, dark
         pdf.setFontSize(8);
-        pdf.setTextColor(...THEME.amber);
-        const exclFontH = 8 * 0.352778;
-        pdf.text("⚠", iconX, iconCY + exclFontH * 0.35);
+        pdf.setTextColor(...THEME.navy);
+        const labelX = margin + 8;
+        const labelY = dY + discPadY + 1;
+        pdf.text("참고", labelX, labelY);
+        pdf.text("참고", labelX + 0.12, labelY); // faux bold
 
-        // Disclaimer text
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(120, 90, 20);
-        const disc = cfg.disclaimer_text;
-        const discLines = pdf.splitTextToSize(disc, contentWidth - 18);
-        const discTextH = discLines.length * 3.8;
-        const discTextStartY = dY + (discH - discTextH) / 2 + 3.8 * 0.75;
-        for (let i = 0; i < discLines.length; i++) {
-          pdf.text(discLines[i], margin + 14, discTextStartY + i * 3.8);
+        // Thin separator after label
+        const labelW = pdf.getTextWidth("참고");
+        pdf.setDrawColor(...THEME.borderLight);
+        pdf.setLineWidth(0.2);
+        pdf.line(labelX + labelW + 3, labelY - 1.5, labelX + labelW + 3, labelY + 1.5);
+
+        // Disclaimer text — larger, darker, more readable
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(...THEME.textSecondary);
+        const discTextStartX = labelX + labelW + 7;
+        const discLinesAdjusted = pdf.splitTextToSize(disc, contentWidth - (discTextStartX - margin) - 6);
+        for (let i = 0; i < discLinesAdjusted.length; i++) {
+          pdf.text(discLinesAdjusted[i], discTextStartX, labelY + i * discLineH);
         }
         yPosition = dY + discH + 4;
       }
