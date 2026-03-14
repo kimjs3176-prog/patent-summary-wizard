@@ -362,6 +362,7 @@ serve(async (req) => {
         const detailRes = await fetchWithRetry(detailUrl.toString());
         const detailText = await detailRes.text();
 
+
         if (detailRes.ok && !detailText.includes("<successYN>N</successYN>")) {
           // 청구항 태그는 응답 포맷에 따라 claim / claimText 등으로 다를 수 있어 폭넓게 파싱
           const claimCandidates = [
@@ -386,18 +387,22 @@ serve(async (req) => {
           }
 
           if (claims.length > 0) {
-            patentData.claims = claims.slice(0, 50); // 과도한 길이 방지
+            patentData.claims = claims.slice(0, 50);
           }
 
-          // 발명자 정보 보강: 상세 API에서 더 정확한 발명자 정보 추출
-          const detailInventorName = getFieldFromXml(detailText, "inventorName");
-          if (detailInventorName) {
-            const detailInventors = detailInventorName
-              .split(/[,|;]/)
-              .map((n: string) => n.trim())
-              .filter((n: string) => n.length > 0);
-            if (detailInventors.length > 0) {
-              patentData.inventors = detailInventors;
+          // 발명자 정보: inventorInfoArray > inventorInfo > name 구조에서 추출
+          const inventorMatches = [...detailText.matchAll(/<inventorInfo>([\s\S]*?)<\/inventorInfo>/g)];
+          if (inventorMatches.length > 0) {
+            const inventors: string[] = [];
+            for (const m of inventorMatches) {
+              const nameMatch = m[1].match(/<name>([^<]+)<\/name>/);
+              if (nameMatch && nameMatch[1].trim()) {
+                inventors.push(nameMatch[1].trim());
+              }
+            }
+            if (inventors.length > 0) {
+              patentData.inventors = inventors;
+              console.log("Inventors extracted from detail API:", inventors.join(", "));
             }
           }
 
@@ -436,6 +441,7 @@ serve(async (req) => {
       } catch (detailErr) {
         console.error("Error fetching patent detail (claims):", detailErr);
       }
+
 
       // 3차: 도면이 1개 이하인 경우, 출원번호 기반 추가 검색으로 보충
       if ((patentData.images?.length || 0) < 2 && applicationNumber) {
