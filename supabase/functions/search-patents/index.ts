@@ -97,115 +97,137 @@ serve(async (req) => {
 
     console.log("Processed search keyword:", searchKeyword);
 
-    // 농업 기관별로 검색 수행
+    // 특허 파싱 헬퍼
+    const parsePatentsFromXml = (searchText: string, orgName: string): KeywordSearchResult[] => {
+      const patents: KeywordSearchResult[] = [];
+      let itemMatches = [...searchText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+      if (itemMatches.length === 0) {
+        itemMatches = [...searchText.matchAll(/<PatentUtilityInfo>([\s\S]*?)<\/PatentUtilityInfo>/g)];
+      }
+
+      for (const match of itemMatches) {
+        const itemXml = match[1];
+        const getField = (field: string): string | undefined => {
+          const cdataMatch = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`, 'i'));
+          if (cdataMatch) return cdataMatch[1].trim();
+          const simpleMatch = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i'));
+          return simpleMatch ? simpleMatch[1].trim() : undefined;
+        };
+
+        const applicationNumber = getField("applicationNumber") || "";
+        const registrationNumber = getField("registerNumber") || getField("registrationNumber") || "";
+        const inventionTitle = getField("inventionTitle") || "";
+        const applicationDate = getField("applicationDate") || "";
+        const openDate = getField("openDate") || "";
+        const publicationDate = getField("publicationDate") || "";
+        const registerDate = getField("registerDate") || "";
+        const applicant = getField("applicant") || "";
+        const astrtCont = getField("astrtCont") || "";
+        const drawing = getField("bigDrawing") || getField("drawing") || "";
+
+        let patentId = "";
+        let displayNumber = "";
+
+        if (registrationNumber && registrationNumber.length >= 7) {
+          const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
+          if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
+            displayNumber = `10-${cleanNum.slice(2, 9)}`;
+          } else if (cleanNum.length >= 7) {
+            displayNumber = `10-${cleanNum.slice(-7)}`;
+          }
+          patentId = displayNumber;
+        } else if (applicationNumber && applicationNumber.length >= 7) {
+          const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
+          if (cleanNum.length === 13 && cleanNum.startsWith("10")) {
+            displayNumber = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
+          } else if (cleanNum.length > 13 && cleanNum.startsWith("10")) {
+            displayNumber = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6, 13)}`;
+          } else if (cleanNum.length >= 11) {
+            displayNumber = `10-${cleanNum.slice(0, 4)}-${cleanNum.slice(4, 11)}`;
+          } else {
+            displayNumber = `10-${cleanNum}`;
+          }
+          patentId = displayNumber;
+        }
+
+        if (!patentId || !inventionTitle) continue;
+
+        patents.push({
+          patentId,
+          title: inventionTitle,
+          titleKo: inventionTitle,
+          applicant,
+          assignee: applicant,
+          applicationDate: applicationDate ? formatDate(applicationDate) : undefined,
+          publicationDate: openDate ? formatDate(openDate) : (publicationDate ? formatDate(publicationDate) : (registerDate ? formatDate(registerDate) : undefined)),
+          applicationNumber,
+          registrationNumber,
+          snippet: astrtCont ? astrtCont.substring(0, 200) + (astrtCont.length > 200 ? "..." : "") : undefined,
+          thumbnail: drawing || undefined,
+          organizationName: orgName,
+        });
+      }
+      return patents;
+    };
+
+    // 농업 기관별로 검색 수행 (제목 검색 + 초록 검색 병렬)
     const allPatents: KeywordSearchResult[] = [];
 
     for (const org of AGRI_ORGANIZATIONS) {
       try {
-        // KIPRIS Plus API - 전체검색 (getAdvancedSearch) - 제목+초록 동시 검색
-        const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-        searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-        searchUrl.searchParams.set("inventionTitle", searchKeyword);
-        searchUrl.searchParams.set("applicant", org.id); // 출원인 코드로 필터링
-        searchUrl.searchParams.set("astrtCont", "");
-        searchUrl.searchParams.set("pageNo", "1");
-        searchUrl.searchParams.set("numOfRows", "30");
-        searchUrl.searchParams.set("sortSpec", "AD");
-        searchUrl.searchParams.set("descSort", "true");
-        searchUrl.searchParams.set("patent", "true");
-        searchUrl.searchParams.set("utility", "true");
+        // 제목 검색
+        const titleUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+        titleUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+        titleUrl.searchParams.set("inventionTitle", searchKeyword);
+        titleUrl.searchParams.set("applicant", org.id);
+        titleUrl.searchParams.set("astrtCont", "");
+        titleUrl.searchParams.set("pageNo", "1");
+        titleUrl.searchParams.set("numOfRows", "30");
+        titleUrl.searchParams.set("sortSpec", "AD");
+        titleUrl.searchParams.set("descSort", "true");
+        titleUrl.searchParams.set("patent", "true");
+        titleUrl.searchParams.set("utility", "true");
 
-        console.log(`Searching patents for org: ${org.name} (${org.id})`);
+        // 초록 검색
+        const abstractUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+        abstractUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+        abstractUrl.searchParams.set("inventionTitle", "");
+        abstractUrl.searchParams.set("applicant", org.id);
+        abstractUrl.searchParams.set("astrtCont", searchKeyword);
+        abstractUrl.searchParams.set("pageNo", "1");
+        abstractUrl.searchParams.set("numOfRows", "30");
+        abstractUrl.searchParams.set("sortSpec", "AD");
+        abstractUrl.searchParams.set("descSort", "true");
+        abstractUrl.searchParams.set("patent", "true");
+        abstractUrl.searchParams.set("utility", "true");
 
-        const searchResponse = await fetch(searchUrl.toString());
-        const searchText = await searchResponse.text();
-        
-        if (!searchResponse.ok || searchText.includes("<successYN>N</successYN>")) {
-          console.log(`No results or error for org: ${org.name}`);
-          continue;
+        console.log(`Searching patents for org: ${org.name} (${org.id}) - title + abstract`);
+
+        const [titleRes, abstractRes] = await Promise.all([
+          fetch(titleUrl.toString()),
+          fetch(abstractUrl.toString()),
+        ]);
+
+        const [titleText, abstractText] = await Promise.all([
+          titleRes.text(),
+          abstractRes.text(),
+        ]);
+
+        let orgCount = 0;
+
+        if (titleRes.ok && !titleText.includes("<successYN>N</successYN>")) {
+          const patents = parsePatentsFromXml(titleText, org.name);
+          allPatents.push(...patents);
+          orgCount += patents.length;
         }
 
-        // Parse XML response
-        let itemMatches = [...searchText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-        if (itemMatches.length === 0) {
-          itemMatches = [...searchText.matchAll(/<PatentUtilityInfo>([\s\S]*?)<\/PatentUtilityInfo>/g)];
+        if (abstractRes.ok && !abstractText.includes("<successYN>N</successYN>")) {
+          const patents = parsePatentsFromXml(abstractText, org.name);
+          allPatents.push(...patents);
+          orgCount += patents.length;
         }
-        
-        console.log(`Found ${itemMatches.length} patents for ${org.name}`);
-        
-        for (const match of itemMatches) {
-          const itemXml = match[1];
-          
-          const getField = (field: string): string | undefined => {
-            const cdataMatch = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`, 'i'));
-            if (cdataMatch) return cdataMatch[1].trim();
-            const simpleMatch = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i'));
-            return simpleMatch ? simpleMatch[1].trim() : undefined;
-          };
-          
-          const applicationNumber = getField("applicationNumber") || "";
-          const registrationNumber = getField("registerNumber") || getField("registrationNumber") || "";
-          const inventionTitle = getField("inventionTitle") || "";
-          const applicationDate = getField("applicationDate") || "";
-          const openDate = getField("openDate") || "";
-          const publicationDate = getField("publicationDate") || "";
-          const registerDate = getField("registerDate") || "";
-          const applicant = getField("applicant") || "";
-          const astrtCont = getField("astrtCont") || "";
-          const drawing = getField("bigDrawing") || getField("drawing") || "";
-          
-          // 특허 ID 생성 (등록번호 우선, 없으면 출원번호)
-          let patentId = "";
-          let displayNumber = "";
-          
-          if (registrationNumber && registrationNumber.length >= 7) {
-            const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
-            if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
-              const regNum = cleanNum.slice(2, 9);
-              displayNumber = `10-${regNum}`;
-            } else if (cleanNum.length >= 7) {
-              displayNumber = `10-${cleanNum.slice(-7)}`;
-            }
-            patentId = displayNumber;
-          } else if (applicationNumber && applicationNumber.length >= 7) {
-            const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
-            // Standard Korean application number: 10 + 4-digit year + 7-digit serial = 13 digits
-            if (cleanNum.length === 13 && cleanNum.startsWith("10")) {
-              const year = cleanNum.slice(2, 6);
-              const serial = cleanNum.slice(6); // 7 digits
-              displayNumber = `10-${year}-${serial}`;
-            } else if (cleanNum.length > 13 && cleanNum.startsWith("10")) {
-              // Truncate to standard 13-digit format
-              const year = cleanNum.slice(2, 6);
-              const serial = cleanNum.slice(6, 13);
-              displayNumber = `10-${year}-${serial}`;
-            } else if (cleanNum.length >= 11) {
-              const year = cleanNum.slice(0, 4);
-              const serial = cleanNum.slice(4, 11);
-              displayNumber = `10-${year}-${serial}`;
-            } else {
-              displayNumber = `10-${cleanNum}`;
-            }
-            patentId = displayNumber;
-          }
-          
-          if (!patentId || !inventionTitle) continue;
-          
-          allPatents.push({
-            patentId,
-            title: inventionTitle,
-            titleKo: inventionTitle,
-            applicant: applicant,
-            assignee: applicant,
-            applicationDate: applicationDate ? formatDate(applicationDate) : undefined,
-            publicationDate: openDate ? formatDate(openDate) : (publicationDate ? formatDate(publicationDate) : (registerDate ? formatDate(registerDate) : undefined)),
-            applicationNumber: applicationNumber,
-            registrationNumber: registrationNumber,
-            snippet: astrtCont ? astrtCont.substring(0, 150) + (astrtCont.length > 150 ? "..." : "") : undefined,
-            thumbnail: drawing || undefined,
-            organizationName: org.name,
-          });
-        }
+
+        console.log(`Found ${orgCount} patents for ${org.name} (title+abstract)`);
       } catch (orgError) {
         console.error(`Error searching for org ${org.name}:`, orgError);
         continue;
