@@ -57,6 +57,13 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
           )}
           <p className="text-xs text-muted-foreground">{settings.footer_line1}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{settings.footer_line2}</p>
+          <nav className="mt-3 flex items-center justify-center gap-4 text-[11px] text-muted-foreground" aria-label="푸터 링크">
+            <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">NATI</a>
+            <span className="text-border">|</span>
+            <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">KIPRIS</a>
+            <span className="text-border">|</span>
+            <a href="https://www.rda.go.kr" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">농촌진흥청</a>
+          </nav>
         </div>
       </footer>
     </div>

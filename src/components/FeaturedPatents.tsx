@@ -187,7 +187,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <div className="flex items-center gap-2">
                 {patent.transfer_status && (
-                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 border-emerald-300 text-emerald-600 dark:text-emerald-400">
+                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 border-chart-3/40 text-chart-3">
                     {patent.transfer_status}
                   </Badge>
                 )}
