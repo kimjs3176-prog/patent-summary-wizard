@@ -34,8 +34,8 @@ const Index = () => {
     try {return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {};} catch {return {};}
   }, [settings.homepage_visible_sections]);
 
-  const [keywordResults, setKeywordResults] = useState<KeywordSearchResult[]>([]);
-  const [searchedKeyword, setSearchedKeyword] = useState("");
+  // keyword state kept for compatibility but results now shown on /search page
+  const [keywordResults] = useState<KeywordSearchResult[]>([]);
 
   const initialLoadDone = useRef(false);
 
