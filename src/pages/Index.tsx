@@ -188,12 +188,6 @@ const Index = () => {
             }
             </section>
 
-            {/* Keyword Results */}
-            {keywordResults.length > 0 &&
-          <section data-keyword-results className="mb-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-                <KeywordSearchResults results={keywordResults} keyword={searchedKeyword} onPatentSelect={handleKeywordPatentSelect} onClose={handleClearKeywordResults} isLoading={isLoading} />
-              </section>
-          }
 
             {homepageVisible.featuredPatents !== false &&
           <FeaturedPatents
