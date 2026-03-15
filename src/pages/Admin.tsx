@@ -91,6 +91,33 @@ const Admin = () => {
   const [cachePage, setCachePage] = useState(0);
   const [selectedCacheIds, setSelectedCacheIds] = useState<Set<string>>(new Set());
 
+  // Stats dashboard state
+  interface UsageStats {
+    totalSummaries: number;
+    totalScores: number;
+    totalSearches: number;
+    totalDataCache: number;
+    recentSummaries: { date: string; count: number }[];
+    recentSearches: { date: string; count: number }[];
+    topSearched: { patent_number: string; patent_title: string | null; search_count: number }[];
+    currentModel: string;
+  }
+  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const loadUsageStats = async () => {
+    setStatsLoading(true);
+    try {
+      const result = await apiCall("usage-stats");
+      if (result.success) {
+        setUsageStats(result.stats);
+      }
+    } catch {
+      toast.error("통계 로딩 실패");
+    }
+    setStatsLoading(false);
+  };
+
   // Homepage section visibility
   const DEFAULT_HOMEPAGE_SECTIONS: Record<string, boolean> = {
     featuredPatents: true,
