@@ -127,12 +127,13 @@ serve(async (req) => {
     // Read custom prompt additions and max tokens from site_settings
     let customPromptExtra = "";
     let maxTokens = 3000;
+    let aiModel = "google/gemini-2.5-flash";
     try {
       const supabase = getSupabaseClient();
       const { data: settings } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens"]);
+        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens", "ai_model"]);
       if (settings) {
         for (const row of settings) {
           if (row.key === "summary_ai_prompt_extra" && row.value) {
@@ -143,6 +144,9 @@ serve(async (req) => {
             if (!isNaN(parsed) && parsed >= 500 && parsed <= 8000) {
               maxTokens = parsed;
             }
+          }
+          if (row.key === "ai_model" && row.value) {
+            aiModel = row.value;
           }
         }
       }
@@ -185,7 +189,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: aiModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },

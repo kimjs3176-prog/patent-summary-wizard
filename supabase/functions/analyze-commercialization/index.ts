@@ -157,7 +157,19 @@ TRL(1-9): 개념특허→2~3, 실험데이터→4~5, 시제품→5~6, 상용→7
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"80~100자 근거","analysis":"120~160자 종합평가","technologyReason":"60~80자 상세근거","marketReason":"60~80자 상세근거","businessReason":"60~80자 상세근거"}`;
 
-    const scoreModel = isDetailedScore ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite";
+    // Read AI model from settings
+    let configuredModel = "google/gemini-2.5-flash";
+    try {
+      const supabase2 = getSupabaseClient();
+      const { data: modelSetting } = await supabase2
+        .from("site_settings")
+        .select("value")
+        .eq("key", "ai_model")
+        .maybeSingle();
+      if (modelSetting?.value) configuredModel = modelSetting.value;
+    } catch { /* use default */ }
+
+    const scoreModel = isDetailedScore ? configuredModel : (configuredModel.includes("lite") ? configuredModel : configuredModel.replace("-pro", "-flash-lite").replace("-flash", "-flash-lite").replace("-lite-lite", "-lite"));
     const scoreMaxTokens = isDetailedScore ? 900 : 600;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
