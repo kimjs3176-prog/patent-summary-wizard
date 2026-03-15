@@ -148,6 +148,7 @@ const Admin = () => {
   const [isSavingSummarySettings, setIsSavingSummarySettings] = useState(false);
   const [newSectionKey, setNewSectionKey] = useState("");
   const [summaryMaxTokens, setSummaryMaxTokens] = useState(3000);
+  const [aiModel, setAiModel] = useState("google/gemini-2.5-flash");
   const [printSections, setPrintSections] = useState<Record<string, boolean>>(DEFAULT_PRINT_SECTIONS);
   const [isSavingPrintSettings, setIsSavingPrintSettings] = useState(false);
   const [newAdminPassword, setNewAdminPassword] = useState("");
