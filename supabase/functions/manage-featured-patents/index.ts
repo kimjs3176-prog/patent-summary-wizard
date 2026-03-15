@@ -49,7 +49,7 @@ serve(async (req) => {
       );
     }
 
-    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password"];
+    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats"];
     if (!action || !validActions.includes(action)) {
       return new Response(
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
@@ -328,6 +328,79 @@ serve(async (req) => {
       if (error) throw error;
       return new Response(
         JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== Usage Stats ==========
+    if (action === "usage-stats") {
+      // Count totals
+      const [aiRes, scoreRes, dataRes, searchRes] = await Promise.all([
+        supabase.from("patent_ai_cache").select("id", { count: "exact", head: true }),
+        supabase.from("patent_score_cache").select("id", { count: "exact", head: true }),
+        supabase.from("patent_data_cache").select("id", { count: "exact", head: true }),
+        supabase.from("patent_search_stats").select("search_count"),
+      ]);
+
+      const totalSearches = (searchRes.data || []).reduce((sum: number, r: { search_count: number }) => sum + r.search_count, 0);
+
+      // Recent 7 days summaries
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const [recentAiRes, recentSearchRes] = await Promise.all([
+        supabase.from("patent_ai_cache").select("created_at").gte("created_at", sevenDaysAgo),
+        supabase.from("patent_search_stats").select("last_searched_at, search_count").gte("last_searched_at", sevenDaysAgo),
+      ]);
+
+      // Group by date
+      const groupByDate = (items: { date: string }[]) => {
+        const map: Record<string, number> = {};
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+          map[`${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getDate().toString().padStart(2, "0")}`] = 0;
+        }
+        for (const item of items) {
+          const d = new Date(item.date);
+          const key = `${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getDate().toString().padStart(2, "0")}`;
+          if (key in map) map[key]++;
+        }
+        return Object.entries(map).map(([date, count]) => ({ date, count }));
+      };
+
+      const recentSummaries = groupByDate(
+        (recentAiRes.data || []).map((r: { created_at: string }) => ({ date: r.created_at }))
+      );
+      const recentSearches = groupByDate(
+        (recentSearchRes.data || []).map((r: { last_searched_at: string }) => ({ date: r.last_searched_at }))
+      );
+
+      // Top searched
+      const { data: topSearched } = await supabase
+        .from("patent_search_stats")
+        .select("patent_number, patent_title, search_count")
+        .order("search_count", { ascending: false })
+        .limit(10);
+
+      // Current model
+      const { data: modelSetting } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "ai_model")
+        .maybeSingle();
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          stats: {
+            totalSummaries: aiRes.count || 0,
+            totalScores: scoreRes.count || 0,
+            totalDataCache: dataRes.count || 0,
+            totalSearches,
+            recentSummaries,
+            recentSearches,
+            topSearched: topSearched || [],
+            currentModel: modelSetting?.value || "google/gemini-2.5-flash",
+          },
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
