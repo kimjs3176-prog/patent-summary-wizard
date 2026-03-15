@@ -92,16 +92,6 @@ const Admin = () => {
   const [selectedCacheIds, setSelectedCacheIds] = useState<Set<string>>(new Set());
 
   // Stats dashboard state
-  interface UsageStats {
-    totalSummaries: number;
-    totalScores: number;
-    totalSearches: number;
-    totalDataCache: number;
-    recentSummaries: { date: string; count: number }[];
-    recentSearches: { date: string; count: number }[];
-    topSearched: { patent_number: string; patent_title: string | null; search_count: number }[];
-    currentModel: string;
-  }
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
 
