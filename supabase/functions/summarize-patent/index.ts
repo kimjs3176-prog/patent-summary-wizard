@@ -127,12 +127,13 @@ serve(async (req) => {
     // Read custom prompt additions and max tokens from site_settings
     let customPromptExtra = "";
     let maxTokens = 3000;
+    let aiModel = "google/gemini-2.5-flash";
     try {
       const supabase = getSupabaseClient();
       const { data: settings } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens"]);
+        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens", "ai_model"]);
       if (settings) {
         for (const row of settings) {
           if (row.key === "summary_ai_prompt_extra" && row.value) {
