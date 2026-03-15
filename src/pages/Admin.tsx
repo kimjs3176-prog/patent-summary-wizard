@@ -1336,6 +1336,148 @@ const Admin = () => {
           <TabsContent value="pdf">
             <PdfLayoutSettings apiCall={apiCall} initialConfig={pdfLayoutConfig} />
           </TabsContent>
+
+          {/* ===== Stats Dashboard Tab ===== */}
+          <TabsContent value="stats">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-sm">AI 사용량 · 통계 대시보드</h2>
+                <Button variant="outline" size="sm" onClick={loadUsageStats} disabled={statsLoading}>
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1 ${statsLoading ? "animate-spin" : ""}`} /> 새로고침
+                </Button>
+              </div>
+
+              {statsLoading && !usageStats ? (
+                <div className="text-center py-16 text-muted-foreground text-sm">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                  통계 로딩 중...
+                </div>
+              ) : usageStats ? (
+                <>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { label: "AI 요약 생성", value: usageStats.totalSummaries, icon: <FileText className="w-4 h-4" />, color: "text-blue-500" },
+                      { label: "사업화 점수 분석", value: usageStats.totalScores, icon: <TrendingUp className="w-4 h-4" />, color: "text-emerald-500" },
+                      { label: "총 검색 횟수", value: usageStats.totalSearches, icon: <Search className="w-4 h-4" />, color: "text-amber-500" },
+                      { label: "KIPRIS 데이터 캐시", value: usageStats.totalDataCache, icon: <Database className="w-4 h-4" />, color: "text-purple-500" },
+                    ].map((stat, i) => (
+                      <Card key={i} className="p-4">
+                        <div className={`flex items-center gap-2 mb-2 ${stat.color}`}>
+                          {stat.icon}
+                          <span className="text-[10px] font-medium uppercase tracking-wider">{stat.label}</span>
+                        </div>
+                        <p className="text-2xl font-bold">{stat.value.toLocaleString()}</p>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Current Model */}
+                  <Card className="p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-medium">현재 AI 모델</span>
+                    </div>
+                    <p className="text-sm font-mono font-semibold">{usageStats.currentModel || "google/gemini-2.5-flash"}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">요약서 탭에서 모델을 변경할 수 있습니다</p>
+                  </Card>
+
+                  {/* Recent Activity Charts */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Card className="p-4">
+                      <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" /> 최근 7일 AI 요약 생성
+                      </h3>
+                      {usageStats.recentSummaries.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {usageStats.recentSummaries.map((d, i) => {
+                            const maxCount = Math.max(...usageStats.recentSummaries.map(s => s.count), 1);
+                            return (
+                              <div key={i} className="flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground w-12 flex-shrink-0">{d.date}</span>
+                                <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                  <div
+                                    className="h-full bg-blue-500/60 rounded transition-all"
+                                    style={{ width: `${(d.count / maxCount) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] font-medium w-6 text-right">{d.count}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                      )}
+                    </Card>
+
+                    <Card className="p-4">
+                      <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" /> 최근 7일 검색 활동
+                      </h3>
+                      {usageStats.recentSearches.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {usageStats.recentSearches.map((d, i) => {
+                            const maxCount = Math.max(...usageStats.recentSearches.map(s => s.count), 1);
+                            return (
+                              <div key={i} className="flex items-center gap-2">
+                                <span className="text-[10px] text-muted-foreground w-12 flex-shrink-0">{d.date}</span>
+                                <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                  <div
+                                    className="h-full bg-amber-500/60 rounded transition-all"
+                                    style={{ width: `${(d.count / maxCount) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] font-medium w-6 text-right">{d.count}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                      )}
+                    </Card>
+                  </div>
+
+                  {/* Top Searched Patents */}
+                  <Card className="p-4">
+                    <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                      <Star className="w-3.5 h-3.5" /> 인기 검색 특허 TOP 10
+                    </h3>
+                    {usageStats.topSearched.length > 0 ? (
+                      <div className="space-y-2">
+                        {usageStats.topSearched.map((item, i) => (
+                          <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/20">
+                            <span className="text-xs font-bold text-muted-foreground w-5 text-center">{i + 1}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-mono truncate">{item.patent_number}</p>
+                              {item.patent_title && (
+                                <p className="text-[10px] text-muted-foreground truncate">{item.patent_title}</p>
+                              )}
+                            </div>
+                            <Badge variant="secondary" className="text-[10px] flex-shrink-0">
+                              {item.search_count}회
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-center py-4">검색 데이터 없음</p>
+                    )}
+                  </Card>
+
+                  <p className="text-[10px] text-muted-foreground">
+                    ※ AI 사용량은 캐시된 분석 결과 기준이며, 실제 API 호출 비용과는 차이가 있을 수 있습니다. 
+                    캐시에서 응답된 요청은 추가 API 비용이 발생하지 않습니다.
+                  </p>
+                </>
+              ) : (
+                <div className="text-center py-16 text-muted-foreground text-sm">
+                  통계 탭을 클릭하면 데이터를 불러옵니다.
+                </div>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
     </div>
