@@ -399,6 +399,7 @@ const Admin = () => {
       summary_card_icons: JSON.stringify(summaryCardIcons),
       summary_info_labels: JSON.stringify(summaryInfoLabels),
       summary_max_tokens: String(summaryMaxTokens),
+      ai_model: aiModel,
       score_settings: JSON.stringify(scoreConfig),
       trl_settings: JSON.stringify(trlConfig),
     };
