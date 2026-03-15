@@ -535,6 +535,9 @@ const Admin = () => {
               <TabsTrigger value="security" className="gap-1.5 text-xs sm:text-sm">
                 <KeyRound className="w-3.5 h-3.5" /> <span className="hidden sm:inline">보안</span><span className="sm:hidden">보안</span>
               </TabsTrigger>
+              <TabsTrigger value="stats" className="gap-1.5 text-xs sm:text-sm" onClick={() => loadUsageStats()}>
+                <BarChart3 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">통계</span><span className="sm:hidden">통계</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
