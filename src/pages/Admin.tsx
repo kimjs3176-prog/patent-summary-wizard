@@ -220,6 +220,9 @@ const Admin = () => {
           const v = parseInt(settingsResult.settings.summary_max_tokens, 10);
           if (!isNaN(v)) setSummaryMaxTokens(v);
         }
+        if (settingsResult.settings?.ai_model) {
+          setAiModel(settingsResult.settings.ai_model);
+        }
         if (settingsResult.settings?.score_settings) {
           try { setScoreConfig({ ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settingsResult.settings.score_settings) }); } catch {}
         }
