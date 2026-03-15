@@ -145,6 +145,9 @@ serve(async (req) => {
               maxTokens = parsed;
             }
           }
+          if (row.key === "ai_model" && row.value) {
+            aiModel = row.value;
+          }
         }
       }
     } catch (e) {
