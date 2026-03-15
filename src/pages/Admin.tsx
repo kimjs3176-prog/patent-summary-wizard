@@ -56,6 +56,17 @@ interface CacheCounts {
   score: number;
 }
 
+interface UsageStats {
+  totalSummaries: number;
+  totalScores: number;
+  totalSearches: number;
+  totalDataCache: number;
+  recentSummaries: { date: string; count: number }[];
+  recentSearches: { date: string; count: number }[];
+  topSearched: { patent_number: string; patent_title: string | null; search_count: number }[];
+  currentModel: string;
+}
+
 const SETTINGS_FIELDS = [
   { key: "header_title", label: "헤더 타이틀", placeholder: "농식품분야 특허 AI 기술요약" },
   { key: "header_subtitle", label: "헤더 서브타이틀", placeholder: "Agri-Food Patent AI Summary" },
