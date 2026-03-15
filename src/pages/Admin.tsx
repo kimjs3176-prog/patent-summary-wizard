@@ -1056,6 +1056,44 @@ const Admin = () => {
                 </div>
               </div>
 
+              {/* AI Model Selection */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">AI 분석 모델 선택</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">특허 요약 및 점수 분석에 사용할 AI 모델을 선택합니다. 모델에 따라 분석 품질과 속도가 달라집니다.</p>
+                <div className="space-y-2">
+                  {[
+                    { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", desc: "균형 잡힌 속도와 품질 (기본값)" },
+                    { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", desc: "최고 품질, 복잡한 분석에 적합 (느림)" },
+                    { value: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", desc: "빠르고 저렴, 간단한 분석에 적합" },
+                    { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview", desc: "차세대 모델 미리보기, 빠른 속도" },
+                    { value: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview", desc: "차세대 추론 모델 미리보기" },
+                    { value: "openai/gpt-5-mini", label: "GPT-5 Mini", desc: "강력한 추론, 비용 효율적" },
+                    { value: "openai/gpt-5", label: "GPT-5", desc: "최고 성능, 높은 비용" },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setAiModel(opt.value)}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        aiModel === opt.value
+                          ? "border-primary bg-primary/10"
+                          : "border-border/50 bg-secondary/20 hover:bg-secondary/40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`text-sm font-medium ${aiModel === opt.value ? "text-primary" : ""}`}>{opt.label}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                        </div>
+                        {aiModel === opt.value && (
+                          <Badge variant="outline" className="text-[10px] border-primary text-primary">선택됨</Badge>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">⚠️ 모델 변경 후 기존 AI 캐시를 삭제해야 새 모델로 분석됩니다</p>
+              </div>
+
               {/* Score & TRL Settings */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">기술사업화점수 · TRL 관리</h3>
