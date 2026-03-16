@@ -239,8 +239,8 @@ serve(async (req) => {
       new Map(allPatents.map(p => [p.patentId, p])).values()
     );
 
-    // 상위 15건만 반환
-    const topPatents = uniquePatents.slice(0, 15);
+    // 상위 50건만 반환
+    const topPatents = uniquePatents.slice(0, 50);
 
     console.log(`Total unique patents found: ${uniquePatents.length}, returning: ${topPatents.length}`);
 
