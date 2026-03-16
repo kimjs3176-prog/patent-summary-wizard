@@ -182,7 +182,7 @@ serve(async (req) => {
         titleUrl.searchParams.set("applicant", org.id);
         titleUrl.searchParams.set("astrtCont", "");
         titleUrl.searchParams.set("pageNo", "1");
-        titleUrl.searchParams.set("numOfRows", "30");
+        titleUrl.searchParams.set("numOfRows", "100");
         titleUrl.searchParams.set("sortSpec", "AD");
         titleUrl.searchParams.set("descSort", "true");
         titleUrl.searchParams.set("patent", "true");
@@ -195,7 +195,7 @@ serve(async (req) => {
         abstractUrl.searchParams.set("applicant", org.id);
         abstractUrl.searchParams.set("astrtCont", searchKeyword);
         abstractUrl.searchParams.set("pageNo", "1");
-        abstractUrl.searchParams.set("numOfRows", "30");
+        abstractUrl.searchParams.set("numOfRows", "100");
         abstractUrl.searchParams.set("sortSpec", "AD");
         abstractUrl.searchParams.set("descSort", "true");
         abstractUrl.searchParams.set("patent", "true");
@@ -239,8 +239,8 @@ serve(async (req) => {
       new Map(allPatents.map(p => [p.patentId, p])).values()
     );
 
-    // 상위 15건만 반환
-    const topPatents = uniquePatents.slice(0, 15);
+    // 상위 50건만 반환
+    const topPatents = uniquePatents.slice(0, 50);
 
     console.log(`Total unique patents found: ${uniquePatents.length}, returning: ${topPatents.length}`);
 
