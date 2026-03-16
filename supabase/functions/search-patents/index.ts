@@ -182,7 +182,7 @@ serve(async (req) => {
         titleUrl.searchParams.set("applicant", org.id);
         titleUrl.searchParams.set("astrtCont", "");
         titleUrl.searchParams.set("pageNo", "1");
-        titleUrl.searchParams.set("numOfRows", "30");
+        titleUrl.searchParams.set("numOfRows", "100");
         titleUrl.searchParams.set("sortSpec", "AD");
         titleUrl.searchParams.set("descSort", "true");
         titleUrl.searchParams.set("patent", "true");
