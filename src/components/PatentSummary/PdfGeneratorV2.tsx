@@ -65,9 +65,8 @@ function parseSummaryContent(content: string): Record<string, string[]> {
 function extractKeywords(patentData?: PatentData | null, content?: string): string[] {
   const keywords: string[] = [];
   // From IPC
-  if (patentData?.ipc) {
-    const ipcParts = patentData.ipc.split(",").map(s => s.trim()).filter(Boolean);
-    if (ipcParts.length > 0) keywords.push(ipcParts[0]);
+  if (patentData?.classifications?.length) {
+    keywords.push(patentData.classifications[0]);
   }
   // From title
   if (patentData?.titleKo || patentData?.title) {
