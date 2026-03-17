@@ -36,6 +36,7 @@ const Index = () => {
   }, [settings.homepage_visible_sections]);
 
   const [keywordResults] = useState<KeywordSearchResult[]>([]);
+  const [searchFocused, setSearchFocused] = useState(false);
   const initialLoadDone = useRef(false);
 
   const updateUrl = (patentNum?: string) => {
