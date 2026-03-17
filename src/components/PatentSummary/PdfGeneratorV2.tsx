@@ -453,8 +453,8 @@ export function PdfGeneratorV2({
         pdf.line(M, fy - 2, pageW - M, fy - 2);
 
         // Left: IPC
-        if (patentData?.ipc) {
-          normalText(`IPC: ${patentData.ipc.split(",")[0].trim()}`, M, fy + 1, 6, V2.textMuted);
+        if (patentData?.classifications?.length) {
+          normalText(`IPC: ${patentData.classifications[0]}`, M, fy + 1, 6, V2.textMuted);
         }
 
         // Center: AI 자동 생성
