@@ -236,8 +236,8 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 20% 20%, hsl(239 84% 67% / 0.06) 0%, transparent 40%),
-                radial-gradient(circle at 80% 80%, hsl(280 68% 56% / 0.04) 0%, transparent 40%);
+    background: radial-gradient(circle at 20% 20%, hsl(152 76% 36% / 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, hsl(168 72% 40% / 0.04) 0%, transparent 40%);
     pointer-events: none;
   }
 
