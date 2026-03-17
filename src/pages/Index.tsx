@@ -150,11 +150,15 @@ const Index = () => {
 
             {/* Search */}
             <section className="mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-              <div className="w-full max-w-2xl mx-auto flex flex-col gap-0">
+              <div className="w-full max-w-2xl mx-auto flex flex-col">
                 <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} onFocusChange={setSearchFocused} />
                 {homepageVisible.popularSearches !== false && (
-                  <div className={`overflow-hidden transition-all duration-300 ease-in-out ${searchFocused ? 'max-h-40 opacity-100 mt-5' : 'max-h-0 opacity-0 mt-0'}`}>
-                    <PopularSearches onPatentSelect={handleSubmit} />
+                  <div className="relative">
+                    <div className={`absolute left-0 right-0 top-0 z-20 transition-all duration-300 ease-in-out origin-top ${searchFocused ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-95 -translate-y-2 pointer-events-none'}`}>
+                      <div className="mt-2 rounded-2xl border border-border/40 bg-card/95 backdrop-blur-md p-4" style={{ boxShadow: 'var(--shadow-elevated)' }}>
+                        <PopularSearches onPatentSelect={handleSubmit} />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
