@@ -40,6 +40,7 @@ export interface PdfLayoutConfig {
 
 export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
   pdf_version: "v1",
+  header_title: "농식품 특허 요약서",
   header_subtitle: "Agri-Food Patent Summary Report",
   header_bg_color: "#008c82",
   body_font_size: 9.5,
