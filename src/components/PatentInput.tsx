@@ -10,9 +10,10 @@ interface PatentInputProps {
   onKeywordSearch?: (results: KeywordSearchResult[], keyword: string) => void;
   placeholder?: string;
   helperText?: string;
+  onFocusChange?: (focused: boolean) => void;
 }
 
-export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText }: PatentInputProps) {
+export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, onFocusChange }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
 
@@ -87,7 +88,10 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
               onChange={handleInputChange}
               className="w-full h-12 pl-11 pr-4 text-sm bg-card/80 backdrop-blur-sm border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground/60 focus:border-foreground/20 focus:bg-card focus:ring-2 focus:ring-foreground/5 focus:shadow-[0_0_20px_hsl(174_60%_50%/0.08)] focus-glow"
               style={{ boxShadow: 'var(--shadow-glossy)' }}
-              disabled={isProcessing} placeholder={placeholder || "관심 키워드 또는 특허 등록번호, 출원번호를 입력하세요"} />
+              disabled={isProcessing}
+              placeholder={placeholder || "관심 키워드 또는 특허 등록번호, 출원번호를 입력하세요"}
+              onFocus={() => onFocusChange?.(true)}
+              onBlur={() => setTimeout(() => onFocusChange?.(false), 200)} />
 
           </div>
           <Button

@@ -36,6 +36,7 @@ const Index = () => {
   }, [settings.homepage_visible_sections]);
 
   const [keywordResults] = useState<KeywordSearchResult[]>([]);
+  const [searchFocused, setSearchFocused] = useState(false);
   const initialLoadDone = useRef(false);
 
   const updateUrl = (patentNum?: string) => {
@@ -149,10 +150,12 @@ const Index = () => {
 
             {/* Search */}
             <section className="mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-              <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
-                <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} />
+              <div className="w-full max-w-2xl mx-auto flex flex-col gap-0">
+                <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} onFocusChange={setSearchFocused} />
                 {homepageVisible.popularSearches !== false && (
-                  <PopularSearches onPatentSelect={handleSubmit} />
+                  <div className={`overflow-hidden transition-all duration-300 ease-in-out ${searchFocused ? 'max-h-40 opacity-100 mt-5' : 'max-h-0 opacity-0 mt-0'}`}>
+                    <PopularSearches onPatentSelect={handleSubmit} />
+                  </div>
                 )}
               </div>
               {history.length > 0 && keywordResults.length === 0 && (
