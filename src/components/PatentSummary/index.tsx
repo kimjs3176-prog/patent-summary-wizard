@@ -8,6 +8,7 @@ interface PatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
 }
 import { PdfGenerator } from "./PdfGenerator";
+import { PdfGeneratorV2 } from "./PdfGeneratorV2";
 import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
