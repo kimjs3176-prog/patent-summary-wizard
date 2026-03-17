@@ -13,7 +13,7 @@ interface PatentInputProps {
   onFocusChange?: (focused: boolean) => void;
 }
 
-export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText }: PatentInputProps) {
+export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, onFocusChange }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
 
