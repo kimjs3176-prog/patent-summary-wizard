@@ -148,7 +148,7 @@
 
   /* Selection styling */
   ::selection {
-    background: hsl(239 84% 67% / 0.2);
+    background: hsl(152 76% 36% / 0.2);
     color: hsl(222 47% 11%);
   }
 }
