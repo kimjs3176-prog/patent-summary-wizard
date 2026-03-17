@@ -220,8 +220,8 @@
     position: absolute;
     inset: -40px;
     border-radius: inherit;
-    background: radial-gradient(ellipse at 30% 0%, hsl(239 84% 67% / 0.12) 0%, transparent 50%),
-                radial-gradient(ellipse at 70% 100%, hsl(280 68% 56% / 0.08) 0%, transparent 50%);
+    background: radial-gradient(ellipse at 30% 0%, hsl(152 76% 36% / 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 100%, hsl(168 72% 40% / 0.08) 0%, transparent 50%);
     z-index: -1;
     filter: blur(60px);
     transition: opacity 0.5s ease;
