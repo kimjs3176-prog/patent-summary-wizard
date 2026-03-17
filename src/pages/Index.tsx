@@ -129,7 +129,7 @@ const Index = () => {
                 <AiHeroAnimation />
               </div>
               {/* Radial glow behind heading */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full -z-10 blur-[100px] opacity-40" style={{ background: 'radial-gradient(ellipse, hsl(239 84% 67% / 0.3), transparent 70%)' }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full -z-10 blur-[100px] opacity-40" style={{ background: 'radial-gradient(ellipse, hsl(152 76% 36% / 0.3), transparent 70%)' }} />
 
               <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-6 text-xs font-semibold bg-primary/[0.08] text-primary border border-primary/15 shadow-sm backdrop-blur-sm">
                 <span className="relative flex h-2 w-2">
