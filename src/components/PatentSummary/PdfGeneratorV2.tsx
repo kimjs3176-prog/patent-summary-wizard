@@ -190,7 +190,7 @@ export function PdfGeneratorV2({
       }
       if (patentData?.assignee) metaItems.push(`🏢 ${patentData.assignee}`);
       if (patentData?.filingDate) metaItems.push(`📅 출원 ${patentData.filingDate}`);
-      if (patentData?.ipc) metaItems.push(`🔬 ${patentData.ipc.split(",")[0].trim()}`);
+      if (patentData?.classifications?.length) metaItems.push(`🔬 ${patentData.classifications[0]}`);
 
       let metaX = M;
       for (const item of metaItems) {
