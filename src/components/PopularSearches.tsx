@@ -21,7 +21,7 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
       from("patent_search_stats").
       select("patent_number, patent_title, search_count").
       order("search_count", { ascending: false }).
-      limit(5);
+      limit(6);
       if (data && data.length > 0) setPopular(data);
     };
     fetchPopular();
