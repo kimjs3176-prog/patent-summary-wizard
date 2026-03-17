@@ -46,8 +46,8 @@ export const AiHeroAnimation = () => {
     }));
 
     const MAX_DIST = 150;
-    const PRIMARY_R = 82, PRIMARY_G = 82, PRIMARY_B = 224;
-    const ACCENT_R = 138, ACCENT_G = 43, ACCENT_B = 226;
+    const PRIMARY_R = 22, PRIMARY_G = 163, PRIMARY_B = 74;
+    const ACCENT_R = 5, ACCENT_G = 150, ACCENT_B = 105;
 
     let t = 0;
 

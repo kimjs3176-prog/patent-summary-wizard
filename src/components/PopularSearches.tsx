@@ -35,7 +35,7 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
         <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="text-xs font-semibold text-muted-foreground">인기 검색</span>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {popular.map((item, idx) =>
           <button
             key={item.patent_number}
