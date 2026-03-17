@@ -31,11 +31,11 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-2 mb-2.5">
+      <div className="flex items-center gap-2 mb-1.5">
         <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="text-xs font-semibold text-muted-foreground">인기 검색</span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="flex flex-col">
         {popular.map((item, idx) =>
           <PopularSearchItem key={item.patent_number} item={item} idx={idx} onSelect={onPatentSelect} />
         )}
