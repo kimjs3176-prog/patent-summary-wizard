@@ -10,6 +10,7 @@ interface PatentInputProps {
   onKeywordSearch?: (results: KeywordSearchResult[], keyword: string) => void;
   placeholder?: string;
   helperText?: string;
+  onFocusChange?: (focused: boolean) => void;
 }
 
 export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText }: PatentInputProps) {
