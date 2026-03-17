@@ -67,11 +67,10 @@ function PopularSearchItem({ item, idx, onSelect }: { item: PopularSearch; idx: 
       onClick={() => onSelect(item.patent_number)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-border/40 bg-card/80 backdrop-blur-sm hover:border-foreground/15 hover:shadow-sm transition-all duration-200 group btn-press min-w-0"
-      style={{ boxShadow: 'var(--shadow-glossy)' }}
+      className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors group min-w-0"
       title={`${item.patent_number} · ${item.search_count}회`}
     >
-      <span className="flex-shrink-0 w-4.5 h-4.5 rounded-md bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground num-highlight">
+      <span className="flex-shrink-0 w-5 h-5 rounded-md bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground">
         {idx + 1}
       </span>
       <div ref={containerRef} className="overflow-hidden min-w-0 flex-1">
@@ -85,6 +84,7 @@ function PopularSearchItem({ item, idx, onSelect }: { item: PopularSearch; idx: 
           {title}
         </span>
       </div>
+      <span className="text-[10px] text-muted-foreground flex-shrink-0">{item.search_count}회</span>
     </button>
   );
 }
