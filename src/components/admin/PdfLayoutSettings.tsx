@@ -11,7 +11,8 @@ import { Save, Loader2, FileDown, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 export interface PdfLayoutConfig {
-  // Header
+  // Version
+  pdf_version: "v1" | "v2";
   header_title: string;
   header_subtitle: string;
   header_bg_color: string;
