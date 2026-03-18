@@ -537,6 +537,34 @@ export function PdfGenerator({
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ██  KIPRIS 특허상세보기 링크                    ██
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      if (patentData?.applicationNumber) {
+        checkNewPage(14);
+        const kiprisUrl = `https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`;
+        const linkY = yPosition + 2;
+
+        // Link icon + text
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(...THEME.navy);
+        const linkLabel = "🔗 특허상세보기 (KIPRIS)";
+        pdf.text(linkLabel, margin, linkY);
+        pdf.text(linkLabel, margin + 0.12, linkY); // faux bold
+
+        pdf.setFontSize(6.5);
+        pdf.setTextColor(...THEME.textMuted);
+        pdf.textWithLink(kiprisUrl, margin, linkY + 5, { url: kiprisUrl });
+
+        // Underline the URL
+        const urlW = pdf.getTextWidth(kiprisUrl);
+        pdf.setDrawColor(...THEME.textMuted);
+        pdf.setLineWidth(0.2);
+        pdf.line(margin, linkY + 5.5, margin + urlW, linkY + 5.5);
+
+        yPosition = linkY + 12;
+      }
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  FOOTER — Book-style running footer       ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       const totalPages = pdf.getNumberOfPages();

@@ -5,14 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Save, Loader2, FileDown, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 export interface PdfLayoutConfig {
-  // Version
-  pdf_version: "v1" | "v2";
   header_title: string;
   header_subtitle: string;
   header_bg_color: string;
@@ -39,7 +36,6 @@ export interface PdfLayoutConfig {
 }
 
 export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
-  pdf_version: "v1",
   header_title: "농식품 특허 요약서",
   header_subtitle: "Agri-Food Patent Summary Report",
   header_bg_color: "#008c82",
@@ -117,21 +113,6 @@ export function PdfLayoutSettings({ apiCall, initialConfig }: PdfLayoutSettingsP
         </div>
       </div>
 
-      {/* Version Selector */}
-      <Card className="p-4 space-y-3">
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">PDF 버전 선택</h3>
-        <RadioGroup value={config.pdf_version} onValueChange={(v) => update("pdf_version", v as "v1" | "v2")} className="flex gap-4">
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="v1" id="pdf-v1" />
-            <Label htmlFor="pdf-v1" className="text-sm cursor-pointer">Ver1 (에디토리얼 · 텍스트 중심)</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="v2" id="pdf-v2" />
-            <Label htmlFor="pdf-v2" className="text-sm cursor-pointer">Ver2 (인포그래픽 · 구조화)</Label>
-          </div>
-        </RadioGroup>
-        <p className="text-[10px] text-muted-foreground">Ver1은 기존 텍스트 기반 레이아웃, Ver2는 카드/그리드 기반 인포그래픽 레이아웃입니다</p>
-      </Card>
 
 
       <Card className="p-4 space-y-3">
