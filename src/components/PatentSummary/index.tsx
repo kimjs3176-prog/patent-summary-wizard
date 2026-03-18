@@ -367,12 +367,22 @@ export function PatentSummary({
       {/* Action Bar */}
       {!isStreaming && content && (
         <div className="flex items-center justify-between flex-wrap mb-2 gap-2">
-          <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
-            <Button size="sm" className="gap-1.5 text-xs h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm btn-press">
-              <ExternalLink className="w-3.5 h-3.5" />
-              기술이전 신청
-            </Button>
-          </a>
+          <div className="flex items-center gap-2">
+            <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
+              <Button size="sm" className="gap-1.5 text-xs h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm btn-press">
+                <ExternalLink className="w-3.5 h-3.5" />
+                기술이전 신청
+              </Button>
+            </a>
+            {patentData?.applicationNumber && (
+              <a href={`https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 btn-press">
+                  <FileText className="w-3.5 h-3.5" />
+                  특허상세보기
+                </Button>
+              </a>
+            )}
+          </div>
           <div className="flex items-center gap-0.5">
             <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-foreground transition-colors">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
