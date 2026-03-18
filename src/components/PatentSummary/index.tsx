@@ -416,25 +416,15 @@ export function PatentSummary({
               {patentIsFavorite ? "담김" : "담기"}
             </Button>
             {featureFlags.pdfEnabled && (
-              pdfLayoutConfig?.pdf_version === "v2" ? (
-                <PdfGeneratorV2
-                  content={content}
-                  patentNumber={patentNumber}
-                  patentData={patentData}
-                  printRef={printRef}
-                  layoutConfig={pdfLayoutConfig}
-                />
-              ) : (
-                <PdfGenerator
-                  content={content}
-                  patentNumber={patentNumber}
-                  patentData={patentData}
-                  printRef={printRef}
-                  commercializationDetails={commercializationDetails}
-                  commercializationScore={commercializationScore}
-                  layoutConfig={pdfLayoutConfig}
-                />
-              )
+              <PdfGenerator
+                content={content}
+                patentNumber={patentNumber}
+                patentData={patentData}
+                printRef={printRef}
+                commercializationDetails={commercializationDetails}
+                commercializationScore={commercializationScore}
+                layoutConfig={pdfLayoutConfig}
+              />
             )}
             {featureFlags.pptEnabled && (
               <PptGenerator
