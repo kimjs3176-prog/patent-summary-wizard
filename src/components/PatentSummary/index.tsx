@@ -679,18 +679,39 @@ export function PatentSummary({
                 ];
                 fallbackPatterns.forEach(([p, l]) => { if (p.test(text) && !extraFallbacks.includes(l)) extraFallbacks.push(l); });
 
-                // 조합: 소재(앞) → 기능성 → 활용산업 → 특징 → 폴백
-                const allKws = [
-                  ...subjectKws.slice(0, 3),
-                  ...funcKws.slice(0, 3),
-                  ...industryKws.slice(0, 3),
-                  ...featKws.slice(0, 4),
-                  ...extraFallbacks.slice(0, 4),
+                // 조합: 4개 카테고리 균등 배분 (라운드로빈)
+                const categories = [
+                  subjectKws,   // 소재
+                  funcKws,      // 기능성
+                  industryKws,  // 활용산업
+                  featKws,      // 기술특징
                 ];
-                [subjectKws, funcKws, industryKws, featKws, extraFallbacks].forEach(arr => {
-                  arr.forEach(k => { if (!allKws.includes(k)) allKws.push(k); });
-                });
-                const unique = [...new Set(allKws)].slice(0, 12);
+                const allKws: string[] = [];
+                const maxTotal = 12;
+                // Round-robin: 각 카테고리에서 1개씩 돌아가며 추가
+                let added = true;
+                let round = 0;
+                while (added && allKws.length < maxTotal) {
+                  added = false;
+                  for (const cat of categories) {
+                    if (round < cat.length && allKws.length < maxTotal) {
+                      const kw = cat[round];
+                      if (!allKws.includes(kw)) {
+                        allKws.push(kw);
+                        added = true;
+                      }
+                    }
+                  }
+                  round++;
+                }
+                // 부족하면 폴백에서 보충
+                if (allKws.length < 5) {
+                  extraFallbacks.forEach(k => {
+                    if (!allKws.includes(k) && allKws.length < maxTotal) allKws.push(k);
+                  });
+                }
+                const unique = allKws.slice(0, maxTotal);
+
                 if (unique.length === 0) return null;
 
                 // 카테고리별 색상
