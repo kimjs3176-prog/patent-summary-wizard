@@ -1093,13 +1093,15 @@ const Admin = () => {
                 <p className="text-[10px] text-muted-foreground mb-3">특허 요약 및 점수 분석에 사용할 AI 모델을 선택합니다. 모델에 따라 분석 품질과 속도가 달라집니다.</p>
                 <div className="space-y-2">
                   {[
-                    { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", desc: "균형 잡힌 속도와 품질 (기본값)" },
-                    { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", desc: "최고 품질, 복잡한 분석에 적합 (느림)" },
-                    { value: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", desc: "빠르고 저렴, 간단한 분석에 적합" },
-                    { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview", desc: "차세대 모델 미리보기, 빠른 속도" },
-                    { value: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview", desc: "차세대 추론 모델 미리보기" },
-                    { value: "openai/gpt-5-mini", label: "GPT-5 Mini", desc: "강력한 추론, 비용 효율적" },
-                    { value: "openai/gpt-5", label: "GPT-5", desc: "최고 성능, 높은 비용" },
+                    { value: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", desc: "빠르고 저렴, 간단한 분석에 적합", cost: "~₩2", tier: "economy" },
+                    { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", desc: "균형 잡힌 속도와 품질 (기본값)", cost: "~₩5", tier: "standard" },
+                    { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview", desc: "차세대 모델, 빠른 속도와 높은 품질", cost: "~₩5", tier: "standard" },
+                    { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", desc: "최고 품질, 복잡한 분석에 적합 (느림)", cost: "~₩25", tier: "premium" },
+                    { value: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview", desc: "차세대 추론 모델, 최고 수준 분석", cost: "~₩25", tier: "premium" },
+                    { value: "openai/gpt-5-nano", label: "GPT-5 Nano", desc: "초고속·저비용, 단순 분류/요약에 최적", cost: "~₩3", tier: "economy" },
+                    { value: "openai/gpt-5-mini", label: "GPT-5 Mini", desc: "강력한 추론, 비용 효율적", cost: "~₩10", tier: "standard" },
+                    { value: "openai/gpt-5", label: "GPT-5", desc: "최고 성능 범용 모델, 높은 정확도", cost: "~₩30", tier: "premium" },
+                    { value: "openai/gpt-5.2", label: "GPT-5.2", desc: "최신 강화 추론 모델, 복잡한 문제 해결", cost: "~₩35", tier: "premium" },
                   ].map(opt => (
                     <button
                       key={opt.value}
@@ -1111,13 +1113,29 @@ const Admin = () => {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className={`text-sm font-medium ${aiModel === opt.value ? "text-primary" : ""}`}>{opt.label}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-medium ${aiModel === opt.value ? "text-primary" : ""}`}>{opt.label}</p>
+                            <Badge variant="secondary" className={`text-[9px] px-1.5 py-0 ${
+                              opt.tier === "economy" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                              opt.tier === "premium" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
+                              "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                            }`}>
+                              {opt.tier === "economy" ? "경제" : opt.tier === "premium" ? "프리미엄" : "표준"}
+                            </Badge>
+                          </div>
                           <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
                         </div>
-                        {aiModel === opt.value && (
-                          <Badge variant="outline" className="text-[10px] border-primary text-primary">선택됨</Badge>
-                        )}
+                        <div className="flex items-center gap-2 ml-2 shrink-0">
+                          <span className={`text-xs font-semibold tabular-nums ${
+                            opt.tier === "economy" ? "text-emerald-600" :
+                            opt.tier === "premium" ? "text-amber-600" :
+                            "text-blue-600"
+                          }`}>{opt.cost}/건</span>
+                          {aiModel === opt.value && (
+                            <Badge variant="outline" className="text-[10px] border-primary text-primary">선택됨</Badge>
+                          )}
+                        </div>
                       </div>
                     </button>
                   ))}
