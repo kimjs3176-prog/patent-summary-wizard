@@ -662,13 +662,18 @@ export function PatentSummary({
                   [/키토산/, '키토산'], [/펙틴/, '펙틴'], [/폴리페놀/, '폴리페놀'],
                   [/단백질/, '단백질'], [/전분/, '전분'], [/셀룰로오스|섬유소/, '셀룰로오스'],
                 ];
-                const title = patentData.titleKo || patentData.title || '';
                 const subjectKws: string[] = [];
-                subjectPatterns.forEach(([p, l]) => { if (p.test(title) && !subjectKws.includes(l)) subjectKws.push(l); });
+                subjectPatterns.forEach(([p, l]) => { if (p.test(text) && !subjectKws.includes(l)) subjectKws.push(l); });
 
-                // 조합: 소재(앞) → 기능성 → 활용산업 → 특징
-                const allKws = [...subjectKws, ...funcKws.slice(0, 2), ...industryKws.slice(0, 2), ...featKws.slice(0, 2)];
-                const unique = [...new Set(allKws)].slice(0, 8);
+                // 조합: 소재(앞) → 기능성 → 활용산업 → 특징 (각 카테고리 넉넉히)
+                const allKws = [...subjectKws.slice(0, 3), ...funcKws.slice(0, 3), ...industryKws.slice(0, 3), ...featKws.slice(0, 3)];
+                // 최소 5개 보장: 부족하면 남은 항목에서 추가
+                if (allKws.length < 5) {
+                  [subjectKws, funcKws, industryKws, featKws].forEach(arr => {
+                    arr.forEach(k => { if (!allKws.includes(k)) allKws.push(k); });
+                  });
+                }
+                const unique = [...new Set(allKws)].slice(0, 10);
                 if (unique.length === 0) return null;
 
                 // 카테고리별 색상
