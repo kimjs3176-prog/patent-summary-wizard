@@ -644,10 +644,14 @@ export function PatentSummary({
                   [/블록체인|이력추적/, '이력추적'], [/빅데이터|데이터분석/, '빅데이터'],
                   [/복합|융합|하이브리드/, '복합기술'], [/모니터링|실시간/, '실시간모니터링'],
                   [/영상|이미지|비전/, '영상분석'], [/스펙트럼|분광/, '분광분석'],
+                  [/장치|디바이스/, '장치기술'], [/시스템/, '시스템기술'], [/구조|프레임/, '구조설계'],
+                  [/제어|조절/, '제어기술'], [/구동|모터|벨트|기어|동력/, '구동메커니즘'],
+                  [/진동|캠|베어링/, '진동구조'], [/선별|분리|정선/, '선별기술'],
+                  [/탈곡|수확/, '수확처리'], [/호퍼|드럼|배출부|망체|타공체망/, '처리구조'],
                 ];
                 featPatterns.forEach(([p, l]) => { if (p.test(text) && !featKws.includes(l)) featKws.push(l); });
 
-                // 5. 소재 키워드 (제목 기반, 앞에 배치)
+                // 5. 소재 키워드
                 const subjectPatterns: [RegExp, string][] = [
                   [/쌀|미곡|현미/, '쌀'], [/밀가루|밀(?!봉)/, '밀'], [/보리/, '보리'], [/옥수수/, '옥수수'],
                   [/콩|대두/, '콩'], [/인삼|홍삼/, '인삼'], [/녹차|차(?:잎|나무)/, '차'],
@@ -665,15 +669,28 @@ export function PatentSummary({
                 const subjectKws: string[] = [];
                 subjectPatterns.forEach(([p, l]) => { if (p.test(text) && !subjectKws.includes(l)) subjectKws.push(l); });
 
-                // 조합: 소재(앞) → 기능성 → 활용산업 → 특징 (각 카테고리 넉넉히)
-                const allKws = [...subjectKws.slice(0, 3), ...funcKws.slice(0, 3), ...industryKws.slice(0, 3), ...featKws.slice(0, 3)];
-                // 최소 5개 보장: 부족하면 남은 항목에서 추가
-                if (allKws.length < 5) {
-                  [subjectKws, funcKws, industryKws, featKws].forEach(arr => {
-                    arr.forEach(k => { if (!allKws.includes(k)) allKws.push(k); });
-                  });
-                }
-                const unique = [...new Set(allKws)].slice(0, 10);
+                const extraFallbacks: string[] = [];
+                const fallbackPatterns: [RegExp, string][] = [
+                  [/조성물/, '조성물'], [/제조방법|제조 공정|제조/, '제조공정'], [/방법/, '처리방법'],
+                  [/기기|장치/, '기계장치'], [/시스템/, '시스템'], [/모듈/, '모듈구성'],
+                  [/센서/, '센서기반'], [/자동|자동화/, '자동화설비'], [/제어/, '속도제어'],
+                  [/구동/, '구동제어'], [/선별|정선/, '정밀선별'], [/분리/, '분리처리'],
+                  [/수확|탈곡/, '농기계'], [/드럼|호퍼|배출/, '핵심구성요소'],
+                ];
+                fallbackPatterns.forEach(([p, l]) => { if (p.test(text) && !extraFallbacks.includes(l)) extraFallbacks.push(l); });
+
+                // 조합: 소재(앞) → 기능성 → 활용산업 → 특징 → 폴백
+                const allKws = [
+                  ...subjectKws.slice(0, 3),
+                  ...funcKws.slice(0, 3),
+                  ...industryKws.slice(0, 3),
+                  ...featKws.slice(0, 4),
+                  ...extraFallbacks.slice(0, 4),
+                ];
+                [subjectKws, funcKws, industryKws, featKws, extraFallbacks].forEach(arr => {
+                  arr.forEach(k => { if (!allKws.includes(k)) allKws.push(k); });
+                });
+                const unique = [...new Set(allKws)].slice(0, 12);
                 if (unique.length === 0) return null;
 
                 // 카테고리별 색상
