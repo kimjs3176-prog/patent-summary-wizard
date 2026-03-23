@@ -1,8 +1,7 @@
-import { Heart, RotateCcw } from "lucide-react";
+import { Heart, RotateCcw, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
 import { PatentInput } from "@/components/PatentInput";
 import { PatentSummary } from "@/components/PatentSummary/index";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
@@ -124,32 +123,29 @@ const Index = () => {
         {!summary && !isLoading ? (
           <>
             {/* Hero */}
-            <section className="text-center max-w-3xl mx-auto mb-14 md:mb-20 animate-fade-down relative py-6 md:py-10">
+            <section className="text-center max-w-3xl mx-auto mb-16 md:mb-24 animate-fade-down relative py-10 md:py-16">
               {/* Neural network animation background */}
-              <div className="absolute -inset-16 -z-10 overflow-hidden rounded-[2rem]">
+              <div className="absolute -inset-20 -z-10 overflow-hidden rounded-[3rem]">
                 <AiHeroAnimation />
               </div>
               {/* Radial glow behind heading */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full -z-10 blur-[100px] opacity-40" style={{ background: 'radial-gradient(ellipse, hsl(152 76% 36% / 0.3), transparent 70%)' }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] rounded-full -z-10 blur-[120px] opacity-50" style={{ background: 'radial-gradient(ellipse, hsl(152 76% 36% / 0.25), transparent 70%)' }} />
 
-              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-6 text-xs font-semibold bg-primary/[0.08] text-primary border border-primary/15 shadow-sm backdrop-blur-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-                </span>
+              <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full mb-8 text-xs font-semibold border shadow-sm backdrop-blur-md" style={{ background: 'hsl(152 76% 36% / 0.06)', color: 'hsl(152 76% 36%)', borderColor: 'hsl(152 76% 36% / 0.12)' }}>
+                <Sparkles className="w-3.5 h-3.5" />
                 AI 기반 특허 분석
               </div>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-5 md:mb-6 leading-[1.08] tracking-tight">
+              <h2 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold text-foreground mb-6 md:mb-7 leading-[1.08] tracking-tight">
                 {settings.hero_title}<br />
                 <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-xl mx-auto text-muted-foreground">
+              <p className="text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-lg mx-auto text-muted-foreground">
                 {settings.hero_description}
               </p>
             </section>
 
             {/* Search */}
-            <section className="mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+            <section className="mb-10 animate-fade-up" style={{ animationDelay: "0.1s" }}>
               <div className="w-full max-w-2xl mx-auto flex flex-col">
                 <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} onFocusChange={setSearchFocused} />
                 {homepageVisible.popularSearches !== false && (
@@ -171,8 +167,8 @@ const Index = () => {
 
             {homepageVisible.featuredPatents !== false && (
               <>
-                <div className="max-w-5xl mx-auto mt-10 md:mt-14 mb-2">
-                  <Separator className="bg-border/60" />
+                <div className="max-w-5xl mx-auto mt-12 md:mt-16 mb-2">
+                  <div className="section-divider" />
                 </div>
                 <FeaturedPatents
                   onPatentSelect={handleSubmit}
@@ -184,8 +180,8 @@ const Index = () => {
 
             {homepageVisible.techVideos !== false && (
               <>
-                <div className="max-w-5xl mx-auto mt-10 md:mt-14 mb-2">
-                  <Separator className="bg-border/60" />
+                <div className="max-w-5xl mx-auto mt-12 md:mt-16 mb-2">
+                  <div className="section-divider" />
                 </div>
                 <TechVideoSection videos={(() => {
                   try {
@@ -198,8 +194,8 @@ const Index = () => {
 
             {homepageVisible.techTransferGuide !== false && (
               <>
-                <div className="max-w-5xl mx-auto mt-2 mb-2">
-                  <Separator className="bg-border/60" />
+                <div className="max-w-5xl mx-auto mt-4 mb-2">
+                  <div className="section-divider" />
                 </div>
                 <TechTransferGuide />
               </>
