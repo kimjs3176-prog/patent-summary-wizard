@@ -1,4 +1,4 @@
-import { Search, FileEdit, ClipboardCheck, Stamp, Handshake, Wallet } from "lucide-react";
+import { Search, FileEdit, ClipboardCheck, Stamp, Handshake, Wallet, BookOpen } from "lucide-react";
 
 const steps = [
   { num: 1, icon: Search, title: "이전 기술 탐색", desc: "KIPRIS, NATI 등에서 관심 기술을 검색하고 유망기술 자료집을 참고하세요." },
@@ -13,9 +13,14 @@ export function TechTransferGuide() {
   return (
     <section className="max-w-5xl mx-auto mt-12 md:mt-16 mb-8">
       <div className="mb-8 md:mb-10">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">
-          기술이전 절차 안내
-        </p>
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'hsl(152 76% 36% / 0.1)' }}>
+            <BookOpen className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            기술이전 절차 안내
+          </p>
+        </div>
         <h3 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
           국가직무발명특허 <span className="gradient-text">기술이전</span>이란?
         </h3>
@@ -31,15 +36,15 @@ export function TechTransferGuide() {
           return (
             <div
               key={step.num}
-              className="group rounded-2xl p-5 md:p-6 bg-card/80 backdrop-blur-sm border border-border/30 hover:bg-card hover:border-border/50 hover:shadow-lg transition-all duration-300 animate-fade-up"
+              className="group rounded-2xl p-5 md:p-6 bg-card border border-border/40 hover:border-border/70 hover:shadow-lg transition-all duration-300 animate-fade-up card-interactive"
               style={{ animationDelay: `${0.06 * step.num}s`, boxShadow: 'var(--shadow-glossy)' }}
             >
               <div className="flex items-start gap-4">
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
-                    <Icon className="w-4 h-4 text-background" />
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors duration-300">
+                    <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
                   </div>
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center text-primary-foreground" style={{ background: 'var(--gradient-accent)' }}>
                     {step.num}
                   </span>
                 </div>
@@ -53,7 +58,7 @@ export function TechTransferGuide() {
         })}
       </div>
 
-      <p className="text-center mt-6 text-xs text-muted-foreground">
+      <p className="text-center mt-8 text-xs text-muted-foreground">
         자세한 내용은{" "}
         <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">NATI</a>
         {" "}또는{" "}

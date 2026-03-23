@@ -1,4 +1,4 @@
-import { Play } from "lucide-react";
+import { Play, Video } from "lucide-react";
 
 interface TechVideo {
   title: string;
@@ -19,9 +19,14 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
 
   return (
     <section className="max-w-5xl mx-auto mt-12 md:mt-16 mb-12 md:mb-16 animate-fade-up" style={{ animationDelay: "0.3s" }}>
-      <div className="mb-5">
-        <h3 className="text-lg md:text-xl font-semibold text-foreground">기술소개영상</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">농식품 분야 기술 소개 영상</p>
+      <div className="mb-6 md:mb-8">
+        <div className="flex items-center gap-2.5 mb-1">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'hsl(0 84% 60% / 0.1)' }}>
+            <Video className="w-3.5 h-3.5" style={{ color: 'hsl(0 84% 60%)' }} />
+          </div>
+          <h3 className="text-lg md:text-xl font-bold text-foreground tracking-tight">기술소개영상</h3>
+        </div>
+        <p className="text-xs text-muted-foreground ml-[38px]">농식품 분야 기술 소개 영상</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {videos.slice(0, 3).map((video, idx) => {
@@ -36,28 +41,28 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
               href={video.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative rounded-2xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-sm hover:border-foreground/15 hover:shadow-lg transition-all duration-300"
+              className="group relative rounded-2xl overflow-hidden border border-border/40 bg-card hover:border-border/70 hover:shadow-lg transition-all duration-300 card-interactive"
               style={{ boxShadow: 'var(--shadow-glossy)' }}
             >
-              <div className="aspect-video bg-muted/30 flex items-center justify-center overflow-hidden relative">
+              <div className="aspect-video bg-secondary/30 flex items-center justify-center overflow-hidden relative">
                 {thumbnail ? (
                   <img
                     src={thumbnail}
                     alt={video.title || "기술소개영상"}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
-                  <Play className="w-10 h-10 text-muted-foreground/40" />
+                  <Play className="w-10 h-10 text-muted-foreground/30" />
                 )}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-foreground/80 flex items-center justify-center opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-200">
-                    <Play className="w-5 h-5 text-background ml-0.5" />
+                <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300 backdrop-blur-sm" style={{ background: 'hsl(0 0% 100% / 0.95)', boxShadow: '0 4px 20px hsl(0 0% 0% / 0.15)' }}>
+                    <Play className="w-5 h-5 text-foreground ml-0.5" />
                   </div>
                 </div>
               </div>
               {video.title && (
-                <div className="px-3 py-2.5">
-                  <p className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                <div className="px-4 py-3">
+                  <p className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-relaxed">
                     {video.title}
                   </p>
                 </div>
