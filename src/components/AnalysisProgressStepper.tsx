@@ -1,0 +1,93 @@
+import { Check, Database, Brain, FileText } from "lucide-react";
+
+export type AnalysisStep = "idle" | "fetching" | "scoring" | "summarizing" | "done";
+
+interface AnalysisProgressStepperProps {
+  currentStep: AnalysisStep;
+}
+
+const steps = [
+  { key: "fetching" as const, label: "특허정보 조회", icon: Database, desc: "KIPRIS에서 데이터 수집" },
+  { key: "scoring" as const, label: "사업화 점수 분석", icon: Brain, desc: "AI 기술성·시장성·사업성 평가" },
+  { key: "summarizing" as const, label: "AI 요약 생성", icon: FileText, desc: "특허 분석 보고서 작성" },
+];
+
+const stepOrder: AnalysisStep[] = ["fetching", "scoring", "summarizing", "done"];
+
+export function AnalysisProgressStepper({ currentStep }: AnalysisProgressStepperProps) {
+  if (currentStep === "idle") return null;
+
+  const currentIdx = stepOrder.indexOf(currentStep);
+
+  return (
+    <div className="w-full max-w-xl mx-auto mb-10 animate-fade-up">
+      <div className="rounded-2xl border border-border/40 bg-card/80 backdrop-blur-md p-6" style={{ boxShadow: 'var(--shadow-elevated)' }}>
+        <div className="flex items-center justify-between gap-2">
+          {steps.map((step, idx) => {
+            const isActive = stepOrder[idx] === currentStep;
+            const isCompleted = currentIdx > idx || currentStep === "done";
+
+            return (
+              <div key={step.key} className="flex-1 flex flex-col items-center text-center relative">
+                {/* Connector line */}
+                {idx > 0 && (
+                  <div className="absolute top-5 -left-1/2 w-full h-0.5 -z-10">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        background: isCompleted
+                          ? 'var(--gradient-accent)'
+                          : 'hsl(var(--border) / 0.4)',
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Icon circle */}
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 transition-all duration-500 ${
+                    isCompleted
+                      ? 'text-white shadow-md'
+                      : isActive
+                      ? 'text-white shadow-lg scale-110'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                  style={
+                    isCompleted || isActive
+                      ? { background: 'var(--gradient-accent)' }
+                      : undefined
+                  }
+                >
+                  {isCompleted ? (
+                    <Check className="w-5 h-5" />
+                  ) : isActive ? (
+                    <div className="relative">
+                      <step.icon className="w-5 h-5 animate-pulse" />
+                    </div>
+                  ) : (
+                    <step.icon className="w-4 h-4" />
+                  )}
+                </div>
+
+                {/* Label */}
+                <p className={`text-xs font-semibold transition-colors ${isActive ? 'text-foreground' : isCompleted ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {step.label}
+                </p>
+                <p className={`text-[10px] mt-0.5 transition-colors hidden sm:block ${isActive ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
+                  {step.desc}
+                </p>
+
+                {/* Active spinner */}
+                {isActive && (
+                  <div className="mt-2">
+                    <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
