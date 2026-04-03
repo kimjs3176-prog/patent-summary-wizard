@@ -179,6 +179,7 @@ export function usePatentSummary() {
     currentPatent,
     patentData,
     relatedPatents,
+    analysisStep,
     generateSummary,
     loadFromHistory,
     reset,
