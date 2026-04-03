@@ -72,6 +72,20 @@ const Index = () => {
     }
   };
 
+  // Update history with score when it becomes available
+  const handleScoreReady = (score: number) => {
+    if (!currentPatent) return;
+    const stored = localStorage.getItem("patent-search-history");
+    if (!stored) return;
+    try {
+      const items = JSON.parse(stored);
+      const updated = items.map((item: SearchHistoryItem) =>
+        item.patentNumber === currentPatent ? { ...item, commercializationScore: score } : item
+      );
+      localStorage.setItem("patent-search-history", JSON.stringify(updated));
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     if (initialLoadDone.current) return;
     initialLoadDone.current = true;
