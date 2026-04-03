@@ -15,6 +15,7 @@ export function usePatentSummary() {
   const generateSummary = useCallback(async (patentNumber: string) => {
     setIsLoading(true);
     setIsFetching(true);
+    setAnalysisStep("fetching");
     setSummary("");
     setPatentData(null);
     setRelatedPatents([]);
