@@ -60,6 +60,7 @@ export function usePatentSummary() {
     }
 
     setIsFetching(false);
+    setAnalysisStep("summarizing");
 
     // Step 2: Generate AI summary with patent data
     try {
