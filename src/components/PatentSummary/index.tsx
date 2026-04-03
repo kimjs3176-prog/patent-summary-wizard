@@ -6,6 +6,7 @@ import { PatentSummaryProps as BasePatentSummaryProps, FeatureFlags } from "./ty
 
 interface PatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
+  onScoreReady?: (score: number) => void;
 }
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
