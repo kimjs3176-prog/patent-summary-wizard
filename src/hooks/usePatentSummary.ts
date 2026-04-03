@@ -169,6 +169,7 @@ export function usePatentSummary() {
     setCurrentPatent("");
     setPatentData(null);
     setRelatedPatents([]);
+    setAnalysisStep("idle");
   }, []);
 
   return {
