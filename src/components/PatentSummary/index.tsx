@@ -102,6 +102,7 @@ export function PatentSummary({
         if (result.success) {
           setCommercializationScore(result.score);
           setCommercializationDetails(result.details);
+          onScoreReady?.(result.score);
         }
       } catch (error) {
         console.error("Commercialization analysis error:", error);
