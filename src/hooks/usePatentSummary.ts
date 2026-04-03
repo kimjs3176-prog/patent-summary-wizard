@@ -130,6 +130,7 @@ export function usePatentSummary() {
         }
       }
 
+      setAnalysisStep("done");
       toast.success("요약서가 생성되었습니다!");
       
       // Return the generated data for history saving
