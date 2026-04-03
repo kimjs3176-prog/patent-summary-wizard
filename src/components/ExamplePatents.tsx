@@ -6,9 +6,9 @@ interface ExamplePatentsProps {
 }
 
 const examples = [
-  { number: "10-2023-0072978", label: "스마트 농업 IoT", emoji: "🌱" },
-  { number: "10-2022-0150293", label: "생분해성 포장재", emoji: "♻️" },
-  { number: "10-2023-0014576", label: "AI 병해충 진단", emoji: "🤖" },
+  { number: "10-2023-0083397", label: "스마트 온실 IoT", emoji: "🌱" },
+  { number: "10-2791393", label: "신규 보리 계통", emoji: "🌾" },
+  { number: "10-2083668", label: "저항전분 다이어트 선식", emoji: "🍚" },
 ];
 
 export function ExamplePatents({ onSelect, isLoading }: ExamplePatentsProps) {
