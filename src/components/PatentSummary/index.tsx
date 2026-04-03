@@ -24,6 +24,7 @@ export function PatentSummary({
   relatedPatents = [],
   onRelatedPatentClick,
   onKeywordClick,
+  onScoreReady,
   featureFlags = { pdfEnabled: true, pptEnabled: true },
 }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
