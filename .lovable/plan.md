@@ -1,38 +1,25 @@
+## 특허분석 서비스 개선 계획
 
+### 1. 분석 진행 단계 표시 (Progress Stepper)
+- 현재: 단순 스피너만 표시
+- 개선: 3단계 진행 표시 (① 특허정보 조회 → ② 사업화 점수 분석 → ③ AI 요약 생성)
+- 각 단계 완료 시 체크마크, 예상 소요시간 표시
 
-## 상세/요약 전환 시 분석 내용 불일치 버그 수정
+### 2. 빠른 체험 - 예시 특허 버튼
+- 검색창 아래에 "이런 특허를 분석해 보세요" 예시 3개 추가
+- 신규 사용자가 서비스를 즉시 체험할 수 있도록 유도
 
-### 문제 원인
+### 3. 결과 자동 스크롤
+- 분석 시작 시 결과 영역으로 부드럽게 스크롤
+- 모바일에서 특히 유용
 
-`usePatentSummary.ts`의 `generateSummary` 함수에서 `analysisMode` 기본값이 `"summary"`로 설정되어 있습니다. 하지만 `Index.tsx`에서는 `analysisMode` 상태를 `"detailed"`로 초기화합니다.
+### 4. 분석 결과 요약 카드 (Quick Stats)
+- 요약서 상단에 핵심 지표를 한눈에 보여주는 요약 카드
+- 총점, TRL 등급, 출원인, IPC 분류를 카드 형태로 표시
 
-결과적으로:
-- 첫 검색 시 UI는 "상세" 모드로 표시되지만, 실제 API에는 `"summary"` 모드로 요청
-- 캐시에도 `"summary"` 키로 저장되어 모드 전환 시 혼동 발생
+### 5. 최근 검색 카드에 점수 배지 추가
+- 검색 히스토리 카드에 사업화 점수 배지 표시
+- 어떤 특허가 높은 점수인지 바로 비교 가능
 
-### 수정 사항
-
-**1. `src/hooks/usePatentSummary.ts` - 기본 분석 모드를 `"detailed"`로 변경**
-
-- 13행: `generateSummary` 함수의 `analysisMode` 기본값을 `"summary"` -> `"detailed"`로 수정
-
-**2. `src/pages/Index.tsx` - 초기 검색 시 현재 모드 전달**
-
-- `handleSubmitInternal`에서 `generateSummary` 호출 시 현재 `analysisMode` 상태값을 명시적으로 전달하도록 수정
-- "새로운 검색" 시 `analysisMode`를 `"detailed"`로 초기화
-
-### 기술 상세
-
-```text
-[현재 흐름 - 버그]
-Index.tsx: analysisMode = "detailed" (UI 표시)
-    -> generateSummary(patentNumber)  // mode 미전달
-        -> usePatentSummary: default = "summary"  // 실제 요청
-            -> Edge Function: analysisMode = "summary"
-
-[수정 후 흐름]
-Index.tsx: analysisMode = "detailed" (UI 표시)
-    -> generateSummary(patentNumber, "detailed")  // 명시적 전달
-        -> Edge Function: analysisMode = "detailed"
-```
-
+### 6. 결과 공유 시 OG 미리보기 메타태그 개선
+- 공유 링크에 특허 제목과 점수가 표시되도록 개선
