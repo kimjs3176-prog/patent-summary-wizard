@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { PatentData, RelatedPatent } from "@/components/PatentSummary/types";
+import { AnalysisStep } from "@/components/AnalysisProgressStepper";
 
 export function usePatentSummary() {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,10 +10,12 @@ export function usePatentSummary() {
   const [currentPatent, setCurrentPatent] = useState("");
   const [patentData, setPatentData] = useState<PatentData | null>(null);
   const [relatedPatents, setRelatedPatents] = useState<RelatedPatent[]>([]);
+  const [analysisStep, setAnalysisStep] = useState<AnalysisStep>("idle");
 
   const generateSummary = useCallback(async (patentNumber: string) => {
     setIsLoading(true);
     setIsFetching(true);
+    setAnalysisStep("fetching");
     setSummary("");
     setPatentData(null);
     setRelatedPatents([]);
@@ -57,6 +60,7 @@ export function usePatentSummary() {
     }
 
     setIsFetching(false);
+    setAnalysisStep("summarizing");
 
     // Step 2: Generate AI summary with patent data
     try {
@@ -126,6 +130,7 @@ export function usePatentSummary() {
         }
       }
 
+      setAnalysisStep("done");
       toast.success("요약서가 생성되었습니다!");
       
       // Return the generated data for history saving
@@ -138,6 +143,7 @@ export function usePatentSummary() {
       console.error("Patent summary error:", error);
       toast.error(error instanceof Error ? error.message : "오류가 발생했습니다.");
       setSummary("");
+      setAnalysisStep("idle");
       return null;
     } finally {
       setIsLoading(false);
@@ -163,6 +169,7 @@ export function usePatentSummary() {
     setCurrentPatent("");
     setPatentData(null);
     setRelatedPatents([]);
+    setAnalysisStep("idle");
   }, []);
 
   return {
@@ -172,6 +179,7 @@ export function usePatentSummary() {
     currentPatent,
     patentData,
     relatedPatents,
+    analysisStep,
     generateSummary,
     loadFromHistory,
     reset,

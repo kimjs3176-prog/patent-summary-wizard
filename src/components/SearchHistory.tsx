@@ -47,6 +47,7 @@ function HistoryCard({
   const title = item.patentData?.title || item.patentData?.titleKo || "";
   const displayNum = item.patentData?.displayNumber || item.patentNumber;
   const thumbnailUrl = item.patentData?.representativeImage;
+  const score = item.commercializationScore;
 
   return (
     <button
@@ -61,6 +62,17 @@ function HistoryCard({
       >
         <X className="w-3 h-3" />
       </button>
+      {/* Score badge */}
+      {score != null && (
+        <span
+          className="absolute top-1.5 left-1.5 z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white"
+          style={{
+            background: score >= 80 ? 'hsl(152 76% 36%)' : score >= 65 ? 'hsl(45 93% 47%)' : 'hsl(0 84% 60%)',
+          }}
+        >
+          {score}점
+        </span>
+      )}
       <div className="w-full h-[100px] bg-muted/30 flex items-center justify-center overflow-hidden">
         {thumbnailUrl && !imgError ? (
           <img

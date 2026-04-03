@@ -16,6 +16,8 @@ import { PopularSearches } from "@/components/PopularSearches";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
+import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
+import { ExamplePatents } from "@/components/ExamplePatents";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 
@@ -23,12 +25,13 @@ const Index = () => {
   const navigate = useNavigate();
   const {
     isLoading, isFetching, summary, currentPatent, patentData,
-    relatedPatents, generateSummary,
+    relatedPatents, analysisStep, generateSummary,
     loadFromHistory, reset
   } = usePatentSummary();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { settings } = useSiteSettings();
   const { favorites } = useFavoritePatents();
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const homepageVisible = useMemo(() => {
     try { return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {}; } catch { return {}; }
@@ -46,6 +49,15 @@ const Index = () => {
     }
   };
 
+  // Auto-scroll to results when analysis starts
+  useEffect(() => {
+    if (analysisStep === "fetching" && resultRef.current) {
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+    }
+  }, [analysisStep]);
+
   const handleSubmitInternal = async (patentNumber: string) => {
     updateUrl(patentNumber);
     const result = await generateSummary(patentNumber);
@@ -58,6 +70,20 @@ const Index = () => {
       });
       trackPatentSearch(patentNumber, result.patentData.titleKo || result.patentData.title);
     }
+  };
+
+  // Update history with score when it becomes available
+  const handleScoreReady = (score: number) => {
+    if (!currentPatent) return;
+    const stored = localStorage.getItem("patent-search-history");
+    if (!stored) return;
+    try {
+      const items = JSON.parse(stored);
+      const updated = items.map((item: SearchHistoryItem) =>
+        item.patentNumber === currentPatent ? { ...item, commercializationScore: score } : item
+      );
+      localStorage.setItem("patent-search-history", JSON.stringify(updated));
+    } catch { /* ignore */ }
   };
 
   useEffect(() => {
@@ -124,11 +150,9 @@ const Index = () => {
           <>
             {/* Hero */}
             <section className="text-center max-w-3xl mx-auto mb-16 md:mb-24 animate-fade-down relative py-10 md:py-16">
-              {/* Neural network animation background */}
               <div className="absolute -inset-20 -z-10 overflow-hidden rounded-[3rem]">
                 <AiHeroAnimation />
               </div>
-              {/* Radial glow behind heading */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] rounded-full -z-10 blur-[120px] opacity-50" style={{ background: 'radial-gradient(ellipse, hsl(152 76% 36% / 0.25), transparent 70%)' }} />
 
               <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full mb-8 text-xs font-semibold border shadow-sm backdrop-blur-md" style={{ background: 'hsl(152 76% 36% / 0.06)', color: 'hsl(152 76% 36%)', borderColor: 'hsl(152 76% 36% / 0.12)' }}>
@@ -158,6 +182,14 @@ const Index = () => {
                   </div>
                 )}
               </div>
+
+              {/* Example patents for new users */}
+              {history.length === 0 && keywordResults.length === 0 && (
+                <div className="w-full max-w-2xl mx-auto">
+                  <ExamplePatents onSelect={handleSubmit} isLoading={isLoading} />
+                </div>
+              )}
+
               {history.length > 0 && keywordResults.length === 0 && (
                 <div className="w-full max-w-5xl mx-auto mt-5">
                   <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
@@ -202,18 +234,14 @@ const Index = () => {
             )}
           </>
         ) : (
-          <>
-            {isFetching && (
-              <div className="text-center mb-8 animate-fade-up">
-                <div className="inline-flex flex-col items-center gap-4 px-8 py-8 rounded-2xl bg-secondary">
-                  <div className="w-10 h-10 border-3 border-muted-foreground/20 border-t-foreground rounded-full animate-spin" />
-                  <span className="text-sm text-muted-foreground">특허 정보를 불러오는 중...</span>
-                </div>
-              </div>
+          <div ref={resultRef}>
+            {/* Progress Stepper - shows during analysis */}
+            {isLoading && (
+              <AnalysisProgressStepper currentStep={analysisStep} />
             )}
 
             <section className="mb-8">
-              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} onKeywordClick={handleKeywordTagClick} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} />
+              <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} onKeywordClick={handleKeywordTagClick} onScoreReady={handleScoreReady} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} />
             </section>
 
             {isLoading && !isFetching && (
@@ -221,7 +249,7 @@ const Index = () => {
                 <PatentInput onSubmit={generateSummary} isLoading={isLoading} />
               </section>
             )}
-          </>
+          </div>
         )}
       </main>
     </PageLayout>

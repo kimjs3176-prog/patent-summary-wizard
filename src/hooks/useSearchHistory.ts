@@ -7,6 +7,7 @@ export interface SearchHistoryItem {
   summary: string;
   relatedPatents: RelatedPatent[];
   searchedAt: string;
+  commercializationScore?: number | null;
 }
 
 const STORAGE_KEY = "patent-search-history";

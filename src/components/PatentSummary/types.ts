@@ -41,6 +41,7 @@ export interface PatentSummaryProps {
   patentData?: PatentData | null;
   relatedPatents?: RelatedPatent[];
   onRelatedPatentClick?: (patentNumber: string) => void;
+  onScoreReady?: (score: number) => void;
   featureFlags?: FeatureFlags;
 }
 

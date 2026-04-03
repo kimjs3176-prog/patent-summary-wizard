@@ -6,6 +6,7 @@ import { PatentSummaryProps as BasePatentSummaryProps, FeatureFlags } from "./ty
 
 interface PatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
+  onScoreReady?: (score: number) => void;
 }
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
@@ -23,6 +24,7 @@ export function PatentSummary({
   relatedPatents = [],
   onRelatedPatentClick,
   onKeywordClick,
+  onScoreReady,
   featureFlags = { pdfEnabled: true, pptEnabled: true },
 }: PatentSummaryProps) {
   const [copied, setCopied] = useState(false);
@@ -100,6 +102,7 @@ export function PatentSummary({
         if (result.success) {
           setCommercializationScore(result.score);
           setCommercializationDetails(result.details);
+          onScoreReady?.(result.score);
         }
       } catch (error) {
         console.error("Commercialization analysis error:", error);
