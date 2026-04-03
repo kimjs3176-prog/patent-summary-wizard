@@ -143,6 +143,7 @@ export function usePatentSummary() {
       console.error("Patent summary error:", error);
       toast.error(error instanceof Error ? error.message : "오류가 발생했습니다.");
       setSummary("");
+      setAnalysisStep("idle");
       return null;
     } finally {
       setIsLoading(false);
