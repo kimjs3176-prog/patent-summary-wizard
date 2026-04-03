@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { PatentData, RelatedPatent } from "@/components/PatentSummary/types";
+import { AnalysisStep } from "@/components/AnalysisProgressStepper";
 
 export function usePatentSummary() {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,6 +10,7 @@ export function usePatentSummary() {
   const [currentPatent, setCurrentPatent] = useState("");
   const [patentData, setPatentData] = useState<PatentData | null>(null);
   const [relatedPatents, setRelatedPatents] = useState<RelatedPatent[]>([]);
+  const [analysisStep, setAnalysisStep] = useState<AnalysisStep>("idle");
 
   const generateSummary = useCallback(async (patentNumber: string) => {
     setIsLoading(true);
