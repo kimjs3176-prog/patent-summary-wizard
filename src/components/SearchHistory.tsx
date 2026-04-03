@@ -47,6 +47,7 @@ function HistoryCard({
   const title = item.patentData?.title || item.patentData?.titleKo || "";
   const displayNum = item.patentData?.displayNumber || item.patentNumber;
   const thumbnailUrl = item.patentData?.representativeImage;
+  const score = item.commercializationScore;
 
   return (
     <button
