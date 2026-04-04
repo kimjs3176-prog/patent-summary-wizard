@@ -373,14 +373,14 @@
   }
 }
 
-/* Keyframes */
+/* 2026 Keyframes — organic spring easing */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(28px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-24px); }
+  from { opacity: 0; transform: translateY(-28px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -390,24 +390,29 @@
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-20px); }
+  from { opacity: 0; transform: translateX(-24px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.94); }
   to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes pulseSoft {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  50% { opacity: 0.5; }
 }
 
 @keyframes gradientShimmer {
   0% { background-position: 0% center; }
   50% { background-position: 100% center; }
   100% { background-position: 0% center; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 @keyframes marquee {
@@ -422,6 +427,11 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.05); opacity: 1; }
 }
 
 /* Print styles */
