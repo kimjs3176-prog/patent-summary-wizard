@@ -16,9 +16,9 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-xl animate-pulse bg-muted" />
-          <Skeleton className="h-4 w-32" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-2xl animate-pulse bg-muted" />
+          <Skeleton className="h-3 w-28 rounded-full" />
         </div>
       </div>
     );
@@ -26,25 +26,25 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Ambient background */}
+      {/* 2026 Ambient background — softer, more organic blobs */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[160px]" style={{ background: 'radial-gradient(circle, hsl(152 76% 36% / 0.07) 0%, transparent 70%)' }} />
-        <div className="absolute -bottom-40 -right-40 w-[450px] h-[450px] rounded-full blur-[160px]" style={{ background: 'radial-gradient(circle, hsl(168 72% 40% / 0.05) 0%, transparent 70%)' }} />
-        <div className="absolute inset-0 opacity-[0.012]" style={{ backgroundImage: 'linear-gradient(hsl(220 13% 91%) 1px, transparent 1px), linear-gradient(90deg, hsl(220 13% 91%) 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
+        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full blur-[200px] animate-float" style={{ background: 'radial-gradient(circle, hsl(158 64% 40% / 0.06) 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-[200px]" style={{ background: 'radial-gradient(circle, hsl(172 56% 42% / 0.04) 0%, transparent 70%)', animationDelay: '3s' }} />
+        <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full blur-[180px] animate-float" style={{ background: 'radial-gradient(circle, hsl(184 48% 44% / 0.03) 0%, transparent 70%)', animationDelay: '1.5s' }} />
       </div>
 
-      {/* Header */}
-      <header className="w-full sticky top-0 z-50 backdrop-blur-2xl border-b border-border/40" style={{ background: 'hsl(0 0% 100% / 0.88)' }}>
-        <div className="container mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm icon-bounce cursor-pointer" style={{ background: 'var(--gradient-accent)' }}>
+      {/* 2026 Header — frosted glass with refined presence */}
+      <header className="w-full sticky top-0 z-50 backdrop-blur-3xl border-b border-border/30" style={{ background: 'hsl(60 5% 98% / 0.82)' }}>
+        <div className="container mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3 min-w-0 group">
+            <div className="w-9 h-9 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-400 group-hover:shadow-md group-hover:scale-105" style={{ background: 'var(--gradient-accent)' }}>
               <FileText className="w-4 h-4 text-white" />
             </div>
             <div className="min-w-0">
               <h1 className="font-bold text-sm text-foreground tracking-tight leading-tight">
                 {settings.header_title}
               </h1>
-              <p className="text-[10px] text-muted-foreground/70 hidden sm:block leading-tight">
+              <p className="text-[10px] text-muted-foreground/60 hidden sm:block leading-tight tracking-wide">
                 {settings.header_subtitle}
               </p>
             </div>
@@ -55,19 +55,19 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
 
       {children}
 
-      {/* Footer */}
-      <footer className="mt-auto relative z-10 border-t border-border/30">
-        <div className="container mx-auto px-4 py-10 md:py-12 text-center">
+      {/* 2026 Footer — clean, generous spacing */}
+      <footer className="mt-auto relative z-10 border-t border-border/20">
+        <div className="container mx-auto px-4 py-12 md:py-16 text-center">
           {showFooterLogo && (
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'var(--gradient-accent)' }}>
-                <FileText className="w-2.5 h-2.5 text-white" />
+            <div className="flex items-center justify-center gap-2.5 mb-4">
+              <div className="w-6 h-6 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-accent)' }}>
+                <FileText className="w-3 h-3 text-white" />
               </div>
-              <span className="text-xs font-semibold text-foreground">{settings.header_title}</span>
+              <span className="text-xs font-semibold text-foreground tracking-tight">{settings.header_title}</span>
             </div>
           )}
-          <p className="text-[11px] text-muted-foreground/60">{settings.footer_line1}</p>
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5">{settings.footer_line2}</p>
+          <p className="text-[11px] text-muted-foreground/50 leading-relaxed">{settings.footer_line1}</p>
+          <p className="text-[11px] text-muted-foreground/50 mt-1">{settings.footer_line2}</p>
         </div>
       </footer>
     </div>
