@@ -6,12 +6,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 2025 Design System — Neobrutalism + Glassmorphism + Bold Typography */
+/* 2026 Design System — Evolved Glassmorphism + Organic Motion + Depth Layers */
 
 @layer base {
   :root {
-    /* Core palette — Refined Green/Slate */
-    --background: 0 0% 99%;
+    /* Core palette — Warm neutrals with green accent */
+    --background: 60 5% 98%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -21,7 +21,7 @@
     --popover-foreground: 222 47% 11%;
 
     /* Green accent system */
-    --primary: 152 76% 36%;
+    --primary: 158 64% 40%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
@@ -38,45 +38,49 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 152 76% 36%;
+    --ring: 158 64% 40%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* 2025 Design Tokens */
-    --gradient-accent: linear-gradient(135deg, hsl(152 76% 36%) 0%, hsl(168 72% 40%) 50%, hsl(180 58% 42%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 98%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(152 76% 36% / 0.08) 0%, hsl(180 58% 42% / 0.05) 100%);
-    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.95) 0%, hsl(0 0% 100% / 0.85) 100%);
-    
-    /* Layered shadow system */
-    --shadow-2xs: 0 1px 2px hsl(222 47% 11% / 0.04);
-    --shadow-xs: 0 1px 3px hsl(222 47% 11% / 0.06), 0 1px 2px hsl(222 47% 11% / 0.04);
-    --shadow-sm: 0 2px 4px hsl(222 47% 11% / 0.06), 0 1px 2px hsl(222 47% 11% / 0.04);
-    --shadow-md: 0 4px 8px -2px hsl(222 47% 11% / 0.08), 0 2px 4px -1px hsl(222 47% 11% / 0.04);
-    --shadow-lg: 0 8px 16px -4px hsl(222 47% 11% / 0.1), 0 4px 8px -2px hsl(222 47% 11% / 0.05);
-    --shadow-xl: 0 16px 32px -8px hsl(222 47% 11% / 0.12), 0 8px 16px -4px hsl(222 47% 11% / 0.06);
-    --shadow-2xl: 0 24px 48px -12px hsl(222 47% 11% / 0.18);
-    
-    /* Accent glow shadows */
-    --shadow-glow: 0 0 0 1px hsl(152 76% 36% / 0.1), 0 8px 24px -4px hsl(152 76% 36% / 0.15);
-    --shadow-card: 0 1px 3px hsl(222 47% 11% / 0.04), 0 0 0 1px hsl(220 13% 91% / 0.8), inset 0 1px 0 hsl(0 0% 100%);
-    --shadow-glossy: 0 2px 8px hsl(222 47% 11% / 0.06), 0 0 0 1px hsl(220 13% 91%), inset 0 1px 0 hsl(0 0% 100% / 0.9);
-    --shadow-elevated: 0 4px 12px -2px hsl(222 47% 11% / 0.08), 0 2px 6px -1px hsl(222 47% 11% / 0.04), 0 0 0 1px hsl(220 13% 91% / 0.6);
+    /* 2026 Design Tokens — depth-aware gradients */
+    --gradient-accent: linear-gradient(135deg, hsl(158 64% 40%) 0%, hsl(172 56% 42%) 50%, hsl(184 48% 44%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(60 5% 97%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(158 64% 40% / 0.06) 0%, hsl(184 48% 44% / 0.04) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.92) 0%, hsl(0 0% 100% / 0.78) 100%);
+    --gradient-frosted: linear-gradient(160deg, hsl(0 0% 100% / 0.7) 0%, hsl(220 14% 98% / 0.5) 100%);
+
+    /* Layered shadow system — organic depth */
+    --shadow-2xs: 0 1px 2px hsl(222 47% 11% / 0.03);
+    --shadow-xs: 0 1px 3px hsl(222 47% 11% / 0.05), 0 1px 2px hsl(222 47% 11% / 0.03);
+    --shadow-sm: 0 2px 6px hsl(222 47% 11% / 0.05), 0 1px 3px hsl(222 47% 11% / 0.03);
+    --shadow-md: 0 4px 12px -2px hsl(222 47% 11% / 0.07), 0 2px 6px -1px hsl(222 47% 11% / 0.04);
+    --shadow-lg: 0 10px 24px -6px hsl(222 47% 11% / 0.09), 0 4px 10px -3px hsl(222 47% 11% / 0.04);
+    --shadow-xl: 0 20px 40px -8px hsl(222 47% 11% / 0.1), 0 8px 20px -4px hsl(222 47% 11% / 0.05);
+    --shadow-2xl: 0 28px 56px -12px hsl(222 47% 11% / 0.14);
+
+    /* Accent glow shadows — softer, more diffuse */
+    --shadow-glow: 0 0 0 1px hsl(158 64% 40% / 0.08), 0 8px 30px -4px hsl(158 64% 40% / 0.12), 0 0 60px -10px hsl(158 64% 40% / 0.08);
+    --shadow-card: 0 1px 3px hsl(222 47% 11% / 0.03), 0 0 0 1px hsl(220 13% 91% / 0.6), inset 0 1px 0 hsl(0 0% 100%);
+    --shadow-glossy: 0 2px 10px hsl(222 47% 11% / 0.04), 0 0 0 1px hsl(220 13% 91% / 0.8), inset 0 1px 0 hsl(0 0% 100% / 0.9);
+    --shadow-elevated: 0 6px 16px -3px hsl(222 47% 11% / 0.07), 0 2px 8px -1px hsl(222 47% 11% / 0.04), 0 0 0 1px hsl(220 13% 91% / 0.5);
     --shadow-neo: 4px 4px 0 0 hsl(222 47% 11%);
     --shadow-neo-sm: 2px 2px 0 0 hsl(222 47% 11%);
 
-    --sidebar-background: 0 0% 99%;
+    /* Frosted glass shadow */
+    --shadow-frosted: 0 8px 32px -8px hsl(222 47% 11% / 0.08), inset 0 0 0 1px hsl(0 0% 100% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.5);
+
+    --sidebar-background: 60 5% 98%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 152 76% 36%;
+    --sidebar-primary: 158 64% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 14% 96%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 152 76% 36%;
+    --sidebar-ring: 158 64% 40%;
 
-    --chart-1: 152 76% 36%;
-    --chart-2: 168 72% 40%;
-    --chart-3: 180 58% 42%;
+    --chart-1: 158 64% 40%;
+    --chart-2: 172 56% 42%;
+    --chart-3: 184 48% 44%;
     --chart-4: 38 92% 50%;
     --chart-5: 0 84% 60%;
   }
