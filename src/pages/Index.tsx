@@ -148,22 +148,22 @@ const Index = () => {
       <main className="container mx-auto px-4 md:px-6 py-8 md:py-14 relative z-10">
         {!summary && !isLoading ? (
           <>
-            {/* Hero */}
-            <section className="text-center max-w-3xl mx-auto mb-16 md:mb-24 animate-fade-down relative py-10 md:py-16">
-              <div className="absolute -inset-20 -z-10 overflow-hidden rounded-[3rem]">
+            {/* 2026 Hero — generous spacing, organic glow, refined typography */}
+            <section className="text-center max-w-3xl mx-auto mb-20 md:mb-28 animate-fade-down relative py-14 md:py-20">
+              <div className="absolute -inset-24 -z-10 overflow-hidden rounded-[4rem]">
                 <AiHeroAnimation />
               </div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] rounded-full -z-10 blur-[120px] opacity-50" style={{ background: 'radial-gradient(ellipse, hsl(152 76% 36% / 0.25), transparent 70%)' }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[400px] rounded-full -z-10 blur-[140px] opacity-40 animate-float" style={{ background: 'radial-gradient(ellipse, hsl(158 64% 40% / 0.2), transparent 70%)' }} />
 
-              <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full mb-8 text-xs font-semibold border shadow-sm backdrop-blur-md" style={{ background: 'hsl(152 76% 36% / 0.06)', color: 'hsl(152 76% 36%)', borderColor: 'hsl(152 76% 36% / 0.12)' }}>
+              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl mb-10 text-xs font-semibold border backdrop-blur-xl" style={{ background: 'hsl(158 64% 40% / 0.05)', color: 'hsl(158 64% 40%)', borderColor: 'hsl(158 64% 40% / 0.1)' }}>
                 <Sparkles className="w-3.5 h-3.5" />
                 AI 기반 특허 분석
               </div>
-              <h2 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold text-foreground mb-6 md:mb-7 leading-[1.08] tracking-tight">
+              <h2 className="text-4xl md:text-5xl lg:text-[3.75rem] font-extrabold text-foreground mb-7 md:mb-8 leading-[1.06] tracking-[-0.03em]">
                 {settings.hero_title}<br />
                 <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-lg mx-auto text-muted-foreground">
+              <p className="text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-md mx-auto text-muted-foreground/70 tracking-tight">
                 {settings.hero_description}
               </p>
             </section>
