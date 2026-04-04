@@ -14,12 +14,12 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-muted-foreground">최근 검색</span>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs font-semibold text-muted-foreground/60 tracking-wide">최근 검색</span>
         {history.length > 1 && (
           <button
             onClick={onClear}
-            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            className="text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors duration-300"
           >
             전체삭제
           </button>
@@ -52,12 +52,12 @@ function HistoryCard({
   return (
     <button
       onClick={() => onSelect(item)}
-      className="group relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm hover:border-foreground/15 hover:shadow-md transition-all duration-300 text-left overflow-hidden card-interactive btn-press"
-      style={{ boxShadow: 'var(--shadow-glossy)' }}
+      className="group relative rounded-3xl border border-border/20 bg-card/70 backdrop-blur-lg hover:border-primary/15 transition-all duration-500 text-left overflow-hidden card-interactive btn-press"
+      style={{ boxShadow: 'var(--shadow-card)' }}
       title={`${displayNum} ${title}`}
     >
       <button
-        className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive z-10 bg-background/80 rounded-full p-0.5"
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 text-muted-foreground hover:text-destructive z-10 bg-background/70 backdrop-blur-sm rounded-xl p-1"
         onClick={(e) => { e.stopPropagation(); onRemove(item.patentNumber); }}
       >
         <X className="w-3 h-3" />
@@ -65,15 +65,15 @@ function HistoryCard({
       {/* Score badge */}
       {score != null && (
         <span
-          className="absolute top-1.5 left-1.5 z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white"
+          className="absolute top-2 left-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded-xl text-white backdrop-blur-sm"
           style={{
-            background: score >= 80 ? 'hsl(152 76% 36%)' : score >= 65 ? 'hsl(45 93% 47%)' : 'hsl(0 84% 60%)',
+            background: score >= 80 ? 'hsl(158 64% 40% / 0.9)' : score >= 65 ? 'hsl(45 93% 47% / 0.9)' : 'hsl(0 84% 60% / 0.9)',
           }}
         >
           {score}점
         </span>
       )}
-      <div className="w-full h-[100px] bg-muted/30 flex items-center justify-center overflow-hidden">
+      <div className="w-full h-[100px] bg-muted/20 flex items-center justify-center overflow-hidden rounded-t-3xl">
         {thumbnailUrl && !imgError ? (
           <img
             src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(thumbnailUrl)}`}
@@ -82,14 +82,14 @@ function HistoryCard({
             onError={() => setImgError(true)}
           />
         ) : (
-          <span className="text-2xl text-muted-foreground/30">📄</span>
+          <span className="text-2xl text-muted-foreground/20">📄</span>
         )}
       </div>
-      <div className="px-2.5 py-2">
-        <p className="text-[11px] font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors min-h-[30px]">
+      <div className="px-3 py-2.5">
+        <p className="text-[11px] font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-300 min-h-[30px]">
           {title || displayNum}
         </p>
-        <p className="text-[10px] text-muted-foreground mt-1 truncate">{displayNum}</p>
+        <p className="text-[10px] text-muted-foreground/50 mt-1 truncate">{displayNum}</p>
       </div>
     </button>
   );

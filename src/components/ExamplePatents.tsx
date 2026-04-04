@@ -1,4 +1,4 @@
-import { Beaker } from "lucide-react";
+import { Beaker, ArrowUpRight } from "lucide-react";
 
 interface ExamplePatentsProps {
   onSelect: (patentNumber: string) => void;
@@ -13,21 +13,23 @@ const examples = [
 
 export function ExamplePatents({ onSelect, isLoading }: ExamplePatentsProps) {
   return (
-    <div className="flex flex-col items-center gap-3 mt-6">
-      <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70 font-medium">
+    <div className="flex flex-col items-center gap-4 mt-8">
+      <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 font-medium tracking-wide">
         <Beaker className="w-3 h-3" />
         이런 특허를 분석해 보세요
       </span>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex flex-wrap justify-center gap-2.5">
         {examples.map((ex) => (
           <button
             key={ex.number}
             onClick={() => !isLoading && onSelect(ex.number)}
             disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border border-border/40 bg-card/60 backdrop-blur-sm text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed btn-press"
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-medium border border-border/30 bg-card/70 backdrop-blur-md text-muted-foreground hover:text-foreground hover:border-primary/20 hover:bg-primary/5 transition-all duration-400 disabled:opacity-30 disabled:cursor-not-allowed btn-press"
+            style={{ boxShadow: 'var(--shadow-card)' }}
           >
-            <span>{ex.emoji}</span>
-            {ex.label}
+            <span className="text-sm">{ex.emoji}</span>
+            <span>{ex.label}</span>
+            <ArrowUpRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-60 group-hover:translate-x-0 transition-all duration-300" />
           </button>
         ))}
       </div>
