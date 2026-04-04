@@ -11,7 +11,18 @@ interface PageLayoutProps {
 }
 
 export function PageLayout({ children, headerRight, showFooterLogo = true }: PageLayoutProps) {
-  const { settings } = useSiteSettings();
+  const { settings, isLoading } = useSiteSettings();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-xl animate-pulse bg-muted" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
