@@ -86,8 +86,8 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
               opacity: isFocused ? 1 : 0,
             }}
           />
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
-            <FileText className={`h-[18px] w-[18px] transition-colors duration-300 ${isFocused ? 'text-primary' : 'text-muted-foreground/40'}`} />
+          <div className="absolute inset-y-0 left-0 pl-3 md:pl-5 flex items-center pointer-events-none z-10">
+            <FileText className={`h-4 w-4 md:h-[18px] md:w-[18px] transition-colors duration-300 ${isFocused ? 'text-primary' : 'text-muted-foreground/40'}`} />
           </div>
           <input
             type="text"
