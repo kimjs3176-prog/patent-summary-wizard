@@ -57,7 +57,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
 
       {/* 2026 Footer — clean, generous spacing */}
       <footer className="mt-auto relative z-10 border-t border-border/20">
-        <div className="container mx-auto px-4 py-12 md:py-16 text-center">
+        <div className="container mx-auto px-3 sm:px-4 py-8 md:py-16 text-center">
           {showFooterLogo && (
             <div className="flex items-center justify-center gap-2.5 mb-4">
               <div className="w-6 h-6 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-accent)' }}>

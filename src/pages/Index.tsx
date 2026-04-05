@@ -125,7 +125,7 @@ const Index = () => {
             variant="outline"
             size="sm"
             onClick={() => { updateUrl(); reset(); }}
-            className="rounded-full text-xs h-8 px-4 glossy-card btn-press font-medium"
+            className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card btn-press font-medium"
           >
             새로운 검색
           </Button>
@@ -133,10 +133,10 @@ const Index = () => {
             variant="outline"
             size="sm"
             onClick={() => { updateUrl(); reset(); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); }}
-            className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5 btn-press font-medium"
+            className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-1.5 btn-press font-medium"
           >
             <RotateCcw className="w-3 h-3" />
-            초기화
+            <span className="hidden sm:inline">초기화</span>
           </Button>
         </>
       )}

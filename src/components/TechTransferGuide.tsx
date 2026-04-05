@@ -30,13 +30,13 @@ export function TechTransferGuide() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 md:gap-4">
         {steps.map((step) => {
           const Icon = step.icon;
           return (
             <div
               key={step.num}
-              className="group rounded-2xl p-5 md:p-6 bg-card border border-border/40 hover:border-border/70 hover:shadow-lg transition-all duration-300 animate-fade-up card-interactive"
+              className="group rounded-2xl p-4 sm:p-5 md:p-6 bg-card border border-border/40 hover:border-border/70 hover:shadow-lg transition-all duration-300 animate-fade-up card-interactive"
               style={{ animationDelay: `${0.06 * step.num}s`, boxShadow: 'var(--shadow-glossy)' }}
             >
               <div className="flex items-start gap-4">
