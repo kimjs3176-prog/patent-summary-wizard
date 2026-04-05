@@ -25,7 +25,7 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
           </button>
         )}
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-3">
         {history.slice(0, 6).map((item) => (
           <HistoryCard key={item.patentNumber} item={item} onSelect={onSelect} onRemove={onRemove} />
         ))}
