@@ -35,21 +35,21 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
 
       {/* 2026 Header — frosted glass with refined presence */}
       <header className="w-full sticky top-0 z-50 backdrop-blur-3xl border-b border-border/30" style={{ background: 'hsl(60 5% 98% / 0.82)' }}>
-        <div className="container mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 min-w-0 group">
-            <div className="w-9 h-9 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-400 group-hover:shadow-md group-hover:scale-105" style={{ background: 'var(--gradient-accent)' }}>
-              <FileText className="w-4 h-4 text-white" />
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2.5 md:py-3.5 flex items-center justify-between gap-2">
+          <Link to="/" className="flex items-center gap-2 md:gap-3 min-w-0 group flex-shrink-0">
+            <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm transition-all duration-400 group-hover:shadow-md group-hover:scale-105" style={{ background: 'var(--gradient-accent)' }}>
+              <FileText className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-bold text-sm text-foreground tracking-tight leading-tight">
+              <h1 className="font-bold text-xs md:text-sm text-foreground tracking-tight leading-tight truncate max-w-[120px] sm:max-w-none">
                 {settings.header_title}
               </h1>
-              <p className="text-[10px] text-muted-foreground/60 hidden sm:block leading-tight tracking-wide">
+              <p className="text-[9px] md:text-[10px] text-muted-foreground/60 hidden sm:block leading-tight tracking-wide">
                 {settings.header_subtitle}
               </p>
             </div>
           </Link>
-          {headerRight && <div className="flex items-center gap-2">{headerRight}</div>}
+          {headerRight && <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">{headerRight}</div>}
         </div>
       </header>
 
