@@ -122,12 +122,12 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
       )}
 
       {/* Patent Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 md:gap-4">
         {filteredPatents.map((patent, index) => (
           <button
             key={patent.id}
             onClick={() => onPatentSelect(patent.patent_number)}
-            className="group p-4 md:p-5 rounded-2xl bg-card text-left border border-border/40 hover:border-border/70 hover:shadow-lg backdrop-blur-sm transition-all duration-300 animate-fade-up card-interactive btn-press"
+            className="group p-3.5 sm:p-4 md:p-5 rounded-2xl bg-card text-left border border-border/40 hover:border-border/70 hover:shadow-lg backdrop-blur-sm transition-all duration-300 animate-fade-up card-interactive btn-press"
             style={{ animationDelay: `${0.05 + index * 0.03}s`, boxShadow: 'var(--shadow-glossy)' }}
           >
             <div className="flex items-start gap-3 mb-3">

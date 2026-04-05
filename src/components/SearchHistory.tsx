@@ -25,7 +25,7 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
           </button>
         )}
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-3">
         {history.slice(0, 6).map((item) => (
           <HistoryCard key={item.patentNumber} item={item} onSelect={onSelect} onRemove={onRemove} />
         ))}
@@ -73,7 +73,7 @@ function HistoryCard({
           {score}점
         </span>
       )}
-      <div className="w-full h-[100px] bg-muted/20 flex items-center justify-center overflow-hidden rounded-t-3xl">
+      <div className="w-full h-[80px] sm:h-[100px] bg-muted/20 flex items-center justify-center overflow-hidden rounded-t-3xl">
         {thumbnailUrl && !imgError ? (
           <img
             src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(thumbnailUrl)}`}

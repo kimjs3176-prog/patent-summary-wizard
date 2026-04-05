@@ -114,9 +114,9 @@ const Index = () => {
   const headerRight = (
     <>
       <Link to="/compare">
-        <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 glossy-card gap-2 btn-press font-medium">
-          <Heart className="w-3.5 h-3.5" />
-          관심특허{favorites.length > 0 ? ` (${favorites.length})` : ""}
+        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+          <Heart className="w-3 h-3 md:w-3.5 md:h-3.5" />
+          <span className="hidden sm:inline">관심특허</span>{favorites.length > 0 ? ` (${favorites.length})` : ""}
         </Button>
       </Link>
       {(summary || isLoading) && (
@@ -125,7 +125,7 @@ const Index = () => {
             variant="outline"
             size="sm"
             onClick={() => { updateUrl(); reset(); }}
-            className="rounded-full text-xs h-8 px-4 glossy-card btn-press font-medium"
+            className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card btn-press font-medium"
           >
             새로운 검색
           </Button>
@@ -133,10 +133,10 @@ const Index = () => {
             variant="outline"
             size="sm"
             onClick={() => { updateUrl(); reset(); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); }}
-            className="rounded-full text-xs h-8 px-4 glossy-card gap-1.5 btn-press font-medium"
+            className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-1.5 btn-press font-medium"
           >
             <RotateCcw className="w-3 h-3" />
-            초기화
+            <span className="hidden sm:inline">초기화</span>
           </Button>
         </>
       )}
@@ -145,25 +145,25 @@ const Index = () => {
 
   return (
     <PageLayout headerRight={headerRight}>
-      <main className="container mx-auto px-4 md:px-6 py-8 md:py-14 relative z-10">
+      <main className="container mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-14 relative z-10">
         {!summary && !isLoading ? (
           <>
-            {/* 2026 Hero — generous spacing, organic glow, refined typography */}
-            <section className="text-center max-w-3xl mx-auto mb-20 md:mb-28 animate-fade-down relative py-14 md:py-20">
-              <div className="absolute -inset-24 -z-10 overflow-hidden rounded-[4rem]">
+            {/* 2026 Hero — mobile-first spacing */}
+            <section className="text-center max-w-3xl mx-auto mb-12 md:mb-28 animate-fade-down relative py-8 md:py-20">
+              <div className="absolute -inset-12 md:-inset-24 -z-10 overflow-hidden rounded-[2rem] md:rounded-[4rem]">
                 <AiHeroAnimation />
               </div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[400px] rounded-full -z-10 blur-[140px] opacity-40 animate-float" style={{ background: 'radial-gradient(ellipse, hsl(158 64% 40% / 0.2), transparent 70%)' }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] md:w-[650px] h-[300px] md:h-[400px] rounded-full -z-10 blur-[100px] md:blur-[140px] opacity-40 animate-float" style={{ background: 'radial-gradient(ellipse, hsl(158 64% 40% / 0.2), transparent 70%)' }} />
 
-              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl mb-10 text-xs font-semibold border backdrop-blur-xl" style={{ background: 'hsl(158 64% 40% / 0.05)', color: 'hsl(158 64% 40%)', borderColor: 'hsl(158 64% 40% / 0.1)' }}>
-                <Sparkles className="w-3.5 h-3.5" />
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl mb-6 md:mb-10 text-[11px] md:text-xs font-semibold border backdrop-blur-xl" style={{ background: 'hsl(158 64% 40% / 0.05)', color: 'hsl(158 64% 40%)', borderColor: 'hsl(158 64% 40% / 0.1)' }}>
+                <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 AI 기반 특허 분석
               </div>
-              <h2 className="text-4xl md:text-5xl lg:text-[3.75rem] font-extrabold text-foreground mb-7 md:mb-8 leading-[1.06] tracking-[-0.03em]">
+              <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-[3.75rem] font-extrabold text-foreground mb-4 md:mb-8 leading-[1.12] md:leading-[1.06] tracking-[-0.02em] md:tracking-[-0.03em] px-2">
                 {settings.hero_title}<br />
                 <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-md mx-auto text-muted-foreground/70 tracking-tight">
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-xs sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight px-4 md:px-0">
                 {settings.hero_description}
               </p>
             </section>
