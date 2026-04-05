@@ -21,10 +21,10 @@ export function TechTransferGuide() {
             기술이전 절차 안내
           </p>
         </div>
-        <h3 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
+        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground leading-tight">
           국가직무발명특허 <span className="gradient-text">기술이전</span>이란?
         </h3>
-        <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed">
+        <p className="mt-2 md:mt-3 text-xs sm:text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed">
           국가공무원의 직무발명에 따라 국가 명의로 출원하여 등록된 권리(특허)를{" "}
           <strong className="text-foreground font-medium">'실시권 허락(라이센싱 계약)'</strong>의 형태로 이전하는 것
         </p>
