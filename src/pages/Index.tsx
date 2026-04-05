@@ -114,9 +114,9 @@ const Index = () => {
   const headerRight = (
     <>
       <Link to="/compare">
-        <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 glossy-card gap-2 btn-press font-medium">
-          <Heart className="w-3.5 h-3.5" />
-          관심특허{favorites.length > 0 ? ` (${favorites.length})` : ""}
+        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+          <Heart className="w-3 h-3 md:w-3.5 md:h-3.5" />
+          <span className="hidden sm:inline">관심특허</span>{favorites.length > 0 ? ` (${favorites.length})` : ""}
         </Button>
       </Link>
       {(summary || isLoading) && (
