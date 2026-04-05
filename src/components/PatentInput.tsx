@@ -102,11 +102,11 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             onFocus={() => { setIsFocused(true); onFocusChange?.(true); }}
             onBlur={() => { setIsFocused(false); setTimeout(() => onFocusChange?.(false), 200); }}
           />
-          <div className="absolute inset-y-0 right-2.5 flex items-center">
+          <div className="absolute inset-y-0 right-1.5 md:right-2.5 flex items-center">
             <button
               type="submit"
               disabled={!inputValue.trim() || isProcessing}
-              className="h-10 px-5 text-sm font-semibold rounded-xl transition-all duration-400 disabled:opacity-25 disabled:cursor-not-allowed flex items-center gap-2 btn-press"
+              className="h-9 md:h-10 px-3 md:px-5 text-xs md:text-sm font-semibold rounded-xl transition-all duration-400 disabled:opacity-25 disabled:cursor-not-allowed flex items-center gap-1.5 md:gap-2 btn-press"
               style={{
                 background: inputValue.trim() && !isProcessing ? 'var(--gradient-accent)' : 'hsl(var(--muted))',
                 color: inputValue.trim() && !isProcessing ? 'white' : 'hsl(var(--muted-foreground))',
