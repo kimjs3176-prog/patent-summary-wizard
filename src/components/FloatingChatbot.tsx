@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { X, Bot } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const CHATBOT_URL = "https://patent-ask-chat.lovable.app";
