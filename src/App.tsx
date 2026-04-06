@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,35 +10,46 @@ import Compare from "./pages/Compare";
 import SearchResults from "./pages/SearchResults";
 import NotFound from "./pages/NotFound";
 import { FloatingChatbot } from "./components/FloatingChatbot";
+import { SplashScreen } from "./components/SplashScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5분
+      staleTime: 5 * 60 * 1000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/compare" element={<Compare />} />
-          <Route path="/search" element={<SearchResults />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <FloatingChatbot />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const alreadyShown = sessionStorage.getItem("splash-shown") === "1";
+  const [showSplash, setShowSplash] = useState(!alreadyShown);
+
+  const handleSplashComplete = useCallback(() => {
+    sessionStorage.setItem("splash-shown", "1");
+    setShowSplash(false);
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="/search" element={<SearchResults />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <FloatingChatbot />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
