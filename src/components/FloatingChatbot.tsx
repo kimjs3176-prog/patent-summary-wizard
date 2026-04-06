@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { X, Bot } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const CHATBOT_URL = "https://patent-ask-chat.lovable.app";
@@ -38,11 +38,18 @@ export const FloatingChatbot = () => {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="fixed bottom-6 right-5 z-[9999] w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 btn-press"
-        style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))' }}
+        className="fixed bottom-6 right-5 z-[9999] shadow-lg flex items-center transition-all hover:scale-105 active:scale-95 btn-press"
+        style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))', borderRadius: isOpen ? '50%' : '2rem', padding: isOpen ? '0' : '0', width: isOpen ? '3.5rem' : 'auto', height: '3.5rem' }}
         aria-label="챗봇 열기"
       >
-        {isOpen ? <X className="w-6 h-6 text-white" /> : <MessageCircle className="w-6 h-6 text-white" />}
+        {isOpen ? (
+          <X className="w-6 h-6 text-white mx-auto" />
+        ) : (
+          <span className="flex items-center gap-2 px-5 text-white font-semibold text-sm">
+            <Bot className="w-5 h-5" />
+            챗봇
+          </span>
+        )}
       </button>
     </>
   );
