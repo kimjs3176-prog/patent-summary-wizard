@@ -10,7 +10,7 @@ const allExamples = [
   { number: "10-2023-0083397", label: "스마트 온실 IoT", emoji: "🌱" },
   { number: "10-2791393", label: "신규 보리 계통", emoji: "🌾" },
   { number: "10-2083668", label: "저항전분 다이어트 선식", emoji: "🍚" },
-  { number: "10-2024-0037882", label: "AI 병해충 진단", emoji: "🔬" },
+  { number: "10-2558387", label: "AI 병해충 진단", emoji: "🔬" },
   { number: "10-2568901", label: "스마트팜 양액제어", emoji: "💧" },
   { number: "10-2023-0145632", label: "농산물 품질 검사", emoji: "🍎" },
   { number: "10-2641258", label: "축산 악취 저감", emoji: "🐄" },
