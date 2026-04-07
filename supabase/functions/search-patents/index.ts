@@ -26,6 +26,8 @@ const AGRI_ORGANIZATIONS = [
   { id: "219981064455", name: "농림축산검역본부" },
   { id: "219999001749", name: "국립농산물품질관리원" },
   { id: "220040383104", name: "국립종자원" },
+  { id: "", name: "농업기술센터" },
+  { id: "", name: "농업기술원" },
 ];
 
 const AGRI_ORG_IDS = AGRI_ORGANIZATIONS.map(org => org.id);
