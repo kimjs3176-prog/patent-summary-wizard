@@ -26,6 +26,8 @@ const AGRI_ORGANIZATIONS = [
   { id: "219981064455", name: "농림축산검역본부" },
   { id: "219999001749", name: "국립농산물품질관리원" },
   { id: "220040383104", name: "국립종자원" },
+  { id: "", name: "농업기술센터" },
+  { id: "", name: "농업기술원" },
 ];
 
 const AGRI_ORG_IDS = AGRI_ORGANIZATIONS.map(org => org.id);
@@ -179,7 +181,7 @@ serve(async (req) => {
         const titleUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
         titleUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
         titleUrl.searchParams.set("inventionTitle", searchKeyword);
-        titleUrl.searchParams.set("applicant", org.id);
+        titleUrl.searchParams.set("applicant", org.id || org.name);
         titleUrl.searchParams.set("astrtCont", "");
         titleUrl.searchParams.set("pageNo", "1");
         titleUrl.searchParams.set("numOfRows", "100");
@@ -192,7 +194,7 @@ serve(async (req) => {
         const abstractUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
         abstractUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
         abstractUrl.searchParams.set("inventionTitle", "");
-        abstractUrl.searchParams.set("applicant", org.id);
+        abstractUrl.searchParams.set("applicant", org.id || org.name);
         abstractUrl.searchParams.set("astrtCont", searchKeyword);
         abstractUrl.searchParams.set("pageNo", "1");
         abstractUrl.searchParams.set("numOfRows", "100");
