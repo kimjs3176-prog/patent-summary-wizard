@@ -517,7 +517,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "본 서비스는 농촌진흥청, 농림축산검역본부, 국립농산물품질관리원, 국립종자원의 특허만 조회 가능합니다."
+          error: "본 서비스는 농촌진흥청, 농림축산검역본부, 국립농산물품질관리원, 국립종자원, 농업기술센터, 농업기술원의 특허만 조회 가능합니다."
         }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
