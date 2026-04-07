@@ -181,7 +181,7 @@ serve(async (req) => {
         const titleUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
         titleUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
         titleUrl.searchParams.set("inventionTitle", searchKeyword);
-        titleUrl.searchParams.set("applicant", org.id);
+        titleUrl.searchParams.set("applicant", org.id || org.name);
         titleUrl.searchParams.set("astrtCont", "");
         titleUrl.searchParams.set("pageNo", "1");
         titleUrl.searchParams.set("numOfRows", "100");
