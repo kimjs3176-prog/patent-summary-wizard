@@ -17,7 +17,7 @@ import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
-import { ExamplePatents } from "@/components/ExamplePatents";
+
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 
