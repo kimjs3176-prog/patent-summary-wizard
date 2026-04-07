@@ -187,8 +187,8 @@ const Index = () => {
                 )}
               </div>
 
-              {/* Example patents for new users */}
-              {history.length === 0 && keywordResults.length === 0 && (
+              {/* Example patents - always visible */}
+              {keywordResults.length === 0 && (
                 <div className="w-full max-w-2xl mx-auto">
                   <ExamplePatents onSelect={handleSubmit} isLoading={isLoading} />
                 </div>

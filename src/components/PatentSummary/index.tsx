@@ -15,6 +15,7 @@ import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 
 export function PatentSummary({
   content,
@@ -250,12 +251,12 @@ export function PatentSummary({
             <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
               {parts.map((part, i) => {
                 if ((part.startsWith('**') && part.endsWith('**'))) {
-                  return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+                  return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
                 }
                 if ((part.startsWith('__') && part.endsWith('__'))) {
-                  return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+                  return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
                 }
-                return part;
+                return <span key={i}>{annotateWithGlossary(part)}</span>;
               })}
             </p>
           );
@@ -340,12 +341,12 @@ export function PatentSummary({
           <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
             {parts.map((part, i) => {
               if ((part.startsWith('**') && part.endsWith('**'))) {
-                return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+                return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
               }
               if ((part.startsWith('__') && part.endsWith('__'))) {
-                return <strong key={i} className="font-bold text-foreground">{part.slice(2, -2)}</strong>;
+                return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
               }
-              return part;
+              return <span key={i}>{annotateWithGlossary(part)}</span>;
             })}
           </p>
         );
