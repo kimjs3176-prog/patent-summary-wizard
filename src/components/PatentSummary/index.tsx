@@ -15,6 +15,7 @@ import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 
 export function PatentSummary({
   content,
