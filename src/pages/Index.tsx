@@ -187,13 +187,6 @@ const Index = () => {
                 )}
               </div>
 
-              {/* Example patents - always visible */}
-              {keywordResults.length === 0 && (
-                <div className="w-full max-w-2xl mx-auto">
-                  <ExamplePatents onSelect={handleSubmit} isLoading={isLoading} />
-                </div>
-              )}
-
               {history.length > 0 && keywordResults.length === 0 && (
                 <div className="w-full max-w-5xl mx-auto mt-5">
                   <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
