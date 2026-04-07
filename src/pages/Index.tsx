@@ -17,7 +17,7 @@ import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
-import { ExamplePatents } from "@/components/ExamplePatents";
+
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 
@@ -186,13 +186,6 @@ const Index = () => {
                   </div>
                 )}
               </div>
-
-              {/* Example patents - always visible */}
-              {keywordResults.length === 0 && (
-                <div className="w-full max-w-2xl mx-auto">
-                  <ExamplePatents onSelect={handleSubmit} isLoading={isLoading} />
-                </div>
-              )}
 
               {history.length > 0 && keywordResults.length === 0 && (
                 <div className="w-full max-w-5xl mx-auto mt-5">
