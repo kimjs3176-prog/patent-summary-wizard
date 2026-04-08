@@ -170,7 +170,7 @@ const Index = () => {
 
             {/* Search */}
             <section className="mb-10 animate-fade-up relative z-20" style={{ animationDelay: "0.1s" }}>
-              <div className="w-full max-w-2xl mx-auto flex flex-col">
+              <div className="w-full max-w-2xl mx-auto flex flex-col relative z-40">
                 <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} onFocusChange={setSearchFocused} />
                 {homepageVisible.popularSearches !== false && (
                   <div className="relative">
