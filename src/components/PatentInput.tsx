@@ -75,7 +75,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-2">
         <div className="relative group">
           {/* Glow ring on focus */}
           <div

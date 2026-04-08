@@ -176,10 +176,10 @@ const Index = () => {
                   <div className="relative">
                     {/* Backdrop overlay on mobile to prevent seeing content behind */}
                     {searchFocused && (
-                      <div className="fixed inset-0 bg-background/70 z-30 md:hidden" />
+                      <div className="fixed inset-0 bg-background/80 z-30 md:hidden" style={{ top: '120px' }} />
                     )}
-                    <div className={`absolute left-0 right-0 top-1 z-40 transition-all duration-300 ease-in-out origin-top ${searchFocused ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-95 -translate-y-2 pointer-events-none'}`}>
-                      <div className="mt-1 rounded-2xl border border-border/50 bg-card p-3 md:p-4 max-h-[50vh] overflow-y-auto" style={{ boxShadow: '0 8px 32px -4px hsl(var(--foreground) / 0.08), 0 2px 8px -2px hsl(var(--foreground) / 0.04)' }}>
+                    <div className={`absolute left-0 right-0 top-0 z-40 transition-all duration-300 ease-in-out origin-top ${searchFocused ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-95 -translate-y-2 pointer-events-none'}`}>
+                      <div className="rounded-2xl border border-border/50 bg-card p-3 md:p-4 max-h-[50vh] overflow-y-auto" style={{ boxShadow: '0 8px 32px -4px hsl(var(--foreground) / 0.08), 0 2px 8px -2px hsl(var(--foreground) / 0.04)' }}>
                         <PopularSearches onPatentSelect={handleSubmit} />
                       </div>
                     </div>
