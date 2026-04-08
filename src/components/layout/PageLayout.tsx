@@ -68,6 +68,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
           )}
           <p className="text-[11px] text-muted-foreground/50 leading-relaxed">{settings.footer_line1}</p>
           <p className="text-[11px] text-muted-foreground/50 mt-1">{settings.footer_line2}</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground/70 transition-colors">kimjs1408@koat.or.kr</a></p>
         </div>
       </footer>
     </div>

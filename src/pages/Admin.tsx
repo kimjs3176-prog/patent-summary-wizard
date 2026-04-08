@@ -1501,6 +1501,11 @@ const Admin = () => {
               )}
             </div>
           </TabsContent>
+
+          {/* ===== Notices Tab ===== */}
+          <TabsContent value="notices">
+            <NoticeManager apiCall={apiCall} />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
