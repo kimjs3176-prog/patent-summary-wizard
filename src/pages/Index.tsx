@@ -179,7 +179,7 @@ const Index = () => {
                       <div className="fixed inset-0 bg-background/70 z-30 md:hidden" />
                     )}
                     <div className={`absolute left-0 right-0 top-0 z-40 transition-all duration-300 ease-in-out origin-top ${searchFocused ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-95 -translate-y-2 pointer-events-none'}`}>
-                      <div className="mt-2 rounded-2xl border border-border/40 bg-card backdrop-blur-md p-3 md:p-4 max-h-[50vh] overflow-y-auto" style={{ boxShadow: 'var(--shadow-elevated)' }}>
+                      <div className="mt-2 rounded-2xl border border-border/40 bg-card p-3 md:p-4 max-h-[50vh] overflow-y-auto" style={{ boxShadow: 'var(--shadow-elevated)' }}>
                         <PopularSearches onPatentSelect={handleSubmit} />
                       </div>
                     </div>
