@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText, FileDown, Printer, KeyRound, MessageCircle, BarChart3, TrendingUp, Zap, Calendar } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText, FileDown, Printer, KeyRound, MessageCircle, BarChart3, TrendingUp, Zap, Calendar, Megaphone } from "lucide-react";
+import { NoticeManager } from "@/components/admin/NoticeManager";
 import { PdfLayoutSettings, DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 import { toast } from "sonner";
 import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
@@ -538,6 +539,9 @@ const Admin = () => {
               </TabsTrigger>
               <TabsTrigger value="stats" className="gap-1.5 text-xs sm:text-sm" onClick={() => loadUsageStats()}>
                 <BarChart3 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">통계</span><span className="sm:hidden">통계</span>
+              </TabsTrigger>
+              <TabsTrigger value="notices" className="gap-1.5 text-xs sm:text-sm">
+                <Megaphone className="w-3.5 h-3.5" /> <span className="hidden sm:inline">공지사항</span><span className="sm:hidden">공지</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1496,6 +1500,11 @@ const Admin = () => {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          {/* ===== Notices Tab ===== */}
+          <TabsContent value="notices">
+            <NoticeManager apiCall={apiCall} />
           </TabsContent>
         </Tabs>
       </main>

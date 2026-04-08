@@ -49,7 +49,7 @@ serve(async (req) => {
       );
     }
 
-    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats"];
+    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats", "list-notices", "create-notice", "update-notice", "delete-notice"];
     if (!action || !validActions.includes(action)) {
       return new Response(
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
@@ -401,6 +401,64 @@ serve(async (req) => {
             currentModel: modelSetting?.value || "google/gemini-2.5-flash",
           },
         }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== Notices ==========
+    if (action === "list-notices") {
+      const { data: notices, error } = await supabase
+        .from("notices")
+        .select("*")
+        .order("is_pinned", { ascending: false })
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ success: true, notices: notices || [] }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "create-notice") {
+      const { error } = await supabase.from("notices").insert({
+        title: data.title,
+        content: data.content || null,
+        is_active: data.is_active ?? true,
+        is_pinned: data.is_pinned ?? false,
+        display_order: data.display_order ?? 0,
+      });
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "update-notice") {
+      const { error } = await supabase
+        .from("notices")
+        .update({
+          title: data.title,
+          content: data.content || null,
+          is_active: data.is_active ?? true,
+          is_pinned: data.is_pinned ?? false,
+          display_order: data.display_order ?? 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.id);
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "delete-notice") {
+      const { error } = await supabase.from("notices").delete().eq("id", data.id);
+      if (error) throw error;
+      return new Response(
+        JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

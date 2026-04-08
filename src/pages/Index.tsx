@@ -17,6 +17,7 @@ import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
+import { NoticeSection } from "@/components/NoticeSection";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -193,6 +194,8 @@ const Index = () => {
                 </div>
               )}
             </section>
+
+            <NoticeSection />
 
             {homepageVisible.featuredPatents !== false && (
               <>
