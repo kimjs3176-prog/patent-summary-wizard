@@ -79,10 +79,9 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
         <div className="relative group">
           {/* Glow ring on focus */}
           <div
-            className="absolute -inset-1 rounded-[1.25rem] transition-all duration-500 pointer-events-none"
+            className="absolute -inset-[2px] rounded-[1.15rem] transition-all duration-400 pointer-events-none"
             style={{
-              background: isFocused ? 'linear-gradient(135deg, hsl(158 64% 40% / 0.12), hsl(184 48% 44% / 0.08))' : 'transparent',
-              filter: 'blur(8px)',
+              background: isFocused ? 'linear-gradient(135deg, hsl(158 64% 40% / 0.25), hsl(184 48% 44% / 0.15))' : 'transparent',
               opacity: isFocused ? 1 : 0,
             }}
           />
@@ -93,7 +92,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             type="text"
             value={inputValue}
             onChange={handleInputChange}
-            className="relative w-full h-12 md:h-[3.5rem] pl-10 md:pl-12 pr-16 sm:pr-36 text-xs sm:text-sm bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 placeholder:text-muted-foreground/40 focus:border-primary/25 focus:ring-0"
+            className="relative w-full h-12 md:h-[3.5rem] pl-10 md:pl-12 pr-16 sm:pr-36 text-xs sm:text-sm bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 placeholder:text-muted-foreground/40 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
             style={{
               boxShadow: isFocused ? 'var(--shadow-glow)' : 'var(--shadow-glossy)',
             }}
