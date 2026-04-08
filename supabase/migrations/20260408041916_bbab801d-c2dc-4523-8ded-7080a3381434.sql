@@ -1,0 +1,1 @@
+TRUNCATE TABLE public.patent_score_cache;
