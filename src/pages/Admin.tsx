@@ -824,6 +824,7 @@ const Admin = () => {
                     </div>
                   );
                 })()}
+              </div>
 
               {/* Category Management */}
               <div className="pt-4 border-t border-border/50">
