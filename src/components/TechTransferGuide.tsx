@@ -11,8 +11,8 @@ const steps = [
 
 export function TechTransferGuide() {
   return (
-    <section className="max-w-5xl mx-auto mt-12 md:mt-16 mb-8">
-      <div className="mb-8 md:mb-10">
+    <section className="max-w-5xl mx-auto mt-8 md:mt-16 mb-6 md:mb-8">
+      <div className="mb-5 md:mb-10">
         <div className="flex items-center gap-2.5 mb-3">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(152 76% 36% / 0.1)' }}>
             <BookOpen className="w-4 h-4 text-primary" />
