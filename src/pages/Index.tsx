@@ -150,27 +150,27 @@ const Index = () => {
         {!summary && !isLoading ? (
           <>
             {/* 2026 Hero — mobile-first spacing */}
-            <section className="text-center max-w-3xl mx-auto mb-12 md:mb-28 animate-fade-down relative py-8 md:py-20">
-              <div className="absolute -inset-12 md:-inset-24 -z-10 overflow-hidden rounded-[2rem] md:rounded-[4rem]">
+            <section className="text-center max-w-3xl mx-auto mb-8 md:mb-28 animate-fade-down relative py-4 md:py-20">
+              <div className="absolute -inset-8 md:-inset-24 -z-10 overflow-hidden rounded-[2rem] md:rounded-[4rem]">
                 <AiHeroAnimation />
               </div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] md:w-[650px] h-[300px] md:h-[400px] rounded-full -z-10 blur-[100px] md:blur-[140px] opacity-40 animate-float" style={{ background: 'radial-gradient(ellipse, hsl(158 64% 40% / 0.2), transparent 70%)' }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] md:w-[650px] h-[200px] md:h-[400px] rounded-full -z-10 blur-[80px] md:blur-[140px] opacity-40 animate-float" style={{ background: 'radial-gradient(ellipse, hsl(158 64% 40% / 0.2), transparent 70%)' }} />
 
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl mb-6 md:mb-10 text-[11px] md:text-xs font-semibold border backdrop-blur-xl" style={{ background: 'hsl(158 64% 40% / 0.05)', color: 'hsl(158 64% 40%)', borderColor: 'hsl(158 64% 40% / 0.1)' }}>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-2xl mb-4 md:mb-10 text-[10px] md:text-xs font-semibold border backdrop-blur-xl" style={{ background: 'hsl(158 64% 40% / 0.05)', color: 'hsl(158 64% 40%)', borderColor: 'hsl(158 64% 40% / 0.1)' }}>
                 <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 AI 기반 특허 분석
               </div>
-              <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-[3.75rem] font-extrabold text-foreground mb-4 md:mb-8 leading-[1.12] md:leading-[1.06] tracking-[-0.02em] md:tracking-[-0.03em] px-2">
+              <h2 className="text-[22px] sm:text-3xl md:text-5xl lg:text-[3.75rem] font-extrabold text-foreground mb-3 md:mb-8 leading-[1.15] md:leading-[1.06] tracking-[-0.02em] md:tracking-[-0.03em] px-2">
                 {settings.hero_title}<br />
                 <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-xs sm:text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-xs sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight px-4 md:px-0">
+              <p className="text-[11px] sm:text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-[280px] sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight px-4 md:px-0">
                 {settings.hero_description}
               </p>
             </section>
 
             {/* Search */}
-            <section className="mb-10 animate-fade-up relative z-20" style={{ animationDelay: "0.1s" }}>
+            <section className="mb-6 md:mb-10 animate-fade-up relative z-20" style={{ animationDelay: "0.1s" }}>
               <div className="w-full max-w-2xl mx-auto flex flex-col relative z-40">
                 <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()} onFocusChange={setSearchFocused} />
                 {homepageVisible.popularSearches !== false && (
@@ -199,7 +199,7 @@ const Index = () => {
 
             {homepageVisible.featuredPatents !== false && (
               <>
-                <div className="max-w-5xl mx-auto mt-12 md:mt-16 mb-2">
+                <div className="max-w-5xl mx-auto mt-8 md:mt-16 mb-2">
                   <div className="section-divider" />
                 </div>
                 <FeaturedPatents
@@ -212,7 +212,7 @@ const Index = () => {
 
             {homepageVisible.techVideos !== false && (
               <>
-                <div className="max-w-5xl mx-auto mt-12 md:mt-16 mb-2">
+                <div className="max-w-5xl mx-auto mt-6 md:mt-16 mb-2">
                   <div className="section-divider" />
                 </div>
                 <TechVideoSection videos={(() => {
@@ -226,7 +226,7 @@ const Index = () => {
 
             {homepageVisible.techTransferGuide !== false && (
               <>
-                <div className="max-w-5xl mx-auto mt-4 mb-2">
+                <div className="max-w-5xl mx-auto mt-4 md:mt-4 mb-2">
                   <div className="section-divider" />
                 </div>
                 <TechTransferGuide />
