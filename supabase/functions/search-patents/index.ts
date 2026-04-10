@@ -288,67 +288,71 @@ serve(async (req) => {
       return patents;
     };
 
-    // Search with each keyword across all organizations
-    const allPatents: KeywordSearchResult[] = [];
+    // Combine all keywords with AND (*) operator for a single precise search
+    const combinedKeyword = searchKeywords.length > 1
+      ? searchKeywords.join("*")
+      : searchKeywords[0];
 
-    for (const kw of searchKeywords) {
-      // Process keyword for KIPRIS search
-      const words = kw.split(/\s+/).filter((w: string) => w.length > 0);
-      const searchKeyword = words.length > 1
-        ? words.filter((w: string) => w.length >= 1).join("*")
-        : kw;
+    console.log(`Combined search keyword: "${combinedKeyword}"`);
 
-      for (const org of AGRI_ORGANIZATIONS) {
+    // Build all search requests in parallel: (title + abstract) × all organizations
+    const searchPromises: Promise<KeywordSearchResult[]>[] = [];
+
+    for (const org of AGRI_ORGANIZATIONS) {
+      // Title search
+      searchPromises.push((async () => {
         try {
-          const titleUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-          titleUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-          titleUrl.searchParams.set("inventionTitle", searchKeyword);
-          titleUrl.searchParams.set("applicant", org.id || org.name);
-          titleUrl.searchParams.set("astrtCont", "");
-          titleUrl.searchParams.set("pageNo", "1");
-          titleUrl.searchParams.set("numOfRows", "100");
-          titleUrl.searchParams.set("sortSpec", "AD");
-          titleUrl.searchParams.set("descSort", "true");
-          titleUrl.searchParams.set("patent", "true");
-          titleUrl.searchParams.set("utility", "true");
-
-          const abstractUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-          abstractUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-          abstractUrl.searchParams.set("inventionTitle", "");
-          abstractUrl.searchParams.set("applicant", org.id || org.name);
-          abstractUrl.searchParams.set("astrtCont", searchKeyword);
-          abstractUrl.searchParams.set("pageNo", "1");
-          abstractUrl.searchParams.set("numOfRows", "100");
-          abstractUrl.searchParams.set("sortSpec", "AD");
-          abstractUrl.searchParams.set("descSort", "true");
-          abstractUrl.searchParams.set("patent", "true");
-          abstractUrl.searchParams.set("utility", "true");
-
-          console.log(`Searching for keyword "${searchKeyword}" in org: ${org.name}`);
-
-          const [titleRes, abstractRes] = await Promise.all([
-            fetch(titleUrl.toString()),
-            fetch(abstractUrl.toString()),
-          ]);
-
-          const [titleText, abstractText] = await Promise.all([
-            titleRes.text(),
-            abstractRes.text(),
-          ]);
-
-          if (titleRes.ok && !titleText.includes("<successYN>N</successYN>")) {
-            allPatents.push(...parsePatentsFromXml(titleText, org.name));
+          const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+          url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+          url.searchParams.set("inventionTitle", combinedKeyword);
+          url.searchParams.set("applicant", org.id || org.name);
+          url.searchParams.set("astrtCont", "");
+          url.searchParams.set("pageNo", "1");
+          url.searchParams.set("numOfRows", "100");
+          url.searchParams.set("sortSpec", "AD");
+          url.searchParams.set("descSort", "true");
+          url.searchParams.set("patent", "true");
+          url.searchParams.set("utility", "true");
+          const res = await fetch(url.toString());
+          const text = await res.text();
+          if (res.ok && !text.includes("<successYN>N</successYN>")) {
+            return parsePatentsFromXml(text, org.name);
           }
-
-          if (abstractRes.ok && !abstractText.includes("<successYN>N</successYN>")) {
-            allPatents.push(...parsePatentsFromXml(abstractText, org.name));
-          }
-        } catch (orgError) {
-          console.error(`Error searching for org ${org.name}:`, orgError);
-          continue;
+        } catch (e) {
+          console.error(`Title search error for ${org.name}:`, e);
         }
-      }
+        return [];
+      })());
+
+      // Abstract search
+      searchPromises.push((async () => {
+        try {
+          const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+          url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+          url.searchParams.set("inventionTitle", "");
+          url.searchParams.set("applicant", org.id || org.name);
+          url.searchParams.set("astrtCont", combinedKeyword);
+          url.searchParams.set("pageNo", "1");
+          url.searchParams.set("numOfRows", "100");
+          url.searchParams.set("sortSpec", "AD");
+          url.searchParams.set("descSort", "true");
+          url.searchParams.set("patent", "true");
+          url.searchParams.set("utility", "true");
+          const res = await fetch(url.toString());
+          const text = await res.text();
+          if (res.ok && !text.includes("<successYN>N</successYN>")) {
+            return parsePatentsFromXml(text, org.name);
+          }
+        } catch (e) {
+          console.error(`Abstract search error for ${org.name}:`, e);
+        }
+        return [];
+      })());
     }
+
+    console.log(`Launching ${searchPromises.length} parallel KIPRIS requests...`);
+    const results = await Promise.all(searchPromises);
+    const allPatents: KeywordSearchResult[] = results.flat();
 
     // 중복 제거 (patentId 기준)
     const uniquePatents = Array.from(
