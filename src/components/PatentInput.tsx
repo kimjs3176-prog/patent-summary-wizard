@@ -97,7 +97,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
               boxShadow: isFocused ? 'var(--shadow-glow)' : 'var(--shadow-glossy)',
             }}
             disabled={isProcessing}
-            placeholder={placeholder || "관심 키워드 또는 특허 등록번호, 출원번호를 입력하세요"}
+            placeholder={placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요"}
             onFocus={() => { setIsFocused(true); onFocusChange?.(true); }}
             onBlur={() => { setIsFocused(false); setTimeout(() => onFocusChange?.(false), 200); }}
           />
@@ -128,7 +128,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
           </div>
         </div>
         <p className="text-center text-muted-foreground/50 text-[11px] md:text-xs tracking-wide px-2 leading-relaxed">
-          {helperText || "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요"}
+          {helperText || "예: \"딸기 저장기간 늘리고 싶음\", \"스마트팜 자동화\", 특허번호(10-2920574)"}
         </p>
       </form>
     </div>
