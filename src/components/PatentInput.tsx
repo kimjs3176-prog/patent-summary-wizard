@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, FileText, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
@@ -127,9 +127,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             </button>
           </div>
         </div>
-        <p className="text-center text-muted-foreground/50 text-[11px] md:text-xs tracking-wide px-2 leading-relaxed">
-          {helperText || "예: \"딸기 저장기간 늘리고 싶음\", \"스마트팜 자동화\", 특허번호(10-2920574)"}
-        </p>
+        <RotatingHelperText customText={helperText} />
       </form>
     </div>
   );
