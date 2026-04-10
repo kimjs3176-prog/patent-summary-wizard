@@ -688,6 +688,18 @@ const Admin = () => {
                 ))}
               </div>
             )}
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="notices" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-sm font-semibold gap-2">
+                  <span className="flex items-center gap-2"><Megaphone className="w-4 h-4 text-primary" /> 공지사항 관리</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <NoticeManager apiCall={apiCall} />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </TabsContent>
 
           {/* ===== Settings Tab ===== */}
