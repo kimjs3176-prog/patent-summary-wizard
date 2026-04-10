@@ -33,6 +33,111 @@ const AGRI_ORGANIZATIONS = [
 const AGRI_ORG_IDS = AGRI_ORGANIZATIONS.map(org => org.id);
 const AGRI_ORG_NAMES = AGRI_ORGANIZATIONS.map(org => org.name);
 
+/**
+ * Detect if the input is a natural language problem/question rather than simple keywords.
+ * Returns true for sentences like "딸기 저장기간 늘리고 싶음", "스마트팜 자동화 도입 검토"
+ */
+function isNaturalLanguageQuery(text: string): boolean {
+  const trimmed = text.trim();
+  // If it's very short (1-2 words, no verb endings), treat as keyword
+  const words = trimmed.split(/\s+/);
+  if (words.length <= 2 && !/[다음임요죠네게려고싶]+$/u.test(trimmed)) {
+    return false;
+  }
+  // Check for sentence-like patterns: verb endings, particles, desire expressions
+  const nlPatterns = [
+    /[고을를이가에서로의은는]+\s/u, // particles mid-sentence
+    /싶[다음어으]/u, // want to
+    /하고\s/u, // and do
+    /찾[기고아]/u, // find
+    /검토/u, // review
+    /도입/u, // introduce
+    /방법/u, // method
+    /어떻게/u, // how
+    /늘리/u, // increase
+    /줄이/u, // decrease
+    /개선/u, // improve
+    /해결/u, // solve
+    /필요/u, // need
+    /가능/u, // possible
+    /[?？]/u, // question mark
+  ];
+  // If 3+ words or matches NL patterns, it's likely natural language
+  if (words.length >= 4) return true;
+  return nlPatterns.some(p => p.test(trimmed));
+}
+
+/**
+ * Use AI to extract search keywords from a natural language query
+ */
+async function extractKeywordsWithAI(query: string): Promise<{ keywords: string[], originalIntent: string }> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    // Fallback: just use the query as-is
+    return { keywords: [query], originalIntent: query };
+  }
+
+  try {
+    const response = await fetch("https://ai-gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          {
+            role: "system",
+            content: `You are a Korean agricultural patent search keyword extractor.
+Given a user's problem description or question in Korean, extract 2-4 concise technical search keywords that would find relevant patents in the Korean patent database (KIPRIS).
+
+Rules:
+- Output ONLY a JSON object: {"keywords": ["keyword1", "keyword2", ...], "intent": "one-line summary of what user needs"}
+- Keywords should be technical terms, not conversational phrases
+- Focus on the core technology, crop, method, or domain
+- Each keyword should be 1-3 words max
+- Do NOT include particles or verb endings
+- Think about what patent titles would contain`
+          },
+          {
+            role: "user",
+            content: query
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 200,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("AI keyword extraction failed:", response.status);
+      return { keywords: [query], originalIntent: query };
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    
+    // Parse JSON from response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.keywords && Array.isArray(parsed.keywords) && parsed.keywords.length > 0) {
+        console.log(`AI extracted keywords: ${parsed.keywords.join(", ")} from query: "${query}"`);
+        return { 
+          keywords: parsed.keywords.slice(0, 4), 
+          originalIntent: parsed.intent || query 
+        };
+      }
+    }
+    
+    return { keywords: [query], originalIntent: query };
+  } catch (error) {
+    console.error("AI keyword extraction error:", error);
+    return { keywords: [query], originalIntent: query };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,7 +153,6 @@ serve(async (req) => {
     }
     const { keyword } = body;
 
-    // Validate keyword: type, length, allowed characters
     if (!keyword || typeof keyword !== "string" || keyword.trim().length < 1) {
       return new Response(
         JSON.stringify({ success: false, error: "검색어를 1자 이상 입력해주세요." }),
@@ -56,15 +160,15 @@ serve(async (req) => {
       );
     }
 
-    if (keyword.length > 100) {
+    if (keyword.length > 200) {
       return new Response(
-        JSON.stringify({ success: false, error: "검색어는 100자 이내로 입력해주세요." }),
+        JSON.stringify({ success: false, error: "검색어는 200자 이내로 입력해주세요." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Only allow Korean, alphanumeric, spaces, hyphens
-    if (!/^[\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-(),.]+$/u.test(keyword.trim())) {
+    // Allow broader character set for natural language queries
+    if (!/^[\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-(),.?!~·]+$/u.test(keyword.trim())) {
       return new Response(
         JSON.stringify({ success: false, error: "검색어에 허용되지 않는 문자가 포함되어 있습니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -87,17 +191,29 @@ serve(async (req) => {
       );
     }
 
-    console.log("Searching patents with keyword:", keyword);
+    console.log("Searching patents with input:", keyword);
 
-    // 키워드를 공백으로 분리해서 AND 조건으로 결합 (e.g. "쌀 가공 기술" -> "쌀*가공*기술")
-    const rawKeyword = keyword.trim();
-    const words = rawKeyword.split(/\s+/).filter((w: string) => w.length > 0);
-    // 2글자 이상 단어들만 추출하되, 전체가 1단어면 그대로 사용
-    const searchKeyword = words.length > 1
-      ? words.filter((w: string) => w.length >= 1).join("*")
-      : rawKeyword;
+    // Determine if this is a natural language query and extract keywords
+    const rawInput = keyword.trim();
+    let searchKeywords: string[] = [];
+    let isNLQuery = false;
+    let aiIntent = "";
 
-    console.log("Processed search keyword:", searchKeyword);
+    if (isNaturalLanguageQuery(rawInput)) {
+      isNLQuery = true;
+      console.log("Detected natural language query, extracting keywords with AI...");
+      const extraction = await extractKeywordsWithAI(rawInput);
+      searchKeywords = extraction.keywords;
+      aiIntent = extraction.originalIntent;
+      console.log(`AI keywords: [${searchKeywords.join(", ")}], intent: ${aiIntent}`);
+    } else {
+      // Original keyword processing
+      const words = rawInput.split(/\s+/).filter((w: string) => w.length > 0);
+      const searchKeyword = words.length > 1
+        ? words.filter((w: string) => w.length >= 1).join("*")
+        : rawInput;
+      searchKeywords = [searchKeyword];
+    }
 
     // 특허 파싱 헬퍼
     const parsePatentsFromXml = (searchText: string, orgName: string): KeywordSearchResult[] => {
@@ -172,67 +288,65 @@ serve(async (req) => {
       return patents;
     };
 
-    // 농업 기관별로 검색 수행 (제목 검색 + 초록 검색 병렬)
+    // Search with each keyword across all organizations
     const allPatents: KeywordSearchResult[] = [];
 
-    for (const org of AGRI_ORGANIZATIONS) {
-      try {
-        // 제목 검색
-        const titleUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-        titleUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-        titleUrl.searchParams.set("inventionTitle", searchKeyword);
-        titleUrl.searchParams.set("applicant", org.id || org.name);
-        titleUrl.searchParams.set("astrtCont", "");
-        titleUrl.searchParams.set("pageNo", "1");
-        titleUrl.searchParams.set("numOfRows", "100");
-        titleUrl.searchParams.set("sortSpec", "AD");
-        titleUrl.searchParams.set("descSort", "true");
-        titleUrl.searchParams.set("patent", "true");
-        titleUrl.searchParams.set("utility", "true");
+    for (const kw of searchKeywords) {
+      // Process keyword for KIPRIS search
+      const words = kw.split(/\s+/).filter((w: string) => w.length > 0);
+      const searchKeyword = words.length > 1
+        ? words.filter((w: string) => w.length >= 1).join("*")
+        : kw;
 
-        // 초록 검색
-        const abstractUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-        abstractUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-        abstractUrl.searchParams.set("inventionTitle", "");
-        abstractUrl.searchParams.set("applicant", org.id || org.name);
-        abstractUrl.searchParams.set("astrtCont", searchKeyword);
-        abstractUrl.searchParams.set("pageNo", "1");
-        abstractUrl.searchParams.set("numOfRows", "100");
-        abstractUrl.searchParams.set("sortSpec", "AD");
-        abstractUrl.searchParams.set("descSort", "true");
-        abstractUrl.searchParams.set("patent", "true");
-        abstractUrl.searchParams.set("utility", "true");
+      for (const org of AGRI_ORGANIZATIONS) {
+        try {
+          const titleUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+          titleUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+          titleUrl.searchParams.set("inventionTitle", searchKeyword);
+          titleUrl.searchParams.set("applicant", org.id || org.name);
+          titleUrl.searchParams.set("astrtCont", "");
+          titleUrl.searchParams.set("pageNo", "1");
+          titleUrl.searchParams.set("numOfRows", "100");
+          titleUrl.searchParams.set("sortSpec", "AD");
+          titleUrl.searchParams.set("descSort", "true");
+          titleUrl.searchParams.set("patent", "true");
+          titleUrl.searchParams.set("utility", "true");
 
-        console.log(`Searching patents for org: ${org.name} (${org.id}) - title + abstract`);
+          const abstractUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+          abstractUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+          abstractUrl.searchParams.set("inventionTitle", "");
+          abstractUrl.searchParams.set("applicant", org.id || org.name);
+          abstractUrl.searchParams.set("astrtCont", searchKeyword);
+          abstractUrl.searchParams.set("pageNo", "1");
+          abstractUrl.searchParams.set("numOfRows", "100");
+          abstractUrl.searchParams.set("sortSpec", "AD");
+          abstractUrl.searchParams.set("descSort", "true");
+          abstractUrl.searchParams.set("patent", "true");
+          abstractUrl.searchParams.set("utility", "true");
 
-        const [titleRes, abstractRes] = await Promise.all([
-          fetch(titleUrl.toString()),
-          fetch(abstractUrl.toString()),
-        ]);
+          console.log(`Searching for keyword "${searchKeyword}" in org: ${org.name}`);
 
-        const [titleText, abstractText] = await Promise.all([
-          titleRes.text(),
-          abstractRes.text(),
-        ]);
+          const [titleRes, abstractRes] = await Promise.all([
+            fetch(titleUrl.toString()),
+            fetch(abstractUrl.toString()),
+          ]);
 
-        let orgCount = 0;
+          const [titleText, abstractText] = await Promise.all([
+            titleRes.text(),
+            abstractRes.text(),
+          ]);
 
-        if (titleRes.ok && !titleText.includes("<successYN>N</successYN>")) {
-          const patents = parsePatentsFromXml(titleText, org.name);
-          allPatents.push(...patents);
-          orgCount += patents.length;
+          if (titleRes.ok && !titleText.includes("<successYN>N</successYN>")) {
+            allPatents.push(...parsePatentsFromXml(titleText, org.name));
+          }
+
+          if (abstractRes.ok && !abstractText.includes("<successYN>N</successYN>")) {
+            allPatents.push(...parsePatentsFromXml(abstractText, org.name));
+          }
+        } catch (orgError) {
+          console.error(`Error searching for org ${org.name}:`, orgError);
+          continue;
         }
-
-        if (abstractRes.ok && !abstractText.includes("<successYN>N</successYN>")) {
-          const patents = parsePatentsFromXml(abstractText, org.name);
-          allPatents.push(...patents);
-          orgCount += patents.length;
-        }
-
-        console.log(`Found ${orgCount} patents for ${org.name} (title+abstract)`);
-      } catch (orgError) {
-        console.error(`Error searching for org ${org.name}:`, orgError);
-        continue;
       }
     }
 
@@ -247,7 +361,18 @@ serve(async (req) => {
     console.log(`Total unique patents found: ${uniquePatents.length}, returning: ${topPatents.length}`);
 
     return new Response(
-      JSON.stringify({ success: true, patents: topPatents, keyword: keyword.trim(), totalCount: uniquePatents.length }),
+      JSON.stringify({ 
+        success: true, 
+        patents: topPatents, 
+        keyword: keyword.trim(), 
+        totalCount: uniquePatents.length,
+        // Include AI-extracted info for natural language queries
+        ...(isNLQuery ? { 
+          isNaturalLanguage: true, 
+          extractedKeywords: searchKeywords,
+          intent: aiIntent 
+        } : {})
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

@@ -16,6 +16,8 @@ export default function SearchResults() {
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [extractedKeywords, setExtractedKeywords] = useState<string[]>([]);
+  const [aiIntent, setAiIntent] = useState("");
 
   useEffect(() => {
     if (!keyword) return;
@@ -38,6 +40,8 @@ export default function SearchResults() {
         if (result.success && result.patents) {
           setResults(result.patents);
           setTotalCount(result.totalCount || result.patents.length);
+          setExtractedKeywords(result.extractedKeywords || []);
+          setAiIntent(result.intent || "");
           if (result.patents.length === 0) toast.info("검색 결과가 없습니다.");
         } else {
           toast.error(result.error || "검색에 실패했습니다.");
@@ -110,8 +114,28 @@ export default function SearchResults() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {isLoading ? "특허를 검색하고 있습니다..." : `총 ${totalCount}건의 특허 발견 · ${results.length}건 표시`}
+                {isLoading ? "AI가 검색어를 분석하고 특허를 찾고 있습니다..." : `총 ${totalCount}건의 특허 발견 · ${results.length}건 표시`}
               </p>
+              {!isLoading && extractedKeywords.length > 0 && (
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  <span className="text-xs text-muted-foreground/70">AI 추출 키워드:</span>
+                  {extractedKeywords.map((kw, i) => (
+                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/15">
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {!isLoading && extractedKeywords.length > 0 && (
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  <span className="text-xs text-muted-foreground/70">AI 추출 키워드:</span>
+                  {extractedKeywords.map((kw, i) => (
+                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/15">
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
