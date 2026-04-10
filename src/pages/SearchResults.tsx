@@ -40,6 +40,8 @@ export default function SearchResults() {
         if (result.success && result.patents) {
           setResults(result.patents);
           setTotalCount(result.totalCount || result.patents.length);
+          setExtractedKeywords(result.extractedKeywords || []);
+          setAiIntent(result.intent || "");
           if (result.patents.length === 0) toast.info("검색 결과가 없습니다.");
         } else {
           toast.error(result.error || "검색에 실패했습니다.");
