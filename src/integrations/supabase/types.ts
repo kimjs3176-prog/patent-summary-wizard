@@ -86,6 +86,7 @@ export type Database = {
           created_at: string
           display_order: number
           id: string
+          importance: string
           is_active: boolean
           is_pinned: boolean
           title: string
@@ -96,6 +97,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          importance?: string
           is_active?: boolean
           is_pinned?: boolean
           title: string
@@ -106,6 +108,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          importance?: string
           is_active?: boolean
           is_pinned?: boolean
           title?: string

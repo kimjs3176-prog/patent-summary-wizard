@@ -1,0 +1,1 @@
+ALTER TABLE public.notices ADD COLUMN importance text NOT NULL DEFAULT 'normal';
