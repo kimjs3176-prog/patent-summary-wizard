@@ -535,8 +535,14 @@ const Admin = () => {
             </TabsList>
           </div>
 
-          {/* ===== Patents Tab ===== */}
-          <TabsContent value="patents">
+          {/* ===== Content Tab (Patents + Notices) ===== */}
+          <TabsContent value="content">
+            <Accordion type="multiple" defaultValue={["patents", "notices"]} className="space-y-3">
+              <AccordionItem value="patents" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-sm font-semibold gap-2">
+                  <span className="flex items-center gap-2"><Star className="w-4 h-4 text-primary" /> 이달의 특허 관리</span>
+                </AccordionTrigger>
+                <AccordionContent>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-sm">이달의 특허 관리</h2>
               <Button size="sm" onClick={() => { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); }}>
