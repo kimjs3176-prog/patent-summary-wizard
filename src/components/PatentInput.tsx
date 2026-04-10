@@ -92,7 +92,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             type="text"
             value={inputValue}
             onChange={handleInputChange}
-            className="relative w-full h-13 md:h-14 pl-11 md:pl-13 pr-16 sm:pr-36 text-sm sm:text-[15px] bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 placeholder:text-muted-foreground/40 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+            className="relative w-full h-14 md:h-14 pl-11 md:pl-13 pr-16 sm:pr-36 text-sm sm:text-[15px] bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 placeholder:text-muted-foreground/40 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
             style={{
               boxShadow: isFocused ? 'var(--shadow-glow)' : 'var(--shadow-glossy)',
             }}
