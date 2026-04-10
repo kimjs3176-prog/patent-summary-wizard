@@ -164,7 +164,7 @@ const Index = () => {
                 {settings.hero_title}<br />
                 <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-[11px] sm:text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-[280px] sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight px-4 md:px-0">
+              <p className="text-[11px] sm:text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-[260px] sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight">
                 {settings.hero_description}
               </p>
             </section>
