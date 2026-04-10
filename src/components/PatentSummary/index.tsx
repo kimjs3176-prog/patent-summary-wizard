@@ -823,33 +823,32 @@ export function PatentSummary({
         />
       )}
 
-      {/* 5. Claims Card — 2025 Purple accent */}
+      {/* 5. Claims Card — Toss-style */}
       {printSections.claims !== false && visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
-        <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s' }}>
-          {/* Top accent gradient band */}
-          <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(262 83% 58%), hsl(280 68% 56%), hsl(300 60% 55%))' }} />
+        <div className={`relative rounded-3xl overflow-hidden animate-slide-in bg-card border border-border/40 ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.03)' }}>
+          <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(262 60% 55% / 0.5), hsl(262 40% 55% / 0.15), transparent)' }} />
           
           <div className="p-5 md:p-7">
             <div className="flex items-center gap-3.5 mb-5">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-md" style={{ background: 'linear-gradient(135deg, hsl(262 83% 58%), hsl(280 68% 56%))', color: 'white' }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'hsl(262 60% 55% / 0.08)', color: 'hsl(262 60% 50%)' }}>
                 {cardIcons.claims || "📑"}
               </div>
               <div>
-                <h3 className="font-bold text-lg text-foreground">청구항</h3>
+                <h3 className="font-bold text-[17px] text-foreground tracking-[-0.01em]">청구항</h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">{patentData.claims.length}개 항목</p>
               </div>
             </div>
 
             <details className="group">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2.5 py-2.5 px-4 rounded-xl hover:bg-muted/60">
-                <span className="w-5 h-5 flex items-center justify-center text-[10px] rounded-lg transition-transform group-open:rotate-90" style={{ background: 'hsl(262 60% 95%)', color: 'hsl(262 60% 45%)' }}>▶</span>
+              <summary className="cursor-pointer select-none text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2.5 py-2.5 px-4 rounded-2xl hover:bg-muted/50">
+                <span className="w-5 h-5 flex items-center justify-center text-[10px] rounded-lg transition-transform group-open:rotate-90 bg-muted text-muted-foreground">▶</span>
                 청구항 내용 펼치기/접기
               </summary>
               <div className="mt-5 space-y-3">
                 {patentData.claims.map((c, idx) => (
-                  <div key={idx} className="p-5 rounded-xl border transition-all hover:shadow-sm" style={{ background: 'hsl(262 30% 98%)', borderColor: 'hsl(262 20% 92%)' }}>
+                  <div key={idx} className="p-5 rounded-2xl border transition-all hover:shadow-sm bg-muted/30 border-border/30">
                     <div className="inline-flex items-center gap-2 text-[11px] text-muted-foreground mb-3 font-semibold">
-                      <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style={{ background: 'linear-gradient(135deg, hsl(262 83% 58%), hsl(280 68% 56%))' }}>{idx + 1}</span>
+                      <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold text-primary-foreground bg-primary/80">{idx + 1}</span>
                       청구항 {idx + 1}
                     </div>
                     <div className="text-sm text-foreground/90 leading-relaxed">{c}</div>
