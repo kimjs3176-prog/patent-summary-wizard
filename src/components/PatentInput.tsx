@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, FileText, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
@@ -77,7 +77,6 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
     <div className="w-full max-w-2xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-2.5">
         <div className="relative group">
-          {/* Glow ring on focus */}
           <div
             className="absolute -inset-[2px] rounded-[1.15rem] transition-all duration-400 pointer-events-none"
             style={{
@@ -127,10 +126,51 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             </button>
           </div>
         </div>
-        <p className="text-center text-muted-foreground/50 text-[11px] md:text-xs tracking-wide px-2 leading-relaxed">
-          {helperText || "예: \"딸기 저장기간 늘리고 싶음\", \"스마트팜 자동화\", 특허번호(10-2920574)"}
-        </p>
+        <RotatingHelperText customText={helperText} />
       </form>
+    </div>
+  );
+}
+
+const HELPER_TEXTS = [
+  '예: "딸기 저장기간 늘리고 싶음", "스마트팜 자동화", 특허번호(10-2920574)',
+  '💡 해결하고 싶은 문제를 자연어로 입력해 보세요',
+  '🔍 "곤충단백질 가공기술 찾기" 같은 문장도 검색 가능합니다',
+  '📋 특허번호를 알고 있다면 바로 입력해서 AI 분석을 받아보세요',
+  '🌱 "친환경 포장재 대체 기술" 등 관심 분야를 입력해 보세요',
+  '🤖 AI가 입력 문장에서 핵심 키워드를 추출하여 특허를 검색합니다',
+];
+
+function RotatingHelperText({ customText }: { customText?: string }) {
+  const [currentIdx, setCurrentIdx] = useState(() => Math.floor(Math.random() * HELPER_TEXTS.length));
+  const [isVisible, setIsVisible] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (customText) return;
+    intervalRef.current = setInterval(() => {
+      setIsVisible(false);
+      setTimeout(() => {
+        setCurrentIdx(prev => {
+          let next: number;
+          do { next = Math.floor(Math.random() * HELPER_TEXTS.length); } while (next === prev && HELPER_TEXTS.length > 1);
+          return next;
+        });
+        setIsVisible(true);
+      }, 400);
+    }, 4000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [customText]);
+
+  const text = customText || HELPER_TEXTS[currentIdx];
+
+  return (
+    <div className="h-6 flex items-center justify-center overflow-hidden">
+      <p
+        className={`text-center text-muted-foreground/60 text-xs md:text-[13px] tracking-wide px-2 transition-all duration-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+      >
+        {text}
+      </p>
     </div>
   );
 }
