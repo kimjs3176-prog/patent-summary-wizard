@@ -527,7 +527,7 @@ export function PatentSummary({
                       </span>
                     </span>
                     {(patentData.filingDate || patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-                      <span className="text-muted-foreground/30 text-xs">|</span>
+                      <span className="text-border text-xs">|</span>
                     )}
                   </>
                 )}
@@ -538,7 +538,7 @@ export function PatentSummary({
                       <span className="text-foreground font-medium">{patentData.filingDate}</span>
                     </span>
                     {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
-                      <span className="text-muted-foreground/30 text-xs">|</span>
+                      <span className="text-border text-xs">|</span>
                     )}
                   </>
                 )}
@@ -549,7 +549,7 @@ export function PatentSummary({
                       <span className="text-foreground font-medium">{patentData.publicationDate}</span>
                     </span>
                     {patentData.classifications && patentData.classifications.length > 0 && (
-                      <span className="text-muted-foreground/30 text-xs">|</span>
+                      <span className="text-border text-xs">|</span>
                     )}
                   </>
                 )}
