@@ -127,7 +127,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             </button>
           </div>
         </div>
-        <RotatingHelperText customText={helperText} customTexts={helperTexts} />
+        
       </form>
     </div>
   );
