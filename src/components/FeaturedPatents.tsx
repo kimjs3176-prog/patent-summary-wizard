@@ -80,15 +80,15 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
     <section className="max-w-5xl mx-auto mt-10 md:mt-16 animate-fade-up">
       {/* Section Header */}
       <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-2.5 mb-1">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'hsl(38 92% 50% / 0.12)' }}>
-            <Star className="w-3.5 h-3.5" style={{ color: 'hsl(38 92% 50%)' }} />
+        <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(38 92% 50% / 0.12)' }}>
+            <Star className="w-4 h-4" style={{ color: 'hsl(38 92% 50%)' }} />
           </div>
           <h3 className="text-lg md:text-xl font-bold text-foreground tracking-tight">
             {sectionTitle || "이달의 특허 · 기술이전 추천"}
           </h3>
         </div>
-        <p className="text-xs text-muted-foreground ml-[38px]">
+        <p className="text-[13px] text-muted-foreground ml-[42px]">
           {sectionSubtitle || "농식품 분야 기술이전 추천 특허"}
         </p>
       </div>
@@ -103,7 +103,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
               <button
                 key={cat}
                 onClick={() => setActiveTab(cat)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 btn-press ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-medium transition-all duration-200 btn-press ${
                   isActive
                     ? "text-primary-foreground shadow-sm"
                     : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -112,7 +112,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
               >
                 <span>{CATEGORY_EMOJI[cat] || "📋"}</span>
                 <span>{cat}</span>
-                <span className={`ml-0.5 text-[10px] ${isActive ? 'opacity-80' : 'opacity-50'}`}>
+                <span className={`ml-0.5 text-[11px] ${isActive ? 'opacity-80' : 'opacity-50'}`}>
                   {count}
                 </span>
               </button>
@@ -127,7 +127,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
           <button
             key={patent.id}
             onClick={() => onPatentSelect(patent.patent_number)}
-            className="group p-3.5 sm:p-4 md:p-5 rounded-2xl bg-card text-left border border-border/40 hover:border-border/70 hover:shadow-lg backdrop-blur-sm transition-all duration-300 animate-fade-up card-interactive btn-press"
+            className="group p-4 sm:p-5 md:p-6 rounded-2xl bg-card text-left border border-border/40 hover:border-border/70 hover:shadow-lg backdrop-blur-sm transition-all duration-300 animate-fade-up card-interactive btn-press"
             style={{ animationDelay: `${0.05 + index * 0.03}s`, boxShadow: 'var(--shadow-glossy)' }}
           >
             <div className="flex items-start gap-3 mb-3">
@@ -144,38 +144,38 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                  <span className="inline-block px-2 py-0.5 text-[10px] font-medium rounded-md bg-secondary text-muted-foreground">
+                <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                  <span className="inline-block px-2 py-0.5 text-[11px] font-medium rounded-md bg-secondary text-muted-foreground">
                     {patent.patent_number}
                   </span>
                   {patent.category && (
-                    <Badge variant="secondary" className="text-[10px] h-4 px-1.5 py-0 bg-primary/8 text-primary border-0">
+                    <Badge variant="secondary" className="text-[11px] h-5 px-2 py-0 bg-primary/8 text-primary border-0">
                       {patent.category}
                     </Badge>
                   )}
                 </div>
-                <h4 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                <h4 className="text-[14px] font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
                   {patent.title}
                 </h4>
               </div>
             </div>
 
             {patent.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-2.5 leading-relaxed">
+              <p className="text-[13px] text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
                 {patent.description}
               </p>
             )}
 
             {patent.recommendation_reason && (
-              <div className="text-xs rounded-lg px-3 py-2 mb-2.5 line-clamp-2 bg-primary/5 text-foreground/70">
+              <div className="text-[13px] rounded-xl px-3.5 py-2.5 mb-3 line-clamp-2 bg-primary/5 text-foreground/70 leading-relaxed">
                 💡 {patent.recommendation_reason}
               </div>
             )}
 
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/30">
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/30">
               <div className="flex items-center gap-2">
                 {patent.transfer_status && (
-                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 border-primary/30 text-primary">
+                  <Badge variant="outline" className="text-[11px] h-5 px-2 py-0 border-primary/30 text-primary">
                     {patent.transfer_status}
                   </Badge>
                 )}
@@ -183,7 +183,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
                   <span className="truncate max-w-[150px]">{patent.contact_info}</span>
                 )}
               </div>
-              <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all text-primary arrow-slide" />
+              <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all text-primary arrow-slide" />
             </div>
           </button>
         ))}

@@ -248,7 +248,7 @@ export function PatentSummary({
           const bodyText = hashMatch[2];
           const parts = bodyText.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
           elements.push(
-            <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
+            <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px] md:text-base">
               {parts.map((part, i) => {
                 if ((part.startsWith('**') && part.endsWith('**'))) {
                   return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
@@ -338,7 +338,7 @@ export function PatentSummary({
         // Enhanced bold text parsing: **text**, __text__, and partial bold within sentences
         const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
         elements.push(
-          <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px]">
+          <p key={index} className="text-foreground/85 leading-[1.85] mb-3 text-[15px] md:text-base">
             {parts.map((part, i) => {
               if ((part.startsWith('**') && part.endsWith('**'))) {
                 return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
@@ -457,7 +457,7 @@ export function PatentSummary({
                 {cardIcons.patentInfo || "📄"}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-[15px] text-foreground leading-tight">특허 정보</div>
+                <div className="font-bold text-[15px] md:text-base text-foreground leading-tight">특허 정보</div>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {(() => {
@@ -506,7 +506,7 @@ export function PatentSummary({
             {/* Stacked layout: Meta info (top) + Keywords (bottom) */}
             <div className="flex flex-col gap-3">
               {/* Top: Meta info — Toss-style subtle dividers */}
-              <div className="px-4 py-3 rounded-2xl flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] bg-muted/50 border border-border/30">
+              <div className="px-4 py-3.5 rounded-2xl flex flex-wrap items-center gap-x-4 gap-y-2.5 text-[13px] md:text-sm bg-muted/50 border border-border/30">
                 {patentData.assignee && (
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
@@ -770,8 +770,8 @@ export function PatentSummary({
               {cardIcons.aiSummary || "🤖"}
             </div>
             <div>
-              <h3 className="font-bold text-[17px] text-foreground tracking-[-0.01em]">AI 종합 요약</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
+              <h3 className="font-bold text-lg text-foreground tracking-[-0.01em]">AI 종합 요약</h3>
+              <p className="text-xs text-muted-foreground mt-0.5 font-medium">
                 {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
               </p>
             </div>
@@ -805,7 +805,7 @@ export function PatentSummary({
           <div className="mx-5 md:mx-7 mb-5">
             <div className="flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-muted/50 border border-border/30">
               <span className="text-base shrink-0 leading-none">⚠️</span>
-              <p className="text-xs font-medium leading-relaxed text-muted-foreground">
+              <p className="text-[13px] font-medium leading-[1.75] text-muted-foreground">
                 {disclaimerText}
               </p>
             </div>
@@ -834,8 +834,8 @@ export function PatentSummary({
                 {cardIcons.claims || "📑"}
               </div>
               <div>
-                <h3 className="font-bold text-[17px] text-foreground tracking-[-0.01em]">청구항</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">{patentData.claims.length}개 항목</p>
+                <h3 className="font-bold text-lg text-foreground tracking-[-0.01em]">청구항</h3>
+                <p className="text-xs text-muted-foreground mt-0.5 font-medium">{patentData.claims.length}개 항목</p>
               </div>
             </div>
 
@@ -851,7 +851,7 @@ export function PatentSummary({
                       <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold text-primary-foreground bg-primary/80">{idx + 1}</span>
                       청구항 {idx + 1}
                     </div>
-                    <div className="text-sm text-foreground/90 leading-relaxed">{c}</div>
+                    <div className="text-[14px] text-foreground/90 leading-[1.8]">{c}</div>
                   </div>
                 ))}
               </div>

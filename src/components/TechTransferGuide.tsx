@@ -14,17 +14,17 @@ export function TechTransferGuide() {
     <section className="max-w-5xl mx-auto mt-12 md:mt-16 mb-8">
       <div className="mb-8 md:mb-10">
         <div className="flex items-center gap-2.5 mb-3">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'hsl(152 76% 36% / 0.1)' }}>
-            <BookOpen className="w-3.5 h-3.5 text-primary" />
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(152 76% 36% / 0.1)' }}>
+            <BookOpen className="w-4 h-4 text-primary" />
           </div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+          <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-widest">
             기술이전 절차 안내
           </p>
         </div>
         <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground leading-tight">
           국가직무발명특허 <span className="gradient-text">기술이전</span>이란?
         </h3>
-        <p className="mt-2 md:mt-3 text-xs sm:text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed">
+        <p className="mt-2.5 md:mt-3.5 text-sm sm:text-[15px] md:text-base text-muted-foreground max-w-xl leading-[1.8]">
           국가공무원의 직무발명에 따라 국가 명의로 출원하여 등록된 권리(특허)를{" "}
           <strong className="text-foreground font-medium">'실시권 허락(라이센싱 계약)'</strong>의 형태로 이전하는 것
         </p>
@@ -36,21 +36,21 @@ export function TechTransferGuide() {
           return (
             <div
               key={step.num}
-              className="group rounded-2xl p-4 sm:p-5 md:p-6 bg-card border border-border/40 hover:border-border/70 hover:shadow-lg transition-all duration-300 animate-fade-up card-interactive"
+              className="group rounded-2xl p-5 sm:p-6 md:p-7 bg-card border border-border/40 hover:border-border/70 hover:shadow-lg transition-all duration-300 animate-fade-up card-interactive"
               style={{ animationDelay: `${0.06 * step.num}s`, boxShadow: 'var(--shadow-glossy)' }}
             >
               <div className="flex items-start gap-4">
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors duration-300">
-                    <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+                  <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors duration-300">
+                    <Icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
                   </div>
                   <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center text-primary-foreground" style={{ background: 'var(--gradient-accent)' }}>
                     {step.num}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold text-foreground mb-1">{step.title}</h4>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{step.desc}</p>
+                  <h4 className="text-[14px] font-bold text-foreground mb-1.5">{step.title}</h4>
+                  <p className="text-[13px] leading-[1.75] text-muted-foreground">{step.desc}</p>
                 </div>
               </div>
             </div>
@@ -58,7 +58,7 @@ export function TechTransferGuide() {
         })}
       </div>
 
-      <p className="text-center mt-8 text-xs text-muted-foreground">
+      <p className="text-center mt-8 text-[13px] text-muted-foreground">
         자세한 내용은{" "}
         <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">NATI</a>
         {" "}또는{" "}

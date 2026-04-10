@@ -15,11 +15,11 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-semibold text-muted-foreground/60 tracking-wide">최근 검색</span>
+        <span className="text-[13px] font-semibold text-muted-foreground/60 tracking-wide">최근 검색</span>
         {history.length > 1 && (
           <button
             onClick={onClear}
-            className="text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors duration-300"
+            className="text-xs text-muted-foreground/50 hover:text-foreground transition-colors duration-300"
           >
             전체삭제
           </button>
@@ -65,7 +65,7 @@ function HistoryCard({
       {/* Score badge */}
       {score != null && (
         <span
-          className="absolute top-2 left-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded-xl text-white backdrop-blur-sm"
+          className="absolute top-2 left-2 z-10 text-[11px] font-bold px-2 py-0.5 rounded-xl text-white backdrop-blur-sm"
           style={{
             background: score >= 80 ? 'hsl(158 64% 40% / 0.9)' : score >= 65 ? 'hsl(45 93% 47% / 0.9)' : 'hsl(0 84% 60% / 0.9)',
           }}
@@ -85,11 +85,11 @@ function HistoryCard({
           <span className="text-2xl text-muted-foreground/20">📄</span>
         )}
       </div>
-      <div className="px-3 py-2.5">
-        <p className="text-[11px] font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-300 min-h-[30px]">
+      <div className="px-3 py-3">
+        <p className="text-xs font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-300 min-h-[32px]">
           {title || displayNum}
         </p>
-        <p className="text-[10px] text-muted-foreground/50 mt-1 truncate">{displayNum}</p>
+        <p className="text-[11px] text-muted-foreground/50 mt-1.5 truncate">{displayNum}</p>
       </div>
     </button>
   );
