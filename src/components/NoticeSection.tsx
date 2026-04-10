@@ -40,7 +40,7 @@ export function NoticeSection() {
   if (notices.length === 0) return null;
 
   return (
-    <section className="max-w-5xl mx-auto mt-8 md:mt-12 animate-fade-up">
+    <section className="max-w-5xl mx-auto mt-4 md:mt-12 animate-fade-up">
       <div className="flex items-center gap-2.5 mb-4">
         <Megaphone className="w-4.5 h-4.5 text-primary" />
         <h3 className="text-sm font-bold text-foreground">공지사항</h3>

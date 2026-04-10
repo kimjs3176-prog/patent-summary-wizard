@@ -77,7 +77,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
   const filteredPatents = activeTab === "전체" ? patents : patents.filter(p => p.category === activeTab);
 
   return (
-    <section className="max-w-5xl mx-auto mt-10 md:mt-16 animate-fade-up">
+    <section className="max-w-5xl mx-auto mt-6 md:mt-16 animate-fade-up">
       {/* Section Header */}
       <div className="mb-6 md:mb-8">
         <div className="flex items-center gap-2.5 mb-1.5">

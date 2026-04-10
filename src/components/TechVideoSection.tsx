@@ -18,7 +18,7 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
   if (!videos || videos.length === 0) return null;
 
   return (
-    <section className="max-w-5xl mx-auto mt-12 md:mt-16 mb-12 md:mb-16 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+    <section className="max-w-5xl mx-auto mt-8 md:mt-16 mb-8 md:mb-16 animate-fade-up" style={{ animationDelay: "0.3s" }}>
       <div className="mb-6 md:mb-8">
         <div className="flex items-center gap-2.5 mb-1.5">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(0 84% 60% / 0.1)' }}>
