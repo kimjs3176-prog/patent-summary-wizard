@@ -98,7 +98,7 @@ function SubScoreCard({ label, score, reason, colorIndex }: { label: string; sco
           {score}
         </span>
       </div>
-      <p className="text-xs sm:text-[13px] text-foreground/65 leading-[1.75] sm:leading-[1.8]">
+      <p className="text-[13px] sm:text-sm text-foreground/65 leading-[1.8] sm:leading-[1.85]">
         {renderBoldText(reason)}
       </p>
     </div>
@@ -150,7 +150,7 @@ export function TechnologyCommercializationScore({
         {details.trlReason && (
           <div className="mt-4 p-4 rounded-xl bg-secondary/50 border border-border/50">
             <p className="text-xs text-muted-foreground mb-1 font-medium">TRL 추정 근거</p>
-            <p className="text-sm text-foreground/80 leading-relaxed">{details.trlReason}</p>
+            <p className="text-sm text-foreground/80 leading-[1.8]">{details.trlReason}</p>
           </div>
         )}
       </div>
@@ -222,7 +222,7 @@ export function TechnologyCommercializationScore({
               <span className="text-xs">🤖</span>
               <p className="text-[10px] sm:text-xs text-muted-foreground font-semibold">AI 분석 의견</p>
             </div>
-            <p className="text-xs sm:text-sm text-foreground/75 leading-[1.7] sm:leading-relaxed">{details.analysis}</p>
+            <p className="text-[13px] sm:text-sm text-foreground/75 leading-[1.8] sm:leading-[1.85]">{details.analysis}</p>
           </div>
         </div>
       )}
