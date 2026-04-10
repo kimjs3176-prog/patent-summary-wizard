@@ -290,71 +290,89 @@ serve(async (req) => {
       return patents;
     };
 
-    // Combine all keywords with AND (*) operator for a single precise search
+    // Build search terms: try AND-combined first, then individual keywords as fallback
     const combinedKeyword = searchKeywords.length > 1
-      ? searchKeywords.join("*")
+      ? searchKeywords.slice(0, 3).join("*")
       : searchKeywords[0];
 
-    console.log(`Combined search keyword: "${combinedKeyword}"`);
+    console.log(`Primary AND search: "${combinedKeyword}"`);
 
-    // Build all search requests in parallel: (title + abstract) × all organizations
-    const searchPromises: Promise<KeywordSearchResult[]>[] = [];
-
-    for (const org of AGRI_ORGANIZATIONS) {
-      // Title search
-      searchPromises.push((async () => {
-        try {
-          const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-          url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-          url.searchParams.set("inventionTitle", combinedKeyword);
-          url.searchParams.set("applicant", org.id || org.name);
-          url.searchParams.set("astrtCont", "");
-          url.searchParams.set("pageNo", "1");
-          url.searchParams.set("numOfRows", "100");
-          url.searchParams.set("sortSpec", "AD");
-          url.searchParams.set("descSort", "true");
-          url.searchParams.set("patent", "true");
-          url.searchParams.set("utility", "true");
-          const res = await fetch(url.toString());
-          const text = await res.text();
-          if (res.ok && !text.includes("<successYN>N</successYN>")) {
-            return parsePatentsFromXml(text, org.name);
+    // Helper: run parallel searches across all orgs for a given keyword
+    const searchAllOrgs = async (kw: string): Promise<KeywordSearchResult[]> => {
+      const promises: Promise<KeywordSearchResult[]>[] = [];
+      for (const org of AGRI_ORGANIZATIONS) {
+        // Title search
+        promises.push((async () => {
+          try {
+            const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+            url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+            url.searchParams.set("inventionTitle", kw);
+            url.searchParams.set("applicant", org.id || org.name);
+            url.searchParams.set("astrtCont", "");
+            url.searchParams.set("pageNo", "1");
+            url.searchParams.set("numOfRows", "100");
+            url.searchParams.set("sortSpec", "AD");
+            url.searchParams.set("descSort", "true");
+            url.searchParams.set("patent", "true");
+            url.searchParams.set("utility", "true");
+            const res = await fetch(url.toString());
+            const text = await res.text();
+            if (res.ok && !text.includes("<successYN>N</successYN>")) {
+              return parsePatentsFromXml(text, org.name);
+            }
+          } catch (e) {
+            console.error(`Title search error for ${org.name}:`, e);
           }
-        } catch (e) {
-          console.error(`Title search error for ${org.name}:`, e);
-        }
-        return [];
-      })());
-
-      // Abstract search
-      searchPromises.push((async () => {
-        try {
-          const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-          url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-          url.searchParams.set("inventionTitle", "");
-          url.searchParams.set("applicant", org.id || org.name);
-          url.searchParams.set("astrtCont", combinedKeyword);
-          url.searchParams.set("pageNo", "1");
-          url.searchParams.set("numOfRows", "100");
-          url.searchParams.set("sortSpec", "AD");
-          url.searchParams.set("descSort", "true");
-          url.searchParams.set("patent", "true");
-          url.searchParams.set("utility", "true");
-          const res = await fetch(url.toString());
-          const text = await res.text();
-          if (res.ok && !text.includes("<successYN>N</successYN>")) {
-            return parsePatentsFromXml(text, org.name);
+          return [];
+        })());
+        // Abstract search
+        promises.push((async () => {
+          try {
+            const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+            url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+            url.searchParams.set("inventionTitle", "");
+            url.searchParams.set("applicant", org.id || org.name);
+            url.searchParams.set("astrtCont", kw);
+            url.searchParams.set("pageNo", "1");
+            url.searchParams.set("numOfRows", "100");
+            url.searchParams.set("sortSpec", "AD");
+            url.searchParams.set("descSort", "true");
+            url.searchParams.set("patent", "true");
+            url.searchParams.set("utility", "true");
+            const res = await fetch(url.toString());
+            const text = await res.text();
+            if (res.ok && !text.includes("<successYN>N</successYN>")) {
+              return parsePatentsFromXml(text, org.name);
+            }
+          } catch (e) {
+            console.error(`Abstract search error for ${org.name}:`, e);
           }
-        } catch (e) {
-          console.error(`Abstract search error for ${org.name}:`, e);
-        }
-        return [];
-      })());
+          return [];
+        })());
+      }
+      console.log(`Launching ${promises.length} parallel KIPRIS requests for "${kw}"...`);
+      const results = await Promise.all(promises);
+      return results.flat();
+    };
+
+    // Step 1: AND-combined search
+    let allPatents = await searchAllOrgs(combinedKeyword);
+
+    // Step 2: If AND yields too few results and we have multiple keywords, try top-2 AND
+    if (allPatents.length < 5 && searchKeywords.length > 2) {
+      const top2 = searchKeywords.slice(0, 2).join("*");
+      console.log(`AND result too few (${allPatents.length}), fallback to top-2 AND: "${top2}"`);
+      const fallbackResults = await searchAllOrgs(top2);
+      allPatents = [...allPatents, ...fallbackResults];
     }
 
-    console.log(`Launching ${searchPromises.length} parallel KIPRIS requests...`);
-    const results = await Promise.all(searchPromises);
-    const allPatents: KeywordSearchResult[] = results.flat();
+    // Step 3: If still too few, search with just the primary keyword
+    if (allPatents.length < 5 && searchKeywords.length > 1) {
+      const primary = searchKeywords[0];
+      console.log(`Still too few (${allPatents.length}), fallback to primary keyword: "${primary}"`);
+      const fallbackResults = await searchAllOrgs(primary);
+      allPatents = [...allPatents, ...fallbackResults];
+    }
 
     // 중복 제거 (patentId 기준)
     const uniquePatents = Array.from(
