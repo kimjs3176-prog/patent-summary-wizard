@@ -1219,333 +1219,298 @@ const Admin = () => {
             </div>
           </TabsContent>
 
-          {/* ===== Print Tab ===== */}
-          <TabsContent value="print">
-            <div className="space-y-4">
-              <h2 className="font-semibold text-sm">인쇄 요소 표시/숨김</h2>
-              <p className="text-[11px] text-muted-foreground">저장 후 인쇄 시 선택한 항목만 포함됩니다.</p>
-              <div className="space-y-3">
-                {[
-                  { key: "header", label: "인쇄 헤더", desc: "출력 상단 제목/번호 영역" },
-                  { key: "patentInfo", label: "특허 정보 카드", desc: "등록번호/출원인/날짜 정보" },
-                  { key: "commercialization", label: "사업화 점수", desc: "종합 점수 및 상세 분석" },
-                  { key: "aiSummary", label: "AI 종합 요약", desc: "본문 요약 텍스트 영역" },
-                  { key: "trl", label: "TRL 섹션", desc: "기술 성숙도 차트 영역" },
-                  { key: "claims", label: "청구항", desc: "청구항 카드(화면에는 항상 표시)" },
-                  { key: "relatedPatents", label: "관련 특허", desc: "추천 특허 리스트" },
-                  { key: "disclaimer", label: "면책 문구", desc: "요약 하단 주의 문구" },
-                  { key: "footer", label: "인쇄 푸터", desc: "생성일 및 하단 문구" },
-                ].map((item) => {
-                  const isOn = printSections[item.key] !== false;
-                  return (
-                    <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/30">
-                      <div>
-                        <p className="text-sm font-medium">{item.label}</p>
-                        <p className="text-[11px] text-muted-foreground">{item.desc}</p>
-                      </div>
-                      <button onClick={() => setPrintSections((prev) => ({ ...prev, [item.key]: !isOn }))} className="flex-shrink-0">
-                        {isOn ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted-foreground" />}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              <Button onClick={handleSavePrintSettings} disabled={isSavingPrintSettings} className="w-full">
-                {isSavingPrintSettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-                인쇄 설정 저장
-              </Button>
-            </div>
-          </TabsContent>
-
-          {/* ===== Security Tab ===== */}
-          <TabsContent value="security">
-            <Card className="p-5 space-y-4">
-              <h2 className="font-semibold text-sm">관리자 비밀번호 변경</h2>
-              <p className="text-[11px] text-muted-foreground">현재 로그인된 관리자 비밀번호를 새 비밀번호로 변경합니다.</p>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">새 비밀번호</label>
-                <Input
-                  type="password"
-                  value={newAdminPassword}
-                  onChange={(e) => setNewAdminPassword(e.target.value)}
-                  placeholder="4~100자 입력"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">새 비밀번호 확인</label>
-                <Input
-                  type="password"
-                  value={confirmAdminPassword}
-                  onChange={(e) => setConfirmAdminPassword(e.target.value)}
-                  placeholder="비밀번호를 다시 입력"
-                />
-              </div>
-              <Button onClick={handleChangePassword} disabled={isChangingPassword}>
-                {isChangingPassword ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <KeyRound className="w-4 h-4 mr-1" />}
-                비밀번호 변경
-              </Button>
-            </Card>
-          </TabsContent>
-
-          {/* ===== Cache Tab ===== */}
-          <TabsContent value="cache">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-sm">KIPRIS 데이터 캐시 현황</h2>
-                <Button variant="outline" size="sm" onClick={() => loadCache(cachePage)} disabled={cacheLoading}>
-                  <RefreshCw className={`w-3.5 h-3.5 mr-1 ${cacheLoading ? "animate-spin" : ""}`} /> 새로고침
-                </Button>
-              </div>
-
-              {/* Summary cards */}
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: "특허 원본 데이터", count: cacheCounts.data },
-                  { label: "AI 요약 캐시", count: cacheCounts.ai },
-                  { label: "사업화 점수 캐시", count: cacheCounts.score },
-                ].map(item => (
-                  <Card key={item.label} className="p-3 text-center">
-                    <p className="text-2xl font-bold">{item.count}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">{item.label}</p>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDeleteCache}
-                  disabled={selectedCacheIds.size === 0 || cacheLoading}
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-1" /> 선택 삭제 ({selectedCacheIds.size})
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDeleteAllCache}
-                  disabled={cacheLoading || cacheCounts.data === 0}
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-1" /> 전체 삭제
-                </Button>
-              </div>
-
-              {/* Cache list */}
-              {cacheItems.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground text-sm">
-                  {cacheLoading ? "로딩 중..." : "캐시된 데이터가 없습니다."}
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 px-3 py-2 text-[11px] text-muted-foreground border-b border-border/50">
-                    <input
-                      type="checkbox"
-                      checked={selectedCacheIds.size === cacheItems.length && cacheItems.length > 0}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCacheIds(new Set(cacheItems.map(i => i.id)));
-                        } else {
-                          setSelectedCacheIds(new Set());
-                        }
-                      }}
-                    />
-                    <span className="flex-1">특허번호</span>
-                    <span>캐시 일시</span>
-                  </div>
-                  {cacheItems.map(item => (
-                    <div key={item.id} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary/30 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={selectedCacheIds.has(item.id)}
-                        onChange={(e) => {
-                          const next = new Set(selectedCacheIds);
-                          if (e.target.checked) next.add(item.id);
-                          else next.delete(item.id);
-                          setSelectedCacheIds(next);
-                        }}
-                      />
-                      <span className="flex-1 text-sm font-mono">{item.patent_number}</span>
-                      <span className="text-[11px] text-muted-foreground">
-                        {new Date(item.created_at).toLocaleDateString("ko-KR")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Pagination */}
-              {cacheCounts.data > 20 && (
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <Button variant="outline" size="sm" disabled={cachePage === 0 || cacheLoading} onClick={() => loadCache(cachePage - 1)}>
-                    이전
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    {cachePage + 1} / {Math.ceil(cacheCounts.data / 20)}
-                  </span>
-                  <Button variant="outline" size="sm" disabled={(cachePage + 1) * 20 >= cacheCounts.data || cacheLoading} onClick={() => loadCache(cachePage + 1)}>
-                    다음
-                  </Button>
-                </div>
-              )}
-
-              <p className="text-[10px] text-muted-foreground">
-                캐시 삭제 시 해당 특허의 AI 요약과 사업화 점수 캐시도 함께 삭제됩니다. 다음 검색 시 KIPRIS API에서 새로 가져옵니다.
-              </p>
-            </div>
-        </TabsContent>
-
-          {/* ===== PDF Layout Tab ===== */}
-          <TabsContent value="pdf">
-            <PdfLayoutSettings apiCall={apiCall} initialConfig={pdfLayoutConfig} />
-          </TabsContent>
-
-          {/* ===== Stats Dashboard Tab ===== */}
-          <TabsContent value="stats">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-sm">AI 사용량 · 통계 대시보드</h2>
-                <Button variant="outline" size="sm" onClick={loadUsageStats} disabled={statsLoading}>
-                  <RefreshCw className={`w-3.5 h-3.5 mr-1 ${statsLoading ? "animate-spin" : ""}`} /> 새로고침
-                </Button>
-              </div>
-
-              {statsLoading && !usageStats ? (
-                <div className="text-center py-16 text-muted-foreground text-sm">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                  통계 로딩 중...
-                </div>
-              ) : usageStats ? (
-                <>
-                  {/* Summary Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {[
-                      { label: "AI 요약 생성", value: usageStats.totalSummaries, icon: <FileText className="w-4 h-4" />, color: "text-blue-500" },
-                      { label: "사업화 점수 분석", value: usageStats.totalScores, icon: <TrendingUp className="w-4 h-4" />, color: "text-emerald-500" },
-                      { label: "총 검색 횟수", value: usageStats.totalSearches, icon: <Search className="w-4 h-4" />, color: "text-amber-500" },
-                      { label: "KIPRIS 데이터 캐시", value: usageStats.totalDataCache, icon: <Database className="w-4 h-4" />, color: "text-purple-500" },
-                    ].map((stat, i) => (
-                      <Card key={i} className="p-4">
-                        <div className={`flex items-center gap-2 mb-2 ${stat.color}`}>
-                          {stat.icon}
-                          <span className="text-[10px] font-medium uppercase tracking-wider">{stat.label}</span>
-                        </div>
-                        <p className="text-2xl font-bold">{stat.value.toLocaleString()}</p>
-                      </Card>
-                    ))}
-                  </div>
-
-                  {/* Current Model */}
-                  <Card className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Zap className="w-4 h-4 text-primary" />
-                      <span className="text-xs font-medium">현재 AI 모델</span>
-                    </div>
-                    <p className="text-sm font-mono font-semibold">{usageStats.currentModel || "google/gemini-2.5-flash"}</p>
-                    <p className="text-[10px] text-muted-foreground mt-1">요약서 탭에서 모델을 변경할 수 있습니다</p>
-                  </Card>
-
-                  {/* Recent Activity Charts */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Card className="p-4">
-                      <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" /> 최근 7일 AI 요약 생성
-                      </h3>
-                      {usageStats.recentSummaries.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {usageStats.recentSummaries.map((d, i) => {
-                            const maxCount = Math.max(...usageStats.recentSummaries.map(s => s.count), 1);
-                            return (
-                              <div key={i} className="flex items-center gap-2">
-                                <span className="text-[10px] text-muted-foreground w-12 flex-shrink-0">{d.date}</span>
-                                <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
-                                  <div
-                                    className="h-full bg-blue-500/60 rounded transition-all"
-                                    style={{ width: `${(d.count / maxCount) * 100}%` }}
-                                  />
-                                </div>
-                                <span className="text-[10px] font-medium w-6 text-right">{d.count}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
-                      )}
-                    </Card>
-
-                    <Card className="p-4">
-                      <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" /> 최근 7일 검색 활동
-                      </h3>
-                      {usageStats.recentSearches.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {usageStats.recentSearches.map((d, i) => {
-                            const maxCount = Math.max(...usageStats.recentSearches.map(s => s.count), 1);
-                            return (
-                              <div key={i} className="flex items-center gap-2">
-                                <span className="text-[10px] text-muted-foreground w-12 flex-shrink-0">{d.date}</span>
-                                <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
-                                  <div
-                                    className="h-full bg-amber-500/60 rounded transition-all"
-                                    style={{ width: `${(d.count / maxCount) * 100}%` }}
-                                  />
-                                </div>
-                                <span className="text-[10px] font-medium w-6 text-right">{d.count}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
-                      )}
-                    </Card>
-                  </div>
-
-                  {/* Top Searched Patents */}
-                  <Card className="p-4">
-                    <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
-                      <Star className="w-3.5 h-3.5" /> 인기 검색 특허 TOP 10
-                    </h3>
-                    {usageStats.topSearched.length > 0 ? (
-                      <div className="space-y-2">
-                        {usageStats.topSearched.map((item, i) => (
-                          <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/20">
-                            <span className="text-xs font-bold text-muted-foreground w-5 text-center">{i + 1}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-mono truncate">{item.patent_number}</p>
-                              {item.patent_title && (
-                                <p className="text-[10px] text-muted-foreground truncate">{item.patent_title}</p>
-                              )}
+          {/* ===== Output Tab (Print + PDF) ===== */}
+          <TabsContent value="output">
+            <Accordion type="multiple" defaultValue={["print"]} className="space-y-3">
+              <AccordionItem value="print" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-sm font-semibold gap-2">
+                  <span className="flex items-center gap-2"><Printer className="w-4 h-4 text-primary" /> 인쇄 설정</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4">
+                    <p className="text-[11px] text-muted-foreground">저장 후 인쇄 시 선택한 항목만 포함됩니다.</p>
+                    <div className="space-y-3">
+                      {[
+                        { key: "header", label: "인쇄 헤더", desc: "출력 상단 제목/번호 영역" },
+                        { key: "patentInfo", label: "특허 정보 카드", desc: "등록번호/출원인/날짜 정보" },
+                        { key: "commercialization", label: "사업화 점수", desc: "종합 점수 및 상세 분석" },
+                        { key: "aiSummary", label: "AI 종합 요약", desc: "본문 요약 텍스트 영역" },
+                        { key: "trl", label: "TRL 섹션", desc: "기술 성숙도 차트 영역" },
+                        { key: "claims", label: "청구항", desc: "청구항 카드(화면에는 항상 표시)" },
+                        { key: "relatedPatents", label: "관련 특허", desc: "추천 특허 리스트" },
+                        { key: "disclaimer", label: "면책 문구", desc: "요약 하단 주의 문구" },
+                        { key: "footer", label: "인쇄 푸터", desc: "생성일 및 하단 문구" },
+                      ].map((item) => {
+                        const isOn = printSections[item.key] !== false;
+                        return (
+                          <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/30">
+                            <div>
+                              <p className="text-sm font-medium">{item.label}</p>
+                              <p className="text-[11px] text-muted-foreground">{item.desc}</p>
                             </div>
-                            <Badge variant="secondary" className="text-[10px] flex-shrink-0">
-                              {item.search_count}회
-                            </Badge>
+                            <button onClick={() => setPrintSections((prev) => ({ ...prev, [item.key]: !isOn }))} className="flex-shrink-0">
+                              {isOn ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted-foreground" />}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Button onClick={handleSavePrintSettings} disabled={isSavingPrintSettings} className="w-full">
+                      {isSavingPrintSettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                      인쇄 설정 저장
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="pdf" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-sm font-semibold gap-2">
+                  <span className="flex items-center gap-2"><FileDown className="w-4 h-4 text-primary" /> PDF 레이아웃</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <PdfLayoutSettings apiCall={apiCall} initialConfig={pdfLayoutConfig} />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+
+          {/* ===== System Tab (Stats + Cache + Security) ===== */}
+          <TabsContent value="system">
+            <Accordion type="multiple" defaultValue={["stats"]} className="space-y-3">
+              <AccordionItem value="stats" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-sm font-semibold gap-2">
+                  <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> 통계 대시보드</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-end">
+                      <Button variant="outline" size="sm" onClick={loadUsageStats} disabled={statsLoading}>
+                        <RefreshCw className={`w-3.5 h-3.5 mr-1 ${statsLoading ? "animate-spin" : ""}`} /> 새로고침
+                      </Button>
+                    </div>
+
+                    {statsLoading && !usageStats ? (
+                      <div className="text-center py-16 text-muted-foreground text-sm">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                        통계 로딩 중...
+                      </div>
+                    ) : usageStats ? (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {[
+                            { label: "AI 요약 생성", value: usageStats.totalSummaries, icon: <FileText className="w-4 h-4" />, color: "text-primary" },
+                            { label: "사업화 점수 분석", value: usageStats.totalScores, icon: <TrendingUp className="w-4 h-4" />, color: "text-primary" },
+                            { label: "총 검색 횟수", value: usageStats.totalSearches, icon: <Search className="w-4 h-4" />, color: "text-primary" },
+                            { label: "KIPRIS 데이터 캐시", value: usageStats.totalDataCache, icon: <Database className="w-4 h-4" />, color: "text-primary" },
+                          ].map((stat, i) => (
+                            <Card key={i} className="p-4">
+                              <div className={`flex items-center gap-2 mb-2 ${stat.color}`}>
+                                {stat.icon}
+                                <span className="text-[10px] font-medium uppercase tracking-wider">{stat.label}</span>
+                              </div>
+                              <p className="text-2xl font-bold">{stat.value.toLocaleString()}</p>
+                            </Card>
+                          ))}
+                        </div>
+
+                        <Card className="p-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Zap className="w-4 h-4 text-primary" />
+                            <span className="text-xs font-medium">현재 AI 모델</span>
+                          </div>
+                          <p className="text-sm font-mono font-semibold">{usageStats.currentModel || "google/gemini-2.5-flash"}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">요약서 탭에서 모델을 변경할 수 있습니다</p>
+                        </Card>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Card className="p-4">
+                            <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5" /> 최근 7일 AI 요약 생성
+                            </h3>
+                            {usageStats.recentSummaries.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {usageStats.recentSummaries.map((d, i) => {
+                                  const maxCount = Math.max(...usageStats.recentSummaries.map(s => s.count), 1);
+                                  return (
+                                    <div key={i} className="flex items-center gap-2">
+                                      <span className="text-[10px] text-muted-foreground w-12 flex-shrink-0">{d.date}</span>
+                                      <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                        <div className="h-full bg-primary/60 rounded transition-all" style={{ width: `${(d.count / maxCount) * 100}%` }} />
+                                      </div>
+                                      <span className="text-[10px] font-medium w-6 text-right">{d.count}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                            )}
+                          </Card>
+
+                          <Card className="p-4">
+                            <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5" /> 최근 7일 검색 활동
+                            </h3>
+                            {usageStats.recentSearches.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {usageStats.recentSearches.map((d, i) => {
+                                  const maxCount = Math.max(...usageStats.recentSearches.map(s => s.count), 1);
+                                  return (
+                                    <div key={i} className="flex items-center gap-2">
+                                      <span className="text-[10px] text-muted-foreground w-12 flex-shrink-0">{d.date}</span>
+                                      <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                        <div className="h-full bg-accent/60 rounded transition-all" style={{ width: `${(d.count / maxCount) * 100}%` }} />
+                                      </div>
+                                      <span className="text-[10px] font-medium w-6 text-right">{d.count}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                            )}
+                          </Card>
+                        </div>
+
+                        <Card className="p-4">
+                          <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                            <Star className="w-3.5 h-3.5" /> 인기 검색 특허 TOP 10
+                          </h3>
+                          {usageStats.topSearched.length > 0 ? (
+                            <div className="space-y-2">
+                              {usageStats.topSearched.map((item, i) => (
+                                <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/20">
+                                  <span className="text-xs font-bold text-muted-foreground w-5 text-center">{i + 1}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-mono truncate">{item.patent_number}</p>
+                                    {item.patent_title && (
+                                      <p className="text-[10px] text-muted-foreground truncate">{item.patent_title}</p>
+                                    )}
+                                  </div>
+                                  <Badge variant="secondary" className="text-[10px] flex-shrink-0">
+                                    {item.search_count}회
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground text-center py-4">검색 데이터 없음</p>
+                          )}
+                        </Card>
+
+                        <p className="text-[10px] text-muted-foreground">
+                          ※ AI 사용량은 캐시된 분석 결과 기준이며, 실제 API 호출 비용과는 차이가 있을 수 있습니다.
+                        </p>
+                      </>
+                    ) : (
+                      <div className="text-center py-16 text-muted-foreground text-sm">
+                        통계 탭을 클릭하면 데이터를 불러옵니다.
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="cache" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-sm font-semibold gap-2">
+                  <span className="flex items-center gap-2"><Database className="w-4 h-4 text-primary" /> 캐시 관리</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-end">
+                      <Button variant="outline" size="sm" onClick={() => loadCache(cachePage)} disabled={cacheLoading}>
+                        <RefreshCw className={`w-3.5 h-3.5 mr-1 ${cacheLoading ? "animate-spin" : ""}`} /> 새로고침
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: "특허 원본 데이터", count: cacheCounts.data },
+                        { label: "AI 요약 캐시", count: cacheCounts.ai },
+                        { label: "사업화 점수 캐시", count: cacheCounts.score },
+                      ].map(item => (
+                        <Card key={item.label} className="p-3 text-center">
+                          <p className="text-2xl font-bold">{item.count}</p>
+                          <p className="text-[11px] text-muted-foreground mt-1">{item.label}</p>
+                        </Card>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button variant="destructive" size="sm" onClick={handleDeleteCache} disabled={selectedCacheIds.size === 0 || cacheLoading}>
+                        <Trash2 className="w-3.5 h-3.5 mr-1" /> 선택 삭제 ({selectedCacheIds.size})
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleDeleteAllCache} disabled={cacheLoading || cacheCounts.data === 0} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                        <Trash2 className="w-3.5 h-3.5 mr-1" /> 전체 삭제
+                      </Button>
+                    </div>
+
+                    {cacheItems.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground text-sm">
+                        {cacheLoading ? "로딩 중..." : "캐시된 데이터가 없습니다."}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 px-3 py-2 text-[11px] text-muted-foreground border-b border-border/50">
+                          <input type="checkbox" checked={selectedCacheIds.size === cacheItems.length && cacheItems.length > 0} onChange={(e) => {
+                            if (e.target.checked) setSelectedCacheIds(new Set(cacheItems.map(i => i.id)));
+                            else setSelectedCacheIds(new Set());
+                          }} />
+                          <span className="flex-1">특허번호</span>
+                          <span>캐시 일시</span>
+                        </div>
+                        {cacheItems.map(item => (
+                          <div key={item.id} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary/30 transition-colors">
+                            <input type="checkbox" checked={selectedCacheIds.has(item.id)} onChange={(e) => {
+                              const next = new Set(selectedCacheIds);
+                              if (e.target.checked) next.add(item.id); else next.delete(item.id);
+                              setSelectedCacheIds(next);
+                            }} />
+                            <span className="flex-1 text-sm font-mono">{item.patent_number}</span>
+                            <span className="text-[11px] text-muted-foreground">{new Date(item.created_at).toLocaleDateString("ko-KR")}</span>
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground text-center py-4">검색 데이터 없음</p>
                     )}
-                  </Card>
 
-                  <p className="text-[10px] text-muted-foreground">
-                    ※ AI 사용량은 캐시된 분석 결과 기준이며, 실제 API 호출 비용과는 차이가 있을 수 있습니다. 
-                    캐시에서 응답된 요청은 추가 API 비용이 발생하지 않습니다.
-                  </p>
-                </>
-              ) : (
-                <div className="text-center py-16 text-muted-foreground text-sm">
-                  통계 탭을 클릭하면 데이터를 불러옵니다.
-                </div>
-              )}
-            </div>
-          </TabsContent>
+                    {cacheCounts.data > 20 && (
+                      <div className="flex items-center justify-center gap-2 pt-2">
+                        <Button variant="outline" size="sm" disabled={cachePage === 0 || cacheLoading} onClick={() => loadCache(cachePage - 1)}>이전</Button>
+                        <span className="text-xs text-muted-foreground">{cachePage + 1} / {Math.ceil(cacheCounts.data / 20)}</span>
+                        <Button variant="outline" size="sm" disabled={(cachePage + 1) * 20 >= cacheCounts.data || cacheLoading} onClick={() => loadCache(cachePage + 1)}>다음</Button>
+                      </div>
+                    )}
 
-          {/* ===== Notices Tab ===== */}
-          <TabsContent value="notices">
-            <NoticeManager apiCall={apiCall} />
+                    <p className="text-[10px] text-muted-foreground">
+                      캐시 삭제 시 해당 특허의 AI 요약과 사업화 점수 캐시도 함께 삭제됩니다.
+                    </p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="security" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-sm font-semibold gap-2">
+                  <span className="flex items-center gap-2"><KeyRound className="w-4 h-4 text-primary" /> 보안 설정</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4">
+                    <p className="text-[11px] text-muted-foreground">현재 로그인된 관리자 비밀번호를 새 비밀번호로 변경합니다.</p>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">새 비밀번호</label>
+                      <Input type="password" value={newAdminPassword} onChange={(e) => setNewAdminPassword(e.target.value)} placeholder="4~100자 입력" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">새 비밀번호 확인</label>
+                      <Input type="password" value={confirmAdminPassword} onChange={(e) => setConfirmAdminPassword(e.target.value)} placeholder="비밀번호를 다시 입력" />
+                    </div>
+                    <Button onClick={handleChangePassword} disabled={isChangingPassword}>
+                      {isChangingPassword ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <KeyRound className="w-4 h-4 mr-1" />}
+                      비밀번호 변경
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </TabsContent>
         </Tabs>
       </main>
