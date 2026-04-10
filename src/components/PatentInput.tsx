@@ -175,8 +175,6 @@ function RotatingHelperText({ customText }: { customText?: string }) {
     </div>
   );
 }
-
-  return (
     <div className="w-full max-w-2xl mx-auto">
       <form onSubmit={handleSubmit} className="space-y-2.5">
         <div className="relative group">
