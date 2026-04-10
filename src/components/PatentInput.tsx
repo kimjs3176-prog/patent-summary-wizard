@@ -9,10 +9,11 @@ interface PatentInputProps {
   onKeywordSearch?: (results: KeywordSearchResult[], keyword: string) => void;
   placeholder?: string;
   helperText?: string;
+  helperTexts?: string[];
   onFocusChange?: (focused: boolean) => void;
 }
 
-export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, onFocusChange }: PatentInputProps) {
+export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, onFocusChange }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -126,13 +127,13 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             </button>
           </div>
         </div>
-        <RotatingHelperText customText={helperText} />
+        <RotatingHelperText customText={helperText} customTexts={helperTexts} />
       </form>
     </div>
   );
 }
 
-const HELPER_TEXTS = [
+const DEFAULT_HELPER_TEXTS = [
   '예: "딸기 저장기간 늘리고 싶음", "스마트팜 자동화", 특허번호(10-2920574)',
   '💡 해결하고 싶은 문제를 자연어로 입력해 보세요',
   '🔍 "곤충단백질 가공기술 찾기" 같은 문장도 검색 가능합니다',
@@ -141,8 +142,9 @@ const HELPER_TEXTS = [
   '🤖 AI가 입력 문장에서 핵심 키워드를 추출하여 특허를 검색합니다',
 ];
 
-function RotatingHelperText({ customText }: { customText?: string }) {
-  const [currentIdx, setCurrentIdx] = useState(() => Math.floor(Math.random() * HELPER_TEXTS.length));
+function RotatingHelperText({ customText, customTexts }: { customText?: string; customTexts?: string[] }) {
+  const texts = (customTexts && customTexts.length > 0) ? customTexts : DEFAULT_HELPER_TEXTS;
+  const [currentIdx, setCurrentIdx] = useState(() => Math.floor(Math.random() * texts.length));
   const [isVisible, setIsVisible] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -153,16 +155,16 @@ function RotatingHelperText({ customText }: { customText?: string }) {
       setTimeout(() => {
         setCurrentIdx(prev => {
           let next: number;
-          do { next = Math.floor(Math.random() * HELPER_TEXTS.length); } while (next === prev && HELPER_TEXTS.length > 1);
+          do { next = Math.floor(Math.random() * texts.length); } while (next === prev && texts.length > 1);
           return next;
         });
         setIsVisible(true);
       }, 400);
     }, 4000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [customText]);
+  }, [customText, texts.length]);
 
-  const text = customText || HELPER_TEXTS[currentIdx];
+  const text = customText || texts[currentIdx % texts.length];
 
   return (
     <div className="h-6 flex items-center justify-center overflow-hidden">
