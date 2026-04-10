@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Search, FileText, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
@@ -88,16 +88,20 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
           <div className="absolute inset-y-0 left-0 pl-3.5 md:pl-5 flex items-center pointer-events-none z-10">
             <FileText className={`h-[18px] w-[18px] md:h-5 md:w-5 transition-colors duration-300 ${isFocused ? 'text-primary' : 'text-muted-foreground/40'}`} />
           </div>
+          {/* Scrolling placeholder for long text */}
+          {!inputValue && !isFocused && (
+            <ScrollingPlaceholder text={placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요"} />
+          )}
           <input
             type="text"
             value={inputValue}
             onChange={handleInputChange}
-            className="relative w-full h-14 md:h-14 pl-11 md:pl-13 pr-16 sm:pr-36 text-sm sm:text-[15px] bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 placeholder:text-muted-foreground/40 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+            className="relative w-full h-14 md:h-14 pl-11 md:pl-13 pr-16 sm:pr-36 text-sm sm:text-[15px] bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
             style={{
               boxShadow: isFocused ? 'var(--shadow-glow)' : 'var(--shadow-glossy)',
             }}
             disabled={isProcessing}
-            placeholder={placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요"}
+            placeholder={isFocused ? (placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요") : ""}
             onFocus={() => { setIsFocused(true); onFocusChange?.(true); }}
             onBlur={() => { setIsFocused(false); setTimeout(() => onFocusChange?.(false), 200); }}
           />
