@@ -794,6 +794,37 @@ const Admin = () => {
                 </div>
               </div>
 
+              {/* Search Helper Texts */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-1">🔄 검색창 랜덤 안내 문구</h3>
+                <p className="text-[11px] text-muted-foreground mb-3">검색창 아래에 랜덤으로 표시되는 안내 문구를 관리합니다. 비워두면 기본 문구가 사용됩니다.</p>
+                {(() => {
+                  let helperTexts: string[] = [];
+                  try { helperTexts = JSON.parse(siteSettings.search_helper_texts || "[]"); } catch { helperTexts = []; }
+                  if (!Array.isArray(helperTexts)) helperTexts = [];
+                  const updateTexts = (newTexts: string[]) => setSiteSettings(s => ({ ...s, search_helper_texts: JSON.stringify(newTexts) }));
+                  return (
+                    <div className="space-y-2">
+                      {helperTexts.map((text, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          <Input
+                            value={text}
+                            onChange={e => { const t = [...helperTexts]; t[i] = e.target.value; updateTexts(t); }}
+                            placeholder={`안내 문구 ${i + 1}`}
+                            className="flex-1 text-sm"
+                          />
+                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => { const t = helperTexts.filter((_, idx) => idx !== i); updateTexts(t); }}>
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => updateTexts([...helperTexts, ""])}>
+                        <Plus className="w-3 h-3" /> 문구 추가
+                      </Button>
+                    </div>
+                  );
+                })()}
+
               {/* Category Management */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">기술분류 카테고리 관리</h3>
