@@ -758,19 +758,19 @@ export function PatentSummary({
         />
       )}
 
-      {/* 3. AI Summary Card — 2025 Glass morphism */}
-      <div className={`relative rounded-2xl overflow-hidden animate-slide-in surface-elevated print:break-before-page ai-summary-print-section ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s' }}>
-        {/* Top accent gradient band */}
-        <div className="h-1" style={{ background: 'linear-gradient(90deg, hsl(160 84% 39%), hsl(174 60% 40%), hsl(200 80% 50%))' }} />
+      {/* 3. AI Summary Card — Toss-style clean */}
+      <div className={`relative rounded-3xl overflow-hidden animate-slide-in bg-card border border-border/40 print:break-before-page ai-summary-print-section ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.03)' }}>
+        {/* Subtle top accent */}
+        <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
         
         {/* Header */}
-        <div className="px-5 md:px-7 py-4 flex items-center justify-between flex-wrap gap-3" style={{ background: 'linear-gradient(180deg, hsl(160 30% 97%), hsl(0 0% 100%))' }}>
+        <div className="px-5 md:px-7 py-5 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-md" style={{ background: 'linear-gradient(135deg, hsl(160 84% 39%), hsl(200 80% 50%))', color: 'white' }}>
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'hsl(var(--primary) / 0.08)', color: 'hsl(var(--primary))' }}>
               {cardIcons.aiSummary || "🤖"}
             </div>
             <div>
-              <h3 className="font-bold text-lg text-foreground">AI 종합 요약</h3>
+              <h3 className="font-bold text-[17px] text-foreground tracking-[-0.01em]">AI 종합 요약</h3>
               <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
                 {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
               </p>
@@ -778,8 +778,8 @@ export function PatentSummary({
           </div>
         </div>
 
-        {/* Subtle separator */}
-        <div className="mx-5 md:mx-7 h-px" style={{ background: 'linear-gradient(90deg, transparent, hsl(160 30% 88%), transparent)' }} />
+        {/* Divider */}
+        <div className="mx-5 md:mx-7 h-px bg-border/40" />
 
         {/* Content */}
         <div className="px-5 py-7 md:px-7 md:py-9 min-h-[350px]">
@@ -787,12 +787,12 @@ export function PatentSummary({
             <div className="prose max-w-none">
               {renderMarkdown(content)}
               {isStreaming && (
-                <span className="inline-block w-1.5 h-5 rounded-full ml-1 animate-pulse" style={{ background: 'hsl(var(--primary) / 0.6)' }} />
+                <span className="inline-block w-1.5 h-5 rounded-full ml-1 animate-pulse bg-primary/50" />
               )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 shadow-sm" style={{ background: 'hsl(var(--muted))' }}>
+              <div className="w-16 h-16 rounded-3xl flex items-center justify-center mb-4 bg-muted">
                 <FileText className="w-8 h-8" />
               </div>
               <p className="text-sm font-medium">요약서가 여기에 표시됩니다</p>
@@ -800,12 +800,12 @@ export function PatentSummary({
           )}
         </div>
 
-        {/* Disclaimer — Warm accent box */}
+        {/* Disclaimer */}
         {printSections.disclaimer !== false && (
           <div className="mx-5 md:mx-7 mb-5">
-            <div className="flex items-center gap-3.5 px-5 py-4 rounded-xl" style={{ background: 'linear-gradient(135deg, hsl(38 92% 95%), hsl(38 70% 92%))', border: '1px solid hsl(38 60% 85%)' }}>
+            <div className="flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-muted/50 border border-border/30">
               <span className="text-base shrink-0 leading-none">⚠️</span>
-              <p className="text-xs font-semibold leading-relaxed" style={{ color: 'hsl(38 50% 25%)' }}>
+              <p className="text-xs font-medium leading-relaxed text-muted-foreground">
                 {disclaimerText}
               </p>
             </div>
