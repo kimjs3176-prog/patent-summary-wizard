@@ -9,6 +9,7 @@ interface PatentInputProps {
   onKeywordSearch?: (results: KeywordSearchResult[], keyword: string) => void;
   placeholder?: string;
   helperText?: string;
+  helperTexts?: string[];
   onFocusChange?: (focused: boolean) => void;
 }
 
