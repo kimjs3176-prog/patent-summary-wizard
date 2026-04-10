@@ -172,7 +172,7 @@ const Index = () => {
             {/* Search */}
             <section className="mb-10 animate-fade-up relative z-20" style={{ animationDelay: "0.1s" }}>
               <div className="w-full max-w-2xl mx-auto flex flex-col relative z-40">
-                <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} onFocusChange={setSearchFocused} />
+                <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()} onFocusChange={setSearchFocused} />
                 {homepageVisible.popularSearches !== false && (
                   <div className="relative">
                     {/* Backdrop overlay on mobile to prevent seeing content behind */}
