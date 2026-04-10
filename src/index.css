@@ -420,6 +420,16 @@
   100% { transform: translateX(-100%); }
 }
 
+@keyframes marquee-placeholder {
+  0%, 15% { transform: translateX(0); }
+  45%, 55% { transform: translateX(calc(-100% + 250px)); }
+  85%, 100% { transform: translateX(0); }
+}
+
+.animate-marquee-placeholder {
+  animation: marquee-placeholder 8s ease-in-out infinite;
+}
+
 @keyframes skeletonShimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Search, FileText, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
@@ -88,16 +88,20 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
           <div className="absolute inset-y-0 left-0 pl-3.5 md:pl-5 flex items-center pointer-events-none z-10">
             <FileText className={`h-[18px] w-[18px] md:h-5 md:w-5 transition-colors duration-300 ${isFocused ? 'text-primary' : 'text-muted-foreground/40'}`} />
           </div>
+          {/* Scrolling placeholder for long text */}
+          {!inputValue && !isFocused && (
+            <ScrollingPlaceholder text={placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요"} />
+          )}
           <input
             type="text"
             value={inputValue}
             onChange={handleInputChange}
-            className="relative w-full h-14 md:h-14 pl-11 md:pl-13 pr-16 sm:pr-36 text-sm sm:text-[15px] bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 placeholder:text-muted-foreground/40 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+            className="relative w-full h-14 md:h-14 pl-11 md:pl-13 pr-16 sm:pr-36 text-sm sm:text-[15px] bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
             style={{
               boxShadow: isFocused ? 'var(--shadow-glow)' : 'var(--shadow-glossy)',
             }}
             disabled={isProcessing}
-            placeholder={placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요"}
+            placeholder={isFocused ? (placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요") : ""}
             onFocus={() => { setIsFocused(true); onFocusChange?.(true); }}
             onBlur={() => { setIsFocused(false); setTimeout(() => onFocusChange?.(false), 200); }}
           />
@@ -133,46 +137,33 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
   );
 }
 
-const DEFAULT_HELPER_TEXTS = [
-  '예: "딸기 저장기간 늘리고 싶음", "스마트팜 자동화", 특허번호(10-2920574)',
-  '💡 해결하고 싶은 문제를 자연어로 입력해 보세요',
-  '🔍 "곤충단백질 가공기술 찾기" 같은 문장도 검색 가능합니다',
-  '📋 특허번호를 알고 있다면 바로 입력해서 AI 분석을 받아보세요',
-  '🌱 "친환경 포장재 대체 기술" 등 관심 분야를 입력해 보세요',
-  '🤖 AI가 입력 문장에서 핵심 키워드를 추출하여 특허를 검색합니다',
-];
-
-function RotatingHelperText({ customText, customTexts }: { customText?: string; customTexts?: string[] }) {
-  const texts = (customTexts && customTexts.length > 0) ? customTexts : DEFAULT_HELPER_TEXTS;
-  const [currentIdx, setCurrentIdx] = useState(() => Math.floor(Math.random() * texts.length));
-  const [isVisible, setIsVisible] = useState(true);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+function ScrollingPlaceholder({ text }: { text: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
 
   useEffect(() => {
-    if (customText) return;
-    intervalRef.current = setInterval(() => {
-      setIsVisible(false);
-      setTimeout(() => {
-        setCurrentIdx(prev => {
-          let next: number;
-          do { next = Math.floor(Math.random() * texts.length); } while (next === prev && texts.length > 1);
-          return next;
-        });
-        setIsVisible(true);
-      }, 400);
-    }, 4000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [customText, texts.length]);
-
-  const text = customText || texts[currentIdx % texts.length];
+    const check = () => {
+      if (containerRef.current && textRef.current) {
+        setShouldScroll(textRef.current.scrollWidth > containerRef.current.clientWidth);
+      }
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [text]);
 
   return (
-    <div className="h-6 flex items-center justify-center overflow-hidden">
-      <p
-        className={`text-center text-muted-foreground/60 text-xs md:text-[13px] tracking-wide px-2 transition-all duration-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+    <div
+      ref={containerRef}
+      className="absolute inset-y-0 left-11 md:left-13 right-16 sm:right-36 flex items-center overflow-hidden pointer-events-none z-[5]"
+    >
+      <span
+        ref={textRef}
+        className={`text-sm sm:text-[15px] text-muted-foreground/40 whitespace-nowrap ${shouldScroll ? 'animate-marquee-placeholder' : ''}`}
       >
         {text}
-      </p>
+      </span>
     </div>
   );
 }
