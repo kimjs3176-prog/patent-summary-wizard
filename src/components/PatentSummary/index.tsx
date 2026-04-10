@@ -500,20 +500,20 @@ export function PatentSummary({
             
             {/* Title */}
             {patentData.titleKo && (
-              <h2 className="text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-tight">{patentData.titleKo}</h2>
+              <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 leading-snug tracking-[-0.01em]">{patentData.titleKo}</h2>
             )}
             
             {/* Stacked layout: Meta info (top) + Keywords (bottom) */}
             <div className="flex flex-col gap-3">
-              {/* Top: Meta info strip */}
-              <div className="px-3.5 py-2.5 rounded-lg flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]" style={{ background: 'hsl(220 14% 96%)', border: '1px solid hsl(220 13% 91%)' }}>
+              {/* Top: Meta info — Toss-style subtle dividers */}
+              <div className="px-4 py-3 rounded-2xl flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] bg-muted/50 border border-border/30">
                 {patentData.assignee && (
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.assignee || "출원인"}</span>
                       <span className="text-foreground font-semibold">{patentData.assignee}</span>
                     </span>
-                    <span className="text-muted-foreground/30 text-xs">|</span>
+                    <span className="text-border text-xs">|</span>
                   </>
                 )}
                 {patentData.inventors && patentData.inventors.length > 0 && (
