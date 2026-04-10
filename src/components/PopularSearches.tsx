@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { TrendingUp, Flame } from "lucide-react";
+import { Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PopularSearch {
@@ -31,9 +31,9 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-2 mb-2">
-        <Flame className="w-3.5 h-3.5 text-primary" />
-        <span className="text-xs font-semibold text-foreground">인기 검색</span>
+      <div className="flex items-center gap-2 mb-2.5">
+        <Flame className="w-4 h-4 text-primary" />
+        <span className="text-[13px] font-bold text-foreground">인기 검색</span>
       </div>
       <div className="flex flex-col gap-0.5">
         {popular.map((item, idx) =>
@@ -66,10 +66,10 @@ function PopularSearchItem({ item, idx, onSelect }: { item: PopularSearch; idx: 
       onClick={() => onSelect(item.patent_number)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-primary/5 transition-colors group min-w-0"
+      className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl hover:bg-primary/5 transition-colors group min-w-0"
       title={`${item.patent_number} · ${item.search_count}회`}
     >
-      <span className={`flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold transition-colors ${
+      <span className={`flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold transition-colors ${
         idx < 3 ? 'text-primary-foreground' : 'bg-secondary text-muted-foreground'
       }`} style={idx < 3 ? { background: 'var(--gradient-accent)' } : undefined}>
         {idx + 1}
@@ -77,7 +77,7 @@ function PopularSearchItem({ item, idx, onSelect }: { item: PopularSearch; idx: 
       <div ref={containerRef} className="overflow-hidden min-w-0 flex-1">
         <span
           ref={textRef}
-          className="text-xs font-medium text-foreground group-hover:text-primary transition-colors whitespace-nowrap inline-block"
+          className="text-[13px] font-medium text-foreground group-hover:text-primary transition-colors whitespace-nowrap inline-block"
           style={isHovered && isOverflowing ? {
             animation: `marquee ${scrollDuration}s linear infinite`,
           } : undefined}
@@ -85,7 +85,7 @@ function PopularSearchItem({ item, idx, onSelect }: { item: PopularSearch; idx: 
           {title}
         </span>
       </div>
-      <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 tabular-nums">{item.search_count}회</span>
+      <span className="text-[11px] text-muted-foreground/60 flex-shrink-0 tabular-nums">{item.search_count}회</span>
     </button>
   );
 }

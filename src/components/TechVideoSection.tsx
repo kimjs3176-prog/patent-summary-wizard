@@ -20,13 +20,13 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
   return (
     <section className="max-w-5xl mx-auto mt-12 md:mt-16 mb-12 md:mb-16 animate-fade-up" style={{ animationDelay: "0.3s" }}>
       <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-2.5 mb-1">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'hsl(0 84% 60% / 0.1)' }}>
-            <Video className="w-3.5 h-3.5" style={{ color: 'hsl(0 84% 60%)' }} />
+        <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(0 84% 60% / 0.1)' }}>
+            <Video className="w-4 h-4" style={{ color: 'hsl(0 84% 60%)' }} />
           </div>
           <h3 className="text-lg md:text-xl font-bold text-foreground tracking-tight">기술소개영상</h3>
         </div>
-        <p className="text-xs text-muted-foreground ml-[38px]">농식품 분야 기술 소개 영상</p>
+        <p className="text-[13px] text-muted-foreground ml-[42px]">농식품 분야 기술 소개 영상</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {videos.slice(0, 3).map((video, idx) => {
@@ -61,8 +61,8 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
                 </div>
               </div>
               {video.title && (
-                <div className="px-4 py-3">
-                  <p className="text-xs font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-relaxed">
+                <div className="px-4 py-3.5">
+                  <p className="text-[13px] font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-relaxed">
                     {video.title}
                   </p>
                 </div>

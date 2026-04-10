@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, FileText, ArrowRight, Sparkles } from "lucide-react";
+import { Search, FileText, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 
@@ -75,7 +75,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-2">
+      <form onSubmit={handleSubmit} className="space-y-2.5">
         <div className="relative group">
           {/* Glow ring on focus */}
           <div
@@ -85,14 +85,14 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
               opacity: isFocused ? 1 : 0,
             }}
           />
-          <div className="absolute inset-y-0 left-0 pl-3 md:pl-5 flex items-center pointer-events-none z-10">
-            <FileText className={`h-4 w-4 md:h-[18px] md:w-[18px] transition-colors duration-300 ${isFocused ? 'text-primary' : 'text-muted-foreground/40'}`} />
+          <div className="absolute inset-y-0 left-0 pl-3.5 md:pl-5 flex items-center pointer-events-none z-10">
+            <FileText className={`h-[18px] w-[18px] md:h-5 md:w-5 transition-colors duration-300 ${isFocused ? 'text-primary' : 'text-muted-foreground/40'}`} />
           </div>
           <input
             type="text"
             value={inputValue}
             onChange={handleInputChange}
-            className="relative w-full h-12 md:h-[3.5rem] pl-10 md:pl-12 pr-16 sm:pr-36 text-xs sm:text-sm bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 placeholder:text-muted-foreground/40 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
+            className="relative w-full h-13 md:h-14 pl-11 md:pl-13 pr-16 sm:pr-36 text-sm sm:text-[15px] bg-card border border-border/40 rounded-2xl text-foreground outline-none transition-all duration-400 placeholder:text-muted-foreground/40 focus:border-primary/40 focus:ring-1 focus:ring-primary/20"
             style={{
               boxShadow: isFocused ? 'var(--shadow-glow)' : 'var(--shadow-glossy)',
             }}
@@ -105,7 +105,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             <button
               type="submit"
               disabled={!inputValue.trim() || isProcessing}
-              className="h-9 md:h-10 px-3 md:px-5 text-xs md:text-sm font-semibold rounded-xl transition-all duration-400 disabled:opacity-25 disabled:cursor-not-allowed flex items-center gap-1.5 md:gap-2 btn-press"
+              className="h-10 md:h-11 px-3.5 md:px-5 text-sm font-semibold rounded-xl transition-all duration-400 disabled:opacity-25 disabled:cursor-not-allowed flex items-center gap-1.5 md:gap-2 btn-press"
               style={{
                 background: inputValue.trim() && !isProcessing ? 'var(--gradient-accent)' : 'hsl(var(--muted))',
                 color: inputValue.trim() && !isProcessing ? 'white' : 'hsl(var(--muted-foreground))',
@@ -127,7 +127,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             </button>
           </div>
         </div>
-        <p className="text-center text-muted-foreground/50 text-[10px] md:text-[11px] tracking-wide px-2 leading-relaxed">
+        <p className="text-center text-muted-foreground/50 text-[11px] md:text-xs tracking-wide px-2 leading-relaxed">
           {helperText || "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요"}
         </p>
       </form>

@@ -26,25 +26,25 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* 2026 Ambient background — softer, more organic blobs */}
+      {/* Ambient background */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full blur-[200px] animate-float" style={{ background: 'radial-gradient(circle, hsl(158 64% 40% / 0.06) 0%, transparent 70%)' }} />
         <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full blur-[200px]" style={{ background: 'radial-gradient(circle, hsl(172 56% 42% / 0.04) 0%, transparent 70%)', animationDelay: '3s' }} />
         <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full blur-[180px] animate-float" style={{ background: 'radial-gradient(circle, hsl(184 48% 44% / 0.03) 0%, transparent 70%)', animationDelay: '1.5s' }} />
       </div>
 
-      {/* 2026 Header — frosted glass with refined presence */}
+      {/* Header — Toss-style clean */}
       <header className="w-full sticky top-0 z-50 backdrop-blur-3xl border-b border-border/30" style={{ background: 'hsl(60 5% 98% / 0.82)' }}>
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2.5 md:py-3.5 flex items-center justify-between gap-2">
-          <Link to="/" className="flex items-center gap-2 md:gap-3 min-w-0 group flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2.5 md:gap-3 min-w-0 group flex-shrink-0">
             <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm transition-all duration-400 group-hover:shadow-md group-hover:scale-105" style={{ background: 'var(--gradient-accent)' }}>
               <FileText className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-bold text-xs md:text-sm text-foreground tracking-tight leading-tight truncate max-w-[120px] sm:max-w-none">
+              <h1 className="font-bold text-sm md:text-[15px] text-foreground tracking-tight leading-tight truncate max-w-[140px] sm:max-w-none">
                 {settings.header_title}
               </h1>
-              <p className="text-[9px] md:text-[10px] text-muted-foreground/60 hidden sm:block leading-tight tracking-wide">
+              <p className="text-[10px] md:text-[11px] text-muted-foreground/60 hidden sm:block leading-tight tracking-wide">
                 {settings.header_subtitle}
               </p>
             </div>
@@ -55,20 +55,20 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
 
       {children}
 
-      {/* 2026 Footer — clean, generous spacing */}
+      {/* Footer — generous spacing, readable text */}
       <footer className="mt-auto relative z-10 border-t border-border/20">
-        <div className="container mx-auto px-3 sm:px-4 py-8 md:py-16 text-center">
+        <div className="container mx-auto px-3 sm:px-4 py-10 md:py-16 text-center">
           {showFooterLogo && (
-            <div className="flex items-center justify-center gap-2.5 mb-4">
-              <div className="w-6 h-6 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-accent)' }}>
-                <FileText className="w-3 h-3 text-white" />
+            <div className="flex items-center justify-center gap-2.5 mb-5">
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-accent)' }}>
+                <FileText className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="text-xs font-semibold text-foreground tracking-tight">{settings.header_title}</span>
+              <span className="text-sm font-semibold text-foreground tracking-tight">{settings.header_title}</span>
             </div>
           )}
-          <p className="text-[11px] text-muted-foreground/50 leading-relaxed">{settings.footer_line1}</p>
-          <p className="text-[11px] text-muted-foreground/50 mt-1">{settings.footer_line2}</p>
-          <p className="text-[11px] text-muted-foreground/60 mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground/70 transition-colors">kimjs1408@koat.or.kr</a></p>
+          <p className="text-xs text-muted-foreground/50 leading-relaxed">{settings.footer_line1}</p>
+          <p className="text-xs text-muted-foreground/50 mt-1.5">{settings.footer_line2}</p>
+          <p className="text-xs text-muted-foreground/60 mt-4">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground/70 transition-colors">kimjs1408@koat.or.kr</a></p>
         </div>
       </footer>
     </div>

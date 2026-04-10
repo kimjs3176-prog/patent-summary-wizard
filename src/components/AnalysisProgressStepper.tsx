@@ -68,14 +68,14 @@ export function AnalysisProgressStepper({ currentStep }: AnalysisProgressStepper
                 </div>
 
                 {/* Label */}
-                <p className={`text-xs font-semibold transition-colors duration-400 ${isActive ? 'text-foreground' : isCompleted ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                <p className={`text-[13px] font-semibold transition-colors duration-400 ${isActive ? 'text-foreground' : isCompleted ? 'text-primary' : 'text-muted-foreground/50'}`}>
                   {step.label}
                 </p>
-                <p className={`text-[10px] mt-0.5 transition-colors duration-400 hidden sm:block ${isActive ? 'text-muted-foreground' : 'text-muted-foreground/40'}`}>
+                <p className={`text-[11px] mt-0.5 transition-colors duration-400 hidden sm:block ${isActive ? 'text-muted-foreground' : 'text-muted-foreground/40'}`}>
                   {step.desc}
                 </p>
 
-                {/* Active spinner — refined */}
+                {/* Active spinner */}
                 {isActive && (
                   <div className="mt-2.5">
                     <div className="w-4 h-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
