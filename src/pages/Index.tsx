@@ -195,7 +195,7 @@ const Index = () => {
               )}
             </section>
 
-            <NoticeSection />
+            {homepageVisible.notices !== false && <NoticeSection />}
 
             {homepageVisible.featuredPatents !== false && (
               <>

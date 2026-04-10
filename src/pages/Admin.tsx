@@ -776,6 +776,7 @@ const Admin = () => {
                     { key: "techVideos", label: "기술소개 영상", desc: "유튜브 영상 카드 섹션" },
                     { key: "techTransferGuide", label: "기술이전 가이드", desc: "기술이전 절차 안내 섹션" },
                     { key: "popularSearches", label: "인기 검색 특허", desc: "자주 검색되는 특허 버튼" },
+                    { key: "notices", label: "공지사항", desc: "공지사항 섹션 표시" },
                   ].map(item => {
                     const isOn = homepageVisibleSections[item.key] !== false;
                     return (
@@ -1102,6 +1103,7 @@ const Admin = () => {
                     { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview", desc: "차세대 모델, 빠른 속도와 높은 품질", cost: "~₩5", tier: "standard" },
                     { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", desc: "최고 품질, 복잡한 분석에 적합 (느림)", cost: "~₩25", tier: "premium" },
                     { value: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview", desc: "차세대 추론 모델, 최고 수준 분석", cost: "~₩25", tier: "premium" },
+                    { value: "google/gemini-3.1-flash-image-preview", label: "Gemini 3.1 Flash Image", desc: "이미지 생성·편집, 빠른 속도", cost: "~₩5", tier: "standard" },
                     { value: "openai/gpt-5-nano", label: "GPT-5 Nano", desc: "초고속·저비용, 단순 분류/요약에 최적", cost: "~₩3", tier: "economy" },
                     { value: "openai/gpt-5-mini", label: "GPT-5 Mini", desc: "강력한 추론, 비용 효율적", cost: "~₩10", tier: "standard" },
                     { value: "openai/gpt-5", label: "GPT-5", desc: "최고 성능 범용 모델, 높은 정확도", cost: "~₩30", tier: "premium" },
