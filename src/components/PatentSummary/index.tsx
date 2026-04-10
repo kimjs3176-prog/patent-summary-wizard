@@ -724,7 +724,7 @@ export function PatentSummary({
                 };
 
                 return (
-                  <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 rounded-lg" style={{ background: 'hsl(250 30% 97%)', border: '1px solid hsl(250 20% 91%)' }}>
+                  <div className="flex flex-wrap items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-muted/40 border border-border/30">
                     <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">키워드</span>
                     {unique.map((kw, i) => {
                       const c = getColor(kw);
@@ -732,7 +732,7 @@ export function PatentSummary({
                         <button
                           key={i}
                           onClick={() => onKeywordClick?.(kw)}
-                          className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium transition-all hover:scale-105 hover:shadow-sm cursor-pointer"
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium transition-all hover:scale-105 cursor-pointer"
                           style={{ background: c.bg, color: c.fg, border: `1px solid ${c.bd}` }}
                           title={`"${kw}" 관련 특허 검색`}
                         >
