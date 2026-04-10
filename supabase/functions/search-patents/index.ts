@@ -90,14 +90,16 @@ async function extractKeywordsWithAI(query: string): Promise<{ keywords: string[
           {
             role: "system",
             content: `You are a Korean agricultural patent search keyword extractor.
-Given a user's problem description or question in Korean, extract 2-4 concise technical search keywords that would find relevant patents in the Korean patent database (KIPRIS).
+Given a user's problem description or question in Korean, extract 2-3 concise technical search keywords for the Korean patent database (KIPRIS).
 
 Rules:
 - Output ONLY a JSON object: {"keywords": ["keyword1", "keyword2", ...], "intent": "one-line summary of what user needs"}
+- Return keywords in priority order: most important first (e.g. crop name first, then technique)
 - Keywords should be technical terms, not conversational phrases
 - Focus on the core technology, crop, method, or domain
-- Each keyword should be 1-3 words max
+- Each keyword should be 1-2 words max, ideally single word
 - Do NOT include particles or verb endings
+- Keep to 2-3 keywords only for precise AND-combined search
 - Think about what patent titles would contain`
           },
           {
