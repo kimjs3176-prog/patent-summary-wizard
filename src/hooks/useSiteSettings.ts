@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type SiteSettings = Record<string, string>;
@@ -41,30 +41,51 @@ const DEFAULT_SETTINGS: SiteSettings = {
   ai_model: "google/gemini-2.5-flash",
 };
 
+// Shared cache to prevent multiple fetches
+let cachedSettings: SiteSettings | null = null;
+let fetchPromise: Promise<SiteSettings> | null = null;
+
+async function fetchSettings(): Promise<SiteSettings> {
+  if (cachedSettings) return cachedSettings;
+  if (fetchPromise) return fetchPromise;
+  
+  fetchPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("key, value");
+      if (!error && data) {
+        const map: SiteSettings = { ...DEFAULT_SETTINGS };
+        for (const row of data) {
+          if (row.key && row.value) map[row.key] = row.value;
+        }
+        cachedSettings = map;
+        return map;
+      }
+    } catch {
+      // use defaults
+    }
+    cachedSettings = DEFAULT_SETTINGS;
+    return DEFAULT_SETTINGS;
+  })();
+  
+  return fetchPromise;
+}
+
 export function useSiteSettings() {
-  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
-  const [isLoading, setIsLoading] = useState(true);
+  const [settings, setSettings] = useState<SiteSettings>(cachedSettings || DEFAULT_SETTINGS);
+  const [isLoading, setIsLoading] = useState(!cachedSettings);
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("site_settings")
-          .select("key, value");
-        if (!error && data) {
-          const map: SiteSettings = { ...DEFAULT_SETTINGS };
-          for (const row of data) {
-            if (row.key && row.value) map[row.key] = row.value;
-          }
-          setSettings(map);
-        }
-      } catch {
-        // use defaults
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetch();
+    if (cachedSettings) {
+      setSettings(cachedSettings);
+      setIsLoading(false);
+      return;
+    }
+    fetchSettings().then((s) => {
+      setSettings(s);
+      setIsLoading(false);
+    });
   }, []);
 
   return { settings, isLoading };
