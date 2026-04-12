@@ -248,7 +248,7 @@ export function PatentSummary({
           const bodyText = hashMatch[2];
           const parts = bodyText.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
           elements.push(
-            <p key={index} className="text-foreground/85 leading-[1.85] mb-2.5 text-[15px] md:text-base">
+            <p key={index} className="text-foreground/80 leading-[1.8] mb-2 text-[13px] sm:text-[14px] md:text-[15px]">
               {parts.map((part, i) => {
                 if ((part.startsWith('**') && part.endsWith('**'))) {
                   return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
@@ -268,16 +268,16 @@ export function PatentSummary({
         const IconComp = getSectionIcon(rawTitle);
         const displayTitle = sectionTitles[rawTitle] || rawTitle;
         elements.push(
-          <div key={index} className="mt-8 mb-4 first:mt-0">
-            <div className="flex items-center gap-2.5">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl shrink-0 bg-primary/[0.07]" style={{ color: 'hsl(var(--primary))' }}>
-                <IconComp className="w-[16px] h-[16px]" />
+          <div key={index} className="mt-6 mb-3 first:mt-0">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg shrink-0 bg-primary/[0.06]" style={{ color: 'hsl(var(--primary))' }}>
+                <IconComp className="w-[14px] h-[14px]" />
               </span>
-              <h2 className="text-lg font-bold tracking-[-0.01em] text-foreground">
+              <h2 className="text-[15px] sm:text-base font-bold tracking-[-0.01em] text-foreground">
                 {displayTitle}
               </h2>
             </div>
-            <div className="mt-2 h-px bg-border/40" />
+            <div className="mt-1.5 h-px bg-border/30" />
           </div>
         );
         
@@ -338,7 +338,7 @@ export function PatentSummary({
         // Enhanced bold text parsing: **text**, __text__, and partial bold within sentences
         const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
         elements.push(
-          <p key={index} className="text-foreground/85 leading-[1.85] mb-3 text-[15px] md:text-base">
+          <p key={index} className="text-foreground/80 leading-[1.8] mb-2.5 text-[13px] sm:text-[14px] md:text-[15px]">
             {parts.map((part, i) => {
               if ((part.startsWith('**') && part.endsWith('**'))) {
                 return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
