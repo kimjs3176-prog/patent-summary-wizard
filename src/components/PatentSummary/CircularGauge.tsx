@@ -12,42 +12,27 @@ function getGaugeColors(value: number): { start: string; end: string; glow: stri
 }
 
 export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
-  const radius = 52;
-  const stroke = 10;
-  const cx = 64;
-  const cy = 64;
+  const radius = 50;
+  const stroke = 8;
+  const cx = 60;
+  const cy = 60;
   const circumference = 2 * Math.PI * radius;
   const progress = (score / 100) * circumference;
   const colors = getGaugeColors(score);
   const gradientId = `gauge-gradient-${score}`;
   const glowId = `gauge-glow-${score}`;
 
-  const ticks = Array.from({ length: 40 }, (_, i) => {
-    const angle = (i / 40) * 360 - 90;
-    const rad = (angle * Math.PI) / 180;
-    const isMajor = i % 10 === 0;
-    const outerR = radius + stroke / 2 + 2;
-    const innerR = outerR + (isMajor ? 6 : 3);
-    return {
-      x1: cx + outerR * Math.cos(rad),
-      y1: cy + outerR * Math.sin(rad),
-      x2: cx + innerR * Math.cos(rad),
-      y2: cy + innerR * Math.sin(rad),
-      isMajor,
-    };
-  });
-
   return (
     <div className="flex flex-col items-center select-none shrink-0">
-      <div className="relative w-[130px] h-[130px] sm:w-[160px] sm:h-[160px] md:w-[180px] md:h-[180px]">
-        <svg viewBox="0 0 128 128" className="w-full h-full -rotate-90">
+      <div className="relative w-[110px] h-[110px] sm:w-[130px] sm:h-[130px] md:w-[150px] md:h-[150px]">
+        <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
           <defs>
             <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor={colors.start} />
               <stop offset="100%" stopColor={colors.end} />
             </linearGradient>
             <filter id={glowId}>
-              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
               <feFlood floodColor={colors.glow} result="color" />
               <feComposite in="color" in2="blur" operator="in" result="glow" />
               <feMerge>
@@ -57,18 +42,10 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
             </filter>
           </defs>
 
-          {ticks.map((t, i) => (
-            <line
-              key={i}
-              x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
-              stroke={t.isMajor ? 'hsl(220 9% 70%)' : 'hsl(220 13% 88%)'}
-              strokeWidth={t.isMajor ? 1.2 : 0.6}
-              strokeLinecap="round"
-            />
-          ))}
+          {/* Track */}
+          <circle cx={cx} cy={cy} r={radius} fill="none" stroke="hsl(220 14% 94%)" strokeWidth={stroke} />
 
-          <circle cx={cx} cy={cy} r={radius} fill="none" stroke="hsl(220 14% 96%)" strokeWidth={stroke} />
-
+          {/* Progress */}
           <circle
             cx={cx} cy={cy} r={radius}
             fill="none"
@@ -81,37 +58,40 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
             className="transition-all duration-1000 ease-out"
           />
 
+          {/* End dot */}
           {score > 0 && (() => {
             const angle = ((score / 100) * 360 - 90) * (Math.PI / 180);
             return (
               <circle
                 cx={cx + radius * Math.cos(angle)}
                 cy={cy + radius * Math.sin(angle)}
-                r={stroke / 2 + 1}
+                r={stroke / 2}
                 fill="white"
                 stroke={colors.end}
-                strokeWidth={2}
+                strokeWidth={1.5}
               />
             );
           })()}
         </svg>
 
+        {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight" style={{ color: colors.start }}>
+          <span className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight tabular-nums" style={{ color: colors.start }}>
             {score}
           </span>
-          <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium mt-0.5">/ 100점</span>
+          <span className="text-[8px] sm:text-[9px] text-muted-foreground/50 font-medium">/ 100</span>
         </div>
       </div>
 
-      <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:gap-2">
+      {/* Grade badge */}
+      <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5">
         <div
-          className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-white text-xs sm:text-sm font-bold shadow-sm"
+          className="px-2 py-0.5 rounded-md text-white text-[10px] sm:text-xs font-bold"
           style={{ background: `linear-gradient(135deg, ${colors.start}, ${colors.end})` }}
         >
           {grade}
         </div>
-        <span className="text-xs sm:text-sm font-semibold text-foreground/70">{label}</span>
+        <span className="text-[11px] sm:text-xs font-semibold text-foreground/60">{label}</span>
       </div>
     </div>
   );

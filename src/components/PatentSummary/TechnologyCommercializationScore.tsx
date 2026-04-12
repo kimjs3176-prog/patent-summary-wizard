@@ -62,9 +62,9 @@ function getGradeLabel(value: number, grades: ScoreConfig["grades"]): string {
 }
 
 const SUB_COLORS = [
-  { stroke: 'hsl(217 91% 60%)', bg: 'hsl(217 91% 60% / 0.06)', border: 'hsl(217 91% 60% / 0.15)', icon: '🔬', scoreBg: 'hsl(217 91% 95%)' },
-  { stroke: 'hsl(160 84% 39%)', bg: 'hsl(160 84% 39% / 0.06)', border: 'hsl(160 84% 39% / 0.15)', icon: '📈', scoreBg: 'hsl(160 84% 95%)' },
-  { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 55% / 0.06)', border: 'hsl(25 90% 55% / 0.15)', icon: '💼', scoreBg: 'hsl(25 90% 95%)' },
+  { stroke: 'hsl(217 91% 60%)', bg: 'hsl(217 91% 97%)', border: 'hsl(217 91% 90%)', icon: '🔬' },
+  { stroke: 'hsl(160 84% 39%)', bg: 'hsl(160 84% 97%)', border: 'hsl(160 84% 90%)', icon: '📈' },
+  { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 97%)', border: 'hsl(25 90% 90%)', icon: '💼' },
 ];
 
 function renderBoldText(text: string) {
@@ -82,23 +82,22 @@ function SubScoreCard({ label, score, reason, colorIndex }: { label: string; sco
   if (!reason) return null;
   return (
     <div
-      className="p-3.5 sm:p-4 rounded-xl"
+      className="p-3 sm:p-3.5 rounded-xl"
       style={{ background: c.bg, border: `1px solid ${c.border}` }}
     >
-      {/* Header with score */}
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-sm">{c.icon}</span>
-          <p className="text-xs font-bold text-foreground/80">{label}</p>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs">{c.icon}</span>
+          <p className="text-[11px] sm:text-xs font-bold text-foreground/75">{label}</p>
         </div>
         <span
-          className="text-sm font-extrabold tabular-nums px-2 py-0.5 rounded-md"
-          style={{ color: c.stroke, background: c.scoreBg }}
+          className="text-xs font-extrabold tabular-nums"
+          style={{ color: c.stroke }}
         >
-          {score}
+          {score}점
         </span>
       </div>
-      <p className="text-[13px] sm:text-sm text-foreground/65 leading-[1.8] sm:leading-[1.85]">
+      <p className="text-[12px] sm:text-[13px] text-foreground/60 leading-[1.75]">
         {renderBoldText(reason)}
       </p>
     </div>
@@ -116,10 +115,10 @@ export function TechnologyCommercializationScore({
 
   if (isLoading && !showTrlOnly) {
     return (
-      <div className="mb-6 glass-effect rounded-3xl p-8">
-        <div className="flex items-center justify-center gap-3 py-6">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <span className="text-muted-foreground font-medium">AI가 기술사업화점수를 분석 중...</span>
+      <div className="mb-5 rounded-2xl border border-border/30 bg-card p-6 md:p-8">
+        <div className="flex items-center justify-center gap-3 py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground font-medium">사업화 점수 분석 중...</span>
         </div>
       </div>
     );
@@ -129,30 +128,35 @@ export function TechnologyCommercializationScore({
     return null;
   }
 
-  // Show only TRL section
+  // TRL only mode
   if (showTrlOnly) {
     if (!details.trl) return null;
     
     return (
-      <div className="mt-6 glass-effect rounded-3xl p-6 md:p-8 animate-slide-in trl-print-section border-t-[3px]" style={{ animationDelay: '0.12s', borderTopColor: 'hsl(160 70% 40%)' }}>
-        <div className="flex items-center gap-3 mb-5 pb-5 border-b border-border/50">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl" style={{ background: 'linear-gradient(135deg, hsl(160 70% 45%), hsl(170 60% 35%))', color: 'white' }}>
-            📊
+      <div className="mt-5 rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in trl-print-section" style={{ animationDelay: '0.12s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        {/* Top accent */}
+        <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(160 70% 45% / 0.6), hsl(160 70% 45% / 0.15), transparent)' }} />
+        
+        <div className="p-4 sm:p-6 md:p-7">
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: 'hsl(160 70% 45% / 0.08)', color: 'hsl(160 70% 40%)' }}>
+              📊
+            </div>
+            <div>
+              <h4 className="font-bold text-sm sm:text-base text-foreground tracking-tight">{trlConfig.cardTitle}</h4>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{trlConfig.cardSubtitle}</p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-bold text-lg" style={{ color: 'hsl(160 60% 30%)' }}>{trlConfig.cardTitle}</h4>
-            <p className="text-sm text-muted-foreground">{trlConfig.cardSubtitle}</p>
-          </div>
+          
+          <TrlChart estimatedTrl={details.trl} trlConfig={trlConfig} />
+          
+          {details.trlReason && (
+            <div className="mt-4 p-3 sm:p-4 rounded-xl bg-muted/40 border border-border/30">
+              <p className="text-[10px] text-muted-foreground mb-1 font-semibold">TRL 추정 근거</p>
+              <p className="text-[12px] sm:text-sm text-foreground/70 leading-[1.75]">{details.trlReason}</p>
+            </div>
+          )}
         </div>
-        
-        <TrlChart estimatedTrl={details.trl} trlConfig={trlConfig} />
-        
-        {details.trlReason && (
-          <div className="mt-4 p-4 rounded-xl bg-secondary/50 border border-border/50">
-            <p className="text-xs text-muted-foreground mb-1 font-medium">TRL 추정 근거</p>
-            <p className="text-sm text-foreground/80 leading-[1.8]">{details.trlReason}</p>
-          </div>
-        )}
       </div>
     );
   }
@@ -163,37 +167,33 @@ export function TechnologyCommercializationScore({
     { label: scoreConfig.subLabels.business, score: details.businessScore, reason: details.businessReason },
   ];
 
-  // Show commercialization score section — restructured layout:
-  // Row 1: Gauge + Bar Chart (visual summary)
-  // Row 2: Sub-score detail cards (reasoning)
-  // Row 3: AI analysis opinion
   return (
-    <div className="mb-6 glass-effect rounded-2xl sm:rounded-3xl overflow-hidden animate-slide-in border-t-[3px]" style={{ borderTopColor: 'hsl(25 90% 55%)' }}>
+    <div className="mb-5 rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+      {/* Top accent */}
+      <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(25 90% 55% / 0.6), hsl(25 90% 55% / 0.15), transparent)' }} />
+
       {/* Header */}
-      <div className="px-4 sm:px-6 md:px-7 pt-4 sm:pt-5 md:pt-6 pb-3 sm:pb-4">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center text-base sm:text-xl" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55%), hsl(35 85% 50%))', color: 'white' }}>
-            ✨
-          </div>
-          <div>
-            <h4 className="font-bold text-sm sm:text-lg" style={{ color: 'hsl(25 70% 35%)' }}>{scoreConfig.cardTitle}</h4>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">{scoreConfig.cardSubtitle}</p>
-          </div>
+      <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 flex items-center gap-2.5">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: 'hsl(25 90% 55% / 0.08)', color: 'hsl(25 80% 45%)' }}>
+          ✨
+        </div>
+        <div>
+          <h4 className="font-bold text-sm sm:text-base text-foreground tracking-tight">{scoreConfig.cardTitle}</h4>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">{scoreConfig.cardSubtitle}</p>
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="mx-4 sm:mx-6 md:mx-7 h-px bg-border/40" />
+      <div className="mx-4 sm:mx-6 h-px bg-border/30" />
 
-      {/* Section 1: Visual Score Summary — Gauge + Bar Chart */}
-      <div className="px-4 sm:px-6 md:px-7 py-4 sm:py-5">
-        <div className="flex items-center gap-4 sm:gap-6">
+      {/* Gauge + Bar Chart — dashboard layout */}
+      <div className="px-4 sm:px-6 py-4 sm:py-5">
+        <div className="flex items-center gap-3 sm:gap-5">
           <CircularGauge
             score={score}
             grade={getGradeLabel(score, scoreConfig.grades)}
             label={getScoreLabel(score, scoreConfig.grades)}
           />
-          <div className="w-px self-stretch bg-border/30 hidden sm:block" />
+          <div className="w-px self-stretch bg-border/20 hidden sm:block" />
           <div className="flex-1 min-w-0">
             <ScoreBarChart
               technologyScore={details.technologyScore}
@@ -205,24 +205,24 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Section 2: Detailed Reasoning Cards */}
-      <div className="px-4 sm:px-6 md:px-7 pb-3 sm:pb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
+      {/* Sub-score detail cards */}
+      <div className="px-4 sm:px-6 pb-3 sm:pb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {subItems.map((item, idx) => (
             <SubScoreCard key={item.label} label={item.label} score={item.score} reason={item.reason} colorIndex={idx} />
           ))}
         </div>
       </div>
 
-      {/* Section 3: AI Analysis Opinion */}
+      {/* AI Analysis */}
       {details.analysis && (
-        <div className="px-4 sm:px-6 md:px-7 pb-4 sm:pb-5 md:pb-6">
-          <div className="p-3 sm:p-4 rounded-xl bg-secondary/30 border border-border/40">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <span className="text-xs">🤖</span>
-              <p className="text-[10px] sm:text-xs text-muted-foreground font-semibold">AI 분석 의견</p>
+        <div className="px-4 sm:px-6 pb-4 sm:pb-5">
+          <div className="p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[10px]">🤖</span>
+              <p className="text-[10px] text-muted-foreground font-semibold">AI 분석 의견</p>
             </div>
-            <p className="text-[13px] sm:text-sm text-foreground/75 leading-[1.8] sm:leading-[1.85]">{details.analysis}</p>
+            <p className="text-[12px] sm:text-[13px] text-foreground/65 leading-[1.75]">{details.analysis}</p>
           </div>
         </div>
       )}
