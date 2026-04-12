@@ -427,7 +427,7 @@
 }
 
 .animate-marquee-placeholder {
-  animation: marquee-placeholder 8s ease-in-out infinite;
+  animation: marquee-placeholder 10s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
 @keyframes skeletonShimmer {
