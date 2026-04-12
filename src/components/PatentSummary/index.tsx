@@ -443,10 +443,10 @@ export function PatentSummary({
         </div>
       )}
 
-      <div className="space-y-5">
-      {/* 1. Patent Info Card — Toss-style clean card */}
+      <div className="space-y-4">
+      {/* 1. Patent Info Card — Dashboard-style */}
       {patentData && (
-        <div className={`relative rounded-3xl overflow-hidden animate-slide-in bg-card border border-border/40 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.03)' }}>
+        <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           {/* Subtle top accent */}
           <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.2), transparent)' }} />
           
