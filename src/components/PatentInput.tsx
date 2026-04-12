@@ -145,7 +145,13 @@ function ScrollingPlaceholder({ text }: { text: string }) {
   useEffect(() => {
     const check = () => {
       if (containerRef.current && textRef.current) {
-        setShouldScroll(textRef.current.scrollWidth > containerRef.current.clientWidth);
+        const overflow = textRef.current.scrollWidth - containerRef.current.clientWidth;
+        if (overflow > 0) {
+          setShouldScroll(true);
+          textRef.current.style.setProperty('--marquee-distance', `-${overflow + 12}px`);
+        } else {
+          setShouldScroll(false);
+        }
       }
     };
     check();

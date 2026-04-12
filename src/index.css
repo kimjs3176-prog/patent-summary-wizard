@@ -421,13 +421,13 @@
 }
 
 @keyframes marquee-placeholder {
-  0%, 15% { transform: translateX(0); }
-  45%, 55% { transform: translateX(calc(-100% + 250px)); }
-  85%, 100% { transform: translateX(0); }
+  0%, 20% { transform: translateX(0); }
+  40%, 60% { transform: translateX(var(--marquee-distance, -30%)); }
+  80%, 100% { transform: translateX(0); }
 }
 
 .animate-marquee-placeholder {
-  animation: marquee-placeholder 8s ease-in-out infinite;
+  animation: marquee-placeholder 10s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
 @keyframes skeletonShimmer {
