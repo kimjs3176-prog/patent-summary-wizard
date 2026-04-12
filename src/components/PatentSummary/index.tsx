@@ -724,7 +724,7 @@ export function PatentSummary({
                 };
 
                 return (
-                  <div className="flex flex-wrap items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-muted/40 border border-border/30">
+                  <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-muted/30 border border-border/20">
                     <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">키워드</span>
                     {unique.map((kw, i) => {
                       const c = getColor(kw);
