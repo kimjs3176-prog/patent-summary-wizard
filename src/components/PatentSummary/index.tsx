@@ -819,35 +819,35 @@ export function PatentSummary({
         />
       )}
 
-      {/* 5. Claims Card — Toss-style */}
+      {/* 5. Claims Card */}
       {printSections.claims !== false && visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
-        <div className={`relative rounded-3xl overflow-hidden animate-slide-in bg-card border border-border/40 ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.03)' }}>
-          <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(262 60% 55% / 0.5), hsl(262 40% 55% / 0.15), transparent)' }} />
+        <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+          <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(262 60% 55% / 0.4), hsl(262 40% 55% / 0.1), transparent)' }} />
           
-          <div className="p-5 md:p-7">
-            <div className="flex items-center gap-3.5 mb-5">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'hsl(262 60% 55% / 0.08)', color: 'hsl(262 60% 50%)' }}>
+          <div className="p-4 sm:p-5 md:p-6">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base sm:text-lg" style={{ background: 'hsl(262 60% 55% / 0.06)', color: 'hsl(262 60% 50%)' }}>
                 {cardIcons.claims || "📑"}
               </div>
               <div>
-                <h3 className="font-bold text-lg text-foreground tracking-[-0.01em]">청구항</h3>
-                <p className="text-xs text-muted-foreground mt-0.5 font-medium">{patentData.claims.length}개 항목</p>
+                <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">청구항</h3>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">{patentData.claims.length}개 항목</p>
               </div>
             </div>
 
             <details className="group">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2.5 py-2.5 px-4 rounded-2xl hover:bg-muted/50">
-                <span className="w-5 h-5 flex items-center justify-center text-[10px] rounded-lg transition-transform group-open:rotate-90 bg-muted text-muted-foreground">▶</span>
+              <summary className="cursor-pointer select-none text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 py-2 px-3 rounded-xl hover:bg-muted/40">
+                <span className="w-4 h-4 flex items-center justify-center text-[9px] rounded-md transition-transform group-open:rotate-90 bg-muted text-muted-foreground">▶</span>
                 청구항 내용 펼치기/접기
               </summary>
-              <div className="mt-5 space-y-3">
+              <div className="mt-3 space-y-2">
                 {patentData.claims.map((c, idx) => (
-                  <div key={idx} className="p-5 rounded-2xl border transition-all hover:shadow-sm bg-muted/30 border-border/30">
-                    <div className="inline-flex items-center gap-2 text-[11px] text-muted-foreground mb-3 font-semibold">
-                      <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold text-primary-foreground bg-primary/80">{idx + 1}</span>
+                  <div key={idx} className="p-3 sm:p-4 rounded-xl border bg-muted/20 border-border/20">
+                    <div className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground mb-2 font-semibold">
+                      <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-primary-foreground bg-primary/80">{idx + 1}</span>
                       청구항 {idx + 1}
                     </div>
-                    <div className="text-[14px] text-foreground/90 leading-[1.8]">{c}</div>
+                    <div className="text-[12px] sm:text-[13px] text-foreground/80 leading-[1.75]">{c}</div>
                   </div>
                 ))}
               </div>
