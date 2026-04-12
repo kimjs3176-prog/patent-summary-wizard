@@ -758,31 +758,27 @@ export function PatentSummary({
         />
       )}
 
-      {/* 3. AI Summary Card — Toss-style clean */}
-      <div className={`relative rounded-3xl overflow-hidden animate-slide-in bg-card border border-border/40 print:break-before-page ai-summary-print-section ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.03)' }}>
-        {/* Subtle top accent */}
+      {/* 3. AI Summary Card — Dashboard-style */}
+      <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 print:break-before-page ai-summary-print-section ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
         <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
         
         {/* Header */}
-        <div className="px-5 md:px-7 py-5 flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'hsl(var(--primary) / 0.08)', color: 'hsl(var(--primary))' }}>
-              {cardIcons.aiSummary || "🤖"}
-            </div>
-            <div>
-              <h3 className="font-bold text-lg text-foreground tracking-[-0.01em]">AI 종합 요약</h3>
-              <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-                {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
-              </p>
-            </div>
+        <div className="px-4 sm:px-5 md:px-6 py-3 sm:py-4 flex items-center gap-2.5">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base sm:text-lg" style={{ background: 'hsl(var(--primary) / 0.06)', color: 'hsl(var(--primary))' }}>
+            {cardIcons.aiSummary || "🤖"}
+          </div>
+          <div>
+            <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">AI 종합 요약</h3>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">
+              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
+            </p>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="mx-5 md:mx-7 h-px bg-border/40" />
+        <div className="mx-4 sm:mx-5 md:mx-6 h-px bg-border/30" />
 
         {/* Content */}
-        <div className="px-5 py-7 md:px-7 md:py-9 min-h-[350px]">
+        <div className="px-4 py-5 sm:px-5 sm:py-6 md:px-6 md:py-7 min-h-[300px]">
           {content ? (
             <div className="prose max-w-none">
               {renderMarkdown(content)}
@@ -791,9 +787,9 @@ export function PatentSummary({
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
-              <div className="w-16 h-16 rounded-3xl flex items-center justify-center mb-4 bg-muted">
-                <FileText className="w-8 h-8" />
+            <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 bg-muted">
+                <FileText className="w-7 h-7" />
               </div>
               <p className="text-sm font-medium">요약서가 여기에 표시됩니다</p>
             </div>
@@ -802,10 +798,10 @@ export function PatentSummary({
 
         {/* Disclaimer */}
         {printSections.disclaimer !== false && (
-          <div className="mx-5 md:mx-7 mb-5">
-            <div className="flex items-center gap-3.5 px-5 py-4 rounded-2xl bg-muted/50 border border-border/30">
-              <span className="text-base shrink-0 leading-none">⚠️</span>
-              <p className="text-[13px] font-medium leading-[1.75] text-muted-foreground">
+          <div className="mx-4 sm:mx-5 md:mx-6 mb-4">
+            <div className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-muted/40 border border-border/20">
+              <span className="text-sm shrink-0 leading-none">⚠️</span>
+              <p className="text-[11px] sm:text-[12px] font-medium leading-[1.7] text-muted-foreground/80">
                 {disclaimerText}
               </p>
             </div>
