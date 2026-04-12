@@ -448,16 +448,16 @@ export function PatentSummary({
       {patentData && (
         <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           {/* Subtle top accent */}
-          <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.2), transparent)' }} />
+          <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
           
-          <div className="px-5 py-4 md:px-7 md:py-5">
+          <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4">
             {/* Header row — minimal */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg shrink-0" style={{ background: 'hsl(var(--primary) / 0.08)', color: 'hsl(var(--primary))' }}>
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base shrink-0" style={{ background: 'hsl(var(--primary) / 0.06)', color: 'hsl(var(--primary))' }}>
                 {cardIcons.patentInfo || "📄"}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-[15px] md:text-base text-foreground leading-tight">특허 정보</div>
+                <div className="font-bold text-sm sm:text-[15px] text-foreground leading-tight">특허 정보</div>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {(() => {
@@ -500,13 +500,13 @@ export function PatentSummary({
             
             {/* Title */}
             {patentData.titleKo && (
-              <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 leading-snug tracking-[-0.01em]">{patentData.titleKo}</h2>
+              <h2 className="text-base sm:text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-[-0.01em]">{patentData.titleKo}</h2>
             )}
             
             {/* Stacked layout: Meta info (top) + Keywords (bottom) */}
             <div className="flex flex-col gap-3">
               {/* Top: Meta info — Toss-style subtle dividers */}
-              <div className="px-4 py-3.5 rounded-2xl flex flex-wrap items-center gap-x-4 gap-y-2.5 text-[13px] md:text-sm bg-muted/50 border border-border/30">
+              <div className="px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-2 text-[12px] sm:text-[13px] bg-muted/40 border border-border/20">
                 {patentData.assignee && (
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
