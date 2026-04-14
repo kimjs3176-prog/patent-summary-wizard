@@ -860,7 +860,7 @@ export function PatentSummary({
 
       {/* 6. Related Patents Section */}
       {printSections.relatedPatents !== false && visibleSections.relatedPatents !== false && (
-        <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
+        <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
       )}
     </div>
   );
