@@ -126,16 +126,6 @@ export default function SearchResults() {
                   ))}
                 </div>
               )}
-              {!isLoading && extractedKeywords.length > 0 && (
-                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <span className="text-xs text-muted-foreground/70">AI 추출 키워드:</span>
-                  {extractedKeywords.map((kw, i) => (
-                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/15">
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
