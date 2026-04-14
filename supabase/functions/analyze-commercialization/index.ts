@@ -180,7 +180,7 @@ JSON형식:
       if (modelSetting?.value) configuredModel = modelSetting.value;
     } catch { /* use default */ }
 
-    const scoreModel = isDetailedScore ? configuredModel : (configuredModel.includes("lite") ? configuredModel : configuredModel.replace("-pro", "-flash-lite").replace("-flash", "-flash-lite").replace("-lite-lite", "-lite"));
+    const scoreModel = isDetailedScore ? configuredModel : "google/gemini-2.5-flash-lite";
     const scoreMaxTokens = isDetailedScore ? 900 : 600;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
