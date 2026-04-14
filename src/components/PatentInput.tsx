@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, FileText, ArrowRight } from "lucide-react";
+import { Search, FileText, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 
