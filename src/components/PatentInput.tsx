@@ -123,8 +123,17 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
                 </>
               ) : (
                 <>
-                  <Search className="w-4 h-4" />
-                  <span className="hidden sm:inline">{inputValue.trim() && !isPatentNumber(inputValue.trim()) ? "검색" : "분석"}</span>
+                  {inputValue.trim() && !isPatentNumber(inputValue.trim()) ? (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span className="hidden sm:inline">AI 검색</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4" />
+                      <span className="hidden sm:inline">분석</span>
+                    </>
+                  )}
                   <ArrowRight className="w-3.5 h-3.5 hidden sm:inline" />
                 </>
               )}
