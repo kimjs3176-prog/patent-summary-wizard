@@ -168,7 +168,7 @@ export function TechnologyCommercializationScore({
   ];
 
   return (
-    <div className="mb-5 rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+    <div className="rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in h-full" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
       {/* Top accent */}
       <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(25 90% 55% / 0.6), hsl(25 90% 55% / 0.15), transparent)' }} />
 
