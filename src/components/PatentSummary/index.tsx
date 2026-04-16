@@ -750,14 +750,28 @@ export function PatentSummary({
         </div>
       )}
 
-      {/* 2. Technology Commercialization Score */}
+      {/* 2. Technology Commercialization Score — Left column on desktop */}
       {patentData && visibleSections.commercialization !== false && printSections.commercialization !== false && (
-        <TechnologyCommercializationScore 
-          score={commercializationScore}
-          isLoading={isAnalyzing}
-          details={commercializationDetails}
-          showTrlOnly={false}
-        />
+        <div className="lg:col-span-7">
+          <TechnologyCommercializationScore 
+            score={commercializationScore}
+            isLoading={isAnalyzing}
+            details={commercializationDetails}
+            showTrlOnly={false}
+          />
+        </div>
+      )}
+
+      {/* 2b. TRL Section — Right column on desktop, next to score */}
+      {patentData && commercializationDetails && visibleSections.trl !== false && printSections.trl !== false && (
+        <div className="lg:col-span-5">
+          <TechnologyCommercializationScore 
+            score={commercializationScore}
+            isLoading={false}
+            details={commercializationDetails}
+            showTrlOnly={true}
+          />
+        </div>
       )}
 
       {/* 3. AI Summary Card — Dashboard-style */}
