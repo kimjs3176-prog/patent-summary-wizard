@@ -115,7 +115,7 @@ export function TechnologyCommercializationScore({
 
   if (isLoading && !showTrlOnly) {
     return (
-      <div className="mb-5 rounded-2xl border border-border/30 bg-card p-6 md:p-8">
+      <div className="rounded-2xl border border-border/30 bg-card p-6 md:p-8 h-full">
         <div className="flex items-center justify-center gap-3 py-4">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
           <span className="text-sm text-muted-foreground font-medium">사업화 점수 분석 중...</span>
