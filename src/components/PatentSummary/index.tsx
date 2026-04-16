@@ -443,10 +443,12 @@ export function PatentSummary({
         </div>
       )}
 
-      <div className="space-y-4">
-      {/* 1. Patent Info Card — Dashboard-style */}
+      {/* ═══ Bento Grid Layout ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4">
+
+      {/* 1. Patent Info Card — Full width */}
       {patentData && (
-        <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        <div className={`lg:col-span-12 relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           {/* Subtle top accent */}
           <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
           
@@ -748,18 +750,32 @@ export function PatentSummary({
         </div>
       )}
 
-      {/* 2. Technology Commercialization Score */}
+      {/* 2. Technology Commercialization Score — Left column on desktop */}
       {patentData && visibleSections.commercialization !== false && printSections.commercialization !== false && (
-        <TechnologyCommercializationScore 
-          score={commercializationScore}
-          isLoading={isAnalyzing}
-          details={commercializationDetails}
-          showTrlOnly={false}
-        />
+        <div className="lg:col-span-7">
+          <TechnologyCommercializationScore 
+            score={commercializationScore}
+            isLoading={isAnalyzing}
+            details={commercializationDetails}
+            showTrlOnly={false}
+          />
+        </div>
+      )}
+
+      {/* 2b. TRL Section — Right column on desktop, next to score */}
+      {patentData && commercializationDetails && visibleSections.trl !== false && printSections.trl !== false && (
+        <div className="lg:col-span-5">
+          <TechnologyCommercializationScore 
+            score={commercializationScore}
+            isLoading={false}
+            details={commercializationDetails}
+            showTrlOnly={true}
+          />
+        </div>
       )}
 
       {/* 3. AI Summary Card — Dashboard-style */}
-      <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 print:break-before-page ai-summary-print-section ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+      <div className={`lg:col-span-12 relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 print:break-before-page ai-summary-print-section ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
         <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
         
         {/* Header */}
@@ -809,19 +825,9 @@ export function PatentSummary({
         )}
       </div>
 
-      {/* 4. TRL Section */}
-      {patentData && commercializationDetails && visibleSections.trl !== false && printSections.trl !== false && (
-        <TechnologyCommercializationScore 
-          score={commercializationScore}
-          isLoading={false}
-          details={commercializationDetails}
-          showTrlOnly={true}
-        />
-      )}
-
       {/* 5. Claims Card */}
       {printSections.claims !== false && visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
-        <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        <div className={`lg:col-span-12 relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(262 60% 55% / 0.4), hsl(262 40% 55% / 0.1), transparent)' }} />
           
           <div className="p-4 sm:p-5 md:p-6">

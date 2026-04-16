@@ -115,7 +115,7 @@ export function TechnologyCommercializationScore({
 
   if (isLoading && !showTrlOnly) {
     return (
-      <div className="mb-5 rounded-2xl border border-border/30 bg-card p-6 md:p-8">
+      <div className="rounded-2xl border border-border/30 bg-card p-6 md:p-8 h-full">
         <div className="flex items-center justify-center gap-3 py-4">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
           <span className="text-sm text-muted-foreground font-medium">사업화 점수 분석 중...</span>
@@ -133,7 +133,7 @@ export function TechnologyCommercializationScore({
     if (!details.trl) return null;
     
     return (
-      <div className="mt-5 rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in trl-print-section" style={{ animationDelay: '0.12s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+      <div className="rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in trl-print-section h-full" style={{ animationDelay: '0.12s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
         {/* Top accent */}
         <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(160 70% 45% / 0.6), hsl(160 70% 45% / 0.15), transparent)' }} />
         
@@ -168,7 +168,7 @@ export function TechnologyCommercializationScore({
   ];
 
   return (
-    <div className="mb-5 rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+    <div className="rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in h-full" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
       {/* Top accent */}
       <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(25 90% 55% / 0.6), hsl(25 90% 55% / 0.15), transparent)' }} />
 
