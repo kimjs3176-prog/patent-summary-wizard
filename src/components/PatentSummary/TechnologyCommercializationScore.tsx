@@ -133,7 +133,7 @@ export function TechnologyCommercializationScore({
     if (!details.trl) return null;
     
     return (
-      <div className="mt-5 rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in trl-print-section" style={{ animationDelay: '0.12s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+      <div className="rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in trl-print-section h-full" style={{ animationDelay: '0.12s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
         {/* Top accent */}
         <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(160 70% 45% / 0.6), hsl(160 70% 45% / 0.15), transparent)' }} />
         
