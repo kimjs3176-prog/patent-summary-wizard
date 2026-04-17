@@ -13,6 +13,7 @@ import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
+import { BentoDashboard } from "./BentoDashboard";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
@@ -444,6 +445,31 @@ export function PatentSummary({
       )}
 
       <div className="space-y-4">
+      {/* 0. Bento Dashboard — At-a-glance overview */}
+      {patentData && (
+        <BentoDashboard
+          patentData={patentData}
+          score={commercializationScore}
+          details={commercializationDetails}
+          isAnalyzing={isAnalyzing}
+          keywords={(() => {
+            // Lightweight keyword pull from title + abstract for the dashboard
+            const text = [patentData.titleKo || patentData.title || '', patentData.abstract || ''].join(' ');
+            const kws: string[] = [];
+            const patterns: [RegExp, string][] = [
+              [/항균|살균/, '항균'], [/항산화/, '항산화'], [/항염/, '항염'], [/항암/, '항암'],
+              [/면역/, '면역강화'], [/혈당|당뇨/, '혈당조절'], [/발효|유산균/, '발효'],
+              [/나노/, '나노기술'], [/추출|정제/, '추출정제'], [/건조/, '건조공정'],
+              [/IoT|센서/, 'IoT'], [/AI|인공지능/, 'AI활용'], [/친환경|유기/, '친환경'],
+              [/스마트팜|정밀농업/, '스마트팜'], [/드론/, '드론'],
+            ];
+            patterns.forEach(([p, l]) => { if (p.test(text) && !kws.includes(l)) kws.push(l); });
+            return kws.slice(0, 8);
+          })()}
+          onKeywordClick={onKeywordClick}
+        />
+      )}
+
       {/* 1. Patent Info Card — Dashboard-style */}
       {patentData && (
         <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
