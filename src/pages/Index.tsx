@@ -1,4 +1,4 @@
-import { Heart, RotateCcw, Sparkles } from "lucide-react";
+import { Heart, RotateCcw, Sparkles, BarChart3 } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
