@@ -1,6 +1,7 @@
 import { Award, Layers, Building2, Calendar, TrendingUp } from "lucide-react";
 import { PatentData } from "@/components/PatentSummary/types";
 import { CommercializationDetails } from "@/components/PatentSummary/TechnologyCommercializationScore";
+import { useCountUp } from "@/hooks/useCountUp";
 
 interface QuickStatsBarProps {
   patentData: PatentData | null;
@@ -28,20 +29,22 @@ function getTrlLabel(trl: number): string {
 }
 
 export function QuickStatsBar({ patentData, score, details }: QuickStatsBarProps) {
+  const animatedScore = useCountUp(score ?? 0, 1100);
+  const animatedTrl = useCountUp(details?.trl ?? 0, 900);
   if (!patentData) return null;
 
   return (
     <div className="w-full max-w-4xl mx-auto mb-5 animate-fade-up">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         {/* Score Card */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        <div className="group relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-border/60 hover:shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.15)]" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[10px] md:text-[11px] text-muted-foreground/70 font-medium mb-1">사업화 점수</p>
               {score != null ? (
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-2xl md:text-3xl font-black tabular-nums tracking-tight" style={{ color: getScoreColor(score) }}>
-                    {score}
+                    {Math.round(animatedScore)}
                   </span>
                   <span className="text-[10px] text-muted-foreground/50 font-medium">/100</span>
                 </div>
@@ -73,14 +76,14 @@ export function QuickStatsBar({ patentData, score, details }: QuickStatsBarProps
         </div>
 
         {/* TRL Card */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        <div className="group relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-border/60 hover:shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.15)]" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[10px] md:text-[11px] text-muted-foreground/70 font-medium mb-1">기술 성숙도</p>
               {details?.trl != null ? (
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl md:text-3xl font-black tabular-nums tracking-tight text-foreground">
-                    {details.trl}
+                    {Math.round(animatedTrl)}
                   </span>
                   <span className="text-[10px] text-muted-foreground/50 font-medium">/9</span>
                 </div>
@@ -98,7 +101,7 @@ export function QuickStatsBar({ patentData, score, details }: QuickStatsBarProps
         </div>
 
         {/* Applicant Card */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        <div className="group relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-border/60 hover:shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.15)]" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           <div>
             <p className="text-[10px] md:text-[11px] text-muted-foreground/70 font-medium mb-1">출원인</p>
             <p className="text-sm md:text-[15px] font-bold text-foreground truncate leading-snug">
@@ -113,7 +116,7 @@ export function QuickStatsBar({ patentData, score, details }: QuickStatsBarProps
         </div>
 
         {/* Date Card */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        <div className="group relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-border/60 hover:shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.15)]" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           <div>
             <p className="text-[10px] md:text-[11px] text-muted-foreground/70 font-medium mb-1">출원일</p>
             <p className="text-sm md:text-[15px] font-bold text-foreground leading-snug">
