@@ -142,6 +142,26 @@ export default function Compare() {
     [selected, favorites]
   );
 
+  // Find best (highest) value indices for highlighting
+  const bestIndices = useMemo(() => {
+    const findMaxIdx = (getter: (p: FavoritePatent) => number | undefined | null): number => {
+      let maxIdx = -1;
+      let maxVal = -Infinity;
+      selectedPatents.forEach((p, i) => {
+        const v = getter(p);
+        if (v != null && v > maxVal) { maxVal = v; maxIdx = i; }
+      });
+      return maxIdx;
+    };
+    return {
+      total: findMaxIdx((p) => p.commercializationScore),
+      tech: findMaxIdx((p) => p.commercializationDetails?.technologyScore),
+      market: findMaxIdx((p) => p.commercializationDetails?.marketScore),
+      business: findMaxIdx((p) => p.commercializationDetails?.businessScore),
+      trl: findMaxIdx((p) => p.commercializationDetails?.trl),
+    };
+  }, [selectedPatents]);
+
   const usedTags = useMemo(() => {
     const set = new Set<string>();
     favorites.forEach((f) => (f.tags || []).forEach((t) => set.add(t)));
