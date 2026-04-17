@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Compare from "./pages/Compare";
+import Insights from "./pages/Insights";
 import SearchResults from "./pages/SearchResults";
 import NotFound from "./pages/NotFound";
 import { FloatingChatbot } from "./components/FloatingChatbot";
@@ -42,6 +43,7 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/compare" element={<Compare />} />
+            <Route path="/insights" element={<Insights />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
