@@ -1,3 +1,5 @@
+import { useCountUp } from "@/hooks/useCountUp";
+
 interface CircularGaugeProps {
   score: number;
   grade: string;
@@ -16,8 +18,9 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
   const stroke = 8;
   const cx = 60;
   const cy = 60;
+  const animatedScore = useCountUp(score, 1200);
   const circumference = 2 * Math.PI * radius;
-  const progress = (score / 100) * circumference;
+  const progress = (animatedScore / 100) * circumference;
   const colors = getGaugeColors(score);
   const gradientId = `gauge-gradient-${score}`;
   const glowId = `gauge-glow-${score}`;
@@ -55,12 +58,11 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
             strokeDasharray={circumference}
             strokeDashoffset={circumference - progress}
             filter={`url(#${glowId})`}
-            className="transition-all duration-1000 ease-out"
           />
 
           {/* End dot */}
-          {score > 0 && (() => {
-            const angle = ((score / 100) * 360 - 90) * (Math.PI / 180);
+          {animatedScore > 0 && (() => {
+            const angle = ((animatedScore / 100) * 360 - 90) * (Math.PI / 180);
             return (
               <circle
                 cx={cx + radius * Math.cos(angle)}
@@ -77,7 +79,7 @@ export function CircularGauge({ score, grade, label }: CircularGaugeProps) {
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight tabular-nums" style={{ color: colors.start }}>
-            {score}
+            {Math.round(animatedScore)}
           </span>
           <span className="text-[8px] sm:text-[9px] text-muted-foreground/50 font-medium">/ 100</span>
         </div>
