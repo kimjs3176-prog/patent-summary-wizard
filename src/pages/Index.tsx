@@ -1,4 +1,4 @@
-import { Heart, RotateCcw, Sparkles } from "lucide-react";
+import { Heart, RotateCcw, Sparkles, BarChart3 } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -114,6 +114,12 @@ const Index = () => {
 
   const headerRight = (
     <>
+      <Link to="/insights">
+        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+          <BarChart3 className="w-3 h-3 md:w-3.5 md:h-3.5" />
+          <span className="hidden sm:inline">인사이트</span>
+        </Button>
+      </Link>
       <Link to="/compare">
         <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <Heart className="w-3 h-3 md:w-3.5 md:h-3.5" />

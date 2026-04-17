@@ -142,6 +142,26 @@ export default function Compare() {
     [selected, favorites]
   );
 
+  // Find best (highest) value indices for highlighting
+  const bestIndices = useMemo(() => {
+    const findMaxIdx = (getter: (p: FavoritePatent) => number | undefined | null): number => {
+      let maxIdx = -1;
+      let maxVal = -Infinity;
+      selectedPatents.forEach((p, i) => {
+        const v = getter(p);
+        if (v != null && v > maxVal) { maxVal = v; maxIdx = i; }
+      });
+      return maxIdx;
+    };
+    return {
+      total: findMaxIdx((p) => p.commercializationScore),
+      tech: findMaxIdx((p) => p.commercializationDetails?.technologyScore),
+      market: findMaxIdx((p) => p.commercializationDetails?.marketScore),
+      business: findMaxIdx((p) => p.commercializationDetails?.businessScore),
+      trl: findMaxIdx((p) => p.commercializationDetails?.trl),
+    };
+  }, [selectedPatents]);
+
   const usedTags = useMemo(() => {
     const set = new Set<string>();
     favorites.forEach((f) => (f.tags || []).forEach((t) => set.add(t)));
@@ -457,10 +477,11 @@ export default function Compare() {
                       </tr>
                       <tr>
                         <td className="p-3 text-xs font-medium text-muted-foreground border-b border-border/30">TRL (기술성숙도)</td>
-                        {selectedPatents.map((p) => {
+                        {selectedPatents.map((p, idx) => {
                           const trl = p.commercializationDetails?.trl;
+                          const isBest = idx === bestIndices.trl && selectedPatents.length > 1;
                           return (
-                            <td key={p.patentNumber} className="p-3 border-b border-border/30">
+                            <td key={p.patentNumber} className={`p-3 border-b border-border/30 ${isBest ? "bg-primary/5" : ""}`}>
                               {trl != null ? (
                                 <div className="flex items-center gap-2">
                                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">{trl}</div>
@@ -471,6 +492,7 @@ export default function Compare() {
                                       ))}
                                     </div>
                                   </div>
+                                  {isBest && <span className="text-[9px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary/15">BEST</span>}
                                 </div>
                               ) : <span className="text-sm text-muted-foreground">-</span>}
                             </td>
@@ -479,46 +501,59 @@ export default function Compare() {
                       </tr>
                       <tr>
                         <td className="p-3 text-xs font-medium text-muted-foreground border-b border-border/30">사업화 총점</td>
-                        {selectedPatents.map((p) => (
-                          <td key={p.patentNumber} className="p-3 border-b border-border/30">
-                            {p.commercializationScore != null ? (
-                              <div className="flex items-center gap-2">
-                                <span className={`text-2xl font-black ${getScoreColor(p.commercializationScore)}`}>{p.commercializationScore}</span>
-                                <span className={`text-lg font-bold ${getScoreColor(p.commercializationScore)}`}>{getGradeLabel(p.commercializationScore)}</span>
-                              </div>
-                            ) : <span className="text-sm text-muted-foreground">-</span>}
-                          </td>
-                        ))}
+                        {selectedPatents.map((p, idx) => {
+                          const isBest = idx === bestIndices.total && selectedPatents.length > 1;
+                          return (
+                            <td key={p.patentNumber} className={`p-3 border-b border-border/30 ${isBest ? "bg-primary/5" : ""}`}>
+                              {p.commercializationScore != null ? (
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-2xl font-black ${getScoreColor(p.commercializationScore)}`}>{p.commercializationScore}</span>
+                                  <span className={`text-lg font-bold ${getScoreColor(p.commercializationScore)}`}>{getGradeLabel(p.commercializationScore)}</span>
+                                  {isBest && <span className="text-[9px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary/15 ml-auto">BEST</span>}
+                                </div>
+                              ) : <span className="text-sm text-muted-foreground">-</span>}
+                            </td>
+                          );
+                        })}
                       </tr>
                       <tr>
                         <td className="p-3 text-xs font-medium text-muted-foreground border-b border-border/30">기술성</td>
-                        {selectedPatents.map((p) => (
-                          <td key={p.patentNumber} className="p-3 border-b border-border/30">
-                            {p.commercializationDetails?.technologyScore != null ? (
-                              <ScoreBar score={p.commercializationDetails.technologyScore} label="" />
-                            ) : <span className="text-sm text-muted-foreground">-</span>}
-                          </td>
-                        ))}
+                        {selectedPatents.map((p, idx) => {
+                          const isBest = idx === bestIndices.tech && selectedPatents.length > 1;
+                          return (
+                            <td key={p.patentNumber} className={`p-3 border-b border-border/30 ${isBest ? "bg-primary/5" : ""}`}>
+                              {p.commercializationDetails?.technologyScore != null ? (
+                                <ScoreBar score={p.commercializationDetails.technologyScore} label="" />
+                              ) : <span className="text-sm text-muted-foreground">-</span>}
+                            </td>
+                          );
+                        })}
                       </tr>
                       <tr>
                         <td className="p-3 text-xs font-medium text-muted-foreground border-b border-border/30">시장성</td>
-                        {selectedPatents.map((p) => (
-                          <td key={p.patentNumber} className="p-3 border-b border-border/30">
-                            {p.commercializationDetails?.marketScore != null ? (
-                              <ScoreBar score={p.commercializationDetails.marketScore} label="" />
-                            ) : <span className="text-sm text-muted-foreground">-</span>}
-                          </td>
-                        ))}
+                        {selectedPatents.map((p, idx) => {
+                          const isBest = idx === bestIndices.market && selectedPatents.length > 1;
+                          return (
+                            <td key={p.patentNumber} className={`p-3 border-b border-border/30 ${isBest ? "bg-primary/5" : ""}`}>
+                              {p.commercializationDetails?.marketScore != null ? (
+                                <ScoreBar score={p.commercializationDetails.marketScore} label="" />
+                              ) : <span className="text-sm text-muted-foreground">-</span>}
+                            </td>
+                          );
+                        })}
                       </tr>
                       <tr>
                         <td className="p-3 text-xs font-medium text-muted-foreground border-b border-border/30">사업성</td>
-                        {selectedPatents.map((p) => (
-                          <td key={p.patentNumber} className="p-3 border-b border-border/30">
-                            {p.commercializationDetails?.businessScore != null ? (
-                              <ScoreBar score={p.commercializationDetails.businessScore} label="" />
-                            ) : <span className="text-sm text-muted-foreground">-</span>}
-                          </td>
-                        ))}
+                        {selectedPatents.map((p, idx) => {
+                          const isBest = idx === bestIndices.business && selectedPatents.length > 1;
+                          return (
+                            <td key={p.patentNumber} className={`p-3 border-b border-border/30 ${isBest ? "bg-primary/5" : ""}`}>
+                              {p.commercializationDetails?.businessScore != null ? (
+                                <ScoreBar score={p.commercializationDetails.businessScore} label="" />
+                              ) : <span className="text-sm text-muted-foreground">-</span>}
+                            </td>
+                          );
+                        })}
                       </tr>
                       <tr>
                         <td className="p-3 text-xs font-medium text-muted-foreground">AI 분석 의견</td>
