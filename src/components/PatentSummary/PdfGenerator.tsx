@@ -90,6 +90,8 @@ export function PdfGenerator({
   patentNumber,
   patentData,
   layoutConfig,
+  commercializationDetails,
+  commercializationScore,
 }: PdfGeneratorProps) {
   const cfg = { ...DEFAULT_PDF_CONFIG, ...layoutConfig };
 
