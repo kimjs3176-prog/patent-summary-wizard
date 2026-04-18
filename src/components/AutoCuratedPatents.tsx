@@ -10,8 +10,6 @@ interface CuratedItem {
   totalScore: number;
   ipc: string;
   ipcSection: string;
-  confidenceScore: number;
-  scoreBreakdown: { label: string; value: number; weight: number }[];
 }
 
 const SCORE_BANDS = [
