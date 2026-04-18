@@ -8,6 +8,7 @@ import { useSearchHistory } from "@/hooks/useSearchHistory";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, RadialBarChart, RadialBar, PolarAngleAxis,
+  LineChart, Line, ScatterChart, Scatter, ZAxis,
 } from "recharts";
 
 const SCORE_BANDS = [
