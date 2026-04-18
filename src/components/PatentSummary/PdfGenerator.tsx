@@ -113,6 +113,198 @@ export function PdfGenerator({
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = cfg.page_margin;
       const contentWidth = pageWidth - margin * 2;
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ██  MAGAZINE COVER PAGE                       ██
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      {
+        // Full-page paper background
+        pdf.setFillColor(...THEME.paper);
+        pdf.rect(0, 0, pageWidth, pageHeight, "F");
+
+        // Top dramatic emerald block
+        pdf.setFillColor(...THEME.emerald);
+        pdf.rect(0, 0, pageWidth, 70, "F");
+        // Diagonal gold strip
+        pdf.setFillColor(...THEME.gold);
+        pdf.rect(0, 70, pageWidth, 1.5, "F");
+        // Sub paper-tone band
+        pdf.setFillColor(...THEME.paperDark);
+        pdf.rect(0, 71.5, pageWidth, 5, "F");
+
+        // Masthead label
+        pdf.setFontSize(8);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("PATENT INTELLIGENCE REPORT", margin, 18);
+        pdf.text("PATENT INTELLIGENCE REPORT", margin + 0.12, 18);
+
+        // Issue number / date — top right
+        const coverDate = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long" });
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(220, 235, 228);
+        const cdW = pdf.getTextWidth(coverDate);
+        pdf.text(coverDate, pageWidth - margin - cdW, 18);
+
+        // Big editorial title (multiline)
+        pdf.setFontSize(32);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("특허 요약", margin, 42);
+        pdf.text("특허 요약", margin + 0.3, 42);
+        pdf.setFontSize(14);
+        pdf.setTextColor(220, 235, 228);
+        pdf.text("AI Commercialization Brief", margin, 54);
+
+        // Decorative bar
+        pdf.setFillColor(...THEME.gold);
+        pdf.rect(margin, 60, 30, 1.2, "F");
+
+        // ── Cover content area ──
+        let cY = 90;
+        const title = patentData?.titleKo || patentData?.title || "특허 요약 리포트";
+        pdf.setFontSize(9);
+        pdf.setTextColor(...THEME.emerald);
+        pdf.text("FEATURED INVENTION", margin, cY);
+        pdf.text("FEATURED INVENTION", margin + 0.12, cY);
+        cY += 8;
+
+        // Cover title (large, multi-line)
+        pdf.setFontSize(22);
+        pdf.setTextColor(...THEME.navy);
+        const coverTitleLines = pdf.splitTextToSize(title, contentWidth);
+        const coverTitleShown = coverTitleLines.slice(0, 4);
+        for (const tl of coverTitleShown) {
+          pdf.text(tl, margin, cY);
+          pdf.text(tl, margin + 0.25, cY);
+          cY += 10;
+        }
+        cY += 4;
+
+        // Thin separator
+        pdf.setDrawColor(...THEME.navy);
+        pdf.setLineWidth(0.6);
+        pdf.line(margin, cY, margin + 40, cY);
+        cY += 8;
+
+        // Patent meta on cover
+        const isAppCover = patentData?.searchType === "application";
+        const dispNum = isAppCover
+          ? patentData?.applicationNumber || patentData?.displayNumber || patentNumber
+          : patentData?.displayNumber || patentNumber;
+        pdf.setFontSize(8);
+        pdf.setTextColor(...THEME.textMuted);
+        pdf.text(isAppCover ? "출원번호" : "등록번호", margin, cY);
+        pdf.setFontSize(13);
+        pdf.setTextColor(...THEME.text);
+        pdf.text(dispNum, margin, cY + 6);
+        pdf.text(dispNum, margin + 0.15, cY + 6);
+
+        if (patentData?.assignee) {
+          pdf.setFontSize(8);
+          pdf.setTextColor(...THEME.textMuted);
+          pdf.text("출원인", margin + 70, cY);
+          pdf.setFontSize(11);
+          pdf.setTextColor(...THEME.text);
+          const asgn = patentData.assignee.length > 22 ? patentData.assignee.slice(0, 22) + "…" : patentData.assignee;
+          pdf.text(asgn, margin + 70, cY + 6);
+        }
+        cY += 18;
+
+        // ── SCORE HERO CARD ──
+        if (commercializationScore != null && commercializationDetails) {
+          const cardY = cY;
+          const cardH = 70;
+          // Outer dark card
+          pdf.setFillColor(...THEME.navy);
+          pdf.roundedRect(margin, cardY, contentWidth, cardH, 3, 3, "F");
+          // Top emerald strip
+          pdf.setFillColor(...THEME.emerald);
+          pdf.rect(margin, cardY, contentWidth, 4, "F");
+          pdf.setFillColor(...THEME.gold);
+          pdf.rect(margin, cardY + 4, contentWidth, 0.8, "F");
+
+          // Big score number — left
+          const grade = getGradeLetter(commercializationScore);
+          const gradeColor = getGradeColor(commercializationScore);
+          pdf.setFontSize(9);
+          pdf.setTextColor(220, 235, 228);
+          pdf.text("사업화 종합점수", margin + 8, cardY + 16);
+          pdf.text("사업화 종합점수", margin + 8.12, cardY + 16);
+
+          pdf.setFontSize(54);
+          pdf.setTextColor(255, 255, 255);
+          const scoreStr = String(Math.round(commercializationScore));
+          pdf.text(scoreStr, margin + 8, cardY + 42);
+          pdf.text(scoreStr, margin + 8.4, cardY + 42);
+          // /100 suffix
+          pdf.setFontSize(12);
+          pdf.setTextColor(180, 200, 215);
+          const scW = pdf.getTextWidth(scoreStr) * 0.95;
+          pdf.text("/100", margin + 8 + scW + 3, cardY + 42);
+
+          // Grade circle
+          const gx = margin + 8 + scW + 22;
+          const gy = cardY + 35;
+          pdf.setFillColor(...gradeColor);
+          pdf.circle(gx, gy, 9, "F");
+          pdf.setFontSize(20);
+          pdf.setTextColor(255, 255, 255);
+          const grW = pdf.getTextWidth(grade);
+          pdf.text(grade, gx - grW / 2, gy + 3);
+          pdf.text(grade, gx - grW / 2 + 0.2, gy + 3);
+          pdf.setFontSize(6);
+          pdf.setTextColor(220, 235, 228);
+          pdf.text("GRADE", gx - 5, gy + 14);
+
+          // Right side — sub scores as bars
+          const barX = margin + 100;
+          const barW = contentWidth - 108;
+          const subs = [
+            { label: "기술성", val: commercializationDetails.technologyScore, c: [110, 200, 170] as [number, number, number] },
+            { label: "시장성", val: commercializationDetails.marketScore, c: [255, 200, 100] as [number, number, number] },
+            { label: "사업성", val: commercializationDetails.businessScore, c: [255, 140, 110] as [number, number, number] },
+          ];
+          let bY = cardY + 16;
+          for (const s of subs) {
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(220, 235, 228);
+            pdf.text(s.label, barX, bY);
+            pdf.setFontSize(9);
+            pdf.setTextColor(255, 255, 255);
+            const vStr = `${Math.round(s.val)}`;
+            const vW = pdf.getTextWidth(vStr);
+            pdf.text(vStr, barX + barW - vW, bY);
+            pdf.text(vStr, barX + barW - vW + 0.12, bY);
+            // Bar track
+            pdf.setFillColor(50, 70, 100);
+            pdf.roundedRect(barX, bY + 2, barW, 2.5, 1, 1, "F");
+            // Bar fill
+            pdf.setFillColor(...s.c);
+            pdf.roundedRect(barX, bY + 2, barW * Math.min(1, s.val / 100), 2.5, 1, 1, "F");
+            bY += 14;
+          }
+
+          // TRL footnote inside card
+          if (commercializationDetails.trl) {
+            pdf.setFontSize(7);
+            pdf.setTextColor(180, 200, 215);
+            pdf.text(`TRL ${commercializationDetails.trl} / 9`, barX, cardY + cardH - 5);
+          }
+        }
+
+        // Footer of cover
+        pdf.setDrawColor(...THEME.gold);
+        pdf.setLineWidth(0.4);
+        pdf.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+        pdf.setFontSize(7);
+        pdf.setTextColor(...THEME.textMuted);
+        pdf.text(cfg.footer_text, margin, pageHeight - 14);
+        const issued = `Issued ${new Date().toLocaleDateString("ko-KR")}`;
+        pdf.text(issued, pageWidth - margin - pdf.getTextWidth(issued), pageHeight - 14);
+
+        // Add page break for content
+        pdf.addPage();
+        yPosition = margin;
+      }
       let yPosition = margin;
       const headerColor = hexToRgb(cfg.header_bg_color);
       const accentColor = hexToRgb(cfg.section_accent_color);
