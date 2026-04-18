@@ -808,45 +808,62 @@ export function PdfGenerator({
       const totalPages = pdf.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
+        if (i === 1) continue; // skip cover
+
         const fy = pageHeight - 10;
 
-        // Clean top rule — thin navy line
-        pdf.setDrawColor(...THEME.navy);
-        pdf.setLineWidth(0.4);
-        pdf.line(margin, fy - 3, pageWidth - margin, fy - 3);
+        // Footer accent block on right (page number badge)
+        if (cfg.footer_show_page) {
+          const pgText = String(i).padStart(2, "0");
+          const totText = `/ ${String(totalPages).padStart(2, "0")}`;
+          // Emerald block behind page number
+          const badgeW = 18;
+          const badgeH = 8;
+          const badgeX = pageWidth - margin - badgeW;
+          const badgeY = fy - 2.5;
+          pdf.setFillColor(...THEME.emerald);
+          pdf.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.2, 1.2, "F");
+          pdf.setFillColor(...THEME.gold);
+          pdf.rect(badgeX, badgeY, badgeW, 0.6, "F");
 
-        // Secondary thin line for book feel
-        pdf.setDrawColor(...THEME.borderLight);
-        pdf.setLineWidth(0.15);
-        pdf.line(margin, fy - 1.8, pageWidth - margin, fy - 1.8);
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(255, 255, 255);
+          pdf.text(pgText, badgeX + 3, badgeY + 5.6);
+          pdf.text(pgText, badgeX + 3.18, badgeY + 5.6);
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(200, 220, 210);
+          pdf.text(totText, badgeX + 9, badgeY + 5.6);
+        }
+
+        // Strong navy top rule
+        pdf.setDrawColor(...THEME.navy);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, fy - 3, pageWidth - margin - 22, fy - 3);
+        // Gold echo
+        pdf.setDrawColor(...THEME.gold);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, fy - 1.6, margin + 25, fy - 1.6);
 
         // Footer text — left side
-        pdf.setFontSize(6.5);
-        pdf.setTextColor(...THEME.textSecondary);
+        pdf.setFontSize(6.8);
+        pdf.setTextColor(...THEME.navy);
         pdf.text(cfg.footer_text, margin, fy + 2);
+        pdf.text(cfg.footer_text, margin + 0.1, fy + 2);
 
-        // Date — right side
+        // Date — center
         if (cfg.footer_show_date) {
           const dateText = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+          pdf.setFontSize(6.5);
           pdf.setTextColor(...THEME.textMuted);
-          pdf.text(dateText, pageWidth - margin - pdf.getTextWidth(dateText), fy + 2);
+          const dW = pdf.getTextWidth(dateText);
+          pdf.text(dateText, (pageWidth - dW) / 2, fy + 2);
         }
 
-        // Page number — centered, book style
-        if (cfg.footer_show_page) {
-          const pgText = `— ${i} / ${totalPages} —`;
-          pdf.setFontSize(7);
-          pdf.setTextColor(...THEME.textMuted);
-          const pgW = pdf.getTextWidth(pgText);
-          pdf.text(pgText, (pageWidth - pgW) / 2, fy + 2);
-        }
-
-        // Side margin decorative line (book gutter hint) — only on non-cover pages
-        if (i > 1) {
-          pdf.setDrawColor(...THEME.borderLight);
-          pdf.setLineWidth(0.15);
-          pdf.line(margin - 2, margin, margin - 2, pageHeight - margin);
-        }
+        // Side margin colored tab — uses navy
+        pdf.setFillColor(...THEME.emerald);
+        pdf.rect(0, margin + 10, 3, 30, "F");
+        pdf.setFillColor(...THEME.gold);
+        pdf.rect(0, margin + 40, 3, 4, "F");
       }
 
       pdf.save(`특허요약_${patentNumber}.pdf`);
