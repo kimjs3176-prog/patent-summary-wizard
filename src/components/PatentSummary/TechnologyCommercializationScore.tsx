@@ -2,6 +2,8 @@ import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
 import { ScoreBarChart } from "./ScoreBarChart";
 import { CircularGauge } from "./CircularGauge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Info } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
