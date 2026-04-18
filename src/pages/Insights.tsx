@@ -8,6 +8,7 @@ import { useSearchHistory } from "@/hooks/useSearchHistory";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, RadialBarChart, RadialBar, PolarAngleAxis,
+  LineChart, Line, ScatterChart, Scatter, ZAxis,
 } from "recharts";
 
 const SCORE_BANDS = [
@@ -89,6 +90,51 @@ export default function Insights() {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 8)
       .map(([name, value]) => ({ name, value }));
+  }, [allAnalyzed]);
+
+  // Score timeline (based on search history searchedAt)
+  const scoreTimeline = useMemo(() => {
+    return [...history]
+      .filter((h) => h.commercializationScore != null)
+      .sort((a, b) => new Date(a.searchedAt).getTime() - new Date(b.searchedAt).getTime())
+      .map((h) => {
+        const d = new Date(h.searchedAt);
+        return {
+          label: `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+          score: h.commercializationScore as number,
+          patentNumber: h.patentNumber,
+        };
+      });
+  }, [history]);
+
+  const timelineAvg = useMemo(
+    () => (scoreTimeline.length > 0 ? Math.round(scoreTimeline.reduce((s, p) => s + p.score, 0) / scoreTimeline.length) : 0),
+    [scoreTimeline]
+  );
+
+  // IPC bubble chart: x = avg score, y = avg TRL, z = count
+  const ipcBubble = useMemo(() => {
+    const map = new Map<string, { count: number; totalScore: number; scoredCount: number; totalTrl: number; trlCount: number }>();
+    allAnalyzed.forEach((p) => {
+      p.ipcs.forEach((c) => {
+        const section = c.trim().slice(0, 4);
+        if (!section) return;
+        const cur = map.get(section) || { count: 0, totalScore: 0, scoredCount: 0, totalTrl: 0, trlCount: 0 };
+        cur.count += 1;
+        if (p.score != null) { cur.totalScore += p.score; cur.scoredCount += 1; }
+        if (p.trl != null) { cur.totalTrl += p.trl; cur.trlCount += 1; }
+        map.set(section, cur);
+      });
+    });
+    return Array.from(map.entries())
+      .map(([name, v]) => ({
+        name,
+        count: v.count,
+        avgScore: v.scoredCount > 0 ? Math.round(v.totalScore / v.scoredCount) : 70,
+        avgTrl: v.trlCount > 0 ? +(v.totalTrl / v.trlCount).toFixed(1) : 5,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 12);
   }, [allAnalyzed]);
 
   // Top assignees
@@ -310,6 +356,114 @@ export default function Insights() {
             )}
           </Section>
         </div>
+
+        {/* Score Timeline */}
+        <section className="mt-4">
+          <Section title="점수 추이 (검색 시각 기준)" icon={<TrendingUp className="w-4 h-4 text-primary" />}>
+            {scoreTimeline.length < 2 ? (
+              <EmptyMini text="2건 이상 분석 시 추이가 표시됩니다" />
+            ) : (
+              <>
+                <div className="flex items-baseline gap-3 mb-2 px-1">
+                  <span className="text-[11px] text-muted-foreground">최근 {scoreTimeline.length}건 평균</span>
+                  <span className="text-sm font-bold" style={{ color: getBand(timelineAvg).color }}>{timelineAvg}점</span>
+                </div>
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={scoreTimeline} margin={{ top: 10, right: 16, bottom: 5, left: -10 }}>
+                    <defs>
+                      <linearGradient id="scoreLineGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="hsl(220, 70%, 55%)" />
+                        <stop offset="100%" stopColor="hsl(158, 64%, 40%)" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[40, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: "1px solid hsl(var(--border) / 0.5)",
+                        background: "hsl(var(--card))",
+                        fontSize: "12px",
+                      }}
+                      formatter={(value: number) => [`${value}점`, "사업화 점수"]}
+                      labelFormatter={(l, items) => {
+                        const pn = (items?.[0]?.payload as { patentNumber?: string } | undefined)?.patentNumber;
+                        return pn ? `${l} · ${pn}` : String(l);
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="url(#scoreLineGrad)"
+                      strokeWidth={2.5}
+                      dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </>
+            )}
+          </Section>
+        </section>
+
+        {/* IPC Bubble Chart */}
+        <section className="mt-4">
+          <Section title="IPC 분야 버블맵 (점수 × TRL × 빈도)" icon={<Layers className="w-4 h-4 text-primary" />}>
+            {ipcBubble.length === 0 ? (
+              <EmptyMini text="IPC 데이터가 부족합니다" />
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <ScatterChart margin={{ top: 20, right: 24, bottom: 30, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
+                  <XAxis
+                    type="number"
+                    dataKey="avgScore"
+                    name="평균 점수"
+                    domain={[50, 100]}
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                    label={{ value: "평균 사업화 점수", position: "insideBottom", offset: -10, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey="avgTrl"
+                    name="평균 TRL"
+                    domain={[0, 9]}
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                    label={{ value: "평균 TRL", angle: -90, position: "insideLeft", fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  />
+                  <ZAxis type="number" dataKey="count" range={[120, 900]} name="특허 수" />
+                  <Tooltip
+                    cursor={{ strokeDasharray: "3 3" }}
+                    contentStyle={{
+                      borderRadius: "12px",
+                      border: "1px solid hsl(var(--border) / 0.5)",
+                      background: "hsl(var(--card))",
+                      fontSize: "12px",
+                    }}
+                    formatter={(value: number, name: string) => {
+                      if (name === "특허 수") return [`${value}건`, name];
+                      if (name === "평균 점수") return [`${value}점`, name];
+                      if (name === "평균 TRL") return [`${value} 단계`, name];
+                      return [value, name];
+                    }}
+                    labelFormatter={(_, items) => (items?.[0]?.payload as { name?: string } | undefined)?.name || ""}
+                  />
+                  <Scatter data={ipcBubble}>
+                    {ipcBubble.map((entry, i) => (
+                      <Cell key={i} fill={getBand(entry.avgScore).color} fillOpacity={0.65} stroke={getBand(entry.avgScore).color} strokeWidth={1.5} />
+                    ))}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
+            )}
+            <p className="text-[10px] text-muted-foreground text-center mt-2">버블 크기 = 특허 수 · 색상 = 점수 등급 · 라벨은 툴팁에서 확인</p>
+          </Section>
+        </section>
 
         {/* Recent High-Scorers */}
         {scored.length > 0 && (
