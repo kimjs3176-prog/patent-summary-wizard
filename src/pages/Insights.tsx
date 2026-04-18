@@ -192,10 +192,13 @@ export default function Insights() {
             <BarChart3 className="w-5 h-5 text-primary" />
             <h2 className="font-semibold text-lg text-foreground">분석 인사이트</h2>
           </div>
-          <div className="text-center py-20">
+          <div className="text-center py-12">
             <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
             <p className="text-muted-foreground mb-4">아직 분석한 특허가 없습니다.</p>
             <Link to="/"><Button>특허 분석 시작하기</Button></Link>
+          </div>
+          <div className="mt-8">
+            <AutoCuratedPatents />
           </div>
         </main>
       </PageLayout>
