@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Award, Layers, Loader2, Star, BarChart3 } from "lucide-react";
+import { Sparkles, Award, Layers, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CuratedItem {
@@ -159,7 +159,7 @@ export function AutoCuratedPatents() {
                 to={`/?patent=${encodeURIComponent(item.patentNumber)}`}
                 className="group relative rounded-xl border border-border/40 bg-card p-3 hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-md transition-all"
               >
-                <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span
                       className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white shrink-0"
@@ -169,32 +169,16 @@ export function AutoCuratedPatents() {
                     </span>
                     <span className="text-[10px] font-mono text-muted-foreground truncate">{item.patentNumber}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="flex gap-0.5">
-                      {[1, 2, 3].map((star) => (
-                        <Star key={star} className={`w-2.5 h-2.5 ${star <= Math.round(item.confidenceScore / 20) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
-                      ))}
-                    </div>
-                    <span
-                      className="flex items-center gap-0.5 text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded"
-                      style={{ background: `${color}15`, color }}
-                    >
-                      <Award className="w-2.5 h-2.5" />
-                      {item.totalScore}
-                    </span>
-                  </div>
+                  <span
+                    className="flex items-center gap-0.5 text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded shrink-0"
+                    style={{ background: `${color}15`, color }}
+                  >
+                    <Award className="w-2.5 h-2.5" />
+                    {item.totalScore}
+                  </span>
                 </div>
-                
-                <p className="text-xs font-semibold text-foreground line-clamp-2 leading-snug mb-3">{item.title}</p>
-                
-                <div className="flex items-center gap-2 mb-3">
-                  <BarChart3 className="w-3 h-3 text-muted-foreground" />
-                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden flex">
-                    {item.scoreBreakdown.map((b, i) => (
-                      <div key={i} style={{ width: `${b.weight}%`, background: `hsl(var(--primary) / ${0.3 + i * 0.2})` }} />
-                    ))}
-                  </div>
-                </div>
+
+                <p className="text-xs font-semibold text-foreground line-clamp-2 leading-snug mb-1.5">{item.title}</p>
 
                 <div className="flex items-center justify-between gap-2 text-[10px]">
                   <span className="text-muted-foreground truncate">{item.assignee || "출원인 정보 없음"}</span>
