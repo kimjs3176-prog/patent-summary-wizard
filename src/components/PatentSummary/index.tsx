@@ -755,6 +755,7 @@ export function PatentSummary({
           isLoading={isAnalyzing}
           details={commercializationDetails}
           showTrlOnly={false}
+          patentData={patentData}
         />
       )}
 
