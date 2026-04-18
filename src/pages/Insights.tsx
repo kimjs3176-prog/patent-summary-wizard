@@ -92,6 +92,51 @@ export default function Insights() {
       .map(([name, value]) => ({ name, value }));
   }, [allAnalyzed]);
 
+  // Score timeline (based on search history searchedAt)
+  const scoreTimeline = useMemo(() => {
+    return [...history]
+      .filter((h) => h.commercializationScore != null)
+      .sort((a, b) => new Date(a.searchedAt).getTime() - new Date(b.searchedAt).getTime())
+      .map((h) => {
+        const d = new Date(h.searchedAt);
+        return {
+          label: `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+          score: h.commercializationScore as number,
+          patentNumber: h.patentNumber,
+        };
+      });
+  }, [history]);
+
+  const timelineAvg = useMemo(
+    () => (scoreTimeline.length > 0 ? Math.round(scoreTimeline.reduce((s, p) => s + p.score, 0) / scoreTimeline.length) : 0),
+    [scoreTimeline]
+  );
+
+  // IPC bubble chart: x = avg score, y = avg TRL, z = count
+  const ipcBubble = useMemo(() => {
+    const map = new Map<string, { count: number; totalScore: number; scoredCount: number; totalTrl: number; trlCount: number }>();
+    allAnalyzed.forEach((p) => {
+      p.ipcs.forEach((c) => {
+        const section = c.trim().slice(0, 4);
+        if (!section) return;
+        const cur = map.get(section) || { count: 0, totalScore: 0, scoredCount: 0, totalTrl: 0, trlCount: 0 };
+        cur.count += 1;
+        if (p.score != null) { cur.totalScore += p.score; cur.scoredCount += 1; }
+        if (p.trl != null) { cur.totalTrl += p.trl; cur.trlCount += 1; }
+        map.set(section, cur);
+      });
+    });
+    return Array.from(map.entries())
+      .map(([name, v]) => ({
+        name,
+        count: v.count,
+        avgScore: v.scoredCount > 0 ? Math.round(v.totalScore / v.scoredCount) : 70,
+        avgTrl: v.trlCount > 0 ? +(v.totalTrl / v.trlCount).toFixed(1) : 5,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 12);
+  }, [allAnalyzed]);
+
   // Top assignees
   const topAssignees = useMemo(() => {
     const map = new Map<string, { count: number; totalScore: number; scoredCount: number }>();
