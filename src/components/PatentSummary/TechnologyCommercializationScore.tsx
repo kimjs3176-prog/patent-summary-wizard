@@ -218,7 +218,10 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* AI Analysis */}
+      {/* Score insight: weights + benchmark + reliability */}
+      <ScoreInsightFooter score={score} details={details} patentData={patentData} scoreConfig={scoreConfig} />
+
+
       {details.analysis && (
         <div className="px-4 sm:px-6 pb-4 sm:pb-5">
           <div className="p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/30">
