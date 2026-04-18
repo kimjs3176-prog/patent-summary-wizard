@@ -28,33 +28,61 @@ const lerpColor = (a: [number, number, number], b: [number, number, number], t: 
   Math.round(a[2] + (b[2] - a[2]) * t),
 ];
 
-// ─── Publication-Grade Design System ───
+// ─── Magazine-Grade Design System ───
 const THEME = {
-  // Premium ink tones
-  text: [18, 18, 24] as [number, number, number],
-  textSecondary: [55, 65, 81] as [number, number, number],
-  textMuted: [120, 130, 150] as [number, number, number],
-  textBody: [32, 38, 52] as [number, number, number],
-  // Refined neutrals
+  text: [12, 14, 22] as [number, number, number],
+  textSecondary: [45, 55, 75] as [number, number, number],
+  textMuted: [110, 120, 140] as [number, number, number],
+  textBody: [25, 32, 48] as [number, number, number],
   border: [210, 216, 224] as [number, number, number],
   borderLight: [235, 238, 243] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
-  // Warm paper tones
   paper: [252, 251, 249] as [number, number, number],
   paperDark: [245, 243, 240] as [number, number, number],
-  // Deep navy accent — editorial / book style
-  navy: [20, 40, 72] as [number, number, number],
+  // Strong editorial ink
+  navy: [12, 28, 56] as [number, number, number],
   navyLight: [35, 60, 100] as [number, number, number],
-  // Warm gold accent for highlights
+  // Magazine emerald
+  emerald: [6, 95, 70] as [number, number, number],
+  emeraldDark: [4, 70, 52] as [number, number, number],
+  emeraldBg: [232, 248, 242] as [number, number, number],
   gold: [180, 145, 60] as [number, number, number],
   goldLight: [220, 195, 120] as [number, number, number],
   goldBg: [255, 250, 235] as [number, number, number],
-  // Teal accent for data
   teal: [0, 128, 115] as [number, number, number],
   tealLight: [230, 248, 246] as [number, number, number],
-  // Warm amber for alerts
   amber: [190, 130, 20] as [number, number, number],
   amberBg: [255, 250, 235] as [number, number, number],
+  // Score grade colors (S/A/B/C)
+  gradeS: [200, 50, 70] as [number, number, number],
+  gradeA: [220, 110, 30] as [number, number, number],
+  gradeB: [30, 130, 200] as [number, number, number],
+  gradeC: [100, 110, 130] as [number, number, number],
+};
+
+// Section color palette — chromatic index for editorial sections
+const SECTION_PALETTE: [number, number, number][] = [
+  [6, 95, 70],     // emerald
+  [200, 80, 40],   // burnt orange
+  [40, 80, 160],   // royal blue
+  [150, 50, 110],  // magenta
+  [180, 145, 60],  // gold
+  [0, 120, 130],   // teal
+  [120, 60, 160],  // purple
+  [200, 50, 70],   // crimson
+];
+
+const getGradeColor = (score: number): [number, number, number] => {
+  if (score >= 85) return THEME.gradeS;
+  if (score >= 75) return THEME.gradeA;
+  if (score >= 65) return THEME.gradeB;
+  return THEME.gradeC;
+};
+const getGradeLetter = (score: number): string => {
+  if (score >= 85) return "S";
+  if (score >= 75) return "A";
+  if (score >= 65) return "B";
+  return "C";
 };
 
 export function PdfGenerator({
@@ -62,6 +90,8 @@ export function PdfGenerator({
   patentNumber,
   patentData,
   layoutConfig,
+  commercializationDetails,
+  commercializationScore,
 }: PdfGeneratorProps) {
   const cfg = { ...DEFAULT_PDF_CONFIG, ...layoutConfig };
 
@@ -84,6 +114,198 @@ export function PdfGenerator({
       const margin = cfg.page_margin;
       const contentWidth = pageWidth - margin * 2;
       let yPosition = margin;
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ██  MAGAZINE COVER PAGE                       ██
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      {
+        // Full-page paper background
+        pdf.setFillColor(...THEME.paper);
+        pdf.rect(0, 0, pageWidth, pageHeight, "F");
+
+        // Top dramatic emerald block
+        pdf.setFillColor(...THEME.emerald);
+        pdf.rect(0, 0, pageWidth, 70, "F");
+        // Diagonal gold strip
+        pdf.setFillColor(...THEME.gold);
+        pdf.rect(0, 70, pageWidth, 1.5, "F");
+        // Sub paper-tone band
+        pdf.setFillColor(...THEME.paperDark);
+        pdf.rect(0, 71.5, pageWidth, 5, "F");
+
+        // Masthead label
+        pdf.setFontSize(8);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("PATENT INTELLIGENCE REPORT", margin, 18);
+        pdf.text("PATENT INTELLIGENCE REPORT", margin + 0.12, 18);
+
+        // Issue number / date — top right
+        const coverDate = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long" });
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(220, 235, 228);
+        const cdW = pdf.getTextWidth(coverDate);
+        pdf.text(coverDate, pageWidth - margin - cdW, 18);
+
+        // Big editorial title (multiline)
+        pdf.setFontSize(32);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("특허 요약", margin, 42);
+        pdf.text("특허 요약", margin + 0.3, 42);
+        pdf.setFontSize(14);
+        pdf.setTextColor(220, 235, 228);
+        pdf.text("AI Commercialization Brief", margin, 54);
+
+        // Decorative bar
+        pdf.setFillColor(...THEME.gold);
+        pdf.rect(margin, 60, 30, 1.2, "F");
+
+        // ── Cover content area ──
+        let cY = 90;
+        const title = patentData?.titleKo || patentData?.title || "특허 요약 리포트";
+        pdf.setFontSize(9);
+        pdf.setTextColor(...THEME.emerald);
+        pdf.text("FEATURED INVENTION", margin, cY);
+        pdf.text("FEATURED INVENTION", margin + 0.12, cY);
+        cY += 8;
+
+        // Cover title (large, multi-line)
+        pdf.setFontSize(22);
+        pdf.setTextColor(...THEME.navy);
+        const coverTitleLines = pdf.splitTextToSize(title, contentWidth);
+        const coverTitleShown = coverTitleLines.slice(0, 4);
+        for (const tl of coverTitleShown) {
+          pdf.text(tl, margin, cY);
+          pdf.text(tl, margin + 0.25, cY);
+          cY += 10;
+        }
+        cY += 4;
+
+        // Thin separator
+        pdf.setDrawColor(...THEME.navy);
+        pdf.setLineWidth(0.6);
+        pdf.line(margin, cY, margin + 40, cY);
+        cY += 8;
+
+        // Patent meta on cover
+        const isAppCover = patentData?.searchType === "application";
+        const dispNum = isAppCover
+          ? patentData?.applicationNumber || patentData?.displayNumber || patentNumber
+          : patentData?.displayNumber || patentNumber;
+        pdf.setFontSize(8);
+        pdf.setTextColor(...THEME.textMuted);
+        pdf.text(isAppCover ? "출원번호" : "등록번호", margin, cY);
+        pdf.setFontSize(13);
+        pdf.setTextColor(...THEME.text);
+        pdf.text(dispNum, margin, cY + 6);
+        pdf.text(dispNum, margin + 0.15, cY + 6);
+
+        if (patentData?.assignee) {
+          pdf.setFontSize(8);
+          pdf.setTextColor(...THEME.textMuted);
+          pdf.text("출원인", margin + 70, cY);
+          pdf.setFontSize(11);
+          pdf.setTextColor(...THEME.text);
+          const asgn = patentData.assignee.length > 22 ? patentData.assignee.slice(0, 22) + "…" : patentData.assignee;
+          pdf.text(asgn, margin + 70, cY + 6);
+        }
+        cY += 18;
+
+        // ── SCORE HERO CARD ──
+        if (commercializationScore != null && commercializationDetails) {
+          const cardY = cY;
+          const cardH = 70;
+          // Outer dark card
+          pdf.setFillColor(...THEME.navy);
+          pdf.roundedRect(margin, cardY, contentWidth, cardH, 3, 3, "F");
+          // Top emerald strip
+          pdf.setFillColor(...THEME.emerald);
+          pdf.rect(margin, cardY, contentWidth, 4, "F");
+          pdf.setFillColor(...THEME.gold);
+          pdf.rect(margin, cardY + 4, contentWidth, 0.8, "F");
+
+          // Big score number — left
+          const grade = getGradeLetter(commercializationScore);
+          const gradeColor = getGradeColor(commercializationScore);
+          pdf.setFontSize(9);
+          pdf.setTextColor(220, 235, 228);
+          pdf.text("사업화 종합점수", margin + 8, cardY + 16);
+          pdf.text("사업화 종합점수", margin + 8.12, cardY + 16);
+
+          pdf.setFontSize(54);
+          pdf.setTextColor(255, 255, 255);
+          const scoreStr = String(Math.round(commercializationScore));
+          pdf.text(scoreStr, margin + 8, cardY + 42);
+          pdf.text(scoreStr, margin + 8.4, cardY + 42);
+          // /100 suffix
+          pdf.setFontSize(12);
+          pdf.setTextColor(180, 200, 215);
+          const scW = pdf.getTextWidth(scoreStr) * 0.95;
+          pdf.text("/100", margin + 8 + scW + 3, cardY + 42);
+
+          // Grade circle
+          const gx = margin + 8 + scW + 22;
+          const gy = cardY + 35;
+          pdf.setFillColor(...gradeColor);
+          pdf.circle(gx, gy, 9, "F");
+          pdf.setFontSize(20);
+          pdf.setTextColor(255, 255, 255);
+          const grW = pdf.getTextWidth(grade);
+          pdf.text(grade, gx - grW / 2, gy + 3);
+          pdf.text(grade, gx - grW / 2 + 0.2, gy + 3);
+          pdf.setFontSize(6);
+          pdf.setTextColor(220, 235, 228);
+          pdf.text("GRADE", gx - 5, gy + 14);
+
+          // Right side — sub scores as bars
+          const barX = margin + 100;
+          const barW = contentWidth - 108;
+          const subs = [
+            { label: "기술성", val: commercializationDetails.technologyScore, c: [110, 200, 170] as [number, number, number] },
+            { label: "시장성", val: commercializationDetails.marketScore, c: [255, 200, 100] as [number, number, number] },
+            { label: "사업성", val: commercializationDetails.businessScore, c: [255, 140, 110] as [number, number, number] },
+          ];
+          let bY = cardY + 16;
+          for (const s of subs) {
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(220, 235, 228);
+            pdf.text(s.label, barX, bY);
+            pdf.setFontSize(9);
+            pdf.setTextColor(255, 255, 255);
+            const vStr = `${Math.round(s.val)}`;
+            const vW = pdf.getTextWidth(vStr);
+            pdf.text(vStr, barX + barW - vW, bY);
+            pdf.text(vStr, barX + barW - vW + 0.12, bY);
+            // Bar track
+            pdf.setFillColor(50, 70, 100);
+            pdf.roundedRect(barX, bY + 2, barW, 2.5, 1, 1, "F");
+            // Bar fill
+            pdf.setFillColor(...s.c);
+            pdf.roundedRect(barX, bY + 2, barW * Math.min(1, s.val / 100), 2.5, 1, 1, "F");
+            bY += 14;
+          }
+
+          // TRL footnote inside card
+          if (commercializationDetails.trl) {
+            pdf.setFontSize(7);
+            pdf.setTextColor(180, 200, 215);
+            pdf.text(`TRL ${commercializationDetails.trl} / 9`, barX, cardY + cardH - 5);
+          }
+        }
+
+        // Footer of cover
+        pdf.setDrawColor(...THEME.gold);
+        pdf.setLineWidth(0.4);
+        pdf.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+        pdf.setFontSize(7);
+        pdf.setTextColor(...THEME.textMuted);
+        pdf.text(cfg.footer_text, margin, pageHeight - 14);
+        const issued = `Issued ${new Date().toLocaleDateString("ko-KR")}`;
+        pdf.text(issued, pageWidth - margin - pdf.getTextWidth(issued), pageHeight - 14);
+
+        // Add page break for content
+        pdf.addPage();
+        yPosition = margin;
+      }
       const headerColor = hexToRgb(cfg.header_bg_color);
       const accentColor = hexToRgb(cfg.section_accent_color);
 
@@ -442,39 +664,55 @@ export function PdfGenerator({
 
           sectionIndex++;
 
-          // ── Publication-style Section Header ──
-          const sectionHeaderH = 9;
+          // ── Magazine-style Section Header with Color Index ──
+          const sectionHeaderH = 12;
           const bandY = yPosition;
+          const sColor = SECTION_PALETTE[(sectionIndex - 1) % SECTION_PALETTE.length];
 
-          // Clean horizontal rule above
+          // Top hairline rule
           pdf.setDrawColor(...THEME.border);
-          pdf.setLineWidth(0.3);
-          pdf.line(margin, bandY - 1, margin + contentWidth, bandY - 1);
+          pdf.setLineWidth(0.25);
+          pdf.line(margin, bandY - 2, margin + contentWidth, bandY - 2);
 
-          // Left accent — thick vertical bar with gold trim
-          pdf.setFillColor(...accentColor);
-          pdf.rect(margin, bandY, 3, sectionHeaderH, "F");
-          // Gold cap on accent bar
-          pdf.setFillColor(...THEME.gold);
-          pdf.rect(margin, bandY, 3, 1.2, "F");
+          // Color index chip — bold filled square with section number
+          const chipSize = sectionHeaderH;
+          pdf.setFillColor(...sColor);
+          pdf.roundedRect(margin, bandY, chipSize, chipSize, 1.2, 1.2, "F");
+          // Number inside chip
+          pdf.setFontSize(10);
+          pdf.setTextColor(255, 255, 255);
+          const numStr = String(sectionIndex).padStart(2, "0");
+          const numW = pdf.getTextWidth(numStr);
+          pdf.text(numStr, margin + chipSize / 2 - numW / 2, bandY + chipSize / 2 + 2);
+          pdf.text(numStr, margin + chipSize / 2 - numW / 2 + 0.18, bandY + chipSize / 2 + 2);
 
-          // Section title — clean, bold, editorial
-          const stitleX = margin + 8;
-          const titleFontH = (cfg.section_title_size + 0.5) * 0.352778;
+          // Section title — bigger, bolder
+          const stitleX = margin + chipSize + 5;
+          const titleFontH = (cfg.section_title_size + 1.5) * 0.352778;
           const centerY = bandY + sectionHeaderH / 2;
           const stitleY = centerY + titleFontH * 0.35;
-          pdf.setFontSize(cfg.section_title_size + 0.5);
+          pdf.setFontSize(cfg.section_title_size + 1.5);
           pdf.setTextColor(...THEME.navy);
           pdf.text(sectionTitle, stitleX, stitleY);
-          pdf.text(sectionTitle, stitleX + 0.15, stitleY); // faux bold
+          pdf.text(sectionTitle, stitleX + 0.22, stitleY);
 
-          // Subtle extending rule after title
-          const stW = pdf.getTextWidth(sectionTitle);
-          pdf.setDrawColor(...THEME.borderLight);
-          pdf.setLineWidth(0.25);
-          pdf.line(stitleX + stW + 4, centerY, margin + contentWidth, centerY);
+          // Section label above title in section color (small caps)
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(...sColor);
+          const sectLabel = `SECTION ${numStr}`;
+          pdf.text(sectLabel, stitleX, bandY + 3.5);
+          pdf.text(sectLabel, stitleX + 0.1, bandY + 3.5);
 
-          yPosition = bandY + sectionHeaderH + 4;
+          // Strong colored bottom rule under header
+          pdf.setDrawColor(...sColor);
+          pdf.setLineWidth(0.8);
+          pdf.line(margin, bandY + sectionHeaderH + 1, margin + contentWidth, bandY + sectionHeaderH + 1);
+          // Thin gold echo
+          pdf.setDrawColor(...THEME.gold);
+          pdf.setLineWidth(0.2);
+          pdf.line(margin, bandY + sectionHeaderH + 2, margin + 30, bandY + sectionHeaderH + 2);
+
+          yPosition = bandY + sectionHeaderH + 6;
 
           if (sectionTitle === "발명의 요약" && cfg.show_patent_images) await insertImages();
         } else if (cleanLine.trim()) {
@@ -570,45 +808,62 @@ export function PdfGenerator({
       const totalPages = pdf.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
+        if (i === 1) continue; // skip cover
+
         const fy = pageHeight - 10;
 
-        // Clean top rule — thin navy line
-        pdf.setDrawColor(...THEME.navy);
-        pdf.setLineWidth(0.4);
-        pdf.line(margin, fy - 3, pageWidth - margin, fy - 3);
+        // Footer accent block on right (page number badge)
+        if (cfg.footer_show_page) {
+          const pgText = String(i).padStart(2, "0");
+          const totText = `/ ${String(totalPages).padStart(2, "0")}`;
+          // Emerald block behind page number
+          const badgeW = 18;
+          const badgeH = 8;
+          const badgeX = pageWidth - margin - badgeW;
+          const badgeY = fy - 2.5;
+          pdf.setFillColor(...THEME.emerald);
+          pdf.roundedRect(badgeX, badgeY, badgeW, badgeH, 1.2, 1.2, "F");
+          pdf.setFillColor(...THEME.gold);
+          pdf.rect(badgeX, badgeY, badgeW, 0.6, "F");
 
-        // Secondary thin line for book feel
-        pdf.setDrawColor(...THEME.borderLight);
-        pdf.setLineWidth(0.15);
-        pdf.line(margin, fy - 1.8, pageWidth - margin, fy - 1.8);
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(255, 255, 255);
+          pdf.text(pgText, badgeX + 3, badgeY + 5.6);
+          pdf.text(pgText, badgeX + 3.18, badgeY + 5.6);
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(200, 220, 210);
+          pdf.text(totText, badgeX + 9, badgeY + 5.6);
+        }
+
+        // Strong navy top rule
+        pdf.setDrawColor(...THEME.navy);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, fy - 3, pageWidth - margin - 22, fy - 3);
+        // Gold echo
+        pdf.setDrawColor(...THEME.gold);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, fy - 1.6, margin + 25, fy - 1.6);
 
         // Footer text — left side
-        pdf.setFontSize(6.5);
-        pdf.setTextColor(...THEME.textSecondary);
+        pdf.setFontSize(6.8);
+        pdf.setTextColor(...THEME.navy);
         pdf.text(cfg.footer_text, margin, fy + 2);
+        pdf.text(cfg.footer_text, margin + 0.1, fy + 2);
 
-        // Date — right side
+        // Date — center
         if (cfg.footer_show_date) {
           const dateText = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+          pdf.setFontSize(6.5);
           pdf.setTextColor(...THEME.textMuted);
-          pdf.text(dateText, pageWidth - margin - pdf.getTextWidth(dateText), fy + 2);
+          const dW = pdf.getTextWidth(dateText);
+          pdf.text(dateText, (pageWidth - dW) / 2, fy + 2);
         }
 
-        // Page number — centered, book style
-        if (cfg.footer_show_page) {
-          const pgText = `— ${i} / ${totalPages} —`;
-          pdf.setFontSize(7);
-          pdf.setTextColor(...THEME.textMuted);
-          const pgW = pdf.getTextWidth(pgText);
-          pdf.text(pgText, (pageWidth - pgW) / 2, fy + 2);
-        }
-
-        // Side margin decorative line (book gutter hint) — only on non-cover pages
-        if (i > 1) {
-          pdf.setDrawColor(...THEME.borderLight);
-          pdf.setLineWidth(0.15);
-          pdf.line(margin - 2, margin, margin - 2, pageHeight - margin);
-        }
+        // Side margin colored tab — uses navy
+        pdf.setFillColor(...THEME.emerald);
+        pdf.rect(0, margin + 10, 3, 30, "F");
+        pdf.setFillColor(...THEME.gold);
+        pdf.rect(0, margin + 40, 3, 4, "F");
       }
 
       pdf.save(`특허요약_${patentNumber}.pdf`);
