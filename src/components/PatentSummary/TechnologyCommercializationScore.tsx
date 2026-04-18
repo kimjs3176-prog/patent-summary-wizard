@@ -24,7 +24,6 @@ interface TechnologyCommercializationScoreProps {
   score: number | null;
   isLoading: boolean;
   details?: CommercializationDetails | null;
-  showTrlOnly?: boolean;
 }
 
 function useScoreConfig(): ScoreConfig {
