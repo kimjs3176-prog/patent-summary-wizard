@@ -113,6 +113,7 @@ export function PdfGenerator({
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = cfg.page_margin;
       const contentWidth = pageWidth - margin * 2;
+      let yPosition = margin;
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  MAGAZINE COVER PAGE                       ██
