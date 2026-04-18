@@ -21,12 +21,6 @@ function getScoreGrade(score: number): string {
   return "C";
 }
 
-function getTrlLabel(trl: number): string {
-  if (trl <= 3) return "기초연구";
-  if (trl <= 6) return "개발/실증";
-  return "상용화";
-}
-
 export function QuickStatsBar({ patentData, score, details }: QuickStatsBarProps) {
   const animatedScore = useCountUp(score ?? 0, 1100);
   if (!patentData) return null;
