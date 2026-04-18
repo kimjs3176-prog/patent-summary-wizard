@@ -664,39 +664,55 @@ export function PdfGenerator({
 
           sectionIndex++;
 
-          // ── Publication-style Section Header ──
-          const sectionHeaderH = 9;
+          // ── Magazine-style Section Header with Color Index ──
+          const sectionHeaderH = 12;
           const bandY = yPosition;
+          const sColor = SECTION_PALETTE[(sectionIndex - 1) % SECTION_PALETTE.length];
 
-          // Clean horizontal rule above
+          // Top hairline rule
           pdf.setDrawColor(...THEME.border);
-          pdf.setLineWidth(0.3);
-          pdf.line(margin, bandY - 1, margin + contentWidth, bandY - 1);
+          pdf.setLineWidth(0.25);
+          pdf.line(margin, bandY - 2, margin + contentWidth, bandY - 2);
 
-          // Left accent — thick vertical bar with gold trim
-          pdf.setFillColor(...accentColor);
-          pdf.rect(margin, bandY, 3, sectionHeaderH, "F");
-          // Gold cap on accent bar
-          pdf.setFillColor(...THEME.gold);
-          pdf.rect(margin, bandY, 3, 1.2, "F");
+          // Color index chip — bold filled square with section number
+          const chipSize = sectionHeaderH;
+          pdf.setFillColor(...sColor);
+          pdf.roundedRect(margin, bandY, chipSize, chipSize, 1.2, 1.2, "F");
+          // Number inside chip
+          pdf.setFontSize(10);
+          pdf.setTextColor(255, 255, 255);
+          const numStr = String(sectionIndex).padStart(2, "0");
+          const numW = pdf.getTextWidth(numStr);
+          pdf.text(numStr, margin + chipSize / 2 - numW / 2, bandY + chipSize / 2 + 2);
+          pdf.text(numStr, margin + chipSize / 2 - numW / 2 + 0.18, bandY + chipSize / 2 + 2);
 
-          // Section title — clean, bold, editorial
-          const stitleX = margin + 8;
-          const titleFontH = (cfg.section_title_size + 0.5) * 0.352778;
+          // Section title — bigger, bolder
+          const stitleX = margin + chipSize + 5;
+          const titleFontH = (cfg.section_title_size + 1.5) * 0.352778;
           const centerY = bandY + sectionHeaderH / 2;
           const stitleY = centerY + titleFontH * 0.35;
-          pdf.setFontSize(cfg.section_title_size + 0.5);
+          pdf.setFontSize(cfg.section_title_size + 1.5);
           pdf.setTextColor(...THEME.navy);
           pdf.text(sectionTitle, stitleX, stitleY);
-          pdf.text(sectionTitle, stitleX + 0.15, stitleY); // faux bold
+          pdf.text(sectionTitle, stitleX + 0.22, stitleY);
 
-          // Subtle extending rule after title
-          const stW = pdf.getTextWidth(sectionTitle);
-          pdf.setDrawColor(...THEME.borderLight);
-          pdf.setLineWidth(0.25);
-          pdf.line(stitleX + stW + 4, centerY, margin + contentWidth, centerY);
+          // Section label above title in section color (small caps)
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(...sColor);
+          const sectLabel = `SECTION ${numStr}`;
+          pdf.text(sectLabel, stitleX, bandY + 3.5);
+          pdf.text(sectLabel, stitleX + 0.1, bandY + 3.5);
 
-          yPosition = bandY + sectionHeaderH + 4;
+          // Strong colored bottom rule under header
+          pdf.setDrawColor(...sColor);
+          pdf.setLineWidth(0.8);
+          pdf.line(margin, bandY + sectionHeaderH + 1, margin + contentWidth, bandY + sectionHeaderH + 1);
+          // Thin gold echo
+          pdf.setDrawColor(...THEME.gold);
+          pdf.setLineWidth(0.2);
+          pdf.line(margin, bandY + sectionHeaderH + 2, margin + 30, bandY + sectionHeaderH + 2);
+
+          yPosition = bandY + sectionHeaderH + 6;
 
           if (sectionTitle === "발명의 요약" && cfg.show_patent_images) await insertImages();
         } else if (cleanLine.trim()) {
