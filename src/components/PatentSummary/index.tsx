@@ -809,15 +809,7 @@ export function PatentSummary({
         )}
       </div>
 
-      {/* 4. TRL Section */}
-      {patentData && commercializationDetails && visibleSections.trl !== false && printSections.trl !== false && (
-        <TechnologyCommercializationScore 
-          score={commercializationScore}
-          isLoading={false}
-          details={commercializationDetails}
-          showTrlOnly={true}
-        />
-      )}
+      {/* 4. TRL is now integrated into the AI 기술분석 점수 section above */}
 
       {/* 5. Claims Card */}
       {printSections.claims !== false && visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
