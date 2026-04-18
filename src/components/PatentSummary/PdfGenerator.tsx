@@ -28,33 +28,61 @@ const lerpColor = (a: [number, number, number], b: [number, number, number], t: 
   Math.round(a[2] + (b[2] - a[2]) * t),
 ];
 
-// ─── Publication-Grade Design System ───
+// ─── Magazine-Grade Design System ───
 const THEME = {
-  // Premium ink tones
-  text: [18, 18, 24] as [number, number, number],
-  textSecondary: [55, 65, 81] as [number, number, number],
-  textMuted: [120, 130, 150] as [number, number, number],
-  textBody: [32, 38, 52] as [number, number, number],
-  // Refined neutrals
+  text: [12, 14, 22] as [number, number, number],
+  textSecondary: [45, 55, 75] as [number, number, number],
+  textMuted: [110, 120, 140] as [number, number, number],
+  textBody: [25, 32, 48] as [number, number, number],
   border: [210, 216, 224] as [number, number, number],
   borderLight: [235, 238, 243] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
-  // Warm paper tones
   paper: [252, 251, 249] as [number, number, number],
   paperDark: [245, 243, 240] as [number, number, number],
-  // Deep navy accent — editorial / book style
-  navy: [20, 40, 72] as [number, number, number],
+  // Strong editorial ink
+  navy: [12, 28, 56] as [number, number, number],
   navyLight: [35, 60, 100] as [number, number, number],
-  // Warm gold accent for highlights
+  // Magazine emerald
+  emerald: [6, 95, 70] as [number, number, number],
+  emeraldDark: [4, 70, 52] as [number, number, number],
+  emeraldBg: [232, 248, 242] as [number, number, number],
   gold: [180, 145, 60] as [number, number, number],
   goldLight: [220, 195, 120] as [number, number, number],
   goldBg: [255, 250, 235] as [number, number, number],
-  // Teal accent for data
   teal: [0, 128, 115] as [number, number, number],
   tealLight: [230, 248, 246] as [number, number, number],
-  // Warm amber for alerts
   amber: [190, 130, 20] as [number, number, number],
   amberBg: [255, 250, 235] as [number, number, number],
+  // Score grade colors (S/A/B/C)
+  gradeS: [200, 50, 70] as [number, number, number],
+  gradeA: [220, 110, 30] as [number, number, number],
+  gradeB: [30, 130, 200] as [number, number, number],
+  gradeC: [100, 110, 130] as [number, number, number],
+};
+
+// Section color palette — chromatic index for editorial sections
+const SECTION_PALETTE: [number, number, number][] = [
+  [6, 95, 70],     // emerald
+  [200, 80, 40],   // burnt orange
+  [40, 80, 160],   // royal blue
+  [150, 50, 110],  // magenta
+  [180, 145, 60],  // gold
+  [0, 120, 130],   // teal
+  [120, 60, 160],  // purple
+  [200, 50, 70],   // crimson
+];
+
+const getGradeColor = (score: number): [number, number, number] => {
+  if (score >= 85) return THEME.gradeS;
+  if (score >= 75) return THEME.gradeA;
+  if (score >= 65) return THEME.gradeB;
+  return THEME.gradeC;
+};
+const getGradeLetter = (score: number): string => {
+  if (score >= 85) return "S";
+  if (score >= 75) return "A";
+  if (score >= 65) return "B";
+  return "C";
 };
 
 export function PdfGenerator({
