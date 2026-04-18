@@ -211,6 +211,11 @@ export default function Insights() {
         </div>
         <p className="text-sm text-muted-foreground mb-6">최근 분석한 특허들의 통계와 트렌드를 한눈에 확인하세요</p>
 
+        {/* AI Auto-Curated Recommendations */}
+        <AutoCuratedPatents />
+
+        <div className="mt-6" />
+
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <KpiCard icon={<Layers className="w-4 h-4" />} label="분석 특허" value={stats.total} unit="건" />
