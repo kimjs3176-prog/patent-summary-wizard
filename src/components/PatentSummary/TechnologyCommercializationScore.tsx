@@ -111,7 +111,8 @@ export function TechnologyCommercializationScore({
   score, 
   isLoading, 
   details,
-  showTrlOnly = false
+  showTrlOnly = false,
+  patentData,
 }: TechnologyCommercializationScoreProps) {
   const scoreConfig = useScoreConfig();
   const trlConfig = useTrlConfig();
