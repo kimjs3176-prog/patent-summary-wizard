@@ -754,7 +754,6 @@ export function PatentSummary({
           score={commercializationScore}
           isLoading={isAnalyzing}
           details={commercializationDetails}
-          showTrlOnly={false}
         />
       )}
 
