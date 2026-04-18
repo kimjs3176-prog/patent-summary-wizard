@@ -306,7 +306,6 @@ export function PdfGenerator({
         pdf.addPage();
         yPosition = margin;
       }
-      let yPosition = margin;
       const headerColor = hexToRgb(cfg.header_bg_color);
       const accentColor = hexToRgb(cfg.section_accent_color);
 
