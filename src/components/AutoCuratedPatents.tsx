@@ -80,8 +80,6 @@ export function AutoCuratedPatents() {
               title: pd.titleKo || pd.title || c.patent_number,
               assignee: pd.assignee,
               totalScore: c.total_score,
-              confidenceScore: c.confidence_score || 0,
-              scoreBreakdown: c.score_details || [],
               ipc,
               ipcSection,
             } as CuratedItem;
