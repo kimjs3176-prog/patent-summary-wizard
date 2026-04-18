@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
+import { AutoCuratedPatents } from "@/components/AutoCuratedPatents";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, RadialBarChart, RadialBar, PolarAngleAxis,
