@@ -1,4 +1,3 @@
-import { Award, Layers, Building2, Calendar, TrendingUp } from "lucide-react";
 import { PatentData } from "@/components/PatentSummary/types";
 import { CommercializationDetails } from "@/components/PatentSummary/TechnologyCommercializationScore";
 import { useCountUp } from "@/hooks/useCountUp";
