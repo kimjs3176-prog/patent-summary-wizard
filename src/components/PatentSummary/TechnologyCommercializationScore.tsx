@@ -25,6 +25,7 @@ interface TechnologyCommercializationScoreProps {
   isLoading: boolean;
   details?: CommercializationDetails | null;
   showTrlOnly?: boolean;
+  patentData?: PatentData | null;
 }
 
 function useScoreConfig(): ScoreConfig {
