@@ -36,7 +36,7 @@ export function AutoCuratedPatents() {
       try {
         const { data: scoreRows, error: scoreErr } = await supabase
           .from("patent_score_cache")
-          .select("patent_number, total_score, score_details, confidence_score, created_at")
+          .select("patent_number, total_score")
           .order("total_score", { ascending: false })
           .limit(80);
         if (scoreErr) throw scoreErr;
