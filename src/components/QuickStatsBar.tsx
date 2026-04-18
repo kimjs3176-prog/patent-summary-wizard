@@ -1,4 +1,3 @@
-import { Award, Layers, Building2, Calendar, TrendingUp } from "lucide-react";
 import { PatentData } from "@/components/PatentSummary/types";
 import { CommercializationDetails } from "@/components/PatentSummary/TechnologyCommercializationScore";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -22,20 +21,13 @@ function getScoreGrade(score: number): string {
   return "C";
 }
 
-function getTrlLabel(trl: number): string {
-  if (trl <= 3) return "기초연구";
-  if (trl <= 6) return "개발/실증";
-  return "상용화";
-}
-
 export function QuickStatsBar({ patentData, score, details }: QuickStatsBarProps) {
   const animatedScore = useCountUp(score ?? 0, 1100);
-  const animatedTrl = useCountUp(details?.trl ?? 0, 900);
   if (!patentData) return null;
 
   return (
     <div className="w-full max-w-4xl mx-auto mb-5 animate-fade-up">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
         {/* Score Card */}
         <div className="group relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-border/60 hover:shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.15)]" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           <div className="flex items-start justify-between">
@@ -72,31 +64,6 @@ export function QuickStatsBar({ patentData, score, details }: QuickStatsBarProps
                 style={{ width: `${score}%`, background: getScoreColor(score) }}
               />
             </div>
-          )}
-        </div>
-
-        {/* TRL Card */}
-        <div className="group relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-border/60 hover:shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.15)]" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[10px] md:text-[11px] text-muted-foreground/70 font-medium mb-1">기술 성숙도</p>
-              {details?.trl != null ? (
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl md:text-3xl font-black tabular-nums tracking-tight text-foreground">
-                    {Math.round(animatedTrl)}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/50 font-medium">/9</span>
-                </div>
-              ) : (
-                <span className="text-sm text-muted-foreground">-</span>
-              )}
-            </div>
-            <Layers className="w-4 h-4 text-muted-foreground/30" />
-          </div>
-          {details?.trl != null && (
-            <p className="text-[10px] md:text-[11px] text-muted-foreground mt-1.5 font-medium">
-              TRL {details.trl} · {getTrlLabel(details.trl)}
-            </p>
           )}
         </div>
 
