@@ -2,11 +2,9 @@ import { Loader2 } from "lucide-react";
 import { TrlChart } from "./TrlChart";
 import { ScoreBarChart } from "./ScoreBarChart";
 import { CircularGauge } from "./CircularGauge";
-import { ScoreInsightFooter } from "./ScoreInsightFooter";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
-import type { PatentData } from "./types";
 
 export interface CommercializationDetails {
   technologyScore: number;
@@ -25,7 +23,6 @@ interface TechnologyCommercializationScoreProps {
   isLoading: boolean;
   details?: CommercializationDetails | null;
   showTrlOnly?: boolean;
-  patentData?: PatentData | null;
 }
 
 function useScoreConfig(): ScoreConfig {
@@ -111,8 +108,7 @@ export function TechnologyCommercializationScore({
   score, 
   isLoading, 
   details,
-  showTrlOnly = false,
-  patentData,
+  showTrlOnly = false
 }: TechnologyCommercializationScoreProps) {
   const scoreConfig = useScoreConfig();
   const trlConfig = useTrlConfig();
@@ -218,10 +214,7 @@ export function TechnologyCommercializationScore({
         </div>
       </div>
 
-      {/* Score insight: weights + benchmark + reliability */}
-      <ScoreInsightFooter score={score} details={details} patentData={patentData} scoreConfig={scoreConfig} />
-
-
+      {/* AI Analysis */}
       {details.analysis && (
         <div className="px-4 sm:px-6 pb-4 sm:pb-5">
           <div className="p-3 sm:p-3.5 rounded-xl bg-muted/30 border border-border/30">
