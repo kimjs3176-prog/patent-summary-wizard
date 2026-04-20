@@ -577,9 +577,6 @@ export function PatentSummary({
               if (patentData.inventors?.length) {
                 kpis.push({ label: "발명자", value: `${patentData.inventors.length}명` });
               }
-              if (patentData.images?.length) {
-                kpis.push({ label: "도면", value: `${patentData.images.length}장` });
-              }
               if (kpis.length === 0) return null;
               return (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-3">
