@@ -69,6 +69,21 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const strengthScore = (s: Strength) => (s === "strong" ? 3 : s === "medium" ? 2 : 1);
+
+  const radarData = useMemo(() => {
+    if (!result?.rows?.length) return [];
+    return result.rows.map((row) => {
+      const compScores = row.competitorStrengths.map(strengthScore);
+      const compAvg = compScores.length ? compScores.reduce((a, b) => a + b, 0) / compScores.length : 0;
+      return {
+        axis: row.axis,
+        current: strengthScore(row.currentStrength),
+        competitorAvg: Number(compAvg.toFixed(2)),
+      };
+    });
+  }, [result]);
+
   useEffect(() => {
     const run = async () => {
       if (!patentData?.title && !patentData?.titleKo) return;
