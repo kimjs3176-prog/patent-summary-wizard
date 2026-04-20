@@ -42,6 +42,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<ViewMode>("tree");
+  const [swimlane, setSwimlane] = useState<boolean>(false);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
