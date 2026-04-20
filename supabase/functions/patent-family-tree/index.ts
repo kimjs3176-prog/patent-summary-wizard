@@ -161,14 +161,50 @@ serve(async (req) => {
         ipc: ipc.split(/[,;|]/)[0]?.trim(),
         ipcCategory: category,
         isCurrent,
+        relevanceScore: scoreRelevance(inventionTitle),
       });
 
-      if (patents.length >= 30) break;
+      if (patents.length >= 80) break;
     }
 
+    // Determine current patent's IPC category for category bonus
+    const currentPatent = patents.find((p) => p.isCurrent);
+    const currentCategory = currentPatent?.ipcCategory;
+
+    // Apply IPC category bonus + boost current patent
+    patents.forEach((p) => {
+      if (p.isCurrent) {
+        p.relevanceScore = Number.MAX_SAFE_INTEGER;
+      } else if (currentCategory && p.ipcCategory === currentCategory) {
+        p.relevanceScore = (p.relevanceScore || 0) + 1;
+      }
+    });
+
+    // Filter to keyword-relevant patents (score > 0). Always keep current patent.
+    // If too few survive, fall back to top-N by recency to avoid an empty tree.
+    let filtered = patents.filter((p) => p.isCurrent || (p.relevanceScore || 0) > 0);
+    if (filtered.length < 4) {
+      // Not enough relevance hits — keep best-effort: top by IPC category match, else top recent
+      const sameCategory = patents.filter((p) => !p.isCurrent && currentCategory && p.ipcCategory === currentCategory);
+      const merged = [...filtered, ...sameCategory.filter((p) => !filtered.includes(p))];
+      filtered = merged.length >= 4 ? merged : patents.slice(0, Math.max(8, filtered.length));
+    }
+
+    // Sort by relevance desc, then by date desc (current patent first via Number.MAX_SAFE_INTEGER)
+    filtered.sort((a, b) => {
+      const sa = a.relevanceScore || 0;
+      const sb = b.relevanceScore || 0;
+      if (sb !== sa) return sb - sa;
+      const da = (a.registrationDate || a.applicationDate || "").replace(/\./g, "");
+      const db = (b.registrationDate || b.applicationDate || "").replace(/\./g, "");
+      return db.localeCompare(da);
+    });
+
+    const finalPatents = filtered.slice(0, 30);
+
     // Ensure current patent is in list
-    if (currentPatentNumber && !patents.some((p) => p.isCurrent) && currentPatentTitle) {
-      patents.unshift({
+    if (currentPatentNumber && !finalPatents.some((p) => p.isCurrent) && currentPatentTitle) {
+      finalPatents.unshift({
         patentId: currentPatentNumber,
         title: currentPatentTitle,
         ipcCategory: "현재 분석 특허",
@@ -176,7 +212,7 @@ serve(async (req) => {
       });
     }
 
-    const responseData = { patents, assignee };
+    const responseData = { patents: finalPatents, assignee };
 
     try {
       await supabase.from("patent_data_cache").upsert({
