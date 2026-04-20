@@ -923,28 +923,30 @@ export function PatentSummary({
               </div>
             </details>
           </div>
-        </div>
+        </section>
       )}
 
       </div>
 
       {/* 6. Competitor Comparison Table — AI generated */}
       {patentData && !isStreaming && content && visibleSections.competitorComparison !== false && (
-        <div className="mt-4">
+        <div id="sec-compare" className="mt-4 scroll-mt-24">
           <CompetitorComparisonTable patentData={patentData} onPatentClick={onRelatedPatentClick} />
         </div>
       )}
 
       {/* 7. Patent Family Tree — D3 visualization */}
       {patentData?.assignee && !isStreaming && content && visibleSections.familyTree !== false && (
-        <div className="mt-4">
+        <div id="sec-family" className="mt-4 scroll-mt-24">
           <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
         </div>
       )}
 
       {/* 8. Related Patents Section */}
       {printSections.relatedPatents !== false && visibleSections.relatedPatents !== false && (
-        <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
+        <div id="sec-related" className="scroll-mt-24">
+          <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
+        </div>
       )}
     </div>
   );
