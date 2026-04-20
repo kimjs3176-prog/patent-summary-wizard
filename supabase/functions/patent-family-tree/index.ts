@@ -49,7 +49,7 @@ serve(async (req) => {
     };
 
     // Cache check (7d TTL). Key includes patent number so each search produces its own relevance-filtered list.
-    const cacheKey = `fam_${assignee.substring(0, 60)}_${(currentPatentNumber || "x").replace(/[^0-9]/g, "").slice(0, 16)}`;
+    const cacheKey = `fam2_${assignee.substring(0, 60)}_${(currentPatentNumber || "x").replace(/[^0-9]/g, "").slice(0, 16)}`;
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
