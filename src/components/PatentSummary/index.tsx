@@ -819,12 +819,33 @@ export function PatentSummary({
         {/* Content */}
         <div className="px-4 py-5 sm:px-5 sm:py-6 md:px-6 md:py-7 min-h-[300px]">
           {content ? (
-            <div className="prose max-w-none">
-              {renderMarkdown(content)}
-              {isStreaming && (
-                <span className="inline-block w-1.5 h-5 rounded-full ml-1 animate-pulse bg-primary/50" />
-              )}
-            </div>
+            (() => {
+              const { body, footnotes } = renderMarkdown(content);
+              return (
+                <div className="prose max-w-none">
+                  {body}
+                  {isStreaming && (
+                    <span className="inline-block w-1.5 h-5 rounded-full ml-1 animate-pulse bg-primary/50" />
+                  )}
+                  {footnotes.length > 0 && !isStreaming && (
+                    <div className="mt-8 pt-4 border-t border-border/40">
+                      <h4 className="text-[11px] sm:text-[12px] font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                        <span className="inline-block w-1 h-3 bg-primary rounded-full" />
+                        참고 출처
+                      </h4>
+                      <div className="space-y-1.5">
+                        {footnotes.map((fn) => (
+                          <div key={fn.num} id={`fn-${fn.num}`} className="flex gap-2 text-[11px] sm:text-[12px] text-muted-foreground/90 leading-[1.6] pl-2 border-l-2 border-primary/20">
+                            <span className="font-bold text-primary/70 shrink-0">[{fn.num}]</span>
+                            <span>{fn.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
           ) : (
             <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 bg-muted">
