@@ -96,7 +96,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     } else {
       renderTimeline();
     }
-  }, [patents, mode, patentData.assignee]);
+  }, [patents, mode, swimlane, patentData.assignee]);
 
   const findPatent = (patentId: string) => patents.find((p) => p.patentId === patentId);
 
