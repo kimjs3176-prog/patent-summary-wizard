@@ -397,6 +397,19 @@ export function PatentSummary({
     return { body: elements, footnotes };
   };
 
+  // Build section nav items based on what's visible
+  const navItems = useMemo<SectionNavItem[]>(() => {
+    const items: SectionNavItem[] = [];
+    if (patentData) items.push({ id: "sec-info", label: "특허 정보", icon: Info });
+    if (patentData && visibleSections.commercialization !== false) items.push({ id: "sec-score", label: "기술분석 점수", icon: GaugeCircle });
+    if (content) items.push({ id: "sec-summary", label: "AI 요약", icon: Sparkles });
+    if (patentData?.claims && patentData.claims.length > 0 && visibleSections.claims !== false) items.push({ id: "sec-claims", label: "청구항", icon: ScrollText });
+    if (patentData && visibleSections.competitorComparison !== false) items.push({ id: "sec-compare", label: "경쟁 비교", icon: GitCompare });
+    if (patentData?.assignee && visibleSections.familyTree !== false) items.push({ id: "sec-family", label: "패밀리 트리", icon: Network });
+    if (visibleSections.relatedPatents !== false) items.push({ id: "sec-related", label: "관련 특허", icon: ListChecks });
+    return items;
+  }, [patentData, content, visibleSections]);
+
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-up">
       {/* Printable Content (Hidden) */}
@@ -408,9 +421,12 @@ export function PatentSummary({
         printSections={printSections}
       />
 
+      {/* Section Navigation — sticky pill bar */}
+      {!isStreaming && content && navItems.length > 1 && <SectionNav items={navItems} />}
+
       {/* Toss-style Action Bar — floating pill */}
       {!isStreaming && content && (
-        <div className="flex items-center justify-between flex-wrap mb-5 gap-2 px-1">
+        <div className="flex items-center justify-between flex-wrap mb-4 gap-2 px-1 print:hidden">
           <div className="flex items-center gap-2">
             <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="gap-1.5 text-xs h-9 rounded-xl bg-foreground text-background hover:bg-foreground/90 shadow-sm btn-press font-semibold">
