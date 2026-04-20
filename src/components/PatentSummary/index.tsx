@@ -189,7 +189,44 @@ export function PatentSummary({
   };
 
   const renderMarkdown = (text: string): { body: JSX.Element[]; footnotes: { num: string; text: string }[] } => {
-    const lines = text.split("\n");
+    // Pre-process: strip trailing source/reference sections that have no real body content
+    // (only footnote definitions or whitespace), so empty "## 출처" / "### 참고문헌" headings don't render.
+    const sourceHeadingRe = /^#{2,3}\s*\**\s*(출처|참고문헌|참고\s*자료|참고|references?|sources?)\s*\**\s*$/i;
+    const rawLines = text.split("\n");
+    const lines: string[] = [];
+    let i = 0;
+    while (i < rawLines.length) {
+      const line = rawLines[i];
+      if (sourceHeadingRe.test(line.trim())) {
+        // Look ahead: is there any non-footnote, non-empty content before next ## heading or EOF?
+        let j = i + 1;
+        let hasBody = false;
+        while (j < rawLines.length) {
+          const next = rawLines[j];
+          if (/^##\s/.test(next) && !sourceHeadingRe.test(next.trim())) break;
+          const trimmed = next.trim();
+          if (trimmed && !/^\[\^\d+\]:/.test(trimmed) && !sourceHeadingRe.test(trimmed)) {
+            hasBody = true;
+            break;
+          }
+          j++;
+        }
+        if (!hasBody) {
+          // Skip the heading itself but keep footnote definitions (they're collected separately)
+          i++;
+          while (i < rawLines.length) {
+            const next = rawLines[i];
+            if (/^##\s/.test(next) && !sourceHeadingRe.test(next.trim())) break;
+            if (/^\[\^\d+\]:/.test(next.trim())) lines.push(next);
+            i++;
+          }
+          continue;
+        }
+      }
+      lines.push(line);
+      i++;
+    }
+
     const elements: JSX.Element[] = [];
     const footnotes: { num: string; text: string }[] = [];
     let inSourcesSection = false;
