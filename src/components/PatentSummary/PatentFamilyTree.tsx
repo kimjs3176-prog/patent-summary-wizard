@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { Network, Loader2, AlertCircle, GitBranch, Calendar, Layers } from "lucide-react";
+import { Network, Loader2, AlertCircle, Layers } from "lucide-react";
 import { PatentData } from "./types";
 
 interface FamilyPatent {
@@ -35,13 +35,10 @@ interface TooltipState {
   patent: FamilyPatent;
 }
 
-type ViewMode = "tree" | "timeline";
-
 export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTreeProps) {
   const [patents, setPatents] = useState<FamilyPatent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<ViewMode>("tree");
   const [swimlane, setSwimlane] = useState<boolean>(false);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -86,18 +83,12 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     run();
   }, [patentData?.assignee, patentData?.patentNumber]);
 
-  // Render visualization based on mode (only timeline uses D3 SVG; tree mode is React-rendered)
+  // Render timeline visualization (D3 SVG)
   useEffect(() => {
     if (!patents.length || !svgRef.current || !containerRef.current) return;
     setTooltip(null);
-    if (mode === "timeline") {
-      renderTimeline();
-    } else {
-      // Clear svg in tree mode
-      d3.select(svgRef.current).selectAll("*").remove();
-      d3.select(svgRef.current).attr("width", 0).attr("height", 0);
-    }
-  }, [patents, mode, swimlane, patentData.assignee]);
+    renderTimeline();
+  }, [patents, swimlane, patentData.assignee]);
 
   const findPatent = (patentId: string) => patents.find((p) => p.patentId === patentId);
 
@@ -483,22 +474,14 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
               {topCategory && totalPatents > 0 && ` · 주력분야: ${topCategory[0]} (${topCategory[1]}건)`}
             </p>
           </div>
-          {/* Mode toggle */}
+          {/* Swim lane toggle */}
           {patents.length > 0 && (
-            <div className="inline-flex items-center bg-muted/40 rounded-lg p-0.5 shrink-0">
-              <button
-                onClick={() => setMode("tree")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors ${mode === "tree" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <GitBranch className="w-3 h-3" /> 트리
-              </button>
-              <button
-                onClick={() => setMode("timeline")}
-                className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors ${mode === "timeline" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Calendar className="w-3 h-3" /> 타임라인
-              </button>
-            </div>
+            <button
+              onClick={() => setSwimlane((s) => !s)}
+              className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors shrink-0 ${swimlane ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/40 border-border/30 text-muted-foreground hover:text-foreground"}`}
+            >
+              <Layers className="w-3 h-3" /> Swim Lane {swimlane ? "ON" : "OFF"}
+            </button>
           )}
         </div>
       </div>
@@ -520,77 +503,10 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
 
         {patents.length > 0 && !loading && (
           <>
-            {mode === "tree" && (() => {
-              // Group patents by IPC category for clean card list
-              const grouped = new Map<string, FamilyPatent[]>();
-              patents.forEach((p) => {
-                const cat = p.ipcCategory || "기타";
-                if (!grouped.has(cat)) grouped.set(cat, []);
-                grouped.get(cat)!.push(p);
-              });
-              const palette = ["hsl(280 60% 55%)", "hsl(200 70% 50%)", "hsl(160 65% 45%)", "hsl(30 80% 55%)", "hsl(340 70% 55%)", "hsl(220 60% 55%)"];
-              const groups = Array.from(grouped.entries());
-              return (
-                <div className="space-y-3">
-                  {groups.map(([category, items], gi) => {
-                    const color = palette[gi % palette.length];
-                    return (
-                      <div key={category} className="rounded-xl bg-muted/20 border border-border/20 overflow-hidden">
-                        {/* Group header */}
-                        <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20" style={{ background: `${color.replace(')', ' / 0.06)')}` }}>
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-                          <span className="text-[11px] font-bold tracking-tight" style={{ color }}>{category}</span>
-                          <span className="text-[10px] text-muted-foreground font-medium">· {items.length}건</span>
-                        </div>
-                        {/* Items */}
-                        <ul className="divide-y divide-border/15">
-                          {items.map((p) => (
-                            <li key={p.patentId}>
-                              <button
-                                onClick={() => onPatentClick?.(p.patentId)}
-                                className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors ${p.isCurrent ? "bg-primary/5" : ""}`}
-                              >
-                                <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${p.isCurrent ? "bg-primary ring-2 ring-primary/30" : ""}`} style={p.isCurrent ? {} : { background: color, opacity: 0.7 }} />
-                                <div className="min-w-0 flex-1">
-                                  <div className={`text-[12px] sm:text-[13px] leading-snug truncate ${p.isCurrent ? "font-bold text-primary" : "font-medium text-foreground/85"}`} title={p.title}>
-                                    {p.title}
-                                    {p.isCurrent && <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider text-primary">현재</span>}
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
-                                    <span className="tabular-nums">{p.patentId}</span>
-                                    {(p.registrationDate || p.applicationDate) && (
-                                      <>
-                                        <span className="text-border">·</span>
-                                        <span>{p.registrationDate || p.applicationDate}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-            {mode === "timeline" && (
-              <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-                <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground">
-                  <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 현재 분석 특허</div>
-                  <span>· 색상 = IPC 기술분야 · 가로축 = 등록/출원 연도</span>
-                </div>
-                <button
-                  onClick={() => setSwimlane((s) => !s)}
-                  className={`flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-md border transition-colors ${swimlane ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/40 border-border/30 text-muted-foreground hover:text-foreground"}`}
-                >
-                  <Layers className="w-3 h-3" /> Swim Lane {swimlane ? "ON" : "OFF"}
-                </button>
-              </div>
-            )}
-            {mode === "timeline" && (
+            <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground mb-3">
+              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 현재 분석 특허</div>
+              <span>· 색상 = IPC 기술분야 · 가로축 = 등록/출원 연도</span>
+            </div>
             <div ref={containerRef} className="relative overflow-x-auto rounded-xl bg-muted/20 border border-border/20 p-2">
               <svg ref={svgRef} />
               {tooltip && (
@@ -615,7 +531,6 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
                 </div>
               )}
             </div>
-            )}
           </>
         )}
       </div>
