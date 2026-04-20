@@ -86,15 +86,16 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     run();
   }, [patentData?.assignee, patentData?.patentNumber]);
 
-  // Render visualization based on mode
+  // Render visualization based on mode (only timeline uses D3 SVG; tree mode is React-rendered)
   useEffect(() => {
     if (!patents.length || !svgRef.current || !containerRef.current) return;
     setTooltip(null);
-
-    if (mode === "tree") {
-      renderTree();
-    } else {
+    if (mode === "timeline") {
       renderTimeline();
+    } else {
+      // Clear svg in tree mode
+      d3.select(svgRef.current).selectAll("*").remove();
+      d3.select(svgRef.current).attr("width", 0).attr("height", 0);
     }
   }, [patents, mode, swimlane, patentData.assignee]);
 
