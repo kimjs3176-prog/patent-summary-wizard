@@ -14,7 +14,7 @@ import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { KeywordExplorer } from "@/components/KeywordExplorer";
-import { HomeTabs } from "@/components/HomeTabs";
+
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
@@ -201,21 +201,53 @@ const Index = () => {
               <KeywordExplorer />
             </section>
 
-            {/* 섹션 탭 전환형 */}
-            <section className="max-w-5xl mx-auto animate-fade-up" style={{ animationDelay: "0.2s" }}>
-              <HomeTabs
-                showFeatured={homepageVisible.featuredPatents !== false}
-                showVideos={homepageVisible.techVideos !== false}
-                showGuide={homepageVisible.techTransferGuide !== false}
-                showNotices={homepageVisible.notices !== false}
-                onPatentSelect={handleSubmit}
-                onHistorySelect={handleHistorySelect}
-                onHistoryRemove={removeFromHistory}
-                onHistoryClear={clearHistory}
-                history={history}
-                settings={settings}
-              />
-            </section>
+            {/* 세로 스크롤 단일 컬럼 — 공지·기록 → 추천특허 → 기술영상 → 기술이전 안내 */}
+            <div className="max-w-5xl mx-auto space-y-8 md:space-y-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+              {(homepageVisible.notices !== false || history.length > 0) && (
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                  {homepageVisible.notices !== false && (
+                    <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+                      <NoticeSection compact />
+                    </div>
+                  )}
+                  <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+                    <PopularSearches onPatentSelect={handleSubmit} />
+                  </div>
+                  {history.length > 0 && (
+                    <div className="rounded-2xl border border-border/40 bg-card p-4 md:col-span-2" style={{ boxShadow: "var(--shadow-card)" }}>
+                      <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {homepageVisible.featuredPatents !== false && (
+                <section>
+                  <FeaturedPatents
+                    onPatentSelect={handleSubmit}
+                    sectionTitle={settings.featured_section_title}
+                    sectionSubtitle={settings.featured_section_subtitle}
+                  />
+                </section>
+              )}
+
+              {homepageVisible.techVideos !== false && (
+                <section>
+                  <TechVideoSection videos={(() => {
+                    try {
+                      const parsed = JSON.parse(settings.tech_videos || "[]");
+                      return Array.isArray(parsed) ? parsed : [];
+                    } catch { return []; }
+                  })()} />
+                </section>
+              )}
+
+              {homepageVisible.techTransferGuide !== false && (
+                <section id="tech-transfer">
+                  <TechTransferGuide />
+                </section>
+              )}
+            </div>
           </>
         ) : (
           <div ref={resultRef}>
