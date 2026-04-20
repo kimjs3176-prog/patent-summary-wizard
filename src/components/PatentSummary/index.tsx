@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo } from "react";
-import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, ExternalLink, Info, GaugeCircle, Sparkles, ScrollText, ListChecks, GitCompare, Network, Bookmark, type LucideIcon } from "lucide-react";
+import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, ExternalLink, Info, GaugeCircle, Sparkles, ScrollText, ListChecks, GitCompare, Network, type LucideIcon } from "lucide-react";
 import { SectionNav, type SectionNavItem } from "./SectionNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
