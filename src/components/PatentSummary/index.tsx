@@ -285,7 +285,7 @@ export function PatentSummary({
 
         // Known section titles (short headings). If the text after ## is too long,
         // it's likely a paragraph mistakenly starting with ## — render as body text.
-        const knownSections = ["기술 분야", "발명의 요약", "기술적 특징", "시장동향", "농산업 활용 특장점", "기술 성숙도 및 상용화 전망"];
+        const knownSections = ["기술 분야", "발명의 요약 및 기술적 특징", "발명의 요약", "기술적 특징", "시장동향", "농산업 활용 특장점", "기술 성숙도 및 상용화 전망"];
         const isKnownSection = knownSections.some(s => rawTitle === s || rawTitle.startsWith(s));
         const isLikelyHeading = isKnownSection || rawTitle.length <= 30;
 
@@ -329,7 +329,7 @@ export function PatentSummary({
         );
         
         // Insert representative images AFTER "발명의 요약" section header (up to 3)
-        if (rawTitle === "발명의 요약" && patentData?.images && patentData.images.length > 0) {
+        if ((rawTitle === "발명의 요약" || rawTitle === "발명의 요약 및 기술적 특징") && patentData?.images && patentData.images.length > 0) {
           const imagesToShow = patentData.images.slice(0, 3);
           const isSingle = imagesToShow.length === 1;
           
@@ -357,7 +357,7 @@ export function PatentSummary({
               })}
             </div>
           );
-        } else if (rawTitle === "발명의 요약" && patentData?.representativeImage) {
+        } else if ((rawTitle === "발명의 요약" || rawTitle === "발명의 요약 및 기술적 특징") && patentData?.representativeImage) {
           const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(
             patentData.representativeImage
           )}`;
