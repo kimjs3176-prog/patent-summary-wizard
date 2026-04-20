@@ -14,6 +14,7 @@ interface FamilyPatent {
   ipc?: string;
   ipcCategory?: string;
   isCurrent: boolean;
+  relevanceScore?: number;
 }
 
 serve(async (req) => {
