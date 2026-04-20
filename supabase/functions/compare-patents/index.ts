@@ -35,8 +35,22 @@ serve(async (req) => {
       );
     }
 
-    const top3 = competitorPatents.slice(0, 3);
-    const cacheKey = `cmp_${currentPatent.patentNumber || currentPatent.displayNumber || ""}_${top3.map((p: any) => p.patentId).join("_")}`;
+    // Deduplicate: remove competitors that match the current patent number
+    const normalizeNum = (s: string) => (s || "").replace(/[^0-9]/g, "");
+    const currentNum = normalizeNum(currentPatent.patentNumber || currentPatent.displayNumber || currentPatent.applicationNumber || "");
+    const filtered = competitorPatents.filter((p: any) => {
+      const pn = normalizeNum(p.patentId || p.patentNumber || "");
+      if (!pn || !currentNum) return true;
+      return !(pn.includes(currentNum) || currentNum.includes(pn));
+    });
+    const top3 = filtered.slice(0, 3);
+    if (top3.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: "비교할 유사 특허가 없습니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const cacheKey = `cmp_v2_${currentPatent.patentNumber || currentPatent.displayNumber || ""}_${top3.map((p: any) => p.patentId).join("_")}`;
 
     // Cache check
     const supabase = createClient(
