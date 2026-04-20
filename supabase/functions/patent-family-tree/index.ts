@@ -28,6 +28,25 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Tokenize current patent title for keyword-relevance scoring
+    const stopwords = new Set(["방법", "장치", "시스템", "기술", "이용", "위한", "관한", "관련", "포함", "제공", "이를", "그리고", "또는", "있는", "되는", "사용", "통해", "통한"]);
+    const titleTokens = (currentPatentTitle || "")
+      .toString()
+      .replace(/[\[\](),.·\-/]/g, " ")
+      .split(/\s+/)
+      .map((t: string) => t.trim())
+      .filter((t: string) => t.length >= 2 && !stopwords.has(t));
+    const tokenSet = new Set<string>(titleTokens);
+    const scoreRelevance = (title: string): number => {
+      if (!title || tokenSet.size === 0) return 0;
+      let score = 0;
+      const lower = title.toLowerCase();
+      tokenSet.forEach((tk) => {
+        if (lower.includes(tk.toLowerCase())) score += 2;
+      });
+      return score;
+    };
+
     // Cache check (24h TTL by created_at row reuse)
     const cacheKey = `fam_${assignee.substring(0, 80)}`;
     const supabase = createClient(
