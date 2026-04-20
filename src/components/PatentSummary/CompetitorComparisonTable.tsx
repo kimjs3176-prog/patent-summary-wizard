@@ -2,17 +2,28 @@ import { useEffect, useState } from "react";
 import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles } from "lucide-react";
 import { PatentData } from "./types";
 
+type Strength = "strong" | "medium" | "weak";
+
 interface ComparisonRow {
   axis: string;
   current: string;
+  currentStrength: Strength;
   competitors: string[];
+  competitorStrengths: Strength[];
   advantage: "current" | "competitor" | "neutral";
+}
+
+interface CompetitorMeta {
+  patentId: string;
+  title: string;
+  assignee?: string;
+  similarityScore: number;
 }
 
 interface ComparisonResult {
   rows: ComparisonRow[];
   summary: string;
-  competitors: Array<{ patentId: string; title: string; assignee?: string }>;
+  competitors: CompetitorMeta[];
 }
 
 interface AiRecommendedPatent {
@@ -30,6 +41,28 @@ interface CompetitorComparisonTableProps {
   onPatentClick?: (patentNumber: string) => void;
 }
 
+// Strength → dot count
+function StrengthDots({ s }: { s: Strength }) {
+  const count = s === "strong" ? 3 : s === "medium" ? 2 : 1;
+  const color = s === "strong" ? "hsl(280 60% 55%)" : s === "medium" ? "hsl(var(--muted-foreground))" : "hsl(var(--muted-foreground) / 0.4)";
+  return (
+    <span className="inline-flex items-center gap-0.5 ml-1.5 align-middle">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-1 h-1 rounded-full inline-block"
+          style={{ background: i < count ? color : "hsl(var(--border))" }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function truncate(s: string, n: number) {
+  if (!s) return "";
+  return s.length > n ? s.substring(0, n - 1) + "…" : s;
+}
+
 export function CompetitorComparisonTable({ patentData, onPatentClick }: CompetitorComparisonTableProps) {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,7 +75,7 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
       setError(null);
       setResult(null);
       try {
-        // Step 1: Get top 3 competitors via existing recommend function
+        // Step 1: Get top similar patents via existing recommend function
         const recRes = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/recommend-similar-patents`,
           {
@@ -65,7 +98,21 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
           setLoading(false);
           return;
         }
-        const top3 = (recJson.patents as AiRecommendedPatent[]).slice(0, 3);
+
+        // Filter out the current patent (deduplicate)
+        const currentNum = (patentData.patentNumber || patentData.displayNumber || patentData.applicationNumber || "").replace(/[^0-9]/g, "");
+        const filteredCompetitors = (recJson.patents as AiRecommendedPatent[]).filter((p) => {
+          const pn = (p.patentId || "").replace(/[^0-9]/g, "");
+          if (!pn || !currentNum) return true;
+          return !(pn.includes(currentNum) || currentNum.includes(pn));
+        });
+
+        const top3 = filteredCompetitors.slice(0, 3);
+        if (top3.length === 0) {
+          setError("동일 특허가 아닌 유사 특허를 찾지 못했습니다.");
+          setLoading(false);
+          return;
+        }
 
         // Step 2: Generate comparison table
         const cmpRes = await fetch(
@@ -104,6 +151,11 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
 
   if (!loading && !result && !error) return null;
 
+  const currentTitle = truncate(patentData.titleKo || patentData.title || "분석 대상", 24);
+  const competitorCount = result?.competitors.length || 0;
+  // Build dynamic column widths
+  const colCount = competitorCount + 1; // +1 for axis column
+
   return (
     <div className="relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
       <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(280 60% 55% / 0.5), hsl(280 40% 55% / 0.15), transparent)' }} />
@@ -115,7 +167,7 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">경쟁 특허 비교 분석</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">AI가 유사 특허 3건과 핵심 차별점을 비교</p>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">AI가 유사 특허와 5개 축으로 차별점을 비교</p>
           </div>
         </div>
       </div>
@@ -137,34 +189,46 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
 
         {result && !loading && (
           <div className="space-y-4">
-            {/* Competitor headers as cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {/* Competitor header cards with similarity % */}
+            <div className={`grid gap-2 grid-cols-2 ${colCount === 4 ? 'sm:grid-cols-4' : colCount === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               <div className="p-2.5 rounded-xl border-2 text-center" style={{ borderColor: 'hsl(var(--primary) / 0.4)', background: 'hsl(var(--primary) / 0.04)' }}>
-                <div className="text-[9px] font-bold uppercase tracking-wider text-primary mb-0.5">분석 대상</div>
-                <div className="text-[10px] font-semibold text-foreground/80 truncate">{patentData.displayNumber || patentData.patentNumber}</div>
+                <div className="text-[9px] font-bold uppercase tracking-wider text-primary mb-1">분석 대상</div>
+                <div className="text-[11px] font-bold text-foreground line-clamp-2 leading-tight" title={patentData.titleKo || patentData.title}>{currentTitle}</div>
+                <div className="text-[9px] text-muted-foreground mt-1 truncate">{patentData.displayNumber || patentData.patentNumber}</div>
               </div>
-              {result.competitors.map((c, i) => (
-                <button
-                  key={i}
-                  onClick={() => onPatentClick?.(c.patentId)}
-                  className="p-2.5 rounded-xl border bg-muted/40 border-border/30 text-center hover:border-primary/40 hover:bg-muted/60 transition-colors text-left"
-                >
-                  <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">경쟁 {i + 1}</div>
-                  <div className="text-[10px] font-semibold text-foreground/70 truncate">{c.patentId}</div>
-                </button>
-              ))}
+              {result.competitors.map((c, i) => {
+                const simColor = c.similarityScore >= 80 ? 'hsl(280 60% 55%)' : c.similarityScore >= 60 ? 'hsl(280 50% 65%)' : 'hsl(var(--muted-foreground))';
+                return (
+                  <button
+                    key={i}
+                    onClick={() => onPatentClick?.(c.patentId)}
+                    className="p-2.5 rounded-xl border bg-muted/40 border-border/30 text-center hover:border-primary/40 hover:bg-muted/60 transition-colors"
+                  >
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">유사도</span>
+                      <span className="text-[10px] font-bold" style={{ color: simColor }}>{c.similarityScore}%</span>
+                    </div>
+                    <div className="text-[11px] font-bold text-foreground/85 line-clamp-2 leading-tight text-left" title={c.title}>{truncate(c.title, 26)}</div>
+                    <div className="text-[9px] text-muted-foreground mt-1 truncate text-left">{c.patentId}</div>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Comparison table */}
             <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full text-[12px] sm:text-[13px] border-separate border-spacing-0">
+              <table className="w-full text-[12px] sm:text-[13px] border-separate border-spacing-0 min-w-[640px]">
                 <thead>
                   <tr>
-                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40 rounded-l-lg">평가 축</th>
-                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-primary bg-primary/[0.06]">분석 대상</th>
-                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40">경쟁 1</th>
-                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40">경쟁 2</th>
-                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40 rounded-r-lg">경쟁 3</th>
+                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40 rounded-l-lg w-[110px]">평가 축</th>
+                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-primary bg-primary/[0.06]">
+                      <div className="line-clamp-1" title={patentData.titleKo || patentData.title}>{truncate(patentData.titleKo || patentData.title || "분석 대상", 18)}</div>
+                    </th>
+                    {result.competitors.map((c, i) => (
+                      <th key={i} className={`text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40 ${i === result.competitors.length - 1 ? 'rounded-r-lg' : ''}`}>
+                        <div className="line-clamp-1" title={c.title}>{truncate(c.title, 18)}</div>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -180,11 +244,17 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
                           <div className="flex items-center gap-1.5">{row.axis}{advIcon}</div>
                         </td>
                         <td className={`py-3 px-3 align-top ${row.advantage === 'current' ? 'bg-primary/[0.05] font-medium text-foreground' : 'text-foreground/70'}`}>
-                          {row.current}
+                          <div className="flex items-start">
+                            <span className="flex-1">{row.current}</span>
+                            <StrengthDots s={row.currentStrength} />
+                          </div>
                         </td>
-                        {[0, 1, 2].map((idx) => (
+                        {result.competitors.map((_, idx) => (
                           <td key={idx} className="py-3 px-3 align-top text-foreground/60">
-                            {row.competitors[idx] || "—"}
+                            <div className="flex items-start">
+                              <span className="flex-1">{row.competitors[idx] || "—"}</span>
+                              {row.competitors[idx] && <StrengthDots s={row.competitorStrengths[idx] || "medium"} />}
+                            </div>
                           </td>
                         ))}
                       </tr>
@@ -192,6 +262,15 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground px-1">
+              <div className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> 분석대상 우위</div>
+              <div className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-orange-500" /> 경쟁 우위</div>
+              <div className="flex items-center gap-1"><StrengthDots s="strong" /> 강</div>
+              <div className="flex items-center gap-1"><StrengthDots s="medium" /> 중</div>
+              <div className="flex items-center gap-1"><StrengthDots s="weak" /> 약</div>
             </div>
 
             {/* AI Summary */}
