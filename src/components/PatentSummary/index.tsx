@@ -187,9 +187,11 @@ export function PatentSummary({
     return FileText;
   };
 
-  const renderMarkdown = (text: string) => {
+  const renderMarkdown = (text: string): { body: JSX.Element[]; footnotes: { num: string; text: string }[] } => {
     const lines = text.split("\n");
     const elements: JSX.Element[] = [];
+    const footnotes: { num: string; text: string }[] = [];
+    let inSourcesSection = false;
     let skipSection = false;
     let hasRenderedFirstSection = false;
 
