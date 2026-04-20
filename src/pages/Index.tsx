@@ -239,7 +239,7 @@ const Index = () => {
                 {/* 공지사항 */}
                 {homepageVisible.notices !== false && (
                   <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-                    <NoticeSection />
+                    <NoticeSection compact />
                   </div>
                 )}
 
