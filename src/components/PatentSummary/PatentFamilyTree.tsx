@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { Network, Loader2, AlertCircle, GitBranch, Calendar } from "lucide-react";
+import { Network, Loader2, AlertCircle, GitBranch, Calendar, Layers } from "lucide-react";
 import { PatentData } from "./types";
 
 interface FamilyPatent {
