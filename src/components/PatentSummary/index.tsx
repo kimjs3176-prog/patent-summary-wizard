@@ -406,7 +406,6 @@ export function PatentSummary({
     if (patentData?.claims && patentData.claims.length > 0 && visibleSections.claims !== false) items.push({ id: "sec-claims", label: "청구항", icon: ScrollText });
     if (patentData && visibleSections.competitorComparison !== false) items.push({ id: "sec-compare", label: "경쟁 비교", icon: GitCompare });
     if (patentData?.assignee && visibleSections.familyTree !== false) items.push({ id: "sec-family", label: "패밀리 트리", icon: Network });
-    if (visibleSections.relatedPatents !== false) items.push({ id: "sec-related", label: "관련 특허", icon: ListChecks });
     return items;
   }, [patentData, content, visibleSections]);
 
