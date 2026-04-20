@@ -90,9 +90,9 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
       setLoading(true);
       setError(null);
       setResult(null);
-      try {
-        // Step 1: Get top similar patents via existing recommend function
-        const recRes = await fetch(
+
+      const callRecommend = async (overrideTitle?: string, overrideAbstract?: string) => {
+        const res = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/recommend-similar-patents`,
           {
             method: "POST",
@@ -101,34 +101,63 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
             body: JSON.stringify({
-              title: patentData.titleKo || patentData.title || "",
-              abstract: patentData.abstract || "",
+              title: overrideTitle ?? (patentData.titleKo || patentData.title || ""),
+              abstract: overrideAbstract ?? (patentData.abstract || ""),
               classifications: patentData.classifications || [],
               patentNumber: patentData.patentNumber || patentData.displayNumber || "",
             }),
           }
         );
-        const recJson = await recRes.json();
-        if (!recJson.success || !recJson.patents?.length) {
-          setError("비교할 유사 특허를 찾지 못했습니다.");
-          setLoading(false);
-          return;
-        }
+        return res.json();
+      };
 
-        // Filter out the current patent (deduplicate)
+      const dedupeCurrent = (list: AiRecommendedPatent[]) => {
         const currentNum = (patentData.patentNumber || patentData.displayNumber || patentData.applicationNumber || "").replace(/[^0-9]/g, "");
-        const filteredCompetitors = (recJson.patents as AiRecommendedPatent[]).filter((p) => {
+        return list.filter((p) => {
           const pn = (p.patentId || "").replace(/[^0-9]/g, "");
           if (!pn || !currentNum) return true;
           return !(pn.includes(currentNum) || currentNum.includes(pn));
         });
+      };
 
-        const top3 = filteredCompetitors.slice(0, 3);
-        if (top3.length === 0) {
-          setError("동일 특허가 아닌 유사 특허를 찾지 못했습니다.");
+      try {
+        // Step 1a: Standard similar-patent search
+        let recJson = await callRecommend();
+        let competitors: AiRecommendedPatent[] = recJson.success ? (recJson.patents || []) : [];
+        let filtered = dedupeCurrent(competitors);
+
+        // Step 1b: Keyword fallback — extract simple title tokens and retry with looser query
+        if (filtered.length === 0) {
+          const stop = new Set(["방법", "장치", "시스템", "기술", "이용", "위한", "관한", "관련", "포함", "제공", "그리고", "또는", "있는", "되는", "사용", "통해", "통한", "및", "을", "를", "의"]);
+          const tokens = (patentData.titleKo || patentData.title || "")
+            .replace(/[\[\](),.·\-/]/g, " ")
+            .split(/\s+/)
+            .map((t) => t.trim())
+            .filter((t) => t.length >= 2 && !stop.has(t));
+          if (tokens.length) {
+            // Try with the 2-3 most distinctive (longest) tokens, fall back to any single keyword
+            const sorted = [...tokens].sort((a, b) => b.length - a.length);
+            const looseTitle = sorted.slice(0, 3).join(" ");
+            recJson = await callRecommend(looseTitle, "");
+            competitors = recJson.success ? (recJson.patents || []) : [];
+            filtered = dedupeCurrent(competitors);
+
+            // Last resort: try just the single longest keyword
+            if (filtered.length === 0 && sorted[0]) {
+              recJson = await callRecommend(sorted[0], "");
+              competitors = recJson.success ? (recJson.patents || []) : [];
+              filtered = dedupeCurrent(competitors);
+            }
+          }
+        }
+
+        if (filtered.length === 0) {
+          setError("키워드로도 비교 가능한 특허를 찾지 못했습니다.");
           setLoading(false);
           return;
         }
+
+        const top3 = filtered.slice(0, 3);
 
         // Step 2: Generate comparison table
         const cmpRes = await fetch(
