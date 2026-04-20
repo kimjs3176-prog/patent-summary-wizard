@@ -27,12 +27,12 @@ export function HomeTabs({
   showFeatured, showVideos, showGuide, showNotices,
   onPatentSelect, onHistorySelect, onHistoryRemove, onHistoryClear, history, settings,
 }: Props) {
-  const tabs: { key: TabKey; label: string; icon: any; show: boolean }[] = [
-    { key: "featured", label: "추천 특허", icon: Star, show: showFeatured },
-    { key: "videos", label: "기술 영상", icon: Video, show: showVideos },
-    { key: "guide", label: "기술이전 안내", icon: BookOpen, show: showGuide },
-    { key: "info", label: "공지·기록", icon: Bell, show: showNotices || history.length > 0 },
-  ].filter((t) => t.show);
+  const tabs = ([
+    { key: "featured" as const, label: "추천 특허", icon: Star, show: showFeatured },
+    { key: "videos" as const, label: "기술 영상", icon: Video, show: showVideos },
+    { key: "guide" as const, label: "기술이전 안내", icon: BookOpen, show: showGuide },
+    { key: "info" as const, label: "공지·기록", icon: Bell, show: showNotices || history.length > 0 },
+  ]).filter((t) => t.show);
 
   const [active, setActive] = useState<TabKey>(tabs[0]?.key || "featured");
 
