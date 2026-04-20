@@ -337,24 +337,22 @@ export function PatentSummary({
           );
         }
       } else if (cleanLine.trim()) {
-        // If body text appears before any section header, auto-insert "기술 분야"
-        maybeInsertTechFieldHeader(index);
-
-        // Footnote definition lines: [^N]: text → render as small citation row
+        // Footnote definition lines: [^N]: text → collect, do NOT render inline
         const footnoteDefMatch = cleanLine.match(/^\[\^(\d+)\]:\s*(.+)$/);
         if (footnoteDefMatch) {
-          elements.push(
-            <div key={index} id={`fn-${footnoteDefMatch[1]}`} className="flex gap-2 text-[11px] sm:text-[12px] text-muted-foreground/90 leading-[1.6] mb-1 pl-2 border-l-2 border-primary/20">
-              <span className="font-bold text-primary/70 shrink-0">[{footnoteDefMatch[1]}]</span>
-              <span>{footnoteDefMatch[2]}</span>
-            </div>
-          );
+          footnotes.push({ num: footnoteDefMatch[1], text: footnoteDefMatch[2] });
           return;
         }
 
-        // ### subheading (e.g., 출처)
+        // ### 출처 subheading: enter sources section, suppress remaining lines from body
         const subHeadMatch = cleanLine.match(/^###\s+(.+)$/);
         if (subHeadMatch) {
+          if (/출처|참고/.test(subHeadMatch[1])) {
+            inSourcesSection = true;
+            return;
+          }
+          // Other ### subheadings render normally
+          maybeInsertTechFieldHeader(index);
           elements.push(
             <h4 key={index} className="text-[12px] sm:text-[13px] font-bold text-muted-foreground uppercase tracking-wider mt-4 mb-2 pb-1 border-b border-border/30">
               {subHeadMatch[1]}
@@ -362,6 +360,12 @@ export function PatentSummary({
           );
           return;
         }
+
+        // Inside 출처 section: skip everything (footnotes already extracted)
+        if (inSourcesSection) return;
+
+        // If body text appears before any section header, auto-insert "기술 분야"
+        maybeInsertTechFieldHeader(index);
 
         // Enhanced bold text parsing with footnote refs [^N]
         const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__|\[\^\d+\])/g);
@@ -389,7 +393,7 @@ export function PatentSummary({
       }
     });
 
-    return elements;
+    return { body: elements, footnotes };
   };
 
   return (
