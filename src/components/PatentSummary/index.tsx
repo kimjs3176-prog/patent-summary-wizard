@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useMemo } from "react";
-import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, ExternalLink, type LucideIcon } from "lucide-react";
+import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, ExternalLink, Info, GaugeCircle, Sparkles, ScrollText, ListChecks, GitCompare, Network, type LucideIcon } from "lucide-react";
+import { SectionNav, type SectionNavItem } from "./SectionNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentSummaryProps as BasePatentSummaryProps, FeatureFlags } from "./types";
@@ -396,6 +397,19 @@ export function PatentSummary({
     return { body: elements, footnotes };
   };
 
+  // Build section nav items based on what's visible
+  const navItems = useMemo<SectionNavItem[]>(() => {
+    const items: SectionNavItem[] = [];
+    if (patentData) items.push({ id: "sec-info", label: "특허 정보", icon: Info });
+    if (patentData && visibleSections.commercialization !== false) items.push({ id: "sec-score", label: "기술분석 점수", icon: GaugeCircle });
+    if (content) items.push({ id: "sec-summary", label: "AI 요약", icon: Sparkles });
+    if (patentData?.claims && patentData.claims.length > 0 && visibleSections.claims !== false) items.push({ id: "sec-claims", label: "청구항", icon: ScrollText });
+    if (patentData && visibleSections.competitorComparison !== false) items.push({ id: "sec-compare", label: "경쟁 비교", icon: GitCompare });
+    if (patentData?.assignee && visibleSections.familyTree !== false) items.push({ id: "sec-family", label: "패밀리 트리", icon: Network });
+    if (visibleSections.relatedPatents !== false) items.push({ id: "sec-related", label: "관련 특허", icon: ListChecks });
+    return items;
+  }, [patentData, content, visibleSections]);
+
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-up">
       {/* Printable Content (Hidden) */}
@@ -407,9 +421,12 @@ export function PatentSummary({
         printSections={printSections}
       />
 
+      {/* Section Navigation — sticky pill bar */}
+      {!isStreaming && content && navItems.length > 1 && <SectionNav items={navItems} />}
+
       {/* Toss-style Action Bar — floating pill */}
       {!isStreaming && content && (
-        <div className="flex items-center justify-between flex-wrap mb-5 gap-2 px-1">
+        <div className="flex items-center justify-between flex-wrap mb-4 gap-2 px-1 print:hidden">
           <div className="flex items-center gap-2">
             <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="gap-1.5 text-xs h-9 rounded-xl bg-foreground text-background hover:bg-foreground/90 shadow-sm btn-press font-semibold">
@@ -486,7 +503,7 @@ export function PatentSummary({
       <div className="space-y-4">
       {/* 1. Patent Info Card — Dashboard-style */}
       {patentData && (
-        <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        <section id="sec-info" className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 scroll-mt-24 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           {/* Subtle top accent */}
           <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
           
@@ -542,7 +559,40 @@ export function PatentSummary({
             {patentData.titleKo && (
               <h2 className="text-base sm:text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-[-0.01em]">{patentData.titleKo}</h2>
             )}
-            
+
+            {/* KPI Strip — quick at-a-glance metrics */}
+            {(() => {
+              const kpis: { label: string; value: string | number; tone?: string }[] = [];
+              if (patentData.publicationDate || patentData.filingDate) {
+                const date = patentData.publicationDate || patentData.filingDate || "";
+                const year = date.substring(0, 4);
+                kpis.push({ label: patentData.registrationNumber ? "등록연도" : "공개연도", value: year || "-" });
+              }
+              if (patentData.classifications?.length) {
+                kpis.push({ label: "IPC", value: `${patentData.classifications.length}건` });
+              }
+              if (patentData.claims?.length) {
+                kpis.push({ label: "청구항", value: `${patentData.claims.length}항` });
+              }
+              if (patentData.inventors?.length) {
+                kpis.push({ label: "발명자", value: `${patentData.inventors.length}명` });
+              }
+              if (patentData.images?.length) {
+                kpis.push({ label: "도면", value: `${patentData.images.length}장` });
+              }
+              if (kpis.length === 0) return null;
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-3">
+                  {kpis.map((k, i) => (
+                    <div key={i} className="px-3 py-2 rounded-xl bg-muted/40 border border-border/20 flex flex-col gap-0.5">
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</span>
+                      <span className="text-[13px] font-bold text-foreground tabular-nums leading-tight">{k.value}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
             {/* Stacked layout: Meta info (top) + Keywords (bottom) */}
             <div className="flex flex-col gap-3">
               {/* Top: Meta info — Toss-style subtle dividers */}
@@ -785,10 +835,11 @@ export function PatentSummary({
               })()}
             </div>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* 2. Technology Commercialization Score */}
+      {/* Wrap commercialization score in id anchor */}
+      <div id="sec-score" className="scroll-mt-24" />
       {patentData && visibleSections.commercialization !== false && printSections.commercialization !== false && (
         <TechnologyCommercializationScore 
           score={commercializationScore}
@@ -798,7 +849,7 @@ export function PatentSummary({
       )}
 
       {/* 3. AI Summary Card — Dashboard-style */}
-      <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 print:break-before-page ai-summary-print-section ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+      <section id="sec-summary" className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 print:break-before-page ai-summary-print-section scroll-mt-24 ${printSections.aiSummary === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.1s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
         <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
         
         {/* Header */}
@@ -867,13 +918,13 @@ export function PatentSummary({
             </div>
           </div>
         )}
-      </div>
+      </section>
 
       {/* 4. TRL is now integrated into the AI 기술분석 점수 section above */}
 
       {/* 5. Claims Card */}
       {printSections.claims !== false && visibleSections.claims !== false && patentData?.claims && patentData.claims.length > 0 && (
-        <div className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+        <section id="sec-claims" className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 scroll-mt-24 ${printSections.claims === false ? "print:hidden" : ""}`} style={{ animationDelay: '0.15s', boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(262 60% 55% / 0.4), hsl(262 40% 55% / 0.1), transparent)' }} />
           
           <div className="p-4 sm:p-5 md:p-6">
@@ -905,28 +956,30 @@ export function PatentSummary({
               </div>
             </details>
           </div>
-        </div>
+        </section>
       )}
 
       </div>
 
       {/* 6. Competitor Comparison Table — AI generated */}
       {patentData && !isStreaming && content && visibleSections.competitorComparison !== false && (
-        <div className="mt-4">
+        <div id="sec-compare" className="mt-4 scroll-mt-24">
           <CompetitorComparisonTable patentData={patentData} onPatentClick={onRelatedPatentClick} />
         </div>
       )}
 
       {/* 7. Patent Family Tree — D3 visualization */}
       {patentData?.assignee && !isStreaming && content && visibleSections.familyTree !== false && (
-        <div className="mt-4">
+        <div id="sec-family" className="mt-4 scroll-mt-24">
           <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
         </div>
       )}
 
       {/* 8. Related Patents Section */}
       {printSections.relatedPatents !== false && visibleSections.relatedPatents !== false && (
-        <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
+        <div id="sec-related" className="scroll-mt-24">
+          <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
+        </div>
       )}
     </div>
   );

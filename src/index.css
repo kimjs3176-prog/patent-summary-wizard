@@ -635,3 +635,14 @@
     line-height: 1.45 !important;
   }
 }
+
+/* Hide scrollbar utility for horizontal section nav */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
