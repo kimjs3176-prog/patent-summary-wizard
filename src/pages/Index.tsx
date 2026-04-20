@@ -13,6 +13,8 @@ import { FeaturedPatents } from "@/components/FeaturedPatents";
 import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
+import { KeywordExplorer } from "@/components/KeywordExplorer";
+import { QuickActionCards } from "@/components/QuickActionCards";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
