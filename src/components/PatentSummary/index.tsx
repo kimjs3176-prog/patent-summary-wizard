@@ -13,6 +13,8 @@ import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
+import { CompetitorComparisonTable } from "./CompetitorComparisonTable";
+import { PatentFamilyTree } from "./PatentFamilyTree";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
