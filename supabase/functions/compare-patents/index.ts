@@ -9,14 +9,16 @@ const corsHeaders = {
 interface ComparisonRow {
   axis: string;
   current: string;
+  currentStrength: "strong" | "medium" | "weak";
   competitors: string[];
+  competitorStrengths: ("strong" | "medium" | "weak")[];
   advantage: "current" | "competitor" | "neutral";
 }
 
 interface ComparisonResult {
   rows: ComparisonRow[];
   summary: string;
-  competitors: Array<{ patentId: string; title: string; assignee?: string }>;
+  competitors: Array<{ patentId: string; title: string; assignee?: string; similarityScore: number }>;
 }
 
 serve(async (req) => {
