@@ -559,7 +559,40 @@ export function PatentSummary({
             {patentData.titleKo && (
               <h2 className="text-base sm:text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-[-0.01em]">{patentData.titleKo}</h2>
             )}
-            
+
+            {/* KPI Strip — quick at-a-glance metrics */}
+            {(() => {
+              const kpis: { label: string; value: string | number; tone?: string }[] = [];
+              if (patentData.publicationDate || patentData.filingDate) {
+                const date = patentData.publicationDate || patentData.filingDate || "";
+                const year = date.substring(0, 4);
+                kpis.push({ label: patentData.registrationNumber ? "등록연도" : "공개연도", value: year || "-" });
+              }
+              if (patentData.classifications?.length) {
+                kpis.push({ label: "IPC", value: `${patentData.classifications.length}건` });
+              }
+              if (patentData.claims?.length) {
+                kpis.push({ label: "청구항", value: `${patentData.claims.length}항` });
+              }
+              if (patentData.inventors?.length) {
+                kpis.push({ label: "발명자", value: `${patentData.inventors.length}명` });
+              }
+              if (patentData.images?.length) {
+                kpis.push({ label: "도면", value: `${patentData.images.length}장` });
+              }
+              if (kpis.length === 0) return null;
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-3">
+                  {kpis.map((k, i) => (
+                    <div key={i} className="px-3 py-2 rounded-xl bg-muted/40 border border-border/20 flex flex-col gap-0.5">
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</span>
+                      <span className="text-[13px] font-bold text-foreground tabular-nums leading-tight">{k.value}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
             {/* Stacked layout: Meta info (top) + Keywords (bottom) */}
             <div className="flex flex-col gap-3">
               {/* Top: Meta info — Toss-style subtle dividers */}
