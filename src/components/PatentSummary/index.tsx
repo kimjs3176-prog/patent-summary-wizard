@@ -579,7 +579,7 @@ export function PatentSummary({
               }
               if (kpis.length === 0) return null;
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
                   {kpis.map((k, i) => (
                     <div key={i} className="px-3 py-2 rounded-xl bg-muted/40 border border-border/20 flex flex-col gap-0.5">
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</span>
