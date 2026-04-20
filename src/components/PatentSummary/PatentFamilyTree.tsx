@@ -18,17 +18,6 @@ interface PatentFamilyTreeProps {
   onPatentClick?: (patentNumber: string) => void;
 }
 
-interface TreeNode {
-  name: string;
-  patentId?: string;
-  title?: string;
-  date?: string;
-  ipc?: string;
-  ipcCategory?: string;
-  isCurrent?: boolean;
-  children?: TreeNode[];
-}
-
 interface TooltipState {
   x: number;
   y: number;
