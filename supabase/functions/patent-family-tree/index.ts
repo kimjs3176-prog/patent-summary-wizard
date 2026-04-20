@@ -48,8 +48,8 @@ serve(async (req) => {
       return score;
     };
 
-    // Cache check (24h TTL by created_at row reuse)
-    const cacheKey = `fam_${assignee.substring(0, 80)}`;
+    // Cache check (7d TTL). Key includes patent number so each search produces its own relevance-filtered list.
+    const cacheKey = `fam_${assignee.substring(0, 60)}_${(currentPatentNumber || "x").replace(/[^0-9]/g, "").slice(0, 16)}`;
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -93,7 +93,7 @@ serve(async (req) => {
     url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
     url.searchParams.set("applicant", assignee);
     url.searchParams.set("pageNo", "1");
-    url.searchParams.set("numOfRows", "50");
+    url.searchParams.set("numOfRows", "100");
     url.searchParams.set("sortSpec", "AD");
     url.searchParams.set("descSort", "true");
     url.searchParams.set("patent", "true");
