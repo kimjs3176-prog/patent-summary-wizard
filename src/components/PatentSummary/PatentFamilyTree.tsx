@@ -528,9 +528,17 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
               </div>
             )}
             {mode === "timeline" && (
-              <div className="flex items-center gap-3 mb-3 flex-wrap text-[10px] text-muted-foreground">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 현재 분석 특허</div>
-                <span>· 색상 = IPC 기술분야 · 가로축 = 등록/출원 연도</span>
+              <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 현재 분석 특허</div>
+                  <span>· 색상 = IPC 기술분야 · 가로축 = 등록/출원 연도</span>
+                </div>
+                <button
+                  onClick={() => setSwimlane((s) => !s)}
+                  className={`flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-md border transition-colors ${swimlane ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/40 border-border/30 text-muted-foreground hover:text-foreground"}`}
+                >
+                  <Layers className="w-3 h-3" /> Swim Lane {swimlane ? "ON" : "OFF"}
+                </button>
               </div>
             )}
             <div ref={containerRef} className="relative overflow-x-auto rounded-xl bg-muted/20 border border-border/20 p-2">
