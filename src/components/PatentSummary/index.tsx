@@ -971,12 +971,6 @@ export function PatentSummary({
         </div>
       )}
 
-      {/* 8. Related Patents Section */}
-      {printSections.relatedPatents !== false && visibleSections.relatedPatents !== false && (
-        <div id="sec-related" className="scroll-mt-24">
-          <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
-        </div>
-      )}
     </div>
   );
 }
