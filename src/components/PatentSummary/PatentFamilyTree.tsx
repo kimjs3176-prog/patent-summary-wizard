@@ -359,7 +359,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
           <div className="min-w-0 flex-1">
             <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">특허 패밀리 트리</h3>
             <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium truncate">
-              <span className="font-semibold">{patentData.assignee}</span>의 관련 특허 계보 {totalPatents > 0 && `· 총 ${totalPatents}건`}
+              <span className="font-semibold">{patentData.assignee}</span>의 키워드 연관 특허 {totalPatents > 0 && `· 총 ${totalPatents}건`}
               {topCategory && totalPatents > 0 && ` · 주력분야: ${topCategory[0]} (${topCategory[1]}건)`}
             </p>
           </div>
