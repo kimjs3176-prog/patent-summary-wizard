@@ -277,6 +277,11 @@ export function PatentSummary({
           skipSection = true;
           return;
         }
+        // Safety net: never render source-style headings as section titles
+        if (/^(출처|참고문헌|참고\s*자료|참고|references?|sources?)$/i.test(rawTitle)) {
+          inSourcesSection = true;
+          return;
+        }
 
         // Known section titles (short headings). If the text after ## is too long,
         // it's likely a paragraph mistakenly starting with ## — render as body text.
