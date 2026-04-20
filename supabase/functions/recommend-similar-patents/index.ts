@@ -184,6 +184,12 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
           // Skip the current patent
           if (patentNumber && displayNumber.includes(patentNumber.replace(/^10-/, ""))) continue;
 
+          // Restrict to the 6 designated agricultural public institutes
+          const ALLOWED_KEYWORDS = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
+          const applicantNorm = (applicant || "").replace(/\s+/g, "");
+          const isAllowed = ALLOWED_KEYWORDS.some((kw) => applicantNorm.includes(kw.replace(/\s+/g, "")));
+          if (!isAllowed) continue;
+
           const dateStr = openDate || registerDate;
           results.push({
             patentId: displayNumber,

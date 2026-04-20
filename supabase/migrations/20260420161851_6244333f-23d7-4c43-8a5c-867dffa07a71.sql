@@ -1,0 +1,1 @@
+DELETE FROM public.patent_ai_cache WHERE analysis_mode = 'detailed';

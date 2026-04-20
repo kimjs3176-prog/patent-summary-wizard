@@ -476,7 +476,7 @@ export function PdfGenerator({
 
           yPosition = bandY + sectionHeaderH + 4;
 
-          if (sectionTitle === "발명의 요약" && cfg.show_patent_images) await insertImages();
+          if ((sectionTitle === "발명의 요약" || sectionTitle === "발명의 요약 및 기술적 특징") && cfg.show_patent_images) await insertImages();
         } else if (cleanLine.trim()) {
           addWrappedText(cleanLine, cfg.body_font_size, THEME.textBody, cfg.line_height);
           yPosition += 1;

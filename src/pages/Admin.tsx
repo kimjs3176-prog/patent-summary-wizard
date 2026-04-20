@@ -133,8 +133,7 @@ const Admin = () => {
   // Summary customization state
   const DEFAULT_SECTION_TITLES: Record<string, string> = {
     "기술 분야": "기술 분야",
-    "발명의 요약": "발명의 요약",
-    "기술적 특징": "기술적 특징",
+    "발명의 요약 및 기술적 특징": "발명의 요약 및 기술적 특징",
     "시장동향": "시장동향",
     "농산업 활용 특장점": "농산업 활용 특장점",
     "기술 성숙도 및 상용화 전망": "기술 성숙도 및 상용화 전망",
