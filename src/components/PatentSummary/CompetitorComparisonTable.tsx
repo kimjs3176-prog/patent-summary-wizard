@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles } from "lucide-react";
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip as RTooltip } from "recharts";
 import { PatentData } from "./types";
 
 type Strength = "strong" | "medium" | "weak";
