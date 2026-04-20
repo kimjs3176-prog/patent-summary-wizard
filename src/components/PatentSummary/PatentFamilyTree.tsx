@@ -615,6 +615,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
                 </div>
               )}
             </div>
+            )}
           </>
         )}
       </div>
