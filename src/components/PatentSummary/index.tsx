@@ -802,10 +802,11 @@ export function PatentSummary({
               })()}
             </div>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* 2. Technology Commercialization Score */}
+      {/* Wrap commercialization score in id anchor */}
+      <div id="sec-score" className="scroll-mt-24" />
       {patentData && visibleSections.commercialization !== false && printSections.commercialization !== false && (
         <TechnologyCommercializationScore 
           score={commercializationScore}
