@@ -14,7 +14,7 @@ import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { KeywordExplorer } from "@/components/KeywordExplorer";
-import { QuickActionCards } from "@/components/QuickActionCards";
+import { HomeTabs } from "@/components/HomeTabs";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
@@ -154,31 +154,31 @@ const Index = () => {
 
   return (
     <PageLayout headerRight={headerRight}>
-      <main className="container mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-12 relative z-10">
+      <main className="container mx-auto px-3 sm:px-4 md:px-6 py-5 md:py-8 relative z-10">
         {!summary && !isLoading ? (
           <>
-            {/* Hero — 큰 임팩트 유지 */}
-            <section className="text-center max-w-3xl mx-auto mb-8 md:mb-14 animate-fade-down relative py-4 md:py-16">
-              <div className="absolute -inset-8 md:-inset-24 -z-10 overflow-hidden rounded-[2rem] md:rounded-[4rem]">
+            {/* Hero — 슬림화 */}
+            <section className="text-center max-w-3xl mx-auto mb-5 md:mb-8 animate-fade-down relative py-4 md:py-8">
+              <div className="absolute -inset-6 md:-inset-16 -z-10 overflow-hidden rounded-[2rem] md:rounded-[3rem]">
                 <AiHeroAnimation />
               </div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] md:w-[650px] h-[200px] md:h-[400px] rounded-full -z-10 blur-[80px] md:blur-[140px] opacity-40 animate-float" style={{ background: 'radial-gradient(ellipse, hsl(158 64% 40% / 0.2), transparent 70%)' }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] md:w-[520px] h-[160px] md:h-[280px] rounded-full -z-10 blur-[70px] md:blur-[120px] opacity-35 animate-float" style={{ background: 'radial-gradient(ellipse, hsl(158 64% 40% / 0.18), transparent 70%)' }} />
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-2xl mb-4 md:mb-8 text-[10px] md:text-xs font-semibold border backdrop-blur-xl" style={{ background: 'hsl(158 64% 40% / 0.05)', color: 'hsl(158 64% 40%)', borderColor: 'hsl(158 64% 40% / 0.1)' }}>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 md:py-1.5 rounded-2xl mb-3 md:mb-5 text-[10px] md:text-xs font-semibold border backdrop-blur-xl" style={{ background: 'hsl(158 64% 40% / 0.05)', color: 'hsl(158 64% 40%)', borderColor: 'hsl(158 64% 40% / 0.1)' }}>
                 <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 AI 기반 특허 분석
               </div>
-              <h2 className="text-[22px] sm:text-3xl md:text-5xl lg:text-[3.75rem] font-extrabold text-foreground mb-3 md:mb-6 leading-[1.15] md:leading-[1.06] tracking-[-0.02em] md:tracking-[-0.03em] px-2">
-                {settings.hero_title}<br />
+              <h2 className="text-[20px] sm:text-[26px] md:text-[38px] lg:text-[44px] font-extrabold text-foreground mb-2 md:mb-4 leading-[1.15] md:leading-[1.1] tracking-[-0.02em] md:tracking-[-0.03em] px-2">
+                {settings.hero_title}{" "}
                 <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
               </h2>
-              <p className="text-[11px] sm:text-sm md:text-base lg:text-lg font-normal leading-relaxed max-w-[260px] sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight">
+              <p className="text-[11px] sm:text-xs md:text-sm font-normal leading-relaxed max-w-[280px] sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight">
                 {settings.hero_description}
               </p>
             </section>
 
-            {/* Search bar — Hero 바로 아래 고정 */}
-            <section className="mb-6 md:mb-8 animate-fade-up relative z-20" style={{ animationDelay: "0.1s" }}>
+            {/* Search bar */}
+            <section className="mb-5 md:mb-7 animate-fade-up relative z-20" style={{ animationDelay: "0.1s" }}>
               <div className="w-full max-w-2xl mx-auto flex flex-col relative z-40">
                 <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()} onFocusChange={setSearchFocused} />
                 {homepageVisible.popularSearches !== false && (
@@ -196,80 +196,33 @@ const Index = () => {
               </div>
             </section>
 
-            {/* 3가지 핵심 액션 카드 */}
-            <section className="max-w-5xl mx-auto mb-8 md:mb-10 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-              <QuickActionCards onFocusSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
-            </section>
-
-            {/* 키워드 탐색 칩 */}
-            <section className="max-w-5xl mx-auto mb-8 md:mb-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+            {/* 주제별 빠른 탐색 (유지) */}
+            <section className="max-w-5xl mx-auto mb-6 md:mb-10 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <KeywordExplorer />
             </section>
 
-            {/* 대시보드 2단 그리드 — 좌측 메인 / 우측 사이드 위젯 */}
-            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 lg:gap-8 animate-fade-up" style={{ animationDelay: "0.25s" }}>
-              {/* === 메인 컬럼 === */}
-              <div className="space-y-8 md:space-y-10 min-w-0">
-                {homepageVisible.featuredPatents !== false && (
-                  <FeaturedPatents
-                    onPatentSelect={handleSubmit}
-                    sectionTitle={settings.featured_section_title}
-                    sectionSubtitle={settings.featured_section_subtitle}
-                  />
-                )}
-
-                {homepageVisible.techVideos !== false && (
-                  <TechVideoSection videos={(() => {
-                    try {
-                      const parsed = JSON.parse(settings.tech_videos || "[]");
-                      return Array.isArray(parsed) ? parsed : [];
-                    } catch { return []; }
-                  })()} />
-                )}
-
-                {homepageVisible.techTransferGuide !== false && (
-                  <div id="tech-transfer">
-                    <TechTransferGuide />
-                  </div>
-                )}
-              </div>
-
-              {/* === 사이드 컬럼 (sticky) === */}
-              <aside className="space-y-5 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto pr-1">
-                {/* 공지사항 */}
-                {homepageVisible.notices !== false && (
-                  <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-                    <NoticeSection compact />
-                  </div>
-                )}
-
-                {/* 인기 검색 위젯 */}
-                {homepageVisible.popularSearches !== false && (
-                  <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-                    <PopularSearches onPatentSelect={handleSubmit} />
-                  </div>
-                )}
-
-                {/* 최근 검색 기록 */}
-                {history.length > 0 && keywordResults.length === 0 && (
-                  <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-                    <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
-                  </div>
-                )}
-              </aside>
-            </div>
+            {/* 섹션 탭 전환형 */}
+            <section className="max-w-5xl mx-auto animate-fade-up" style={{ animationDelay: "0.2s" }}>
+              <HomeTabs
+                showFeatured={homepageVisible.featuredPatents !== false}
+                showVideos={homepageVisible.techVideos !== false}
+                showGuide={homepageVisible.techTransferGuide !== false}
+                showNotices={homepageVisible.notices !== false}
+                onPatentSelect={handleSubmit}
+                onHistorySelect={handleHistorySelect}
+                onHistoryRemove={removeFromHistory}
+                onHistoryClear={clearHistory}
+                history={history}
+                settings={settings}
+              />
+            </section>
           </>
         ) : (
           <div ref={resultRef}>
-            {/* Progress Stepper - shows during analysis */}
-            {isLoading && (
-              <AnalysisProgressStepper currentStep={analysisStep} />
-            )}
-
+            {isLoading && (<AnalysisProgressStepper currentStep={analysisStep} />)}
             <section className="mb-8">
               <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} onKeywordClick={handleKeywordTagClick} onScoreReady={handleScoreReady} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} />
             </section>
-
             {isLoading && !isFetching && (
               <section className="mt-12">
                 <PatentInput onSubmit={generateSummary} isLoading={isLoading} />
