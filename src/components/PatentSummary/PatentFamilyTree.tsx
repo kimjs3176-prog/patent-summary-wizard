@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { Network, Loader2, AlertCircle, GitBranch, Calendar, Layers } from "lucide-react";
+import { Network, Loader2, AlertCircle, Layers } from "lucide-react";
 import { PatentData } from "./types";
 
 interface FamilyPatent {
@@ -35,13 +35,10 @@ interface TooltipState {
   patent: FamilyPatent;
 }
 
-type ViewMode = "tree" | "timeline";
-
 export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTreeProps) {
   const [patents, setPatents] = useState<FamilyPatent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<ViewMode>("tree");
   const [swimlane, setSwimlane] = useState<boolean>(false);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -86,18 +83,12 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     run();
   }, [patentData?.assignee, patentData?.patentNumber]);
 
-  // Render visualization based on mode (only timeline uses D3 SVG; tree mode is React-rendered)
+  // Render timeline visualization (D3 SVG)
   useEffect(() => {
     if (!patents.length || !svgRef.current || !containerRef.current) return;
     setTooltip(null);
-    if (mode === "timeline") {
-      renderTimeline();
-    } else {
-      // Clear svg in tree mode
-      d3.select(svgRef.current).selectAll("*").remove();
-      d3.select(svgRef.current).attr("width", 0).attr("height", 0);
-    }
-  }, [patents, mode, swimlane, patentData.assignee]);
+    renderTimeline();
+  }, [patents, swimlane, patentData.assignee]);
 
   const findPatent = (patentId: string) => patents.find((p) => p.patentId === patentId);
 
