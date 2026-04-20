@@ -883,7 +883,21 @@ export function PatentSummary({
 
       </div>
 
-      {/* 6. Related Patents Section */}
+      {/* 6. Competitor Comparison Table — AI generated */}
+      {patentData && !isStreaming && content && visibleSections.competitorComparison !== false && (
+        <div className="mt-4">
+          <CompetitorComparisonTable patentData={patentData} onPatentClick={onRelatedPatentClick} />
+        </div>
+      )}
+
+      {/* 7. Patent Family Tree — D3 visualization */}
+      {patentData?.assignee && !isStreaming && content && visibleSections.familyTree !== false && (
+        <div className="mt-4">
+          <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
+        </div>
+      )}
+
+      {/* 8. Related Patents Section */}
       {printSections.relatedPatents !== false && visibleSections.relatedPatents !== false && (
         <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
       )}
