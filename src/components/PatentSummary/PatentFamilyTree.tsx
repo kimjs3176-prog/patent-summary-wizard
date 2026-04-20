@@ -18,17 +18,6 @@ interface PatentFamilyTreeProps {
   onPatentClick?: (patentNumber: string) => void;
 }
 
-interface TreeNode {
-  name: string;
-  patentId?: string;
-  title?: string;
-  date?: string;
-  ipc?: string;
-  ipcCategory?: string;
-  isCurrent?: boolean;
-  children?: TreeNode[];
-}
-
 interface TooltipState {
   x: number;
   y: number;
@@ -103,109 +92,6 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     });
   };
   const hideTooltip = () => setTooltip(null);
-
-  const renderTree = () => {
-    if (!svgRef.current || !containerRef.current) return;
-
-    const grouped = new Map<string, FamilyPatent[]>();
-    patents.forEach((p) => {
-      const cat = p.ipcCategory || "기타";
-      if (!grouped.has(cat)) grouped.set(cat, []);
-      grouped.get(cat)!.push(p);
-    });
-
-    const root: TreeNode = {
-      name: patentData.assignee || "출원인",
-      children: Array.from(grouped.entries()).map(([category, ps]) => ({
-        name: `${category} (${ps.length})`,
-        children: ps.map((p) => ({
-          name: p.title.length > 28 ? p.title.substring(0, 26) + "…" : p.title,
-          patentId: p.patentId,
-          title: p.title,
-          date: p.registrationDate || p.applicationDate,
-          ipc: p.ipc,
-          ipcCategory: p.ipcCategory,
-          isCurrent: p.isCurrent,
-        })),
-      })),
-    };
-
-    const containerWidth = containerRef.current.clientWidth;
-    const totalLeaves = patents.length;
-    const height = Math.max(420, totalLeaves * 26 + 80);
-    const width = Math.max(containerWidth, 720);
-
-    const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-    svg.attr("viewBox", `0 0 ${width} ${height}`).attr("width", "100%").attr("height", height);
-
-    const g = svg.append("g").attr("transform", `translate(160, 20)`);
-
-    const hierarchy = d3.hierarchy<TreeNode>(root);
-    const treeLayout = d3.tree<TreeNode>().size([height - 40, width - 320]);
-    treeLayout(hierarchy);
-
-    g.append("g")
-      .attr("fill", "none")
-      .attr("stroke", "hsl(var(--border))")
-      .attr("stroke-opacity", 0.6)
-      .attr("stroke-width", 1.2)
-      .selectAll("path")
-      .data(hierarchy.links())
-      .join("path")
-      .attr("d", (d: any) => `M${d.source.y},${d.source.x}C${(d.source.y + d.target.y) / 2},${d.source.x} ${(d.source.y + d.target.y) / 2},${d.target.x} ${d.target.y},${d.target.x}`);
-
-    const node = g
-      .append("g")
-      .selectAll("g")
-      .data(hierarchy.descendants())
-      .join("g")
-      .attr("transform", (d: any) => `translate(${d.y},${d.x})`)
-      .style("cursor", (d: any) => (d.data.patentId ? "pointer" : "default"))
-      .on("click", (_e, d: any) => {
-        if (d.data.patentId && onPatentClick) onPatentClick(d.data.patentId);
-      })
-      .on("mouseenter", (e, d: any) => {
-        if (d.data.patentId) showTooltip(e, d.data.patentId);
-      })
-      .on("mousemove", (e, d: any) => {
-        if (d.data.patentId) showTooltip(e, d.data.patentId);
-      })
-      .on("mouseleave", () => hideTooltip());
-
-    node
-      .append("circle")
-      .attr("r", (d: any) => (d.data.isCurrent ? 7 : d.depth === 0 ? 8 : d.depth === 1 ? 6 : 4.5))
-      .attr("fill", (d: any) => {
-        if (d.data.isCurrent) return "hsl(var(--primary))";
-        if (d.depth === 0) return "hsl(var(--foreground))";
-        if (d.depth === 1) return "hsl(280 60% 55%)";
-        return "hsl(var(--card))";
-      })
-      .attr("stroke", (d: any) => {
-        if (d.data.isCurrent) return "hsl(var(--primary))";
-        if (d.depth === 0) return "hsl(var(--foreground))";
-        if (d.depth === 1) return "hsl(280 60% 55%)";
-        return "hsl(var(--border))";
-      })
-      .attr("stroke-width", (d: any) => (d.data.isCurrent ? 3 : 1.5));
-
-    node
-      .append("text")
-      .attr("dy", "0.32em")
-      .attr("x", (d: any) => (d.children ? -10 : 10))
-      .attr("text-anchor", (d: any) => (d.children ? "end" : "start"))
-      .attr("font-size", (d: any) => (d.depth === 0 ? 13 : d.depth === 1 ? 11 : 10))
-      .attr("font-weight", (d: any) => (d.data.isCurrent ? 700 : d.depth <= 1 ? 600 : 400))
-      .attr("fill", (d: any) => {
-        if (d.data.isCurrent) return "hsl(var(--primary))";
-        if (d.depth === 0) return "hsl(var(--foreground))";
-        if (d.depth === 1) return "hsl(280 60% 40%)";
-        return "hsl(var(--foreground) / 0.7)";
-      })
-      .text((d: any) => d.data.name)
-      .style("pointer-events", "none");
-  };
 
   const renderTimeline = () => {
     if (!svgRef.current || !containerRef.current) return;
