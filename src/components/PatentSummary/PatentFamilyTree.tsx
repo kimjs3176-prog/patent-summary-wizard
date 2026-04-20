@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { Network, Loader2, AlertCircle, GitBranch, Calendar } from "lucide-react";
+import { Network, Loader2, AlertCircle, GitBranch, Calendar, Layers } from "lucide-react";
 import { PatentData } from "./types";
 
 interface FamilyPatent {
@@ -42,6 +42,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<ViewMode>("tree");
+  const [swimlane, setSwimlane] = useState<boolean>(false);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -95,7 +96,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     } else {
       renderTimeline();
     }
-  }, [patents, mode, patentData.assignee]);
+  }, [patents, mode, swimlane, patentData.assignee]);
 
   const findPatent = (patentId: string) => patents.find((p) => p.patentId === patentId);
 
@@ -217,7 +218,6 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
   const renderTimeline = () => {
     if (!svgRef.current || !containerRef.current) return;
 
-    // Sort by date descending; need a parsable date
     const parsed = patents
       .map((p) => {
         const d = p.registrationDate || p.applicationDate || "";
@@ -243,19 +243,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
 
     const containerWidth = containerRef.current.clientWidth;
     const width = Math.max(containerWidth, 720);
-    const margin = { top: 30, right: 40, bottom: 40, left: 80 };
-    const rowHeight = 28;
-    const height = margin.top + margin.bottom + parsed.length * rowHeight;
-
-    const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-    svg.attr("viewBox", `0 0 ${width} ${height}`).attr("width", "100%").attr("height", height);
-
-    const minTs = d3.min(parsed, (d) => d.ts)!;
-    const maxTs = d3.max(parsed, (d) => d.ts)!;
-    const xScale = d3.scaleTime()
-      .domain([new Date(minTs - (maxTs - minTs) * 0.05), new Date(maxTs + (maxTs - minTs) * 0.05)])
-      .range([margin.left, width - margin.right]);
+    const margin = { top: 30, right: 40, bottom: 40, left: 110 };
 
     // Category color map
     const categories = Array.from(new Set(parsed.map((p) => p.ipcCategory || "기타")));
@@ -263,7 +251,135 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     const palette = ["hsl(280 60% 55%)", "hsl(200 70% 50%)", "hsl(160 65% 45%)", "hsl(30 80% 55%)", "hsl(340 70% 55%)", "hsl(220 60% 55%)"];
     categories.forEach((c, i) => colorMap.set(c, palette[i % palette.length]));
 
-    // X axis
+    const minTs = d3.min(parsed, (d) => d.ts)!;
+    const maxTs = d3.max(parsed, (d) => d.ts)!;
+    const xScale = d3.scaleTime()
+      .domain([new Date(minTs - (maxTs - minTs) * 0.05), new Date(maxTs + (maxTs - minTs) * 0.05)])
+      .range([margin.left, width - margin.right]);
+
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
+
+    if (swimlane) {
+      // SWIM LANE: group rows by IPC category, each lane has multiple rows
+      const grouped = new Map<string, typeof parsed>();
+      categories.forEach((c) => grouped.set(c, []));
+      parsed.forEach((p) => grouped.get(p.ipcCategory || "기타")!.push(p));
+
+      const laneRowHeight = 24;
+      const lanePadding = 18;
+      const laneInfos: { category: string; items: typeof parsed; yStart: number; height: number }[] = [];
+      let cursorY = margin.top;
+      grouped.forEach((items, cat) => {
+        if (!items.length) return;
+        const h = items.length * laneRowHeight + 12;
+        laneInfos.push({ category: cat, items, yStart: cursorY, height: h });
+        cursorY += h + lanePadding;
+      });
+      const height = cursorY + margin.bottom;
+
+      svg.attr("viewBox", `0 0 ${width} ${height}`).attr("width", "100%").attr("height", height);
+
+      // X axis
+      const xAxis = d3.axisBottom(xScale).ticks(Math.min(8, parsed.length)).tickFormat((d: any) => d3.timeFormat("%Y")(d));
+      svg.append("g")
+        .attr("transform", `translate(0,${margin.top - 8})`)
+        .call(xAxis as any)
+        .call((g) => g.select(".domain").attr("stroke", "hsl(var(--border))"))
+        .call((g) => g.selectAll(".tick line").attr("stroke", "hsl(var(--border))"))
+        .call((g) => g.selectAll(".tick text").attr("fill", "hsl(var(--muted-foreground))").attr("font-size", 10));
+
+      // Vertical year grid
+      svg.append("g")
+        .selectAll("line")
+        .data(xScale.ticks(8))
+        .join("line")
+        .attr("x1", (d: any) => xScale(d))
+        .attr("x2", (d: any) => xScale(d))
+        .attr("y1", margin.top)
+        .attr("y2", height - margin.bottom)
+        .attr("stroke", "hsl(var(--border))")
+        .attr("stroke-opacity", 0.25)
+        .attr("stroke-dasharray", "2,3");
+
+      // Render each lane
+      laneInfos.forEach((lane) => {
+        const color = colorMap.get(lane.category) || "hsl(var(--muted-foreground))";
+        const laneG = svg.append("g");
+
+        // Lane background
+        laneG.append("rect")
+          .attr("x", margin.left - 8)
+          .attr("y", lane.yStart)
+          .attr("width", width - margin.right - margin.left + 16)
+          .attr("height", lane.height)
+          .attr("rx", 8)
+          .attr("fill", color)
+          .attr("fill-opacity", 0.04)
+          .attr("stroke", color)
+          .attr("stroke-opacity", 0.18)
+          .attr("stroke-width", 1);
+
+        // Lane label (left)
+        laneG.append("text")
+          .attr("x", margin.left - 16)
+          .attr("y", lane.yStart + lane.height / 2)
+          .attr("dy", "0.32em")
+          .attr("text-anchor", "end")
+          .attr("font-size", 10)
+          .attr("font-weight", 700)
+          .attr("fill", color)
+          .text(`${lane.category}`);
+        laneG.append("text")
+          .attr("x", margin.left - 16)
+          .attr("y", lane.yStart + lane.height / 2 + 13)
+          .attr("text-anchor", "end")
+          .attr("font-size", 9)
+          .attr("fill", "hsl(var(--muted-foreground))")
+          .text(`${lane.items.length}건`);
+
+        // Items in lane
+        const rows = laneG
+          .selectAll("g.lane-item")
+          .data(lane.items)
+          .join("g")
+          .attr("class", "lane-item")
+          .attr("transform", (_d, i) => `translate(0, ${lane.yStart + 10 + i * laneRowHeight + laneRowHeight / 2})`);
+
+        rows.append("circle")
+          .attr("cx", (d) => xScale(new Date(d.ts)))
+          .attr("cy", 0)
+          .attr("r", (d) => (d.isCurrent ? 6.5 : 4.5))
+          .attr("fill", (d) => (d.isCurrent ? "hsl(var(--primary))" : color))
+          .attr("stroke", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--background))"))
+          .attr("stroke-width", (d) => (d.isCurrent ? 3 : 2))
+          .style("cursor", "pointer")
+          .on("click", (_e, d) => { if (onPatentClick) onPatentClick(d.patentId); })
+          .on("mouseenter", (e, d) => showTooltip(e, d.patentId))
+          .on("mousemove", (e, d) => showTooltip(e, d.patentId))
+          .on("mouseleave", () => hideTooltip());
+
+        rows.append("text")
+          .attr("x", (d) => xScale(new Date(d.ts)) + 9)
+          .attr("y", 0)
+          .attr("dy", "0.32em")
+          .attr("font-size", 10)
+          .attr("font-weight", (d) => (d.isCurrent ? 700 : 400))
+          .attr("fill", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--foreground) / 0.78)"))
+          .text((d) => {
+            const t = d.title.length > 30 ? d.title.substring(0, 28) + "…" : d.title;
+            return `${t}  ·  ${d.year}`;
+          })
+          .style("pointer-events", "none");
+      });
+      return;
+    }
+
+    // FLAT TIMELINE (original)
+    const rowHeight = 28;
+    const height = margin.top + margin.bottom + parsed.length * rowHeight;
+    svg.attr("viewBox", `0 0 ${width} ${height}`).attr("width", "100%").attr("height", height);
+
     const xAxis = d3.axisBottom(xScale).ticks(Math.min(8, parsed.length)).tickFormat((d: any) => d3.timeFormat("%Y")(d));
     svg.append("g")
       .attr("transform", `translate(0,${margin.top - 8})`)
@@ -272,7 +388,6 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       .call((g) => g.selectAll(".tick line").attr("stroke", "hsl(var(--border))"))
       .call((g) => g.selectAll(".tick text").attr("fill", "hsl(var(--muted-foreground))").attr("font-size", 10));
 
-    // Background grid lines
     svg.append("g")
       .selectAll("line")
       .data(xScale.ticks(8))
@@ -285,7 +400,6 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       .attr("stroke-opacity", 0.3)
       .attr("stroke-dasharray", "2,3");
 
-    // Rows
     const rows = svg
       .append("g")
       .selectAll("g.row")
@@ -294,7 +408,6 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       .attr("class", "row")
       .attr("transform", (_d, i) => `translate(0, ${margin.top + i * rowHeight + rowHeight / 2})`);
 
-    // Connector line from left margin to dot
     rows.append("line")
       .attr("x1", margin.left - 60)
       .attr("x2", (d) => xScale(new Date(d.ts)))
@@ -304,7 +417,6 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 1);
 
-    // IPC category label on left
     rows.append("text")
       .attr("x", margin.left - 70)
       .attr("y", 0)
@@ -315,7 +427,6 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       .attr("fill", (d) => colorMap.get(d.ipcCategory || "기타") || "hsl(var(--muted-foreground))")
       .text((d) => d.ipcCategory || "기타");
 
-    // Dots
     rows.append("circle")
       .attr("cx", (d) => xScale(new Date(d.ts)))
       .attr("cy", 0)
@@ -324,14 +435,11 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       .attr("stroke", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--background))"))
       .attr("stroke-width", (d) => (d.isCurrent ? 3 : 2))
       .style("cursor", "pointer")
-      .on("click", (_e, d) => {
-        if (onPatentClick) onPatentClick(d.patentId);
-      })
+      .on("click", (_e, d) => { if (onPatentClick) onPatentClick(d.patentId); })
       .on("mouseenter", (e, d) => showTooltip(e, d.patentId))
       .on("mousemove", (e, d) => showTooltip(e, d.patentId))
       .on("mouseleave", () => hideTooltip());
 
-    // Title labels next to dots
     rows.append("text")
       .attr("x", (d) => xScale(new Date(d.ts)) + 10)
       .attr("y", 0)
@@ -420,9 +528,17 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
               </div>
             )}
             {mode === "timeline" && (
-              <div className="flex items-center gap-3 mb-3 flex-wrap text-[10px] text-muted-foreground">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 현재 분석 특허</div>
-                <span>· 색상 = IPC 기술분야 · 가로축 = 등록/출원 연도</span>
+              <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 현재 분석 특허</div>
+                  <span>· 색상 = IPC 기술분야 · 가로축 = 등록/출원 연도</span>
+                </div>
+                <button
+                  onClick={() => setSwimlane((s) => !s)}
+                  className={`flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-md border transition-colors ${swimlane ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/40 border-border/30 text-muted-foreground hover:text-foreground"}`}
+                >
+                  <Layers className="w-3 h-3" /> Swim Lane {swimlane ? "ON" : "OFF"}
+                </button>
               </div>
             )}
             <div ref={containerRef} className="relative overflow-x-auto rounded-xl bg-muted/20 border border-border/20 p-2">

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles } from "lucide-react";
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip as RTooltip } from "recharts";
 import { PatentData } from "./types";
 
 type Strength = "strong" | "medium" | "weak";
@@ -67,6 +68,21 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const strengthScore = (s: Strength) => (s === "strong" ? 3 : s === "medium" ? 2 : 1);
+
+  const radarData = useMemo(() => {
+    if (!result?.rows?.length) return [];
+    return result.rows.map((row) => {
+      const compScores = row.competitorStrengths.map(strengthScore);
+      const compAvg = compScores.length ? compScores.reduce((a, b) => a + b, 0) / compScores.length : 0;
+      return {
+        axis: row.axis,
+        current: strengthScore(row.currentStrength),
+        competitorAvg: Number(compAvg.toFixed(2)),
+      };
+    });
+  }, [result]);
 
   useEffect(() => {
     const run = async () => {
@@ -214,6 +230,72 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
                 );
               })}
             </div>
+
+            {/* Strength Radar Chart: current vs competitor average */}
+            {radarData.length >= 3 && (
+              <div className="rounded-xl border border-border/30 bg-muted/20 p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                  <div>
+                    <div className="text-[11px] font-bold text-foreground tracking-tight">차별점 강도 레이더</div>
+                    <div className="text-[10px] text-muted-foreground">강(3) · 중(2) · 약(1) 점수 기준 · 분석대상 vs 경쟁 평균</div>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 분석대상</div>
+                    <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(280 60% 55%)' }} /> 경쟁 평균</div>
+                  </div>
+                </div>
+                <div className="w-full h-[240px] sm:h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="72%">
+                      <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                      <PolarAngleAxis
+                        dataKey="axis"
+                        tick={{ fontSize: 10, fontWeight: 600, fill: 'hsl(var(--foreground) / 0.75)' }}
+                      />
+                      <PolarRadiusAxis
+                        angle={90}
+                        domain={[0, 3]}
+                        tickCount={4}
+                        tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                        axisLine={false}
+                      />
+                      <Radar
+                        name="분석대상"
+                        dataKey="current"
+                        stroke="hsl(var(--primary))"
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.28}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: 'hsl(var(--primary))' }}
+                      />
+                      <Radar
+                        name="경쟁 평균"
+                        dataKey="competitorAvg"
+                        stroke="hsl(280 60% 55%)"
+                        fill="hsl(280 60% 55%)"
+                        fillOpacity={0.15}
+                        strokeWidth={2}
+                        strokeDasharray="4 3"
+                        dot={{ r: 3, fill: 'hsl(280 60% 55%)' }}
+                      />
+                      <RTooltip
+                        contentStyle={{
+                          background: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: 8,
+                          fontSize: 11,
+                        }}
+                        formatter={(value: any) => {
+                          const v = Number(value);
+                          const label = v >= 2.5 ? '강' : v >= 1.5 ? '중' : '약';
+                          return [`${value} (${label})`, ''];
+                        }}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
 
             {/* Comparison table */}
             <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
