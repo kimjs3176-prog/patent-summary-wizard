@@ -200,7 +200,54 @@ serve(async (req) => {
       return db.localeCompare(da);
     });
 
-    const finalPatents = filtered.slice(0, 30);
+    // Deduplicate by normalized title — same title across multiple application/registration entries
+    // should appear as a single node (keep most recent date, prefer current patent).
+    const normalizeTitle = (s: string) =>
+      (s || "")
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[\[\](){}<>·,.\-_/\\]/g, "")
+        .trim();
+    const titleGroups = new Map<string, FamilyPatent & { _count?: number }>();
+    for (const p of filtered) {
+      const key = normalizeTitle(p.title);
+      if (!key) continue;
+      const existing = titleGroups.get(key);
+      if (!existing) {
+        titleGroups.set(key, { ...p, _count: 1 });
+        continue;
+      }
+      existing._count = (existing._count || 1) + 1;
+      // Prefer current patent as the representative
+      if (p.isCurrent && !existing.isCurrent) {
+        titleGroups.set(key, { ...p, _count: existing._count });
+        continue;
+      }
+      if (existing.isCurrent && !p.isCurrent) continue;
+      // Otherwise keep the one with the most recent date
+      const dateA = (existing.registrationDate || existing.applicationDate || "").replace(/\./g, "");
+      const dateB = (p.registrationDate || p.applicationDate || "").replace(/\./g, "");
+      if (dateB > dateA) {
+        titleGroups.set(key, { ...p, _count: existing._count });
+      }
+    }
+    const deduped = Array.from(titleGroups.values()).map((p) => {
+      const count = p._count || 1;
+      const { _count, ...rest } = p;
+      return count > 1 ? { ...rest, title: `${rest.title} (${count}건 통합)` } : rest;
+    });
+
+    // Re-sort after dedup
+    deduped.sort((a, b) => {
+      const sa = a.relevanceScore || 0;
+      const sb = b.relevanceScore || 0;
+      if (sb !== sa) return sb - sa;
+      const da = (a.registrationDate || a.applicationDate || "").replace(/\./g, "");
+      const db = (b.registrationDate || b.applicationDate || "").replace(/\./g, "");
+      return db.localeCompare(da);
+    });
+
+    const finalPatents = deduped.slice(0, 30);
 
     // Ensure current patent is in list
     if (currentPatentNumber && !finalPatents.some((p) => p.isCurrent) && currentPatentTitle) {
