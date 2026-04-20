@@ -57,8 +57,11 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
         );
         const json = await res.json();
         if (json.success) {
-          setPatents(json.patents || []);
-          if (!json.patents?.length) setError("동일 출원인의 다른 특허를 찾지 못했습니다.");
+          // 현재 특허를 최상단으로 정렬 (시각적 차별화)
+          const list: FamilyPatent[] = json.patents || [];
+          list.sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent));
+          setPatents(list);
+          if (!list.length) setError("동일 출원인의 다른 특허를 찾지 못했습니다.");
         } else {
           setError(json.error || "패밀리 트리 로딩 실패");
         }
@@ -70,7 +73,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       }
     };
     run();
-  }, [patentData?.assignee, patentData?.patentNumber]);
+  }, [patentData?.assignee, patentData?.patentNumber, patentData?.displayNumber]);
 
   // Render timeline visualization (D3 SVG)
   useEffect(() => {
