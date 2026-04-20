@@ -86,15 +86,16 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     run();
   }, [patentData?.assignee, patentData?.patentNumber]);
 
-  // Render visualization based on mode
+  // Render visualization based on mode (only timeline uses D3 SVG; tree mode is React-rendered)
   useEffect(() => {
     if (!patents.length || !svgRef.current || !containerRef.current) return;
     setTooltip(null);
-
-    if (mode === "tree") {
-      renderTree();
-    } else {
+    if (mode === "timeline") {
       renderTimeline();
+    } else {
+      // Clear svg in tree mode
+      d3.select(svgRef.current).selectAll("*").remove();
+      d3.select(svgRef.current).attr("width", 0).attr("height", 0);
     }
   }, [patents, mode, swimlane, patentData.assignee]);
 
@@ -519,14 +520,62 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
 
         {patents.length > 0 && !loading && (
           <>
-            {mode === "tree" && (
-              <div className="flex items-center gap-3 mb-3 flex-wrap text-[10px] text-muted-foreground">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-foreground" /> 출원인</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(280 60% 55%)' }} /> 기술분야 (IPC)</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 현재 분석 특허</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-card border border-border" /> 관련 특허 (호버/클릭)</div>
-              </div>
-            )}
+            {mode === "tree" && (() => {
+              // Group patents by IPC category for clean card list
+              const grouped = new Map<string, FamilyPatent[]>();
+              patents.forEach((p) => {
+                const cat = p.ipcCategory || "기타";
+                if (!grouped.has(cat)) grouped.set(cat, []);
+                grouped.get(cat)!.push(p);
+              });
+              const palette = ["hsl(280 60% 55%)", "hsl(200 70% 50%)", "hsl(160 65% 45%)", "hsl(30 80% 55%)", "hsl(340 70% 55%)", "hsl(220 60% 55%)"];
+              const groups = Array.from(grouped.entries());
+              return (
+                <div className="space-y-3">
+                  {groups.map(([category, items], gi) => {
+                    const color = palette[gi % palette.length];
+                    return (
+                      <div key={category} className="rounded-xl bg-muted/20 border border-border/20 overflow-hidden">
+                        {/* Group header */}
+                        <div className="flex items-center gap-2 px-3 py-2 border-b border-border/20" style={{ background: `${color.replace(')', ' / 0.06)')}` }}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+                          <span className="text-[11px] font-bold tracking-tight" style={{ color }}>{category}</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">· {items.length}건</span>
+                        </div>
+                        {/* Items */}
+                        <ul className="divide-y divide-border/15">
+                          {items.map((p) => (
+                            <li key={p.patentId}>
+                              <button
+                                onClick={() => onPatentClick?.(p.patentId)}
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/40 transition-colors ${p.isCurrent ? "bg-primary/5" : ""}`}
+                              >
+                                <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${p.isCurrent ? "bg-primary ring-2 ring-primary/30" : ""}`} style={p.isCurrent ? {} : { background: color, opacity: 0.7 }} />
+                                <div className="min-w-0 flex-1">
+                                  <div className={`text-[12px] sm:text-[13px] leading-snug truncate ${p.isCurrent ? "font-bold text-primary" : "font-medium text-foreground/85"}`} title={p.title}>
+                                    {p.title}
+                                    {p.isCurrent && <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wider text-primary">현재</span>}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
+                                    <span className="tabular-nums">{p.patentId}</span>
+                                    {(p.registrationDate || p.applicationDate) && (
+                                      <>
+                                        <span className="text-border">·</span>
+                                        <span>{p.registrationDate || p.applicationDate}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
             {mode === "timeline" && (
               <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
                 <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground">
@@ -541,6 +590,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
                 </button>
               </div>
             )}
+            {mode === "timeline" && (
             <div ref={containerRef} className="relative overflow-x-auto rounded-xl bg-muted/20 border border-border/20 p-2">
               <svg ref={svgRef} />
               {tooltip && (
@@ -565,6 +615,7 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
                 </div>
               )}
             </div>
+            )}
           </>
         )}
       </div>

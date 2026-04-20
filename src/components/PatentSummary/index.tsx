@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo } from "react";
-import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, ExternalLink, Info, GaugeCircle, Sparkles, ScrollText, ListChecks, GitCompare, Network, type LucideIcon } from "lucide-react";
+import { FileText, Copy, Check, Share2, Printer, Lightbulb, Target, Wrench, TrendingUp, Globe, Microscope, ShieldCheck, Layers, BookOpen, Cpu, Leaf, BarChart3, Users, Zap, Heart, ExternalLink, Info, GaugeCircle, Sparkles, ScrollText, GitCompare, Network, type LucideIcon } from "lucide-react";
 import { SectionNav, type SectionNavItem } from "./SectionNav";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ interface PatentSummaryProps extends BasePatentSummaryProps {
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
-import { RelatedPatentsSection } from "./RelatedPatentsSection";
+
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { CompetitorComparisonTable } from "./CompetitorComparisonTable";
 import { PatentFamilyTree } from "./PatentFamilyTree";
@@ -406,7 +406,6 @@ export function PatentSummary({
     if (patentData?.claims && patentData.claims.length > 0 && visibleSections.claims !== false) items.push({ id: "sec-claims", label: "청구항", icon: ScrollText });
     if (patentData && visibleSections.competitorComparison !== false) items.push({ id: "sec-compare", label: "경쟁 비교", icon: GitCompare });
     if (patentData?.assignee && visibleSections.familyTree !== false) items.push({ id: "sec-family", label: "패밀리 트리", icon: Network });
-    if (visibleSections.relatedPatents !== false) items.push({ id: "sec-related", label: "관련 특허", icon: ListChecks });
     return items;
   }, [patentData, content, visibleSections]);
 
@@ -577,12 +576,9 @@ export function PatentSummary({
               if (patentData.inventors?.length) {
                 kpis.push({ label: "발명자", value: `${patentData.inventors.length}명` });
               }
-              if (patentData.images?.length) {
-                kpis.push({ label: "도면", value: `${patentData.images.length}장` });
-              }
               if (kpis.length === 0) return null;
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
                   {kpis.map((k, i) => (
                     <div key={i} className="px-3 py-2 rounded-xl bg-muted/40 border border-border/20 flex flex-col gap-0.5">
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{k.label}</span>
@@ -975,12 +971,6 @@ export function PatentSummary({
         </div>
       )}
 
-      {/* 8. Related Patents Section */}
-      {printSections.relatedPatents !== false && visibleSections.relatedPatents !== false && (
-        <div id="sec-related" className="scroll-mt-24">
-          <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
-        </div>
-      )}
     </div>
   );
 }
