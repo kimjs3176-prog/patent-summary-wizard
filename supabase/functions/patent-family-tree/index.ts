@@ -1,0 +1,176 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface FamilyPatent {
+  patentId: string;
+  title: string;
+  applicationDate?: string;
+  registrationDate?: string;
+  ipc?: string;
+  ipcCategory?: string;
+  isCurrent: boolean;
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { assignee, currentPatentNumber, currentPatentTitle } = await req.json();
+    if (!assignee || typeof assignee !== "string") {
+      return new Response(JSON.stringify({ success: false, error: "출원인 정보가 필요합니다." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Cache check (24h TTL by created_at row reuse)
+    const cacheKey = `fam_${assignee.substring(0, 80)}`;
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    try {
+      const { data: cached } = await supabase
+        .from("patent_data_cache")
+        .select("patent_data, created_at")
+        .eq("patent_number", cacheKey)
+        .maybeSingle();
+      if (cached?.patent_data) {
+        const cachedAt = new Date(cached.created_at).getTime();
+        if (Date.now() - cachedAt < 7 * 24 * 60 * 60 * 1000) {
+          // mark current
+          const data = cached.patent_data as any;
+          if (Array.isArray(data.patents)) {
+            data.patents = data.patents.map((p: FamilyPatent) => ({
+              ...p,
+              isCurrent: !!(currentPatentNumber && p.patentId.replace(/[^0-9]/g, "").includes(currentPatentNumber.replace(/[^0-9]/g, ""))),
+            }));
+          }
+          return new Response(JSON.stringify({ success: true, ...data }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
+    } catch (_) { /* ignore */ }
+
+    let KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
+    try {
+      const { data: row } = await supabase.from("site_settings").select("value").eq("key", "kipris_api_key").maybeSingle();
+      if (row?.value) KIPRIS_API_KEY = row.value;
+    } catch { /* ignore */ }
+
+    if (!KIPRIS_API_KEY) {
+      return new Response(JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+    url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+    url.searchParams.set("applicant", assignee);
+    url.searchParams.set("pageNo", "1");
+    url.searchParams.set("numOfRows", "50");
+    url.searchParams.set("sortSpec", "AD");
+    url.searchParams.set("descSort", "true");
+    url.searchParams.set("patent", "true");
+    url.searchParams.set("utility", "true");
+
+    const res = await fetch(url.toString());
+    const text = await res.text();
+    if (!res.ok || text.includes("<successYN>N</successYN>")) {
+      return new Response(JSON.stringify({ success: true, patents: [], assignee }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const ipcCategoryMap: Record<string, string> = {
+      A01: "농업·식품", A22: "축산·식품가공", A23: "식품·음료", A61: "의약·헬스케어",
+      B01: "화학공정", B02: "곡물가공", B07: "선별·분리", B29: "성형", B65: "포장·물류",
+      C02: "수처리", C05: "비료", C07: "정밀화학", C08: "고분자·소재", C12: "바이오·발효",
+      F25: "냉장·냉동", F26: "건조",
+      G01: "계측·검사", G05: "제어·자동화", G06: "ICT·SW", G16: "바이오IT",
+      H04: "통신·IoT",
+    };
+
+    const items = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const patents: FamilyPatent[] = [];
+    const seen = new Set<string>();
+
+    for (const m of items) {
+      const itemXml = m[1];
+      const getField = (field: string): string | undefined => {
+        const cdata = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([^\\]]*?)\\]\\]><\\/${field}>`, "i"));
+        if (cdata) return cdata[1].trim();
+        const simple = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`, "i"));
+        return simple ? simple[1].trim() : undefined;
+      };
+
+      const applicationNumber = getField("applicationNumber") || "";
+      const registrationNumber = getField("registerNumber") || getField("registrationNumber") || "";
+      const inventionTitle = getField("inventionTitle") || "";
+      const ipc = getField("ipcNumber") || "";
+      const applicationDate = getField("applicationDate") || "";
+      const registerDate = getField("registerDate") || "";
+
+      let displayNumber = "";
+      if (registrationNumber) {
+        const c = registrationNumber.replace(/[^0-9]/g, "");
+        if (c.length >= 9 && c.startsWith("10")) displayNumber = `10-${c.slice(2, 9)}`;
+        else if (c.length >= 7) displayNumber = `10-${c.slice(-7)}`;
+      } else if (applicationNumber) {
+        const c = applicationNumber.replace(/[^0-9]/g, "");
+        if (c.length === 13 && c.startsWith("10")) displayNumber = `10-${c.slice(2, 6)}-${c.slice(6)}`;
+      }
+      if (!displayNumber || !inventionTitle) continue;
+      if (seen.has(displayNumber)) continue;
+      seen.add(displayNumber);
+
+      const ipcMain = ipc.split(/[,;|]/)[0]?.trim().replace(/\s/g, "").slice(0, 3) || "";
+      const category = ipcCategoryMap[ipcMain] || "기타";
+
+      const isCurrent = !!(currentPatentNumber && displayNumber.replace(/[^0-9]/g, "").includes(currentPatentNumber.replace(/[^0-9]/g, "")));
+
+      patents.push({
+        patentId: displayNumber,
+        title: inventionTitle,
+        applicationDate: applicationDate ? `${applicationDate.slice(0, 4)}.${applicationDate.slice(4, 6)}.${applicationDate.slice(6, 8)}` : undefined,
+        registrationDate: registerDate ? `${registerDate.slice(0, 4)}.${registerDate.slice(4, 6)}.${registerDate.slice(6, 8)}` : undefined,
+        ipc: ipc.split(/[,;|]/)[0]?.trim(),
+        ipcCategory: category,
+        isCurrent,
+      });
+
+      if (patents.length >= 30) break;
+    }
+
+    // Ensure current patent is in list
+    if (currentPatentNumber && !patents.some((p) => p.isCurrent) && currentPatentTitle) {
+      patents.unshift({
+        patentId: currentPatentNumber,
+        title: currentPatentTitle,
+        ipcCategory: "현재 분석 특허",
+        isCurrent: true,
+      });
+    }
+
+    const responseData = { patents, assignee };
+
+    try {
+      await supabase.from("patent_data_cache").upsert({
+        patent_number: cacheKey,
+        patent_data: responseData,
+        related_patents: [],
+      }, { onConflict: "patent_number" });
+    } catch (_) { /* ignore */ }
+
+    return new Response(JSON.stringify({ success: true, ...responseData }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (error) {
+    console.error("patent-family-tree error:", error);
+    return new Response(JSON.stringify({ success: false, error: "서버 오류가 발생했습니다." }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+});

@@ -13,6 +13,8 @@ import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
 import { RelatedPatentsSection } from "./RelatedPatentsSection";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
+import { CompetitorComparisonTable } from "./CompetitorComparisonTable";
+import { PatentFamilyTree } from "./PatentFamilyTree";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
@@ -335,8 +337,32 @@ export function PatentSummary({
       } else if (cleanLine.trim()) {
         // If body text appears before any section header, auto-insert "기술 분야"
         maybeInsertTechFieldHeader(index);
-        // Enhanced bold text parsing: **text**, __text__, and partial bold within sentences
-        const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+
+        // Footnote definition lines: [^N]: text → render as small citation row
+        const footnoteDefMatch = cleanLine.match(/^\[\^(\d+)\]:\s*(.+)$/);
+        if (footnoteDefMatch) {
+          elements.push(
+            <div key={index} id={`fn-${footnoteDefMatch[1]}`} className="flex gap-2 text-[11px] sm:text-[12px] text-muted-foreground/90 leading-[1.6] mb-1 pl-2 border-l-2 border-primary/20">
+              <span className="font-bold text-primary/70 shrink-0">[{footnoteDefMatch[1]}]</span>
+              <span>{footnoteDefMatch[2]}</span>
+            </div>
+          );
+          return;
+        }
+
+        // ### subheading (e.g., 출처)
+        const subHeadMatch = cleanLine.match(/^###\s+(.+)$/);
+        if (subHeadMatch) {
+          elements.push(
+            <h4 key={index} className="text-[12px] sm:text-[13px] font-bold text-muted-foreground uppercase tracking-wider mt-4 mb-2 pb-1 border-b border-border/30">
+              {subHeadMatch[1]}
+            </h4>
+          );
+          return;
+        }
+
+        // Enhanced bold text parsing with footnote refs [^N]
+        const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__|\[\^\d+\])/g);
         elements.push(
           <p key={index} className="text-foreground/80 leading-[1.8] mb-2.5 text-[13px] sm:text-[14px] md:text-[15px]">
             {parts.map((part, i) => {
@@ -345,6 +371,14 @@ export function PatentSummary({
               }
               if ((part.startsWith('__') && part.endsWith('__'))) {
                 return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+              }
+              const fnMatch = part.match(/^\[\^(\d+)\]$/);
+              if (fnMatch) {
+                return (
+                  <a key={i} href={`#fn-${fnMatch[1]}`} className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 ml-0.5 align-super text-[9px] font-bold rounded bg-primary/10 text-primary hover:bg-primary/20 no-underline transition-colors">
+                    {fnMatch[1]}
+                  </a>
+                );
               }
               return <span key={i}>{annotateWithGlossary(part)}</span>;
             })}
@@ -849,7 +883,21 @@ export function PatentSummary({
 
       </div>
 
-      {/* 6. Related Patents Section */}
+      {/* 6. Competitor Comparison Table — AI generated */}
+      {patentData && !isStreaming && content && visibleSections.competitorComparison !== false && (
+        <div className="mt-4">
+          <CompetitorComparisonTable patentData={patentData} onPatentClick={onRelatedPatentClick} />
+        </div>
+      )}
+
+      {/* 7. Patent Family Tree — D3 visualization */}
+      {patentData?.assignee && !isStreaming && content && visibleSections.familyTree !== false && (
+        <div className="mt-4">
+          <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
+        </div>
+      )}
+
+      {/* 8. Related Patents Section */}
       {printSections.relatedPatents !== false && visibleSections.relatedPatents !== false && (
         <RelatedPatentsSection relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} patentData={patentData} />
       )}
