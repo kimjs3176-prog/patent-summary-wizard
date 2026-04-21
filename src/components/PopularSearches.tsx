@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
