@@ -45,43 +45,21 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
 }
 
 function PopularSearchItem({ item, idx, onSelect }: { item: PopularSearch; idx: number; onSelect: (pn: string) => void }) {
-  const textRef = useRef<HTMLSpanElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isOverflowing, setIsOverflowing] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-
-  useEffect(() => {
-    const el = textRef.current;
-    const container = containerRef.current;
-    if (el && container) {
-      setIsOverflowing(el.scrollWidth > container.clientWidth);
-    }
-  }, [item.patent_title]);
-
   const title = item.patent_title || item.patent_number;
-  const scrollDuration = Math.max(3, title.length * 0.15);
 
   return (
     <button
       onClick={() => onSelect(item.patent_number)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl hover:bg-primary/5 transition-colors group min-w-0"
-      title={`${item.patent_number} · ${item.search_count}회`}
+      title={`${title} · ${item.search_count}회`}
     >
       <span className={`flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold transition-colors ${
         idx < 3 ? 'text-primary-foreground' : 'bg-secondary text-muted-foreground'
       }`} style={idx < 3 ? { background: 'var(--gradient-accent)' } : undefined}>
         {idx + 1}
       </span>
-      <div ref={containerRef} className="overflow-hidden min-w-0 flex-1">
-        <span
-          ref={textRef}
-          className="text-[13px] font-medium text-foreground group-hover:text-primary transition-colors whitespace-nowrap inline-block"
-          style={isHovered && isOverflowing ? {
-            animation: `marquee ${scrollDuration}s linear infinite`,
-          } : undefined}
-        >
+      <div className="min-w-0 flex-1 text-left">
+        <span className="text-[13px] font-medium text-foreground group-hover:text-primary transition-colors block truncate">
           {title}
         </span>
       </div>
