@@ -541,7 +541,7 @@ export function PatentSummary({
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
       {/* 1. Patent Info Card — Dashboard-style */}
       {patentData && (
         <section id="sec-info" className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 scroll-mt-24 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
