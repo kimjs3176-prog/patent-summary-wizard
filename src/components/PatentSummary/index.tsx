@@ -295,7 +295,7 @@ export function PatentSummary({
           const bodyText = hashMatch[2];
           const parts = bodyText.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
           elements.push(
-            <p key={index} className="text-foreground/80 leading-[1.8] mb-2 text-[13px] sm:text-[14px] md:text-[15px]">
+          <p key={index} className="text-foreground/80 leading-[1.78] mb-2 text-[13.5px] sm:text-[14.5px] md:text-[15px] tracking-[-0.005em]">
               {parts.map((part, i) => {
                 if ((part.startsWith('**') && part.endsWith('**'))) {
                   return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
