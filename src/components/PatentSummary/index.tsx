@@ -485,15 +485,15 @@ export function PatentSummary({
             )}
           </div>
           <div className="flex items-center gap-0">
-            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 text-xs h-9 rounded-xl text-muted-foreground hover:text-foreground transition-colors">
+            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1 text-[11.5px] h-8 px-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? "복사됨" : "복사"}
             </Button>
-            <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-9 rounded-xl text-muted-foreground hover:text-foreground transition-colors">
+            <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1 text-[11.5px] h-8 px-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
               <Printer className="w-3.5 h-3.5" />
               인쇄
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs h-9 rounded-xl text-muted-foreground hover:text-foreground transition-colors">
+            <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1 text-[11.5px] h-8 px-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
               <Share2 className="w-3.5 h-3.5" />
               공유
             </Button>
@@ -512,7 +512,7 @@ export function PatentSummary({
                 });
                 toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
               }}
-              className={`gap-1.5 text-xs h-9 rounded-xl transition-colors ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
+              className={`gap-1 text-[11.5px] h-8 px-2 rounded-lg transition-colors ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
             >
               <Heart className={`w-3.5 h-3.5 ${patentIsFavorite ? "fill-current" : ""}`} />
               {patentIsFavorite ? "담김" : "담기"}
