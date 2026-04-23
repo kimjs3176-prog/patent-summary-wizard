@@ -566,8 +566,8 @@ export function PatentSummary({
                       ? `10-${cleanNum.slice(2, 9)}`
                       : patentData.displayNumber || regNum;
                     return (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-foreground/[0.04] text-foreground/70">
-                        {infoLabels.registrationNumber || "등록번호"}: {formatted}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-foreground/[0.04] text-foreground/70 tabular-nums tracking-tight">
+                        {infoLabels.registrationNumber || "등록번호"} <span className="text-foreground/85">{formatted}</span>
                       </span>
                     );
                   }
@@ -581,16 +581,16 @@ export function PatentSummary({
                       ? `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`
                       : appNum;
                     return (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-foreground/[0.04] text-foreground/70">
-                        {infoLabels.applicationNumber || "출원번호"}: {formatted}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-foreground/[0.04] text-foreground/70 tabular-nums tracking-tight">
+                        {infoLabels.applicationNumber || "출원번호"} <span className="text-foreground/85">{formatted}</span>
                       </span>
                     );
                   }
                   return null;
                 })()}
                 {!patentData.registrationNumber && !patentData.applicationNumber && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-foreground/[0.04] text-foreground/70">
-                    {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-foreground/[0.04] text-foreground/70 tabular-nums tracking-tight">
+                    {patentData.searchType === 'application' ? '출원번호' : '등록번호'} <span className="text-foreground/85">{patentData.displayNumber || patentData.patentNumber}</span>
                   </span>
                 )}
               </div>
