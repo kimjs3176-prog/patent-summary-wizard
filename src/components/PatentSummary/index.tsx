@@ -467,24 +467,24 @@ export function PatentSummary({
 
       {/* Toss-style Action Bar — floating pill */}
       {!isStreaming && content && (
-        <div className="flex items-center justify-between flex-wrap mb-4 gap-2 px-1 print:hidden">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between flex-wrap mb-3 gap-2 px-1 print:hidden">
+          <div className="flex items-center gap-1.5">
             <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="gap-1.5 text-xs h-9 rounded-xl bg-foreground text-background hover:bg-foreground/90 shadow-sm btn-press font-semibold">
+              <Button size="sm" className="gap-1.5 text-[12px] h-8 rounded-lg bg-foreground text-background hover:bg-foreground/90 shadow-sm btn-press font-semibold tracking-[-0.01em]">
                 <ExternalLink className="w-3.5 h-3.5" />
                 기술이전 신청
               </Button>
             </a>
             {patentData?.applicationNumber && (
               <a href={`https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 rounded-xl btn-press font-medium border-border/60">
+                <Button variant="outline" size="sm" className="gap-1.5 text-[12px] h-8 rounded-lg btn-press font-medium border-border/60 tracking-[-0.01em]">
                   <FileText className="w-3.5 h-3.5" />
                   특허상세보기
                 </Button>
               </a>
             )}
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0">
             <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 text-xs h-9 rounded-xl text-muted-foreground hover:text-foreground transition-colors">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? "복사됨" : "복사"}
