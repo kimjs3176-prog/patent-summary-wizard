@@ -861,22 +861,20 @@ export function PatentSummary({
         <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
         
         {/* Header */}
-        <div className="px-4 sm:px-5 md:px-6 py-3 sm:py-4 flex items-center gap-2.5">
+        <div className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 flex items-center gap-2.5 border-b border-border/20">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base sm:text-lg" style={{ background: 'hsl(var(--primary) / 0.06)', color: 'hsl(var(--primary))' }}>
             {cardIcons.aiSummary || "🤖"}
           </div>
-          <div>
-            <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">AI 종합 요약</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">
-              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
+          <div className="min-w-0 flex-1">
+            <h3 className="font-bold text-[14px] sm:text-[15px] text-foreground tracking-[-0.01em] leading-tight">AI 종합 요약</h3>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium tabular-nums tracking-tight">
+              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {patentNumber}
             </p>
           </div>
         </div>
 
-        <div className="mx-4 sm:mx-5 md:mx-6 h-px bg-border/30" />
-
         {/* Content */}
-        <div className="px-4 py-5 sm:px-5 sm:py-6 md:px-6 md:py-7 min-h-[300px]">
+        <div className="px-4 py-4 sm:px-5 sm:py-5 md:px-6 md:py-6 min-h-[300px]">
           {content ? (
             (() => {
               const { body, footnotes } = renderMarkdown(content);
