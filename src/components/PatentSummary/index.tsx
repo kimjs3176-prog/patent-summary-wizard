@@ -633,7 +633,7 @@ export function PatentSummary({
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.filingDate || "출원일"}</span>
-                      <span className="text-foreground font-medium">{patentData.filingDate}</span>
+                      <span className="text-foreground font-semibold tabular-nums">{patentData.filingDate}</span>
                     </span>
                     {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
                       <span className="text-border text-xs">|</span>
@@ -644,7 +644,7 @@ export function PatentSummary({
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{patentData.registrationNumber ? (infoLabels.publicationDate || '등록일') : '공개일'}</span>
-                      <span className="text-foreground font-medium">{patentData.publicationDate}</span>
+                      <span className="text-foreground font-semibold tabular-nums">{patentData.publicationDate}</span>
                     </span>
                     {patentData.classifications && patentData.classifications.length > 0 && (
                       <span className="text-border text-xs">|</span>
