@@ -315,16 +315,16 @@ export function PatentSummary({
         const IconComp = getSectionIcon(rawTitle);
         const displayTitle = sectionTitles[rawTitle] || rawTitle;
         elements.push(
-          <div key={index} className="mt-6 mb-3 first:mt-0">
+          <div key={index} className="mt-7 mb-3 first:mt-0">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg shrink-0 bg-primary/[0.06]" style={{ color: 'hsl(var(--primary))' }}>
-                <IconComp className="w-[14px] h-[14px]" />
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0 bg-primary/[0.08]" style={{ color: 'hsl(var(--primary))' }}>
+                <IconComp className="w-[13px] h-[13px]" />
               </span>
-              <h2 className="text-[15px] sm:text-base font-bold tracking-[-0.01em] text-foreground">
+              <h2 className="text-[15px] sm:text-[16px] font-bold tracking-[-0.02em] text-foreground leading-tight">
                 {displayTitle}
               </h2>
             </div>
-            <div className="mt-1.5 h-px bg-border/30" />
+            <div className="mt-2 h-px bg-gradient-to-r from-border/50 via-border/30 to-transparent" />
           </div>
         );
         
