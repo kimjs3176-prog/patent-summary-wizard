@@ -548,14 +548,14 @@ export function PatentSummary({
           {/* Subtle top accent */}
           <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
           
-          <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4">
+          <div className="px-4 py-3 sm:px-5 sm:py-3.5 md:px-6 md:py-4">
             {/* Header row — minimal */}
-            <div className="flex items-center gap-2.5 mb-3">
+            <div className="flex items-center gap-2.5 mb-2.5">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base shrink-0" style={{ background: 'hsl(var(--primary) / 0.06)', color: 'hsl(var(--primary))' }}>
                 {cardIcons.patentInfo || "📄"}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-sm sm:text-[15px] text-foreground leading-tight">특허 정보</div>
+                <div className="font-bold text-[14px] sm:text-[15px] text-foreground leading-tight tracking-[-0.01em]">특허 정보</div>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {(() => {
