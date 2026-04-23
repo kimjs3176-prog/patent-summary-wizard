@@ -822,15 +822,15 @@ export function PatentSummary({
                 };
 
                 return (
-                  <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-muted/30 border border-border/20">
-                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">키워드</span>
+                  <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-muted/25 border border-border/15">
+                    <span className="text-[9.5px] text-muted-foreground/80 font-bold uppercase tracking-[0.08em] mr-0.5">키워드</span>
                     {unique.map((kw, i) => {
                       const c = getColor(kw);
                       return (
                         <button
                           key={i}
                           onClick={() => onKeywordClick?.(kw)}
-                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium transition-all hover:scale-105 cursor-pointer"
+                          className="inline-flex items-center px-2 py-[3px] rounded-md text-[11px] font-semibold transition-all hover:-translate-y-px hover:shadow-sm cursor-pointer tracking-tight"
                           style={{ background: c.bg, color: c.fg, border: `1px solid ${c.bd}` }}
                           title={`"${kw}" 관련 특허 검색`}
                         >
