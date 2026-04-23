@@ -598,13 +598,13 @@ export function PatentSummary({
             
             {/* Title */}
             {patentData.titleKo && (
-              <h2 className="text-base sm:text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-[-0.01em]">{patentData.titleKo}</h2>
+              <h2 className="text-[17px] sm:text-[19px] md:text-[21px] font-extrabold text-foreground mb-3 leading-[1.35] tracking-[-0.02em]">{patentData.titleKo}</h2>
             )}
 
             {/* Stacked layout: Meta info (top) + Keywords (bottom) */}
             <div className="flex flex-col gap-3">
               {/* Top: Meta info — Toss-style subtle dividers */}
-              <div className="px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-2 text-[12px] sm:text-[13px] bg-muted/40 border border-border/20">
+              <div className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px] sm:text-[12.5px] bg-muted/30 border border-border/15">
                 {patentData.assignee && (
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
