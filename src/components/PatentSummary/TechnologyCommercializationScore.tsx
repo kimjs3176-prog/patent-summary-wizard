@@ -141,22 +141,20 @@ export function TechnologyCommercializationScore({
     : '-';
 
   return (
-    <div className="mb-5 rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in trl-print-section" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+    <div className="rounded-2xl border border-border/30 bg-card overflow-hidden animate-slide-in trl-print-section" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
       {/* Top accent — dual color (score + TRL) */}
       <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(25 90% 55% / 0.65), hsl(25 90% 55% / 0.25) 45%, hsl(160 70% 45% / 0.25) 55%, hsl(160 70% 45% / 0.65))' }} />
 
       {/* Header */}
-      <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 flex items-center gap-2.5">
-        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55% / 0.10), hsl(160 70% 45% / 0.10))', color: 'hsl(25 80% 45%)' }}>
+      <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center gap-2.5 border-b border-border/20">
+        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base sm:text-lg" style={{ background: 'linear-gradient(135deg, hsl(25 90% 55% / 0.10), hsl(160 70% 45% / 0.10))', color: 'hsl(25 80% 45%)' }}>
             ✨
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-sm sm:text-base text-foreground tracking-tight">AI 기술분석 점수</h4>
-          <p className="text-[10px] sm:text-xs text-muted-foreground">사업화 잠재력과 기술 성숙도를 한눈에</p>
+          <h4 className="font-bold text-[14px] sm:text-[15px] text-foreground tracking-[-0.01em] leading-tight">AI 기술분석 점수</h4>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground/80 font-medium">사업화 잠재력과 기술 성숙도를 한눈에</p>
         </div>
       </div>
-
-      <div className="mx-4 sm:mx-6 h-px bg-border/30" />
 
       {/* Two equal columns: Score (left) | TRL (right) */}
       <div className="px-4 sm:px-6 py-4 sm:py-5">

@@ -240,16 +240,16 @@ export function PatentSummary({
         const defaultTitle = sectionTitles["기술 분야"] || "기술 분야";
         const IconComp = getSectionIcon("기술 분야");
         elements.push(
-          <div key={`auto-tech-${currentIndex}`} className="mt-6 mb-3 first:mt-0">
+          <div key={`auto-tech-${currentIndex}`} className="mt-7 mb-3 first:mt-0">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg shrink-0 bg-primary/[0.06]" style={{ color: 'hsl(var(--primary))' }}>
-                <IconComp className="w-[14px] h-[14px]" />
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0 bg-primary/[0.08]" style={{ color: 'hsl(var(--primary))' }}>
+                <IconComp className="w-[13px] h-[13px]" />
               </span>
-              <h2 className="text-[15px] sm:text-base font-bold tracking-[-0.01em] text-foreground">
+              <h2 className="text-[15px] sm:text-[16px] font-bold tracking-[-0.02em] text-foreground leading-tight">
                 {defaultTitle}
               </h2>
             </div>
-            <div className="mt-1.5 h-px bg-border/30" />
+            <div className="mt-2 h-px bg-gradient-to-r from-border/50 via-border/30 to-transparent" />
           </div>
         );
       }
@@ -295,7 +295,7 @@ export function PatentSummary({
           const bodyText = hashMatch[2];
           const parts = bodyText.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
           elements.push(
-            <p key={index} className="text-foreground/80 leading-[1.8] mb-2 text-[13px] sm:text-[14px] md:text-[15px]">
+          <p key={index} className="text-foreground/80 leading-[1.78] mb-2 text-[13.5px] sm:text-[14.5px] md:text-[15px] tracking-[-0.005em]">
               {parts.map((part, i) => {
                 if ((part.startsWith('**') && part.endsWith('**'))) {
                   return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
@@ -315,16 +315,16 @@ export function PatentSummary({
         const IconComp = getSectionIcon(rawTitle);
         const displayTitle = sectionTitles[rawTitle] || rawTitle;
         elements.push(
-          <div key={index} className="mt-6 mb-3 first:mt-0">
+          <div key={index} className="mt-7 mb-3 first:mt-0">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg shrink-0 bg-primary/[0.06]" style={{ color: 'hsl(var(--primary))' }}>
-                <IconComp className="w-[14px] h-[14px]" />
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-md shrink-0 bg-primary/[0.08]" style={{ color: 'hsl(var(--primary))' }}>
+                <IconComp className="w-[13px] h-[13px]" />
               </span>
-              <h2 className="text-[15px] sm:text-base font-bold tracking-[-0.01em] text-foreground">
+              <h2 className="text-[15px] sm:text-[16px] font-bold tracking-[-0.02em] text-foreground leading-tight">
                 {displayTitle}
               </h2>
             </div>
-            <div className="mt-1.5 h-px bg-border/30" />
+            <div className="mt-2 h-px bg-gradient-to-r from-border/50 via-border/30 to-transparent" />
           </div>
         );
         
@@ -413,7 +413,7 @@ export function PatentSummary({
         // Enhanced bold text parsing with footnote refs [^N]
         const parts = cleanLine.split(/(\*\*[^*]+\*\*|__[^_]+__|\[\^\d+\])/g);
         elements.push(
-          <p key={index} className="text-foreground/80 leading-[1.8] mb-2.5 text-[13px] sm:text-[14px] md:text-[15px]">
+          <p key={index} className="text-foreground/80 leading-[1.78] mb-2.5 text-[13.5px] sm:text-[14.5px] md:text-[15px] tracking-[-0.005em]">
             {parts.map((part, i) => {
               if ((part.startsWith('**') && part.endsWith('**'))) {
                 return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
@@ -467,33 +467,33 @@ export function PatentSummary({
 
       {/* Toss-style Action Bar — floating pill */}
       {!isStreaming && content && (
-        <div className="flex items-center justify-between flex-wrap mb-4 gap-2 px-1 print:hidden">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between flex-wrap mb-3 gap-2 px-1 print:hidden">
+          <div className="flex items-center gap-1.5">
             <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="gap-1.5 text-xs h-9 rounded-xl bg-foreground text-background hover:bg-foreground/90 shadow-sm btn-press font-semibold">
+              <Button size="sm" className="gap-1.5 text-[12px] h-8 rounded-lg bg-foreground text-background hover:bg-foreground/90 shadow-sm btn-press font-semibold tracking-[-0.01em]">
                 <ExternalLink className="w-3.5 h-3.5" />
                 기술이전 신청
               </Button>
             </a>
             {patentData?.applicationNumber && (
               <a href={`https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9 rounded-xl btn-press font-medium border-border/60">
+                <Button variant="outline" size="sm" className="gap-1.5 text-[12px] h-8 rounded-lg btn-press font-medium border-border/60 tracking-[-0.01em]">
                   <FileText className="w-3.5 h-3.5" />
                   특허상세보기
                 </Button>
               </a>
             )}
           </div>
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5 text-xs h-9 rounded-xl text-muted-foreground hover:text-foreground transition-colors">
+          <div className="flex items-center gap-0">
+            <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1 text-[11.5px] h-8 px-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? "복사됨" : "복사"}
             </Button>
-            <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1.5 text-xs h-9 rounded-xl text-muted-foreground hover:text-foreground transition-colors">
+            <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1 text-[11.5px] h-8 px-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
               <Printer className="w-3.5 h-3.5" />
               인쇄
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs h-9 rounded-xl text-muted-foreground hover:text-foreground transition-colors">
+            <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1 text-[11.5px] h-8 px-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
               <Share2 className="w-3.5 h-3.5" />
               공유
             </Button>
@@ -512,7 +512,7 @@ export function PatentSummary({
                 });
                 toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
               }}
-              className={`gap-1.5 text-xs h-9 rounded-xl transition-colors ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
+              className={`gap-1 text-[11.5px] h-8 px-2 rounded-lg transition-colors ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
             >
               <Heart className={`w-3.5 h-3.5 ${patentIsFavorite ? "fill-current" : ""}`} />
               {patentIsFavorite ? "담김" : "담기"}
@@ -541,21 +541,21 @@ export function PatentSummary({
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
       {/* 1. Patent Info Card — Dashboard-style */}
       {patentData && (
         <section id="sec-info" className={`relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30 scroll-mt-24 ${printSections.patentInfo === false ? "print:hidden" : ""}`} style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
           {/* Subtle top accent */}
           <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
           
-          <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4">
+          <div className="px-4 py-3 sm:px-5 sm:py-3.5 md:px-6 md:py-4">
             {/* Header row — minimal */}
-            <div className="flex items-center gap-2.5 mb-3">
+            <div className="flex items-center gap-2.5 mb-2.5">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base shrink-0" style={{ background: 'hsl(var(--primary) / 0.06)', color: 'hsl(var(--primary))' }}>
                 {cardIcons.patentInfo || "📄"}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-sm sm:text-[15px] text-foreground leading-tight">특허 정보</div>
+                <div className="font-bold text-[14px] sm:text-[15px] text-foreground leading-tight tracking-[-0.01em]">특허 정보</div>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {(() => {
@@ -566,8 +566,8 @@ export function PatentSummary({
                       ? `10-${cleanNum.slice(2, 9)}`
                       : patentData.displayNumber || regNum;
                     return (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-foreground/[0.04] text-foreground/70">
-                        {infoLabels.registrationNumber || "등록번호"}: {formatted}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-foreground/[0.04] text-foreground/70 tabular-nums tracking-tight">
+                        {infoLabels.registrationNumber || "등록번호"} <span className="text-foreground/85">{formatted}</span>
                       </span>
                     );
                   }
@@ -581,16 +581,16 @@ export function PatentSummary({
                       ? `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`
                       : appNum;
                     return (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-foreground/[0.04] text-foreground/70">
-                        {infoLabels.applicationNumber || "출원번호"}: {formatted}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-foreground/[0.04] text-foreground/70 tabular-nums tracking-tight">
+                        {infoLabels.applicationNumber || "출원번호"} <span className="text-foreground/85">{formatted}</span>
                       </span>
                     );
                   }
                   return null;
                 })()}
                 {!patentData.registrationNumber && !patentData.applicationNumber && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-foreground/[0.04] text-foreground/70">
-                    {patentData.searchType === 'application' ? '출원번호' : '등록번호'}: {patentData.displayNumber || patentData.patentNumber}
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-foreground/[0.04] text-foreground/70 tabular-nums tracking-tight">
+                    {patentData.searchType === 'application' ? '출원번호' : '등록번호'} <span className="text-foreground/85">{patentData.displayNumber || patentData.patentNumber}</span>
                   </span>
                 )}
               </div>
@@ -598,13 +598,13 @@ export function PatentSummary({
             
             {/* Title */}
             {patentData.titleKo && (
-              <h2 className="text-base sm:text-lg md:text-xl font-bold text-foreground mb-3 leading-snug tracking-[-0.01em]">{patentData.titleKo}</h2>
+              <h2 className="text-[17px] sm:text-[19px] md:text-[21px] font-extrabold text-foreground mb-3 leading-[1.35] tracking-[-0.02em]">{patentData.titleKo}</h2>
             )}
 
             {/* Stacked layout: Meta info (top) + Keywords (bottom) */}
             <div className="flex flex-col gap-3">
               {/* Top: Meta info — Toss-style subtle dividers */}
-              <div className="px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-2 text-[12px] sm:text-[13px] bg-muted/40 border border-border/20">
+              <div className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px] sm:text-[12.5px] bg-muted/30 border border-border/15">
                 {patentData.assignee && (
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
@@ -633,7 +633,7 @@ export function PatentSummary({
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{infoLabels.filingDate || "출원일"}</span>
-                      <span className="text-foreground font-medium">{patentData.filingDate}</span>
+                      <span className="text-foreground font-semibold tabular-nums">{patentData.filingDate}</span>
                     </span>
                     {(patentData.publicationDate || (patentData.classifications && patentData.classifications.length > 0)) && (
                       <span className="text-border text-xs">|</span>
@@ -644,7 +644,7 @@ export function PatentSummary({
                   <>
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">{patentData.registrationNumber ? (infoLabels.publicationDate || '등록일') : '공개일'}</span>
-                      <span className="text-foreground font-medium">{patentData.publicationDate}</span>
+                      <span className="text-foreground font-semibold tabular-nums">{patentData.publicationDate}</span>
                     </span>
                     {patentData.classifications && patentData.classifications.length > 0 && (
                       <span className="text-border text-xs">|</span>
@@ -822,15 +822,15 @@ export function PatentSummary({
                 };
 
                 return (
-                  <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-muted/30 border border-border/20">
-                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mr-1">키워드</span>
+                  <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-muted/25 border border-border/15">
+                    <span className="text-[9.5px] text-muted-foreground/80 font-bold uppercase tracking-[0.08em] mr-0.5">키워드</span>
                     {unique.map((kw, i) => {
                       const c = getColor(kw);
                       return (
                         <button
                           key={i}
                           onClick={() => onKeywordClick?.(kw)}
-                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium transition-all hover:scale-105 cursor-pointer"
+                          className="inline-flex items-center px-2 py-[3px] rounded-md text-[11px] font-semibold transition-all hover:-translate-y-px hover:shadow-sm cursor-pointer tracking-tight"
                           style={{ background: c.bg, color: c.fg, border: `1px solid ${c.bd}` }}
                           title={`"${kw}" 관련 특허 검색`}
                         >
@@ -861,22 +861,20 @@ export function PatentSummary({
         <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)' }} />
         
         {/* Header */}
-        <div className="px-4 sm:px-5 md:px-6 py-3 sm:py-4 flex items-center gap-2.5">
+        <div className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 flex items-center gap-2.5 border-b border-border/20">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-base sm:text-lg" style={{ background: 'hsl(var(--primary) / 0.06)', color: 'hsl(var(--primary))' }}>
             {cardIcons.aiSummary || "🤖"}
           </div>
-          <div>
-            <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">AI 종합 요약</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">
-              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'}: {patentNumber}
+          <div className="min-w-0 flex-1">
+            <h3 className="font-bold text-[14px] sm:text-[15px] text-foreground tracking-[-0.01em] leading-tight">AI 종합 요약</h3>
+            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium tabular-nums tracking-tight">
+              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {patentNumber}
             </p>
           </div>
         </div>
 
-        <div className="mx-4 sm:mx-5 md:mx-6 h-px bg-border/30" />
-
         {/* Content */}
-        <div className="px-4 py-5 sm:px-5 sm:py-6 md:px-6 md:py-7 min-h-[300px]">
+        <div className="px-4 py-4 sm:px-5 sm:py-5 md:px-6 md:py-6 min-h-[300px]">
           {content ? (
             (() => {
               const { body, footnotes } = renderMarkdown(content);
