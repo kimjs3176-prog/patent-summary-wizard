@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Search, FileText, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
+import { safeFetch } from "@/lib/safeFetch";
 
 interface PatentInputProps {
   onSubmit: (patentNumber: string) => void;
@@ -33,15 +34,17 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
     }
     setIsSearchingKeyword(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-patents`, {
+      const response = await safeFetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-patents`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
         },
-        body: JSON.stringify({ keyword })
+        body: JSON.stringify({ keyword }),
+        timeoutMs: 45000,
+        retries: 1,
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => ({ success: false, error: "응답 형식이 올바르지 않습니다." }));
       if (result.success && result.patents) {
         if (result.patents.length === 0) {
           toast.info("검색 결과가 없습니다. 다른 키워드로 검색해보세요.");
@@ -54,7 +57,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
       }
     } catch (error) {
       console.error("Keyword search error:", error);
-      toast.error("검색 중 오류가 발생했습니다.");
+      const msg = error instanceof Error ? error.message.toLowerCase() : "";
+      if (msg.includes("abort") || msg.includes("timeout")) {
+        toast.error("검색 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
+      } else {
+        toast.error("네트워크 오류로 검색에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      }
     } finally {
       setIsSearchingKeyword(false);
     }

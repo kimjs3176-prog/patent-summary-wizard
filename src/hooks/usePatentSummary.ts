@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { PatentData, RelatedPatent } from "@/components/PatentSummary/types";
 import { AnalysisStep } from "@/components/AnalysisProgressStepper";
+import { safeFetch } from "@/lib/safeFetch";
 
 export function usePatentSummary() {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +28,7 @@ export function usePatentSummary() {
     try {
       toast.info("KIPRIS에서 특허 정보를 조회 중...");
       
-      const fetchResponse = await fetch(
+      const fetchResponse = await safeFetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-patent`,
         {
           method: "POST",
@@ -36,10 +37,12 @@ export function usePatentSummary() {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ patentNumber }),
+          timeoutMs: 45000,
+          retries: 1,
         }
       );
 
-      const fetchResult = await fetchResponse.json();
+      const fetchResult = await fetchResponse.json().catch(() => ({ success: false, error: "응답 형식이 올바르지 않습니다." }));
 
       if (fetchResult.success && fetchResult.data) {
         fetchedPatentData = fetchResult.data;
@@ -66,7 +69,7 @@ export function usePatentSummary() {
     try {
       toast.info("AI 요약서를 생성 중...");
       
-      const response = await fetch(
+      const response = await safeFetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-patent`,
         {
           method: "POST",
@@ -78,6 +81,9 @@ export function usePatentSummary() {
             patentNumber,
             patentData: fetchedPatentData,
           }),
+          // Only the initial request needs a timeout; the streamed body is read by `reader` afterwards
+          timeoutMs: 60000,
+          retries: 1,
         }
       );
 
