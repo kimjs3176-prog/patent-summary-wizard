@@ -119,7 +119,7 @@ async function extractKeywordsWithAI(query: string): Promise<{ keywords: string[
   }
 
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -151,7 +151,7 @@ Rules:
         temperature: 0.3,
         max_tokens: 200,
       }),
-    });
+    }, 8000);
 
     if (!response.ok) {
       console.error("AI keyword extraction failed:", response.status);
@@ -356,7 +356,7 @@ serve(async (req) => {
             url.searchParams.set("descSort", "true");
             url.searchParams.set("patent", "true");
             url.searchParams.set("utility", "true");
-            const res = await fetch(url.toString());
+            const res = await fetchWithRetry(url.toString(), {}, { retries: 1, timeoutMs: 12000 });
             const text = await res.text();
             if (res.ok && !text.includes("<successYN>N</successYN>")) {
               return parsePatentsFromXml(text, org.name);
@@ -380,7 +380,7 @@ serve(async (req) => {
             url.searchParams.set("descSort", "true");
             url.searchParams.set("patent", "true");
             url.searchParams.set("utility", "true");
-            const res = await fetch(url.toString());
+            const res = await fetchWithRetry(url.toString(), {}, { retries: 1, timeoutMs: 12000 });
             const text = await res.text();
             if (res.ok && !text.includes("<successYN>N</successYN>")) {
               return parsePatentsFromXml(text, org.name);
