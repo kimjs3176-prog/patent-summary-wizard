@@ -12,6 +12,7 @@ import SearchResults from "./pages/SearchResults";
 import NotFound from "./pages/NotFound";
 import { FloatingChatbot } from "./components/FloatingChatbot";
 import { SplashScreen } from "./components/SplashScreen";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,24 +34,28 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/compare" element={<Compare />} />
-            <Route path="/insights" element={<Insights />} />
-            <Route path="/search" element={<SearchResults />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <FloatingChatbot />
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+          <BrowserRouter>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/compare" element={<Compare />} />
+                <Route path="/insights" element={<Insights />} />
+                <Route path="/search" element={<SearchResults />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
+            <FloatingChatbot />
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
