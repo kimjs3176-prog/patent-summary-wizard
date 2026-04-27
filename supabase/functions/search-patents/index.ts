@@ -5,6 +5,47 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Fetch with timeout + retry on transient errors
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = 10000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  { retries = 2, timeoutMs = 10000, baseDelay = 600 } = {},
+): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetchWithTimeout(url, options, timeoutMs);
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      const retryable =
+        msg.includes("abort") ||
+        msg.includes("timeout") ||
+        msg.includes("Connection") ||
+        msg.includes("ECONNRESET") ||
+        msg.includes("network");
+      if (!retryable || attempt === retries) break;
+      const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 200;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
 interface KeywordSearchResult {
   patentId: string;
   title: string;
