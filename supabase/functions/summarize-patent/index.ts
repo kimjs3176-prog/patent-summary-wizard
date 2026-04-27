@@ -6,6 +6,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// AbortController-based timeout for fetch
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = 60000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 interface PatentData {
   title?: string;
   abstract?: string;
@@ -188,7 +203,8 @@ serve(async (req) => {
       ? `분석:\n${patentContext}`
       : `특허 ${patentNumber} 요약서 작성.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // 60s timeout to start streaming; once streaming starts the body is read by reader
+    const response = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -203,7 +219,7 @@ serve(async (req) => {
         stream: true,
         max_tokens: maxTokens,
       }),
-    });
+    }, 60000);
 
     if (!response.ok) {
       if (response.status === 429) {
