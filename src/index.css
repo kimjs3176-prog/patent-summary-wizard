@@ -491,7 +491,10 @@
   }
 
   /* Strip ambient gradient backgrounds but keep semantic fills (badges/charts) */
-  section, .bg-card, .bg-background, .bg-muted\\/30, .bg-muted\\/50 {
+  section, .bg-card, .bg-background {
+    background: white !important;
+  }
+  [class*="bg-muted"] {
     background: white !important;
   }
 
