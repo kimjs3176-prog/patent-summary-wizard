@@ -753,6 +753,10 @@ const Admin = () => {
                   {[
                     { key: "feature_pdf", label: "PDF 내보내기", desc: "특허 요약서를 PDF로 다운로드하는 기능" },
                     { key: "feature_ppt", label: "PPT 내보내기", desc: "특허 요약서를 PPT로 다운로드하는 기능" },
+                    { key: "feature_favorites", label: "관심 특허(즐겨찾기)", desc: "요약 화면의 '담기' 버튼 및 비교 페이지" },
+                    { key: "feature_search_history", label: "최근 검색 기록", desc: "메인 화면의 검색 기록 카드 노출" },
+                    { key: "feature_glossary", label: "용어집 자동 주석", desc: "AI 요약 본문의 학술 용어 툴팁 자동 표시" },
+                    { key: "feature_competitor_analysis", label: "경쟁 특허 비교 분석", desc: "요약 하단의 유사 특허 비교 표 노출" },
                   ].map(feat => {
                     const isOn = siteSettings[feat.key] !== "false";
                     return (
