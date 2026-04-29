@@ -6,6 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 30000): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 interface ComparisonRow {
   axis: string;
   current: string;
@@ -131,19 +141,23 @@ advantage: 분석 대상이 우수하면 "current", 경쟁이 우수하면 "comp
   "summary": "분석 대상의 차별적 우위 2~3문장 요약"
 }`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: ctx },
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 2000,
-      }),
-    });
+    const aiResp = await fetchWithTimeout(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: ctx },
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 2000,
+        }),
+      },
+      45000,
+    );
 
     if (!aiResp.ok) {
       if (aiResp.status === 429) {
