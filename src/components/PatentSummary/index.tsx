@@ -64,6 +64,10 @@ export function PatentSummary({
 
   const disclaimerText = settings.summary_disclaimer || "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음";
 
+  // Feature flags from site settings
+  const favoritesEnabled = settings.feature_favorites !== "false";
+  const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
+
   const printSections = useMemo(() => {
     const defaults = {
       patentInfo: true,
