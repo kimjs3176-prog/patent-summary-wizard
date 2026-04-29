@@ -68,7 +68,7 @@ export function PatentSummary({
   const favoritesEnabled = settings.feature_favorites !== "false";
   const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
   const glossaryEnabled = settings.feature_glossary !== "false";
-  const annotate = (text: string) => (glossaryEnabled ? annotate(text) : text);
+  const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text) : text);
 
   const printSections = useMemo(() => {
     const defaults = {
