@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 12;
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -146,15 +146,15 @@ export default function SearchResults() {
         {/* Results */}
         {!isLoading && paginatedResults.length > 0 && (
           <>
-            <div className="max-w-3xl mx-auto grid gap-3">
+            <div className="max-w-5xl mx-auto grid gap-3 sm:grid-cols-1 md:grid-cols-2">
               {paginatedResults.map((patent, idx) => (
                 <button
                   key={patent.patentId}
                   onClick={() => handlePatentClick(patent.patentId)}
-                  className="w-full p-5 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left group"
+                  className="w-full h-full p-5 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left group flex flex-col"
                   style={{ boxShadow: 'var(--shadow-xs)' }}
                 >
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-1">
                     {/* Rank badge */}
                     <div className="flex-shrink-0 self-start">
                       <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${
@@ -171,7 +171,7 @@ export default function SearchResults() {
                         <img
                           src={proxyUrl(patent.thumbnail)}
                           alt=""
-                          className="w-20 h-20 object-contain rounded-xl bg-secondary/50 border border-border/30"
+                          className="w-16 h-16 object-contain rounded-xl bg-secondary/50 border border-border/30"
                           onError={(e) => {
                             (e.currentTarget.parentElement as HTMLElement).style.display = "none";
                           }}
@@ -198,17 +198,28 @@ export default function SearchResults() {
                           </span>
                         )}
                       </div>
+                      {patent.inventors && (
+                        <div className="flex items-center gap-1.5 mb-2 text-[11px] text-muted-foreground">
+                          <User className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate" title={patent.inventors}>
+                            대표 발명자: <span className="font-medium text-foreground/80">{patent.inventors.split(/[|,;]/)[0].trim()}</span>
+                            {patent.inventors.split(/[|,;]/).length > 1 && (
+                              <span className="text-muted-foreground/70"> 외 {patent.inventors.split(/[|,;]/).length - 1}명</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                       {patent.snippet && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
                           {patent.snippet}
                         </p>
                       )}
                     </div>
-                    <div className="flex-shrink-0 self-center">
-                      <span className="text-xs text-primary font-semibold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        요약 →
-                      </span>
-                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-end">
+                    <span className="text-xs text-primary font-semibold opacity-60 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      AI 요약 보기 →
+                    </span>
                   </div>
                 </button>
               ))}
@@ -216,7 +227,7 @@ export default function SearchResults() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="max-w-3xl mx-auto mt-10 flex items-center justify-center gap-1.5">
+              <div className="max-w-5xl mx-auto mt-10 flex items-center justify-center gap-1.5">
                 <Button
                   variant="outline"
                   size="sm"

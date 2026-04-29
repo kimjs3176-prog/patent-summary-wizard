@@ -70,4 +70,5 @@ export interface KeywordSearchResult {
   publicationDate?: string;
   snippet?: string;
   thumbnail?: string;
+  inventors?: string;
 }

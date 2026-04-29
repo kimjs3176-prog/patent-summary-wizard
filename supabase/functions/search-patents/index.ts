@@ -285,6 +285,7 @@ serve(async (req) => {
         const applicant = getField("applicant") || "";
         const astrtCont = getField("astrtCont") || "";
         const drawing = getField("bigDrawing") || getField("drawing") || "";
+        const inventors = getField("inventorName") || getField("inventor") || "";
 
         let patentId = "";
         let displayNumber = "";
@@ -325,6 +326,7 @@ serve(async (req) => {
           registrationNumber,
           snippet: astrtCont ? astrtCont.substring(0, 200) + (astrtCont.length > 200 ? "..." : "") : undefined,
           thumbnail: drawing || undefined,
+          inventors: inventors || undefined,
           organizationName: orgName,
         });
       }
