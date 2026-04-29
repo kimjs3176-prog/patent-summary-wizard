@@ -974,7 +974,7 @@ export function PatentSummary({
       </div>
 
       {/* 6. Competitor Comparison Table — AI generated */}
-      {patentData && !isStreaming && content && visibleSections.competitorComparison !== false && (
+      {patentData && !isStreaming && content && competitorAnalysisEnabled && visibleSections.competitorComparison !== false && (
         <div id="sec-compare" className="mt-4 scroll-mt-24">
           <CompetitorComparisonTable patentData={patentData} onPatentClick={onRelatedPatentClick} />
         </div>
