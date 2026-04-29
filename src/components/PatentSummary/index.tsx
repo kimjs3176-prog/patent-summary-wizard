@@ -501,26 +501,28 @@ export function PatentSummary({
               <Share2 className="w-3.5 h-3.5" />
               공유
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (!patentData) return;
-                toggleFavorite({
-                  patentNumber,
-                  patentData,
-                  commercializationScore,
-                  commercializationDetails,
-                  summary: content,
-                  addedAt: new Date().toISOString(),
-                });
-                toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
-              }}
-              className={`gap-1 text-[11.5px] h-8 px-2 rounded-lg transition-colors ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${patentIsFavorite ? "fill-current" : ""}`} />
-              {patentIsFavorite ? "담김" : "담기"}
-            </Button>
+            {favoritesEnabled && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (!patentData) return;
+                  toggleFavorite({
+                    patentNumber,
+                    patentData,
+                    commercializationScore,
+                    commercializationDetails,
+                    summary: content,
+                    addedAt: new Date().toISOString(),
+                  });
+                  toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
+                }}
+                className={`gap-1 text-[11.5px] h-8 px-2 rounded-lg transition-colors ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Heart className={`w-3.5 h-3.5 ${patentIsFavorite ? "fill-current" : ""}`} />
+                {patentIsFavorite ? "담김" : "담기"}
+              </Button>
+            )}
             {featureFlags.pdfEnabled && (
               <PdfGenerator
                 content={content}
