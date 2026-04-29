@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles } from "lucide-react";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip as RTooltip } from "recharts";
 import { PatentData } from "./types";
+import { safeFetch } from "@/lib/safeFetch";
 
 type Strength = "strong" | "medium" | "weak";
 
@@ -92,7 +93,7 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
       setResult(null);
 
       const callRecommend = async (overrideTitle?: string, overrideAbstract?: string) => {
-        const res = await fetch(
+        const res = await safeFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/recommend-similar-patents`,
           {
             method: "POST",
@@ -106,9 +107,11 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
               classifications: patentData.classifications || [],
               patentNumber: patentData.patentNumber || patentData.displayNumber || "",
             }),
+            timeoutMs: 45000,
+            retries: 1,
           }
         );
-        return res.json();
+        return res.json().catch(() => ({ success: false, patents: [] }));
       };
 
       const dedupeCurrent = (list: AiRecommendedPatent[]) => {
@@ -160,7 +163,7 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
         const top3 = filtered.slice(0, 3);
 
         // Step 2: Generate comparison table
-        const cmpRes = await fetch(
+        const cmpRes = await safeFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/compare-patents`,
           {
             method: "POST",
@@ -172,9 +175,11 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
               currentPatent: patentData,
               competitorPatents: top3,
             }),
+            timeoutMs: 60000,
+            retries: 1,
           }
         );
-        const cmpJson = await cmpRes.json();
+        const cmpJson = await cmpRes.json().catch(() => ({ success: false, error: "응답 형식이 올바르지 않습니다." }));
         if (cmpJson.success) {
           setResult({
             rows: cmpJson.rows || [],
@@ -186,7 +191,12 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
         }
       } catch (e) {
         console.error(e);
-        setError("비교 분석 중 오류가 발생했습니다.");
+        const msg = e instanceof Error ? e.message.toLowerCase() : "";
+        if (msg.includes("abort") || msg.includes("timeout")) {
+          setError("네트워크가 지연되어 비교 분석을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        } else {
+          setError("비교 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        }
       } finally {
         setLoading(false);
       }
