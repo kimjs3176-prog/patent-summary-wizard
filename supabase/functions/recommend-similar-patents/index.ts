@@ -5,6 +5,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Fetch with timeout + retry for flaky upstreams (KIPRIS occasionally resets)
+async function fetchWithRetry(url: string, init: RequestInit = {}, opts: { timeoutMs?: number; retries?: number } = {}): Promise<Response> {
+  const { timeoutMs = 12000, retries = 2 } = opts;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...init, signal: ctrl.signal });
+      clearTimeout(timer);
+      // Retry on transient 5xx
+      if (!res.ok && res.status >= 500 && attempt < retries) {
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      clearTimeout(timer);
+      lastErr = err;
+      if (attempt === retries) break;
+      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -119,8 +145,8 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
 
     const allPatents: SimilarPatent[] = [];
 
-    const searchKipris = async (keywords: string[], groupIndex: number): Promise<SimilarPatent[]> => {
-      const kw = keywords.slice(0, 3).join("*");
+    const searchKipris = async (keywords: string[], groupIndex: number, operator: "*" | "+" = "*"): Promise<SimilarPatent[]> => {
+      const kw = keywords.slice(0, 3).join(operator);
       const results: SimilarPatent[] = [];
 
       try {
@@ -136,7 +162,7 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
         url.searchParams.set("patent", "true");
         url.searchParams.set("utility", "true");
 
-        const res = await fetch(url.toString());
+        const res = await fetchWithRetry(url.toString(), {}, { timeoutMs: 12000, retries: 2 });
         const text = await res.text();
 
         if (!res.ok || text.includes("<successYN>N</successYN>")) return results;
@@ -202,19 +228,35 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
           });
         }
       } catch (e) {
-        console.error(`KIPRIS search error for "${kw}":`, e);
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`KIPRIS search error for "${kw}" (op=${operator}):`, msg);
       }
 
       return results;
     };
 
-    // Run all queries in parallel
+    // Run AND queries in parallel
     const queryResults = await Promise.all(
-      searchQueries.map((q, i) => searchKipris(q, i))
+      searchQueries.map((q, i) => searchKipris(q, i, "*"))
     );
+    for (const results of queryResults) allPatents.push(...results);
 
-    for (const results of queryResults) {
-      allPatents.push(...results);
+    // Fallback 1: if no results, retry with OR operator (broader)
+    if (allPatents.length === 0) {
+      console.log("AND search empty — retrying with OR operator");
+      const orResults = await Promise.all(
+        searchQueries.map((q, i) => searchKipris(q, i, "+"))
+      );
+      for (const results of orResults) allPatents.push(...results);
+    }
+
+    // Fallback 2: still empty — try single keywords from first query
+    if (allPatents.length === 0 && searchQueries[0]?.length) {
+      console.log("OR search empty — retrying with single keywords");
+      const singles = await Promise.all(
+        searchQueries[0].slice(0, 3).map((kw, i) => searchKipris([kw], i, "*"))
+      );
+      for (const results of singles) allPatents.push(...results);
     }
 
     // Deduplicate and prioritize by relevance group
