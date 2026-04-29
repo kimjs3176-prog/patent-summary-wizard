@@ -68,7 +68,7 @@ export function PatentSummary({
   const favoritesEnabled = settings.feature_favorites !== "false";
   const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
   const glossaryEnabled = settings.feature_glossary !== "false";
-  const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text) : text);
+  const annotate = (text: string) => (glossaryEnabled ? annotate(text) : text);
 
   const printSections = useMemo(() => {
     const defaults = {
@@ -304,12 +304,12 @@ export function PatentSummary({
           <p key={index} className="text-foreground/80 leading-[1.78] mb-2 text-[13.5px] sm:text-[14.5px] md:text-[15px] tracking-[-0.005em]">
               {parts.map((part, i) => {
                 if ((part.startsWith('**') && part.endsWith('**'))) {
-                  return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+                  return <strong key={i} className="font-bold text-foreground">{annotate(part.slice(2, -2))}</strong>;
                 }
                 if ((part.startsWith('__') && part.endsWith('__'))) {
-                  return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+                  return <strong key={i} className="font-bold text-foreground">{annotate(part.slice(2, -2))}</strong>;
                 }
-                return <span key={i}>{annotateWithGlossary(part)}</span>;
+                return <span key={i}>{annotate(part)}</span>;
               })}
             </p>
           );
@@ -422,10 +422,10 @@ export function PatentSummary({
           <p key={index} className="text-foreground/80 leading-[1.78] mb-2.5 text-[13.5px] sm:text-[14.5px] md:text-[15px] tracking-[-0.005em]">
             {parts.map((part, i) => {
               if ((part.startsWith('**') && part.endsWith('**'))) {
-                return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+                return <strong key={i} className="font-bold text-foreground">{annotate(part.slice(2, -2))}</strong>;
               }
               if ((part.startsWith('__') && part.endsWith('__'))) {
-                return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+                return <strong key={i} className="font-bold text-foreground">{annotate(part.slice(2, -2))}</strong>;
               }
               const fnMatch = part.match(/^\[\^(\d+)\]$/);
               if (fnMatch) {
@@ -435,7 +435,7 @@ export function PatentSummary({
                   </a>
                 );
               }
-              return <span key={i}>{annotateWithGlossary(part)}</span>;
+              return <span key={i}>{annotate(part)}</span>;
             })}
           </p>
         );
