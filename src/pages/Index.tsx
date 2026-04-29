@@ -190,7 +190,7 @@ const Index = () => {
 
             {/* 세로 스크롤 단일 컬럼 — 공지·기록 → 추천특허 → 기술영상 → 기술이전 안내 */}
             <div className="max-w-5xl mx-auto space-y-8 md:space-y-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-              {(homepageVisible.notices !== false || history.length > 0) && (
+              {(homepageVisible.notices !== false || (settings.feature_search_history !== "false" && history.length > 0)) && (
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   {homepageVisible.notices !== false && (
                     <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -200,7 +200,7 @@ const Index = () => {
                   <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
                     <PopularSearches onPatentSelect={handleSubmit} />
                   </div>
-                  {history.length > 0 && (
+                  {settings.feature_search_history !== "false" && history.length > 0 && (
                     <div className="rounded-2xl border border-border/40 bg-card p-4 md:col-span-2" style={{ boxShadow: "var(--shadow-card)" }}>
                       <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
                     </div>

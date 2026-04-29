@@ -64,6 +64,12 @@ export function PatentSummary({
 
   const disclaimerText = settings.summary_disclaimer || "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음";
 
+  // Feature flags from site settings
+  const favoritesEnabled = settings.feature_favorites !== "false";
+  const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
+  const glossaryEnabled = settings.feature_glossary !== "false";
+  const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text) : text);
+
   const printSections = useMemo(() => {
     const defaults = {
       patentInfo: true,
@@ -298,12 +304,12 @@ export function PatentSummary({
           <p key={index} className="text-foreground/80 leading-[1.78] mb-2 text-[13.5px] sm:text-[14.5px] md:text-[15px] tracking-[-0.005em]">
               {parts.map((part, i) => {
                 if ((part.startsWith('**') && part.endsWith('**'))) {
-                  return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+                  return <strong key={i} className="font-bold text-foreground">{annotate(part.slice(2, -2))}</strong>;
                 }
                 if ((part.startsWith('__') && part.endsWith('__'))) {
-                  return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+                  return <strong key={i} className="font-bold text-foreground">{annotate(part.slice(2, -2))}</strong>;
                 }
-                return <span key={i}>{annotateWithGlossary(part)}</span>;
+                return <span key={i}>{annotate(part)}</span>;
               })}
             </p>
           );
@@ -416,10 +422,10 @@ export function PatentSummary({
           <p key={index} className="text-foreground/80 leading-[1.78] mb-2.5 text-[13.5px] sm:text-[14.5px] md:text-[15px] tracking-[-0.005em]">
             {parts.map((part, i) => {
               if ((part.startsWith('**') && part.endsWith('**'))) {
-                return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+                return <strong key={i} className="font-bold text-foreground">{annotate(part.slice(2, -2))}</strong>;
               }
               if ((part.startsWith('__') && part.endsWith('__'))) {
-                return <strong key={i} className="font-bold text-foreground">{annotateWithGlossary(part.slice(2, -2))}</strong>;
+                return <strong key={i} className="font-bold text-foreground">{annotate(part.slice(2, -2))}</strong>;
               }
               const fnMatch = part.match(/^\[\^(\d+)\]$/);
               if (fnMatch) {
@@ -429,7 +435,7 @@ export function PatentSummary({
                   </a>
                 );
               }
-              return <span key={i}>{annotateWithGlossary(part)}</span>;
+              return <span key={i}>{annotate(part)}</span>;
             })}
           </p>
         );
@@ -497,26 +503,28 @@ export function PatentSummary({
               <Share2 className="w-3.5 h-3.5" />
               공유
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (!patentData) return;
-                toggleFavorite({
-                  patentNumber,
-                  patentData,
-                  commercializationScore,
-                  commercializationDetails,
-                  summary: content,
-                  addedAt: new Date().toISOString(),
-                });
-                toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
-              }}
-              className={`gap-1 text-[11.5px] h-8 px-2 rounded-lg transition-colors ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${patentIsFavorite ? "fill-current" : ""}`} />
-              {patentIsFavorite ? "담김" : "담기"}
-            </Button>
+            {favoritesEnabled && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (!patentData) return;
+                  toggleFavorite({
+                    patentNumber,
+                    patentData,
+                    commercializationScore,
+                    commercializationDetails,
+                    summary: content,
+                    addedAt: new Date().toISOString(),
+                  });
+                  toast.success(patentIsFavorite ? "관심특허에서 제거되었습니다" : "관심특허에 담았습니다");
+                }}
+                className={`gap-1 text-[11.5px] h-8 px-2 rounded-lg transition-colors ${patentIsFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Heart className={`w-3.5 h-3.5 ${patentIsFavorite ? "fill-current" : ""}`} />
+                {patentIsFavorite ? "담김" : "담기"}
+              </Button>
+            )}
             {featureFlags.pdfEnabled && (
               <PdfGenerator
                 content={content}
@@ -968,7 +976,7 @@ export function PatentSummary({
       </div>
 
       {/* 6. Competitor Comparison Table — AI generated */}
-      {patentData && !isStreaming && content && visibleSections.competitorComparison !== false && (
+      {patentData && !isStreaming && content && competitorAnalysisEnabled && visibleSections.competitorComparison !== false && (
         <div id="sec-compare" className="mt-4 scroll-mt-24">
           <CompetitorComparisonTable patentData={patentData} onPatentClick={onRelatedPatentClick} />
         </div>
