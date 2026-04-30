@@ -240,6 +240,13 @@ advantage: 분석 대상이 우수하면 "current", 경쟁이 우수하면 "comp
       parsed = m ? JSON.parse(m[0]) : { rows: [], summary: "" };
     }
 
+    if (!Array.isArray(parsed.rows) || parsed.rows.length === 0) {
+      const fallback = buildFallbackComparison(currentPatent, top3);
+      return new Response(JSON.stringify({ success: true, fallback: true, ...fallback }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const sims = parsed.competitorSimilarities || [];
     const result: ComparisonResult = {
       rows: (parsed.rows || []).map((r: any) => ({
