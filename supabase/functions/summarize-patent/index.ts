@@ -106,7 +106,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v3-5sections";
+    const promptVersion = "v4-agri-specific";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -206,7 +206,11 @@ serve(async (req) => {
 [^1]: 기관명, 「보고서명」, 발행연도
 [^2]: 기관명, 「보고서명」, 발행연도
 출처는 실제 신뢰할 수 있는 기관(KISTEP, KIET, IRS Global, MarketsandMarkets, Grand View Research, Statista, 통계청, 농림축산식품부 등) 사용. 실존하지 않는 출처 금지.**
-## 농산업활용 가능성 - 스마트팜·정밀농업·식품가공·축산 등 농산업 현장에서의 구체적 활용 시나리오, 적용 분야, 기대 효과를 서술
+## 농산업활용 가능성 - 본 특허의 핵심 기술 원리·구성요소에서 직접 도출 가능한 농산업 활용 시나리오만 서술. 반드시 다음 구조로 작성:
+  (1) **직접 적용 분야**: 특허 청구항·기술분야와 직결되는 1차 적용처(작물군/품목/공정/장비 단계까지 구체화. 예: "시설토마토 양액재배의 EC 센싱 단계", "도축 후 냉장숙성 24~72시간 구간의 미생물 억제")
+  (2) **현장 활용 시나리오**: 누가(농가/가공업체/연구기관 등) 어떤 환경(노지/시설/스마트팜/가공라인 등)에서 어떤 문제를 어떻게 해결하는지 단계적으로 서술
+  (3) **기대 효과**: 수율·품질·인건비·에너지·로스율 등 정량적 지표 중심으로 제시(가능한 경우 % 또는 배수)
+  **[금지] 특허의 기술 원리와 무관한 분야로의 비약 금지**(예: 토양 센서 특허를 의료/우주 분야에 활용 제안 금지). 청구항에 명시된 적용대상이 좁은 경우, 인접 작물·인접 공정 정도까지만 확장 허용. 확장 시 "기술원리가 동일하게 적용 가능한 인접 분야"임을 명시할 것.
 ## 상용화전망 - 기술 완성도, 상용화 경로(시장 진입 전략, 사업화 단계), 예상 수요처 및 비즈니스 모델을 정성적으로 설명. TRL 숫자 직접 언급 금지.
 
 [중요] 위 5개 섹션(기술분야 / 발명요약 및 특징 / 관련시장 동향 / 농산업활용 가능성 / 상용화전망)만 사용. 다른 ## 섹션을 추가로 만들지 말 것. "기술적 특징"을 별도 섹션으로 분리하지 말 것.
