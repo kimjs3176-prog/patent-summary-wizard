@@ -113,6 +113,62 @@ serve(async (req) => {
     // Detect if detailed mode (check body for analysisMode)
     const isDetailedScore = body.analysisMode === "detailed";
 
+    // ===== 동적 길이 조절 로직 =====
+    // 1) 문서 정보량 점수 (0~100)
+    const abstractLen = (data.abstract || "").length;
+    const descLen = (data.description || "").length;
+    const claimsCount = data.claims?.length || 0;
+    const firstClaimLen = data.claims?.[0]?.length || 0;
+    const totalContentLen = abstractLen + descLen + firstClaimLen;
+
+    let infoScore = 0;
+    if (totalContentLen >= 2500) infoScore = 100;
+    else if (totalContentLen >= 1500) infoScore = 80;
+    else if (totalContentLen >= 800) infoScore = 60;
+    else if (totalContentLen >= 400) infoScore = 40;
+    else infoScore = 20;
+    // 청구항 다수면 가산
+    if (claimsCount >= 10) infoScore = Math.min(100, infoScore + 15);
+    else if (claimsCount >= 5) infoScore = Math.min(100, infoScore + 8);
+
+    // 2) IPC 복잡도 — 첨단/융합 분야는 길게, 단순 분야는 짧게
+    const ipcStr = (data.classifications || []).join(" ").toUpperCase();
+    const ipcSections = new Set(
+      (data.classifications || []).map(c => c.charAt(0).toUpperCase()).filter(Boolean)
+    );
+    // 첨단/복합 섹션 가중: A(생활필수=의약/식품/농업), C(화학/생화학), G(물리/계측), H(전기/IT)
+    const advancedHits = ["A61", "C12", "C07", "G06", "G01", "H04", "H01", "B01"]
+      .filter(p => ipcStr.includes(p)).length;
+    // 단순 기계/생활 분야: B(처리/운수), F(기계/조명/난방)
+    const simpleHits = ["B65", "F24", "F26", "A47", "A23L", "A23B"]
+      .filter(p => ipcStr.includes(p)).length;
+
+    let complexityScore = 50;
+    complexityScore += advancedHits * 8;          // 첨단 분야 가산
+    complexityScore += (ipcSections.size - 1) * 6; // 다분야 가산
+    complexityScore -= simpleHits * 6;             // 단순 분야 감산
+    complexityScore = Math.max(20, Math.min(100, complexityScore));
+
+    // 3) 종합 길이 배수 계산 (0.7 ~ 1.4)
+    //    정보량 70% + 복잡도 30% 가중 평균
+    const lengthIndex = (infoScore * 0.7 + complexityScore * 0.3) / 100;
+    const lengthMultiplier = Math.max(0.7, Math.min(1.4, 0.7 + lengthIndex * 0.7));
+
+    // 4) 모드별 기본 범위에 배수 적용
+    const round = (n: number) => Math.round(n / 5) * 5;
+    const baseRanges = isDetailedScore
+      ? { reason: [55, 85], trl: [100, 150], analysis: [180, 250] }
+      : { reason: [40, 55], trl: [80, 100], analysis: [120, 160] };
+
+    const reasonMin = round(baseRanges.reason[0] * lengthMultiplier);
+    const reasonMax = round(baseRanges.reason[1] * lengthMultiplier);
+    const trlMin = round(baseRanges.trl[0] * lengthMultiplier);
+    const trlMax = round(baseRanges.trl[1] * lengthMultiplier);
+    const analysisMin = round(baseRanges.analysis[0] * lengthMultiplier);
+    const analysisMax = round(baseRanges.analysis[1] * lengthMultiplier);
+
+    console.log(`[LENGTH-AUTO] ${trimmedPatent} info=${infoScore} complexity=${complexityScore} multiplier=${lengthMultiplier.toFixed(2)} reason=${reasonMin}~${reasonMax}자`);
+
     // Patent context - richer for detailed
     const abstractLimit = isDetailedScore ? 450 : 300;
     let patentContext = `번호: ${data.patentNumber || patentNumber}
@@ -148,7 +204,7 @@ TRL(1-9): 특허 텍스트에서 확인 가능한 기술 완성도만 기준으�
 주의: 시장 규모·성장률 등 특허 문서에 없는 외부 데이터를 추측하여 근거로 제시하지 말 것. IPC 분류와 기술 특성에서 추론 가능한 산업 적용성만 평가할 것.
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"100~150자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"180~250자 종합평가: 기술적 차별성, 시장 적용 가능성, 사업화 전략을 종합적으로 분석","technologyReason":"55~85자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"55~85자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"55~85자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가: 기술적 차별성, 시장 적용 가능성, 사업화 전략을 종합적으로 분석","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
       : `특허 기술사업화 평가 전문가. JSON으로만 응답.
 
 평가기준(0-100):
@@ -165,7 +221,7 @@ TRL(1-9): 특허 텍스트 기반 기술 완성도만 판단. 개념→2~3, 실�
 주의: 특허문서에 없는 시장규모 등 외부데이터 추측 금지. IPC·기술특성 기반 산업적용성만 평가.
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"80~100자 근거","analysis":"120~160자 종합평가","technologyReason":"40~55자 핵심근거","marketReason":"40~55자 핵심근거","businessReason":"40~55자 핵심근거"}`;
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
 
 
     // Read AI model from settings
@@ -181,7 +237,9 @@ JSON형식:
     } catch { /* use default */ }
 
     const scoreModel = isDetailedScore ? configuredModel : "google/gemini-2.5-flash-lite";
-    const scoreMaxTokens = isDetailedScore ? 650 : 420;
+    // max_tokens도 길이 배수에 비례하여 동적 조절
+    const baseMaxTokens = isDetailedScore ? 650 : 420;
+    const scoreMaxTokens = Math.round(baseMaxTokens * lengthMultiplier);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
