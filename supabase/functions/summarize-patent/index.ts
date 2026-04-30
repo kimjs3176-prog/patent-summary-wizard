@@ -71,14 +71,53 @@ serve(async (req) => {
       );
     }
 
-    // Check cache first
+    // Read custom prompt additions, total max tokens, model, and per-section length settings.
+    let customPromptExtra = "";
+    let maxTokens = 3000;
+    let aiModel = "google/gemini-2.5-flash";
+    let sectionLengthSettings: Record<string, number> = {};
+    try {
+      const supabase = getSupabaseClient();
+      const { data: settings } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens", "ai_model", "summary_section_lengths"]);
+      if (settings) {
+        for (const row of settings) {
+          if (row.key === "summary_ai_prompt_extra" && row.value) customPromptExtra = row.value;
+          if (row.key === "summary_max_tokens" && row.value) {
+            const parsed = parseInt(row.value, 10);
+            if (!isNaN(parsed) && parsed >= 500 && parsed <= 8000) maxTokens = parsed;
+          }
+          if (row.key === "ai_model" && row.value) aiModel = row.value;
+          if (row.key === "summary_section_lengths" && row.value) {
+            try {
+              const parsed = JSON.parse(row.value);
+              for (const [key, value] of Object.entries(parsed)) {
+                const n = Number(value);
+                if (key && Number.isFinite(n)) sectionLengthSettings[key] = Math.max(1, Math.min(10, Math.round(n)));
+              }
+            } catch { /* ignore invalid setting */ }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to read custom settings:", e);
+    }
+
+    const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings });
+    let signatureHash = 0;
+    for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
+    const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
+
+    // Check cache first, scoped to settings that affect generated content.
     try {
       const supabase = getSupabaseClient();
       const { data: cached } = await supabase
         .from("patent_ai_cache")
         .select("summary_content")
         .eq("patent_number", trimmedPatent)
-        .eq("analysis_mode", "detailed")
+        .eq("analysis_mode", summaryAnalysisMode)
         .maybeSingle();
 
       if (cached?.summary_content) {
