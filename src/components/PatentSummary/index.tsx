@@ -686,7 +686,12 @@ export function PatentSummary({
                 const text = [patentData.titleKo || patentData.title || '', patentData.abstract || ''].join(' ');
 
                 // 1. IPC → 활용가능산업
-                if (patentData.classifications?.length) {
+                const normalizedClassifications = (patentData.classifications || [])
+                  .flatMap(cls => cls.split(/[|,;]+/))
+                  .map(cls => cls.trim())
+                  .filter(Boolean);
+
+                if (normalizedClassifications.length) {
                   const ipcIndustryMap: Record<string, string> = {
                     'A23L': '건강기능식품', 'A23B': '식품저장', 'A23C': '유제품', 'A23D': '유지식품',
                     'A23F': '음료', 'A23G': '제과', 'A23J': '단백질식품', 'A23K': '사료',
@@ -711,7 +716,7 @@ export function PatentSummary({
                     'G06': 'ICT', 'B01': '화학공정', 'H04': 'IoT', 'G01': '계측산업',
                     'B65': '물류산업', 'B02': '곡물가공', 'F26': '건조산업',
                   };
-                  patentData.classifications.forEach(cls => {
+                  normalizedClassifications.forEach(cls => {
                     const c = cls.replace(/\s/g, '');
                     const k = ipcIndustryMap[c.slice(0, 4)] || ipcIndustryMap[c.slice(0, 3)];
                     if (k && !industryKws.includes(k)) industryKws.push(k);
@@ -828,6 +833,20 @@ export function PatentSummary({
                     if (!allKws.includes(k) && allKws.length < maxTotal) allKws.push(k);
                   });
                 }
+                if (allKws.length < 5) {
+                  const robustFallbacks: [RegExp, string][] = [
+                    [/식물\s*생육|생장\s*촉진/, '식물생육증진'],
+                    [/식물병|병원균|병해/, '식물병억제'],
+                    [/신규\s*균주|균주/, '신규균주'],
+                    [/미생물제|미생물\s*제제/, '미생물제'],
+                    [/슈도모나스|Pseudomonas/i, '슈도모나스'],
+                    [/사포니필라|saponiphila/i, '사포니필라'],
+                    [/생물\s*방제|방제/, '생물방제'],
+                  ];
+                  robustFallbacks.forEach(([p, l]) => {
+                    if (p.test(text) && !allKws.includes(l) && allKws.length < maxTotal) allKws.push(l);
+                  });
+                }
                 const unique = allKws.slice(0, maxTotal);
 
                 if (unique.length === 0) return null;
@@ -841,8 +860,9 @@ export function PatentSummary({
                 };
 
                 return (
-                  <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-muted/25 border border-border/15">
+                  <div className="patent-keyword-container flex flex-wrap items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-muted/25 border border-border/15">
                     <span className="text-[9.5px] text-muted-foreground/80 font-bold uppercase tracking-[0.08em] mr-0.5">키워드</span>
+                    <span className="patent-keyword-print-text">{unique.map(kw => `#${kw}`).join(' ')}</span>
                     {unique.map((kw, i) => {
                       const c = getColor(kw);
                       return (
@@ -852,7 +872,7 @@ export function PatentSummary({
                           tabIndex={0}
                           onClick={() => onKeywordClick?.(kw)}
                           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onKeywordClick?.(kw); } }}
-                          className="inline-flex items-center px-2 py-[3px] rounded-md text-[11px] font-semibold transition-all hover:-translate-y-px hover:shadow-sm cursor-pointer tracking-tight"
+                          className="patent-keyword-chip inline-flex items-center px-2 py-[3px] rounded-md text-[11px] font-semibold transition-all hover:-translate-y-px hover:shadow-sm cursor-pointer tracking-tight"
                           style={{ background: c.bg, color: c.fg, border: `1px solid ${c.bd}` }}
                           title={`"${kw}" 관련 특허 검색`}
                         >
