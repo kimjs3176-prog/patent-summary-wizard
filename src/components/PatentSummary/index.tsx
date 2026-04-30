@@ -295,7 +295,8 @@ export function PatentSummary({
           "기술분야", "기술 분야",
           "발명요약 및 특징", "발명의 요약 및 기술적 특징", "발명의 요약", "기술적 특징",
           "관련시장 동향", "시장동향",
-          "상용화전망", "농산업 활용 특장점", "기술 성숙도 및 상용화 전망",
+          "농산업활용 가능성", "농산업 활용 특장점",
+          "상용화전망", "기술 성숙도 및 상용화 전망",
         ];
         const isKnownSection = knownSections.some(s => rawTitle === s || rawTitle.startsWith(s));
         const isLikelyHeading = isKnownSection || rawTitle.length <= 30;
