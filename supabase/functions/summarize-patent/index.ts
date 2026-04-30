@@ -106,7 +106,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v4-agri-specific";
+    const promptVersion = "v5-flow-connectors";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -204,6 +204,18 @@ serve(async (req) => {
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
 규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 섹션은 ## 사용.
 정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성 필수.
+
+**문장 연결 규칙 (매우 중요! 반드시 준수!):**
+- 단문을 단순 나열하지 말고, 인과·대조·예시·부연·전환 관계를 명확히 드러내는 연결어구를 적극 활용해 자연스러운 흐름으로 작성한다.
+- 권장 연결어구 예시:
+  · 인과: 따라서, 그 결과, 이로 인해, ~함으로써, ~에 따라
+  · 부연/추가: 또한, 아울러, 나아가, 특히, 구체적으로
+  · 대조/전환: 반면, 한편, 그러나, 다만, 이와 달리
+  · 예시/근거: 예를 들어, 실제로, 가령, ~을 바탕으로
+  · 결론/요약: 결과적으로, 종합하면, 이를 통해
+- 동일 연결어구를 한 섹션 내 2회 이상 반복 사용하지 말 것. 다양한 연결어구로 변주한다.
+- 짧은 문장 3개 이상이 연속되지 않도록 하고, 관련 내용은 종속절·분사구문으로 결합해 한 문장으로 자연스럽게 이어간다.
+- 각 문장의 첫 단어가 앞 문장과 무관한 주제로 갑자기 바뀌지 않도록, 앞 문장의 핵심어를 받아 이어가는 방식(주제 연결)을 사용한다.
 
 **볼드 처리 규칙 (매우 중요! 반드시 준수!):**
 - 볼드는 의미 있는 완전한 단어/구에만 적용. 조사·어미·접속사는 절대 볼드 안에 포함하지 않음
