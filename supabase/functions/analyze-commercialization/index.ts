@@ -238,8 +238,12 @@ JSON형식:
 
     const scoreModel = isDetailedScore ? configuredModel : "google/gemini-2.5-flash-lite";
     // max_tokens도 길이 배수에 비례하여 동적 조절
-    const baseMaxTokens = isDetailedScore ? 650 : 420;
-    const scoreMaxTokens = Math.round(baseMaxTokens * lengthMultiplier);
+    // 최소 토큰 보장: JSON 스키마 자체가 길어 너무 적으면 응답이 잘려 파싱 실패
+    const baseMaxTokens = isDetailedScore ? 1200 : 900;
+    const scoreMaxTokens = Math.max(
+      isDetailedScore ? 1000 : 800,
+      Math.round(baseMaxTokens * lengthMultiplier),
+    );
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -255,6 +259,7 @@ JSON형식:
         ],
         temperature: 0.3,
         max_tokens: scoreMaxTokens,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -277,12 +282,23 @@ JSON형식:
       throw new Error("AI 응답이 비어있습니다.");
     }
 
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
+    // 견고한 JSON 파싱: response_format이 무시될 수 있으므로 폴백 포함
+    let scores: any;
+    try {
+      scores = JSON.parse(content);
+    } catch {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error("AI 응답 파싱 실패, raw content:", content.substring(0, 500));
+        throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
+      }
+      try {
+        scores = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error("JSON.parse 실패, raw:", jsonMatch[0].substring(0, 500));
+        throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
+      }
     }
-
-    const scores = JSON.parse(jsonMatch[0]);
 
     // Save to cache
     try {
