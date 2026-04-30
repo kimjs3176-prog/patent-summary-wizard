@@ -154,9 +154,7 @@ export function KeywordExplorer() {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[14px] font-bold text-foreground tracking-tight">주제별 빠른 탐색</h3>
-          <p className="text-[10.5px] text-muted-foreground/80">
-            인기 검색 기반 자동 추천 · 30초마다 자동 변경
-          </p>
+          <p className="text-[10.5px] text-muted-foreground/80">인기 검색 기반 자동 추천</p>
         </div>
         <button
           onClick={() => setChips(buildChips(trendingLabels))}
