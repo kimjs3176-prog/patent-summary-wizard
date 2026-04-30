@@ -686,32 +686,41 @@
 
   /* AI Summary section — slightly more print padding */
   .ai-summary-print-section > div {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-    padding-top: 6px !important;
-    padding-bottom: 6px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
   }
   .ai-summary-print-section p {
-    margin-bottom: 4px !important;
-    line-height: 1.55 !important;
+    margin-bottom: 3px !important;
+    line-height: 1.45 !important;
   }
   .ai-summary-print-section h2 {
-    margin-top: 10px !important;
-    margin-bottom: 5px !important;
+    margin-top: 8px !important;
+    margin-bottom: 4px !important;
   }
 
   .trl-print-section {
-    padding: 5px 6px !important;
+    padding: 4px 5px !important;
   }
   .trl-print-section > div {
-    padding-left: 4px !important;
-    padding-right: 4px !important;
-    padding-top: 3px !important;
-    padding-bottom: 3px !important;
+    padding-left: 3px !important;
+    padding-right: 3px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
   }
   .trl-print-section p {
     margin-bottom: 2px !important;
-    line-height: 1.45 !important;
+    line-height: 1.38 !important;
+  }
+
+  .trl-print-section .grid {
+    gap: 6px !important;
+  }
+
+  .trl-print-section .rounded-xl {
+    padding: 6px 7px !important;
+    border-radius: 5px !important;
   }
 }
 
