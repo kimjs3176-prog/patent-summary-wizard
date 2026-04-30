@@ -132,18 +132,16 @@ const Admin = () => {
 
   // Summary customization state
   const DEFAULT_SECTION_TITLES: Record<string, string> = {
-    "기술 분야": "기술 분야",
-    "발명의 요약 및 기술적 특징": "발명의 요약 및 기술적 특징",
-    "시장동향": "시장동향",
-    "농산업 활용 특장점": "농산업 활용 특장점",
-    "기술 성숙도 및 상용화 전망": "기술 성숙도 및 상용화 전망",
+    "기술분야": "기술분야",
+    "발명요약 및 특징": "발명요약 및 특징",
+    "관련시장 동향": "관련시장 동향",
+    "상용화전망": "상용화전망",
   };
   const DEFAULT_SECTION_LENGTHS: Record<string, number> = {
-    "기술 분야": 3,
-    "발명의 요약 및 기술적 특징": 5,
-    "시장동향": 5,
-    "농산업 활용 특장점": 4,
-    "기술 성숙도 및 상용화 전망": 4,
+    "기술분야": 3,
+    "발명요약 및 특징": 6,
+    "관련시장 동향": 5,
+    "상용화전망": 5,
   };
   const DEFAULT_VISIBLE_SECTIONS: Record<string, boolean> = {
     commercialization: true,
