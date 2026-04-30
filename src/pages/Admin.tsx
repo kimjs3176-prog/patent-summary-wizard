@@ -235,6 +235,9 @@ const Admin = () => {
         if (settingsResult.settings?.summary_section_titles) {
           try { setSummaryTitles(JSON.parse(settingsResult.settings.summary_section_titles)); } catch {}
         }
+        if (settingsResult.settings?.summary_section_lengths) {
+          try { setSummarySectionLengths({ ...DEFAULT_SECTION_LENGTHS, ...JSON.parse(settingsResult.settings.summary_section_lengths) }); } catch {}
+        }
         if (settingsResult.settings?.summary_disclaimer) {
           setSummaryDisclaimer(settingsResult.settings.summary_disclaimer);
         }
@@ -431,6 +434,7 @@ const Admin = () => {
     const settingsToSave: Record<string, string> = {
       summary_section_titles: JSON.stringify(summaryTitles),
       summary_disclaimer: summaryDisclaimer,
+      summary_section_lengths: JSON.stringify(summarySectionLengths),
       summary_visible_sections: JSON.stringify(summaryVisibleSections),
       summary_ai_prompt_extra: summaryAiPromptExtra,
       summary_card_icons: JSON.stringify(summaryCardIcons),
