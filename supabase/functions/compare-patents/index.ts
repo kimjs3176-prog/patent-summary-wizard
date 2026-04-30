@@ -237,7 +237,14 @@ advantage: 분석 대상이 우수하면 "current", 경쟁이 우수하면 "comp
       parsed = JSON.parse(content);
     } catch {
       const m = content.match(/\{[\s\S]*\}/);
-      parsed = m ? JSON.parse(m[0]) : { rows: [], summary: "" };
+      try {
+        parsed = m ? JSON.parse(m[0]) : { rows: [], summary: "" };
+      } catch {
+        const fallback = buildFallbackComparison(currentPatent, top3);
+        return new Response(JSON.stringify({ success: true, fallback: true, ...fallback }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     if (!Array.isArray(parsed.rows) || parsed.rows.length === 0) {
