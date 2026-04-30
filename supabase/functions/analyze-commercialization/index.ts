@@ -148,7 +148,7 @@ TRL(1-9): 특허 텍스트에서 확인 가능한 기술 완성도만 기준으�
 주의: 시장 규모·성장률 등 특허 문서에 없는 외부 데이터를 추측하여 근거로 제시하지 말 것. IPC 분류와 기술 특성에서 추론 가능한 산업 적용성만 평가할 것.
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"100~150자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"180~250자 종합평가: 기술적 차별성, 시장 적용 가능성, 사업화 전략을 종합적으로 분석","technologyReason":"80~120자: 청구항 구성의 독창성, 실시예 구체성, 선행기술 대비 기술적 진보성을 상세 분석","marketReason":"80~120자: IPC 기반 산업 적용 범위, 기존 기술 대비 차별적 우위, 다분야 확장 가능성을 상세 분석","businessReason":"80~120자: 기술구현 난이도, 라이선싱 전략, 투자회수 시나리오를 상세 분석"}`
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"100~150자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"180~250자 종합평가: 기술적 차별성, 시장 적용 가능성, 사업화 전략을 종합적으로 분석","technologyReason":"55~85자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"55~85자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"55~85자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
       : `특허 기술사업화 평가 전문가. JSON으로만 응답.
 
 평가기준(0-100):
@@ -165,7 +165,7 @@ TRL(1-9): 특허 텍스트 기반 기술 완성도만 판단. 개념→2~3, 실�
 주의: 특허문서에 없는 시장규모 등 외부데이터 추측 금지. IPC·기술특성 기반 산업적용성만 평가.
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"80~100자 근거","analysis":"120~160자 종합평가","technologyReason":"60~80자 상세근거","marketReason":"60~80자 상세근거","businessReason":"60~80자 상세근거"}`;
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"80~100자 근거","analysis":"120~160자 종합평가","technologyReason":"40~55자 핵심근거","marketReason":"40~55자 핵심근거","businessReason":"40~55자 핵심근거"}`;
 
 
     // Read AI model from settings
@@ -181,7 +181,7 @@ JSON형식:
     } catch { /* use default */ }
 
     const scoreModel = isDetailedScore ? configuredModel : "google/gemini-2.5-flash-lite";
-    const scoreMaxTokens = isDetailedScore ? 900 : 600;
+    const scoreMaxTokens = isDetailedScore ? 650 : 420;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
