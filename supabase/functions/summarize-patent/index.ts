@@ -281,7 +281,7 @@ serve(async (req) => {
               const supabase = getSupabaseClient();
               await supabase.from("patent_ai_cache").upsert({
                 patent_number: trimmedPatent,
-                analysis_mode: "detailed",
+                analysis_mode: summaryAnalysisMode,
                 summary_content: fullContent,
               }, { onConflict: "patent_number,analysis_mode" });
               console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
