@@ -239,12 +239,12 @@ export function PatentSummary({
     let skipSection = false;
     let hasRenderedFirstSection = false;
 
-    // Helper: auto-insert "기술 분야" heading if first content line is not a proper section header
+    // Helper: auto-insert "기술분야" heading if first content line is not a proper section header
     const maybeInsertTechFieldHeader = (currentIndex: number) => {
       if (!hasRenderedFirstSection) {
         hasRenderedFirstSection = true;
-        const defaultTitle = sectionTitles["기술 분야"] || "기술 분야";
-        const IconComp = getSectionIcon("기술 분야");
+        const defaultTitle = sectionTitles["기술분야"] || sectionTitles["기술 분야"] || "기술분야";
+        const IconComp = getSectionIcon("기술분야");
         elements.push(
           <div key={`auto-tech-${currentIndex}`} className="mt-7 mb-3 first:mt-0">
             <div className="flex items-center gap-2">
@@ -291,12 +291,17 @@ export function PatentSummary({
 
         // Known section titles (short headings). If the text after ## is too long,
         // it's likely a paragraph mistakenly starting with ## — render as body text.
-        const knownSections = ["기술 분야", "발명의 요약 및 기술적 특징", "발명의 요약", "기술적 특징", "시장동향", "농산업 활용 특장점", "기술 성숙도 및 상용화 전망"];
+        const knownSections = [
+          "기술분야", "기술 분야",
+          "발명요약 및 특징", "발명의 요약 및 기술적 특징", "발명의 요약", "기술적 특징",
+          "관련시장 동향", "시장동향",
+          "상용화전망", "농산업 활용 특장점", "기술 성숙도 및 상용화 전망",
+        ];
         const isKnownSection = knownSections.some(s => rawTitle === s || rawTitle.startsWith(s));
         const isLikelyHeading = isKnownSection || rawTitle.length <= 30;
 
         if (!isLikelyHeading) {
-          // It's a paragraph starting with ## — auto-insert "기술 분야" header if needed
+          // It's a paragraph starting with ## — auto-insert "기술분야" header if needed
           maybeInsertTechFieldHeader(index);
           const bodyText = hashMatch[2];
           const parts = bodyText.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
@@ -334,8 +339,13 @@ export function PatentSummary({
           </div>
         );
         
-        // Insert representative images AFTER "발명의 요약" section header (up to 3)
-        if ((rawTitle === "발명의 요약" || rawTitle === "발명의 요약 및 기술적 특징") && patentData?.images && patentData.images.length > 0) {
+        // Insert representative images AFTER 발명요약 section header (up to 3)
+        const isInventionSummarySection = (
+          rawTitle === "발명요약 및 특징" ||
+          rawTitle === "발명의 요약 및 기술적 특징" ||
+          rawTitle === "발명의 요약"
+        );
+        if (isInventionSummarySection && patentData?.images && patentData.images.length > 0) {
           const imagesToShow = patentData.images.slice(0, 3);
           const isSingle = imagesToShow.length === 1;
           
@@ -363,7 +373,7 @@ export function PatentSummary({
               })}
             </div>
           );
-        } else if ((rawTitle === "발명의 요약" || rawTitle === "발명의 요약 및 기술적 특징") && patentData?.representativeImage) {
+        } else if (isInventionSummarySection && patentData?.representativeImage) {
           const proxied = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(
             patentData.representativeImage
           )}`;
