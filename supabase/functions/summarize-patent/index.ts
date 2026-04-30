@@ -106,7 +106,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v5-flow-connectors";
+    const promptVersion = "v6-flow-quality";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -216,6 +216,16 @@ serve(async (req) => {
 - 동일 연결어구를 한 섹션 내 2회 이상 반복 사용하지 말 것. 다양한 연결어구로 변주한다.
 - 짧은 문장 3개 이상이 연속되지 않도록 하고, 관련 내용은 종속절·분사구문으로 결합해 한 문장으로 자연스럽게 이어간다.
 - 각 문장의 첫 단어가 앞 문장과 무관한 주제로 갑자기 바뀌지 않도록, 앞 문장의 핵심어를 받아 이어가는 방식(주제 연결)을 사용한다.
+
+**문장 품질 규칙 (매우 중요! 반드시 준수!):**
+- 한 문장은 원칙적으로 60~90자(공백 포함) 이내로 작성하여 호흡을 가볍게 한다. 100자를 초과하는 문장은 두 문장으로 분할한다.
+- 문장 종결을 단조롭게 반복하지 말고 다음과 같이 변주한다: ~한다 / ~된다 / ~다 / ~이다 / ~할 수 있다 / ~로 평가된다 / ~로 작용한다 / ~다는 점이 특징이다.
+- 한 문단(섹션) 안에서 동일 종결어미를 3회 이상 연속 사용 금지.
+- 군더더기 표현(~에 속합니다, ~인 것입니다, ~라 할 수 있습니다, ~할 것입니다 등)은 가급적 짧고 단정적인 표현으로 대체한다.
+- 같은 명사·핵심어를 한 문단에서 3회 이상 그대로 반복하지 말고, 대명사·축약어·동의어로 자연스럽게 변주한다.
+- 수동태 남용을 피하고 능동·서술형 위주로 작성한다.
+- 모든 문장이 명확한 주술 관계를 가져야 하며, 비문·중복 수식·모호한 지시어("이것", "그것" 단독 사용)는 사용하지 않는다.
+- 문어체 보고서 톤을 유지하되, 딱딱하지 않게 자연스럽게 읽히도록 다듬는다.
 
 **볼드 처리 규칙 (매우 중요! 반드시 준수!):**
 - 볼드는 의미 있는 완전한 단어/구에만 적용. 조사·어미·접속사는 절대 볼드 안에 포함하지 않음
