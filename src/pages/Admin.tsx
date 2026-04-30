@@ -135,13 +135,15 @@ const Admin = () => {
     "기술분야": "기술분야",
     "발명요약 및 특징": "발명요약 및 특징",
     "관련시장 동향": "관련시장 동향",
+    "농산업활용 가능성": "농산업활용 가능성",
     "상용화전망": "상용화전망",
   };
   const DEFAULT_SECTION_LENGTHS: Record<string, number> = {
     "기술분야": 3,
     "발명요약 및 특징": 6,
     "관련시장 동향": 5,
-    "상용화전망": 5,
+    "농산업활용 가능성": 4,
+    "상용화전망": 4,
   };
   const DEFAULT_VISIBLE_SECTIONS: Record<string, boolean> = {
     commercialization: true,

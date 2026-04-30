@@ -106,7 +106,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v2-4sections";
+    const promptVersion = "v3-5sections";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -206,9 +206,10 @@ serve(async (req) => {
 [^1]: 기관명, 「보고서명」, 발행연도
 [^2]: 기관명, 「보고서명」, 발행연도
 출처는 실제 신뢰할 수 있는 기관(KISTEP, KIET, IRS Global, MarketsandMarkets, Grand View Research, Statista, 통계청, 농림축산식품부 등) 사용. 실존하지 않는 출처 금지.**
-## 상용화전망 - 농산업(스마트팜/정밀농업 등) 구체적 활용 시나리오와 기대 효과를 먼저 서술하고, 이어서 기술 완성도와 상용화 경로(시장 진입 전략, 사업화 단계)를 정성적으로 설명. TRL 숫자 직접 언급 금지.
+## 농산업활용 가능성 - 스마트팜·정밀농업·식품가공·축산 등 농산업 현장에서의 구체적 활용 시나리오, 적용 분야, 기대 효과를 서술
+## 상용화전망 - 기술 완성도, 상용화 경로(시장 진입 전략, 사업화 단계), 예상 수요처 및 비즈니스 모델을 정성적으로 설명. TRL 숫자 직접 언급 금지.
 
-[중요] 위 4개 섹션(기술분야 / 발명요약 및 특징 / 관련시장 동향 / 상용화전망)만 사용. 다른 ## 섹션을 추가로 만들지 말 것. "기술적 특징"을 별도 섹션으로 분리하지 말 것.
+[중요] 위 5개 섹션(기술분야 / 발명요약 및 특징 / 관련시장 동향 / 농산업활용 가능성 / 상용화전망)만 사용. 다른 ## 섹션을 추가로 만들지 말 것. "기술적 특징"을 별도 섹션으로 분리하지 말 것.
 
 기술적 깊이와 실용적 인사이트를 균형있게 포함.${lengthInstruction}${sectionLengthInstruction}${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
 
