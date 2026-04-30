@@ -25,8 +25,25 @@ export function QuickStatsBar({ patentData, score, details }: QuickStatsBarProps
   const animatedScore = useCountUp(score ?? 0, 1100);
   if (!patentData) return null;
 
+  const isRegistered = !!patentData.registrationNumber;
+  const badgeLabel = isRegistered ? "등록특허" : "출원특허";
+  const badgeColor = isRegistered ? "hsl(158 64% 40%)" : "hsl(221 83% 53%)";
+  const badgeBg = isRegistered ? "hsl(158 64% 40% / 0.1)" : "hsl(221 83% 53% / 0.1)";
+
   return (
     <div className="w-full max-w-4xl mx-auto mb-5 animate-fade-up">
+      <div className="flex justify-center mb-3">
+        <div
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] md:text-xs font-bold border"
+          style={{ background: badgeBg, color: badgeColor, borderColor: badgeColor + " / 0.2" }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: badgeColor }} />
+          {badgeLabel}
+          <span className="font-medium opacity-70">
+            · {patentData.displayNumber || patentData.registrationNumber || patentData.applicationNumber || patentData.patentNumber}
+          </span>
+        </div>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
         {/* Score Card */}
         <div className="group relative overflow-hidden rounded-2xl border border-border/30 bg-card p-3 md:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-border/60 hover:shadow-[0_8px_24px_-12px_hsl(var(--foreground)/0.15)]" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
