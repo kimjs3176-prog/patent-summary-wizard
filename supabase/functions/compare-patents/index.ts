@@ -145,10 +145,10 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ success: false, error: "AI 서비스가 설정되지 않았습니다." }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const fallback = buildFallbackComparison(currentPatent, top3);
+      return new Response(JSON.stringify({ success: true, fallback: true, ...fallback }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const fmtPatent = (p: any, label: string) => {
@@ -222,14 +222,12 @@ advantage: 분석 대상이 우수하면 "current", 경쟁이 우수하면 "comp
     );
 
     if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ success: false, error: "요청이 너무 많습니다." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
       const t = await aiResp.text();
       console.error("AI compare error:", aiResp.status, t);
-      return new Response(JSON.stringify({ success: false, error: "AI 비교 분석 오류" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const fallback = buildFallbackComparison(currentPatent, top3);
+      return new Response(JSON.stringify({ success: true, fallback: true, ...fallback }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const aiData = await aiResp.json();
