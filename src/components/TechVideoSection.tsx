@@ -24,9 +24,9 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
           <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(0 84% 60% / 0.1)' }}>
             <Video className="w-4 h-4" style={{ color: 'hsl(0 84% 60%)' }} />
           </div>
-          <h3 className="text-lg md:text-xl font-bold text-foreground tracking-tight">기술소개영상</h3>
+          <h3 className="text-lg md:text-xl font-bold text-foreground tracking-tight">주요 기술소개</h3>
         </div>
-        <p className="text-[13px] text-muted-foreground ml-[42px]">농식품 분야 기술 소개 영상</p>
+        <p className="text-[13px] text-muted-foreground ml-[42px]">농식품 분야 주요 기술 소개</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {videos.slice(0, 3).map((video, idx) => {
