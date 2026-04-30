@@ -31,6 +31,68 @@ interface ComparisonResult {
   competitors: Array<{ patentId: string; title: string; assignee?: string; similarityScore: number }>;
 }
 
+function buildFallbackComparison(currentPatent: any, competitors: any[]): ComparisonResult {
+  const currentText = `${currentPatent.titleKo || currentPatent.title || ""} ${currentPatent.abstract || ""} ${(currentPatent.classifications || []).join(" ")}`;
+  const competitorTexts = competitors.map((p: any) => `${p.titleKo || p.title || ""} ${p.snippet || p.abstract || ""}`);
+  const hasAny = (text: string, words: string[]) => words.some((word) => text.includes(word));
+  const score = (text: string, words: string[]) => hasAny(text, words) ? "strong" : text.length > 80 ? "medium" : "weak";
+  const makeCompetitorCells = (words: string[], fallback: string) => competitorTexts.map((text) => hasAny(text, words) ? fallback : "관련 기술 요소 일부 공유");
+
+  const rows: ComparisonRow[] = [
+    {
+      axis: "핵심 기술 방식",
+      current: hasAny(currentText, ["제어", "장치", "시스템", "방법"]) ? "구체적 구현수단 중심" : "기술 구성 중심",
+      currentStrength: score(currentText, ["제어", "장치", "시스템", "방법"]),
+      competitors: makeCompetitorCells(["제어", "장치", "시스템", "방법"], "유사 구현수단 보유"),
+      competitorStrengths: competitorTexts.map((text) => score(text, ["제어", "장치", "시스템", "방법"])),
+      advantage: "neutral",
+    },
+    {
+      axis: "적용 분야/용도",
+      current: hasAny(currentText, ["농", "식품", "재배", "스마트팜"]) ? "농식품 적용성 명확" : "특정 용도 중심",
+      currentStrength: score(currentText, ["농", "식품", "재배", "스마트팜"]),
+      competitors: makeCompetitorCells(["농", "식품", "재배", "스마트팜"], "농산업 활용 가능"),
+      competitorStrengths: competitorTexts.map((text) => score(text, ["농", "식품", "재배", "스마트팜"])),
+      advantage: "neutral",
+    },
+    {
+      axis: "차별적 효과",
+      current: hasAny(currentText, ["효과", "향상", "개선", "증가", "감소"]) ? "개선 효과 제시" : "효과 검증 필요",
+      currentStrength: score(currentText, ["효과", "향상", "개선", "증가", "감소"]),
+      competitors: makeCompetitorCells(["효과", "향상", "개선", "증가", "감소"], "효과 주장 일부 존재"),
+      competitorStrengths: competitorTexts.map((text) => score(text, ["효과", "향상", "개선", "증가", "감소"])),
+      advantage: "neutral",
+    },
+    {
+      axis: "구현 복잡도",
+      current: hasAny(currentText, ["복합", "플랫폼", "센서", "알고리즘"]) ? "복합 구현 필요" : "구현 난도 보통",
+      currentStrength: score(currentText, ["구성", "단계", "플랫폼", "센서"]),
+      competitors: makeCompetitorCells(["구성", "단계", "플랫폼", "센서"], "구현 요소 확인"),
+      competitorStrengths: competitorTexts.map((text) => score(text, ["구성", "단계", "플랫폼", "센서"])),
+      advantage: "neutral",
+    },
+    {
+      axis: "상용화 가능성",
+      current: currentPatent.assignee ? "공공 기술이전 가능" : "사업화 검토 필요",
+      currentStrength: currentPatent.assignee ? "medium" : "weak",
+      competitors: competitors.map((p: any) => p.assignee ? "기관 보유 기술" : "권리자 확인 필요"),
+      competitorStrengths: competitors.map((p: any) => p.assignee ? "medium" : "weak"),
+      advantage: "neutral",
+    },
+  ];
+
+  return {
+    rows,
+    summary: "AI 정밀 비교가 지연되어 특허 제목·초록·분류 기반의 보조 비교 결과를 표시했습니다. 유사 특허의 기술 키워드와 적용 분야를 기준으로 차별점을 우선 검토할 수 있습니다.",
+    competitors: competitors.map((p: any, i: number) => ({
+      patentId: p.patentId || p.patentNumber || "",
+      title: p.title || p.titleKo || "유사 특허",
+      assignee: p.assignee,
+      similarityScore: Math.max(55, 78 - i * 8),
+    })),
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -75,18 +137,26 @@ serve(async (req) => {
         .eq("analysis_mode", "comparison")
         .maybeSingle();
       if (cached?.summary_content) {
+        try {
+          const parsedCache = JSON.parse(cached.summary_content);
+          if (!parsedCache?.success || !Array.isArray(parsedCache.rows) || parsedCache.rows.length === 0 || !Array.isArray(parsedCache.competitors) || parsedCache.competitors.length === 0) {
+            throw new Error("invalid cached comparison");
+          }
+        } catch {
+          throw new Error("invalid cached comparison");
+        }
         return new Response(cached.summary_content, {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-    } catch (_) { /* ignore */ }
+    } catch (_) { /* ignore invalid/missing cache */ }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ success: false, error: "AI 서비스가 설정되지 않았습니다." }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const fallback = buildFallbackComparison(currentPatent, top3);
+      return new Response(JSON.stringify({ success: true, fallback: true, ...fallback }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const fmtPatent = (p: any, label: string) => {
@@ -160,14 +230,12 @@ advantage: 분석 대상이 우수하면 "current", 경쟁이 우수하면 "comp
     );
 
     if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ success: false, error: "요청이 너무 많습니다." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
       const t = await aiResp.text();
       console.error("AI compare error:", aiResp.status, t);
-      return new Response(JSON.stringify({ success: false, error: "AI 비교 분석 오류" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const fallback = buildFallbackComparison(currentPatent, top3);
+      return new Response(JSON.stringify({ success: true, fallback: true, ...fallback }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const aiData = await aiResp.json();
@@ -177,7 +245,21 @@ advantage: 분석 대상이 우수하면 "current", 경쟁이 우수하면 "comp
       parsed = JSON.parse(content);
     } catch {
       const m = content.match(/\{[\s\S]*\}/);
-      parsed = m ? JSON.parse(m[0]) : { rows: [], summary: "" };
+      try {
+        parsed = m ? JSON.parse(m[0]) : { rows: [], summary: "" };
+      } catch {
+        const fallback = buildFallbackComparison(currentPatent, top3);
+        return new Response(JSON.stringify({ success: true, fallback: true, ...fallback }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    if (!Array.isArray(parsed.rows) || parsed.rows.length === 0) {
+      const fallback = buildFallbackComparison(currentPatent, top3);
+      return new Response(JSON.stringify({ success: true, fallback: true, ...fallback }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const sims = parsed.competitorSimilarities || [];

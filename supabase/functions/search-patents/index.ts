@@ -58,6 +58,7 @@ interface KeywordSearchResult {
   registrationNumber?: string;
   snippet?: string;
   thumbnail?: string;
+  inventors?: string;
   organizationName?: string;
 }
 

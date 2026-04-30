@@ -138,6 +138,13 @@ const Admin = () => {
     "농산업 활용 특장점": "농산업 활용 특장점",
     "기술 성숙도 및 상용화 전망": "기술 성숙도 및 상용화 전망",
   };
+  const DEFAULT_SECTION_LENGTHS: Record<string, number> = {
+    "기술 분야": 3,
+    "발명의 요약 및 기술적 특징": 5,
+    "시장동향": 5,
+    "농산업 활용 특장점": 4,
+    "기술 성숙도 및 상용화 전망": 4,
+  };
   const DEFAULT_VISIBLE_SECTIONS: Record<string, boolean> = {
     commercialization: true,
     trl: true,
@@ -169,6 +176,7 @@ const Admin = () => {
     ipc: "IPC",
   };
   const [summaryTitles, setSummaryTitles] = useState<Record<string, string>>(DEFAULT_SECTION_TITLES);
+  const [summarySectionLengths, setSummarySectionLengths] = useState<Record<string, number>>(DEFAULT_SECTION_LENGTHS);
   const [summaryDisclaimer, setSummaryDisclaimer] = useState("※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음");
   const [summaryVisibleSections, setSummaryVisibleSections] = useState<Record<string, boolean>>(DEFAULT_VISIBLE_SECTIONS);
   const [summaryAiPromptExtra, setSummaryAiPromptExtra] = useState("");
@@ -226,6 +234,9 @@ const Admin = () => {
         // Load summary customization settings
         if (settingsResult.settings?.summary_section_titles) {
           try { setSummaryTitles(JSON.parse(settingsResult.settings.summary_section_titles)); } catch {}
+        }
+        if (settingsResult.settings?.summary_section_lengths) {
+          try { setSummarySectionLengths({ ...DEFAULT_SECTION_LENGTHS, ...JSON.parse(settingsResult.settings.summary_section_lengths) }); } catch {}
         }
         if (settingsResult.settings?.summary_disclaimer) {
           setSummaryDisclaimer(settingsResult.settings.summary_disclaimer);
@@ -423,6 +434,7 @@ const Admin = () => {
     const settingsToSave: Record<string, string> = {
       summary_section_titles: JSON.stringify(summaryTitles),
       summary_disclaimer: summaryDisclaimer,
+      summary_section_lengths: JSON.stringify(summarySectionLengths),
       summary_visible_sections: JSON.stringify(summaryVisibleSections),
       summary_ai_prompt_extra: summaryAiPromptExtra,
       summary_card_icons: JSON.stringify(summaryCardIcons),
@@ -969,6 +981,11 @@ const Admin = () => {
                           delete next[key];
                           return next;
                         });
+                          setSummarySectionLengths(prev => {
+                            const next = { ...prev };
+                            delete next[key];
+                            return next;
+                          });
                       }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -983,6 +1000,7 @@ const Admin = () => {
                     onKeyDown={e => {
                       if (e.key === "Enter" && newSectionKey.trim()) {
                         setSummaryTitles(prev => ({ ...prev, [newSectionKey.trim()]: newSectionKey.trim() }));
+                        setSummarySectionLengths(prev => ({ ...prev, [newSectionKey.trim()]: 3 }));
                         setNewSectionKey("");
                       }
                     }}
@@ -990,6 +1008,7 @@ const Admin = () => {
                   <Button variant="outline" size="sm" onClick={() => {
                     if (newSectionKey.trim()) {
                       setSummaryTitles(prev => ({ ...prev, [newSectionKey.trim()]: newSectionKey.trim() }));
+                      setSummarySectionLengths(prev => ({ ...prev, [newSectionKey.trim()]: 3 }));
                       setNewSectionKey("");
                     }
                   }}>
@@ -1132,6 +1151,46 @@ const Admin = () => {
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2">현재 설정: {summaryMaxTokens} tokens (500~8000) · ⚠️ 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
                 </div>
+              </div>
+
+              {/* Section Lengths */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">항목별 분량 조절</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">각 요약 항목의 권장 문장 수를 조절합니다. 전체 토큰 한도 안에서 우선 반영됩니다.</p>
+                <div className="space-y-3">
+                  {Object.entries(summaryTitles).map(([key, label]) => {
+                    const value = summarySectionLengths[key] ?? 3;
+                    return (
+                      <div key={key} className="p-3 rounded-lg bg-secondary/20 border border-border/40">
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{label || key}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{key}</p>
+                          </div>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={value}
+                            onChange={e => {
+                              const next = parseInt(e.target.value, 10);
+                              if (!isNaN(next)) setSummarySectionLengths(prev => ({ ...prev, [key]: Math.max(1, Math.min(10, next)) }));
+                            }}
+                            className="w-20 text-center shrink-0"
+                          />
+                        </div>
+                        <Slider
+                          value={[value]}
+                          onValueChange={([next]) => setSummarySectionLengths(prev => ({ ...prev, [key]: next }))}
+                          min={1}
+                          max={10}
+                          step={1}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">⚠️ 항목별 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
               </div>
 
               {/* AI Model Selection */}

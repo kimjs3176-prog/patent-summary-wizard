@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles } from "lucide-react";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip as RTooltip } from "recharts";
-import { PatentData } from "./types";
+import { PatentData, RelatedPatent } from "./types";
 import { safeFetch } from "@/lib/safeFetch";
 
 type Strength = "strong" | "medium" | "weak";
@@ -40,6 +40,7 @@ interface AiRecommendedPatent {
 
 interface CompetitorComparisonTableProps {
   patentData: PatentData;
+  relatedPatents?: RelatedPatent[];
   onPatentClick?: (patentNumber: string) => void;
 }
 
@@ -65,7 +66,7 @@ function truncate(s: string, n: number) {
   return s.length > n ? s.substring(0, n - 1) + "…" : s;
 }
 
-export function CompetitorComparisonTable({ patentData, onPatentClick }: CompetitorComparisonTableProps) {
+export function CompetitorComparisonTable({ patentData, relatedPatents = [], onPatentClick }: CompetitorComparisonTableProps) {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -155,7 +156,18 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
         }
 
         if (filtered.length === 0) {
-          setError("키워드로도 비교 가능한 특허를 찾지 못했습니다.");
+          filtered = dedupeCurrent(relatedPatents.map((p, i) => ({
+            patentId: p.patentId,
+            title: p.title,
+            assignee: p.assignee,
+            publicationDate: p.publicationDate,
+            snippet: p.snippet,
+            relevanceGroup: i,
+          })));
+        }
+
+        if (filtered.length === 0) {
+          setError("비교 가능한 유사 특허를 찾지 못했습니다.");
           setLoading(false);
           return;
         }
@@ -202,7 +214,7 @@ export function CompetitorComparisonTable({ patentData, onPatentClick }: Competi
       }
     };
     run();
-  }, [patentData?.patentNumber, patentData?.displayNumber]);
+  }, [patentData?.patentNumber, patentData?.displayNumber, relatedPatents]);
 
   if (!loading && !result && !error) return null;
 

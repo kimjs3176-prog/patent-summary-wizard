@@ -71,14 +71,53 @@ serve(async (req) => {
       );
     }
 
-    // Check cache first
+    // Read custom prompt additions, total max tokens, model, and per-section length settings.
+    let customPromptExtra = "";
+    let maxTokens = 3000;
+    let aiModel = "google/gemini-2.5-flash";
+    let sectionLengthSettings: Record<string, number> = {};
+    try {
+      const supabase = getSupabaseClient();
+      const { data: settings } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens", "ai_model", "summary_section_lengths"]);
+      if (settings) {
+        for (const row of settings) {
+          if (row.key === "summary_ai_prompt_extra" && row.value) customPromptExtra = row.value;
+          if (row.key === "summary_max_tokens" && row.value) {
+            const parsed = parseInt(row.value, 10);
+            if (!isNaN(parsed) && parsed >= 500 && parsed <= 8000) maxTokens = parsed;
+          }
+          if (row.key === "ai_model" && row.value) aiModel = row.value;
+          if (row.key === "summary_section_lengths" && row.value) {
+            try {
+              const parsed = JSON.parse(row.value);
+              for (const [key, value] of Object.entries(parsed)) {
+                const n = Number(value);
+                if (key && Number.isFinite(n)) sectionLengthSettings[key] = Math.max(1, Math.min(10, Math.round(n)));
+              }
+            } catch { /* ignore invalid setting */ }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to read custom settings:", e);
+    }
+
+    const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings });
+    let signatureHash = 0;
+    for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
+    const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
+
+    // Check cache first, scoped to settings that affect generated content.
     try {
       const supabase = getSupabaseClient();
       const { data: cached } = await supabase
         .from("patent_ai_cache")
         .select("summary_content")
         .eq("patent_number", trimmedPatent)
-        .eq("analysis_mode", "detailed")
+        .eq("analysis_mode", summaryAnalysisMode)
         .maybeSingle();
 
       if (cached?.summary_content) {
@@ -139,37 +178,10 @@ serve(async (req) => {
       }
     }
 
-    // Read custom prompt additions and max tokens from site_settings
-    let customPromptExtra = "";
-    let maxTokens = 3000;
-    let aiModel = "google/gemini-2.5-flash";
-    try {
-      const supabase = getSupabaseClient();
-      const { data: settings } = await supabase
-        .from("site_settings")
-        .select("key, value")
-        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens", "ai_model"]);
-      if (settings) {
-        for (const row of settings) {
-          if (row.key === "summary_ai_prompt_extra" && row.value) {
-            customPromptExtra = row.value;
-          }
-          if (row.key === "summary_max_tokens" && row.value) {
-            const parsed = parseInt(row.value, 10);
-            if (!isNaN(parsed) && parsed >= 500 && parsed <= 8000) {
-              maxTokens = parsed;
-            }
-          }
-          if (row.key === "ai_model" && row.value) {
-            aiModel = row.value;
-          }
-        }
-      }
-    } catch (e) {
-      console.error("Failed to read custom settings:", e);
-    }
-
     const lengthInstruction = maxTokens <= 2000 ? "\n분량: 각 섹션 2~3문장으로 핵심만 간략히 서술." : maxTokens >= 4000 ? "\n분량: 각 섹션 7~10문장으로 풍부하고 상세하게 서술." : "\n분량: 각 섹션 5~7문장 상세 서술.";
+    const sectionLengthInstruction = Object.keys(sectionLengthSettings).length
+      ? `\n\n항목별 분량 지침(우선 준수):\n${Object.entries(sectionLengthSettings).map(([section, count]) => `- ## ${section}: ${count}문장 내외`).join("\n")}`
+      : "";
 
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
 규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 섹션은 ## 사용.
@@ -197,7 +209,7 @@ serve(async (req) => {
 
 [중요] "기술적 특징"을 별도 ## 섹션으로 만들지 말 것. 반드시 "발명의 요약 및 기술적 특징" 한 섹션으로 통합 작성.
 
-기술적 깊이와 실용적 인사이트를 균형있게 포함.${lengthInstruction}${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
+기술적 깊이와 실용적 인사이트를 균형있게 포함.${lengthInstruction}${sectionLengthInstruction}${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
 
     const userMessage = patentData
       ? `분석:\n${patentContext}`
@@ -269,7 +281,7 @@ serve(async (req) => {
               const supabase = getSupabaseClient();
               await supabase.from("patent_ai_cache").upsert({
                 patent_number: trimmedPatent,
-                analysis_mode: "detailed",
+                analysis_mode: summaryAnalysisMode,
                 summary_content: fullContent,
               }, { onConflict: "patent_number,analysis_mode" });
               console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
