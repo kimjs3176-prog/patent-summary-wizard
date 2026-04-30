@@ -180,10 +180,26 @@ serve(async (req) => {
       }
     }
 
-    const lengthInstruction = maxTokens <= 2000 ? "\n분량: 각 섹션 2~3문장으로 핵심만 간략히 서술." : maxTokens >= 4000 ? "\n분량: 각 섹션 7~10문장으로 풍부하고 상세하게 서술." : "\n분량: 각 섹션 5~7문장 상세 서술.";
-    const sectionLengthInstruction = Object.keys(sectionLengthSettings).length
-      ? `\n\n항목별 분량 지침(우선 준수):\n${Object.entries(sectionLengthSettings).map(([section, count]) => `- ## ${section}: ${count}문장 내외`).join("\n")}`
-      : "";
+    // 섹션 균일화 정책: 가장 분량이 적은 섹션을 기준으로 모든 섹션을 ±1문장 이내로 맞춤
+    const sectionKeys = ["기술분야", "발명요약 및 특징", "관련시장 동향", "농산업활용 가능성", "상용화전망"];
+    const baseTarget = maxTokens <= 2000 ? 3 : maxTokens >= 4000 ? 6 : 5;
+    const minSentences = baseTarget;
+    const maxSentences = baseTarget + 1;
+
+    // 사용자 정의 섹션 길이가 있으면 가장 작은 값을 기준으로 통일
+    let uniformMin = minSentences;
+    let uniformMax = maxSentences;
+    if (Object.keys(sectionLengthSettings).length) {
+      const values = Object.values(sectionLengthSettings).filter((n) => Number.isFinite(n) && n > 0);
+      if (values.length) {
+        const smallest = Math.max(2, Math.min(...values));
+        uniformMin = smallest;
+        uniformMax = smallest + 1;
+      }
+    }
+
+    const lengthInstruction = `\n\n[섹션 균일화 규칙 — 최우선 준수]\n- 모든 ## 섹션은 정확히 ${uniformMin}~${uniformMax}문장으로 작성한다.\n- 가장 분량이 적은 섹션의 길이에 다른 섹션을 맞추며, 어떤 섹션도 다른 섹션보다 1문장 이상 길어서는 안 된다.\n- 특정 섹션에 정보가 많아도 핵심만 압축해서 동일한 분량 범위 내에서 서술한다.\n- 섹션별 글자 수 편차가 30% 이내가 되도록 길이를 조절한다.\n- "관련시장 동향"의 출처 목록(### 출처)은 문장 수 계산에서 제외한다.`;
+    const sectionLengthInstruction = "";
 
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
 규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 섹션은 ## 사용.
