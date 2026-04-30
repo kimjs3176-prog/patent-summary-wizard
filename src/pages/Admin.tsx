@@ -147,9 +147,9 @@ const Admin = () => {
   };
   const DEFAULT_VISIBLE_SECTIONS: Record<string, boolean> = {
     commercialization: true,
-    trl: true,
     claims: true,
-    relatedPatents: true,
+    competitorComparison: true,
+    familyTree: true,
   };
   const DEFAULT_CARD_ICONS: Record<string, string> = {
     patentInfo: "📄",
@@ -1082,10 +1082,10 @@ const Admin = () => {
                 <h3 className="font-semibold text-sm mb-3">섹션 표시/숨김</h3>
                 <div className="space-y-3">
                   {[
-                    { key: "commercialization", label: "기술사업화 점수", desc: "종합 점수, 기술성·시장성·사업성 카드" },
-                    { key: "trl", label: "TRL 차트", desc: "기술 성숙도(TRL) 차트 섹션" },
+                    { key: "commercialization", label: "기술분석 점수", desc: "종합 점수 + TRL 통합 카드 (기술성·시장성·사업성)" },
                     { key: "claims", label: "청구항", desc: "특허 청구항 접기/펼치기 섹션" },
-                    { key: "relatedPatents", label: "관련 특허", desc: "유사 특허 추천 섹션" },
+                    { key: "competitorComparison", label: "경쟁 특허 비교", desc: "유사 특허와의 비교 분석 표" },
+                    { key: "familyTree", label: "패밀리 트리", desc: "동일 출원인의 관련 특허 네트워크" },
                   ].map(item => {
                     const isOn = summaryVisibleSections[item.key] !== false;
                     return (
