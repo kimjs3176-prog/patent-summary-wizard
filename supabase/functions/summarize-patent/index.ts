@@ -105,7 +105,9 @@ serve(async (req) => {
       console.error("Failed to read custom settings:", e);
     }
 
-    const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings });
+    // promptVersion: bump when system prompt structure (section names, instructions) changes
+    const promptVersion = "v2-4sections";
+    const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
@@ -196,18 +198,17 @@ serve(async (req) => {
 - 조사(을/를/이/가/은/는/의/에/로/으로/와/과 등)는 반드시 볼드 바깥에 위치
 
 섹션별 상세 지침:
-## 기술 분야 - IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 구체적으로 서술
-## 발명의 요약 및 기술적 특징 - 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과를 논리적으로 연결하여 상세 서술하고, 이어서 핵심 구성요소별 역할·작동원리·기존 기술 대비 차별점을 구체적으로 분석. 두 내용을 하나의 통합된 흐름으로 자연스럽게 연결.
-## 시장동향 - 반드시 2024년 이후 최신 시장 데이터를 활용하여 서술. 국내외 시장 규모/성장률(KRW 단위, 2024~2025년 기준), CAGR, 경쟁기술 현황, 정책/규제 동향. 시장규모 추정시 출처와 연도를 반드시 명시하고 2023년 이전 데이터만 있을 경우 CAGR 기반으로 2024~2025년 추정치를 산출하여 제시.
+## 기술분야 - IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 구체적으로 서술
+## 발명요약 및 특징 - 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과를 논리적으로 연결하여 상세 서술하고, 이어서 핵심 구성요소별 역할·작동원리·기존 기술 대비 차별점을 구체적으로 분석. 두 내용을 하나의 통합된 흐름으로 자연스럽게 연결.
+## 관련시장 동향 - 반드시 2024년 이후 최신 시장 데이터를 활용하여 서술. 국내외 시장 규모/성장률(KRW 단위, 2024~2025년 기준), CAGR, 경쟁기술 현황, 정책/규제 동향. 시장규모 추정시 출처와 연도를 반드시 명시하고 2023년 이전 데이터만 있을 경우 CAGR 기반으로 2024~2025년 추정치를 산출하여 제시.
 **[중요] 모든 수치(시장규모, CAGR, 점유율 등) 뒤에는 반드시 [^N] 형식의 각주 번호를 붙이고, 섹션 마지막에 다음 형식으로 출처 목록 작성:
 ### 출처
 [^1]: 기관명, 「보고서명」, 발행연도
 [^2]: 기관명, 「보고서명」, 발행연도
 출처는 실제 신뢰할 수 있는 기관(KISTEP, KIET, IRS Global, MarketsandMarkets, Grand View Research, Statista, 통계청, 농림축산식품부 등) 사용. 실존하지 않는 출처 금지.**
-## 농산업 활용 특장점 - 스마트팜/정밀농업 등 구체적 활용 시나리오와 기대 효과 서술
-## 기술 성숙도 및 상용화 전망 - TRL 숫자 언급 금지, 기술 완성도와 상용화 경로를 정성적으로 설명
+## 상용화전망 - 농산업(스마트팜/정밀농업 등) 구체적 활용 시나리오와 기대 효과를 먼저 서술하고, 이어서 기술 완성도와 상용화 경로(시장 진입 전략, 사업화 단계)를 정성적으로 설명. TRL 숫자 직접 언급 금지.
 
-[중요] "기술적 특징"을 별도 ## 섹션으로 만들지 말 것. 반드시 "발명의 요약 및 기술적 특징" 한 섹션으로 통합 작성.
+[중요] 위 4개 섹션(기술분야 / 발명요약 및 특징 / 관련시장 동향 / 상용화전망)만 사용. 다른 ## 섹션을 추가로 만들지 말 것. "기술적 특징"을 별도 섹션으로 분리하지 말 것.
 
 기술적 깊이와 실용적 인사이트를 균형있게 포함.${lengthInstruction}${sectionLengthInstruction}${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
 

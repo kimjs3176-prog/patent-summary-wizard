@@ -415,7 +415,7 @@ export function PptGenerator({
           currentY += 0.4;
 
           // First section content
-          if ((sec.title === "발명의 요약" || sec.title === "발명의 요약 및 기술적 특징") && patentData?.representativeImage) {
+          if ((sec.title === "발명요약 및 특징" || sec.title === "발명의 요약" || sec.title === "발명의 요약 및 기술적 특징") && patentData?.representativeImage) {
             hasImageOnSlide = true;
             const imgDataUrl = await loadImage(
               `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(patentData.representativeImage)}`
@@ -481,8 +481,8 @@ export function PptGenerator({
         currentY = 1.15;
         hasImageOnSlide = false;
 
-        // Representative image on 발명의 요약
-        if ((sec.title === "발명의 요약" || sec.title === "발명의 요약 및 기술적 특징") && patentData?.representativeImage) {
+        // Representative image on 발명요약 및 특징
+        if ((sec.title === "발명요약 및 특징" || sec.title === "발명의 요약" || sec.title === "발명의 요약 및 기술적 특징") && patentData?.representativeImage) {
           hasImageOnSlide = true;
           const imgDataUrl = await loadImage(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(patentData.representativeImage)}`
