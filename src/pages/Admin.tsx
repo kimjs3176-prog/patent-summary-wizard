@@ -995,6 +995,7 @@ const Admin = () => {
                     onKeyDown={e => {
                       if (e.key === "Enter" && newSectionKey.trim()) {
                         setSummaryTitles(prev => ({ ...prev, [newSectionKey.trim()]: newSectionKey.trim() }));
+                        setSummarySectionLengths(prev => ({ ...prev, [newSectionKey.trim()]: 3 }));
                         setNewSectionKey("");
                       }
                     }}
@@ -1002,6 +1003,7 @@ const Admin = () => {
                   <Button variant="outline" size="sm" onClick={() => {
                     if (newSectionKey.trim()) {
                       setSummaryTitles(prev => ({ ...prev, [newSectionKey.trim()]: newSectionKey.trim() }));
+                      setSummarySectionLengths(prev => ({ ...prev, [newSectionKey.trim()]: 3 }));
                       setNewSectionKey("");
                     }
                   }}>
