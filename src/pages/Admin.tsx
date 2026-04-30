@@ -138,6 +138,13 @@ const Admin = () => {
     "농산업 활용 특장점": "농산업 활용 특장점",
     "기술 성숙도 및 상용화 전망": "기술 성숙도 및 상용화 전망",
   };
+  const DEFAULT_SECTION_LENGTHS: Record<string, number> = {
+    "기술 분야": 3,
+    "발명의 요약 및 기술적 특징": 5,
+    "시장동향": 5,
+    "농산업 활용 특장점": 4,
+    "기술 성숙도 및 상용화 전망": 4,
+  };
   const DEFAULT_VISIBLE_SECTIONS: Record<string, boolean> = {
     commercialization: true,
     trl: true,
@@ -169,6 +176,7 @@ const Admin = () => {
     ipc: "IPC",
   };
   const [summaryTitles, setSummaryTitles] = useState<Record<string, string>>(DEFAULT_SECTION_TITLES);
+  const [summarySectionLengths, setSummarySectionLengths] = useState<Record<string, number>>(DEFAULT_SECTION_LENGTHS);
   const [summaryDisclaimer, setSummaryDisclaimer] = useState("※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음");
   const [summaryVisibleSections, setSummaryVisibleSections] = useState<Record<string, boolean>>(DEFAULT_VISIBLE_SECTIONS);
   const [summaryAiPromptExtra, setSummaryAiPromptExtra] = useState("");
