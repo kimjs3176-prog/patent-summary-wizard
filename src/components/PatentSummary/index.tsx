@@ -862,7 +862,7 @@ export function PatentSummary({
                 return (
                   <div className="patent-keyword-container flex flex-wrap items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-muted/25 border border-border/15">
                     <span className="text-[9.5px] text-muted-foreground/80 font-bold uppercase tracking-[0.08em] mr-0.5">키워드</span>
-                    <span className="patent-keyword-print-text">{unique.map(kw => `#${kw}`).join(' ')}</span>
+                    <span className="patent-keyword-print-text sr-only">{unique.map(kw => `#${kw}`).join(' ')}</span>
                     {unique.map((kw, i) => {
                       const c = getColor(kw);
                       return (
@@ -1011,14 +1011,14 @@ export function PatentSummary({
 
       {/* 6. Competitor Comparison Table — AI generated */}
       {patentData && !isStreaming && content && competitorAnalysisEnabled && visibleSections.competitorComparison !== false && (
-        <div id="sec-compare" className="mt-4 scroll-mt-24">
+        <div id="sec-compare" className="mt-4 scroll-mt-24 print:hidden">
           <CompetitorComparisonTable patentData={patentData} relatedPatents={relatedPatents} onPatentClick={onRelatedPatentClick} />
         </div>
       )}
 
       {/* 7. Patent Family Tree — D3 visualization */}
       {patentData?.assignee && !isStreaming && content && visibleSections.familyTree !== false && (
-        <div id="sec-family" className="mt-4 scroll-mt-24">
+        <div id="sec-family" className="mt-4 scroll-mt-24 print:hidden">
           <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
         </div>
       )}
