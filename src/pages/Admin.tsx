@@ -981,6 +981,11 @@ const Admin = () => {
                           delete next[key];
                           return next;
                         });
+                          setSummarySectionLengths(prev => {
+                            const next = { ...prev };
+                            delete next[key];
+                            return next;
+                          });
                       }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
