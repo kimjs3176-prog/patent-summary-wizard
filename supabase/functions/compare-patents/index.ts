@@ -137,11 +137,19 @@ serve(async (req) => {
         .eq("analysis_mode", "comparison")
         .maybeSingle();
       if (cached?.summary_content) {
+        try {
+          const parsedCache = JSON.parse(cached.summary_content);
+          if (!parsedCache?.success || !Array.isArray(parsedCache.rows) || parsedCache.rows.length === 0 || !Array.isArray(parsedCache.competitors) || parsedCache.competitors.length === 0) {
+            throw new Error("invalid cached comparison");
+          }
+        } catch {
+          throw new Error("invalid cached comparison");
+        }
         return new Response(cached.summary_content, {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-    } catch (_) { /* ignore */ }
+    } catch (_) { /* ignore invalid/missing cache */ }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
