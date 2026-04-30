@@ -1153,6 +1153,46 @@ const Admin = () => {
                 </div>
               </div>
 
+              {/* Section Lengths */}
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-semibold text-sm mb-3">항목별 분량 조절</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">각 요약 항목의 권장 문장 수를 조절합니다. 전체 토큰 한도 안에서 우선 반영됩니다.</p>
+                <div className="space-y-3">
+                  {Object.entries(summaryTitles).map(([key, label]) => {
+                    const value = summarySectionLengths[key] ?? 3;
+                    return (
+                      <div key={key} className="p-3 rounded-lg bg-secondary/20 border border-border/40">
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{label || key}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{key}</p>
+                          </div>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={value}
+                            onChange={e => {
+                              const next = parseInt(e.target.value, 10);
+                              if (!isNaN(next)) setSummarySectionLengths(prev => ({ ...prev, [key]: Math.max(1, Math.min(10, next)) }));
+                            }}
+                            className="w-20 text-center shrink-0"
+                          />
+                        </div>
+                        <Slider
+                          value={[value]}
+                          onValueChange={([next]) => setSummarySectionLengths(prev => ({ ...prev, [key]: next }))}
+                          min={1}
+                          max={10}
+                          step={1}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">⚠️ 항목별 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
+              </div>
+
               {/* AI Model Selection */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">AI 분석 모델 선택</h3>
