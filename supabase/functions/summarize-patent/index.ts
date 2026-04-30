@@ -105,7 +105,9 @@ serve(async (req) => {
       console.error("Failed to read custom settings:", e);
     }
 
-    const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings });
+    // promptVersion: bump when system prompt structure (section names, instructions) changes
+    const promptVersion = "v2-4sections";
+    const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
