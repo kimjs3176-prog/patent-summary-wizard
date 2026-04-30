@@ -846,15 +846,18 @@ export function PatentSummary({
                     {unique.map((kw, i) => {
                       const c = getColor(kw);
                       return (
-                        <button
+                        <span
                           key={i}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => onKeywordClick?.(kw)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onKeywordClick?.(kw); } }}
                           className="inline-flex items-center px-2 py-[3px] rounded-md text-[11px] font-semibold transition-all hover:-translate-y-px hover:shadow-sm cursor-pointer tracking-tight"
                           style={{ background: c.bg, color: c.fg, border: `1px solid ${c.bd}` }}
                           title={`"${kw}" 관련 특허 검색`}
                         >
                           #{kw}
-                        </button>
+                        </span>
                       );
                     })}
                   </div>
