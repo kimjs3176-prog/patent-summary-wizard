@@ -393,10 +393,12 @@ serve(async (req) => {
       return await runBatched(tasks, 4);
     };
 
-    // Step 1: AND-combined search
-    let allPatents = await searchAllOrgs(combinedKeyword);
+    // Step 1: AND-combined search (multiple keywords joined by *)
+    let allPatents = searchKeywords.length > 1
+      ? await searchAllOrgs(combinedKeyword)
+      : [];
 
-    // Step 2: If AND yields too few results and we have multiple keywords, try top-2 AND
+    // Step 2: top-2 AND fallback
     if (allPatents.length < 5 && searchKeywords.length > 2) {
       const top2 = searchKeywords.slice(0, 2).join("*");
       console.log(`AND result too few (${allPatents.length}), fallback to top-2 AND: "${top2}"`);
@@ -404,12 +406,17 @@ serve(async (req) => {
       allPatents = [...allPatents, ...fallbackResults];
     }
 
-    // Step 3: If still too few, search with just the primary keyword
-    if (allPatents.length < 5 && searchKeywords.length > 1) {
-      const primary = searchKeywords[0];
-      console.log(`Still too few (${allPatents.length}), fallback to primary keyword: "${primary}"`);
-      const fallbackResults = await searchAllOrgs(primary);
-      allPatents = [...allPatents, ...fallbackResults];
+    // Step 3: Search each individual keyword (OR semantics) — most reliable
+    if (allPatents.length < 5) {
+      const keywordsToTry = searchKeywords.length > 1
+        ? searchKeywords.slice(0, 3)
+        : [searchKeywords[0]];
+      console.log(`Fallback to individual keyword search: [${keywordsToTry.join(", ")}]`);
+      for (const kw of keywordsToTry) {
+        const r = await searchAllOrgs(kw);
+        allPatents = [...allPatents, ...r];
+        if (allPatents.length >= 20) break;
+      }
     }
 
     // 중복 제거 (patentId 기준)
