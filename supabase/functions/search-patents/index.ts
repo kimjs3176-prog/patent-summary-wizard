@@ -339,7 +339,7 @@ serve(async (req) => {
 
     console.log(`Primary AND search: "${combinedKeyword}"`);
 
-    // KIPRIS 단일 요청 (timeout/retry 강화)
+    // KIPRIS 단일 요청 (title 또는 abstract 검색)
     const kiprisSearch = async (
       kw: string,
       org: { id: string; name: string },
@@ -352,26 +352,30 @@ serve(async (req) => {
         url.searchParams.set("astrtCont", field === "abstract" ? kw : "");
         url.searchParams.set("applicant", org.id);
         url.searchParams.set("pageNo", "1");
-        url.searchParams.set("numOfRows", "100");
+        url.searchParams.set("numOfRows", "50");
         url.searchParams.set("sortSpec", "AD");
         url.searchParams.set("descSort", "true");
         url.searchParams.set("patent", "true");
         url.searchParams.set("utility", "true");
-        const res = await fetchWithRetry(url.toString(), {}, { retries: 2, timeoutMs: 20000, baseDelay: 800 });
+        const res = await fetchWithRetry(url.toString(), {}, { retries: 3, timeoutMs: 25000, baseDelay: 1000 });
         const text = await res.text();
         if (res.ok && !text.includes("<successYN>N</successYN>")) {
-          return parsePatentsFromXml(text, org.name);
+          const parsed = parsePatentsFromXml(text, org.name);
+          if (parsed.length > 0) {
+            console.log(`✓ ${field}/${org.name}/"${kw}": ${parsed.length} hits`);
+          }
+          return parsed;
         }
       } catch (e) {
-        console.error(`${field} search error for ${org.name} ("${kw}"):`, e instanceof Error ? e.message : e);
+        console.error(`✗ ${field}/${org.name}/"${kw}":`, e instanceof Error ? e.message : e);
       }
       return [];
     };
 
-    // 배치 단위로 동시 실행 (KIPRIS 부하 회피)
+    // 작은 배치로 순차 실행 (KIPRIS 부하 회피)
     const runBatched = async <T,>(
       tasks: Array<() => Promise<T[]>>,
-      batchSize = 4
+      batchSize = 2
     ): Promise<T[]> => {
       const out: T[] = [];
       for (let i = 0; i < tasks.length; i += batchSize) {
@@ -382,15 +386,18 @@ serve(async (req) => {
       return out;
     };
 
-    // Helper: run searches across all orgs (title + abstract) for a given keyword
-    const searchAllOrgs = async (kw: string): Promise<KeywordSearchResult[]> => {
+    // 모든 기관에 대해 title 검색 (가장 정확하고 빠름). abstract는 필요시에만.
+    const searchAllOrgs = async (
+      kw: string,
+      includeAbstract = false
+    ): Promise<KeywordSearchResult[]> => {
       const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
       for (const org of AGRI_ORGANIZATIONS) {
         tasks.push(() => kiprisSearch(kw, org, "title"));
-        tasks.push(() => kiprisSearch(kw, org, "abstract"));
+        if (includeAbstract) tasks.push(() => kiprisSearch(kw, org, "abstract"));
       }
-      console.log(`Running ${tasks.length} KIPRIS requests in batches for "${kw}"...`);
-      return await runBatched(tasks, 4);
+      console.log(`Running ${tasks.length} KIPRIS requests (batch=2) for "${kw}" [abstract=${includeAbstract}]`);
+      return await runBatched(tasks, 2);
     };
 
     // Step 1: AND-combined search (multiple keywords joined by *)
