@@ -359,7 +359,7 @@ serve(async (req) => {
         url.searchParams.set("descSort", "true");
         url.searchParams.set("patent", "true");
         url.searchParams.set("utility", "true");
-        const res = await fetchWithRetry(url.toString(), {}, { retries: 2, timeoutMs: 15000, baseDelay: 600 });
+        const res = await fetchWithRetry(url.toString(), {}, { retries: 1, timeoutMs: 12000, baseDelay: 500 });
         const text = await res.text();
         if (res.ok && !text.includes("<successYN>N</successYN>")) {
           const parsed = parsePatentsFromXml(text, org.name);
