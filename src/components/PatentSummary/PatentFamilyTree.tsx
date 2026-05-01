@@ -123,8 +123,9 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     }
 
     const containerWidth = containerRef.current.clientWidth;
-    const width = Math.max(containerWidth, 720);
-    const margin = { top: 30, right: 40, bottom: 40, left: 110 };
+    const isMobile = containerWidth < 640;
+    const width = Math.max(containerWidth, isMobile ? containerWidth : 760);
+    const margin = { top: 36, right: 30, bottom: 44, left: isMobile ? 78 : 116 };
 
     // Category color map
     const categories = Array.from(new Set(parsed.map((p) => p.ipcCategory || "기타")));
@@ -134,12 +135,27 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
 
     const minTs = d3.min(parsed, (d) => d.ts)!;
     const maxTs = d3.max(parsed, (d) => d.ts)!;
+    const span = Math.max(maxTs - minTs, 1000 * 60 * 60 * 24 * 365); // ≥1 year span
     const xScale = d3.scaleTime()
-      .domain([new Date(minTs - (maxTs - minTs) * 0.05), new Date(maxTs + (maxTs - minTs) * 0.05)])
+      .domain([new Date(minTs - span * 0.06), new Date(maxTs + span * 0.06)])
       .range([margin.left, width - margin.right]);
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
+
+    // Reusable defs: glow filter for current patent
+    const defs = svg.append("defs");
+    const filter = defs.append("filter").attr("id", "currentGlow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
+    filter.append("feGaussianBlur").attr("stdDeviation", "3").attr("result", "blur");
+    const merge = filter.append("feMerge");
+    merge.append("feMergeNode").attr("in", "blur");
+    merge.append("feMergeNode").attr("in", "SourceGraphic");
+
+    const truncForWidth = (text: string, availPx: number) => {
+      // ~6.2px per char at font-size 10
+      const maxChars = Math.max(8, Math.floor(availPx / 6.2));
+      return text.length > maxChars ? text.substring(0, maxChars - 1) + "…" : text;
+    };
 
     if (swimlane) {
       // SWIM LANE: group rows by IPC category, each lane has multiple rows
@@ -147,13 +163,13 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       categories.forEach((c) => grouped.set(c, []));
       parsed.forEach((p) => grouped.get(p.ipcCategory || "기타")!.push(p));
 
-      const laneRowHeight = 24;
-      const lanePadding = 18;
+      const laneRowHeight = 28;
+      const lanePadding = 20;
       const laneInfos: { category: string; items: typeof parsed; yStart: number; height: number }[] = [];
       let cursorY = margin.top;
       grouped.forEach((items, cat) => {
         if (!items.length) return;
-        const h = items.length * laneRowHeight + 12;
+        const h = items.length * laneRowHeight + 14;
         laneInfos.push({ category: cat, items, yStart: cursorY, height: h });
         cursorY += h + lanePadding;
       });
@@ -162,25 +178,25 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       svg.attr("viewBox", `0 0 ${width} ${height}`).attr("width", "100%").attr("height", height);
 
       // X axis
-      const xAxis = d3.axisBottom(xScale).ticks(Math.min(8, parsed.length)).tickFormat((d: any) => d3.timeFormat("%Y")(d));
+      const xAxisTop = d3.axisTop(xScale).ticks(Math.min(isMobile ? 5 : 8, Math.max(3, parsed.length))).tickFormat((d: any) => d3.timeFormat("%Y")(d));
       svg.append("g")
-        .attr("transform", `translate(0,${margin.top - 8})`)
-        .call(xAxis as any)
-        .call((g) => g.select(".domain").attr("stroke", "hsl(var(--border))"))
-        .call((g) => g.selectAll(".tick line").attr("stroke", "hsl(var(--border))"))
-        .call((g) => g.selectAll(".tick text").attr("fill", "hsl(var(--muted-foreground))").attr("font-size", 10));
+        .attr("transform", `translate(0,${margin.top - 6})`)
+        .call(xAxisTop as any)
+        .call((g) => g.select(".domain").remove())
+        .call((g) => g.selectAll(".tick line").attr("stroke", "hsl(var(--border))").attr("stroke-opacity", 0.5))
+        .call((g) => g.selectAll(".tick text").attr("fill", "hsl(var(--muted-foreground))").attr("font-size", 10).attr("font-weight", 600));
 
       // Vertical year grid
       svg.append("g")
         .selectAll("line")
-        .data(xScale.ticks(8))
+        .data(xScale.ticks(isMobile ? 5 : 8))
         .join("line")
         .attr("x1", (d: any) => xScale(d))
         .attr("x2", (d: any) => xScale(d))
-        .attr("y1", margin.top)
-        .attr("y2", height - margin.bottom)
+        .attr("y1", margin.top - 2)
+        .attr("y2", height - margin.bottom + 4)
         .attr("stroke", "hsl(var(--border))")
-        .attr("stroke-opacity", 0.25)
+        .attr("stroke-opacity", 0.2)
         .attr("stroke-dasharray", "2,3");
 
       // Render each lane
@@ -188,34 +204,45 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
         const color = colorMap.get(lane.category) || "hsl(var(--muted-foreground))";
         const laneG = svg.append("g");
 
-        // Lane background
+        // Lane background with rounded corners
         laneG.append("rect")
-          .attr("x", margin.left - 8)
+          .attr("x", margin.left - 12)
           .attr("y", lane.yStart)
-          .attr("width", width - margin.right - margin.left + 16)
+          .attr("width", width - margin.right - margin.left + 20)
           .attr("height", lane.height)
-          .attr("rx", 8)
+          .attr("rx", 10)
           .attr("fill", color)
-          .attr("fill-opacity", 0.04)
+          .attr("fill-opacity", 0.05)
           .attr("stroke", color)
-          .attr("stroke-opacity", 0.18)
+          .attr("stroke-opacity", 0.22)
           .attr("stroke-width", 1);
 
+        // Left accent bar
+        laneG.append("rect")
+          .attr("x", margin.left - 12)
+          .attr("y", lane.yStart)
+          .attr("width", 3)
+          .attr("height", lane.height)
+          .attr("rx", 1.5)
+          .attr("fill", color);
+
         // Lane label (left)
+        const labelX = margin.left - 18;
         laneG.append("text")
-          .attr("x", margin.left - 16)
-          .attr("y", lane.yStart + lane.height / 2)
+          .attr("x", labelX)
+          .attr("y", lane.yStart + lane.height / 2 - 6)
           .attr("dy", "0.32em")
           .attr("text-anchor", "end")
-          .attr("font-size", 10)
+          .attr("font-size", 11)
           .attr("font-weight", 700)
           .attr("fill", color)
-          .text(`${lane.category}`);
+          .text(truncForWidth(lane.category, margin.left - 28));
         laneG.append("text")
-          .attr("x", margin.left - 16)
-          .attr("y", lane.yStart + lane.height / 2 + 13)
+          .attr("x", labelX)
+          .attr("y", lane.yStart + lane.height / 2 + 9)
           .attr("text-anchor", "end")
           .attr("font-size", 9)
+          .attr("font-weight", 600)
           .attr("fill", "hsl(var(--muted-foreground))")
           .text(`${lane.items.length}건`);
 
@@ -225,30 +252,53 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
           .data(lane.items)
           .join("g")
           .attr("class", "lane-item")
-          .attr("transform", (_d, i) => `translate(0, ${lane.yStart + 10 + i * laneRowHeight + laneRowHeight / 2})`);
+          .attr("transform", (_d, i) => `translate(0, ${lane.yStart + 12 + i * laneRowHeight + laneRowHeight / 2})`);
+
+        // Halo for current patent
+        rows.filter((d) => d.isCurrent).append("circle")
+          .attr("cx", (d) => xScale(new Date(d.ts)))
+          .attr("cy", 0)
+          .attr("r", 11)
+          .attr("fill", "hsl(var(--primary))")
+          .attr("fill-opacity", 0.15)
+          .style("pointer-events", "none");
 
         rows.append("circle")
           .attr("cx", (d) => xScale(new Date(d.ts)))
           .attr("cy", 0)
-          .attr("r", (d) => (d.isCurrent ? 6.5 : 4.5))
+          .attr("r", (d) => (d.isCurrent ? 7 : 5))
           .attr("fill", (d) => (d.isCurrent ? "hsl(var(--primary))" : color))
-          .attr("stroke", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--background))"))
-          .attr("stroke-width", (d) => (d.isCurrent ? 3 : 2))
+          .attr("stroke", "hsl(var(--background))")
+          .attr("stroke-width", 2)
+          .attr("filter", (d) => (d.isCurrent ? "url(#currentGlow)" : null))
           .style("cursor", "pointer")
           .on("click", (_e, d) => { if (onPatentClick) onPatentClick(d.patentId); })
           .on("mouseenter", (e, d) => showTooltip(e, d.patentId))
           .on("mousemove", (e, d) => showTooltip(e, d.patentId))
           .on("mouseleave", () => hideTooltip());
 
+        // Smart label placement: flip to left side if right side is too narrow
         rows.append("text")
-          .attr("x", (d) => xScale(new Date(d.ts)) + 9)
+          .attr("x", (d) => {
+            const cx = xScale(new Date(d.ts));
+            const rightAvail = width - margin.right - cx - 12;
+            return rightAvail < 80 ? cx - 11 : cx + 11;
+          })
           .attr("y", 0)
           .attr("dy", "0.32em")
-          .attr("font-size", 10)
-          .attr("font-weight", (d) => (d.isCurrent ? 700 : 400))
-          .attr("fill", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--foreground) / 0.78)"))
+          .attr("text-anchor", (d) => {
+            const cx = xScale(new Date(d.ts));
+            return (width - margin.right - cx - 12) < 80 ? "end" : "start";
+          })
+          .attr("font-size", 10.5)
+          .attr("font-weight", (d) => (d.isCurrent ? 700 : 500))
+          .attr("fill", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--foreground) / 0.82)"))
           .text((d) => {
-            const t = d.title.length > 30 ? d.title.substring(0, 28) + "…" : d.title;
+            const cx = xScale(new Date(d.ts));
+            const rightAvail = width - margin.right - cx - 16;
+            const leftAvail = cx - margin.left - 8;
+            const avail = Math.max(rightAvail, leftAvail);
+            const t = truncForWidth(d.title, Math.max(60, avail - 30));
             return `${t}  ·  ${d.year}`;
           })
           .style("pointer-events", "none");
@@ -256,29 +306,40 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       return;
     }
 
-    // FLAT TIMELINE (original)
-    const rowHeight = 28;
+    // FLAT TIMELINE
+    const rowHeight = 32;
     const height = margin.top + margin.bottom + parsed.length * rowHeight;
     svg.attr("viewBox", `0 0 ${width} ${height}`).attr("width", "100%").attr("height", height);
 
-    const xAxis = d3.axisBottom(xScale).ticks(Math.min(8, parsed.length)).tickFormat((d: any) => d3.timeFormat("%Y")(d));
+    // Alternating row stripes for readability
+    svg.append("g").selectAll("rect.row-bg")
+      .data(parsed)
+      .join("rect")
+      .attr("class", "row-bg")
+      .attr("x", margin.left - 80)
+      .attr("y", (_d, i) => margin.top + i * rowHeight)
+      .attr("width", width - margin.right - margin.left + 80)
+      .attr("height", rowHeight)
+      .attr("fill", (_d, i) => i % 2 === 0 ? "hsl(var(--muted) / 0.25)" : "transparent");
+
+    const xAxisTop = d3.axisTop(xScale).ticks(Math.min(isMobile ? 5 : 8, Math.max(3, parsed.length))).tickFormat((d: any) => d3.timeFormat("%Y")(d));
     svg.append("g")
-      .attr("transform", `translate(0,${margin.top - 8})`)
-      .call(xAxis as any)
-      .call((g) => g.select(".domain").attr("stroke", "hsl(var(--border))"))
-      .call((g) => g.selectAll(".tick line").attr("stroke", "hsl(var(--border))"))
-      .call((g) => g.selectAll(".tick text").attr("fill", "hsl(var(--muted-foreground))").attr("font-size", 10));
+      .attr("transform", `translate(0,${margin.top - 6})`)
+      .call(xAxisTop as any)
+      .call((g) => g.select(".domain").remove())
+      .call((g) => g.selectAll(".tick line").attr("stroke", "hsl(var(--border))").attr("stroke-opacity", 0.5))
+      .call((g) => g.selectAll(".tick text").attr("fill", "hsl(var(--muted-foreground))").attr("font-size", 10).attr("font-weight", 600));
 
     svg.append("g")
       .selectAll("line")
-      .data(xScale.ticks(8))
+      .data(xScale.ticks(isMobile ? 5 : 8))
       .join("line")
       .attr("x1", (d: any) => xScale(d))
       .attr("x2", (d: any) => xScale(d))
-      .attr("y1", margin.top)
-      .attr("y2", height - margin.bottom)
+      .attr("y1", margin.top - 2)
+      .attr("y2", height - margin.bottom + 4)
       .attr("stroke", "hsl(var(--border))")
-      .attr("stroke-opacity", 0.3)
+      .attr("stroke-opacity", 0.2)
       .attr("stroke-dasharray", "2,3");
 
     const rows = svg
@@ -290,50 +351,98 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
       .attr("transform", (_d, i) => `translate(0, ${margin.top + i * rowHeight + rowHeight / 2})`);
 
     rows.append("line")
-      .attr("x1", margin.left - 60)
+      .attr("x1", margin.left - 4)
       .attr("x2", (d) => xScale(new Date(d.ts)))
       .attr("y1", 0)
       .attr("y2", 0)
-      .attr("stroke", "hsl(var(--border))")
-      .attr("stroke-opacity", 0.4)
-      .attr("stroke-width", 1);
+      .attr("stroke", (d) => colorMap.get(d.ipcCategory || "기타") || "hsl(var(--border))")
+      .attr("stroke-opacity", 0.35)
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3");
 
-    rows.append("text")
-      .attr("x", margin.left - 70)
+    // Category chip on the left
+    const chipPaddingX = 6;
+    const chipH = 18;
+    const chips = rows.append("g").attr("transform", `translate(${margin.left - 10}, 0)`);
+    chips.append("rect")
+      .attr("x", (d) => -(getCategoryChipWidth(d.ipcCategory || "기타", isMobile) + chipPaddingX * 2))
+      .attr("y", -chipH / 2)
+      .attr("width", (d) => getCategoryChipWidth(d.ipcCategory || "기타", isMobile) + chipPaddingX * 2)
+      .attr("height", chipH)
+      .attr("rx", 9)
+      .attr("fill", (d) => colorMap.get(d.ipcCategory || "기타") || "hsl(var(--muted-foreground))")
+      .attr("fill-opacity", 0.12)
+      .attr("stroke", (d) => colorMap.get(d.ipcCategory || "기타") || "hsl(var(--muted-foreground))")
+      .attr("stroke-opacity", 0.35);
+    chips.append("text")
+      .attr("x", -chipPaddingX)
       .attr("y", 0)
       .attr("dy", "0.32em")
       .attr("text-anchor", "end")
-      .attr("font-size", 9)
-      .attr("font-weight", 600)
+      .attr("font-size", 9.5)
+      .attr("font-weight", 700)
       .attr("fill", (d) => colorMap.get(d.ipcCategory || "기타") || "hsl(var(--muted-foreground))")
-      .text((d) => d.ipcCategory || "기타");
+      .text((d) => truncateCategoryLabel(d.ipcCategory || "기타", isMobile));
+
+    // Halo for current patent
+    rows.filter((d) => d.isCurrent).append("circle")
+      .attr("cx", (d) => xScale(new Date(d.ts)))
+      .attr("cy", 0)
+      .attr("r", 12)
+      .attr("fill", "hsl(var(--primary))")
+      .attr("fill-opacity", 0.15)
+      .style("pointer-events", "none");
 
     rows.append("circle")
       .attr("cx", (d) => xScale(new Date(d.ts)))
       .attr("cy", 0)
-      .attr("r", (d) => (d.isCurrent ? 7 : 5))
+      .attr("r", (d) => (d.isCurrent ? 7.5 : 5.5))
       .attr("fill", (d) => (d.isCurrent ? "hsl(var(--primary))" : colorMap.get(d.ipcCategory || "기타") || "hsl(var(--muted-foreground))"))
-      .attr("stroke", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--background))"))
-      .attr("stroke-width", (d) => (d.isCurrent ? 3 : 2))
+      .attr("stroke", "hsl(var(--background))")
+      .attr("stroke-width", 2)
+      .attr("filter", (d) => (d.isCurrent ? "url(#currentGlow)" : null))
       .style("cursor", "pointer")
       .on("click", (_e, d) => { if (onPatentClick) onPatentClick(d.patentId); })
       .on("mouseenter", (e, d) => showTooltip(e, d.patentId))
       .on("mousemove", (e, d) => showTooltip(e, d.patentId))
       .on("mouseleave", () => hideTooltip());
 
+    // Smart label placement: flip side based on available space
     rows.append("text")
-      .attr("x", (d) => xScale(new Date(d.ts)) + 10)
+      .attr("x", (d) => {
+        const cx = xScale(new Date(d.ts));
+        const rightAvail = width - margin.right - cx - 12;
+        return rightAvail < 90 ? cx - 12 : cx + 12;
+      })
       .attr("y", 0)
       .attr("dy", "0.32em")
-      .attr("font-size", 10)
-      .attr("font-weight", (d) => (d.isCurrent ? 700 : 400))
-      .attr("fill", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--foreground) / 0.75)"))
+      .attr("text-anchor", (d) => {
+        const cx = xScale(new Date(d.ts));
+        return (width - margin.right - cx - 12) < 90 ? "end" : "start";
+      })
+      .attr("font-size", 11)
+      .attr("font-weight", (d) => (d.isCurrent ? 700 : 500))
+      .attr("fill", (d) => (d.isCurrent ? "hsl(var(--primary))" : "hsl(var(--foreground) / 0.82)"))
       .text((d) => {
-        const t = d.title.length > 32 ? d.title.substring(0, 30) + "…" : d.title;
+        const cx = xScale(new Date(d.ts));
+        const rightAvail = width - margin.right - cx - 18;
+        const leftAvail = cx - margin.left - 8;
+        const avail = Math.max(rightAvail, leftAvail);
+        const t = truncForWidth(d.title, Math.max(70, avail - 36));
         return `${t}  ·  ${d.year}`;
       })
       .style("pointer-events", "none");
   };
+
+  // Helpers for category chip sizing
+  function getCategoryChipWidth(label: string, isMobile: boolean): number {
+    const truncated = truncateCategoryLabel(label, isMobile);
+    return Math.min(isMobile ? 60 : 90, truncated.length * 6.5);
+  }
+  function truncateCategoryLabel(label: string, isMobile: boolean): string {
+    const max = isMobile ? 5 : 9;
+    return label.length > max ? label.substring(0, max - 1) + "…" : label;
+  }
 
   if (!patentData?.assignee) return null;
   if (!loading && !patents.length && !error) return null;
@@ -392,9 +501,25 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
 
         {patents.length > 0 && !loading && (
           <>
-            <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground mb-3">
-              <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-primary" /> 현재 분석 특허</div>
-              <span>· 색상 = IPC 기술분야 · 가로축 = 등록/출원 연도</span>
+            {/* Legend with category chips */}
+            <div className="flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground mb-3">
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 border border-primary/20">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                <span className="font-semibold text-primary">현재 분석 특허</span>
+              </div>
+              {Object.entries(categoryStats).slice(0, 6).map(([cat, count]) => {
+                const palette = ["hsl(280 60% 55%)", "hsl(200 70% 50%)", "hsl(160 65% 45%)", "hsl(30 80% 55%)", "hsl(340 70% 55%)", "hsl(220 60% 55%)"];
+                const idx = Object.keys(categoryStats).indexOf(cat);
+                const color = palette[idx % palette.length];
+                return (
+                  <div key={cat} className="flex items-center gap-1.5 px-2 py-1 rounded-md border" style={{ background: `${color.replace(')', ' / 0.08)')}`, borderColor: `${color.replace(')', ' / 0.25)')}` }}>
+                    <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                    <span className="font-semibold" style={{ color }}>{cat}</span>
+                    <span className="text-muted-foreground/70">{count}</span>
+                  </div>
+                );
+              })}
+              <span className="text-muted-foreground/60">· 가로축: 등록/출원 연도</span>
             </div>
             <div ref={containerRef} className="relative overflow-x-auto rounded-xl bg-muted/20 border border-border/20 p-2">
               <svg ref={svgRef} />
