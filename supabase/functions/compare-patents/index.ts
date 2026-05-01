@@ -164,8 +164,8 @@ serve(async (req) => {
       parts.push(`번호: ${p.patentNumber || p.patentId || p.displayNumber || ""}`);
       if (p.title || p.titleKo) parts.push(`명칭: ${p.titleKo || p.title}`);
       if (p.assignee) parts.push(`출원인: ${p.assignee}`);
-      if (p.abstract) parts.push(`초록: ${(p.abstract || "").substring(0, 400)}`);
-      if (p.snippet) parts.push(`요약: ${(p.snippet || "").substring(0, 300)}`);
+      if (p.abstract) parts.push(`초록: ${(p.abstract || "").substring(0, 220)}`);
+      else if (p.snippet) parts.push(`요약: ${(p.snippet || "").substring(0, 180)}`);
       if (p.classifications?.length) parts.push(`IPC: ${p.classifications.slice(0, 3).join(", ")}`);
       return parts.join("\n");
     };
