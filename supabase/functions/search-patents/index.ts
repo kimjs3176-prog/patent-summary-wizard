@@ -332,14 +332,16 @@ serve(async (req) => {
       return patents;
     };
 
-    // Build search terms: try AND-combined first, then individual keywords as fallback
-    const combinedKeyword = searchKeywords.length > 1
-      ? searchKeywords.slice(0, 3).join("*")
-      : searchKeywords[0];
+    // 검색어 목록 구성: AND 결합어 + 개별 키워드 (AND 결합도 KIPRIS에서 잘 동작함을 확인)
+    const cleanKeywords = searchKeywords.slice(0, 3).filter(k => k && k.trim().length > 0);
+    const queries: string[] = [];
+    if (cleanKeywords.length > 1) queries.push(cleanKeywords.join("*")); // AND
+    for (const k of cleanKeywords) queries.push(k); // individual
+    // 중복 제거
+    const uniqueQueries = Array.from(new Set(queries));
+    console.log(`Search queries: [${uniqueQueries.join(" | ")}]`);
 
-    console.log(`Primary AND search: "${combinedKeyword}"`);
-
-    // KIPRIS 단일 요청 (timeout/retry 강화)
+    // KIPRIS 단일 요청 (title 또는 abstract 검색)
     const kiprisSearch = async (
       kw: string,
       org: { id: string; name: string },
@@ -352,26 +354,30 @@ serve(async (req) => {
         url.searchParams.set("astrtCont", field === "abstract" ? kw : "");
         url.searchParams.set("applicant", org.id);
         url.searchParams.set("pageNo", "1");
-        url.searchParams.set("numOfRows", "100");
+        url.searchParams.set("numOfRows", "50");
         url.searchParams.set("sortSpec", "AD");
         url.searchParams.set("descSort", "true");
         url.searchParams.set("patent", "true");
         url.searchParams.set("utility", "true");
-        const res = await fetchWithRetry(url.toString(), {}, { retries: 2, timeoutMs: 20000, baseDelay: 800 });
+        const res = await fetchWithRetry(url.toString(), {}, { retries: 1, timeoutMs: 12000, baseDelay: 500 });
         const text = await res.text();
         if (res.ok && !text.includes("<successYN>N</successYN>")) {
-          return parsePatentsFromXml(text, org.name);
+          const parsed = parsePatentsFromXml(text, org.name);
+          if (parsed.length > 0) {
+            console.log(`✓ ${field}/${org.name}/"${kw}": ${parsed.length} hits`);
+          }
+          return parsed;
         }
       } catch (e) {
-        console.error(`${field} search error for ${org.name} ("${kw}"):`, e instanceof Error ? e.message : e);
+        console.error(`✗ ${field}/${org.name}/"${kw}":`, e instanceof Error ? e.message : e);
       }
       return [];
     };
 
-    // 배치 단위로 동시 실행 (KIPRIS 부하 회피)
+    // 작은 배치로 순차 실행 (KIPRIS 부하 회피)
     const runBatched = async <T,>(
       tasks: Array<() => Promise<T[]>>,
-      batchSize = 4
+      batchSize = 2
     ): Promise<T[]> => {
       const out: T[] = [];
       for (let i = 0; i < tasks.length; i += batchSize) {
@@ -382,42 +388,18 @@ serve(async (req) => {
       return out;
     };
 
-    // Helper: run searches across all orgs (title + abstract) for a given keyword
-    const searchAllOrgs = async (kw: string): Promise<KeywordSearchResult[]> => {
-      const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
+    // 모든 기관 × (title + abstract) 검색을 한 번에 수집.
+    // KIPRIS는 기관별로 응답속도 편차가 크므로 (농촌진흥청은 빠름, 나머지는 자주 timeout)
+    // 모든 작업을 병렬로 실행하고 실패한 것은 빈 배열로 무시.
+    const allTasks: Array<() => Promise<KeywordSearchResult[]>> = [];
+    for (const q of uniqueQueries) {
       for (const org of AGRI_ORGANIZATIONS) {
-        tasks.push(() => kiprisSearch(kw, org, "title"));
-        tasks.push(() => kiprisSearch(kw, org, "abstract"));
-      }
-      console.log(`Running ${tasks.length} KIPRIS requests in batches for "${kw}"...`);
-      return await runBatched(tasks, 4);
-    };
-
-    // Step 1: AND-combined search (multiple keywords joined by *)
-    let allPatents = searchKeywords.length > 1
-      ? await searchAllOrgs(combinedKeyword)
-      : [];
-
-    // Step 2: top-2 AND fallback
-    if (allPatents.length < 5 && searchKeywords.length > 2) {
-      const top2 = searchKeywords.slice(0, 2).join("*");
-      console.log(`AND result too few (${allPatents.length}), fallback to top-2 AND: "${top2}"`);
-      const fallbackResults = await searchAllOrgs(top2);
-      allPatents = [...allPatents, ...fallbackResults];
-    }
-
-    // Step 3: Search each individual keyword (OR semantics) — most reliable
-    if (allPatents.length < 5) {
-      const keywordsToTry = searchKeywords.length > 1
-        ? searchKeywords.slice(0, 3)
-        : [searchKeywords[0]];
-      console.log(`Fallback to individual keyword search: [${keywordsToTry.join(", ")}]`);
-      for (const kw of keywordsToTry) {
-        const r = await searchAllOrgs(kw);
-        allPatents = [...allPatents, ...r];
-        if (allPatents.length >= 20) break;
+        allTasks.push(() => kiprisSearch(q, org, "title"));
+        allTasks.push(() => kiprisSearch(q, org, "abstract"));
       }
     }
+    console.log(`Running ${allTasks.length} KIPRIS requests (batch=6)`);
+    const allPatents = await runBatched(allTasks, 6);
 
     // 중복 제거 (patentId 기준)
     const uniquePatents = Array.from(
