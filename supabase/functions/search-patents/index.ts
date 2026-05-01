@@ -180,6 +180,114 @@ Rules:
   }
 }
 
+/**
+ * Use AI to refine an arbitrary search input:
+ *  - typo correction (e.g. "딸기 저장기간" -> "딸기 저장")
+ *  - synonym expansion (e.g. "스마트팜" -> ["스마트팜","지능형 농장","스마트 농업"])
+ *  - classify keywords into MUST (AND) and SHOULD (OR)
+ * Returns a list of recommended KIPRIS query strings (each uses `*` for AND inside).
+ */
+async function recommendQueriesWithAI(
+  rawInput: string,
+  baseKeywords: string[],
+): Promise<{ must: string[]; should: string[]; queries: string[]; corrected?: string }> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  // Conservative fallback: just use base keywords, no synonyms.
+  const fallback = () => {
+    const must = baseKeywords.slice(0, 2).filter(Boolean);
+    const should = baseKeywords.slice(2, 4).filter(Boolean);
+    const queries: string[] = [];
+    if (must.length > 1) queries.push(must.join("*"));
+    for (const k of [...must, ...should]) queries.push(k);
+    return { must, should, queries: Array.from(new Set(queries)) };
+  };
+  if (!LOVABLE_API_KEY) return fallback();
+
+  try {
+    const response = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          {
+            role: "system",
+            content: `You are a KIPRIS (Korean Patent DB) query optimizer for agricultural patents.
+Given a user's raw Korean search input and pre-extracted candidate keywords, output an optimized search plan.
+
+Tasks:
+1. Typo correction: fix obvious Korean typos / spacing (e.g. "병해중" -> "병해충", "스마트팜자동화" -> "스마트팜 자동화").
+2. Normalize: drop particles, verb endings, generic words ("기간","방법","시스템" alone is usually too generic).
+3. Classify keywords:
+   - "must": 1-2 core concepts that MUST appear (typically the crop / target object, the core technique).
+   - "should": 1-3 synonyms or alternative expressions that BROADEN recall (e.g. "스마트팜" <-> "지능형 농장" <-> "스마트 농업"; "병해충" <-> "해충"; "저장" <-> "보관" <-> "저장성").
+4. Each keyword: 1-3 Korean characters/words, no particles, no punctuation, no English unless it's a standard term.
+5. Output ONLY JSON: {"corrected":"<corrected raw input>","must":["..."],"should":["..."]}
+   - must: 1-2 items
+   - should: 0-3 items (synonyms / alternative spellings of must items, NOT new unrelated topics)`,
+          },
+          {
+            role: "user",
+            content: `원문: "${rawInput}"
+추출된 키워드 후보: [${baseKeywords.join(", ")}]`,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 250,
+      }),
+    }, 7000);
+
+    if (!response.ok) {
+      console.error("AI query refine failed:", response.status);
+      return fallback();
+    }
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return fallback();
+    const parsed = JSON.parse(jsonMatch[0]);
+    const must: string[] = Array.isArray(parsed.must)
+      ? parsed.must.filter((x: unknown) => typeof x === "string" && x.trim().length > 0).slice(0, 2)
+      : [];
+    const should: string[] = Array.isArray(parsed.should)
+      ? parsed.should.filter((x: unknown) => typeof x === "string" && x.trim().length > 0).slice(0, 3)
+      : [];
+    const corrected: string | undefined =
+      typeof parsed.corrected === "string" && parsed.corrected.trim().length > 0
+        ? parsed.corrected.trim()
+        : undefined;
+
+    if (must.length === 0) return fallback();
+
+    // Build query list:
+    //  1) AND of all must keywords (most precise)
+    //  2) For each should-synonym: replace the last must term with the synonym -> AND combined
+    //     (treats `should` as alternatives to broaden recall)
+    //  3) Each must keyword alone (recall safety net)
+    const queries: string[] = [];
+    if (must.length > 1) queries.push(must.join("*"));
+    if (must.length === 1) queries.push(must[0]);
+    for (const syn of should) {
+      if (must.length > 1) {
+        queries.push([...must.slice(0, -1), syn].join("*"));
+      } else {
+        queries.push(syn);
+      }
+    }
+    for (const k of must) if (!queries.includes(k)) queries.push(k);
+
+    const uniq = Array.from(new Set(queries.map(q => q.trim()).filter(Boolean))).slice(0, 6);
+    console.log(`AI refined queries: must=[${must.join(",")}] should=[${should.join(",")}] -> ${uniq.join(" | ")}`);
+    return { must, should, queries: uniq, corrected };
+  } catch (e) {
+    console.error("AI query refine error:", e);
+    return fallback();
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
