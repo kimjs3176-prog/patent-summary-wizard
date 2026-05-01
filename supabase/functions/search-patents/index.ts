@@ -332,12 +332,10 @@ serve(async (req) => {
       return patents;
     };
 
-    // Build search terms: try AND-combined first, then individual keywords as fallback
-    const combinedKeyword = searchKeywords.length > 1
-      ? searchKeywords.slice(0, 3).join("*")
-      : searchKeywords[0];
-
-    console.log(`Primary AND search: "${combinedKeyword}"`);
+    // KIPRIS의 `*` AND 검색은 거의 0건을 반환하므로 사용하지 않음.
+    // 대신 개별 키워드를 차례로 검색해 결과를 합친다.
+    const keywordsToSearch = searchKeywords.slice(0, 3).filter(k => k && k.trim().length > 0);
+    console.log(`Searching individual keywords: [${keywordsToSearch.join(", ")}]`);
 
     // KIPRIS 단일 요청 (title 또는 abstract 검색)
     const kiprisSearch = async (
@@ -400,30 +398,20 @@ serve(async (req) => {
       return await runBatched(tasks, 2);
     };
 
-    // Step 1: AND-combined search (multiple keywords joined by *)
-    let allPatents = searchKeywords.length > 1
-      ? await searchAllOrgs(combinedKeyword)
-      : [];
-
-    // Step 2: top-2 AND fallback
-    if (allPatents.length < 5 && searchKeywords.length > 2) {
-      const top2 = searchKeywords.slice(0, 2).join("*");
-      console.log(`AND result too few (${allPatents.length}), fallback to top-2 AND: "${top2}"`);
-      const fallbackResults = await searchAllOrgs(top2);
-      allPatents = [...allPatents, ...fallbackResults];
+    // Step 1: 각 키워드를 title 필드로 검색 (가장 빠르고 정확)
+    let allPatents: KeywordSearchResult[] = [];
+    for (const kw of keywordsToSearch) {
+      const r = await searchAllOrgs(kw, false);
+      allPatents = [...allPatents, ...r];
+      if (allPatents.length >= 30) break;
     }
 
-    // Step 3: Search each individual keyword (OR semantics) — most reliable
-    if (allPatents.length < 5) {
-      const keywordsToTry = searchKeywords.length > 1
-        ? searchKeywords.slice(0, 3)
-        : [searchKeywords[0]];
-      console.log(`Fallback to individual keyword search: [${keywordsToTry.join(", ")}]`);
-      for (const kw of keywordsToTry) {
-        const r = await searchAllOrgs(kw);
-        allPatents = [...allPatents, ...r];
-        if (allPatents.length >= 20) break;
-      }
+    // Step 2: title에서 결과가 적으면 abstract도 추가 검색 (첫 번째 키워드만)
+    const uniqueAfterTitle = new Map(allPatents.map(p => [p.patentId, p])).size;
+    if (uniqueAfterTitle < 5 && keywordsToSearch.length > 0) {
+      console.log(`Title results too few (${uniqueAfterTitle}), expanding to abstract for "${keywordsToSearch[0]}"`);
+      const r = await searchAllOrgs(keywordsToSearch[0], true);
+      allPatents = [...allPatents, ...r];
     }
 
     // 중복 제거 (patentId 기준)
