@@ -359,10 +359,22 @@ serve(async (req) => {
     } else {
       // Original keyword processing
       const words = rawInput.split(/\s+/).filter((w: string) => w.length > 0);
-      const searchKeyword = words.length > 1
-        ? words.filter((w: string) => w.length >= 1).join("*")
-        : rawInput;
-      searchKeywords = [searchKeyword];
+      searchKeywords = words.length > 0 ? words : [rawInput];
+    }
+
+    // === AI-driven query recommendation: typo correction + AND/OR + synonyms ===
+    const refined = await recommendQueriesWithAI(rawInput, searchKeywords);
+    let recommendedQueries = refined.queries;
+    const correctedInput = refined.corrected;
+    if (correctedInput && correctedInput !== rawInput) {
+      console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
+    }
+    // If recommender returned nothing useful, fall back to original logic
+    if (!recommendedQueries || recommendedQueries.length === 0) {
+      const fallback: string[] = [];
+      if (searchKeywords.length > 1) fallback.push(searchKeywords.join("*"));
+      for (const k of searchKeywords) fallback.push(k);
+      recommendedQueries = Array.from(new Set(fallback));
     }
 
     // 특허 파싱 헬퍼
@@ -440,14 +452,9 @@ serve(async (req) => {
       return patents;
     };
 
-    // 검색어 목록 구성: AND 결합어 + 개별 키워드 (AND 결합도 KIPRIS에서 잘 동작함을 확인)
-    const cleanKeywords = searchKeywords.slice(0, 3).filter(k => k && k.trim().length > 0);
-    const queries: string[] = [];
-    if (cleanKeywords.length > 1) queries.push(cleanKeywords.join("*")); // AND
-    for (const k of cleanKeywords) queries.push(k); // individual
-    // 중복 제거
-    const uniqueQueries = Array.from(new Set(queries));
-    console.log(`Search queries: [${uniqueQueries.join(" | ")}]`);
+    // Final query set comes from the AI recommender (already deduped, ordered by precision)
+    const uniqueQueries = recommendedQueries.slice(0, 6);
+    console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
 
     // KIPRIS 단일 요청 (title 또는 abstract 검색)
     const kiprisSearch = async (
@@ -525,6 +532,10 @@ serve(async (req) => {
         patents: topPatents, 
         keyword: keyword.trim(), 
         totalCount: uniquePatents.length,
+        recommendedQueries: uniqueQueries,
+        ...(correctedInput && correctedInput !== rawInput ? { correctedInput } : {}),
+        mustKeywords: refined.must,
+        shouldKeywords: refined.should,
         // Include AI-extracted info for natural language queries
         ...(isNLQuery ? { 
           isNaturalLanguage: true, 
