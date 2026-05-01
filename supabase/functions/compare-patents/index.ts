@@ -164,8 +164,8 @@ serve(async (req) => {
       parts.push(`번호: ${p.patentNumber || p.patentId || p.displayNumber || ""}`);
       if (p.title || p.titleKo) parts.push(`명칭: ${p.titleKo || p.title}`);
       if (p.assignee) parts.push(`출원인: ${p.assignee}`);
-      if (p.abstract) parts.push(`초록: ${(p.abstract || "").substring(0, 400)}`);
-      if (p.snippet) parts.push(`요약: ${(p.snippet || "").substring(0, 300)}`);
+      if (p.abstract) parts.push(`초록: ${(p.abstract || "").substring(0, 220)}`);
+      else if (p.snippet) parts.push(`요약: ${(p.snippet || "").substring(0, 180)}`);
       if (p.classifications?.length) parts.push(`IPC: ${p.classifications.slice(0, 3).join(", ")}`);
       return parts.join("\n");
     };
@@ -175,41 +175,19 @@ serve(async (req) => {
       ...top3.map((p: any, i: number) => fmtPatent(p, `경쟁 특허 ${i + 1}`)),
     ].join("\n\n");
 
-    const systemPrompt = `한국 특허 비교 분석 전문가. 분석 대상 특허와 경쟁 특허 ${top3.length}건을 비교.
-JSON 형식으로만 응답. 다른 텍스트 금지.
-
-평가 축 (정확히 5개):
+    const systemPrompt = `한국 특허 비교 분석 전문가. 분석 대상 vs 경쟁 ${top3.length}건.
+JSON만 출력. 평가 축 4개 고정:
 1. 핵심 기술 방식
-2. 적용 분야/용도
-3. 차별적 효과
-4. 구현 복잡도
-5. 상용화 가능성
+2. 차별적 효과
+3. 적용 분야
+4. 상용화 가능성
 
-각 축마다 분석 대상과 경쟁 특허들의 특징을 12~25자 이내 짧은 구문으로 비교.
+각 셀: 10~20자 짧은 구문. strength: strong/medium/weak.
+advantage: current(분석대상우위) | competitor(경쟁우위) | neutral.
+similarityScore: 각 경쟁 0~100 정수.
 
-각 셀(분석대상/경쟁)마다 "strength" 평가:
-- "strong": 해당 축에서 명확한 우위/완성도가 높음
-- "medium": 보통 수준
-- "weak": 해당 축에서 약점/부재
-
-advantage: 분석 대상이 우수하면 "current", 경쟁이 우수하면 "competitor", 동등하면 "neutral".
-
-또한 각 경쟁 특허마다 분석 대상과의 기술적 유사도를 0~100 정수로 평가 (similarityScore).
-
-응답 형식:
-{
-  "rows": [
-    {
-      "axis": "핵심 기술 방식",
-      "current": "...", "currentStrength": "strong",
-      "competitors": ["...","...","..."],
-      "competitorStrengths": ["medium","weak","strong"],
-      "advantage": "current"
-    }
-  ],
-  "competitorSimilarities": [85, 72, 60],
-  "summary": "분석 대상의 차별적 우위 2~3문장 요약"
-}`;
+형식:
+{"rows":[{"axis":"핵심 기술 방식","current":"...","currentStrength":"strong","competitors":["...","...","..."],"competitorStrengths":["medium","weak","strong"],"advantage":"current"}],"competitorSimilarities":[85,72,60],"summary":"분석 대상의 핵심 우위 1~2문장"}`;
 
     const aiResp = await fetchWithTimeout(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -217,16 +195,17 @@ advantage: 분석 대상이 우수하면 "current", 경쟁이 우수하면 "comp
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.5-flash-lite",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: ctx },
           ],
           response_format: { type: "json_object" },
-          max_tokens: 2000,
+          max_tokens: 1200,
+          temperature: 0.3,
         }),
       },
-      45000,
+      30000,
     );
 
     if (!aiResp.ok) {

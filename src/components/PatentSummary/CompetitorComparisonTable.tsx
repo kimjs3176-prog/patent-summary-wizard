@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles } from "lucide-react";
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Tooltip as RTooltip } from "recharts";
+import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles, ChevronDown, ChevronUp, Trophy, Brain } from "lucide-react";
 import { PatentData, RelatedPatent } from "./types";
 import { safeFetch } from "@/lib/safeFetch";
 
@@ -69,7 +68,9 @@ function truncate(s: string, n: number) {
 export function CompetitorComparisonTable({ patentData, relatedPatents = [], onPatentClick }: CompetitorComparisonTableProps) {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState<"idle" | "search" | "compare">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [showTable, setShowTable] = useState(false);
 
   const strengthScore = (s: Strength) => (s === "strong" ? 3 : s === "medium" ? 2 : 1);
 
@@ -90,6 +91,7 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
     const run = async () => {
       if (!patentData?.title && !patentData?.titleKo) return;
       setLoading(true);
+      setStage("search");
       setError(null);
       setResult(null);
 
@@ -108,7 +110,7 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
               classifications: patentData.classifications || [],
               patentNumber: patentData.patentNumber || patentData.displayNumber || "",
             }),
-            timeoutMs: 45000,
+            timeoutMs: 30000,
             retries: 1,
           }
         );
@@ -175,6 +177,7 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
         const top3 = filtered.slice(0, 3);
 
         // Step 2: Generate comparison table
+        setStage("compare");
         const cmpRes = await safeFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/compare-patents`,
           {
@@ -187,7 +190,7 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
               currentPatent: patentData,
               competitorPatents: top3,
             }),
-            timeoutMs: 60000,
+            timeoutMs: 45000,
             retries: 1,
           }
         );
@@ -211,6 +214,7 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
         }
       } finally {
         setLoading(false);
+        setStage("idle");
       }
     };
     run();
@@ -220,8 +224,29 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
 
   const currentTitle = truncate(patentData.titleKo || patentData.title || "분석 대상", 24);
   const competitorCount = result?.competitors.length || 0;
-  // Build dynamic column widths
-  const colCount = competitorCount + 1; // +1 for axis column
+  const colCount = competitorCount + 1;
+
+  // Aggregate: who wins the most axes?
+  const wins = useMemo(() => {
+    if (!result?.rows) return { current: 0, competitor: 0, neutral: 0 };
+    return result.rows.reduce(
+      (acc, r) => {
+        if (r.advantage === "current") acc.current += 1;
+        else if (r.advantage === "competitor") acc.competitor += 1;
+        else acc.neutral += 1;
+        return acc;
+      },
+      { current: 0, competitor: 0, neutral: 0 }
+    );
+  }, [result]);
+
+  const overallVerdict = useMemo(() => {
+    if (!result?.rows?.length) return null;
+    const total = result.rows.length;
+    if (wins.current > wins.competitor) return { label: "분석 대상 우위", tone: "primary" as const, ratio: wins.current / total };
+    if (wins.competitor > wins.current) return { label: "경쟁 특허 우위", tone: "warn" as const, ratio: wins.competitor / total };
+    return { label: "비등한 경쟁 구도", tone: "neutral" as const, ratio: 0.5 };
+  }, [result, wins]);
 
   return (
     <div className="relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
@@ -241,9 +266,30 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
 
       <div className="p-4 sm:p-5 md:p-6">
         {loading && (
-          <div className="flex flex-col items-center justify-center py-10 gap-3">
-            <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'hsl(280 60% 55%)' }} />
-            <p className="text-xs sm:text-sm text-muted-foreground">유사 특허 검색 + 차별점 분석 중...</p>
+          <div className="space-y-4">
+            {/* Stepper */}
+            <div className="flex items-center justify-center gap-3 sm:gap-5 py-2">
+              <div className={`flex items-center gap-1.5 text-[11px] sm:text-xs font-medium transition-colors ${stage === 'search' ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+                {stage === 'search'
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'hsl(280 60% 55%)' }} />
+                  : <CheckCircle2 className="w-3.5 h-3.5" style={{ color: 'hsl(280 60% 55%)' }} />}
+                <span>유사 특허 검색</span>
+              </div>
+              <div className="w-6 h-px bg-border/50" />
+              <div className={`flex items-center gap-1.5 text-[11px] sm:text-xs font-medium transition-colors ${stage === 'compare' ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+                {stage === 'compare'
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'hsl(280 60% 55%)' }} />
+                  : <Brain className="w-3.5 h-3.5" />}
+                <span>차별점 분석</span>
+              </div>
+            </div>
+            {/* Skeleton bars to set expectation */}
+            <div className="space-y-2.5">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-9 rounded-lg bg-muted/40 animate-pulse" style={{ animationDelay: `${i * 120}ms` }} />
+              ))}
+            </div>
+            <p className="text-center text-[11px] text-muted-foreground/70">최대 30~45초 소요됩니다. 다음 조회부터는 즉시 표시됩니다.</p>
           </div>
         )}
 
@@ -256,7 +302,54 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
 
         {result && !loading && (
           <div className="space-y-4">
-            {/* Competitor header cards with similarity % */}
+            {/* === Verdict banner === */}
+            {overallVerdict && (
+              <div
+                className="flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border"
+                style={{
+                  background: overallVerdict.tone === 'primary'
+                    ? 'hsl(var(--primary) / 0.06)'
+                    : overallVerdict.tone === 'warn'
+                    ? 'hsl(25 90% 55% / 0.06)'
+                    : 'hsl(var(--muted) / 0.5)',
+                  borderColor: overallVerdict.tone === 'primary'
+                    ? 'hsl(var(--primary) / 0.25)'
+                    : overallVerdict.tone === 'warn'
+                    ? 'hsl(25 90% 55% / 0.25)'
+                    : 'hsl(var(--border))',
+                }}
+              >
+                <div
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    background: overallVerdict.tone === 'primary'
+                      ? 'hsl(var(--primary) / 0.12)'
+                      : overallVerdict.tone === 'warn'
+                      ? 'hsl(25 90% 55% / 0.12)'
+                      : 'hsl(var(--muted))',
+                    color: overallVerdict.tone === 'primary'
+                      ? 'hsl(var(--primary))'
+                      : overallVerdict.tone === 'warn'
+                      ? 'hsl(25 90% 45%)'
+                      : 'hsl(var(--muted-foreground))',
+                  }}
+                >
+                  <Trophy className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground">종합 판정</div>
+                  <div className="text-sm sm:text-[15px] font-bold text-foreground">{overallVerdict.label}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-lg sm:text-xl font-black tabular-nums leading-none text-foreground">
+                    {wins.current}<span className="text-muted-foreground/50 text-sm">/{result.rows.length}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">축 우위</div>
+                </div>
+              </div>
+            )}
+
+            {/* === Competitor header cards with similarity === */}
             <div className={`grid gap-2 grid-cols-2 ${colCount === 4 ? 'sm:grid-cols-4' : colCount === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               <div className="p-2.5 rounded-xl border-2 text-center" style={{ borderColor: 'hsl(var(--primary) / 0.4)', background: 'hsl(var(--primary) / 0.04)' }}>
                 <div className="text-[9px] font-bold uppercase tracking-wider text-primary mb-1">분석 대상</div>
@@ -282,8 +375,106 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
               })}
             </div>
 
-            {/* Comparison table */}
-            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+            {/* === Versus bars per axis (mobile-first, intuitive) === */}
+            <div className="space-y-2">
+              {result.rows.map((row, i) => {
+                const curScore = strengthScore(row.currentStrength);
+                const compScores = row.competitorStrengths.map(strengthScore);
+                const compAvg = compScores.length ? compScores.reduce((a, b) => a + b, 0) / compScores.length : 0;
+                const curPct = (curScore / 3) * 100;
+                const compPct = (compAvg / 3) * 100;
+                const advColor = row.advantage === 'current'
+                  ? 'hsl(var(--primary))'
+                  : row.advantage === 'competitor'
+                  ? 'hsl(25 90% 55%)'
+                  : 'hsl(var(--muted-foreground))';
+                const advBg = row.advantage === 'current'
+                  ? 'hsl(var(--primary) / 0.06)'
+                  : row.advantage === 'competitor'
+                  ? 'hsl(25 90% 55% / 0.06)'
+                  : 'transparent';
+                return (
+                  <div
+                    key={i}
+                    className="rounded-xl border border-border/30 p-3 sm:p-3.5 transition-colors"
+                    style={{ background: advBg }}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[12px] sm:text-[13px] font-bold text-foreground truncate">{row.axis}</span>
+                      </div>
+                      <span
+                        className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+                        style={{ color: advColor, background: `${advColor.replace(')', ' / 0.1)')}` }}
+                      >
+                        {row.advantage === 'current' ? '대상 우위' : row.advantage === 'competitor' ? '경쟁 우위' : '동등'}
+                      </span>
+                    </div>
+                    {/* Two stacked bars: current vs competitor avg */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-primary w-12 shrink-0">분석대상</span>
+                        <div className="flex-1 h-2 rounded-full bg-muted/60 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${curPct}%`, background: 'hsl(var(--primary))' }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-medium text-foreground/70 w-10 text-right shrink-0">
+                          {row.currentStrength === 'strong' ? '강' : row.currentStrength === 'medium' ? '중' : '약'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-muted-foreground w-12 shrink-0">경쟁평균</span>
+                        <div className="flex-1 h-2 rounded-full bg-muted/60 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${compPct}%`, background: 'hsl(280 50% 60%)' }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-medium text-foreground/70 w-10 text-right shrink-0">
+                          {compAvg >= 2.5 ? '강' : compAvg >= 1.5 ? '중' : '약'}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Inline summary text per side */}
+                    <div className="mt-2.5 grid grid-cols-2 gap-2 text-[11px] sm:text-[12px] leading-snug">
+                      <div className="text-foreground/80">
+                        <span className="text-primary font-semibold">▸ </span>{row.current}
+                      </div>
+                      <div className="text-foreground/60">
+                        <span className="text-muted-foreground font-semibold">▸ </span>
+                        {row.competitors.filter(Boolean).join(' · ') || '—'}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* === AI Summary (moved up for visibility) === */}
+            {result.summary && (
+              <div className="p-3 sm:p-3.5 rounded-xl bg-[hsl(280,60%,55%,0.05)] border-l-4 border-l-[hsl(280,60%,55%)]">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(280 60% 55%)' }} />
+                  <p className="text-[12px] sm:text-[13px] text-foreground/80 leading-[1.7]">
+                    <span className="font-bold text-foreground">AI 분석:</span> {result.summary}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* === Detailed table (collapsible) === */}
+            <button
+              onClick={() => setShowTable((v) => !v)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-muted/40 hover:bg-muted/60 border border-border/30 text-[11px] sm:text-xs font-semibold text-foreground/70 transition-colors"
+            >
+              {showTable ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {showTable ? '상세 비교표 접기' : '상세 비교표 펼치기'}
+            </button>
+
+            {showTable && (
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 animate-fade-up">
               <table className="w-full text-[12px] sm:text-[13px] border-separate border-spacing-0 min-w-[640px]">
                 <thead>
                   <tr>
@@ -330,26 +521,6 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
                 </tbody>
               </table>
             </div>
-
-            {/* Legend */}
-            <div className="flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground px-1">
-              <div className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> 분석대상 우위</div>
-              <div className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-orange-500" /> 경쟁 우위</div>
-              <div className="flex items-center gap-1"><StrengthDots s="strong" /> 강</div>
-              <div className="flex items-center gap-1"><StrengthDots s="medium" /> 중</div>
-              <div className="flex items-center gap-1"><StrengthDots s="weak" /> 약</div>
-            </div>
-
-            {/* AI Summary */}
-            {result.summary && (
-              <div className="p-3 sm:p-3.5 rounded-xl bg-[hsl(280,60%,55%,0.05)] border-l-4 border-l-[hsl(280,60%,55%)]">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(280 60% 55%)' }} />
-                  <p className="text-[12px] sm:text-[13px] text-foreground/80 leading-[1.7]">
-                    <span className="font-bold text-foreground">AI 분석:</span> {result.summary}
-                  </p>
-                </div>
-              </div>
             )}
           </div>
         )}
