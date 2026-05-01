@@ -355,7 +355,7 @@ serve(async (req) => {
         url.searchParams.set("descSort", "true");
         url.searchParams.set("patent", "true");
         url.searchParams.set("utility", "true");
-        const res = await fetchWithRetry(url.toString(), {}, { retries: 3, timeoutMs: 25000, baseDelay: 1000 });
+        const res = await fetchWithRetry(url.toString(), {}, { retries: 2, timeoutMs: 15000, baseDelay: 600 });
         const text = await res.text();
         if (res.ok && !text.includes("<successYN>N</successYN>")) {
           const parsed = parsePatentsFromXml(text, org.name);
@@ -394,8 +394,8 @@ serve(async (req) => {
         tasks.push(() => kiprisSearch(kw, org, "title"));
         if (includeAbstract) tasks.push(() => kiprisSearch(kw, org, "abstract"));
       }
-      console.log(`Running ${tasks.length} KIPRIS requests (batch=2) for "${kw}" [abstract=${includeAbstract}]`);
-      return await runBatched(tasks, 2);
+      console.log(`Running ${tasks.length} KIPRIS requests (batch=4) for "${kw}" [abstract=${includeAbstract}]`);
+      return await runBatched(tasks, 4);
     };
 
     // Step 1: 각 키워드를 title 필드로 검색 (가장 빠르고 정확)
