@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles, ChevronDown, ChevronUp, Trophy, Search, Brain } from "lucide-react";
+import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles, ChevronDown, ChevronUp, Trophy, Brain } from "lucide-react";
 import { PatentData, RelatedPatent } from "./types";
 import { safeFetch } from "@/lib/safeFetch";
 
