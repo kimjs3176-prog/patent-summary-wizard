@@ -71,6 +71,15 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
   const [stage, setStage] = useState<"idle" | "search" | "compare">("idle");
   const [error, setError] = useState<string | null>(null);
   const [showTable, setShowTable] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  const toggleRow = (i: number) =>
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
 
   const strengthScore = (s: Strength) => (s === "strong" ? 3 : s === "medium" ? 2 : 1);
 
@@ -474,11 +483,88 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
             </button>
 
             {showTable && (
-            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 animate-fade-up">
-              <table className="w-full text-[12px] sm:text-[13px] border-separate border-spacing-0 min-w-[640px]">
+            <div className="animate-fade-up">
+              {/* Mobile: collapsible row cards (no horizontal scroll) */}
+              <div className="md:hidden space-y-2">
+                {result.rows.map((row, i) => {
+                  const isOpen = expandedRows.has(i);
+                  const advTone = row.advantage === 'current'
+                    ? { label: '대상 우위', color: 'hsl(var(--primary))', bg: 'hsl(var(--primary) / 0.08)' }
+                    : row.advantage === 'competitor'
+                    ? { label: '경쟁 우위', color: 'hsl(25 90% 50%)', bg: 'hsl(25 90% 55% / 0.08)' }
+                    : { label: '동등', color: 'hsl(var(--muted-foreground))', bg: 'hsl(var(--muted) / 0.5)' };
+                  return (
+                    <div key={i} className="rounded-xl border border-border/30 bg-background overflow-hidden">
+                      <button
+                        onClick={() => toggleRow(i)}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-muted/30 transition-colors"
+                      >
+                        <span className="flex-1 text-[12px] font-bold text-foreground truncate">{row.axis}</span>
+                        <span
+                          className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
+                          style={{ color: advTone.color, background: advTone.bg }}
+                        >
+                          {advTone.label}
+                        </span>
+                        {isOpen
+                          ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+                      </button>
+                      {isOpen && (
+                        <div className="px-3 pb-3 pt-1 space-y-2 border-t border-border/20">
+                          <div className="rounded-lg p-2.5" style={{ background: 'hsl(var(--primary) / 0.05)' }}>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">분석 대상</span>
+                              <StrengthDots s={row.currentStrength} />
+                            </div>
+                            <p className="text-[12px] text-foreground leading-snug">{row.current || '—'}</p>
+                          </div>
+                          {result.competitors.map((c, idx) => (
+                            <div key={idx} className="rounded-lg p-2.5 bg-muted/30">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate" title={c.title}>
+                                  경쟁 {idx + 1} · {truncate(c.title, 14)}
+                                </span>
+                                {row.competitors[idx] && <StrengthDots s={row.competitorStrengths[idx] || 'medium'} />}
+                              </div>
+                              <p className="text-[12px] text-foreground/75 leading-snug">{row.competitors[idx] || '—'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-center gap-3 pt-1">
+                  <button
+                    onClick={() => setExpandedRows(new Set(result.rows.map((_, i) => i)))}
+                    className="text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    모두 펼치기
+                  </button>
+                  <span className="text-muted-foreground/40">·</span>
+                  <button
+                    onClick={() => setExpandedRows(new Set())}
+                    className="text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    모두 접기
+                  </button>
+                </div>
+              </div>
+
+              {/* Desktop: full table with auto-fit columns */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-[13px] border-separate border-spacing-0 table-fixed">
+                  <colgroup>
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: `${86 / (1 + result.competitors.length)}%` }} />
+                    {result.competitors.map((_, i) => (
+                      <col key={i} style={{ width: `${86 / (1 + result.competitors.length)}%` }} />
+                    ))}
+                  </colgroup>
                 <thead>
                   <tr>
-                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40 rounded-l-lg w-[110px]">평가 축</th>
+                    <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/40 rounded-l-lg">평가 축</th>
                     <th className="text-left py-2 px-3 font-bold text-[10px] uppercase tracking-wider text-primary bg-primary/[0.06]">
                       <div className="line-clamp-1" title={patentData.titleKo || patentData.title}>{truncate(patentData.titleKo || patentData.title || "분석 대상", 18)}</div>
                     </th>
@@ -498,17 +584,17 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
                       : null;
                     return (
                       <tr key={i} className="border-b border-border/20 last:border-0">
-                        <td className="py-3 px-3 font-semibold text-foreground/80 align-top">
+                        <td className="py-3 px-3 font-semibold text-foreground/80 align-top break-keep">
                           <div className="flex items-center gap-1.5">{row.axis}{advIcon}</div>
                         </td>
-                        <td className={`py-3 px-3 align-top ${row.advantage === 'current' ? 'bg-primary/[0.05] font-medium text-foreground' : 'text-foreground/70'}`}>
+                        <td className={`py-3 px-3 align-top break-words ${row.advantage === 'current' ? 'bg-primary/[0.05] font-medium text-foreground' : 'text-foreground/70'}`}>
                           <div className="flex items-start">
                             <span className="flex-1">{row.current}</span>
                             <StrengthDots s={row.currentStrength} />
                           </div>
                         </td>
                         {result.competitors.map((_, idx) => (
-                          <td key={idx} className="py-3 px-3 align-top text-foreground/60">
+                          <td key={idx} className="py-3 px-3 align-top text-foreground/60 break-words">
                             <div className="flex items-start">
                               <span className="flex-1">{row.competitors[idx] || "—"}</span>
                               {row.competitors[idx] && <StrengthDots s={row.competitorStrengths[idx] || "medium"} />}
@@ -519,7 +605,8 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
                     );
                   })}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
             )}
           </div>
