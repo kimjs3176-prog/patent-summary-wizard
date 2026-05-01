@@ -62,14 +62,12 @@ interface KeywordSearchResult {
   organizationName?: string;
 }
 
-// 농업 관련 공공기관 출원인 코드
+// 농업 관련 공공기관 출원인 코드 (id가 있는 기관만 포함 - KIPRIS는 출원인 코드 검색이 가장 정확)
 const AGRI_ORGANIZATIONS = [
   { id: "219980050314", name: "농촌진흥청" },
   { id: "219981064455", name: "농림축산검역본부" },
   { id: "219999001749", name: "국립농산물품질관리원" },
   { id: "220040383104", name: "국립종자원" },
-  { id: "", name: "농업기술센터" },
-  { id: "", name: "농업기술원" },
 ];
 
 const AGRI_ORG_IDS = AGRI_ORGANIZATIONS.map(org => org.id);
@@ -341,62 +339,58 @@ serve(async (req) => {
 
     console.log(`Primary AND search: "${combinedKeyword}"`);
 
-    // Helper: run parallel searches across all orgs for a given keyword
-    const searchAllOrgs = async (kw: string): Promise<KeywordSearchResult[]> => {
-      const promises: Promise<KeywordSearchResult[]>[] = [];
-      for (const org of AGRI_ORGANIZATIONS) {
-        // Title search
-        promises.push((async () => {
-          try {
-            const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-            url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-            url.searchParams.set("inventionTitle", kw);
-            url.searchParams.set("applicant", org.id || org.name);
-            url.searchParams.set("astrtCont", "");
-            url.searchParams.set("pageNo", "1");
-            url.searchParams.set("numOfRows", "100");
-            url.searchParams.set("sortSpec", "AD");
-            url.searchParams.set("descSort", "true");
-            url.searchParams.set("patent", "true");
-            url.searchParams.set("utility", "true");
-            const res = await fetchWithRetry(url.toString(), {}, { retries: 1, timeoutMs: 12000 });
-            const text = await res.text();
-            if (res.ok && !text.includes("<successYN>N</successYN>")) {
-              return parsePatentsFromXml(text, org.name);
-            }
-          } catch (e) {
-            console.error(`Title search error for ${org.name}:`, e);
-          }
-          return [];
-        })());
-        // Abstract search
-        promises.push((async () => {
-          try {
-            const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-            url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-            url.searchParams.set("inventionTitle", "");
-            url.searchParams.set("applicant", org.id || org.name);
-            url.searchParams.set("astrtCont", kw);
-            url.searchParams.set("pageNo", "1");
-            url.searchParams.set("numOfRows", "100");
-            url.searchParams.set("sortSpec", "AD");
-            url.searchParams.set("descSort", "true");
-            url.searchParams.set("patent", "true");
-            url.searchParams.set("utility", "true");
-            const res = await fetchWithRetry(url.toString(), {}, { retries: 1, timeoutMs: 12000 });
-            const text = await res.text();
-            if (res.ok && !text.includes("<successYN>N</successYN>")) {
-              return parsePatentsFromXml(text, org.name);
-            }
-          } catch (e) {
-            console.error(`Abstract search error for ${org.name}:`, e);
-          }
-          return [];
-        })());
+    // KIPRIS 단일 요청 (timeout/retry 강화)
+    const kiprisSearch = async (
+      kw: string,
+      org: { id: string; name: string },
+      field: "title" | "abstract"
+    ): Promise<KeywordSearchResult[]> => {
+      try {
+        const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+        url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+        url.searchParams.set("inventionTitle", field === "title" ? kw : "");
+        url.searchParams.set("astrtCont", field === "abstract" ? kw : "");
+        url.searchParams.set("applicant", org.id);
+        url.searchParams.set("pageNo", "1");
+        url.searchParams.set("numOfRows", "100");
+        url.searchParams.set("sortSpec", "AD");
+        url.searchParams.set("descSort", "true");
+        url.searchParams.set("patent", "true");
+        url.searchParams.set("utility", "true");
+        const res = await fetchWithRetry(url.toString(), {}, { retries: 2, timeoutMs: 20000, baseDelay: 800 });
+        const text = await res.text();
+        if (res.ok && !text.includes("<successYN>N</successYN>")) {
+          return parsePatentsFromXml(text, org.name);
+        }
+      } catch (e) {
+        console.error(`${field} search error for ${org.name} ("${kw}"):`, e instanceof Error ? e.message : e);
       }
-      console.log(`Launching ${promises.length} parallel KIPRIS requests for "${kw}"...`);
-      const results = await Promise.all(promises);
-      return results.flat();
+      return [];
+    };
+
+    // 배치 단위로 동시 실행 (KIPRIS 부하 회피)
+    const runBatched = async <T,>(
+      tasks: Array<() => Promise<T[]>>,
+      batchSize = 4
+    ): Promise<T[]> => {
+      const out: T[] = [];
+      for (let i = 0; i < tasks.length; i += batchSize) {
+        const batch = tasks.slice(i, i + batchSize).map(fn => fn());
+        const results = await Promise.all(batch);
+        for (const r of results) out.push(...r);
+      }
+      return out;
+    };
+
+    // Helper: run searches across all orgs (title + abstract) for a given keyword
+    const searchAllOrgs = async (kw: string): Promise<KeywordSearchResult[]> => {
+      const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
+      for (const org of AGRI_ORGANIZATIONS) {
+        tasks.push(() => kiprisSearch(kw, org, "title"));
+        tasks.push(() => kiprisSearch(kw, org, "abstract"));
+      }
+      console.log(`Running ${tasks.length} KIPRIS requests in batches for "${kw}"...`);
+      return await runBatched(tasks, 4);
     };
 
     // Step 1: AND-combined search
