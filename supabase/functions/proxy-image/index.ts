@@ -82,13 +82,21 @@ serve(async (req) => {
       });
     }
 
-    // Fetch original image
-    const upstream = await fetch(url, {
-      headers: {
-        "User-Agent": "LovableCloudImageProxy/1.0",
-        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-      },
-    });
+    // Fetch original image (with timeout to avoid stalled connections hanging the function)
+    const imgController = new AbortController();
+    const imgTimer = setTimeout(() => imgController.abort(), 15000);
+    let upstream: Response;
+    try {
+      upstream = await fetch(url, {
+        signal: imgController.signal,
+        headers: {
+          "User-Agent": "LovableCloudImageProxy/1.0",
+          Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        },
+      });
+    } finally {
+      clearTimeout(imgTimer);
+    }
 
     if (!upstream.ok) {
       return new Response(JSON.stringify({ success: false, error: `Upstream error: ${upstream.status}` }), {

@@ -99,7 +99,18 @@ serve(async (req) => {
     url.searchParams.set("patent", "true");
     url.searchParams.set("utility", "true");
 
-    const res = await fetch(url.toString());
+    const ftController = new AbortController();
+    const ftTimer = setTimeout(() => ftController.abort(), 12000);
+    let res: Response;
+    try {
+      res = await fetch(url.toString(), { signal: ftController.signal });
+    } catch (e) {
+      clearTimeout(ftTimer);
+      console.error("KIPRIS family tree fetch failed:", e instanceof Error ? e.message : e);
+      return new Response(JSON.stringify({ success: true, patents: [], assignee }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    clearTimeout(ftTimer);
     const text = await res.text();
     if (!res.ok || text.includes("<successYN>N</successYN>")) {
       return new Response(JSON.stringify({ success: true, patents: [], assignee }),

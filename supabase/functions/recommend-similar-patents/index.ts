@@ -70,22 +70,30 @@ ${classInfo}
 
 JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3", "keyword4"], ["keyword5", "keyword6"]]}`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: "You are a Korean patent search expert. Output only valid JSON." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 300,
-      }),
-    });
+    const recCtrl = new AbortController();
+    const recTimer = setTimeout(() => recCtrl.abort(), 30000);
+    let aiResponse: Response;
+    try {
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        signal: recCtrl.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: "You are a Korean patent search expert. Output only valid JSON." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.3,
+          max_tokens: 300,
+        }),
+      });
+    } finally {
+      clearTimeout(recTimer);
+    }
 
     if (!aiResponse.ok) {
       console.error("AI query generation failed:", aiResponse.status);

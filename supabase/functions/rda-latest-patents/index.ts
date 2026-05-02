@@ -30,18 +30,22 @@ function formatDate(dateStr: string): string {
   return `${dateStr.slice(0, 4)}.${dateStr.slice(4, 6)}.${dateStr.slice(6, 8)}`;
 }
 
-async function fetchWithRetry(url: string, maxRetries = 3, initialDelay = 1000): Promise<Response> {
+async function fetchWithRetry(url: string, maxRetries = 3, initialDelay = 800, timeoutMs = 12000): Promise<Response> {
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
       return response;
     } catch (error) {
+      clearTimeout(timer);
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(`Fetch attempt ${attempt + 1}/${maxRetries} failed:`, lastError.message);
-      const isRetryable = lastError.message.includes('Connection reset') ||
-                          lastError.message.includes('connection error') ||
-                          lastError.message.includes('timeout');
+      const m = lastError.message.toLowerCase();
+      const isRetryable = m.includes('connection reset') || m.includes('connection error') ||
+                          m.includes('timeout') || m.includes('abort') || m.includes('econnreset');
       if (!isRetryable || attempt === maxRetries - 1) throw lastError;
       const delay = initialDelay * Math.pow(2, attempt) + Math.random() * 500;
       await new Promise(resolve => setTimeout(resolve, delay));
