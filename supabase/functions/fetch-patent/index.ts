@@ -5,35 +5,48 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Retry fetch with exponential backoff for transient network errors
-async function fetchWithRetry(url: string, maxRetries = 3, initialDelay = 1000): Promise<Response> {
+// Retry fetch with exponential backoff + per-attempt timeout.
+// Without an AbortController, KIPRIS can hang the function for the full
+// edge-runtime wall-clock budget on a stalled connection.
+async function fetchWithRetry(
+  url: string,
+  maxRetries = 3,
+  initialDelay = 800,
+  timeoutMs = 12000,
+): Promise<Response> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
       return response;
     } catch (error) {
+      clearTimeout(timer);
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(`Fetch attempt ${attempt + 1}/${maxRetries} failed:`, lastError.message);
-      
-      // Check if it's a retryable error (connection reset, timeout, etc.)
-      const isRetryable = lastError.message.includes('Connection reset') ||
-                          lastError.message.includes('connection error') ||
-                          lastError.message.includes('timeout') ||
-                          lastError.message.includes('ECONNRESET');
-      
+
+      const msg = lastError.message.toLowerCase();
+      const isRetryable =
+        msg.includes('connection reset') ||
+        msg.includes('connection error') ||
+        msg.includes('timeout') ||
+        msg.includes('econnreset') ||
+        msg.includes('abort') ||
+        msg.includes('network');
+
       if (!isRetryable || attempt === maxRetries - 1) {
         throw lastError;
       }
-      
-      // Exponential backoff with jitter
-      const delay = initialDelay * Math.pow(2, attempt) + Math.random() * 500;
+
+      const delay = initialDelay * Math.pow(2, attempt) + Math.random() * 400;
       console.log(`Retrying in ${Math.round(delay)}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError || new Error('Fetch failed after retries');
 }
 
