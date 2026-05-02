@@ -245,23 +245,31 @@ JSON형식:
       Math.round(baseMaxTokens * lengthMultiplier),
     );
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: scoreModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: patentContext },
-        ],
-        temperature: 0.3,
-        max_tokens: scoreMaxTokens,
-        response_format: { type: "json_object" },
-      }),
-    });
+    const aiController = new AbortController();
+    const aiTimer = setTimeout(() => aiController.abort(), 60000);
+    let response: Response;
+    try {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        signal: aiController.signal,
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: scoreModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: patentContext },
+          ],
+          temperature: 0.3,
+          max_tokens: scoreMaxTokens,
+          response_format: { type: "json_object" },
+        }),
+      });
+    } finally {
+      clearTimeout(aiTimer);
+    }
 
     if (!response.ok) {
       const text = await response.text();

@@ -343,6 +343,17 @@ serve(async (req) => {
 
     console.log("Searching patents with input:", keyword);
 
+    // === In-memory short-term cache (per-instance) ===
+    // Reduces KIPRIS load and latency for repeated searches within a few minutes.
+    const cacheKey = keyword.trim().toLowerCase();
+    const cached = SEARCH_CACHE.get(cacheKey);
+    if (cached && Date.now() - cached.at < SEARCH_CACHE_TTL_MS) {
+      console.log(`Search cache HIT: "${cacheKey}" (age ${Math.round((Date.now()-cached.at)/1000)}s)`);
+      return new Response(JSON.stringify(cached.payload), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Determine if this is a natural language query and extract keywords
     const rawInput = keyword.trim();
     let searchKeywords: string[] = [];
@@ -489,62 +500,87 @@ serve(async (req) => {
       return [];
     };
 
-    // 작은 배치로 순차 실행 (KIPRIS 부하 회피)
-    const runBatched = async <T,>(
-      tasks: Array<() => Promise<T[]>>,
-      batchSize = 2
-    ): Promise<T[]> => {
-      const out: T[] = [];
-      for (let i = 0; i < tasks.length; i += batchSize) {
-        const batch = tasks.slice(i, i + batchSize).map(fn => fn());
-        const results = await Promise.all(batch);
-        for (const r of results) out.push(...r);
+    // ▼ Stability/Perf: tiered fan-out with early termination
+    // 1) Title search for the top query across all orgs (parallel)
+    // 2) If insufficient, broaden to remaining queries (title-only)
+    // 3) If still insufficient, fall back to abstract on the top query
+    // This caps worst-case requests well below the previous N×6×2 pattern.
+    const EARLY_EXIT_HITS = 25;
+    const MAX_QUERIES = 3;
+    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
+    const allPatents: KeywordSearchResult[] = [];
+    const seenIds = new Set<string>();
+    const collect = (arr: KeywordSearchResult[]) => {
+      for (const p of arr) {
+        if (!seenIds.has(p.patentId)) {
+          seenIds.add(p.patentId);
+          allPatents.push(p);
+        }
       }
-      return out;
     };
 
-    // 모든 기관 × (title + abstract) 검색을 한 번에 수집.
-    // KIPRIS는 기관별로 응답속도 편차가 크므로 (농촌진흥청은 빠름, 나머지는 자주 timeout)
-    // 모든 작업을 병렬로 실행하고 실패한 것은 빈 배열로 무시.
-    const allTasks: Array<() => Promise<KeywordSearchResult[]>> = [];
-    for (const q of uniqueQueries) {
-      for (const org of AGRI_ORGANIZATIONS) {
-        allTasks.push(() => kiprisSearch(q, org, "title"));
-        allTasks.push(() => kiprisSearch(q, org, "abstract"));
+    // Stage 1: top query × all orgs (title)
+    if (queriesToTry.length > 0) {
+      const stage1 = await Promise.all(
+        AGRI_ORGANIZATIONS.map(org => kiprisSearch(queriesToTry[0], org, "title")),
+      );
+      stage1.forEach(collect);
+    }
+
+    // Stage 2: remaining queries × all orgs (title), batched 4-at-a-time
+    if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 1) {
+      const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
+      for (const q of queriesToTry.slice(1)) {
+        for (const org of AGRI_ORGANIZATIONS) {
+          tasks.push(() => kiprisSearch(q, org, "title"));
+        }
+      }
+      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 4) {
+        const batch = await Promise.all(tasks.slice(i, i + 4).map(fn => fn()));
+        batch.forEach(collect);
       }
     }
-    console.log(`Running ${allTasks.length} KIPRIS requests (batch=6)`);
-    const allPatents = await runBatched(allTasks, 6);
 
-    // 중복 제거 (patentId 기준)
-    const uniquePatents = Array.from(
-      new Map(allPatents.map(p => [p.patentId, p])).values()
-    );
+    // Stage 3: abstract fallback on top query only (title alone often misses paraphrased filings)
+    if (allPatents.length < 5 && queriesToTry.length > 0) {
+      const stage3 = await Promise.all(
+        AGRI_ORGANIZATIONS.map(org => kiprisSearch(queriesToTry[0], org, "abstract")),
+      );
+      stage3.forEach(collect);
+    }
 
-    // 상위 50건만 반환
-    const topPatents = uniquePatents.slice(0, 50);
+    const topPatents = allPatents.slice(0, 50);
+    console.log(`Total unique patents: ${allPatents.length}, returning: ${topPatents.length}`);
 
-    console.log(`Total unique patents found: ${uniquePatents.length}, returning: ${topPatents.length}`);
+    const payload = {
+      success: true,
+      patents: topPatents,
+      keyword: keyword.trim(),
+      totalCount: allPatents.length,
+      recommendedQueries: uniqueQueries,
+      ...(correctedInput && correctedInput !== rawInput ? { correctedInput } : {}),
+      mustKeywords: refined.must,
+      shouldKeywords: refined.should,
+      ...(isNLQuery ? {
+        isNaturalLanguage: true,
+        extractedKeywords: searchKeywords,
+        intent: aiIntent,
+      } : {}),
+    };
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        patents: topPatents, 
-        keyword: keyword.trim(), 
-        totalCount: uniquePatents.length,
-        recommendedQueries: uniqueQueries,
-        ...(correctedInput && correctedInput !== rawInput ? { correctedInput } : {}),
-        mustKeywords: refined.must,
-        shouldKeywords: refined.should,
-        // Include AI-extracted info for natural language queries
-        ...(isNLQuery ? { 
-          isNaturalLanguage: true, 
-          extractedKeywords: searchKeywords,
-          intent: aiIntent 
-        } : {})
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Cache only successful, non-empty responses
+    if (topPatents.length > 0) {
+      SEARCH_CACHE.set(cacheKey, { at: Date.now(), payload });
+      // Bound cache size to avoid memory growth
+      if (SEARCH_CACHE.size > 200) {
+        const oldestKey = SEARCH_CACHE.keys().next().value;
+        if (oldestKey) SEARCH_CACHE.delete(oldestKey);
+      }
+    }
+
+    return new Response(JSON.stringify(payload), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("search-patents error:", error);
     return new Response(
@@ -553,6 +589,10 @@ serve(async (req) => {
     );
   }
 });
+
+// Per-instance LRU-ish cache for search responses (15 minutes)
+const SEARCH_CACHE_TTL_MS = 15 * 60 * 1000;
+const SEARCH_CACHE = new Map<string, { at: number; payload: unknown }>();
 
 // 날짜 포맷팅: 20231015 -> 2023.10.15
 function formatDate(dateStr: string): string {
