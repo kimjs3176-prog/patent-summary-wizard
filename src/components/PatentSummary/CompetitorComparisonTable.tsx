@@ -229,13 +229,7 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
     run();
   }, [patentData?.patentNumber, patentData?.displayNumber, relatedPatents]);
 
-  if (!loading && !result && !error) return null;
-
-  const currentTitle = truncate(patentData.titleKo || patentData.title || "분석 대상", 24);
-  const competitorCount = result?.competitors.length || 0;
-  const colCount = competitorCount + 1;
-
-  // Aggregate: who wins the most axes?
+  // Aggregate: who wins the most axes? (must be before any early return — Rules of Hooks)
   const wins = useMemo(() => {
     if (!result?.rows) return { current: 0, competitor: 0, neutral: 0 };
     return result.rows.reduce(
@@ -256,6 +250,12 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
     if (wins.competitor > wins.current) return { label: "경쟁 특허 우위", tone: "warn" as const, ratio: wins.competitor / total };
     return { label: "비등한 경쟁 구도", tone: "neutral" as const, ratio: 0.5 };
   }, [result, wins]);
+
+  if (!loading && !result && !error) return null;
+
+  const currentTitle = truncate(patentData.titleKo || patentData.title || "분석 대상", 24);
+  const competitorCount = result?.competitors.length || 0;
+  const colCount = competitorCount + 1;
 
   return (
     <div className="relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
