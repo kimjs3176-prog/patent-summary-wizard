@@ -802,13 +802,15 @@ export function PatentSummary({
                 ];
                 fallbackPatterns.forEach(([p, l]) => { if (p.test(text) && !extraFallbacks.includes(l)) extraFallbacks.push(l); });
 
-                // 조합: 산업분류 + 기능성 우선 (최소 4개 보장), 그 다음 소재/기술특징
+                // 조합: 기능성 + 활용(산업) 우선, 각 최소 2개 / 합계 최소 5개 보장
                 const allKws: string[] = [];
                 const maxTotal = 12;
-                const minPriority = 4; // 산업+기능 합쳐 최소 4개
+                const minFunc = 2;
+                const minIndustry = 2;
+                const minPriority = 5; // 기능+활용 합산 최소
 
-                // 1순위: 산업분류 + 기능성을 라운드로빈으로 우선 배치
-                const priorityCats = [industryKws, funcKws];
+                // 1순위: 기능성 + 활용(산업)을 라운드로빈으로 우선 배치 (기능 먼저)
+                const priorityCats = [funcKws, industryKws];
                 let pRound = 0;
                 let pAdded = true;
                 while (pAdded && allKws.length < maxTotal) {
@@ -843,20 +845,27 @@ export function PatentSummary({
                   sRound++;
                 }
 
-                // 산업+기능 합산이 4개 미만이면, 일반 산업/기능 폴백으로 보강
-                const priorityCount = () =>
-                  allKws.filter(k => industryKws.includes(k) || funcKws.includes(k)).length;
-                if (priorityCount() < minPriority) {
-                  const genericIndustry = ['식품산업', '농업', '바이오산업', '헬스케어'];
-                  const genericFunc = ['기능성소재', '품질개선', '공정효율', '안정성향상'];
-                  for (const k of genericIndustry) {
-                    if (priorityCount() >= minPriority || allKws.length >= maxTotal) break;
-                    if (!allKws.includes(k)) { industryKws.push(k); allKws.push(k); }
-                  }
-                  for (const k of genericFunc) {
-                    if (priorityCount() >= minPriority || allKws.length >= maxTotal) break;
-                    if (!allKws.includes(k)) { funcKws.push(k); allKws.push(k); }
-                  }
+                // 기능/활용 각각 최소 보장 + 합산 최소 보장 (기능 우선)
+                const funcCount = () => allKws.filter(k => funcKws.includes(k)).length;
+                const industryCount = () => allKws.filter(k => industryKws.includes(k)).length;
+                const priorityCount = () => funcCount() + industryCount();
+                const genericFunc = ['기능성소재', '품질개선', '공정효율', '안정성향상', '활성증진', '효능강화'];
+                const genericIndustry = ['식품산업', '농업', '바이오산업', '헬스케어', '환경산업', '소재산업'];
+                for (const k of genericFunc) {
+                  if (funcCount() >= minFunc || allKws.length >= maxTotal) break;
+                  if (!allKws.includes(k)) { funcKws.push(k); allKws.push(k); }
+                }
+                for (const k of genericIndustry) {
+                  if (industryCount() >= minIndustry || allKws.length >= maxTotal) break;
+                  if (!allKws.includes(k)) { industryKws.push(k); allKws.push(k); }
+                }
+                // 합산 부족 시 기능 우선으로 추가 보강
+                while (priorityCount() < minPriority && allKws.length < maxTotal) {
+                  const fk = genericFunc.find(k => !allKws.includes(k));
+                  const ik = genericIndustry.find(k => !allKws.includes(k));
+                  if (fk) { funcKws.push(fk); allKws.push(fk); }
+                  else if (ik) { industryKws.push(ik); allKws.push(ik); }
+                  else break;
                 }
 
                 // 부족하면 폴백에서 보충
@@ -885,9 +894,9 @@ export function PatentSummary({
 
                 // 카테고리별 색상
                 const getColor = (kw: string) => {
-                  if (subjectKws.includes(kw)) return { bg: 'hsl(140 60% 95%)', fg: 'hsl(140 50% 30%)', bd: 'hsl(140 40% 88%)' };
                   if (funcKws.includes(kw)) return { bg: 'hsl(270 60% 95%)', fg: 'hsl(270 50% 35%)', bd: 'hsl(270 40% 88%)' };
                   if (industryKws.includes(kw)) return { bg: 'hsl(210 70% 95%)', fg: 'hsl(210 60% 35%)', bd: 'hsl(210 50% 88%)' };
+                  if (subjectKws.includes(kw)) return { bg: 'hsl(140 60% 95%)', fg: 'hsl(140 50% 30%)', bd: 'hsl(140 40% 88%)' };
                   return { bg: 'hsl(30 70% 95%)', fg: 'hsl(30 55% 35%)', bd: 'hsl(30 45% 88%)' };
                 };
 
