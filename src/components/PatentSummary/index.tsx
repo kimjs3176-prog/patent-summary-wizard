@@ -802,12 +802,9 @@ export function PatentSummary({
                 ];
                 fallbackPatterns.forEach(([p, l]) => { if (p.test(text) && !extraFallbacks.includes(l)) extraFallbacks.push(l); });
 
-                // 조합: 기능성 + 활용(산업) 우선, 각 최소 2개 / 합계 최소 5개 보장
+                // 조합: 실제 본문에서 추출된 키워드만 사용 (인위적 보강 최소화)
                 const allKws: string[] = [];
                 const maxTotal = 12;
-                const minFunc = 2;
-                const minIndustry = 2;
-                const minPriority = 5; // 기능+활용 합산 최소
 
                 // 1순위: 기능성 + 활용(산업)을 라운드로빈으로 우선 배치 (기능 먼저)
                 const priorityCats = [funcKws, industryKws];
@@ -845,36 +842,14 @@ export function PatentSummary({
                   sRound++;
                 }
 
-                // 기능/활용 각각 최소 보장 + 합산 최소 보장 (기능 우선)
-                const funcCount = () => allKws.filter(k => funcKws.includes(k)).length;
-                const industryCount = () => allKws.filter(k => industryKws.includes(k)).length;
-                const priorityCount = () => funcCount() + industryCount();
-                const genericFunc = ['기능성소재', '품질개선', '공정효율', '안정성향상', '활성증진', '효능강화'];
-                const genericIndustry = ['식품산업', '농업', '바이오산업', '헬스케어', '환경산업', '소재산업'];
-                for (const k of genericFunc) {
-                  if (funcCount() >= minFunc || allKws.length >= maxTotal) break;
-                  if (!allKws.includes(k)) { funcKws.push(k); allKws.push(k); }
-                }
-                for (const k of genericIndustry) {
-                  if (industryCount() >= minIndustry || allKws.length >= maxTotal) break;
-                  if (!allKws.includes(k)) { industryKws.push(k); allKws.push(k); }
-                }
-                // 합산 부족 시 기능 우선으로 추가 보강
-                while (priorityCount() < minPriority && allKws.length < maxTotal) {
-                  const fk = genericFunc.find(k => !allKws.includes(k));
-                  const ik = genericIndustry.find(k => !allKws.includes(k));
-                  if (fk) { funcKws.push(fk); allKws.push(fk); }
-                  else if (ik) { industryKws.push(ik); allKws.push(ik); }
-                  else break;
-                }
-
-                // 부족하면 폴백에서 보충
-                if (allKws.length < 5) {
+                // 키워드가 너무 적을 때만 본문에서 직접 매칭되는 추가 패턴으로 보충
+                // (일반 카테고리 라벨은 절대 임의 주입하지 않음)
+                if (allKws.length < 3) {
                   extraFallbacks.forEach(k => {
                     if (!allKws.includes(k) && allKws.length < maxTotal) allKws.push(k);
                   });
                 }
-                if (allKws.length < 5) {
+                if (allKws.length < 3) {
                   const robustFallbacks: [RegExp, string][] = [
                     [/식물\s*생육|생장\s*촉진/, '식물생육증진'],
                     [/식물병|병원균|병해/, '식물병억제'],
