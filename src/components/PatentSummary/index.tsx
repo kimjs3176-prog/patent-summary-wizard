@@ -684,6 +684,30 @@ export function PatentSummary({
                 const funcKws: string[] = [];
                 const featKws: string[] = [];
                 const text = [patentData.titleKo || patentData.title || '', patentData.abstract || ''].join(' ');
+                const titleText = patentData.titleKo || patentData.title || '';
+
+                // 0. 제목 기반 대표 기능 키워드 (최우선)
+                //    특허명에 직접 등장하는 핵심 기능/도구 용어를 그대로 키워드화
+                const titleHighlightKws: string[] = [];
+                const titleHighlightPatterns: [RegExp, string][] = [
+                  // 항-시리즈 (구체 기능)
+                  [/항비만/, '항비만'], [/항당뇨/, '항당뇨'], [/항암/, '항암'],
+                  [/항염/, '항염'], [/항산화/, '항산화'], [/항균/, '항균'],
+                  [/항바이러스/, '항바이러스'], [/항노화/, '항노화'], [/항알레르기/, '항알레르기'],
+                  [/항혈전/, '항혈전'], [/항우울/, '항우울'], [/항피로/, '항피로'],
+                  // 진단·판별 도구
+                  [/마커/, '마커'], [/프라이머/, '프라이머'], [/프로브/, '프로브'],
+                  [/마이크로어레이/, '마이크로어레이'], [/키트/, '키트'],
+                  [/조성물/, '조성물'], [/백신/, '백신'], [/항체/, '항체'],
+                  [/판별|판단/, '판별'], [/진단/, '진단'], [/검출/, '검출'],
+                  [/예측/, '예측'], [/스크리닝/, '스크리닝'],
+                  // 농업·축산 대표 동작
+                  [/육종/, '육종'], [/품종개량/, '품종개량'], [/형질전환/, '형질전환'],
+                  [/방제/, '방제'], [/생육촉진/, '생육촉진'],
+                ];
+                titleHighlightPatterns.forEach(([p, l]) => {
+                  if (p.test(titleText) && !titleHighlightKws.includes(l)) titleHighlightKws.push(l);
+                });
 
                 // 1. IPC → 활용가능산업
                 const normalizedClassifications = (patentData.classifications || [])
@@ -806,6 +830,11 @@ export function PatentSummary({
                 const allKws: string[] = [];
                 const maxTotal = 12;
 
+                // 0순위: 제목에 직접 나오는 대표 기능 키워드를 가장 먼저 배치
+                titleHighlightKws.forEach(kw => {
+                  if (!allKws.includes(kw) && allKws.length < maxTotal) allKws.push(kw);
+                });
+
                 // 1순위: 기능성 + 활용(산업)을 라운드로빈으로 우선 배치 (기능 먼저)
                 const priorityCats = [funcKws, industryKws];
                 let pRound = 0;
@@ -869,6 +898,7 @@ export function PatentSummary({
 
                 // 카테고리별 색상
                 const getColor = (kw: string) => {
+                  if (titleHighlightKws.includes(kw)) return { bg: 'hsl(160 65% 93%)', fg: 'hsl(160 70% 25%)', bd: 'hsl(160 50% 82%)' };
                   if (funcKws.includes(kw)) return { bg: 'hsl(270 60% 95%)', fg: 'hsl(270 50% 35%)', bd: 'hsl(270 40% 88%)' };
                   if (industryKws.includes(kw)) return { bg: 'hsl(210 70% 95%)', fg: 'hsl(210 60% 35%)', bd: 'hsl(210 50% 88%)' };
                   if (subjectKws.includes(kw)) return { bg: 'hsl(140 60% 95%)', fg: 'hsl(140 50% 30%)', bd: 'hsl(140 40% 88%)' };
