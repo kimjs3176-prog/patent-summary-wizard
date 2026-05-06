@@ -239,14 +239,17 @@ const Index = () => {
         ) : (
           <div ref={resultRef}>
             {isLoading && (<AnalysisProgressStepper currentStep={analysisStep} />)}
+            <section className="mb-5 md:mb-7 max-w-2xl mx-auto">
+              <PatentInput
+                onSubmit={handleSubmit}
+                isLoading={isLoading}
+                onKeywordSearch={handleKeywordSearch}
+                placeholder={settings.search_placeholder}
+              />
+            </section>
             <section className="mb-8">
               <PatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} onKeywordClick={handleKeywordTagClick} onScoreReady={handleScoreReady} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} />
             </section>
-            {isLoading && !isFetching && (
-              <section className="mt-12">
-                <PatentInput onSubmit={generateSummary} isLoading={isLoading} />
-              </section>
-            )}
           </div>
         )}
       </main>

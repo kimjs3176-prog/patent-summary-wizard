@@ -11,9 +11,10 @@ interface PatentInputProps {
   placeholder?: string;
   helperText?: string;
   helperTexts?: string[];
+  skipKeywordFetch?: boolean;
 }
 
-export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts }: PatentInputProps) {
+export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, skipKeywordFetch }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -30,6 +31,10 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
   const handleKeywordSearch = async (keyword: string) => {
     if (!keyword.trim() || keyword.trim().length < 1) {
       toast.error("검색어를 1자 이상 입력해주세요.");
+      return;
+    }
+    if (skipKeywordFetch) {
+      onKeywordSearch?.([], keyword);
       return;
     }
     setIsSearchingKeyword(true);

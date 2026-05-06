@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { PatentInput } from "@/components/PatentInput";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -97,6 +98,15 @@ export default function SearchResults() {
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
       <main className="container mx-auto px-4 md:px-6 py-10 md:py-14 relative z-10">
+        {/* Persistent search bar */}
+        <div className="max-w-3xl mx-auto mb-6">
+          <PatentInput
+            onSubmit={(patentNumber) => navigate(`/?patent=${encodeURIComponent(patentNumber)}`)}
+            isLoading={isLoading}
+            onKeywordSearch={(_r, kw) => navigate(`/search?keyword=${encodeURIComponent(kw)}`)}
+            skipKeywordFetch
+          />
+        </div>
         {/* Search header */}
         <div className="max-w-3xl mx-auto mb-10">
           <div className="flex items-center gap-4 mb-1">
