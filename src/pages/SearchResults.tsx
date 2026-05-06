@@ -98,14 +98,16 @@ export default function SearchResults() {
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
       <main className="container mx-auto px-4 md:px-6 py-10 md:py-14 relative z-10">
-        {/* Persistent search bar */}
-        <div className="max-w-3xl mx-auto mb-6">
-          <PatentInput
-            onSubmit={(patentNumber) => navigate(`/?patent=${encodeURIComponent(patentNumber)}`)}
-            isLoading={isLoading}
-            onKeywordSearch={(_r, kw) => navigate(`/search?keyword=${encodeURIComponent(kw)}`)}
-            skipKeywordFetch
-          />
+        {/* Persistent sticky search bar */}
+        <div className="sticky top-2 z-30 mb-6">
+          <div className="max-w-3xl mx-auto rounded-2xl bg-background/85 backdrop-blur-md p-1.5">
+            <PatentInput
+              onSubmit={(patentNumber) => navigate(`/?patent=${encodeURIComponent(patentNumber)}`)}
+              isLoading={isLoading}
+              onKeywordSearch={(_r, kw) => navigate(`/search?keyword=${encodeURIComponent(kw)}`)}
+              skipKeywordFetch
+            />
+          </div>
         </div>
         {/* Search header */}
         <div className="max-w-3xl mx-auto mb-10">
