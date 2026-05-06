@@ -802,31 +802,63 @@ export function PatentSummary({
                 ];
                 fallbackPatterns.forEach(([p, l]) => { if (p.test(text) && !extraFallbacks.includes(l)) extraFallbacks.push(l); });
 
-                // 조합: 4개 카테고리 균등 배분 (라운드로빈)
-                const categories = [
-                  subjectKws,   // 소재
-                  funcKws,      // 기능성
-                  industryKws,  // 활용산업
-                  featKws,      // 기술특징
-                ];
+                // 조합: 산업분류 + 기능성 우선 (최소 4개 보장), 그 다음 소재/기술특징
                 const allKws: string[] = [];
                 const maxTotal = 12;
-                // Round-robin: 각 카테고리에서 1개씩 돌아가며 추가
-                let added = true;
-                let round = 0;
-                while (added && allKws.length < maxTotal) {
-                  added = false;
-                  for (const cat of categories) {
-                    if (round < cat.length && allKws.length < maxTotal) {
-                      const kw = cat[round];
+                const minPriority = 4; // 산업+기능 합쳐 최소 4개
+
+                // 1순위: 산업분류 + 기능성을 라운드로빈으로 우선 배치
+                const priorityCats = [industryKws, funcKws];
+                let pRound = 0;
+                let pAdded = true;
+                while (pAdded && allKws.length < maxTotal) {
+                  pAdded = false;
+                  for (const cat of priorityCats) {
+                    if (pRound < cat.length && allKws.length < maxTotal) {
+                      const kw = cat[pRound];
                       if (!allKws.includes(kw)) {
                         allKws.push(kw);
-                        added = true;
+                        pAdded = true;
                       }
                     }
                   }
-                  round++;
+                  pRound++;
                 }
+
+                // 2순위: 소재 + 기술특징으로 보강
+                const secondaryCats = [subjectKws, featKws];
+                let sRound = 0;
+                let sAdded = true;
+                while (sAdded && allKws.length < maxTotal) {
+                  sAdded = false;
+                  for (const cat of secondaryCats) {
+                    if (sRound < cat.length && allKws.length < maxTotal) {
+                      const kw = cat[sRound];
+                      if (!allKws.includes(kw)) {
+                        allKws.push(kw);
+                        sAdded = true;
+                      }
+                    }
+                  }
+                  sRound++;
+                }
+
+                // 산업+기능 합산이 4개 미만이면, 일반 산업/기능 폴백으로 보강
+                const priorityCount = () =>
+                  allKws.filter(k => industryKws.includes(k) || funcKws.includes(k)).length;
+                if (priorityCount() < minPriority) {
+                  const genericIndustry = ['식품산업', '농업', '바이오산업', '헬스케어'];
+                  const genericFunc = ['기능성소재', '품질개선', '공정효율', '안정성향상'];
+                  for (const k of genericIndustry) {
+                    if (priorityCount() >= minPriority || allKws.length >= maxTotal) break;
+                    if (!allKws.includes(k)) { industryKws.push(k); allKws.push(k); }
+                  }
+                  for (const k of genericFunc) {
+                    if (priorityCount() >= minPriority || allKws.length >= maxTotal) break;
+                    if (!allKws.includes(k)) { funcKws.push(k); allKws.push(k); }
+                  }
+                }
+
                 // 부족하면 폴백에서 보충
                 if (allKws.length < 5) {
                   extraFallbacks.forEach(k => {
