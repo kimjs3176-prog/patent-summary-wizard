@@ -384,8 +384,8 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
               })}
             </div>
 
-            {/* === Versus bars per axis (mobile-first, intuitive) === */}
-            <div className="space-y-2">
+            {/* === Versus bars per axis (2x2 grid on sm+) === */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {result.rows.map((row, i) => {
                 const curScore = strengthScore(row.currentStrength);
                 const compScores = row.competitorStrengths.map(strengthScore);
