@@ -188,7 +188,7 @@ serve(async (req) => {
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // ★ 캐시 확인: patent_data_cache에서 먼저 조회 (30일 이내)
+    // ★ 캐시 확인: patent_data_cache에서 먼저 조회 (7일 이내)
     const { data: cached } = await sb
       .from("patent_data_cache")
       .select("patent_data, related_patents, created_at")
@@ -197,7 +197,7 @@ serve(async (req) => {
 
     if (cached) {
       const cacheAge = Date.now() - new Date(cached.created_at).getTime();
-      const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30일
+      const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7일
       if (cacheAge < CACHE_TTL) {
         console.log("Cache HIT for patent:", trimmedNumber);
         return new Response(
