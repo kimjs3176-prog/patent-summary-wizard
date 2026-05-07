@@ -71,4 +71,6 @@ export interface KeywordSearchResult {
   snippet?: string;
   thumbnail?: string;
   inventors?: string;
+  applicationNumber?: string;
+  registrationNumber?: string;
 }
