@@ -4,22 +4,58 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
+// Initialize current build signature from the loaded document (so first check can detect a new version)
+const getLoadedBuild = (): string | null => {
+  const script = document.querySelector('script[src*="/assets/index-"]') as HTMLScriptElement | null;
+  const src = script?.src || "";
+  const m = src.match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/);
+  return m ? m[1] : null;
+};
+(window as any).__APP_BUILD__ = (window as any).__APP_BUILD__ || getLoadedBuild();
+
+const hardReload = () => {
+  // Clear caches then reload, so stale SW-cached chunks are not served
+  const done = () => window.location.reload();
+  if ("caches" in window) {
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .finally(done);
+  } else {
+    done();
+  }
+};
+
 // Auto-reload when a new SW takes control (after deploy)
 if ("serviceWorker" in navigator) {
   let refreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (refreshing) return;
     refreshing = true;
-    window.location.reload();
+    hardReload();
   });
+
+  // When a waiting worker appears, activate it immediately
+  navigator.serviceWorker.ready.then((reg) => {
+    const promote = (sw: ServiceWorker | null) => {
+      if (sw && sw.state === "installed" && navigator.serviceWorker.controller) {
+        sw.postMessage({ type: "SKIP_WAITING" });
+      }
+    };
+    if (reg.waiting) promote(reg.waiting);
+    reg.addEventListener("updatefound", () => {
+      const nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener("statechange", () => promote(nw));
+    });
+  }).catch(() => { /* ignore */ });
 }
 
-// Periodic version check (every 2 minutes) — compares index.html hash signature
+// Periodic version check — compares index.html asset hash signature
 const checkForUpdate = async () => {
   try {
     const res = await fetch(`${window.location.origin}/?_v=${Date.now()}`, {
       cache: "no-store",
-      headers: { "Cache-Control": "no-cache" },
+      headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
     });
     if (!res.ok) return;
     const html = await res.text();
@@ -33,11 +69,27 @@ const checkForUpdate = async () => {
     }
     if (current !== latest) {
       (window as any).__APP_BUILD__ = latest;
-      // Soft notify and reload
-      window.location.reload();
+      // Ask SW to update; controllerchange will trigger hardReload.
+      // If no SW, reload directly.
+      if ("serviceWorker" in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) {
+            await reg.update();
+            if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+            // Fallback in case controllerchange never fires
+            setTimeout(hardReload, 2000);
+            return;
+          }
+        } catch { /* fall through */ }
+      }
+      hardReload();
     }
   } catch { /* ignore */ }
 };
 setTimeout(checkForUpdate, 3000);
-setInterval(checkForUpdate, 2 * 60 * 1000);
+setInterval(checkForUpdate, 60 * 1000);
 window.addEventListener("focus", checkForUpdate);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkForUpdate();
+});
