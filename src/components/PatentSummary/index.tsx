@@ -462,7 +462,6 @@ export function PatentSummary({
     if (patentData) items.push({ id: "sec-info", label: "특허 정보", icon: Info });
     if (patentData && visibleSections.commercialization !== false) items.push({ id: "sec-score", label: "기술분석 점수", icon: GaugeCircle });
     if (content) items.push({ id: "sec-summary", label: "AI 요약", icon: Sparkles });
-    if (patentData?.claims && patentData.claims.length > 0 && visibleSections.claims !== false) items.push({ id: "sec-claims", label: "청구항", icon: ScrollText });
     if (patentData && visibleSections.competitorComparison !== false) items.push({ id: "sec-compare", label: "경쟁 비교", icon: GitCompare });
     if (patentData?.assignee && visibleSections.familyTree !== false) items.push({ id: "sec-family", label: "패밀리 트리", icon: Network });
     return items;
