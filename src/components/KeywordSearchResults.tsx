@@ -89,6 +89,20 @@
                     {patent.titleKo || patent.title}
                   </p>
                   <div className="flex flex-wrap gap-2 mb-2">
+                    {(() => {
+                      const isRegistered = !!patent.registrationNumber;
+                      return (
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-lg ${
+                            isRegistered
+                              ? "bg-primary/15 text-primary"
+                              : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                          }`}
+                        >
+                          {isRegistered ? "등록" : "출원"}
+                        </span>
+                      );
+                    })()}
                     <span className="px-2 py-1 text-xs rounded-lg bg-accent/20 text-accent">
                       {patent.patentId}
                     </span>
