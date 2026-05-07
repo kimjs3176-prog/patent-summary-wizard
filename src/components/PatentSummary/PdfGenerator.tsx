@@ -101,6 +101,8 @@ export function PdfGenerator({
       const estimateBodyHeight = (linesArr: string[], startIdx: number, fontSize: number, maxW: number, lineHeight: number): number => {
         let h = 0;
         const lhMm = fontSize * 0.352778 * lineHeight;
+        // Guarantee at least ~2 body lines worth of space after a section header
+        const minH = lhMm * 2 + 1;
         for (let i = startIdx; i < linesArr.length; i++) {
           const l = linesArr[i];
           if (l.startsWith("## ")) break;
@@ -111,7 +113,7 @@ export function PdfGenerator({
           h += wrapped.length * lhMm + 0.5;
           if (h > 25) break;
         }
-        return Math.min(h, 30);
+        return Math.max(minH, Math.min(h, 30));
       };
 
       // ── Inline bold text renderer ──
@@ -436,7 +438,8 @@ export function PdfGenerator({
           if (!cfg.show_claims && (sectionTitle.includes("청구항") || sectionTitle.includes("특허 청구"))) { skipSection = true; continue; }
 
           const bodyPreview = estimateBodyHeight(lines, li + 1, cfg.body_font_size, pageWidth - margin * 2 - 8, cfg.line_height);
-          const neededForSection = 18 + bodyPreview;
+          // 6mm pre-gap + 9mm header band + 8mm post-gap + body preview
+          const neededForSection = 6 + 9 + 8 + bodyPreview;
           checkNewPage(neededForSection);
           yPosition += 6;
 
@@ -474,7 +477,8 @@ export function PdfGenerator({
           pdf.setLineWidth(0.25);
           pdf.line(stitleX + stW + 4, centerY, margin + contentWidth, centerY);
 
-          yPosition = bandY + sectionHeaderH + 4;
+          // v6 spec: extra breathing room between section header and body for Korean readability
+          yPosition = bandY + sectionHeaderH + 8;
 
           if ((sectionTitle === "발명요약 및 특징" || sectionTitle === "발명의 요약" || sectionTitle === "발명의 요약 및 기술적 특징") && cfg.show_patent_images) await insertImages();
         } else if (cleanLine.trim()) {
