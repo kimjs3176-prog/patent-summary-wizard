@@ -141,6 +141,8 @@ export default function SummarySample() {
   const [score, setScore] = useState<number | null>(null);
   const [details, setDetails] = useState<CommercializationDetails | null>(null);
   const [scoreLoading, setScoreLoading] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // 1) 진입 시 자동으로 샘플 특허 분석 시작
   useEffect(() => {
@@ -201,6 +203,24 @@ export default function SummarySample() {
     : score >= 65 ? "보통 수준"
     : "낮은 편";
 
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareTitle = `[특허 요약] ${title}`;
+  const shareBody =
+    `${title}\n` +
+    `· 특허번호: ${SAMPLE_PATENT}\n` +
+    (score != null ? `· 사업화 점수: ${score}/100 (${scoreSummary})\n` : "") +
+    (trl != null ? `· TRL: ${trl}/9 (${trlStage})\n` : "") +
+    `\n전체 요약서 보기:\n${shareUrl}\n`;
+  const mailtoHref = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareBody)}`;
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {}
+  };
+
   return (
     <div className="min-h-screen bg-white text-[#191F28]" style={{ fontFamily: "'Pretendard','Inter',sans-serif" }}>
       <header className="sticky top-0 z-10 bg-white/85 backdrop-blur-md border-b border-[#F2F4F6]">
@@ -208,7 +228,7 @@ export default function SummarySample() {
           <Link to="/" className="text-[15px] font-bold text-[#191F28]">← 요약서 시안 (실데이터)</Link>
           <div className="flex items-center gap-1">
             <button className="w-9 h-9 rounded-full hover:bg-[#F2F4F6] flex items-center justify-center text-[#4E5968]"><Bookmark className="w-[18px] h-[18px]" /></button>
-            <button className="w-9 h-9 rounded-full hover:bg-[#F2F4F6] flex items-center justify-center text-[#4E5968]"><Share2 className="w-[18px] h-[18px]" /></button>
+            <button onClick={() => setShareOpen(true)} aria-label="공유" className="w-9 h-9 rounded-full hover:bg-[#F2F4F6] flex items-center justify-center text-[#4E5968]"><Share2 className="w-[18px] h-[18px]" /></button>
             <button className="w-9 h-9 rounded-full hover:bg-[#F2F4F6] flex items-center justify-center text-[#4E5968]"><Download className="w-[18px] h-[18px]" /></button>
           </div>
         </div>
