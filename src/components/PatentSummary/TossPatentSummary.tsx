@@ -707,12 +707,12 @@ export function TossPatentSummary({
             </p>
           </section>
 
-          {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
-          {patentData && (
-            <section className="mb-6">
-              <SectionTitle kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
-              <SoftCard className="!p-2">
-                <div className="bg-white rounded-[16px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+          {/* 상단 2x2 그리드: 특허정보 · AI평가 · 핵심키워드 · 특허도면 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {patentData && (
+              <section className="rounded-[20px] bg-white border border-[#F2F4F6] shadow-[0_2px_8px_rgba(15,23,42,0.04)] p-6 sm:p-7 flex flex-col">
+                <SectionTitle kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 flex-1">
                   {patentData.applicationNumber && <Row label="출원번호" value={patentData.applicationNumber} />}
                   {patentData.filingDate && <Row label="출원일자" value={patentData.filingDate} />}
                   {patentData.registrationNumber && <Row label="등록번호" value={patentData.registrationNumber} />}
@@ -728,7 +728,7 @@ export function TossPatentSummary({
                   ) : null}
                 </div>
                 {(patentData.filingDate || patentData.publicationDate || patentData.registrationDate || patentData.registrationNumber) && (
-                  <div className="bg-white rounded-[16px] mt-2">
+                  <div className="mt-4 pt-4 border-t border-[#F2F4F6]">
                     <PatentTimeline
                       filingDate={patentData.filingDate}
                       publicationDate={patentData.publicationDate}
@@ -737,14 +737,13 @@ export function TossPatentSummary({
                     />
                   </div>
                 )}
-              </SoftCard>
-            </section>
-          )}
+              </section>
+            )}
 
-          {/* 종합점수 + 세부점수 + TRL 통합 카드 */}
-          <section className="mb-8">
-            <SectionTitle kicker="AI 평가">사업화 점수 & 기술 성숙도</SectionTitle>
-            <SoftCard>
+            {/* 종합점수 + 세부점수 + TRL 통합 카드 */}
+            <section className="rounded-[20px] bg-white border border-[#F2F4F6] shadow-[0_2px_8px_rgba(15,23,42,0.04)] p-6 sm:p-7 flex flex-col">
+              <SectionTitle kicker="AI 평가">사업화 점수 & 기술 성숙도</SectionTitle>
+              <div className="flex-1">
               {/* 종합점수 헤더 */}
               <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E5E8EB]">
                 <div className="min-w-0">
@@ -810,14 +809,14 @@ export function TossPatentSummary({
                   )}
                 </div>
               )}
-            </SoftCard>
-          </section>
+              </div>
+            </section>
 
-          {/* 키워드 */}
-          {keywords.length > 0 && (
-            <section className="mb-8">
+            {/* 키워드 */}
+            {keywords.length > 0 && (
+            <section className="rounded-[20px] bg-white border border-[#F2F4F6] shadow-[0_2px_8px_rgba(15,23,42,0.04)] p-6 sm:p-7 flex flex-col">
               <SectionTitle kicker="핵심 키워드">핵심 기능 · 활용 가능 산업</SectionTitle>
-              <SoftCard className="!p-4">
+              <div className="flex-1">
                 {(() => {
                   const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
                     (acc[k.cat] ||= []).push(k.word);
@@ -851,22 +850,22 @@ export function TossPatentSummary({
                     </div>
                   );
                 })()}
-              </SoftCard>
+              </div>
             </section>
-          )}
+            )}
 
-          {/* 도면 */}
-          {drawings.length > 0 && (
-            <section className="mb-10">
+            {/* 도면 */}
+            {drawings.length > 0 && (
+            <section className="rounded-[20px] bg-white border border-[#F2F4F6] shadow-[0_2px_8px_rgba(15,23,42,0.04)] p-6 sm:p-7 flex flex-col">
               <SectionTitle kicker="특허 도면">한눈에 보는 기술 구성</SectionTitle>
-              <SoftCard className="!p-3">
-                <div className={drawings.length === 1 ? "flex justify-center" : "grid grid-cols-2 gap-2"}>
+              <div className="flex-1">
+                <div className={drawings.length === 1 ? "flex justify-center" : "grid grid-cols-2 gap-3"}>
                   {drawings.map((url, i) => (
-                    <div key={i} className="bg-white rounded-[14px] p-3 flex flex-col items-center">
+                    <div key={i} className="bg-[#F8FAFB] rounded-[14px] p-3 flex flex-col items-center border border-[#F2F4F6]">
                       <img
                         src={proxify(url)}
                         alt={`도면 ${i + 1}`}
-                        className="w-full h-auto max-h-[280px] object-contain"
+                        className="w-full h-auto max-h-[220px] object-contain"
                         loading="lazy"
                         decoding="async"
                         onError={(e) => {
@@ -879,9 +878,10 @@ export function TossPatentSummary({
                     </div>
                   ))}
                 </div>
-              </SoftCard>
+              </div>
             </section>
-          )}
+            )}
+          </div>
 
           {/* AI 요약 본문 — 2열 그리드(lg+) */}
           {isStreaming && sections.length === 0 ? (
@@ -892,13 +892,13 @@ export function TossPatentSummary({
               </div>
             </section>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
             {sections.map((sec, idx) => {
               const { kicker, heading } = sectionMeta(sec.title);
               return (
                 <section
                   key={idx}
-                  className="rounded-[20px] bg-white border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6 sm:p-7 flex flex-col"
+                  className="rounded-[20px] bg-white border border-[#F2F4F6] shadow-[0_2px_8px_rgba(15,23,42,0.04)] p-6 sm:p-7 flex flex-col"
                 >
                   <SectionTitle kicker={kicker}>{heading}</SectionTitle>
                   <div className="space-y-4 flex-1">
