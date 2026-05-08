@@ -577,8 +577,8 @@ export function TossPatentSummary({
           {patentData?.assignee && (
             <section className="mb-10">
               <SectionTitle kicker="패밀리 특허"><span className="inline-flex items-center gap-2"><Network className="w-5 h-5" style={{ color: ACCENT_HEX }} />동일 출원인의 관련 특허</span></SectionTitle>
-              <SoftCard>
-                <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} variant="toss" />
+              <SoftCard className="!p-3">
+                <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} variant="compact" />
               </SoftCard>
             </section>
           )}
