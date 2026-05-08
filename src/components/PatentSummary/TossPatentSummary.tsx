@@ -566,7 +566,6 @@ export function TossPatentSummary({
         <div className="max-w-[680px] mx-auto px-5 sm:px-7 pb-12">
           {/* HERO */}
           <section className="pt-9 pb-5">
-            <p className="text-[13px] font-semibold mb-3" style={{ color: ACCENT_HEX }}>AI 종합 평가</p>
             <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.3] tracking-[-0.02em] mb-2 text-[#191F28]">
               {title}
             </h1>
