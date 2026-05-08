@@ -232,11 +232,39 @@ function ScoreRow({ label, value, color, reason }: { label: string; value: numbe
   );
 }
 
-function KeywordChip({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+type KeywordCategory = "function" | "industry" | "material" | "tech" | "general";
+
+const CATEGORY_STYLE: Record<KeywordCategory, { bg: string; text: string; border: string; label: string }> = {
+  function: { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0", label: "기능" },
+  industry: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", label: "활용산업" },
+  material: { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA", label: "소재" },
+  tech:     { bg: "#FAF5FF", text: "#7E22CE", border: "#E9D5FF", label: "기술" },
+  general:  { bg: "#FFFFFF", text: "#4E5968", border: "#E5E8EB", label: "기타" },
+};
+
+// 카테고리 분류 사전 (부분일치 + 정규식)
+function classifyKeyword(word: string): KeywordCategory {
+  const w = word.toLowerCase();
+  // 활용산업/분야
+  if (/(농업|축산|수산|임업|원예|화훼|식품|제약|의약|의료|바이오|헬스|에너지|환경|건설|건축|자동차|항공|조선|반도체|전자|화학|섬유|패션|물류|유통|교육|관광|금융|미용|화장품|가공|제조|산업|시장|소비자|유아|아동|노인|가정|외식|급식|병원|학교|공장|농장|농가|축사|온실|비닐하우스|스마트팜|밭|논|하우스)/.test(word)) return "industry";
+  // 소재/원료
+  if (/(소재|원료|재료|성분|물질|추출물|분말|입자|섬유|금속|합금|폴리머|수지|세라믹|실리콘|탄소|나노|효소|미생물|균주|배지|용액|용매|용제|첨가제|보조제|식물|곡물|과일|채소|허브|꽃|뿌리|잎|줄기|씨앗|종자|종균|콩|쌀|밀|보리|옥수수|고구마|감자|토마토|딸기|버섯|약초|한약|생약|단백질|지방|당류|비타민|미네랄)/.test(word)) return "material";
+  // 기술/장치
+  if (/(ai|인공지능|머신러닝|딥러닝|iot|블록체인|빅데이터|클라우드|로봇|자동화|자율주행|센서|카메라|드론|gps|rfid|nfc|5g|알고리즘|네트워크|플랫폼|소프트웨어|하드웨어|모듈|디바이스|controller|제어기|구동부|모터|배터리|회로|기판|디스플레이)/.test(w)) return "tech";
+  // 기능/효과/공정
+  if (/(분석|측정|감지|판별|판정|진단|검출|예측|인식|식별|추적|모니터링|제어|조절|관리|운영|운용|처리|가공|살포|분사|분무|건조|냉각|가열|살균|멸균|발효|숙성|혼합|배합|성형|코팅|포장|저장|보관|운반|이송|선별|수확|파종|이식|관수|급수|시비|방제|제초|예찰|예방|보호|개선|향상|증대|증가|감소|절감|절약|최적화|효율|품질|안전|편리|간편|신속|정확)/.test(word)) return "function";
+  return "general";
+}
+
+function KeywordChip({
+  children, onClick, category = "general",
+}: { children: React.ReactNode; onClick?: () => void; category?: KeywordCategory }) {
+  const s = CATEGORY_STYLE[category];
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center px-3 py-1.5 rounded-full bg-white text-[13px] font-semibold text-[#4E5968] hover:bg-[#E5E8EB] transition-colors"
+      className="inline-flex items-center px-3 py-1.5 rounded-full text-[13px] font-semibold border transition-all hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+      style={{ background: s.bg, color: s.text, borderColor: s.border }}
     >
       {children}
     </button>
@@ -685,11 +713,40 @@ export function TossPatentSummary({
             <section className="mb-8">
               <SectionTitle kicker="핵심 키워드">핵심 기능 · 활용 가능 산업</SectionTitle>
               <SoftCard className="!p-4">
-                <div className="flex flex-wrap gap-2">
-                  {keywords.map((k) => (
-                    <KeywordChip key={k} onClick={() => onKeywordClick?.(k)}>{k}</KeywordChip>
-                  ))}
-                </div>
+                {(() => {
+                  const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
+                    const c = classifyKeyword(k);
+                    (acc[c] ||= []).push(k);
+                    return acc;
+                  }, { function: [], industry: [], material: [], tech: [], general: [] });
+                  const order: KeywordCategory[] = ["function", "industry", "tech", "material", "general"];
+                  const usedCats = order.filter((c) => grouped[c]?.length);
+                  return (
+                    <div>
+                      {/* 범례 */}
+                      {usedCats.length > 1 && (
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-3 pb-3 border-b border-[#E5E8EB]">
+                          {usedCats.map((c) => {
+                            const s = CATEGORY_STYLE[c];
+                            return (
+                              <div key={c} className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full" style={{ background: s.text }} />
+                                <span className="text-[11.5px] font-semibold" style={{ color: s.text }}>{s.label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {usedCats.flatMap((c) =>
+                          grouped[c].map((k) => (
+                            <KeywordChip key={k} category={c} onClick={() => onKeywordClick?.(k)}>{k}</KeywordChip>
+                          )),
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </SoftCard>
             </section>
           )}
