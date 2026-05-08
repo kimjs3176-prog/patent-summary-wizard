@@ -154,7 +154,7 @@ function renderBold(text: string) {
 
 // ============ 본문 자동 하이라이트 — 다층 패턴 매칭 ============
 // 카테고리 → 시각 처리
-type HLType = "metric" | "superlative" | "solution" | "problem" | "compare" | "concept" | "quote" | "tech";
+type HLType = "metric" | "superlative" | "solution" | "problem" | "compare" | "concept" | "quote";
 
 const HL_STYLE: Record<HLType, string> = {
   metric:      "font-bold text-[#0B7C5C] bg-[#10B9811F] px-1 rounded-[4px] tabular-nums", // 수치+단위
@@ -163,7 +163,6 @@ const HL_STYLE: Record<HLType, string> = {
   solution:    "font-semibold text-[#047857] underline decoration-[#10B98166] decoration-2 underline-offset-[3px]", // 해결/개선/극복/달성
   problem:     "font-semibold text-[#B91C1C]",                                              // 문제/한계/어려움
   concept:     "font-semibold text-[#191F28]",                                              // 핵심 개념(명사+기술/공법…)
-  tech:        "font-semibold text-[#1D4ED8]",                                              // AI/IoT/스마트 등 기술 용어
   quote:       "font-semibold text-[#191F28] bg-[#F2F4F6] px-1 rounded-[4px]",              // 「…」, '…' 인용
 };
 
@@ -181,8 +180,6 @@ const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
   { type: "problem",     regex: /([가-힣A-Za-z]{2,12}(?:의)?\s*(?:문제점?|한계점?|어려움|단점|취약점|부족|불편|손실|오류|결함)|기존\s*기술의?\s*[가-힣]{0,10}한계|종래\s*기술|종래\s*방식)/g },
   // 7) 핵심 개념 명사구 (… 기술/시스템/공법/방식/장치/모듈/메커니즘/알고리즘/플랫폼/구조)
   { type: "concept",     regex: /([가-힣A-Za-z]{2,15}(?:\s*[가-힣A-Za-z]{1,10}){0,2}\s*(?:기술|시스템|공법|방식|장치|모듈|메커니즘|알고리즘|플랫폼|구조|구성|프로세스|솔루션))/g },
-  // 8) 기술 키워드 (영문 약어/스마트/지능형 등)
-  { type: "tech",        regex: /(AI|IoT|ICT|GPS|RFID|NFC|5G|API|ML|DL|CNN|RNN|LLM|NGS|PCR|CRISPR|블록체인|빅데이터|클라우드|딥러닝|머신러닝|인공지능|자율주행|자동화|지능형|스마트(?:팜|시티|폰|센서)?)/g },
 ];
 
 interface HLMatch { start: number; end: number; type: HLType; text: string; }
