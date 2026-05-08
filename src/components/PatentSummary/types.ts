@@ -6,6 +6,7 @@ export interface PatentData {
   assignee?: string;
   filingDate?: string;
   publicationDate?: string;
+  registrationDate?: string;
   claims?: string[];
   patentNumber?: string;
   applicationNumber?: string;
