@@ -188,10 +188,15 @@ IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
 
 평가기준(0-100):
 1.기술성(35%): 청구항 깊이/범위, IPC 특이성, 실시예/실험데이터 유무, 선행기술 대비 진보성. 단순개념55~65, 실시예포함65~78, 실험데이터포함75~85, 독창+실증85~95
-2.시장성(35%): IPC 기반 산업분류 범용성, 기존기술 대비 차별적 경쟁력, 다분야 적용 가능성, 수요처 다양성. 단일산업/낮은차별55~65, 복수산업적용65~78, 범용+높은차별75~85, 광범위+독보적85~95
+2.시장성(35%): IPC 기반 산업분류 범용성, 기존기술 대비 차별적 경쟁력, 다분야 적용 가능성, 수요처 다양성. 단일산업/낮은차별55~65, 복수산업적용68~80, 범용+높은차별80~90, 광범위+독보적88~96
 3.사업성(30%): 기술구현 난이도/소요기간, 라이선싱/기술이전 용이성, 투자회수 가능성. 구현난이도높음55~65, 보통난이도65~78, 구현용이+이전가능75~85, 즉시상용화85~95
 총점=기술×0.35+시장×0.35+사업×0.30 (반올림)
 세항목 최고-최저 차이 5점이상 권장(강제아님).
+
+점수-근거 정합성(필수): 근거 텍스트의 톤과 점수는 반드시 일치할 것.
+- 근거에 "우수/탁월/광범위/독보적/높은 경쟁력/검증된 시장/수요 명확/즉시 상용화/높은 확장성" 등 강한 긍정 표현이 포함되면 해당 항목 점수는 80점 이상이어야 한다.
+- 근거에 "매우 우수/독보적/시장 검증 완료/광범위한 산업 적용" 등 최상급 표현이 포함되면 85점 이상이어야 한다.
+- 점수가 70~79이면 근거에는 "보통/일부 한계/제한적 차별성" 등 중립~온건한 표현만 사용할 것.
 
 중요 보정사항:
 - 식품·농산물 가공 특허 중 소비자가 직접 이해할 수 있는 제품(떡, 빵, 음료, 면류, 과자 등)은 시장성·사업성을 현실적으로 높게 평가할 것. 소비재 식품의 경우 수요 명확성과 상용화 용이성을 반영.
@@ -209,10 +214,12 @@ JSON형식:
 
 평가기준(0-100):
 1.기술성(35%): 청구항 깊이, IPC 특이성, 실시예 유무. 단순개념55~65, 실시예65~78, 실험데이터75~85, 독창+실증85~95
-2.시장성(35%): IPC 기반 산업분류 범용성, 차별점, 다분야적용. 단일산업55~65, 복수산업65~78, 범용+차별75~85, 광범위+독보85~95
+2.시장성(35%): IPC 기반 산업분류 범용성, 차별점, 다분야적용. 단일산업55~65, 복수산업68~80, 범용+차별80~90, 광범위+독보88~96
 3.사업성(30%): 구현난이도, 라이선싱, 이전가능성. 난이도높음55~65, 보통65~78, 용이75~85, 즉시상용85~95
 총점=기술×0.35+시장×0.35+사업×0.30 (반올림)
 세항목 최고-최저 차이 5점이상 권장.
+
+점수-근거 정합성(필수): 근거에 "우수/탁월/광범위/독보적/검증된 시장/수요 명확" 등 강한 긍정이 있으면 80점 이상, "매우 우수/독보적" 등 최상급은 85점 이상. 점수 70~79대는 "보통/일부 한계" 등 중립 표현만 사용.
 
 중요: 식품·농산물 가공 특허 중 소비자 접점이 명확한 제품(떡, 빵, 음료, 면류 등)은 시장성·사업성을 현실적으로 높게 평가. 유사제품 시장 존재 시 시장성 75+, 기존설비 구현 가능 시 사업성 75+ 검토.
 
@@ -306,6 +313,33 @@ JSON형식:
         console.error("JSON.parse 실패, raw:", jsonMatch[0].substring(0, 500));
         throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
       }
+    }
+
+    // 점수-근거 정합성 보정: 근거 텍스트가 강한 긍정인데 점수가 낮으면 끌어올림
+    const STRONG_TOP = /(매우\s*우수|매우\s*뛰어|독보적|독보|최고|최상|광범위한|매우\s*광범|시장\s*검증\s*완료|즉시\s*상용)/;
+    const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요\s*명확|높은\s*확장|상용화\s*용이|즉시\s*적용)/;
+    const enforceConsistency = (score: number, reason: string): number => {
+      if (!reason || typeof score !== "number") return score;
+      if (STRONG_TOP.test(reason) && score < 85) return 85;
+      if (STRONG_POS.test(reason) && score < 80) return 80;
+      return score;
+    };
+    const beforeMarket = scores.marketScore;
+    scores.technologyScore = enforceConsistency(scores.technologyScore, scores.technologyReason || "");
+    scores.marketScore = enforceConsistency(scores.marketScore, scores.marketReason || "");
+    scores.businessScore = enforceConsistency(scores.businessScore, scores.businessReason || "");
+    if (beforeMarket !== scores.marketScore) {
+      console.log(`[CONSISTENCY] market ${beforeMarket} -> ${scores.marketScore} (reason matched strong-positive)`);
+    }
+    // 총점 재계산
+    if (
+      typeof scores.technologyScore === "number" &&
+      typeof scores.marketScore === "number" &&
+      typeof scores.businessScore === "number"
+    ) {
+      scores.totalScore = Math.round(
+        scores.technologyScore * 0.35 + scores.marketScore * 0.35 + scores.businessScore * 0.3
+      );
     }
 
     // Save to cache
