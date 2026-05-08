@@ -137,9 +137,21 @@ function sectionMeta(title: string): { kicker: string; heading: string; Icon: ty
 
 function extractKeywords(md: string, max = 8): string[] {
   if (!md) return [];
-  const text = md.replace(/[#*_`>\-\[\]\(\)]/g, " ");
+  // 핵심 기능 / 활용 가능 산업 중심 — 해당 섹션만 우선 추출
+  const sections = parseSections(md);
+  const focusText = sections
+    .filter((s) => /활용|응용|산업|분야|발명|요약|특징|기능|용도/.test(s.title))
+    .map((s) => s.paragraphs.join(" "))
+    .join(" ");
+  const source = focusText || md;
+  const text = source.replace(/[#*_`>\-\[\]\(\)]/g, " ");
   const tokens = text.match(/[가-힣A-Za-z]{2,}/g) || [];
-  const stop = new Set(["특허", "발명", "본", "이를", "통해", "있는", "있다", "수", "및", "등", "위한", "관한", "기술", "방법", "the", "and", "for", "with", "이러한", "또한", "그리고", "하는", "되는", "대한", "통한"]);
+  const stop = new Set([
+    "특허", "발명", "본", "이를", "통해", "있는", "있다", "수", "및", "등", "위한", "관한",
+    "기술", "방법", "the", "and", "for", "with", "이러한", "또한", "그리고", "하는", "되는",
+    "대한", "통한", "구성", "포함", "사용", "제공", "경우", "다양한", "효과", "수행",
+    "특징", "구비", "마련", "이용", "장치", "시스템",
+  ]);
   const freq = new Map<string, number>();
   for (const t of tokens) {
     if (stop.has(t)) continue;
