@@ -64,14 +64,9 @@ function PatentTimeline({
   hasRegistration: boolean;
 }) {
   const steps = [
-    { key: "file", label: "출원", date: filingDate, done: !!filingDate },
-    { key: "pub", label: "공개", date: publicationDate, done: !!publicationDate },
-    {
-      key: "reg",
-      label: "등록",
-      date: registrationDate,
-      done: hasRegistration,
-    },
+    { key: "file", label: "출원", date: filingDate, done: !!filingDate, color: "#3B82F6" },
+    { key: "pub", label: "공개", date: publicationDate, done: !!publicationDate, color: "#F59E0B" },
+    { key: "reg", label: "등록", date: registrationDate, done: hasRegistration, color: ACCENT_HEX },
   ];
   // Elapsed days from filing to registration (or today if pending)
   const parse = (s?: string) => {
@@ -101,38 +96,42 @@ function PatentTimeline({
       </div>
       <div className="relative">
         {/* base line */}
-        <div className="absolute left-0 right-0 top-[11px] h-[2px] bg-[#E5E8EB] rounded-full" />
-        {/* progress line */}
+        <div className="absolute left-[10%] right-[10%] top-[13px] h-[3px] bg-[#E5E8EB] rounded-full" />
+        {/* progress gradient line */}
         <div
-          className="absolute left-0 top-[11px] h-[2px] rounded-full transition-all"
+          className="absolute left-[10%] top-[13px] h-[3px] rounded-full transition-all duration-500"
           style={{
-            background: ACCENT_HEX,
-            width: hasRegistration
-              ? "100%"
+            background: hasRegistration
+              ? "linear-gradient(90deg, #3B82F6 0%, #F59E0B 50%, #10B981 100%)"
               : publicationDate
-              ? "50%"
-              : filingDate
-              ? "0%"
-              : "0%",
+              ? "linear-gradient(90deg, #3B82F6 0%, #F59E0B 100%)"
+              : "#3B82F6",
+            width: hasRegistration ? "80%" : publicationDate ? "40%" : filingDate ? "0%" : "0%",
           }}
         />
         <div className="relative grid grid-cols-3 gap-2">
           {steps.map((s) => (
             <div key={s.key} className="flex flex-col items-center text-center">
               <div
-                className="w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white"
+                className="w-7 h-7 rounded-full flex items-center justify-center border-[2.5px] bg-white shadow-sm transition-all"
                 style={{
-                  borderColor: s.done ? ACCENT_HEX : "#D1D6DB",
-                  background: s.done ? ACCENT_HEX : "#fff",
+                  borderColor: s.done ? s.color : "#D1D6DB",
+                  background: s.done ? s.color : "#fff",
+                  boxShadow: s.done ? `0 0 0 4px ${s.color}1A` : undefined,
                 }}
               >
                 {s.done && (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2.5 6.5L5 9L9.5 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6.5L5 9L9.5 3.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </div>
-              <p className="mt-2 text-[12px] font-semibold text-[#191F28]">{s.label}</p>
+              <p
+                className="mt-2 text-[12.5px] font-bold"
+                style={{ color: s.done ? s.color : "#8B95A1" }}
+              >
+                {s.label}
+              </p>
               <p className="text-[11px] text-[#8B95A1] font-medium tabular-nums mt-0.5 min-h-[14px]">
                 {s.date || (s.done ? "" : "—")}
               </p>
@@ -151,6 +150,67 @@ function renderBold(text: string) {
       ? <strong key={i} className="font-semibold text-[#191F28]">{p.slice(2, -2)}</strong>
       : <span key={i}>{p}</span>
   );
+}
+
+// 본문 자동 하이라이트: 숫자/단위, 핵심 강조 표현을 시각적으로 강조
+const HIGHLIGHT_PATTERNS: { regex: RegExp; className: string }[] = [
+  // 숫자+단위 (예: 30%, 5kg, 2년, 100mm)
+  {
+    regex: /(\d+(?:\.\d+)?(?:\s?(?:%|배|개|건|년|월|일|시간|분|초|kg|g|mg|mm|cm|m|km|ml|L|°C|℃|kW|W|Hz|원|만원|억원)))/g,
+    className: "font-bold text-[#191F28] bg-[#10B98114] px-1 py-0.5 rounded",
+  },
+  // 핵심 강조 형용사·표현
+  {
+    regex: /(우수한|뛰어난|탁월한|혁신적|독보적|차별화된|핵심|최초|세계\s*최초|국내\s*최초|상용화|실용화|특허\s*등록|핵심\s*기술|주요\s*특징|친환경|고효율|자동화|지능형|스마트|AI|인공지능|머신러닝|딥러닝|IoT|빅데이터|블록체인)/g,
+    className: "font-semibold",
+    // 색상 inline (semantic 토큰 hex) - 아래 wrapper에서 처리
+  },
+];
+
+function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] {
+  // 텍스트 노드만 패턴 분해. React 요소(GlossaryTerm 등)는 건드리지 않음.
+  const out: React.ReactNode[] = [];
+  let key = 0;
+  for (const node of nodes) {
+    if (typeof node !== "string") {
+      out.push(node);
+      continue;
+    }
+    let segments: { text: string; type: "plain" | "num" | "kw" }[] = [{ text: node, type: "plain" }];
+    // capture group 사용: split 결과에서 홀수 인덱스가 매칭된 부분
+    segments = segments.flatMap((seg) => {
+      if (seg.type !== "plain") return [seg];
+      const parts = seg.text.split(HIGHLIGHT_PATTERNS[0].regex);
+      return parts.map((p, i) => ({ text: p, type: (i % 2 === 1 ? "num" : "plain") } as const));
+    });
+    segments = segments.flatMap((seg) => {
+      if (seg.type !== "plain") return [seg];
+      const parts = seg.text.split(HIGHLIGHT_PATTERNS[1].regex);
+      return parts.map((p, i) => ({ text: p, type: (i % 2 === 1 ? "kw" : "plain") } as const));
+    });
+    for (const seg of segments) {
+      if (!seg.text) continue;
+      if (seg.type === "num") {
+        out.push(
+          <strong
+            key={`hl-n-${key++}`}
+            className="font-bold text-[#0B7C5C] bg-[#10B9811A] px-1 rounded-[4px]"
+          >
+            {seg.text}
+          </strong>,
+        );
+      } else if (seg.type === "kw") {
+        out.push(
+          <strong key={`hl-k-${key++}`} className="font-semibold text-[#191F28]">
+            {seg.text}
+          </strong>,
+        );
+      } else {
+        out.push(seg.text);
+      }
+    }
+  }
+  return out;
 }
 
 function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
@@ -257,9 +317,28 @@ function extractKeywords(md: string, max = 8): string[] {
     "본문", "예시", "예를", "들어", "즉", "한편", "한다", "된다", "있어", "없이", "함께",
     // 어미/명사화 단편
     "작업", "복합", "동작", "수단", "구조", "부분", "전체", "내부", "외부", "상부", "하부",
+    // 형용사·부사·일반 수식어 (분석 의미 없음)
+    "결과적", "효과적", "효율적", "전반적", "지속적", "순차적", "독립적", "상대적", "절대적",
+    "구체적", "기본적", "일반적", "근본적", "직접적", "간접적", "필수적", "선택적", "유기적",
+    "불규칙", "불규칙한", "규칙적", "다음과", "위와", "아래와", "같이", "비해", "대비",
+    "그러나", "하지만", "그래서", "따라서", "때문", "때문에", "위해", "위해서",
+    "다소", "약간", "조금", "많이", "거의", "오히려", "역시", "물론", "실제로", "실제",
+    "이는", "이로", "이에", "그것", "그것이", "그들", "그들의", "우리", "우리는",
+    "있도록", "되도록", "하여", "되어", "이며", "이었", "였다", "였고", "이고", "이라고",
+    "위하여", "통하여", "대하여", "관하여",
     // 영문 stopwords
     "the", "and", "for", "with", "this", "that", "from", "into", "are", "was", "were", "has", "have",
   ]);
+
+  // 형용사/부사형 어미 패턴 — 분석 가치 낮은 단어 제거
+  const isAdverbAdjLike = (w: string): boolean => {
+    if (!/[가-힣]/.test(w)) return false;
+    // -적/-적인 형용사형 (예: 결과적, 효과적, 전반적)
+    if (/적$/.test(w) && w.length <= 4) return true;
+    // -인/-한/-게 등 수식어 어미 (예: 불규칙한, 다양한)
+    if (/(인|한|게|히|이|을|를)$/.test(w) && w.length <= 3) return true;
+    return false;
+  };
 
   const freq = new Map<string, number>();
   const rawTokens = text.match(/[가-힣A-Za-z]{2,}/g) || [];
@@ -267,6 +346,7 @@ function extractKeywords(md: string, max = 8): string[] {
     const t = /[가-힣]/.test(raw) ? stripJosa(raw) : raw.toLowerCase();
     if (!t || t.length < 2) continue;
     if (stop.has(t)) continue;
+    if (isAdverbAdjLike(t)) continue;
     // 한글은 3자 이상 우선 (2자는 약한 가중치)
     const weight = /[가-힣]/.test(t) ? (t.length >= 3 ? 2 : 1) : 1;
     freq.set(t, (freq.get(t) || 0) + weight);
@@ -662,9 +742,15 @@ export function TossPatentSummary({
                     <span className="text-[13px] font-semibold">{sec.title}</span>
                   </div>
                   <div className="space-y-4">
-                    {sec.paragraphs.map((p, i) => (
-                      <p key={i} className="text-[15.5px] leading-[1.78] text-[#4E5968]">{annotate(p)}</p>
-                    ))}
+                    {sec.paragraphs.map((p, i) => {
+                      const annotated = annotate(p);
+                      const nodes = Array.isArray(annotated) ? annotated : [annotated];
+                      return (
+                        <p key={i} className="text-[15.5px] leading-[1.78] text-[#4E5968]">
+                          {highlightImportant(nodes as React.ReactNode[])}
+                        </p>
+                      );
+                    })}
                   </div>
                 </section>
               );
