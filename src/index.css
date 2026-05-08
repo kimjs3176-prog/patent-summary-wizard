@@ -12,6 +12,15 @@ html, body {
   overflow-wrap: break-word;
 }
 
+/* Readability polish — pretty wrapping, tabular numbers in UI chrome */
+p, li, dd, blockquote { text-wrap: pretty; }
+h1, h2, h3, h4, h5, h6 { text-wrap: balance; }
+table, thead, tbody, tfoot, th, td,
+time, .tabular-nums, [data-numeric] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
 /* 2026 Design System — Evolved Glassmorphism + Organic Motion + Depth Layers */
 
 @layer base {
