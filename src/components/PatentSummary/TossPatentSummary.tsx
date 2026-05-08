@@ -295,38 +295,85 @@ function KeywordChip({
   );
 }
 
-interface MdSection { title: string; paragraphs: string[]; }
+interface MdSection {
+  title: string;
+  paragraphs: string[];
+  footnotes?: { num: number; text: string }[];
+}
 function parseSections(md: string): MdSection[] {
   if (!md) return [];
   const lines = md.split("\n");
   const sections: MdSection[] = [];
   let cur: MdSection | null = null;
   let buf = "";
+  let inSourcesBlock = false; // ### 출처 진입 후 footnote 수집 모드
   const flush = () => {
     if (cur && buf.trim()) cur.paragraphs.push(buf.trim());
     buf = "";
   };
   for (const raw of lines) {
     const line = raw.replace(/\*\*/g, "");
-    const h = line.match(/^##\s+(.+?)\s*$/);
-    if (h) {
+    const h2 = line.match(/^##\s+(.+?)\s*$/);
+    if (h2) {
       flush();
       if (cur) sections.push(cur);
-      cur = { title: h[1].trim(), paragraphs: [] };
+      cur = { title: h2[1].trim(), paragraphs: [], footnotes: [] };
+      inSourcesBlock = false;
       continue;
     }
-    if (/^#{3,6}\s/.test(line)) continue;
+    // ### 출처 / 참고문헌 등 헤더 — footnote 수집 모드 진입
+    const h3 = line.match(/^#{3,6}\s+(.+?)\s*$/);
+    if (h3) {
+      flush();
+      inSourcesBlock = /출처|참고\s*문헌|references?|sources?/i.test(h3[1]);
+      continue;
+    }
+    // [^N]: 본문 어디서든 footnote 정의로 인식
+    const fn = line.match(/^\s*\[\^(\d+)\]:\s*(.+?)\s*$/);
+    if (fn && cur) {
+      cur.footnotes!.push({ num: parseInt(fn[1], 10), text: fn[2].trim() });
+      continue;
+    }
     if (line.trim() === "") { flush(); continue; }
-    if (/^\[\^\d+\]:/.test(line.trim())) continue;
+    // 출처 블록 내 일반 라인 — "1. 기관명, ..." 또는 "- 기관명" 형식도 footnote로 흡수
+    if (inSourcesBlock && cur) {
+      const numbered = line.match(/^\s*(?:[-•]|\d+\.)\s*(.+?)\s*$/);
+      const txt = (numbered ? numbered[1] : line).trim();
+      if (txt) {
+        const next = (cur.footnotes!.length || 0) + 1;
+        cur.footnotes!.push({ num: next, text: txt });
+      }
+      continue;
+    }
     const cleaned = line.replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "").replace(/[`_]/g, "").trim();
     buf += (buf ? " " : "") + cleaned;
   }
   flush();
   if (cur) sections.push(cur);
   return sections.filter(s =>
-    !/특허\s*기본\s*정보|출처|참고\s*문헌|references?|sources?/i.test(s.title) &&
-    s.paragraphs.length > 0
+    !/특허\s*기본\s*정보/i.test(s.title) &&
+    (s.paragraphs.length > 0 || (s.footnotes && s.footnotes.length > 0))
   );
+}
+
+// 본문 [^1] 인라인 마커를 superscript 노드로 변환
+function renderWithFootnoteRefs(text: string): React.ReactNode[] {
+  const parts = text.split(/(\[\^\d+\])/g);
+  return parts.map((p, i) => {
+    const m = p.match(/^\[\^(\d+)\]$/);
+    if (m) {
+      return (
+        <sup
+          key={`fn-${i}`}
+          className="ml-0.5 text-[10px] font-bold align-super"
+          style={{ color: "#10B981" }}
+        >
+          {m[1]}
+        </sup>
+      );
+    }
+    return p;
+  });
 }
 
 function sectionMeta(title: string): { kicker: string; heading: string; Icon: typeof Lightbulb } {
