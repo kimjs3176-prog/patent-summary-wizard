@@ -182,9 +182,14 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
         const res = await fetchWithRetry(url.toString(), {}, { timeoutMs: 12000, retries: 2 });
         const text = await res.text();
 
-        if (!res.ok || text.includes("<successYN>N</successYN>")) return results;
+        if (!res.ok || text.includes("<successYN>N</successYN>")) {
+          const errMatch = text.match(/<resultMsg>([^<]*)<\/resultMsg>/);
+          console.log(`KIPRIS NG status=${res.status} kw="${kw}" applicant="${applicantFilter || ""}" msg="${errMatch?.[1] || ""}"`);
+          return results;
+        }
 
         const itemMatches = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+        console.log(`KIPRIS OK kw="${kw}" applicant="${applicantFilter || ""}" items=${itemMatches.length}`);
         for (const match of itemMatches) {
           const itemXml = match[1];
           const getField = (field: string): string | undefined => {
