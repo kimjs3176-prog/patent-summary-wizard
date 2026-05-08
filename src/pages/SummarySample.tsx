@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Bookmark, Share2, Download, Loader2 } from "lucide-react";
+import { Sparkles, Bookmark, Share2, Download, Loader2, Lightbulb, TrendingUp, Leaf, Rocket, FileText } from "lucide-react";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import type { CommercializationDetails } from "@/components/PatentSummary/TechnologyCommercializationScore";
 
@@ -74,26 +74,50 @@ function KeywordChip({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Extract a "## 기술분야"~"## 발명요약" 같은 본문 일부 (마크다운에서 첫 2개 단락)
-function extractFirstParagraphs(md: string, count = 2): string[] {
+// 마크다운을 ## 헤딩 단위 섹션으로 분할
+interface MdSection { title: string; paragraphs: string[]; }
+function parseSections(md: string): MdSection[] {
   if (!md) return [];
   const lines = md.split("\n");
-  const paragraphs: string[] = [];
-  let current = "";
-  for (const line of lines) {
-    if (/^#{1,6}\s/.test(line)) {
-      if (current.trim()) { paragraphs.push(current.trim()); current = ""; }
+  const sections: MdSection[] = [];
+  let cur: MdSection | null = null;
+  let buf = "";
+  const flush = () => {
+    if (cur && buf.trim()) cur.paragraphs.push(buf.trim());
+    buf = "";
+  };
+  for (const raw of lines) {
+    const line = raw.replace(/\*\*/g, "");
+    const h = line.match(/^##\s+(.+?)\s*$/);
+    if (h) {
+      flush();
+      if (cur) sections.push(cur);
+      cur = { title: h[1].trim(), paragraphs: [] };
       continue;
     }
-    if (line.trim() === "") {
-      if (current.trim()) { paragraphs.push(current.trim()); current = ""; }
-    } else {
-      current += (current ? " " : "") + line.replace(/[*_`]/g, "").trim();
-    }
-    if (paragraphs.length >= count) break;
+    if (/^#{3,6}\s/.test(line)) continue;
+    if (line.trim() === "") { flush(); continue; }
+    // 출처/footnote 라인 제외
+    if (/^\[\^\d+\]:/.test(line.trim())) continue;
+    const cleaned = line.replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "").replace(/[`_]/g, "").trim();
+    buf += (buf ? " " : "") + cleaned;
   }
-  if (current.trim() && paragraphs.length < count) paragraphs.push(current.trim());
-  return paragraphs.slice(0, count);
+  flush();
+  if (cur) sections.push(cur);
+  // 특허 기본정보 / 출처 섹션 제외
+  return sections.filter(s =>
+    !/특허\s*기본\s*정보|출처|참고\s*문헌|references?|sources?/i.test(s.title) &&
+    s.paragraphs.length > 0
+  );
+}
+
+function sectionMeta(title: string): { kicker: string; heading: string; Icon: typeof Lightbulb } {
+  if (/기술\s*분야/.test(title)) return { kicker: "기술 분야", heading: "어떤 기술인가요?", Icon: Lightbulb };
+  if (/발명|요약|특징/.test(title)) return { kicker: "발명 요약", heading: "무엇을 해결하나요?", Icon: FileText };
+  if (/시장|동향/.test(title)) return { kicker: "시장 동향", heading: "시장은 어떻게 움직이나요?", Icon: TrendingUp };
+  if (/농산업|활용|응용/.test(title)) return { kicker: "농산업 활용", heading: "어디에 쓸 수 있나요?", Icon: Leaf };
+  if (/상용화|사업화|전망|성숙/.test(title)) return { kicker: "상용화 전망", heading: "사업화 가능성은?", Icon: Rocket };
+  return { kicker: title, heading: title, Icon: FileText };
 }
 
 // 마크다운에서 ## 기술분야 / ## 발명요약 등에서 키워드 후보 추출 (단순 빈도)
@@ -157,7 +181,7 @@ export default function SummarySample() {
   const trlStage = trl == null ? "-" : trl <= 3 ? "기초연구" : trl <= 6 ? "개발/실증" : "상용화";
 
   const title = patentData?.titleKo || patentData?.title || `특허 ${SAMPLE_PATENT}`;
-  const paragraphs = extractFirstParagraphs(summary, 2);
+  const sections = parseSections(summary);
   const keywords = extractKeywords(summary, 6);
 
   const scoreSummary = score == null
@@ -289,24 +313,33 @@ export default function SummarySample() {
           </section>
         )}
 
-        {/* 발명요약 */}
-        <section className="mb-10">
-          <SectionTitle kicker="발명 요약">무엇을 해결하나요?</SectionTitle>
-          {isLoading && paragraphs.length === 0 ? (
+        {/* AI 요약서의 모든 섹션을 토스 스타일로 매핑 */}
+        {isLoading && sections.length === 0 ? (
+          <section className="mb-10">
             <div className="flex items-center gap-2 text-[#8B95A1]">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-[14px]">AI가 요약을 생성 중입니다...</span>
+              <span className="text-[14px]">AI가 요약서를 생성 중입니다...</span>
             </div>
-          ) : paragraphs.length > 0 ? (
-            <div className="space-y-4">
-              {paragraphs.map((p, i) => (
-                <p key={i} className="text-[16px] leading-[1.75] text-[#4E5968]">{p}</p>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[14px] text-[#8B95A1]">요약 데이터를 불러오지 못했습니다.</p>
-          )}
-        </section>
+          </section>
+        ) : (
+          sections.map((sec, idx) => {
+            const { kicker, heading, Icon } = sectionMeta(sec.title);
+            return (
+              <section key={idx} className="mb-10">
+                <SectionTitle kicker={kicker}>{heading}</SectionTitle>
+                <div className="flex items-center gap-2 mb-3 text-[#4E5968]">
+                  <Icon className="w-4 h-4" style={{ color: ACCENT_HEX_FALLBACK }} />
+                  <span className="text-[13px] font-semibold">{sec.title}</span>
+                </div>
+                <div className="space-y-4">
+                  {sec.paragraphs.map((p, i) => (
+                    <p key={i} className="text-[15.5px] leading-[1.78] text-[#4E5968]">{p}</p>
+                  ))}
+                </div>
+              </section>
+            );
+          })
+        )}
 
         {/* AI 의견 */}
         {details?.analysis && (
