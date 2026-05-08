@@ -89,9 +89,20 @@ const glossary: Record<string, string> = {
   "자동화": "사람의 개입을 최소화하고 기계·소프트웨어가 작업을 수행하도록 만든 시스템",
 };
 
-// Build a regex that matches glossary terms (longest first to avoid partial matches)
+// Build a regex that matches glossary terms (longest first to avoid partial matches).
+// For ASCII-only terms (e.g. AI, IoT, LLM, GPS), enforce word boundaries so they
+// don't match inside larger words like "MAIN", "RAID", "HELLO". Korean/mixed terms
+// don't need this because Hangul characters never sit adjacent to ASCII identifiers.
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isAsciiTerm = (s: string) => /^[A-Za-z0-9]+$/.test(s);
 const sortedTerms = Object.keys(glossary).sort((a, b) => b.length - a.length);
-const glossaryRegex = new RegExp(`(${sortedTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
+const glossaryPattern = sortedTerms
+  .map((t) => {
+    const esc = escapeRe(t);
+    return isAsciiTerm(t) ? `(?<![A-Za-z0-9])${esc}(?![A-Za-z0-9])` : esc;
+  })
+  .join('|');
+const glossaryRegex = new RegExp(`(${glossaryPattern})`, 'g');
 
 /**
  * Takes a plain text string and returns React nodes with glossary terms wrapped in tooltips.
