@@ -144,21 +144,48 @@ function extractKeywords(md: string, max = 8): string[] {
     .map((s) => s.paragraphs.join(" "))
     .join(" ");
   const source = focusText || md;
-  const text = source.replace(/[#*_`>\-\[\]\(\)]/g, " ");
-  const tokens = text.match(/[가-힣A-Za-z]{2,}/g) || [];
+  const text = source.replace(/[#*_`>\-\[\]\(\)\.,!?;:"']/g, " ");
+
+  // 한글 조사 제거 (단어 끝에 붙는 조사)
+  const stripJosa = (w: string): string => {
+    const josa2 = ["으로", "에서", "에게", "이나", "이며", "보다", "까지", "부터", "마다", "처럼", "이라", "라는", "이라는", "하는", "되는", "이다", "한다", "된다"];
+    const josa1 = ["의", "이", "가", "을", "를", "은", "는", "에", "와", "과", "도", "로", "만", "나", "며", "고"];
+    for (const j of josa2) if (w.endsWith(j) && w.length > j.length + 1) return w.slice(0, -j.length);
+    for (const j of josa1) if (w.endsWith(j) && w.length > 2) return w.slice(0, -1);
+    return w;
+  };
+
   const stop = new Set([
+    // 일반어
     "특허", "발명", "본", "이를", "통해", "있는", "있다", "수", "및", "등", "위한", "관한",
-    "기술", "방법", "the", "and", "for", "with", "이러한", "또한", "그리고", "하는", "되는",
-    "대한", "통한", "구성", "포함", "사용", "제공", "경우", "다양한", "효과", "수행",
-    "특징", "구비", "마련", "이용", "장치", "시스템",
+    "기술", "방법", "이러한", "또한", "그리고", "하는", "되는", "대한", "통한", "구성", "포함",
+    "사용", "제공", "경우", "다양한", "효과", "수행", "특징", "구비", "마련", "이용", "장치", "시스템",
+    // 부사/접속사/대명사
+    "동시에", "특히", "주로", "매우", "더욱", "보다", "가장", "이후", "이전", "현재", "최근",
+    "기존", "기반", "이상", "이하", "내지", "또는", "따라", "따른", "의해", "관련", "해당",
+    "본문", "예시", "예를", "들어", "즉", "한편", "한다", "된다", "있어", "없이", "함께",
+    // 어미/명사화 단편
+    "작업", "복합", "동작", "수단", "구조", "부분", "전체", "내부", "외부", "상부", "하부",
+    // 영문 stopwords
+    "the", "and", "for", "with", "this", "that", "from", "into", "are", "was", "were", "has", "have",
   ]);
+
   const freq = new Map<string, number>();
-  for (const t of tokens) {
+  const rawTokens = text.match(/[가-힣A-Za-z]{2,}/g) || [];
+  for (const raw of rawTokens) {
+    const t = /[가-힣]/.test(raw) ? stripJosa(raw) : raw.toLowerCase();
+    if (!t || t.length < 2) continue;
     if (stop.has(t)) continue;
-    if (t.length < 2) continue;
-    freq.set(t, (freq.get(t) || 0) + 1);
+    // 한글은 3자 이상 우선 (2자는 약한 가중치)
+    const weight = /[가-힣]/.test(t) ? (t.length >= 3 ? 2 : 1) : 1;
+    freq.set(t, (freq.get(t) || 0) + weight);
   }
-  return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, max).map(([w]) => w);
+  // 2자 한글은 빈도 2 이상일 때만 포함
+  const filtered = [...freq.entries()].filter(([w, c]) => {
+    if (/^[가-힣]{2}$/.test(w) && c < 3) return false;
+    return true;
+  });
+  return filtered.sort((a, b) => b[1] - a[1]).slice(0, max).map(([w]) => w);
 }
 
 export function TossPatentSummary({
