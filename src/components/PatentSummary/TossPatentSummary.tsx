@@ -177,23 +177,16 @@ function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] {
       continue;
     }
     let segments: { text: string; type: "plain" | "num" | "kw" }[] = [{ text: node, type: "plain" }];
-    // 숫자+단위
+    // capture group 사용: split 결과에서 홀수 인덱스가 매칭된 부분
     segments = segments.flatMap((seg) => {
       if (seg.type !== "plain") return [seg];
       const parts = seg.text.split(HIGHLIGHT_PATTERNS[0].regex);
-      return parts.map((p, i) => ({
-        text: p,
-        type: HIGHLIGHT_PATTERNS[0].regex.test(p) && i % 2 === 1 ? "num" : "plain",
-      } as const));
+      return parts.map((p, i) => ({ text: p, type: (i % 2 === 1 ? "num" : "plain") } as const));
     });
-    // 핵심 강조어
     segments = segments.flatMap((seg) => {
       if (seg.type !== "plain") return [seg];
       const parts = seg.text.split(HIGHLIGHT_PATTERNS[1].regex);
-      return parts.map((p, i) => ({
-        text: p,
-        type: i % 2 === 1 && p ? "kw" : "plain",
-      } as const));
+      return parts.map((p, i) => ({ text: p, type: (i % 2 === 1 ? "kw" : "plain") } as const));
     });
     for (const seg of segments) {
       if (!seg.text) continue;
