@@ -64,14 +64,9 @@ function PatentTimeline({
   hasRegistration: boolean;
 }) {
   const steps = [
-    { key: "file", label: "출원", date: filingDate, done: !!filingDate },
-    { key: "pub", label: "공개", date: publicationDate, done: !!publicationDate },
-    {
-      key: "reg",
-      label: "등록",
-      date: registrationDate,
-      done: hasRegistration,
-    },
+    { key: "file", label: "출원", date: filingDate, done: !!filingDate, color: "#3B82F6" },
+    { key: "pub", label: "공개", date: publicationDate, done: !!publicationDate, color: "#F59E0B" },
+    { key: "reg", label: "등록", date: registrationDate, done: hasRegistration, color: ACCENT_HEX },
   ];
   // Elapsed days from filing to registration (or today if pending)
   const parse = (s?: string) => {
@@ -101,38 +96,42 @@ function PatentTimeline({
       </div>
       <div className="relative">
         {/* base line */}
-        <div className="absolute left-0 right-0 top-[11px] h-[2px] bg-[#E5E8EB] rounded-full" />
-        {/* progress line */}
+        <div className="absolute left-[10%] right-[10%] top-[13px] h-[3px] bg-[#E5E8EB] rounded-full" />
+        {/* progress gradient line */}
         <div
-          className="absolute left-0 top-[11px] h-[2px] rounded-full transition-all"
+          className="absolute left-[10%] top-[13px] h-[3px] rounded-full transition-all duration-500"
           style={{
-            background: ACCENT_HEX,
-            width: hasRegistration
-              ? "100%"
+            background: hasRegistration
+              ? "linear-gradient(90deg, #3B82F6 0%, #F59E0B 50%, #10B981 100%)"
               : publicationDate
-              ? "50%"
-              : filingDate
-              ? "0%"
-              : "0%",
+              ? "linear-gradient(90deg, #3B82F6 0%, #F59E0B 100%)"
+              : "#3B82F6",
+            width: hasRegistration ? "80%" : publicationDate ? "40%" : filingDate ? "0%" : "0%",
           }}
         />
         <div className="relative grid grid-cols-3 gap-2">
           {steps.map((s) => (
             <div key={s.key} className="flex flex-col items-center text-center">
               <div
-                className="w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white"
+                className="w-7 h-7 rounded-full flex items-center justify-center border-[2.5px] bg-white shadow-sm transition-all"
                 style={{
-                  borderColor: s.done ? ACCENT_HEX : "#D1D6DB",
-                  background: s.done ? ACCENT_HEX : "#fff",
+                  borderColor: s.done ? s.color : "#D1D6DB",
+                  background: s.done ? s.color : "#fff",
+                  boxShadow: s.done ? `0 0 0 4px ${s.color}1A` : undefined,
                 }}
               >
                 {s.done && (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2.5 6.5L5 9L9.5 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6.5L5 9L9.5 3.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </div>
-              <p className="mt-2 text-[12px] font-semibold text-[#191F28]">{s.label}</p>
+              <p
+                className="mt-2 text-[12.5px] font-bold"
+                style={{ color: s.done ? s.color : "#8B95A1" }}
+              >
+                {s.label}
+              </p>
               <p className="text-[11px] text-[#8B95A1] font-medium tabular-nums mt-0.5 min-h-[14px]">
                 {s.date || (s.done ? "" : "—")}
               </p>
