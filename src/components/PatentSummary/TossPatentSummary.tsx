@@ -152,6 +152,74 @@ function renderBold(text: string) {
   );
 }
 
+// 본문 자동 하이라이트: 숫자/단위, 핵심 강조 표현을 시각적으로 강조
+const HIGHLIGHT_PATTERNS: { regex: RegExp; className: string }[] = [
+  // 숫자+단위 (예: 30%, 5kg, 2년, 100mm)
+  {
+    regex: /(\d+(?:\.\d+)?(?:\s?(?:%|배|개|건|년|월|일|시간|분|초|kg|g|mg|mm|cm|m|km|ml|L|°C|℃|kW|W|Hz|원|만원|억원)))/g,
+    className: "font-bold text-[#191F28] bg-[#10B98114] px-1 py-0.5 rounded",
+  },
+  // 핵심 강조 형용사·표현
+  {
+    regex: /(우수한|뛰어난|탁월한|혁신적|독보적|차별화된|핵심|최초|세계\s*최초|국내\s*최초|상용화|실용화|특허\s*등록|핵심\s*기술|주요\s*특징|친환경|고효율|자동화|지능형|스마트|AI|인공지능|머신러닝|딥러닝|IoT|빅데이터|블록체인)/g,
+    className: "font-semibold",
+    // 색상 inline (semantic 토큰 hex) - 아래 wrapper에서 처리
+  },
+];
+
+function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] {
+  // 텍스트 노드만 패턴 분해. React 요소(GlossaryTerm 등)는 건드리지 않음.
+  const out: React.ReactNode[] = [];
+  let key = 0;
+  for (const node of nodes) {
+    if (typeof node !== "string") {
+      out.push(node);
+      continue;
+    }
+    let segments: { text: string; type: "plain" | "num" | "kw" }[] = [{ text: node, type: "plain" }];
+    // 숫자+단위
+    segments = segments.flatMap((seg) => {
+      if (seg.type !== "plain") return [seg];
+      const parts = seg.text.split(HIGHLIGHT_PATTERNS[0].regex);
+      return parts.map((p, i) => ({
+        text: p,
+        type: HIGHLIGHT_PATTERNS[0].regex.test(p) && i % 2 === 1 ? "num" : "plain",
+      } as const));
+    });
+    // 핵심 강조어
+    segments = segments.flatMap((seg) => {
+      if (seg.type !== "plain") return [seg];
+      const parts = seg.text.split(HIGHLIGHT_PATTERNS[1].regex);
+      return parts.map((p, i) => ({
+        text: p,
+        type: i % 2 === 1 && p ? "kw" : "plain",
+      } as const));
+    });
+    for (const seg of segments) {
+      if (!seg.text) continue;
+      if (seg.type === "num") {
+        out.push(
+          <strong
+            key={`hl-n-${key++}`}
+            className="font-bold text-[#0B7C5C] bg-[#10B9811A] px-1 rounded-[4px]"
+          >
+            {seg.text}
+          </strong>,
+        );
+      } else if (seg.type === "kw") {
+        out.push(
+          <strong key={`hl-k-${key++}`} className="font-semibold text-[#191F28]">
+            {seg.text}
+          </strong>,
+        );
+      } else {
+        out.push(seg.text);
+      }
+    }
+  }
+  return out;
+}
+
 function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
   return (
     <div>
