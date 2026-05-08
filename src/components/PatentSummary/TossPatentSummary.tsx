@@ -464,6 +464,22 @@ export function TossPatentSummary({
             </section>
           )}
 
+          {/* 사업화 점수 상세 분석 */}
+          {patentData && (
+            <section className="mb-10">
+              <SectionTitle kicker="상세 분석">사업화 점수 심층 리포트</SectionTitle>
+              <SoftCard className="!p-3">
+                <div className="bg-white rounded-[16px] p-2">
+                  <TechnologyCommercializationScore
+                    score={score}
+                    isLoading={scoreLoading}
+                    details={details}
+                  />
+                </div>
+              </SoftCard>
+            </section>
+          )}
+
           {/* 키워드 */}
           {keywords.length > 0 && (
             <section className="mb-10">
@@ -551,6 +567,34 @@ export function TossPatentSummary({
             </section>
           )}
 
+          {/* 경쟁 특허 비교 */}
+          {patentData && competitorAnalysisEnabled && (
+            <section className="mb-10">
+              <SectionTitle kicker="경쟁 비교"><span className="inline-flex items-center gap-2"><GitCompare className="w-5 h-5" style={{ color: ACCENT_HEX }} />유사·경쟁 특허와 비교</span></SectionTitle>
+              <SoftCard className="!p-3">
+                <div className="bg-white rounded-[16px] p-2">
+                  <CompetitorComparisonTable
+                    patentData={patentData}
+                    relatedPatents={relatedPatents}
+                    onPatentClick={onRelatedPatentClick}
+                  />
+                </div>
+              </SoftCard>
+            </section>
+          )}
+
+          {/* 패밀리 특허 */}
+          {patentData?.assignee && (
+            <section className="mb-10">
+              <SectionTitle kicker="패밀리 특허"><span className="inline-flex items-center gap-2"><Network className="w-5 h-5" style={{ color: ACCENT_HEX }} />동일 출원인의 관련 특허</span></SectionTitle>
+              <SoftCard className="!p-3">
+                <div className="bg-white rounded-[16px] p-2">
+                  <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
+                </div>
+              </SoftCard>
+            </section>
+          )}
+
           {/* 액션 버튼 */}
           {!isStreaming && content && (
             <section className="mb-2">
@@ -570,27 +614,6 @@ export function TossPatentSummary({
           </p>
         </div>
       </div>
-
-      {/* 부가 분석: 사업화 점수 상세 / 경쟁 비교 / 패밀리 트리 (기존 기능 유지) */}
-      {patentData && (
-        <div className="mt-6 space-y-6">
-          <TechnologyCommercializationScore
-            score={score}
-            isLoading={scoreLoading}
-            details={details}
-          />
-          {competitorAnalysisEnabled && (
-            <CompetitorComparisonTable
-              patentData={patentData}
-              relatedPatents={relatedPatents}
-              onPatentClick={onRelatedPatentClick}
-            />
-          )}
-          {patentData.assignee && (
-            <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
-          )}
-        </div>
-      )}
 
       {/* 공유 모달 */}
       {shareOpen && (
