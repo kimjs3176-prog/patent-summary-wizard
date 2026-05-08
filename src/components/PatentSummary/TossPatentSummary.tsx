@@ -568,7 +568,7 @@ export function TossPatentSummary({
 
   const title = patentData?.titleKo || patentData?.title || `특허 ${patentNumber}`;
   const sections = useMemo(() => parseSections(content), [content]);
-  const keywords = useMemo(() => extractKeywords(content, 8), [content]);
+  const keywords = useMemo(() => extractKeywordsFromPatent(patentData, 8), [patentData]);
 
   const drawings: string[] = useMemo(() => {
     const list: string[] = [];
@@ -820,11 +820,10 @@ export function TossPatentSummary({
               <SoftCard className="!p-4">
                 {(() => {
                   const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
-                    const c = classifyKeyword(k);
-                    (acc[c] ||= []).push(k);
+                    (acc[k.cat] ||= []).push(k.word);
                     return acc;
                   }, { function: [], industry: [], material: [], tech: [], general: [] });
-                  const order: KeywordCategory[] = ["function", "industry", "tech", "material", "general"];
+                  const order: KeywordCategory[] = ["material", "function", "industry", "tech", "general"];
                   const usedCats = order.filter((c) => grouped[c]?.length);
                   return (
                     <div>
