@@ -184,6 +184,16 @@ export default function SummarySample() {
   const sections = parseSections(summary);
   const keywords = extractKeywords(summary, 6);
 
+  // 도면 (대표 도면 + 추가 도면, 중복 제거)
+  const drawings: string[] = (() => {
+    const list: string[] = [];
+    if (patentData?.representativeImage) list.push(patentData.representativeImage);
+    if (patentData?.images) for (const u of patentData.images) if (!list.includes(u)) list.push(u);
+    return list.slice(0, 4);
+  })();
+  const proxify = (u: string) =>
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(u)}`;
+
   const scoreSummary = score == null
     ? "분석 중"
     : score >= 80 ? "높은 편"
@@ -308,6 +318,34 @@ export default function SummarySample() {
             <SoftCard>
               <div className="flex flex-wrap gap-2">
                 {keywords.map((k) => <KeywordChip key={k}>{k}</KeywordChip>)}
+              </div>
+            </SoftCard>
+          </section>
+        )}
+
+        {/* 도면 */}
+        {drawings.length > 0 && (
+          <section className="mb-10">
+            <SectionTitle kicker="특허 도면">한눈에 보는 기술 구성</SectionTitle>
+            <SoftCard className="!p-3">
+              <div className={drawings.length === 1 ? "flex justify-center" : "grid grid-cols-2 gap-2"}>
+                {drawings.map((url, i) => (
+                  <div key={i} className="bg-white rounded-[14px] p-3 flex flex-col items-center">
+                    <img
+                      src={proxify(url)}
+                      alt={`도면 ${i + 1}`}
+                      className="w-full h-auto max-h-[280px] object-contain"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                      }}
+                    />
+                    <p className="text-[12px] text-[#8B95A1] mt-2 font-medium">
+                      {i === 0 && patentData?.representativeImage ? "【대표 도면】" : `【도면 ${i + 1}】`}
+                    </p>
+                  </div>
+                ))}
               </div>
             </SoftCard>
           </section>
