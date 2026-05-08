@@ -9,6 +9,7 @@ import Admin from "./pages/Admin";
 import Compare from "./pages/Compare";
 import Insights from "./pages/Insights";
 import SearchResults from "./pages/SearchResults";
+import SummarySample from "./pages/SummarySample";
 import NotFound from "./pages/NotFound";
 import { FloatingChatbot } from "./components/FloatingChatbot";
 import { SplashScreen } from "./components/SplashScreen";
@@ -59,6 +60,7 @@ const App = () => {
                 <Route path="/compare" element={<Compare />} />
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/search" element={<SearchResults />} />
+                <Route path="/summary-sample" element={<SummarySample />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </ErrorBoundary>
