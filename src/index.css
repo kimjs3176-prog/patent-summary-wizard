@@ -6,6 +6,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Korean line-break: break by word/eojeol, not mid-character */
+html, body {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 /* 2026 Design System — Evolved Glassmorphism + Organic Motion + Depth Layers */
 
 @layer base {
