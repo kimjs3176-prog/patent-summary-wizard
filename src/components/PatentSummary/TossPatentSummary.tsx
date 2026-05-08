@@ -256,9 +256,28 @@ function extractKeywords(md: string, max = 8): string[] {
     "본문", "예시", "예를", "들어", "즉", "한편", "한다", "된다", "있어", "없이", "함께",
     // 어미/명사화 단편
     "작업", "복합", "동작", "수단", "구조", "부분", "전체", "내부", "외부", "상부", "하부",
+    // 형용사·부사·일반 수식어 (분석 의미 없음)
+    "결과적", "효과적", "효율적", "전반적", "지속적", "순차적", "독립적", "상대적", "절대적",
+    "구체적", "기본적", "일반적", "근본적", "직접적", "간접적", "필수적", "선택적", "유기적",
+    "불규칙", "불규칙한", "규칙적", "다음과", "위와", "아래와", "같이", "비해", "대비",
+    "그러나", "하지만", "그래서", "따라서", "때문", "때문에", "위해", "위해서",
+    "다소", "약간", "조금", "많이", "거의", "오히려", "역시", "물론", "실제로", "실제",
+    "이는", "이로", "이에", "그것", "그것이", "그들", "그들의", "우리", "우리는",
+    "있도록", "되도록", "하여", "되어", "이며", "이었", "였다", "였고", "이고", "이라고",
+    "위하여", "통하여", "대하여", "관하여",
     // 영문 stopwords
     "the", "and", "for", "with", "this", "that", "from", "into", "are", "was", "were", "has", "have",
   ]);
+
+  // 형용사/부사형 어미 패턴 — 분석 가치 낮은 단어 제거
+  const isAdverbAdjLike = (w: string): boolean => {
+    if (!/[가-힣]/.test(w)) return false;
+    // -적/-적인 형용사형 (예: 결과적, 효과적, 전반적)
+    if (/적$/.test(w) && w.length <= 4) return true;
+    // -인/-한/-게 등 수식어 어미 (예: 불규칙한, 다양한)
+    if (/(인|한|게|히|이|을|를)$/.test(w) && w.length <= 3) return true;
+    return false;
+  };
 
   const freq = new Map<string, number>();
   const rawTokens = text.match(/[가-힣A-Za-z]{2,}/g) || [];
@@ -266,6 +285,7 @@ function extractKeywords(md: string, max = 8): string[] {
     const t = /[가-힣]/.test(raw) ? stripJosa(raw) : raw.toLowerCase();
     if (!t || t.length < 2) continue;
     if (stop.has(t)) continue;
+    if (isAdverbAdjLike(t)) continue;
     // 한글은 3자 이상 우선 (2자는 약한 가중치)
     const weight = /[가-힣]/.test(t) ? (t.length >= 3 ? 2 : 1) : 1;
     freq.set(t, (freq.get(t) || 0) + weight);
