@@ -7,10 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
-import {
-  TechnologyCommercializationScore,
-  CommercializationDetails,
-} from "./TechnologyCommercializationScore";
+import type { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { CompetitorComparisonTable } from "./CompetitorComparisonTable";
 import { PatentFamilyTree } from "./PatentFamilyTree";
 import { PdfGenerator } from "./PdfGenerator";
@@ -27,18 +24,6 @@ interface TossPatentSummaryProps extends BasePatentSummaryProps {
 
 const SOFT = "#F2F4F6";
 const ACCENT_HEX = "#10B981";
-
-function Stat({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
-  return (
-    <div>
-      <p className="text-[13px] text-[#8B95A1] font-medium mb-1.5">{label}</p>
-      <p className="text-[22px] font-bold text-[#191F28] tracking-tight tabular-nums">
-        {value}
-        {suffix && <span className="text-[14px] text-[#8B95A1] font-semibold ml-0.5">{suffix}</span>}
-      </p>
-    </div>
-  );
-}
 
 function SectionTitle({ children, kicker }: { children: React.ReactNode; kicker?: string }) {
   return (
@@ -68,7 +53,16 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
+function renderBold(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) =>
+    p.startsWith("**") && p.endsWith("**")
+      ? <strong key={i} className="font-semibold text-[#191F28]">{p.slice(2, -2)}</strong>
+      : <span key={i}>{p}</span>
+  );
+}
+
+function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-2">
@@ -80,6 +74,9 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
       <div className="h-1.5 rounded-full bg-[#E5E8EB] overflow-hidden">
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
       </div>
+      {reason && (
+        <p className="mt-2.5 text-[13px] leading-[1.7] text-[#4E5968]">{renderBold(reason)}</p>
+      )}
     </div>
   );
 }
