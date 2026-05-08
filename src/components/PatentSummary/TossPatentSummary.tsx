@@ -561,13 +561,13 @@ export function TossPatentSummary({
           {/* 경쟁 특허 비교 */}
           {patentData && competitorAnalysisEnabled && (
             <section className="mb-10">
-              <SectionTitle kicker="경쟁 비교"><span className="inline-flex items-center gap-2"><GitCompare className="w-5 h-5" style={{ color: ACCENT_HEX }} />유사·경쟁 특허와 비교</span></SectionTitle>
-              <SoftCard>
+              <SectionTitle kicker="경쟁 비교"><span className="inline-flex items-center gap-2"><GitCompare className="w-5 h-5" style={{ color: ACCENT_HEX }} />유사 경쟁 특허</span></SectionTitle>
+              <SoftCard className="!p-3">
                 <CompetitorComparisonTable
                   patentData={patentData}
                   relatedPatents={relatedPatents}
                   onPatentClick={onRelatedPatentClick}
-                  variant="toss"
+                  variant="compact"
                 />
               </SoftCard>
             </section>
