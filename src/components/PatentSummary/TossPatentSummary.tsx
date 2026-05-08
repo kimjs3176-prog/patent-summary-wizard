@@ -367,7 +367,7 @@ export function TossPatentSummary({
       <div className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="max-w-[680px] mx-auto px-5 sm:px-7 pb-12">
           {/* HERO */}
-          <section className="pt-9 pb-7">
+          <section className="pt-9 pb-5">
             <p className="text-[13px] font-semibold mb-3" style={{ color: ACCENT_HEX }}>AI 종합 평가</p>
             <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.3] tracking-[-0.02em] mb-2 text-[#191F28]">
               {title}
@@ -375,71 +375,14 @@ export function TossPatentSummary({
             <p className="text-[14px] text-[#8B95A1] font-medium mb-6 tabular-nums">
               {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {patentNumber}
             </p>
-
-            <div className="flex items-end gap-3 mb-2">
-              {scoreLoading || score == null ? (
-                <div className="flex items-center gap-2 h-[72px]">
-                  <Loader2 className="w-6 h-6 animate-spin" style={{ color: ACCENT_HEX }} />
-                  <span className="text-[16px] text-[#8B95A1] font-semibold">사업화 점수 분석 중...</span>
-                </div>
-              ) : (
-                <>
-                  <span className="text-[72px] font-bold leading-none tabular-nums tracking-tight" style={{ color: ACCENT_HEX }}>
-                    {score}
-                  </span>
-                  <span className="text-[20px] text-[#8B95A1] font-semibold mb-2">/ 100점</span>
-                </>
-              )}
-            </div>
-            <p className="text-[14px] text-[#8B95A1] font-medium">
-              상용화 잠재력이 <span className="font-bold text-[#191F28]">{scoreSummary}</span>이에요
-            </p>
           </section>
 
-          {/* TRL — 추정 근거까지 통합 */}
-          {details && (
-            <section className="mb-10">
-              <SoftCard>
-                <div className="flex items-baseline justify-between mb-3">
-                  <div>
-                    <p className="text-[13px] text-[#8B95A1] font-medium mb-1">기술 성숙도 (TRL)</p>
-                    <p className="text-[18px] font-bold">
-                      <span className="text-[24px]" style={{ color: trlColor }}>{trl ?? "-"}</span>
-                      <span className="text-[#8B95A1] text-[14px] font-semibold ml-1">/ 9 단계</span>
-                    </p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-[12px] font-bold text-white" style={{ background: trlColor }}>
-                    {trlStage}
-                  </span>
-                </div>
-                <div className="flex gap-1">
-                  {Array.from({ length: 9 }).map((_, i) => {
-                    const lvl = i + 1;
-                    const active = trl != null && lvl <= trl;
-                    const c = lvl <= 3 ? "#EF4444" : lvl <= 6 ? "#F59E0B" : ACCENT_HEX;
-                    return <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: active ? c : "#E5E8EB" }} />;
-                  })}
-                </div>
-                <div className="flex justify-between mt-1.5 text-[10px] text-[#8B95A1] font-medium">
-                  <span>1 · 기초</span>
-                  <span>5 · 실증</span>
-                  <span>9 · 상용</span>
-                </div>
-                {details.trlReason && (
-                  <p className="mt-4 text-[13px] leading-[1.75] text-[#4E5968]">
-                    {details.trlReason}
-                  </p>
-                )}
-              </SoftCard>
-            </section>
-          )}
-
-          {/* 특허 정보 */}
+          {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
           {patentData && (
-            <section className="mb-10">
+            <section className="mb-6">
               <SectionTitle kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
               <SoftCard className="!p-2">
-                <div className="bg-white rounded-[16px] px-5">
+                <div className="bg-white rounded-[16px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
                   {patentData.applicationNumber && <Row label="출원번호" value={patentData.applicationNumber} />}
                   {patentData.filingDate && <Row label="출원일자" value={patentData.filingDate} />}
                   {patentData.registrationNumber && <Row label="등록번호" value={patentData.registrationNumber} />}
@@ -456,27 +399,83 @@ export function TossPatentSummary({
             </section>
           )}
 
-          {/* 점수 디테일 — 단일 통합 카드 (점수 + 막대 + 근거) */}
-          {details && (
-            <section className="mb-10">
-              <SectionTitle kicker="세부 점수">왜 이 점수인가요?</SectionTitle>
-              <SoftCard>
-                <div className="space-y-6">
+          {/* 종합점수 + 세부점수 + TRL 통합 카드 */}
+          <section className="mb-8">
+            <SectionTitle kicker="AI 평가">사업화 점수 & 기술 성숙도</SectionTitle>
+            <SoftCard>
+              {/* 종합점수 헤더 */}
+              <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E5E8EB]">
+                <div className="min-w-0">
+                  <p className="text-[12px] text-[#8B95A1] font-semibold mb-1">종합 사업화 점수</p>
+                  {scoreLoading || score == null ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" style={{ color: ACCENT_HEX }} />
+                      <span className="text-[13px] text-[#8B95A1] font-semibold">분석 중...</span>
+                    </div>
+                  ) : (
+                    <p className="text-[13px] text-[#4E5968] font-medium">
+                      상용화 잠재력 <span className="font-bold text-[#191F28]">{scoreSummary}</span>
+                    </p>
+                  )}
+                </div>
+                {score != null && (
+                  <div className="flex items-end gap-1 shrink-0">
+                    <span className="text-[44px] sm:text-[52px] font-bold leading-none tabular-nums tracking-tight" style={{ color: ACCENT_HEX }}>
+                      {score}
+                    </span>
+                    <span className="text-[14px] text-[#8B95A1] font-semibold mb-1.5">/100</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 세부 점수 — 컴팩트 그리드 */}
+              {details && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 py-5 border-b border-[#E5E8EB]">
                   <ScoreRow label="기술성" value={details.technologyScore} color={ACCENT_HEX} reason={details.technologyReason} />
-                  <div className="h-px bg-[#E5E8EB]" />
                   <ScoreRow label="시장성" value={details.marketScore} color="#3B82F6" reason={details.marketReason} />
-                  <div className="h-px bg-[#E5E8EB]" />
                   <ScoreRow label="사업성" value={details.businessScore} color="#F59E0B" reason={details.businessReason} />
                 </div>
-              </SoftCard>
-            </section>
-          )}
+              )}
+
+              {/* TRL — 같은 카드 내 통합 */}
+              {details && (
+                <div className="pt-5">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[12px] text-[#8B95A1] font-semibold">기술 성숙도 (TRL)</span>
+                      <span className="text-[18px] font-bold tabular-nums" style={{ color: trlColor }}>{trl ?? "-"}</span>
+                      <span className="text-[#8B95A1] text-[12px] font-semibold">/ 9</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold text-white" style={{ background: trlColor }}>
+                      {trlStage}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 9 }).map((_, i) => {
+                      const lvl = i + 1;
+                      const active = trl != null && lvl <= trl;
+                      const c = lvl <= 3 ? "#EF4444" : lvl <= 6 ? "#F59E0B" : ACCENT_HEX;
+                      return <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: active ? c : "#E5E8EB" }} />;
+                    })}
+                  </div>
+                  <div className="flex justify-between mt-1 text-[10px] text-[#8B95A1] font-medium">
+                    <span>1 · 기초</span>
+                    <span>5 · 실증</span>
+                    <span>9 · 상용</span>
+                  </div>
+                  {details.trlReason && (
+                    <p className="mt-3 text-[12.5px] leading-[1.7] text-[#4E5968]">{renderBold(details.trlReason)}</p>
+                  )}
+                </div>
+              )}
+            </SoftCard>
+          </section>
 
           {/* 키워드 */}
           {keywords.length > 0 && (
-            <section className="mb-10">
-              <SectionTitle kicker="핵심 키워드">기술의 정체성</SectionTitle>
-              <SoftCard>
+            <section className="mb-8">
+              <SectionTitle kicker="핵심 키워드">핵심 기능 · 활용 가능 산업</SectionTitle>
+              <SoftCard className="!p-4">
                 <div className="flex flex-wrap gap-2">
                   {keywords.map((k) => (
                     <KeywordChip key={k} onClick={() => onKeywordClick?.(k)}>{k}</KeywordChip>
