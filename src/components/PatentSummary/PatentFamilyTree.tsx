@@ -16,7 +16,7 @@ interface FamilyPatent {
 interface PatentFamilyTreeProps {
   patentData: PatentData;
   onPatentClick?: (patentNumber: string) => void;
-  variant?: "default" | "toss";
+  variant?: "default" | "toss" | "compact";
 }
 
 interface TooltipState {
@@ -457,6 +457,73 @@ export function PatentFamilyTree({ patentData, onPatentClick, variant = "default
   }, {} as Record<string, number>);
   const topCategory = Object.entries(categoryStats).sort((a, b) => b[1] - a[1])[0];
   const isToss = variant === "toss";
+  const isCompact = variant === "compact";
+
+  if (isCompact) {
+    // 간결한 리스트 뷰 — 텍스트 겹침 문제 해결
+    const sorted = [...patents].sort((a, b) => {
+      if (a.isCurrent !== b.isCurrent) return Number(b.isCurrent) - Number(a.isCurrent);
+      const ad = a.registrationDate || a.applicationDate || "";
+      const bd = b.registrationDate || b.applicationDate || "";
+      return bd.localeCompare(ad);
+    });
+    return (
+      <div>
+        {loading && (
+          <div className="flex items-center gap-2 py-3 text-[13px] text-[#8B95A1]">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>동일 출원인의 특허 조회 중...</span>
+          </div>
+        )}
+        {error && !loading && (
+          <p className="text-[13px] text-[#8B95A1] py-2">{error}</p>
+        )}
+        {sorted.length > 0 && !loading && (
+          <>
+            <p className="text-[12px] text-[#8B95A1] mb-2 px-1">
+              <span className="font-semibold text-[#4E5968]">{patentData.assignee}</span> · 총 {sorted.length}건
+              {topCategory && ` · 주력: ${topCategory[0]} (${topCategory[1]}건)`}
+            </p>
+            <ul className="divide-y divide-[#E5E8EB]">
+              {sorted.slice(0, 8).map((p, i) => {
+                const date = p.registrationDate || p.applicationDate || "";
+                const year = date ? date.substring(0, 4) : "";
+                return (
+                  <li key={i}>
+                    <button
+                      onClick={() => !p.isCurrent && onPatentClick?.(p.patentId)}
+                      disabled={p.isCurrent}
+                      className={`w-full flex items-center justify-between gap-3 py-2.5 px-1 text-left rounded-lg transition-colors ${p.isCurrent ? "cursor-default" : "hover:bg-white/60 group"}`}
+                    >
+                      <div className="min-w-0 flex-1 flex items-center gap-2">
+                        {p.isCurrent && (
+                          <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#10B981] text-white">현재</span>
+                        )}
+                        <div className="min-w-0">
+                          <p className={`text-[13.5px] font-semibold truncate ${p.isCurrent ? "text-[#10B981]" : "text-[#191F28] group-hover:text-[#10B981]"}`}>
+                            {p.title}
+                          </p>
+                          <p className="text-[11px] text-[#8B95A1] tabular-nums mt-0.5 truncate">
+                            {p.patentId}{p.ipcCategory ? ` · ${p.ipcCategory}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      {year && (
+                        <span className="shrink-0 text-[11px] font-semibold text-[#8B95A1] tabular-nums">{year}</span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {sorted.length > 8 && (
+              <p className="text-[11px] text-[#8B95A1] text-center mt-3">+ {sorted.length - 8}건 더 있음</p>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={isToss ? "" : "relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30"} style={isToss ? undefined : { boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
