@@ -461,6 +461,12 @@ export function PatentFamilyTree({ patentData, onPatentClick, variant = "default
 
   if (isCompact) {
     // 간결한 리스트 뷰 — 텍스트 겹침 문제 해결
+    const catStats = patents.reduce((acc, p) => {
+      const c = p.ipcCategory || "기타";
+      acc[c] = (acc[c] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const topCat = Object.entries(catStats).sort((a, b) => b[1] - a[1])[0];
     const sorted = [...patents].sort((a, b) => {
       if (a.isCurrent !== b.isCurrent) return Number(b.isCurrent) - Number(a.isCurrent);
       const ad = a.registrationDate || a.applicationDate || "";
@@ -482,7 +488,7 @@ export function PatentFamilyTree({ patentData, onPatentClick, variant = "default
           <>
             <p className="text-[12px] text-[#8B95A1] mb-2 px-1">
               <span className="font-semibold text-[#4E5968]">{patentData.assignee}</span> · 총 {sorted.length}건
-              {topCategory && ` · 주력: ${topCategory[0]} (${topCategory[1]}건)`}
+              {topCat && ` · 주력: ${topCat[0]} (${topCat[1]}건)`}
             </p>
             <ul className="divide-y divide-[#E5E8EB]">
               {sorted.slice(0, 8).map((p, i) => {
