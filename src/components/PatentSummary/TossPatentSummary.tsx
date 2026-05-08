@@ -863,15 +863,54 @@ export function TossPatentSummary({
                   <SectionTitle kicker={kicker}>{heading}</SectionTitle>
                   <div className="space-y-4">
                     {sec.paragraphs.map((p, i) => {
-                      const annotated = annotate(p);
-                      const nodes = Array.isArray(annotated) ? annotated : [annotated];
+                      // 1) [^N] 인라인 마커를 먼저 분리하여 superscript 노드로 변환
+                      const refParts = p.split(/(\[\^\d+\])/g);
+                      const processed: React.ReactNode[] = [];
+                      refParts.forEach((part, j) => {
+                        const m = part.match(/^\[\^(\d+)\]$/);
+                        if (m) {
+                          processed.push(
+                            <sup
+                              key={`fn-${i}-${j}`}
+                              className="ml-[1px] mr-[1px] text-[10px] font-bold align-super"
+                              style={{ color: "#10B981" }}
+                            >
+                              {m[1]}
+                            </sup>,
+                          );
+                        } else if (part) {
+                          // 2) 일반 텍스트 부분만 용어집/하이라이트 적용
+                          const annotated = annotate(part);
+                          const nodes = Array.isArray(annotated) ? annotated : [annotated];
+                          processed.push(...highlightImportant(nodes as React.ReactNode[]));
+                        }
+                      });
                       return (
                         <p key={i} className="text-[15.5px] leading-[1.78] text-[#4E5968]">
-                          {highlightImportant(nodes as React.ReactNode[])}
+                          {processed}
                         </p>
                       );
                     })}
                   </div>
+                  {/* 출처 (각주) — 시장동향 등 출처가 있는 섹션 */}
+                  {sec.footnotes && sec.footnotes.length > 0 && (
+                    <div className="mt-5 pt-4 border-t border-[#E5E8EB]">
+                      <p className="text-[12px] font-bold text-[#8B95A1] mb-2">출처</p>
+                      <ol className="space-y-1.5">
+                        {sec.footnotes.map((fn) => (
+                          <li
+                            key={fn.num}
+                            className="text-[12.5px] leading-[1.6] text-[#4E5968] flex gap-1.5"
+                          >
+                            <span className="font-bold tabular-nums shrink-0" style={{ color: "#10B981" }}>
+                              {fn.num}.
+                            </span>
+                            <span>{fn.text}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
                 </section>
               );
             })
