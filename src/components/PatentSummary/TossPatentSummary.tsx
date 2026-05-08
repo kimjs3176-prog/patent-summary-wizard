@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Sparkles, Share2, Loader2, Lightbulb, TrendingUp, Leaf, Rocket, FileText, Mail,
-  QrCode, X, Copy, Check, Heart, ExternalLink, Printer, GitCompare, Network,
+  QrCode, X, Copy, Check, Heart, ExternalLink, Printer, Link2,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
 import type { CommercializationDetails } from "./TechnologyCommercializationScore";
-import { CompetitorComparisonTable } from "./CompetitorComparisonTable";
-import { PatentFamilyTree } from "./PatentFamilyTree";
+import { RelatedPatentsCompact } from "./RelatedPatentsCompact";
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
@@ -585,27 +584,12 @@ export function TossPatentSummary({
             </section>
           )}
 
-          {/* 경쟁 특허 비교 */}
-          {patentData && competitorAnalysisEnabled && (
+          {/* 관련 특허 — 기능·특징이 유사한 특허 */}
+          {patentData && (
             <section className="mb-10">
-              <SectionTitle kicker="경쟁 비교"><span className="inline-flex items-center gap-2"><GitCompare className="w-5 h-5" style={{ color: ACCENT_HEX }} />유사 경쟁 특허</span></SectionTitle>
+              <SectionTitle kicker="관련 특허"><span className="inline-flex items-center gap-2"><Link2 className="w-5 h-5" style={{ color: ACCENT_HEX }} />기능·특징이 유사한 특허</span></SectionTitle>
               <SoftCard className="!p-3">
-                <CompetitorComparisonTable
-                  patentData={patentData}
-                  relatedPatents={relatedPatents}
-                  onPatentClick={onRelatedPatentClick}
-                  variant="compact"
-                />
-              </SoftCard>
-            </section>
-          )}
-
-          {/* 패밀리 특허 */}
-          {patentData?.assignee && (
-            <section className="mb-10">
-              <SectionTitle kicker="패밀리 특허"><span className="inline-flex items-center gap-2"><Network className="w-5 h-5" style={{ color: ACCENT_HEX }} />동일 출원인의 관련 특허</span></SectionTitle>
-              <SoftCard className="!p-3">
-                <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} variant="compact" />
+                <RelatedPatentsCompact patentData={patentData} onPatentClick={onRelatedPatentClick} />
               </SoftCard>
             </section>
           )}
