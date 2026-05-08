@@ -742,9 +742,15 @@ export function TossPatentSummary({
                     <span className="text-[13px] font-semibold">{sec.title}</span>
                   </div>
                   <div className="space-y-4">
-                    {sec.paragraphs.map((p, i) => (
-                      <p key={i} className="text-[15.5px] leading-[1.78] text-[#4E5968]">{annotate(p)}</p>
-                    ))}
+                    {sec.paragraphs.map((p, i) => {
+                      const annotated = annotate(p);
+                      const nodes = Array.isArray(annotated) ? annotated : [annotated];
+                      return (
+                        <p key={i} className="text-[15.5px] leading-[1.78] text-[#4E5968]">
+                          {highlightImportant(nodes as React.ReactNode[])}
+                        </p>
+                      );
+                    })}
                   </div>
                 </section>
               );
