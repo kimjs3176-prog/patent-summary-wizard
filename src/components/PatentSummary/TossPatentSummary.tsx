@@ -152,63 +152,87 @@ function renderBold(text: string) {
   );
 }
 
-// 본문 자동 하이라이트: 숫자/단위, 핵심 강조 표현을 시각적으로 강조
-const HIGHLIGHT_PATTERNS: { regex: RegExp; className: string }[] = [
-  // 숫자+단위 (예: 30%, 5kg, 2년, 100mm)
-  {
-    regex: /(\d+(?:\.\d+)?(?:\s?(?:%|배|개|건|년|월|일|시간|분|초|kg|g|mg|mm|cm|m|km|ml|L|°C|℃|kW|W|Hz|원|만원|억원)))/g,
-    className: "font-bold text-[#191F28] bg-[#10B98114] px-1 py-0.5 rounded",
-  },
-  // 핵심 강조 형용사·표현
-  {
-    regex: /(우수한|뛰어난|탁월한|혁신적|독보적|차별화된|핵심|최초|세계\s*최초|국내\s*최초|상용화|실용화|특허\s*등록|핵심\s*기술|주요\s*특징|친환경|고효율|자동화|지능형|스마트|AI|인공지능|머신러닝|딥러닝|IoT|빅데이터|블록체인)/g,
-    className: "font-semibold",
-    // 색상 inline (semantic 토큰 hex) - 아래 wrapper에서 처리
-  },
+// ============ 본문 자동 하이라이트 — 다층 패턴 매칭 ============
+// 카테고리 → 시각 처리
+type HLType = "metric" | "superlative" | "solution" | "problem" | "compare" | "concept" | "quote" | "tech";
+
+const HL_STYLE: Record<HLType, string> = {
+  metric:      "font-bold text-[#0B7C5C] bg-[#10B9811F] px-1 rounded-[4px] tabular-nums", // 수치+단위
+  compare:     "font-bold text-[#0B7C5C] bg-[#10B98114] px-1 rounded-[4px]",               // N배/대비/이상 향상
+  superlative: "font-bold text-[#B45309] bg-[#FEF3C7] px-1 rounded-[4px]",                 // 최초/유일/독보적
+  solution:    "font-semibold text-[#047857] underline decoration-[#10B98166] decoration-2 underline-offset-[3px]", // 해결/개선/극복/달성
+  problem:     "font-semibold text-[#B91C1C]",                                              // 문제/한계/어려움
+  concept:     "font-semibold text-[#191F28]",                                              // 핵심 개념(명사+기술/공법…)
+  tech:        "font-semibold text-[#1D4ED8]",                                              // AI/IoT/스마트 등 기술 용어
+  quote:       "font-semibold text-[#191F28] bg-[#F2F4F6] px-1 rounded-[4px]",              // 「…」, '…' 인용
+};
+
+// 패턴 — 우선순위 순서대로 적용. 비-겹침 매칭 보장을 위해 한 번에 위치를 모아 선점.
+const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
+  // 1) 인용 부호 안의 핵심 용어
+  { type: "quote",       regex: /([「『"][^「『"\n]{1,30}[」』"])/g },
+  // 2) 비교/향상 표현 (수치 + 향상/감소)
+  { type: "compare",     regex: /(\d+(?:\.\d+)?\s?(?:배|%|퍼센트)\s*(?:이상|이하)?\s*(?:향상|증가|개선|증대|상승|단축|감소|절감|저감))/g },
+  // 3) 단순 수치+단위
+  { type: "metric",      regex: /(\d+(?:\.\d+)?(?:\s?(?:%|배|개|건|회|차|년|개월|월|일|주|시간|분|초|kg|g|mg|mm|cm|m|km|ml|L|°C|℃|kW|W|kWh|Hz|MHz|GHz|원|만원|억원|건당|점)))/g },
+  // 4) 최상급/유일성 표현
+  { type: "superlative", regex: /(세계\s*최초|국내\s*최초|업계\s*최초|세계\s*최고|국내\s*최고|세계\s*유일|국내\s*유일|독보적인?|차별화된|혁신적인?|획기적인?|최고\s*수준|최상위|유일한|독점적인?)/g },
+  // 5) 해결/개선/달성 동사구
+  { type: "solution",    regex: /([가-힣A-Za-z]{2,12}을?를?\s*(?:해결|극복|개선|향상|증대|확보|달성|실현|가능하게|가능케)(?:함|한다|하였다|시켰다|시킨다|할 수 있다|할 수 있음)?)/g },
+  // 6) 문제/한계 표현
+  { type: "problem",     regex: /([가-힣A-Za-z]{2,12}(?:의)?\s*(?:문제점?|한계점?|어려움|단점|취약점|부족|불편|손실|오류|결함)|기존\s*기술의?\s*[가-힣]{0,10}한계|종래\s*기술|종래\s*방식)/g },
+  // 7) 핵심 개념 명사구 (… 기술/시스템/공법/방식/장치/모듈/메커니즘/알고리즘/플랫폼/구조)
+  { type: "concept",     regex: /([가-힣A-Za-z]{2,15}(?:\s*[가-힣A-Za-z]{1,10}){0,2}\s*(?:기술|시스템|공법|방식|장치|모듈|메커니즘|알고리즘|플랫폼|구조|구성|프로세스|솔루션))/g },
+  // 8) 기술 키워드 (영문 약어/스마트/지능형 등)
+  { type: "tech",        regex: /(AI|IoT|ICT|GPS|RFID|NFC|5G|API|ML|DL|CNN|RNN|LLM|NGS|PCR|CRISPR|블록체인|빅데이터|클라우드|딥러닝|머신러닝|인공지능|자율주행|자동화|지능형|스마트(?:팜|시티|폰|센서)?)/g },
 ];
 
+interface HLMatch { start: number; end: number; type: HLType; text: string; }
+
+function collectMatches(text: string): HLMatch[] {
+  const all: HLMatch[] = [];
+  for (const { type, regex } of HL_PATTERNS) {
+    const re = new RegExp(regex.source, regex.flags);
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      if (m[0].length === 0) { re.lastIndex++; continue; }
+      all.push({ start: m.index, end: m.index + m[0].length, type, text: m[0] });
+    }
+  }
+  // 정렬 후 겹침 제거 — 더 길고 우선순위 높은(앞 카테고리) 매칭 우선
+  all.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const filtered: HLMatch[] = [];
+  let cursor = 0;
+  for (const m of all) {
+    if (m.start < cursor) continue; // 겹침 스킵
+    filtered.push(m);
+    cursor = m.end;
+  }
+  return filtered;
+}
+
 function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] {
-  // 텍스트 노드만 패턴 분해. React 요소(GlossaryTerm 등)는 건드리지 않음.
   const out: React.ReactNode[] = [];
   let key = 0;
   for (const node of nodes) {
-    if (typeof node !== "string") {
-      out.push(node);
-      continue;
+    if (typeof node !== "string") { out.push(node); continue; }
+    const text = node;
+    const matches = collectMatches(text);
+    if (matches.length === 0) { out.push(text); continue; }
+    let cursor = 0;
+    for (const m of matches) {
+      if (m.start > cursor) out.push(text.slice(cursor, m.start));
+      out.push(
+        <mark
+          key={`hl-${key++}`}
+          className={`bg-transparent ${HL_STYLE[m.type]}`}
+        >
+          {m.text}
+        </mark>,
+      );
+      cursor = m.end;
     }
-    let segments: { text: string; type: "plain" | "num" | "kw" }[] = [{ text: node, type: "plain" }];
-    // capture group 사용: split 결과에서 홀수 인덱스가 매칭된 부분
-    segments = segments.flatMap((seg) => {
-      if (seg.type !== "plain") return [seg];
-      const parts = seg.text.split(HIGHLIGHT_PATTERNS[0].regex);
-      return parts.map((p, i) => ({ text: p, type: (i % 2 === 1 ? "num" : "plain") } as const));
-    });
-    segments = segments.flatMap((seg) => {
-      if (seg.type !== "plain") return [seg];
-      const parts = seg.text.split(HIGHLIGHT_PATTERNS[1].regex);
-      return parts.map((p, i) => ({ text: p, type: (i % 2 === 1 ? "kw" : "plain") } as const));
-    });
-    for (const seg of segments) {
-      if (!seg.text) continue;
-      if (seg.type === "num") {
-        out.push(
-          <strong
-            key={`hl-n-${key++}`}
-            className="font-bold text-[#0B7C5C] bg-[#10B9811A] px-1 rounded-[4px]"
-          >
-            {seg.text}
-          </strong>,
-        );
-      } else if (seg.type === "kw") {
-        out.push(
-          <strong key={`hl-k-${key++}`} className="font-semibold text-[#191F28]">
-            {seg.text}
-          </strong>,
-        );
-      } else {
-        out.push(seg.text);
-      }
-    }
+    if (cursor < text.length) out.push(text.slice(cursor));
   }
   return out;
 }
