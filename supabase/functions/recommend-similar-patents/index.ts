@@ -154,6 +154,8 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
     const allPatents: SimilarPatent[] = [];
 
     const ALLOWED_KEYWORDS = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
+    // KIPRIS applicant IDs for the 4 main institutes (used to scope the search server-side)
+    const ALLOWED_APPLICANT_IDS = ["219980050314", "219981064455", "219999001749", "220040383104"];
 
     const searchKipris = async (
       keywords: string[],
@@ -282,7 +284,7 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
       // pick top 2 distinctive keywords (longest first)
       const topKws = allKeywords.sort((a, b) => b.length - a.length).slice(0, 2);
       const tasks: Promise<SimilarPatent[]>[] = [];
-      for (const inst of ALLOWED_KEYWORDS) {
+      for (const inst of ALLOWED_APPLICANT_IDS) {
         for (const kw of topKws) {
           tasks.push(searchKipris([kw], 5, "*", inst));
         }
@@ -294,7 +296,7 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
     // Fallback 4: list latest patents per institute (no keyword) — minimum context
     if (allPatents.length === 0) {
       console.log("Per-institute keyword search empty — listing latest from institutes");
-      const tasks = ALLOWED_KEYWORDS.map((inst) => searchKipris([""], 9, "*", inst));
+      const tasks = ALLOWED_APPLICANT_IDS.map((inst) => searchKipris([""], 9, "*", inst));
       const perInst = await Promise.all(tasks);
       for (const results of perInst) allPatents.push(...results);
     }
