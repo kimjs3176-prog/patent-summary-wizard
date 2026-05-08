@@ -79,7 +79,6 @@ const glossary: Record<string, string> = {
   "NGS": "차세대염기서열분석(Next-Generation Sequencing). DNA 서열을 대량·고속으로 분석하는 기술",
   "PCR": "중합효소연쇄반응(Polymerase Chain Reaction). 특정 DNA 영역을 증폭하는 분자생물학 기법",
   "CRISPR": "유전자 가위 기술. 특정 DNA 서열을 정밀하게 자르고 편집하는 유전자 편집 도구",
-  "IoT": "사물인터넷(Internet of Things). 센서와 네트워크로 사물을 연결하는 기술",
   "블록체인": "거래 데이터를 분산 저장하여 위·변조를 방지하는 분산원장 기술",
   "빅데이터": "대용량·다양·고속의 데이터를 수집·저장·분석하여 가치를 도출하는 기술",
   "클라우드": "인터넷을 통해 컴퓨팅 자원을 빌려 쓰는 서비스 모델",
