@@ -361,74 +361,135 @@ function sectionMeta(title: string): { kicker: string; heading: string; Icon: ty
   return { kicker: title, heading: title, Icon: FileText };
 }
 
-function extractKeywords(md: string, max = 8): string[] {
-  if (!md) return [];
-  // 사전 기반 추출: 의미 있는 명사(기능/소재/산업/기술/제품)만 키워드로 채택.
-  // 동사형(활용하여, 사용함으로써 등), 형용사/부사형, 일반 단편은 모두 배제.
-  const sections = parseSections(md);
-  const focusText = sections
-    .filter((s) => /활용|응용|산업|분야|발명|요약|특징|기능|용도|제품/.test(s.title))
-    .map((s) => s.paragraphs.join(" "))
-    .join(" ");
-  const source = focusText || md;
-  const text = source.replace(/[#*_`>\[\]\(\)]/g, " ");
+// 디자인 개편 전 키워드 로직 복원: IPC + 제목/초록 기반의 다층 라벨 추출.
+// 카테고리 별 라벨을 직접 만들어 색상 구분에 그대로 사용한다.
+type KwItem = { word: string; cat: KeywordCategory };
+function extractKeywordsFromPatent(
+  patentData: { titleKo?: string; title?: string; abstract?: string; classifications?: string[] } | null | undefined,
+  max = 8,
+): KwItem[] {
+  if (!patentData) return [];
+  const title = patentData.titleKo || patentData.title || "";
+  const text = `${title} ${patentData.abstract || ""}`;
 
-  // 카테고리별 표제어 사전 — 부분일치(text.includes)로 검색
-  const DICT: { word: string; cat: KeywordCategory }[] = [
-    // ─ 활용 산업/분야
-    ...["농업","축산","수산","임업","원예","화훼","식품","제약","의약","의료","바이오","헬스케어",
-        "에너지","환경","건설","건축","자동차","항공","조선","반도체","전자","화학","섬유","유통",
-        "교육","관광","금융","화장품","가공식품","제조업","외식","급식","스마트팜","온실","비닐하우스",
-        "농가","농장","축사","논","밭","과수원","육종","종자산업","종묘"]
-      .map((word) => ({ word, cat: "industry" as const })),
+  const industryKws: string[] = [];
+  const funcKws: string[] = [];
+  const featKws: string[] = [];
+  const subjectKws: string[] = [];
 
-    // ─ 소재/원료/생물
-    ...["소재","원료","성분","추출물","분말","입자","섬유","금속","합금","폴리머","수지","세라믹",
-        "실리콘","탄소","나노입자","효소","미생물","균주","배지","용액","용매","첨가제","보조제",
-        "단백질","지방","당류","비타민","미네랄","안토시아닌","폴리페놀","플라보노이드","항산화물질",
-        "곡물","과일","채소","허브","씨앗","종자","종균","쌀","밀","보리","옥수수","고구마","감자",
-        "토마토","딸기","버섯","약초","한약","생약","콩","배수체","반수체","DNA","RNA","유전자"]
-      .map((word) => ({ word, cat: "material" as const })),
+  // 1) IPC → 활용가능 산업
+  if (patentData.classifications?.length) {
+    const ipcIndustryMap: Record<string, string> = {
+      A23L: "건강기능식품", A23B: "식품저장", A23C: "유제품", A23D: "유지식품",
+      A23F: "음료", A23G: "제과", A23J: "단백질식품", A23K: "사료",
+      A23P: "식품가공", A22C: "축산식품", A22B: "도축",
+      A01G: "스마트팜", A01H: "품종개량", A01K: "스마트축산",
+      A01N: "농약·방제", A01C: "정밀농업", A01D: "수확기계", A01J: "유가공",
+      A01F: "수확후관리",
+      A61K: "의약품", A61P: "치료제", A61B: "의료기기", A61F: "의료용품",
+      A61L: "의료위생", A61Q: "화장품",
+      B01D: "화학공정", B01J: "촉매산업", B01F: "혼합공정",
+      B02C: "분쇄산업", B29C: "성형산업", B65B: "포장산업", B09B: "환경산업",
+      B02B: "곡물가공", B07B: "선별산업",
+      C12N: "바이오산업", C12P: "발효산업", C12G: "주류산업", C12Q: "진단산업",
+      C07K: "바이오의약", C07D: "정밀화학", C08L: "소재산업",
+      C05G: "비료산업", C02F: "수처리산업",
+      G06F: "AI·SW", G06N: "AI산업", G06Q: "유통·물류", G01N: "분석·검사",
+      G16B: "바이오IT", G05B: "자동화산업",
+      H04L: "IoT", H04W: "무선통신",
+      F26B: "건조산업", F25D: "냉장냉동산업",
+      A23: "식품산업", A01: "농업", A22: "축산업", A61: "헬스케어",
+      C12: "바이오산업", C07: "의약화학", C08: "소재산업",
+      G06: "ICT", B01: "화학공정", H04: "IoT", G01: "계측산업",
+      B65: "물류산업", B02: "곡물가공", F26: "건조산업",
+    };
+    patentData.classifications.forEach((cls) => {
+      const c = cls.replace(/\s/g, "");
+      const k = ipcIndustryMap[c.slice(0, 4)] || ipcIndustryMap[c.slice(0, 3)];
+      if (k && !industryKws.includes(k)) industryKws.push(k);
+    });
+  }
 
-    // ─ 기술/장치
-    ...["인공지능","머신러닝","딥러닝","빅데이터","블록체인","클라우드","로봇","자동화","자율주행",
-        "센서","카메라","드론","알고리즘","플랫폼","소프트웨어","하드웨어","모듈","제어기","구동부",
-        "모터","배터리","회로","디스플레이","바이오마커","마커","유전자가위","CRISPR","PCR","NGS",
-        "스마트","IoT","5G","GPS","RFID"]
-      .map((word) => ({ word, cat: "tech" as const })),
-
-    // ─ 기능/공정/효과
-    ...["분석","측정","감지","판별","판정","진단","검출","예측","인식","식별","추적","모니터링",
-        "제어","조절","관리","처리","가공","살포","분사","건조","냉각","가열","살균","멸균",
-        "발효","숙성","혼합","배합","성형","코팅","포장","저장","운반","선별","수확","파종",
-        "이식","관수","급수","시비","방제","제초","예방","개선","향상","증대","절감","최적화",
-        "효율","품질","안전성","편의성","신속성","정확도"]
-      .map((word) => ({ word, cat: "function" as const })),
+  // 2) 제목+초록 → 활용가능 산업 보강
+  const industryPatterns: [RegExp, string][] = [
+    [/식품|음식|먹/, "식품산업"], [/화장품|미용|뷰티/, "화장품산업"],
+    [/의약|약[학물]|치료/, "제약산업"], [/사료|가축|축산/, "축산업"],
+    [/비료|토양|퇴비/, "비료산업"], [/건강기능|건기식|기능성식품/, "건강기능식품"],
+    [/수산|어류|양식/, "수산업"], [/섬유|직물|의류/, "섬유산업"],
+    [/에너지|태양광|바이오매스/, "에너지산업"], [/환경|폐수|폐기물/, "환경산업"],
+    [/반도체|전자/, "전자산업"], [/건설|건축/, "건설산업"],
   ];
+  industryPatterns.forEach(([p, l]) => { if (p.test(text) && !industryKws.includes(l)) industryKws.push(l); });
 
-  // 동사형/형용사형 차단(혹시 사전 단어와 부분일치 후 어미가 붙은 형태가 등장해도 사전 단어는 그대로 카운트)
-  const freq = new Map<string, KeywordCategory>();
-  const counts = new Map<string, number>();
-  for (const { word, cat } of DICT) {
-    const re = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
-    const matches = text.match(re);
-    if (matches && matches.length > 0) {
-      freq.set(word, cat);
-      counts.set(word, matches.length);
-    }
+  // 3) 제목+초록 → 기능성
+  const funcPatterns: [RegExp, string][] = [
+    [/항균|살균|멸균|항미생물/, "항균"], [/항산화|산화방지|라디칼/, "항산화"],
+    [/항염|소염|염증억제/, "항염"], [/항암|종양억제|암세포/, "항암"],
+    [/항바이러스|항virus|바이러스억제/, "항바이러스"],
+    [/면역|면역력|면역조절/, "면역강화"], [/혈당|당뇨|인슐린/, "혈당조절"],
+    [/혈압|고혈압|저혈압/, "혈압조절"], [/비만|체중감소|지방분해/, "체중조절"],
+    [/치매|인지기능|기억력/, "인지개선"], [/피부|보습|주름/, "피부개선"],
+    [/발효|숙성|유산균/, "발효기능"], [/프로바이오|장건강|장내/, "장건강"],
+    [/콜라겐|탄력/, "피부탄력"], [/노화방지|안티에이징/, "항노화"],
+    [/수분보유|보수력/, "보수성"], [/유화|분산/, "유화안정"],
+    [/점도|겔[화형]/, "점도조절"], [/방부|보존|저장성/, "보존성향상"],
+    [/흡착|흡수/, "흡착기능"], [/소취|탈취|냄새/, "소취기능"],
+    [/진통|통증/, "진통효과"], [/이뇨|배뇨/, "이뇨작용"],
+    [/간보호|간기능/, "간기능개선"], [/골[밀다]|뼈/, "골건강"],
+  ];
+  funcPatterns.forEach(([p, l]) => { if (p.test(text) && !funcKws.includes(l)) funcKws.push(l); });
+
+  // 4) 제목+초록 → 기술/특징
+  const featPatterns: [RegExp, string][] = [
+    [/나노|나노입자|나노캡슐/, "나노기술"], [/마이크로캡슐|마이크로/, "마이크로캡슐"],
+    [/코팅|피복/, "코팅기술"], [/추출|분리정제/, "추출정제"],
+    [/건조|동결건조|열풍/, "건조공정"], [/분쇄|미분|초미분/, "미분화"],
+    [/캡슐[화형]|포접/, "캡슐화"], [/수경|양액/, "수경재배"],
+    [/드론|무인비행/, "드론활용"], [/IoT|사물인터넷|센서/, "IoT기반"],
+    [/AI|인공지능|딥러닝|머신러닝/, "AI활용"], [/로봇|자동화/, "자동화"],
+    [/친환경|유기|무농약/, "친환경"], [/저온|저온처리/, "저온공정"],
+    [/고온|고압|초고압/, "고압처리"], [/효소[처분]|효소적/, "효소처리"],
+    [/미생물|균주|접종/, "미생물활용"], [/배양|세포배양/, "배양기술"],
+    [/유전자|형질전환|게놈/, "유전공학"], [/3D|삼차원|적층/, "3D기술"],
+    [/블록체인|이력추적/, "이력추적"], [/빅데이터|데이터분석/, "빅데이터"],
+    [/복합|융합|하이브리드/, "복합기술"], [/모니터링|실시간/, "실시간모니터링"],
+    [/영상|이미지|비전/, "영상분석"], [/스펙트럼|분광/, "분광분석"],
+  ];
+  featPatterns.forEach(([p, l]) => { if (p.test(text) && !featKws.includes(l)) featKws.push(l); });
+
+  // 5) 소재 (제목 기반, 앞에 배치)
+  const subjectPatterns: [RegExp, string][] = [
+    [/쌀|미곡|현미/, "쌀"], [/밀가루|밀(?!봉)/, "밀"], [/보리/, "보리"], [/옥수수/, "옥수수"],
+    [/콩|대두/, "콩"], [/인삼|홍삼/, "인삼"], [/녹차|차(?:잎|나무)/, "차"],
+    [/고추/, "고추"], [/마늘/, "마늘"], [/양파/, "양파"], [/배추/, "배추"],
+    [/토마토/, "토마토"], [/감자/, "감자"], [/고구마/, "고구마"],
+    [/딸기/, "딸기"], [/사과/, "사과"], [/포도/, "포도"], [/감귤|귤/, "감귤"],
+    [/블루베리/, "블루베리"], [/버섯/, "버섯"], [/김치/, "김치"],
+    [/한우|소고기/, "한우"], [/돼지|돈육/, "돼지"], [/닭|가금/, "닭"],
+    [/우유|원유|유청/, "우유"], [/계란|달걀/, "계란"],
+    [/새우/, "새우"], [/김|해조류/, "해조류"], [/미역/, "미역"],
+    [/꿀|벌꿀/, "꿀"], [/유산균|젖산균/, "유산균"], [/효모/, "효모"],
+    [/키토산/, "키토산"], [/펙틴/, "펙틴"], [/폴리페놀/, "폴리페놀"],
+    [/단백질/, "단백질"], [/전분/, "전분"], [/셀룰로오스|섬유소/, "셀룰로오스"],
+  ];
+  subjectPatterns.forEach(([p, l]) => { if (p.test(title) && !subjectKws.includes(l)) subjectKws.push(l); });
+
+  // 조합: 소재 → 기능성 → 활용산업 → 기술특징
+  const combined: KwItem[] = [
+    ...subjectKws.map((w) => ({ word: w, cat: "material" as KeywordCategory })),
+    ...funcKws.slice(0, 2).map((w) => ({ word: w, cat: "function" as KeywordCategory })),
+    ...industryKws.slice(0, 3).map((w) => ({ word: w, cat: "industry" as KeywordCategory })),
+    ...featKws.slice(0, 3).map((w) => ({ word: w, cat: "tech" as KeywordCategory })),
+  ];
+  const seen = new Set<string>();
+  const unique: KwItem[] = [];
+  for (const k of combined) {
+    if (seen.has(k.word)) continue;
+    seen.add(k.word);
+    unique.push(k);
+    if (unique.length >= max) break;
   }
-
-  // 너무 짧은 단어가 다른 단어의 부분 문자열인 경우 제거(예: "콩" vs "콩나물")
-  const words = [...counts.keys()].sort((a, b) => b.length - a.length);
-  const accepted: string[] = [];
-  for (const w of words) {
-    if (accepted.some((a) => a.includes(w) && a !== w)) continue;
-    accepted.push(w);
-  }
-
-  return accepted
-    .sort((a, b) => (counts.get(b)! - counts.get(a)!) || (b.length - a.length))
-    .slice(0, max);
+  return unique;
 }
 
 export function TossPatentSummary({
