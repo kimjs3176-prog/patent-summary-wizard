@@ -713,11 +713,40 @@ export function TossPatentSummary({
             <section className="mb-8">
               <SectionTitle kicker="핵심 키워드">핵심 기능 · 활용 가능 산업</SectionTitle>
               <SoftCard className="!p-4">
-                <div className="flex flex-wrap gap-2">
-                  {keywords.map((k) => (
-                    <KeywordChip key={k} onClick={() => onKeywordClick?.(k)}>{k}</KeywordChip>
-                  ))}
-                </div>
+                {(() => {
+                  const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
+                    const c = classifyKeyword(k);
+                    (acc[c] ||= []).push(k);
+                    return acc;
+                  }, { function: [], industry: [], material: [], tech: [], general: [] });
+                  const order: KeywordCategory[] = ["function", "industry", "tech", "material", "general"];
+                  const usedCats = order.filter((c) => grouped[c]?.length);
+                  return (
+                    <div>
+                      {/* 범례 */}
+                      {usedCats.length > 1 && (
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-3 pb-3 border-b border-[#E5E8EB]">
+                          {usedCats.map((c) => {
+                            const s = CATEGORY_STYLE[c];
+                            return (
+                              <div key={c} className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full" style={{ background: s.text }} />
+                                <span className="text-[11.5px] font-semibold" style={{ color: s.text }}>{s.label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {usedCats.flatMap((c) =>
+                          grouped[c].map((k) => (
+                            <KeywordChip key={k} category={c} onClick={() => onKeywordClick?.(k)}>{k}</KeywordChip>
+                          )),
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </SoftCard>
             </section>
           )}
