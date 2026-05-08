@@ -384,20 +384,7 @@ export function TossPatentSummary({
             </p>
           </section>
 
-          {/* 핵심 지표 */}
-          {details && (
-            <section className="mb-3">
-              <SoftCard>
-                <div className="grid grid-cols-3 gap-2">
-                  <Stat label="기술성" value={details.technologyScore != null ? String(details.technologyScore) : "-"} suffix="점" />
-                  <Stat label="시장성" value={details.marketScore != null ? String(details.marketScore) : "-"} suffix="점" />
-                  <Stat label="사업성" value={details.businessScore != null ? String(details.businessScore) : "-"} suffix="점" />
-                </div>
-              </SoftCard>
-            </section>
-          )}
-
-          {/* TRL */}
+          {/* TRL — 추정 근거까지 통합 */}
           {details && (
             <section className="mb-10">
               <SoftCard>
@@ -421,6 +408,16 @@ export function TossPatentSummary({
                     return <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: active ? c : "#E5E8EB" }} />;
                   })}
                 </div>
+                <div className="flex justify-between mt-1.5 text-[10px] text-[#8B95A1] font-medium">
+                  <span>1 · 기초</span>
+                  <span>5 · 실증</span>
+                  <span>9 · 상용</span>
+                </div>
+                {details.trlReason && (
+                  <p className="mt-4 text-[13px] leading-[1.75] text-[#4E5968]">
+                    {details.trlReason}
+                  </p>
+                )}
               </SoftCard>
             </section>
           )}
@@ -447,31 +444,17 @@ export function TossPatentSummary({
             </section>
           )}
 
-          {/* 점수 디테일 */}
+          {/* 점수 디테일 — 단일 통합 카드 (점수 + 막대 + 근거) */}
           {details && (
             <section className="mb-10">
               <SectionTitle kicker="세부 점수">왜 이 점수인가요?</SectionTitle>
               <SoftCard>
-                <div className="space-y-5">
-                  <ScoreBar label="기술성" value={details.technologyScore} color={ACCENT_HEX} />
-                  <ScoreBar label="시장성" value={details.marketScore} color="#3B82F6" />
-                  <ScoreBar label="사업성" value={details.businessScore} color="#F59E0B" />
-                </div>
-              </SoftCard>
-            </section>
-          )}
-
-          {/* 사업화 점수 상세 분석 */}
-          {patentData && (
-            <section className="mb-10">
-              <SectionTitle kicker="상세 분석">사업화 점수 심층 리포트</SectionTitle>
-              <SoftCard className="!p-3">
-                <div className="bg-white rounded-[16px] p-2">
-                  <TechnologyCommercializationScore
-                    score={score}
-                    isLoading={scoreLoading}
-                    details={details}
-                  />
+                <div className="space-y-6">
+                  <ScoreRow label="기술성" value={details.technologyScore} color={ACCENT_HEX} reason={details.technologyReason} />
+                  <div className="h-px bg-[#E5E8EB]" />
+                  <ScoreRow label="시장성" value={details.marketScore} color="#3B82F6" reason={details.marketReason} />
+                  <div className="h-px bg-[#E5E8EB]" />
+                  <ScoreRow label="사업성" value={details.businessScore} color="#F59E0B" reason={details.businessReason} />
                 </div>
               </SoftCard>
             </section>
