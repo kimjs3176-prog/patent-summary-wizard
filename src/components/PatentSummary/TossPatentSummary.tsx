@@ -316,75 +316,72 @@ function sectionMeta(title: string): { kicker: string; heading: string; Icon: ty
 
 function extractKeywords(md: string, max = 8): string[] {
   if (!md) return [];
-  // 핵심 기능 / 활용 가능 산업 중심 — 해당 섹션만 우선 추출
+  // 사전 기반 추출: 의미 있는 명사(기능/소재/산업/기술/제품)만 키워드로 채택.
+  // 동사형(활용하여, 사용함으로써 등), 형용사/부사형, 일반 단편은 모두 배제.
   const sections = parseSections(md);
   const focusText = sections
-    .filter((s) => /활용|응용|산업|분야|발명|요약|특징|기능|용도/.test(s.title))
+    .filter((s) => /활용|응용|산업|분야|발명|요약|특징|기능|용도|제품/.test(s.title))
     .map((s) => s.paragraphs.join(" "))
     .join(" ");
   const source = focusText || md;
-  const text = source.replace(/[#*_`>\-\[\]\(\)\.,!?;:"']/g, " ");
+  const text = source.replace(/[#*_`>\[\]\(\)]/g, " ");
 
-  // 한글 조사 제거 (단어 끝에 붙는 조사)
-  const stripJosa = (w: string): string => {
-    const josa2 = ["으로", "에서", "에게", "이나", "이며", "보다", "까지", "부터", "마다", "처럼", "이라", "라는", "이라는", "하는", "되는", "이다", "한다", "된다"];
-    const josa1 = ["의", "이", "가", "을", "를", "은", "는", "에", "와", "과", "도", "로", "만", "나", "며", "고"];
-    for (const j of josa2) if (w.endsWith(j) && w.length > j.length + 1) return w.slice(0, -j.length);
-    for (const j of josa1) if (w.endsWith(j) && w.length > 2) return w.slice(0, -1);
-    return w;
-  };
+  // 카테고리별 표제어 사전 — 부분일치(text.includes)로 검색
+  const DICT: { word: string; cat: KeywordCategory }[] = [
+    // ─ 활용 산업/분야
+    ...["농업","축산","수산","임업","원예","화훼","식품","제약","의약","의료","바이오","헬스케어",
+        "에너지","환경","건설","건축","자동차","항공","조선","반도체","전자","화학","섬유","유통",
+        "교육","관광","금융","화장품","가공식품","제조업","외식","급식","스마트팜","온실","비닐하우스",
+        "농가","농장","축사","논","밭","과수원","육종","종자산업","종묘"]
+      .map((word) => ({ word, cat: "industry" as const })),
 
-  const stop = new Set([
-    // 일반어
-    "특허", "발명", "본", "이를", "통해", "있는", "있다", "수", "및", "등", "위한", "관한",
-    "기술", "방법", "이러한", "또한", "그리고", "하는", "되는", "대한", "통한", "구성", "포함",
-    "사용", "제공", "경우", "다양한", "효과", "수행", "특징", "구비", "마련", "이용", "장치", "시스템",
-    // 부사/접속사/대명사
-    "동시에", "특히", "주로", "매우", "더욱", "보다", "가장", "이후", "이전", "현재", "최근",
-    "기존", "기반", "이상", "이하", "내지", "또는", "따라", "따른", "의해", "관련", "해당",
-    "본문", "예시", "예를", "들어", "즉", "한편", "한다", "된다", "있어", "없이", "함께",
-    // 어미/명사화 단편
-    "작업", "복합", "동작", "수단", "구조", "부분", "전체", "내부", "외부", "상부", "하부",
-    // 형용사·부사·일반 수식어 (분석 의미 없음)
-    "결과적", "효과적", "효율적", "전반적", "지속적", "순차적", "독립적", "상대적", "절대적",
-    "구체적", "기본적", "일반적", "근본적", "직접적", "간접적", "필수적", "선택적", "유기적",
-    "불규칙", "불규칙한", "규칙적", "다음과", "위와", "아래와", "같이", "비해", "대비",
-    "그러나", "하지만", "그래서", "따라서", "때문", "때문에", "위해", "위해서",
-    "다소", "약간", "조금", "많이", "거의", "오히려", "역시", "물론", "실제로", "실제",
-    "이는", "이로", "이에", "그것", "그것이", "그들", "그들의", "우리", "우리는",
-    "있도록", "되도록", "하여", "되어", "이며", "이었", "였다", "였고", "이고", "이라고",
-    "위하여", "통하여", "대하여", "관하여",
-    // 영문 stopwords
-    "the", "and", "for", "with", "this", "that", "from", "into", "are", "was", "were", "has", "have",
-  ]);
+    // ─ 소재/원료/생물
+    ...["소재","원료","성분","추출물","분말","입자","섬유","금속","합금","폴리머","수지","세라믹",
+        "실리콘","탄소","나노입자","효소","미생물","균주","배지","용액","용매","첨가제","보조제",
+        "단백질","지방","당류","비타민","미네랄","안토시아닌","폴리페놀","플라보노이드","항산화물질",
+        "곡물","과일","채소","허브","씨앗","종자","종균","쌀","밀","보리","옥수수","고구마","감자",
+        "토마토","딸기","버섯","약초","한약","생약","콩","배수체","반수체","DNA","RNA","유전자"]
+      .map((word) => ({ word, cat: "material" as const })),
 
-  // 형용사/부사형 어미 패턴 — 분석 가치 낮은 단어 제거
-  const isAdverbAdjLike = (w: string): boolean => {
-    if (!/[가-힣]/.test(w)) return false;
-    // -적/-적인 형용사형 (예: 결과적, 효과적, 전반적)
-    if (/적$/.test(w) && w.length <= 4) return true;
-    // -인/-한/-게 등 수식어 어미 (예: 불규칙한, 다양한)
-    if (/(인|한|게|히|이|을|를)$/.test(w) && w.length <= 3) return true;
-    return false;
-  };
+    // ─ 기술/장치
+    ...["인공지능","머신러닝","딥러닝","빅데이터","블록체인","클라우드","로봇","자동화","자율주행",
+        "센서","카메라","드론","알고리즘","플랫폼","소프트웨어","하드웨어","모듈","제어기","구동부",
+        "모터","배터리","회로","디스플레이","바이오마커","마커","유전자가위","CRISPR","PCR","NGS",
+        "스마트","IoT","5G","GPS","RFID"]
+      .map((word) => ({ word, cat: "tech" as const })),
 
-  const freq = new Map<string, number>();
-  const rawTokens = text.match(/[가-힣A-Za-z]{2,}/g) || [];
-  for (const raw of rawTokens) {
-    const t = /[가-힣]/.test(raw) ? stripJosa(raw) : raw.toLowerCase();
-    if (!t || t.length < 2) continue;
-    if (stop.has(t)) continue;
-    if (isAdverbAdjLike(t)) continue;
-    // 한글은 3자 이상 우선 (2자는 약한 가중치)
-    const weight = /[가-힣]/.test(t) ? (t.length >= 3 ? 2 : 1) : 1;
-    freq.set(t, (freq.get(t) || 0) + weight);
+    // ─ 기능/공정/효과
+    ...["분석","측정","감지","판별","판정","진단","검출","예측","인식","식별","추적","모니터링",
+        "제어","조절","관리","처리","가공","살포","분사","건조","냉각","가열","살균","멸균",
+        "발효","숙성","혼합","배합","성형","코팅","포장","저장","운반","선별","수확","파종",
+        "이식","관수","급수","시비","방제","제초","예방","개선","향상","증대","절감","최적화",
+        "효율","품질","안전성","편의성","신속성","정확도"]
+      .map((word) => ({ word, cat: "function" as const })),
+  ];
+
+  // 동사형/형용사형 차단(혹시 사전 단어와 부분일치 후 어미가 붙은 형태가 등장해도 사전 단어는 그대로 카운트)
+  const freq = new Map<string, KeywordCategory>();
+  const counts = new Map<string, number>();
+  for (const { word, cat } of DICT) {
+    const re = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+    const matches = text.match(re);
+    if (matches && matches.length > 0) {
+      freq.set(word, cat);
+      counts.set(word, matches.length);
+    }
   }
-  // 2자 한글은 빈도 2 이상일 때만 포함
-  const filtered = [...freq.entries()].filter(([w, c]) => {
-    if (/^[가-힣]{2}$/.test(w) && c < 3) return false;
-    return true;
-  });
-  return filtered.sort((a, b) => b[1] - a[1]).slice(0, max).map(([w]) => w);
+
+  // 너무 짧은 단어가 다른 단어의 부분 문자열인 경우 제거(예: "콩" vs "콩나물")
+  const words = [...counts.keys()].sort((a, b) => b.length - a.length);
+  const accepted: string[] = [];
+  for (const w of words) {
+    if (accepted.some((a) => a.includes(w) && a !== w)) continue;
+    accepted.push(w);
+  }
+
+  return accepted
+    .sort((a, b) => (counts.get(b)! - counts.get(a)!) || (b.length - a.length))
+    .slice(0, max);
 }
 
 export function TossPatentSummary({
