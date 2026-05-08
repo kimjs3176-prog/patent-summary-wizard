@@ -153,7 +153,14 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
 
     const allPatents: SimilarPatent[] = [];
 
-    const searchKipris = async (keywords: string[], groupIndex: number, operator: "*" | "+" = "*"): Promise<SimilarPatent[]> => {
+    const ALLOWED_KEYWORDS = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
+
+    const searchKipris = async (
+      keywords: string[],
+      groupIndex: number,
+      operator: "*" | "+" = "*",
+      applicantFilter?: string,
+    ): Promise<SimilarPatent[]> => {
       const kw = keywords.slice(0, 3).join(operator);
       const results: SimilarPatent[] = [];
 
@@ -161,7 +168,7 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
         const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
         url.searchParams.set("ServiceKey", KIPRIS_API_KEY!);
         url.searchParams.set("inventionTitle", kw);
-        url.searchParams.set("applicant", "");
+        url.searchParams.set("applicant", applicantFilter || "");
         url.searchParams.set("astrtCont", "");
         url.searchParams.set("pageNo", "1");
         url.searchParams.set("numOfRows", "20");
@@ -219,7 +226,6 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
           if (patentNumber && displayNumber.includes(patentNumber.replace(/^10-/, ""))) continue;
 
           // Restrict to the 6 designated agricultural public institutes
-          const ALLOWED_KEYWORDS = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
           const applicantNorm = (applicant || "").replace(/\s+/g, "");
           const isAllowed = ALLOWED_KEYWORDS.some((kw) => applicantNorm.includes(kw.replace(/\s+/g, "")));
           if (!isAllowed) continue;
@@ -265,6 +271,32 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
         searchQueries[0].slice(0, 3).map((kw, i) => searchKipris([kw], i, "*"))
       );
       for (const results of singles) allPatents.push(...results);
+    }
+
+    // Fallback 3: search per allowed institute (applicant-scoped) using top keyword
+    if (allPatents.length === 0) {
+      console.log("Single-keyword search empty — retrying per allowed institute");
+      const allKeywords = Array.from(
+        new Set(searchQueries.flat().filter((k) => k && k.length >= 2))
+      );
+      // pick top 2 distinctive keywords (longest first)
+      const topKws = allKeywords.sort((a, b) => b.length - a.length).slice(0, 2);
+      const tasks: Promise<SimilarPatent[]>[] = [];
+      for (const inst of ALLOWED_KEYWORDS) {
+        for (const kw of topKws) {
+          tasks.push(searchKipris([kw], 5, "*", inst));
+        }
+      }
+      const perInst = await Promise.all(tasks);
+      for (const results of perInst) allPatents.push(...results);
+    }
+
+    // Fallback 4: list latest patents per institute (no keyword) — minimum context
+    if (allPatents.length === 0) {
+      console.log("Per-institute keyword search empty — listing latest from institutes");
+      const tasks = ALLOWED_KEYWORDS.map((inst) => searchKipris([""], 9, "*", inst));
+      const perInst = await Promise.all(tasks);
+      for (const results of perInst) allPatents.push(...results);
     }
 
     // Deduplicate and prioritize by relevance group
