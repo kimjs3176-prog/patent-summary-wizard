@@ -41,7 +41,7 @@ interface CompetitorComparisonTableProps {
   patentData: PatentData;
   relatedPatents?: RelatedPatent[];
   onPatentClick?: (patentNumber: string) => void;
-  variant?: "default" | "toss";
+  variant?: "default" | "toss" | "compact";
 }
 
 // Strength → dot count
@@ -258,6 +258,53 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
   const competitorCount = result?.competitors.length || 0;
   const colCount = competitorCount + 1;
   const isToss = variant === "toss";
+  const isCompact = variant === "compact";
+
+  if (isCompact) {
+    return (
+      <div>
+        {loading && (
+          <div className="flex items-center gap-2 py-3 text-[13px] text-[#8B95A1]">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>유사 특허 검색 중...</span>
+          </div>
+        )}
+        {error && !loading && (
+          <p className="text-[13px] text-[#8B95A1] py-2">{error}</p>
+        )}
+        {result && !loading && result.competitors.length > 0 && (
+          <ul className="divide-y divide-[#E5E8EB]">
+            {result.competitors.map((c, i) => (
+              <li key={i}>
+                <button
+                  onClick={() => onPatentClick?.(c.patentId)}
+                  className="w-full flex items-center justify-between gap-3 py-3 px-1 text-left hover:bg-white/60 rounded-lg transition-colors group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-semibold text-[#191F28] truncate group-hover:text-[#10B981]">
+                      {c.title}
+                    </p>
+                    <p className="text-[11.5px] text-[#8B95A1] tabular-nums mt-0.5">
+                      {c.patentId}{c.assignee ? ` · ${truncate(c.assignee, 20)}` : ""}
+                    </p>
+                  </div>
+                  <span
+                    className="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: c.similarityScore >= 80 ? "#10B98115" : c.similarityScore >= 60 ? "#3B82F615" : "#E5E8EB",
+                      color: c.similarityScore >= 80 ? "#10B981" : c.similarityScore >= 60 ? "#3B82F6" : "#8B95A1",
+                    }}
+                  >
+                    유사도 {c.similarityScore}%
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={isToss ? "" : "relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30"} style={isToss ? undefined : { boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
