@@ -356,25 +356,6 @@ function parseSections(md: string): MdSection[] {
   );
 }
 
-// 본문 [^1] 인라인 마커를 superscript 노드로 변환
-function renderWithFootnoteRefs(text: string): React.ReactNode[] {
-  const parts = text.split(/(\[\^\d+\])/g);
-  return parts.map((p, i) => {
-    const m = p.match(/^\[\^(\d+)\]$/);
-    if (m) {
-      return (
-        <sup
-          key={`fn-${i}`}
-          className="ml-0.5 text-[10px] font-bold align-super"
-          style={{ color: "#10B981" }}
-        >
-          {m[1]}
-        </sup>
-      );
-    }
-    return p;
-  });
-}
 
 function sectionMeta(title: string): { kicker: string; heading: string; Icon: typeof Lightbulb } {
   if (/기술\s*분야/.test(title)) return { kicker: "기술 분야", heading: "어떤 기술인가요?", Icon: Lightbulb };
