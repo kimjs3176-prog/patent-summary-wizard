@@ -7,10 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
-import {
-  TechnologyCommercializationScore,
-  CommercializationDetails,
-} from "./TechnologyCommercializationScore";
+import type { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { CompetitorComparisonTable } from "./CompetitorComparisonTable";
 import { PatentFamilyTree } from "./PatentFamilyTree";
 import { PdfGenerator } from "./PdfGenerator";
@@ -27,18 +24,6 @@ interface TossPatentSummaryProps extends BasePatentSummaryProps {
 
 const SOFT = "#F2F4F6";
 const ACCENT_HEX = "#10B981";
-
-function Stat({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
-  return (
-    <div>
-      <p className="text-[13px] text-[#8B95A1] font-medium mb-1.5">{label}</p>
-      <p className="text-[22px] font-bold text-[#191F28] tracking-tight tabular-nums">
-        {value}
-        {suffix && <span className="text-[14px] text-[#8B95A1] font-semibold ml-0.5">{suffix}</span>}
-      </p>
-    </div>
-  );
-}
 
 function SectionTitle({ children, kicker }: { children: React.ReactNode; kicker?: string }) {
   return (
@@ -68,7 +53,16 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
+function renderBold(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) =>
+    p.startsWith("**") && p.endsWith("**")
+      ? <strong key={i} className="font-semibold text-[#191F28]">{p.slice(2, -2)}</strong>
+      : <span key={i}>{p}</span>
+  );
+}
+
+function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-2">
@@ -80,6 +74,9 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
       <div className="h-1.5 rounded-full bg-[#E5E8EB] overflow-hidden">
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
       </div>
+      {reason && (
+        <p className="mt-2.5 text-[13px] leading-[1.7] text-[#4E5968]">{renderBold(reason)}</p>
+      )}
     </div>
   );
 }
@@ -387,20 +384,7 @@ export function TossPatentSummary({
             </p>
           </section>
 
-          {/* 핵심 지표 */}
-          {details && (
-            <section className="mb-3">
-              <SoftCard>
-                <div className="grid grid-cols-3 gap-2">
-                  <Stat label="기술성" value={details.technologyScore != null ? String(details.technologyScore) : "-"} suffix="점" />
-                  <Stat label="시장성" value={details.marketScore != null ? String(details.marketScore) : "-"} suffix="점" />
-                  <Stat label="사업성" value={details.businessScore != null ? String(details.businessScore) : "-"} suffix="점" />
-                </div>
-              </SoftCard>
-            </section>
-          )}
-
-          {/* TRL */}
+          {/* TRL — 추정 근거까지 통합 */}
           {details && (
             <section className="mb-10">
               <SoftCard>
@@ -424,6 +408,16 @@ export function TossPatentSummary({
                     return <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: active ? c : "#E5E8EB" }} />;
                   })}
                 </div>
+                <div className="flex justify-between mt-1.5 text-[10px] text-[#8B95A1] font-medium">
+                  <span>1 · 기초</span>
+                  <span>5 · 실증</span>
+                  <span>9 · 상용</span>
+                </div>
+                {details.trlReason && (
+                  <p className="mt-4 text-[13px] leading-[1.75] text-[#4E5968]">
+                    {details.trlReason}
+                  </p>
+                )}
               </SoftCard>
             </section>
           )}
@@ -450,31 +444,17 @@ export function TossPatentSummary({
             </section>
           )}
 
-          {/* 점수 디테일 */}
+          {/* 점수 디테일 — 단일 통합 카드 (점수 + 막대 + 근거) */}
           {details && (
             <section className="mb-10">
               <SectionTitle kicker="세부 점수">왜 이 점수인가요?</SectionTitle>
               <SoftCard>
-                <div className="space-y-5">
-                  <ScoreBar label="기술성" value={details.technologyScore} color={ACCENT_HEX} />
-                  <ScoreBar label="시장성" value={details.marketScore} color="#3B82F6" />
-                  <ScoreBar label="사업성" value={details.businessScore} color="#F59E0B" />
-                </div>
-              </SoftCard>
-            </section>
-          )}
-
-          {/* 사업화 점수 상세 분석 */}
-          {patentData && (
-            <section className="mb-10">
-              <SectionTitle kicker="상세 분석">사업화 점수 심층 리포트</SectionTitle>
-              <SoftCard className="!p-3">
-                <div className="bg-white rounded-[16px] p-2">
-                  <TechnologyCommercializationScore
-                    score={score}
-                    isLoading={scoreLoading}
-                    details={details}
-                  />
+                <div className="space-y-6">
+                  <ScoreRow label="기술성" value={details.technologyScore} color={ACCENT_HEX} reason={details.technologyReason} />
+                  <div className="h-px bg-[#E5E8EB]" />
+                  <ScoreRow label="시장성" value={details.marketScore} color="#3B82F6" reason={details.marketReason} />
+                  <div className="h-px bg-[#E5E8EB]" />
+                  <ScoreRow label="사업성" value={details.businessScore} color="#F59E0B" reason={details.businessReason} />
                 </div>
               </SoftCard>
             </section>
@@ -571,14 +551,13 @@ export function TossPatentSummary({
           {patentData && competitorAnalysisEnabled && (
             <section className="mb-10">
               <SectionTitle kicker="경쟁 비교"><span className="inline-flex items-center gap-2"><GitCompare className="w-5 h-5" style={{ color: ACCENT_HEX }} />유사·경쟁 특허와 비교</span></SectionTitle>
-              <SoftCard className="!p-3">
-                <div className="bg-white rounded-[16px] p-2">
-                  <CompetitorComparisonTable
-                    patentData={patentData}
-                    relatedPatents={relatedPatents}
-                    onPatentClick={onRelatedPatentClick}
-                  />
-                </div>
+              <SoftCard>
+                <CompetitorComparisonTable
+                  patentData={patentData}
+                  relatedPatents={relatedPatents}
+                  onPatentClick={onRelatedPatentClick}
+                  variant="toss"
+                />
               </SoftCard>
             </section>
           )}
@@ -587,10 +566,8 @@ export function TossPatentSummary({
           {patentData?.assignee && (
             <section className="mb-10">
               <SectionTitle kicker="패밀리 특허"><span className="inline-flex items-center gap-2"><Network className="w-5 h-5" style={{ color: ACCENT_HEX }} />동일 출원인의 관련 특허</span></SectionTitle>
-              <SoftCard className="!p-3">
-                <div className="bg-white rounded-[16px] p-2">
-                  <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
-                </div>
+              <SoftCard>
+                <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} variant="toss" />
               </SoftCard>
             </section>
           )}

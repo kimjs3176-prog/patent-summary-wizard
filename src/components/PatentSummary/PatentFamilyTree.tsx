@@ -16,6 +16,7 @@ interface FamilyPatent {
 interface PatentFamilyTreeProps {
   patentData: PatentData;
   onPatentClick?: (patentNumber: string) => void;
+  variant?: "default" | "toss";
 }
 
 interface TooltipState {
@@ -24,7 +25,7 @@ interface TooltipState {
   patent: FamilyPatent;
 }
 
-export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTreeProps) {
+export function PatentFamilyTree({ patentData, onPatentClick, variant = "default" }: PatentFamilyTreeProps) {
   const [patents, setPatents] = useState<FamilyPatent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -455,36 +456,39 @@ export function PatentFamilyTree({ patentData, onPatentClick }: PatentFamilyTree
     return acc;
   }, {} as Record<string, number>);
   const topCategory = Object.entries(categoryStats).sort((a, b) => b[1] - a[1])[0];
+  const isToss = variant === "toss";
 
   return (
-    <div className="relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30" style={{ boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
-      <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(200 70% 50% / 0.5), hsl(200 50% 50% / 0.15), transparent)' }} />
-
-      <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4 border-b border-border/20">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(200 70% 50% / 0.08)', color: 'hsl(200 70% 45%)' }}>
-            <Network className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+    <div className={isToss ? "" : "relative rounded-2xl overflow-hidden animate-slide-in bg-card border border-border/30"} style={isToss ? undefined : { boxShadow: '0 1px 3px hsl(var(--foreground) / 0.03)' }}>
+      {!isToss && (
+        <>
+          <div className="h-0.5" style={{ background: 'linear-gradient(90deg, hsl(200 70% 50% / 0.5), hsl(200 50% 50% / 0.15), transparent)' }} />
+          <div className="px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-4 border-b border-border/20">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(200 70% 50% / 0.08)', color: 'hsl(200 70% 45%)' }}>
+                <Network className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">특허 패밀리 트리</h3>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium truncate">
+                  <span className="font-semibold">{patentData.assignee}</span>의 키워드 연관 특허 {totalPatents > 0 && `· 총 ${totalPatents}건`}
+                  {topCategory && totalPatents > 0 && ` · 주력분야: ${topCategory[0]} (${topCategory[1]}건)`}
+                </p>
+              </div>
+              {patents.length > 0 && (
+                <button
+                  onClick={() => setSwimlane((s) => !s)}
+                  className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors shrink-0 ${swimlane ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/40 border-border/30 text-muted-foreground hover:text-foreground"}`}
+                >
+                  <Layers className="w-3 h-3" /> Swim Lane {swimlane ? "ON" : "OFF"}
+                </button>
+              )}
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">특허 패밀리 트리</h3>
-            <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium truncate">
-              <span className="font-semibold">{patentData.assignee}</span>의 키워드 연관 특허 {totalPatents > 0 && `· 총 ${totalPatents}건`}
-              {topCategory && totalPatents > 0 && ` · 주력분야: ${topCategory[0]} (${topCategory[1]}건)`}
-            </p>
-          </div>
-          {/* Swim lane toggle */}
-          {patents.length > 0 && (
-            <button
-              onClick={() => setSwimlane((s) => !s)}
-              className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-colors shrink-0 ${swimlane ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted/40 border-border/30 text-muted-foreground hover:text-foreground"}`}
-            >
-              <Layers className="w-3 h-3" /> Swim Lane {swimlane ? "ON" : "OFF"}
-            </button>
-          )}
-        </div>
-      </div>
+        </>
+      )}
 
-      <div className="p-3 sm:p-4 md:p-5">
+      <div className={isToss ? "" : "p-3 sm:p-4 md:p-5"}>
         {loading && (
           <div className="flex flex-col items-center justify-center py-10 gap-3">
             <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'hsl(200 70% 50%)' }} />
