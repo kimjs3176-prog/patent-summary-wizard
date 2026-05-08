@@ -232,10 +232,13 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
           // Skip the current patent
           if (patentNumber && displayNumber.includes(patentNumber.replace(/^10-/, ""))) continue;
 
-          // Restrict to the 6 designated agricultural public institutes
-          const applicantNorm = (applicant || "").replace(/\s+/g, "");
-          const isAllowed = ALLOWED_KEYWORDS.some((kw) => applicantNorm.includes(kw.replace(/\s+/g, "")));
-          if (!isAllowed) continue;
+          // Restrict to the designated agricultural public institutes.
+          // When KIPRIS was already scoped via applicantFilter (applicant ID), trust it.
+          if (!applicantFilter) {
+            const applicantNorm = (applicant || "").replace(/\s+/g, "");
+            const isAllowed = ALLOWED_KEYWORDS.some((kw) => applicantNorm.includes(kw.replace(/\s+/g, "")));
+            if (!isAllowed) continue;
+          }
 
           const dateStr = openDate || registerDate;
           results.push({
