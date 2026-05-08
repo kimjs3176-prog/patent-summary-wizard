@@ -696,7 +696,7 @@ export function TossPatentSummary({
       )}
 
       <div className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden">
-        <div className="max-w-[680px] mx-auto px-5 sm:px-7 pb-12">
+        <div className="max-w-[680px] lg:max-w-[1120px] mx-auto px-5 sm:px-7 pb-12">
           {/* HERO */}
           <section className="pt-9 pb-5">
             <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.3] tracking-[-0.02em] mb-2 text-[#191F28]">
@@ -883,7 +883,7 @@ export function TossPatentSummary({
             </section>
           )}
 
-          {/* AI 요약 본문 */}
+          {/* AI 요약 본문 — 2열 그리드(lg+) */}
           {isStreaming && sections.length === 0 ? (
             <section className="mb-10">
               <div className="flex items-center gap-2 text-[#8B95A1]">
@@ -892,12 +892,16 @@ export function TossPatentSummary({
               </div>
             </section>
           ) : (
-            sections.map((sec, idx) => {
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
+            {sections.map((sec, idx) => {
               const { kicker, heading } = sectionMeta(sec.title);
               return (
-                <section key={idx} className="mb-10">
+                <section
+                  key={idx}
+                  className="rounded-[20px] bg-white border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6 sm:p-7 flex flex-col"
+                >
                   <SectionTitle kicker={kicker}>{heading}</SectionTitle>
-                  <div className="space-y-4">
+                  <div className="space-y-4 flex-1">
                     {sec.paragraphs.map((p, i) => {
                       // 1) [^N] 인라인 마커를 먼저 분리하여 superscript 노드로 변환
                       const refParts = p.split(/(\[\^\d+\])/g);
@@ -949,7 +953,8 @@ export function TossPatentSummary({
                   )}
                 </section>
               );
-            })
+            })}
+            </div>
           )}
 
           {/* AI 종합 의견 */}
