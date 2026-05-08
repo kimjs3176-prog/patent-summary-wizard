@@ -52,6 +52,98 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PatentTimeline({
+  filingDate,
+  publicationDate,
+  registrationDate,
+  hasRegistration,
+}: {
+  filingDate?: string;
+  publicationDate?: string;
+  registrationDate?: string;
+  hasRegistration: boolean;
+}) {
+  const steps = [
+    { key: "file", label: "출원", date: filingDate, done: !!filingDate },
+    { key: "pub", label: "공개", date: publicationDate, done: !!publicationDate },
+    {
+      key: "reg",
+      label: "등록",
+      date: registrationDate,
+      done: hasRegistration,
+    },
+  ];
+  // Elapsed days from filing to registration (or today if pending)
+  const parse = (s?: string) => {
+    if (!s) return null;
+    const m = s.match(/(\d{4})\.(\d{2})\.(\d{2})/);
+    if (!m) return null;
+    return new Date(`${m[1]}-${m[2]}-${m[3]}`);
+  };
+  const start = parse(filingDate);
+  const end = parse(registrationDate) || parse(publicationDate);
+  let elapsed: string | null = null;
+  if (start && end) {
+    const days = Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000));
+    const years = (days / 365).toFixed(1);
+    elapsed = `${years}년 (${days.toLocaleString()}일)`;
+  }
+
+  return (
+    <div className="px-4 sm:px-5 pt-4 pb-2">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[12px] font-semibold text-[#8B95A1]">출원 · 등록 경과</p>
+        {elapsed && (
+          <p className="text-[12px] font-semibold text-[#4E5968] tabular-nums">
+            소요 <span style={{ color: ACCENT_HEX }}>{elapsed}</span>
+          </p>
+        )}
+      </div>
+      <div className="relative">
+        {/* base line */}
+        <div className="absolute left-0 right-0 top-[11px] h-[2px] bg-[#E5E8EB] rounded-full" />
+        {/* progress line */}
+        <div
+          className="absolute left-0 top-[11px] h-[2px] rounded-full transition-all"
+          style={{
+            background: ACCENT_HEX,
+            width: hasRegistration
+              ? "100%"
+              : publicationDate
+              ? "50%"
+              : filingDate
+              ? "0%"
+              : "0%",
+          }}
+        />
+        <div className="relative grid grid-cols-3 gap-2">
+          {steps.map((s) => (
+            <div key={s.key} className="flex flex-col items-center text-center">
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white"
+                style={{
+                  borderColor: s.done ? ACCENT_HEX : "#D1D6DB",
+                  background: s.done ? ACCENT_HEX : "#fff",
+                }}
+              >
+                {s.done && (
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6.5L5 9L9.5 3.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <p className="mt-2 text-[12px] font-semibold text-[#191F28]">{s.label}</p>
+              <p className="text-[11px] text-[#8B95A1] font-medium tabular-nums mt-0.5 min-h-[14px]">
+                {s.date || (s.done ? "" : "—")}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function renderBold(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((p, i) =>
@@ -412,7 +504,9 @@ export function TossPatentSummary({
                   {patentData.applicationNumber && <Row label="출원번호" value={patentData.applicationNumber} />}
                   {patentData.filingDate && <Row label="출원일자" value={patentData.filingDate} />}
                   {patentData.registrationNumber && <Row label="등록번호" value={patentData.registrationNumber} />}
-                  {patentData.publicationDate && <Row label={patentData.registrationNumber ? "등록일자" : "공개일자"} value={patentData.publicationDate} />}
+                  {patentData.registrationDate
+                    ? <Row label="등록일자" value={patentData.registrationDate} />
+                    : (patentData.publicationDate && <Row label="공개일자" value={patentData.publicationDate} />)}
                   {patentData.assignee && <Row label="출원인" value={patentData.assignee} />}
                   {patentData.inventors?.length ? (
                     <Row label="발명자" value={patentData.inventors.length >= 5 ? `${patentData.inventors.slice(0, 4).join(", ")} 등 ${patentData.inventors.length}명` : patentData.inventors.join(", ")} />
@@ -421,6 +515,16 @@ export function TossPatentSummary({
                     <Row label="IPC 분류" value={patentData.classifications.slice(0, 3).join(", ")} />
                   ) : null}
                 </div>
+                {(patentData.filingDate || patentData.publicationDate || patentData.registrationDate || patentData.registrationNumber) && (
+                  <div className="bg-white rounded-[16px] mt-2">
+                    <PatentTimeline
+                      filingDate={patentData.filingDate}
+                      publicationDate={patentData.publicationDate}
+                      registrationDate={patentData.registrationDate}
+                      hasRegistration={!!(patentData.registrationDate || patentData.registrationNumber)}
+                    />
+                  </div>
+                )}
               </SoftCard>
             </section>
           )}
