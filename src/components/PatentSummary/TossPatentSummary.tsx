@@ -504,7 +504,9 @@ export function TossPatentSummary({
                   {patentData.applicationNumber && <Row label="출원번호" value={patentData.applicationNumber} />}
                   {patentData.filingDate && <Row label="출원일자" value={patentData.filingDate} />}
                   {patentData.registrationNumber && <Row label="등록번호" value={patentData.registrationNumber} />}
-                  {patentData.publicationDate && <Row label={patentData.registrationNumber ? "등록일자" : "공개일자"} value={patentData.publicationDate} />}
+                  {patentData.registrationDate
+                    ? <Row label="등록일자" value={patentData.registrationDate} />
+                    : (patentData.publicationDate && <Row label="공개일자" value={patentData.publicationDate} />)}
                   {patentData.assignee && <Row label="출원인" value={patentData.assignee} />}
                   {patentData.inventors?.length ? (
                     <Row label="발명자" value={patentData.inventors.length >= 5 ? `${patentData.inventors.slice(0, 4).join(", ")} 등 ${patentData.inventors.length}명` : patentData.inventors.join(", ")} />
@@ -513,6 +515,16 @@ export function TossPatentSummary({
                     <Row label="IPC 분류" value={patentData.classifications.slice(0, 3).join(", ")} />
                   ) : null}
                 </div>
+                {(patentData.filingDate || patentData.publicationDate || patentData.registrationDate || patentData.registrationNumber) && (
+                  <div className="bg-white rounded-[16px] mt-2">
+                    <PatentTimeline
+                      filingDate={patentData.filingDate}
+                      publicationDate={patentData.publicationDate}
+                      registrationDate={patentData.registrationDate}
+                      hasRegistration={!!(patentData.registrationDate || patentData.registrationNumber)}
+                    />
+                  </div>
+                )}
               </SoftCard>
             </section>
           )}
