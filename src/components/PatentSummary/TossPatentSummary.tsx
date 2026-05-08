@@ -737,10 +737,6 @@ export function TossPatentSummary({
               return (
                 <section key={idx} className="mb-10">
                   <SectionTitle kicker={kicker}>{heading}</SectionTitle>
-                  <div className="flex items-center gap-2 mb-3 text-[#4E5968]">
-                    <Icon className="w-4 h-4" style={{ color: ACCENT_HEX }} />
-                    <span className="text-[13px] font-semibold">{sec.title}</span>
-                  </div>
                   <div className="space-y-4">
                     {sec.paragraphs.map((p, i) => {
                       const annotated = annotate(p);
