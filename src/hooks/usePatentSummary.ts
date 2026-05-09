@@ -16,6 +16,8 @@ export function usePatentSummary() {
   const generateSummary = useCallback(async (patentNumber: string) => {
     setIsLoading(true);
     setIsFetching(true);
+    // Mark app as busy so the global auto-update loop won't reload mid-analysis.
+    if (typeof window !== "undefined") (window as any).__APP_BUSY__ = true;
     setAnalysisStep("fetching");
     setSummary("");
     setPatentData(null);
@@ -153,6 +155,7 @@ export function usePatentSummary() {
       return null;
     } finally {
       setIsLoading(false);
+      if (typeof window !== "undefined") (window as any).__APP_BUSY__ = false;
     }
   }, [relatedPatents]);
 
