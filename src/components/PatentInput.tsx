@@ -22,18 +22,65 @@ const DEFAULT_SUGGESTIONS = [
   "AI 센서", "비료 토양", "유기농", "축산", "유전자 분자육종",
 ];
 
-const DEFAULT_PLACEHOLDER_EXAMPLES = [
+// Placeholder examples are randomly generated each session from these pools.
+const PLACEHOLDER_INTROS = [
   "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력해 보세요",
-  "예) 10-2920574 · 10-2022-1213421 등 특허/출원번호로 즉시 분석",
-  "예) '딸기 병해충 방제' 처럼 자연어 문장으로도 검색돼요",
-  "예) 기능성 발효 음료, 항산화 추출물, 프로바이오틱스",
-  "예) 스마트팜 환경 제어, 토양 센서, AI 작황 예측",
-  "예) 친환경 비료, 미생물 제제, 작물 생장 촉진",
-  "예) 가축 사료 첨가제, 축산 악취 저감, 동물 백신",
-  "예) 농산물 신선도 유지 포장재, 콜드체인 물류",
-  "예) 종자 분자육종, 유전체 분석, 내병성 품종",
-  "예) 곤충 단백질, 대체 단백, 푸드테크 소재",
+  "특허번호 · 자연어 문장 · 핵심 키워드 무엇이든 검색해 보세요",
+  "찾고 싶은 농식품 기술을 자유롭게 입력해 보세요",
 ];
+
+const PLACEHOLDER_NUMBER_SAMPLES = [
+  "예) 10-2920574 · 10-2022-1213421 등 특허/출원번호로 즉시 분석",
+  "예) KR10-2456789 처럼 등록·출원번호를 그대로 붙여넣어 보세요",
+  "예) '10-2024-0012345' 출원번호 입력 시 AI가 바로 요약해 드려요",
+];
+
+const PLACEHOLDER_NL_SAMPLES = [
+  "예) '딸기 병해충 친환경 방제' 처럼 자연어로도 검색돼요",
+  "예) '온실 토마토 수확 자동화' 같은 문장으로 탐색해 보세요",
+  "예) '한우 사료 효율 개선 미생물' 처럼 풀어 써도 OK",
+  "예) '기후변화 대응 벼 품종' 한 줄로 관련 특허를 찾아드려요",
+];
+
+// Topic pool — combined into rotating "예) A, B, C" hints
+const PLACEHOLDER_TOPIC_POOL = [
+  "기능성 발효 음료", "항산화 추출물", "프로바이오틱스", "유산균 발효",
+  "스마트팜 환경 제어", "토양 수분 센서", "AI 작황 예측", "드론 방제",
+  "친환경 비료", "미생물 제제", "작물 생장 촉진", "병해충 저항성",
+  "가축 사료 첨가제", "축산 악취 저감", "동물 백신", "유전자 분자육종",
+  "신선도 유지 포장재", "콜드체인 물류", "식품 건조 공정", "동결건조 분말",
+  "곤충 단백질", "대체 단백", "푸드테크 소재", "기능성 펩타이드",
+  "양봉 꿀벌 면역", "해충 페로몬 트랩", "수경재배 양액", "버섯 종균 배양",
+  "쌀 가공 식품", "전통 발효식품", "김치 유산균", "장류 숙성",
+  "농업용 로봇", "수확 자동화", "농기계 자율주행", "스마트 관수",
+  "토양 미생물", "탄소 저감 농법", "기후변화 대응 품종", "내건성 작물",
+  "축산 분뇨 자원화", "바이오차", "유기 농업", "친환경 포장",
+];
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generatePlaceholderExamples(count = 8): string[] {
+  const intro = PLACEHOLDER_INTROS[Math.floor(Math.random() * PLACEHOLDER_INTROS.length)];
+  const numberHint = PLACEHOLDER_NUMBER_SAMPLES[Math.floor(Math.random() * PLACEHOLDER_NUMBER_SAMPLES.length)];
+  const nlHint = PLACEHOLDER_NL_SAMPLES[Math.floor(Math.random() * PLACEHOLDER_NL_SAMPLES.length)];
+
+  // Build topic-based hints by combining 3 random topics each
+  const topics = shuffle(PLACEHOLDER_TOPIC_POOL);
+  const topicHints: string[] = [];
+  for (let i = 0; i + 2 < topics.length && topicHints.length < count; i += 3) {
+    topicHints.push(`예) ${topics[i]}, ${topics[i + 1]}, ${topics[i + 2]}`);
+  }
+
+  const rest = shuffle(topicHints).slice(0, Math.max(0, count - 3));
+  return [intro, numberHint, nlHint, ...rest];
+}
 
 export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, skipKeywordFetch, suggestions }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
