@@ -83,23 +83,10 @@ if ("serviceWorker" in navigator) {
 // Periodic version check — compares index.html asset hash signature
 const checkForUpdate = async () => {
   try {
-    // Bypass the service worker entirely so a stale SW can't serve us
-    // a cached index.html and hide a new deploy.
-    const url = `${window.location.origin}/?_v=${Date.now()}`;
-    const fetchOpts: RequestInit = {
+    const res = await fetch(`${window.location.origin}/?_v=${Date.now()}`, {
       cache: "no-store",
       headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
-    };
-    let res: Response;
-    try {
-      // @ts-ignore - non-standard but supported on Chromium/Firefox to skip SW
-      res = await fetch(url, { ...fetchOpts, mode: "no-cors" === "" ? undefined : undefined, ...(typeof window !== "undefined" ? { } : {}) });
-      // Use a fresh Request so SW sees a unique URL; combined with cache:no-store this
-      // still gives us the live HTML on most setups. Fallback handled below.
-      res = await fetch(url, fetchOpts);
-    } catch {
-      res = await fetch(url, fetchOpts);
-    }
+    });
     if (!res.ok) return;
     const html = await res.text();
     const match = html.match(/src="\/assets\/(index-[A-Za-z0-9_-]+\.js)"/);
