@@ -4,6 +4,36 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
+// ============================================================
+// One-time kill switch — forces every existing client to reset
+// their (possibly stale) service worker + caches exactly once.
+// Bump KILL_SWITCH_VERSION whenever stale SWs are suspected.
+// ============================================================
+const KILL_SWITCH_VERSION = "2026-05-09-a";
+(() => {
+  try {
+    const key = "sw-kill-switch";
+    if (localStorage.getItem(key) === KILL_SWITCH_VERSION) return;
+    const run = async () => {
+      try {
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
+        }
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)));
+        }
+      } finally {
+        localStorage.setItem(key, KILL_SWITCH_VERSION);
+        // Bypass HTTP cache on reload
+        window.location.replace(window.location.pathname + "?_swreset=" + Date.now());
+      }
+    };
+    run();
+  } catch { /* ignore */ }
+})();
+
 // Initialize current build signature from the loaded document (so first check can detect a new version)
 const getLoadedBuild = (): string | null => {
   const script = document.querySelector('script[src*="/assets/index-"]') as HTMLScriptElement | null;
