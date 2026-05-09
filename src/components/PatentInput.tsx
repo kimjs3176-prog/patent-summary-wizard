@@ -207,7 +207,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
               texts={(() => {
                 const list = (helperTexts && helperTexts.length > 0)
                   ? helperTexts
-                  : [placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요"];
+                  : DEFAULT_PLACEHOLDER_EXAMPLES;
                 return list.map((t) => t.trim()).filter(Boolean);
               })()}
             />
