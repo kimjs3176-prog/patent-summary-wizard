@@ -342,11 +342,30 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
   );
 }
 
-function ScrollingPlaceholder({ text }: { text: string }) {
+function ScrollingPlaceholder({ texts }: { texts: string[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
+  const [index, setIndex] = useState(0);
   const [shouldScroll, setShouldScroll] = useState(false);
+  const [phase, setPhase] = useState<"in" | "out">("in");
 
+  const safeTexts = texts.length > 0 ? texts : [""];
+  const current = safeTexts[index % safeTexts.length];
+
+  // Rotate through phrases with a brief fade-out/in
+  useEffect(() => {
+    if (safeTexts.length <= 1) return;
+    const visible = 3500;
+    const fade = 280;
+    const t1 = window.setTimeout(() => setPhase("out"), visible);
+    const t2 = window.setTimeout(() => {
+      setIndex((i) => (i + 1) % safeTexts.length);
+      setPhase("in");
+    }, visible + fade);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
+  }, [index, safeTexts.length]);
+
+  // Measure overflow; if a single phrase is too long, marquee-scroll it
   useEffect(() => {
     const check = () => {
       if (containerRef.current && textRef.current) {
@@ -362,7 +381,7 @@ function ScrollingPlaceholder({ text }: { text: string }) {
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
-  }, [text]);
+  }, [current]);
 
   return (
     <div
@@ -371,9 +390,13 @@ function ScrollingPlaceholder({ text }: { text: string }) {
     >
       <span
         ref={textRef}
-        className={`text-sm sm:text-[15px] text-muted-foreground/40 whitespace-nowrap ${shouldScroll ? 'animate-marquee-placeholder' : ''}`}
+        className={`text-sm sm:text-[15px] text-muted-foreground/40 whitespace-nowrap transition-all duration-300 ease-out ${shouldScroll ? 'animate-marquee-placeholder' : ''}`}
+        style={{
+          opacity: phase === "in" ? 1 : 0,
+          transform: phase === "in" ? "translateY(0)" : "translateY(-4px)",
+        }}
       >
-        {text}
+        {current}
       </span>
     </div>
   );
