@@ -471,284 +471,192 @@ time, .tabular-nums, [data-numeric] {
   50% { transform: scale(1.05); opacity: 1; }
 }
 
-/* Print styles */
+/* ============================================================
+ * Print styles — optimized for the new Toss-style summary UI.
+ * The on-screen TossPatentSummary IS the print artifact.
+ * ============================================================ */
 @media print {
   @page {
     size: A4;
     margin: 12mm 14mm;
   }
 
-  body {
-    background: white !important;
-    color: #111 !important;
-    font-size: 9pt !important;
-    line-height: 1.42 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  /* Universal: preserve brand colors (emerald accent, soft surfaces) */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
   }
 
-  header, footer, button, .no-print,
-  [class*="search"], [class*="Search"],
-  [class*="history"], [class*="History"],
-  details, details + div {
+  html, body {
+    background: #fff !important;
+    color: #191F28 !important;
+    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 10pt !important;
+    line-height: 1.55 !important;
+  }
+
+  /* Kill chrome that should never print */
+  header, footer,
+  nav, aside,
+  .no-print,
+  .print\:hidden,
+  [aria-label="Notifications alt+T"],
+  [aria-label="Notifications (F8)"],
+  [data-sonner-toaster],
+  iframe,
+  /* Floating chatbot launcher */
+  button[aria-label="챗봇 열기"],
+  button[aria-label="챗봇 닫기"],
+  /* Splash + ambient backgrounds */
+  .fixed.inset-0,
+  /* Sticky search bar above results */
+  .sticky,
+  /* Hidden legacy off-screen printable container */
+  [style*="-9999px"] {
     display: none !important;
   }
 
-  .print\\:hidden {
-    display: none !important;
-  }
-
-  .print\\:break-before-page {
+  .print\:break-before-page {
     break-before: page !important;
     page-break-before: always !important;
   }
 
-  /* Avoid splitting only compact key blocks; allow long cards to paginate naturally */
-  article, table, figure,
-  #sec-info, .patent-keyword-container,
-  .trl-print-section, .trl-print-section .rounded-xl {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  /* Remove decorative shadows/gradients to save ink and clarify layout */
-  *, *::before, *::after {
-    box-shadow: none !important;
-    text-shadow: none !important;
-    filter: none !important;
-  }
-
-  /* Strip ambient gradient backgrounds but keep semantic fills (badges/charts) */
-  section, .bg-card, .bg-background {
-    background: white !important;
-  }
-  [class*="bg-muted"] {
-    background: white !important;
-  }
-
-  /* Tighten section spacing */
-  section { margin-bottom: 6px !important; border-color: #d1d5db !important; }
-
-  .glass-effect {
-    background: white !important;
-    backdrop-filter: none !important;
-    border: 1px solid #d1d5db !important;
-    border-radius: 4px !important;
-    padding: 5px 7px !important;
-    margin-bottom: 5px !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  .container {
+  .container, main {
     padding: 0 !important;
+    margin: 0 !important;
     max-width: 100% !important;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    color: #111 !important;
-    break-after: avoid !important;
-    page-break-after: avoid !important;
+  /* Stop animations in print */
+  [class*="animate-"], .animate-spin, .animate-pulse, .animate-ping {
+    animation: none !important;
   }
 
-  h1 { font-size: 13pt !important; font-weight: 700 !important; }
-  h2 {
-    font-size: 10.5pt !important;
-    font-weight: 700 !important;
-    margin-top: 5px !important;
-    margin-bottom: 3px !important;
-    padding-bottom: 2px !important;
-    border-bottom: 1px solid #e5e7eb !important;
+  /* Strip the outer card chrome — content fills the page */
+  .bg-white.rounded-\[24px\],
+  div[class*="rounded-[24px]"][class*="bg-white"] {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+  .max-w-\[680px\] {
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* SoftCard surfaces — keep a subtle tint for grouping, slimmer padding */
+  div[class*="rounded-[20px]"] {
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    background: #F7F9FA !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  div[class*="rounded-[16px]"],
+  div[class*="rounded-[14px]"] {
+    border-radius: 6px !important;
+  }
+
+  /* Section rhythm */
+  section {
+    margin-bottom: 10px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* Long sections (AI 요약 본문) may paginate */
+  section:has(p + p + p) {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  /* Headings */
+  h1, h2, h3 {
+    color: #191F28 !important;
     break-after: avoid !important;
     page-break-after: avoid !important;
   }
-  h3 { font-size: 9.5pt !important; font-weight: 600 !important; margin-top: 3px !important; margin-bottom: 2px !important; }
+  h1 { font-size: 16pt !important; line-height: 1.25 !important; margin: 0 0 4pt !important; }
+  h2 { font-size: 12pt !important; line-height: 1.3 !important; margin: 0 0 4pt !important; }
+  h3 { font-size: 10.5pt !important; }
+
+  /* Section kicker (small emerald label above each h2) */
+  p[style*="color: rgb(16, 185, 129)"],
+  p[style*="#10B981"] {
+    color: #059669 !important;
+    font-size: 8.5pt !important;
+  }
+
+  /* Body paragraphs */
   p {
-    color: #222 !important;
-    font-size: 9pt !important;
-    line-height: 1.42 !important;
-    margin-bottom: 2px !important;
+    color: #2C3038 !important;
+    font-size: 10pt !important;
+    line-height: 1.55 !important;
+    margin: 0 0 4pt !important;
     orphans: 3;
     widows: 3;
   }
 
-  /* Links: avoid distracting underlines, no URL footnote */
-  a, a:visited { color: #111 !important; text-decoration: none !important; }
-  a[href]::after { content: "" !important; }
-
-  /* Tables */
-  table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; }
-  th, td { border: 1px solid #d1d5db !important; padding: 4px 6px !important; }
-  thead { display: table-header-group; }
-  tr { break-inside: avoid !important; page-break-inside: avoid !important; }
-
-  img { max-width: 100% !important; height: auto !important; break-inside: avoid !important; page-break-inside: avoid !important; }
-
-  #sec-info {
-    margin-bottom: 6px !important;
-    border-radius: 5px !important;
+  /* Score block — keep emerald number visible */
+  span[style*="#10B981"], span[style*="rgb(16, 185, 129)"] {
+    color: #10B981 !important;
   }
 
-  #sec-info > div:last-child {
-    padding: 7px 10px !important;
-  }
-
-  #sec-info h2 {
-    font-size: 12pt !important;
-    margin: 4px 0 6px !important;
-    border-bottom: 0 !important;
-    line-height: 1.3 !important;
-  }
-
-  .patent-keyword-container {
-    display: flex !important;
-    gap: 4px !important;
-    padding: 5px 7px !important;
-    min-height: auto !important;
-    background: #f8fafc !important;
-    border: 1px solid #d1d5db !important;
-  }
-
-  .patent-keyword-chip {
-    display: inline-flex !important;
-    color: #111827 !important;
-    background: #eefdf6 !important;
-    border: 1px solid #a7f3d0 !important;
-    font-size: 8pt !important;
-    line-height: 1.15 !important;
-    padding: 2px 5px !important;
+  /* TRL bars — preserve the colored stripes */
+  .flex.gap-1 > .h-1\\.5 {
+    height: 6px !important;
     border-radius: 3px !important;
   }
 
-  .patent-keyword-print-text {
-    display: none !important;
+  /* Keyword chips */
+  .flex.flex-wrap.gap-2 > * {
+    border: 1px solid #E5E8EB !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+    font-size: 9pt !important;
+    line-height: 1.3 !important;
   }
 
-  .prose > h2 + p,
-  .prose > h2 + div {
-    break-before: avoid !important;
-    page-break-before: avoid !important;
-  }
-
-  .grid {
+  /* Drawings: keep contained, never split */
+  img {
+    max-width: 100% !important;
+    max-height: 70mm !important;
+    height: auto !important;
+    object-fit: contain !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  .trl-print-section { break-inside: avoid !important; page-break-inside: avoid !important; }
+  /* Figure captions */
+  .text-\[12px\].text-\[\#8B95A1\] { color: #6B7280 !important; font-size: 8.5pt !important; }
 
-  /* TRL Chart print - force all colors */
-  .trl-print-section * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-  }
+  /* Links: clean, no URL footnote */
+  a, a:visited { color: #191F28 !important; text-decoration: none !important; }
+  a[href]::after { content: "" !important; }
 
-  /* Hide interactive elements in print */
-  .trl-print-section [class*="animate-ping"],
-  .trl-print-section [class*="animate-pulse"],
-  .trl-print-section [class*="blur-lg"] {
-    display: none !important;
-  }
+  /* Tables (rare, but defensive) */
+  table { width: 100% !important; border-collapse: collapse !important; font-size: 9.5pt !important; }
+  th, td { border: 1px solid #E5E8EB !important; padding: 4px 6px !important; }
+  thead { display: table-header-group; }
+  tr, figure { break-inside: avoid !important; page-break-inside: avoid !important; }
 
-  /* Progress bar track */
-  .trl-print-section .h-4.rounded-full {
-    background: #e5e7eb !important;
-    height: 14px !important;
-  }
-
-  /* Progress bar fill */
-  .trl-print-section .h-4.rounded-full > div:first-child {
-    background: linear-gradient(90deg, #f87171 0%, #facc15 35%, #4ade80 65%, #10b981 100%) !important;
+  /* AI 종합 분석 highlight box → print as soft tinted block */
+  div[style*="linear-gradient(135deg, hsl(var(--primary)"] {
+    background: #ECFDF5 !important;
+    border: 1px solid #A7F3D0 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
   }
 
-  /* TRL badge */
-  .trl-print-section .w-16.h-16 {
-    background: #10b981 !important;
-  }
-
-  /* Level marker dots - all dots visible */
-  .trl-print-section .rounded-full[class*="w-2"] {
-    background-color: #9ca3af !important;
-    width: 8px !important;
-    height: 8px !important;
-  }
-
-  .trl-print-section .rounded-full[class*="w-4"] {
-    background: #10b981 !important;
-    width: 14px !important;
-    height: 14px !important;
-    box-shadow: none !important;
-    ring: none !important;
-  }
-
-  /* Level numbers via dedicated class */
-  .trl-level-markers span {
-    color: #374151 !important;
-    font-size: 9px !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-
-  .trl-level-markers span[class*="font-bold"] {
-    color: #059669 !important;
-    font-weight: 700 !important;
-  }
-
-  /* TRL info text */
-  .trl-print-section .text-lg,
-  .trl-print-section .text-sm,
-  .trl-print-section .text-xs {
-    color: #1f2937 !important;
-  }
-
-  /* "상용화까지" box */
-  .trl-print-section .backdrop-blur-sm {
-    backdrop-filter: none !important;
-    background: #f3f4f6 !important;
-  }
-
-  [class*="animate-"] { animation: none !important; }
-
-  /* AI Summary section — slightly more print padding */
-  .ai-summary-print-section > div {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-    padding-top: 5px !important;
-    padding-bottom: 5px !important;
-  }
-  .ai-summary-print-section p {
-    margin-bottom: 3px !important;
-    line-height: 1.45 !important;
-  }
-  .ai-summary-print-section h2 {
-    margin-top: 8px !important;
-    margin-bottom: 4px !important;
-  }
-
-  .trl-print-section {
-    padding: 4px 5px !important;
-  }
-  .trl-print-section > div {
-    padding-left: 3px !important;
-    padding-right: 3px !important;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
-  }
-  .trl-print-section p {
-    margin-bottom: 2px !important;
-    line-height: 1.38 !important;
-  }
-
-  .trl-print-section .grid {
-    gap: 6px !important;
-  }
-
-  .trl-print-section .rounded-xl {
-    padding: 6px 7px !important;
-    border-radius: 5px !important;
-  }
+  /* CTA / share / favorite / pdf buttons inside summary footer */
+  .h-14, .h-12, .h-9 { display: none !important; }
 }
 
 /* Hide scrollbar utility for horizontal section nav */
