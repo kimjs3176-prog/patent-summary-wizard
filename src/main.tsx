@@ -66,6 +66,32 @@ const isAppBusy = (): boolean => {
 };
 
 let pendingReload = false;
+const showUpdateToast = (countdownSec: number) => {
+  // Lightweight, dependency-free toast so the user sees the auto-refresh.
+  try {
+    const id = "__app-update-toast__";
+    if (document.getElementById(id)) return;
+    const el = document.createElement("div");
+    el.id = id;
+    el.setAttribute("role", "status");
+    el.style.cssText =
+      "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);" +
+      "z-index:2147483647;background:#10B981;color:#fff;padding:10px 16px;" +
+      "border-radius:9999px;font:600 13px/1.4 Pretendard,Inter,sans-serif;" +
+      "box-shadow:0 8px 24px rgba(16,185,129,.35);pointer-events:none;" +
+      "opacity:0;transition:opacity .25s ease;";
+    el.textContent = `새 버전이 준비되었습니다. ${countdownSec}초 후 자동 새로고침`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = "1"; });
+    let left = countdownSec;
+    const t = setInterval(() => {
+      left -= 1;
+      if (left <= 0) { clearInterval(t); return; }
+      el.textContent = `새 버전이 준비되었습니다. ${left}초 후 자동 새로고침`;
+    }, 1000);
+  } catch { /* ignore */ }
+};
+
 const hardReload = () => {
   const done = () => window.location.reload();
   if ("caches" in window) {
@@ -77,17 +103,29 @@ const hardReload = () => {
   }
 };
 
-// Defer reload until the app is genuinely idle, so we never interrupt
-// an in-progress patent analysis or reading session.
-const safeReload = () => {
+// Defer reload until the app is idle, but enforce a hard cap so a new
+// service worker (skipWaiting + clientsClaim) eventually takes over —
+// otherwise the page could run stale JS against a newer SW cache.
+// `maxWaitMs` is the absolute upper bound we'll wait before reloading anyway.
+const safeReload = (opts: { maxWaitMs?: number; toastSec?: number } = {}) => {
   if (pendingReload) return;
   pendingReload = true;
+  const start = Date.now();
+  const maxWaitMs = opts.maxWaitMs ?? 3 * 60 * 1000; // 3 min hard cap
+  const toastSec = opts.toastSec ?? 5;
+
+  const fire = () => {
+    showUpdateToast(toastSec);
+    setTimeout(hardReload, toastSec * 1000);
+  };
+
   const tryReload = () => {
-    if (!isAppBusy()) {
-      hardReload();
+    const waited = Date.now() - start;
+    if (!isAppBusy() || waited >= maxWaitMs) {
+      fire();
       return;
     }
-    setTimeout(tryReload, 15 * 1000);
+    setTimeout(tryReload, 10 * 1000);
   };
   tryReload();
 };
