@@ -885,8 +885,8 @@ export function TossPatentSummary({
                   const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
                     (acc[k.cat] ||= []).push(k.word);
                     return acc;
-                  }, { function: [], industry: [], material: [], tech: [], general: [] });
-                  const order: KeywordCategory[] = ["material", "function", "industry", "tech", "general"];
+                  }, { function: [], industry: [], material: [], product: [], tech: [], general: [] });
+                  const order: KeywordCategory[] = ["material", "function", "industry", "product", "tech", "general"];
                   const usedCats = order.filter((c) => grouped[c]?.length);
                   return (
                     <div>
