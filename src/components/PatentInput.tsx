@@ -22,6 +22,19 @@ const DEFAULT_SUGGESTIONS = [
   "AI 센서", "비료 토양", "유기농", "축산", "유전자 분자육종",
 ];
 
+const DEFAULT_PLACEHOLDER_EXAMPLES = [
+  "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력해 보세요",
+  "예) 10-2920574 · 10-2022-1213421 등 특허/출원번호로 즉시 분석",
+  "예) '딸기 병해충 방제' 처럼 자연어 문장으로도 검색돼요",
+  "예) 기능성 발효 음료, 항산화 추출물, 프로바이오틱스",
+  "예) 스마트팜 환경 제어, 토양 센서, AI 작황 예측",
+  "예) 친환경 비료, 미생물 제제, 작물 생장 촉진",
+  "예) 가축 사료 첨가제, 축산 악취 저감, 동물 백신",
+  "예) 농산물 신선도 유지 포장재, 콜드체인 물류",
+  "예) 종자 분자육종, 유전체 분석, 내병성 품종",
+  "예) 곤충 단백질, 대체 단백, 푸드테크 소재",
+];
+
 export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, skipKeywordFetch, suggestions }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
