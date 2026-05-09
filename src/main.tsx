@@ -43,8 +43,30 @@ const getLoadedBuild = (): string | null => {
 };
 (window as any).__APP_BUILD__ = (window as any).__APP_BUILD__ || getLoadedBuild();
 
+// ----- Idle / busy detection -----
+// We want to avoid yanking the page out from under the user (esp. while a
+// long-running summary analysis is streaming). Track last interaction and
+// expose a flag that other code (usePatentSummary, etc.) can set.
+let lastInteraction = Date.now();
+const markInteraction = () => { lastInteraction = Date.now(); };
+["mousemove", "keydown", "scroll", "touchstart", "click"].forEach((ev) =>
+  window.addEventListener(ev, markInteraction, { passive: true })
+);
+
+const isAppBusy = (): boolean => {
+  // Explicit busy flag (set by analysis hooks).
+  if ((window as any).__APP_BUSY__ === true) return true;
+  // Any in-flight network request to our edge functions = treat as busy.
+  if ((window as any).__APP_INFLIGHT__ > 0) return true;
+  // User actively interacting in the last 90s.
+  if (Date.now() - lastInteraction < 90 * 1000) return true;
+  // Visible streaming/loading UI present (defensive selectors).
+  if (document.querySelector('[data-app-busy="true"], .animate-spin')) return true;
+  return false;
+};
+
+let pendingReload = false;
 const hardReload = () => {
-  // Clear caches then reload, so stale SW-cached chunks are not served
   const done = () => window.location.reload();
   if ("caches" in window) {
     caches.keys()
@@ -55,13 +77,28 @@ const hardReload = () => {
   }
 };
 
-// Auto-reload when a new SW takes control (after deploy)
+// Defer reload until the app is genuinely idle, so we never interrupt
+// an in-progress patent analysis or reading session.
+const safeReload = () => {
+  if (pendingReload) return;
+  pendingReload = true;
+  const tryReload = () => {
+    if (!isAppBusy()) {
+      hardReload();
+      return;
+    }
+    setTimeout(tryReload, 15 * 1000);
+  };
+  tryReload();
+};
+
+// Auto-reload when a new SW takes control (after deploy) — but only when idle.
 if ("serviceWorker" in navigator) {
   let refreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (refreshing) return;
     refreshing = true;
-    hardReload();
+    safeReload();
   });
 
   // When a waiting worker appears, activate it immediately
@@ -108,17 +145,19 @@ const checkForUpdate = async () => {
             await reg.update();
             if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
             // Fallback in case controllerchange never fires
-            setTimeout(hardReload, 2000);
+            setTimeout(safeReload, 2000);
             return;
           }
         } catch { /* fall through */ }
       }
-      hardReload();
+      safeReload();
     }
   } catch { /* ignore */ }
 };
-setTimeout(checkForUpdate, 3000);
-setInterval(checkForUpdate, 60 * 1000);
+// Reduced cadence: first check after 30s, then every 5 minutes. Combined with
+// safeReload(), this avoids interrupting active analysis sessions.
+setTimeout(checkForUpdate, 30 * 1000);
+setInterval(checkForUpdate, 5 * 60 * 1000);
 window.addEventListener("focus", checkForUpdate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") checkForUpdate();
