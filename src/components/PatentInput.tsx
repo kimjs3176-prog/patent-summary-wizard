@@ -89,6 +89,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
   const [recentPatents, setRecentPatents] = useState<{ patentNumber: string; title?: string }[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  // Regenerate randomized placeholder examples on mount and every 60s
+  const [placeholderExamples, setPlaceholderExamples] = useState<string[]>(() => generatePlaceholderExamples(8));
+  useEffect(() => {
+    const id = window.setInterval(() => setPlaceholderExamples(generatePlaceholderExamples(8)), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Load recent searches from localStorage
   const loadRecents = () => {
@@ -265,9 +271,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
           {!inputValue && !isFocused && (
             <ScrollingPlaceholder
               texts={(() => {
-                const list = (helperTexts && helperTexts.length > 0)
-                  ? helperTexts
-                  : DEFAULT_PLACEHOLDER_EXAMPLES;
+                const list = (helperTexts && helperTexts.length > 0) ? helperTexts : placeholderExamples;
                 return list.map((t) => t.trim()).filter(Boolean);
               })()}
             />
