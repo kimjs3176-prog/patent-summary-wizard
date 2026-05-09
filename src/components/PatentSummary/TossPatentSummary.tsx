@@ -251,12 +251,13 @@ function ScoreRow({ label, value, color, reason }: { label: string; value: numbe
   );
 }
 
-type KeywordCategory = "function" | "industry" | "material" | "tech" | "general";
+type KeywordCategory = "function" | "industry" | "material" | "product" | "tech" | "general";
 
 const CATEGORY_STYLE: Record<KeywordCategory, { bg: string; text: string; border: string; label: string }> = {
-  function: { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0", label: "기능" },
+  function: { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0", label: "주요기능" },
   industry: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", label: "활용산업" },
   material: { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA", label: "소재" },
+  product:  { bg: "#FEF2F2", text: "#B91C1C", border: "#FECACA", label: "최종제품" },
   tech:     { bg: "#FAF5FF", text: "#7E22CE", border: "#E9D5FF", label: "기술" },
   general:  { bg: "#FFFFFF", text: "#4E5968", border: "#E5E8EB", label: "기타" },
 };
@@ -376,6 +377,7 @@ function extractKeywordsFromPatent(
   const funcKws: string[] = [];
   const featKws: string[] = [];
   const subjectKws: string[] = [];
+  const productKws: string[] = [];
 
   // 1) IPC → 활용가능 산업
   if (patentData.classifications?.length) {
@@ -474,21 +476,82 @@ function extractKeywordsFromPatent(
   ];
   subjectPatterns.forEach(([p, l]) => { if (p.test(title) && !subjectKws.includes(l)) subjectKws.push(l); });
 
-  // 조합: 소재 → 기능성 → 활용산업 → 기술특징
-  const combined: KwItem[] = [
-    ...subjectKws.map((w) => ({ word: w, cat: "material" as KeywordCategory })),
-    ...funcKws.slice(0, 2).map((w) => ({ word: w, cat: "function" as KeywordCategory })),
-    ...industryKws.slice(0, 3).map((w) => ({ word: w, cat: "industry" as KeywordCategory })),
-    ...featKws.slice(0, 3).map((w) => ({ word: w, cat: "tech" as KeywordCategory })),
+  // 6) 제목+초록 → 최종제품 (소비자 형태로 출시될 산출물)
+  const productPatterns: [RegExp, string][] = [
+    [/건강기능식품|건기식|기능성\s*식품/, "건강기능식품"],
+    [/음료|드링크|차\s*제품|주스|스무디/, "음료"],
+    [/조성물|제형|제제|정제|캡슐|환|시럽|연고|크림/, "제형 제품"],
+    [/화장품|스킨케어|크림|로션|에센스|마스크팩|세럼/, "화장품"],
+    [/사료|배합사료|반려동물\s*사료|펫푸드/, "사료"],
+    [/비료|퇴비|토양개량제/, "비료"],
+    [/스낵|과자|간식|빵|면|국수|만두|소스|장류|발효식품|김치/, "가공식품"],
+    [/유제품|치즈|요거트|버터|분유/, "유제품"],
+    [/의약품|치료제|진단키트|의료기기|의료용품/, "의료제품"],
+    [/필름|시트|패키징|포장재|용기/, "포장·소재 제품"],
+    [/장치|시스템|설비|기계|로봇|드론|센서\s*모듈|모니터링\s*시스템/, "장치·시스템"],
+    [/플랫폼|서비스|앱|애플리케이션|솔루션/, "플랫폼·서비스"],
+    [/종자|종균|품종|모종/, "종자·종균"],
+    [/추출물|분말|원료|성분/, "원료 소재"],
   ];
+  productPatterns.forEach(([p, l]) => { if (p.test(text) && !productKws.includes(l)) productKws.push(l); });
+
+  // ----- 폴백: 핵심 4개 카테고리(소재·주요기능·활용산업·최종제품)는 최소 1개 보장 -----
+  if (subjectKws.length === 0) {
+    if (/식품|음료|건기식|발효|가공/.test(text)) subjectKws.push("식품 원료");
+    else if (/작물|재배|농산물|곡물|채소|과일/.test(text)) subjectKws.push("농산 원료");
+    else if (/축산|가축|사료/.test(text)) subjectKws.push("축산 원료");
+    else if (/소재|재료|성분|물질|추출물|분말/.test(text)) subjectKws.push("기능성 소재");
+    else subjectKws.push("핵심 소재");
+  }
+  if (funcKws.length === 0) {
+    if (/측정|분석|감지|판별|진단|검출|모니터링/.test(text)) funcKws.push("측정·분석");
+    else if (/제어|관리|운영|자동/.test(text)) funcKws.push("제어·관리");
+    else if (/처리|가공|공정|제조/.test(text)) funcKws.push("가공·처리");
+    else if (/개선|향상|증대|효율|최적화|품질/.test(text)) funcKws.push("성능 개선");
+    else funcKws.push("핵심 기능");
+  }
+  if (industryKws.length === 0) {
+    if (/식품|음료|건기식|발효/.test(text)) industryKws.push("식품산업");
+    else if (/작물|재배|농산|곡물|채소|과일|스마트팜/.test(text)) industryKws.push("농업");
+    else if (/축산|가축|사료/.test(text)) industryKws.push("축산업");
+    else if (/의약|제약|치료|진단/.test(text)) industryKws.push("제약·의료");
+    else if (/화장품|미용|뷰티/.test(text)) industryKws.push("화장품산업");
+    else if (/환경|폐수|폐기물/.test(text)) industryKws.push("환경산업");
+    else industryKws.push("농식품산업");
+  }
+  if (productKws.length === 0) {
+    if (/조성물|제형|정제|캡슐|시럽/.test(text)) productKws.push("제형 제품");
+    else if (/장치|시스템|설비|기계|모듈/.test(text)) productKws.push("장치·시스템");
+    else if (/추출물|분말|원료|성분/.test(text)) productKws.push("원료 소재");
+    else if (/식품|음료|가공/.test(text)) productKws.push("가공식품");
+    else if (/사료/.test(text)) productKws.push("사료");
+    else if (/비료/.test(text)) productKws.push("비료");
+    else productKws.push("응용 제품");
+  }
+
+  // 조합: 소재 → 주요기능 → 활용산업 → 최종제품 → 기술특징
+  // 핵심 4개 카테고리는 각각 최소 1개를 먼저 확보하여 항상 4개 이상 노출되도록 보장.
   const seen = new Set<string>();
   const unique: KwItem[] = [];
-  for (const k of combined) {
-    if (seen.has(k.word)) continue;
-    seen.add(k.word);
-    unique.push(k);
-    if (unique.length >= max) break;
-  }
+  const push = (word: string, cat: KeywordCategory) => {
+    if (!word || seen.has(word) || unique.length >= max) return;
+    seen.add(word);
+    unique.push({ word, cat });
+  };
+
+  // 1라운드: 각 핵심 카테고리에서 최소 1개씩
+  push(subjectKws[0], "material");
+  push(funcKws[0], "function");
+  push(industryKws[0], "industry");
+  push(productKws[0], "product");
+
+  // 2라운드: 비중 있게 추가
+  subjectKws.slice(1, 2).forEach((w) => push(w, "material"));
+  funcKws.slice(1, 3).forEach((w) => push(w, "function"));
+  industryKws.slice(1, 3).forEach((w) => push(w, "industry"));
+  productKws.slice(1, 2).forEach((w) => push(w, "product"));
+  featKws.slice(0, 3).forEach((w) => push(w, "tech"));
+
   return unique;
 }
 
@@ -822,8 +885,8 @@ export function TossPatentSummary({
                   const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
                     (acc[k.cat] ||= []).push(k.word);
                     return acc;
-                  }, { function: [], industry: [], material: [], tech: [], general: [] });
-                  const order: KeywordCategory[] = ["material", "function", "industry", "tech", "general"];
+                  }, { function: [], industry: [], material: [], product: [], tech: [], general: [] });
+                  const order: KeywordCategory[] = ["material", "function", "industry", "product", "tech", "general"];
                   const usedCats = order.filter((c) => grouped[c]?.length);
                   return (
                     <div>
