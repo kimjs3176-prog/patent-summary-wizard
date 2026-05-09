@@ -203,7 +203,14 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
           </div>
           {/* Scrolling placeholder for long text */}
           {!inputValue && !isFocused && (
-            <ScrollingPlaceholder text={placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요"} />
+            <ScrollingPlaceholder
+              texts={(() => {
+                const list = (helperTexts && helperTexts.length > 0)
+                  ? helperTexts
+                  : [placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요"];
+                return list.map((t) => t.trim()).filter(Boolean);
+              })()}
+            />
           )}
           <input
             type="text"
