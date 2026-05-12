@@ -72,7 +72,7 @@ export function PdfGenerator({
       : Object.fromEntries(
           Object.entries(layoutConfig).filter(([k]) => !STYLE_KEYS.includes(k as keyof PdfLayoutConfig))
         );
-  const cfg = { ...DEFAULT_PDF_CONFIG, ...sanitizedLayout, template_version: TOSS_TEMPLATE_VERSION };
+  const baseCfg = { ...DEFAULT_PDF_CONFIG, ...sanitizedLayout, template_version: TOSS_TEMPLATE_VERSION };
 
   const handlePdfDownload = async () => {
     if (!content) {
@@ -85,12 +85,24 @@ export function PdfGenerator({
     try {
       const koreanFontBase64 = await loadKoreanFont();
 
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      // ── Auto-fit to 2 pages ──
+      // Generate the document, count pages, and if it overflows shrink the
+      // font/line-height/margin and re-render. Up to 5 attempts.
+      let cfg = { ...baseCfg };
+      let pdf!: jsPDF;
+      let pageWidth = 0;
+      let pageHeight = 0;
+      let margin = 0;
+      const TARGET_PAGES = 2;
+      const MAX_ATTEMPTS = 5;
+
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       addKoreanFontToDoc(pdf, koreanFontBase64);
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = Math.max(16, cfg.page_margin);
+      pageWidth = pdf.internal.pageSize.getWidth();
+      pageHeight = pdf.internal.pageSize.getHeight();
+      margin = Math.max(10, cfg.page_margin);
       const contentWidth = pageWidth - margin * 2;
       // Top reserve matches the section-block rhythm used elsewhere
       // (sections start with `yPosition += 6` after a divider/gap),
@@ -653,6 +665,19 @@ export function PdfGenerator({
         pdf.setTextColor(...brand);
         pdf.textWithLink("→ KIPRIS 특허상세보기", margin, yPosition, { url: kiprisUrl });
       }
+
+      // ── End of build attempt: check fit and retry if overflow ──
+      const pageCount = pdf.getNumberOfPages();
+      if (pageCount <= TARGET_PAGES || attempt === MAX_ATTEMPTS - 1) break;
+      // Shrink for next attempt — favor margin/line-height before font.
+      cfg = {
+        ...cfg,
+        page_margin: Math.max(10, +(cfg.page_margin * 0.9).toFixed(1)),
+        line_height: Math.max(1.25, +(cfg.line_height * 0.95).toFixed(2)),
+        body_font_size: Math.max(7, +(cfg.body_font_size * 0.94).toFixed(2)),
+        section_title_size: Math.max(9, +(cfg.section_title_size * 0.96).toFixed(2)),
+      };
+      } // end for-loop
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  FOOTER                                  ██
