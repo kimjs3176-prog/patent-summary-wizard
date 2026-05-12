@@ -758,8 +758,8 @@ export function TossPatentSummary({
         </div>
       )}
 
-      <div className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden">
-        <div className="max-w-[680px] mx-auto px-5 sm:px-7 pb-12">
+      <div className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden max-w-[720px] mx-auto">
+        <div className="px-5 sm:px-7 pb-12">
           {/* HERO */}
           <section className="pt-9 pb-5">
             <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.3] tracking-[-0.02em] mb-2 text-[#191F28]">
