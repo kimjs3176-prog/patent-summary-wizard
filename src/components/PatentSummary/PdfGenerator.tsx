@@ -130,6 +130,8 @@ export function PdfGenerator({
       };
 
       // ── Inline bold text renderer ──
+      const SUP_TOKEN_RE = /(\*\*[^*]+\*\*|\[\^\d+\])/g;
+
       const addWrappedText = (
         rawText: string,
         fontSize: number,
@@ -137,11 +139,17 @@ export function PdfGenerator({
         lineHeight = 1.65,
         indentX = margin
       ) => {
-        const text = renderCitations(rawText);
+        const text = rawText;
         const maxW = pageWidth - indentX - margin;
         const lhMm = fontSize * 0.352778 * lineHeight;
-        const segments = text.split(/(\*\*[^*]+\*\*)/g);
-        const plainText = text.replace(/\*\*/g, "");
+        // Tokenize: keep bold spans, citation markers, and plain text as
+        // separate segments. Plain text used for wrapping has bold delimiters
+        // removed and citation markers reduced to bare digits so wrapping
+        // measurements stay close to the rendered result.
+        const segments = text.split(SUP_TOKEN_RE).filter((s) => s !== undefined && s !== "");
+        const plainText = text
+          .replace(/\*\*([^*]+)\*\*/g, "$1")
+          .replace(/\[\^(\d+)\]/g, "$1");
         pdf.setFontSize(fontSize);
         const wrappedLines = pdf.splitTextToSize(plainText, maxW);
 
@@ -150,12 +158,16 @@ export function PdfGenerator({
           checkNewPage(lhMm + 1);
           let xPos = indentX;
           let remaining = wLine;
-          const lineSegments: { text: string; bold: boolean }[] = [];
+          type Kind = "plain" | "bold" | "sup";
+          const lineSegments: { text: string; kind: Kind }[] = [];
           let segCharCount = 0;
           for (const seg of segments) {
             if (!remaining) break;
             const isBold = seg.startsWith("**") && seg.endsWith("**");
-            const cleanSeg = isBold ? seg.slice(2, -2) : seg;
+            const supMatch = /^\[\^(\d+)\]$/.exec(seg);
+            const isSup = !!supMatch;
+            const cleanSeg = isBold ? seg.slice(2, -2) : isSup ? supMatch![1] : seg;
+            const kind: Kind = isBold ? "bold" : isSup ? "sup" : "plain";
             if (segCharCount + cleanSeg.length <= charIdx) {
               segCharCount += cleanSeg.length;
               continue;
@@ -163,26 +175,37 @@ export function PdfGenerator({
             const startInSeg = Math.max(0, charIdx - segCharCount);
             const availableFromSeg = cleanSeg.substring(startInSeg);
             if (availableFromSeg.length <= remaining.length && remaining.startsWith(availableFromSeg)) {
-              if (availableFromSeg) lineSegments.push({ text: availableFromSeg, bold: isBold });
+              if (availableFromSeg) lineSegments.push({ text: availableFromSeg, kind });
               remaining = remaining.substring(availableFromSeg.length);
               segCharCount += cleanSeg.length;
               charIdx = segCharCount;
             } else if (remaining.length < availableFromSeg.length && availableFromSeg.startsWith(remaining)) {
-              if (remaining) lineSegments.push({ text: remaining, bold: isBold });
+              if (remaining) lineSegments.push({ text: remaining, kind });
               charIdx += remaining.length;
               remaining = "";
             } else {
-              if (remaining) lineSegments.push({ text: remaining, bold: false });
+              if (remaining) lineSegments.push({ text: remaining, kind: "plain" });
               charIdx += remaining.length;
               remaining = "";
             }
           }
           for (const ls of lineSegments) {
-            pdf.setFontSize(fontSize);
-            pdf.setTextColor(...(ls.bold ? T.textDark : color));
-            pdf.text(ls.text, xPos, yPosition);
-            if (ls.bold) pdf.text(ls.text, xPos + 0.13, yPosition);
-            xPos += pdf.getTextWidth(ls.text);
+            if (ls.kind === "sup") {
+              const supSize = Math.max(5.5, fontSize * 0.62);
+              pdf.setFontSize(supSize);
+              pdf.setTextColor(...T.textMuted);
+              // Raise baseline ~35% of body font height
+              const supY = yPosition - fontSize * 0.352778 * 0.42;
+              pdf.text(ls.text, xPos, supY);
+              xPos += pdf.getTextWidth(ls.text) + 0.2;
+              pdf.setFontSize(fontSize);
+            } else {
+              pdf.setFontSize(fontSize);
+              pdf.setTextColor(...(ls.kind === "bold" ? T.textDark : color));
+              pdf.text(ls.text, xPos, yPosition);
+              if (ls.kind === "bold") pdf.text(ls.text, xPos + 0.13, yPosition);
+              xPos += pdf.getTextWidth(ls.text);
+            }
           }
           if (lineSegments.length === 0) {
             pdf.setFontSize(fontSize);
@@ -359,7 +382,7 @@ export function PdfGenerator({
         if (commercializationDetails.analysis) {
           pdf.setFontSize(9);
           analysisLines = pdf.splitTextToSize(
-            renderCitations(commercializationDetails.analysis.replace(/\*\*/g, "")),
+            stripCitationBrackets(commercializationDetails.analysis.replace(/\*\*/g, "")),
             contentWidth - 8
           ).slice(0, 6);
         }
@@ -560,7 +583,7 @@ export function PdfGenerator({
         yPosition += 8;
         pdf.setFontSize(7.5);
         pdf.setTextColor(...T.textFaint);
-        const dLines = pdf.splitTextToSize(renderCitations(cfg.disclaimer_text), contentWidth);
+        const dLines = pdf.splitTextToSize(stripCitationBrackets(cfg.disclaimer_text), contentWidth);
         for (const ln of dLines) {
           checkNewPage(5);
           pdf.text(ln, margin, yPosition);
