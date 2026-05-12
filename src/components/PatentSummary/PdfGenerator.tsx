@@ -24,10 +24,10 @@ const hexToRgb = (hex: string): [number, number, number] => {
 
 // ─── Toss-style Minimal Design System ───
 const T = {
-  textDark: [31, 41, 55] as [number, number, number],       // #1F2937
-  textBody: [55, 65, 81] as [number, number, number],       // #374151
-  textMuted: [107, 114, 128] as [number, number, number],   // #6B7280
-  textFaint: [156, 163, 175] as [number, number, number],   // #9CA3AF
+  textDark: [17, 24, 39] as [number, number, number],         // #111827 (darker for legibility)
+  textBody: [31, 41, 55] as [number, number, number],         // #1F2937 (darker body)
+  textMuted: [75, 85, 99] as [number, number, number],        // #4B5563
+  textFaint: [107, 114, 128] as [number, number, number],     // #6B7280
   divider: [229, 231, 235] as [number, number, number],     // #E5E7EB
   dividerLight: [243, 244, 246] as [number, number, number],// #F3F4F6
   bandBg: [248, 250, 252] as [number, number, number],      // #F8FAFC
@@ -329,6 +329,85 @@ export function PdfGenerator({
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ██  AI COMMERCIALIZATION SCORE DETAIL       ██
+      // ██  (moved directly below the stat band)    ██
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      const renderCommercializationBlock = () => {
+        if (
+          !cfg.show_commercialization_score ||
+          commercializationScore == null ||
+          !commercializationDetails ||
+          (commercializationDetails.technologyScore == null &&
+            commercializationDetails.marketScore == null &&
+            commercializationDetails.businessScore == null)
+        ) return;
+
+        const subs = [
+          { label: "기술성", v: commercializationDetails.technologyScore },
+          { label: "시장성", v: commercializationDetails.marketScore },
+          { label: "사업성", v: commercializationDetails.businessScore },
+        ].filter((s) => typeof s.v === "number");
+
+        let analysisLines: string[] = [];
+        if (commercializationDetails.analysis) {
+          pdf.setFontSize(9);
+          analysisLines = pdf.splitTextToSize(commercializationDetails.analysis.replace(/\*\*/g, ""), contentWidth - 8).slice(0, 6);
+        }
+
+        const blockH = 10 + (subs.length ? 18 : 0) + (analysisLines.length ? analysisLines.length * 4.4 + 4 : 0);
+        checkNewPage(blockH + 14);
+
+        // Section header with extra breathing room before body
+        yPosition += 6;
+        const headerY = yPosition;
+        pdf.setFillColor(...brand);
+        pdf.rect(margin, headerY - 4.6, 1.6, 5.6, "F");
+        pdf.setFontSize(12);
+        pdf.setTextColor(...T.textDark);
+        pdf.text("AI 사업화 분석", margin + 4, headerY);
+        pdf.text("AI 사업화 분석", margin + 4.08, headerY);
+        yPosition = headerY + 9;
+
+        // Sub scores
+        if (subs.length) {
+          const colGap = 6;
+          const colW = (contentWidth - colGap * (subs.length - 1)) / subs.length;
+          for (let i = 0; i < subs.length; i++) {
+            const s = subs[i];
+            const x = margin + i * (colW + colGap);
+            drawText(s.label, x, yPosition, { size: 8, color: T.textMuted });
+            const vStr = `${Math.round(s.v as number)}`;
+            pdf.setFontSize(11);
+            pdf.setTextColor(...T.textDark);
+            const vW = pdf.getTextWidth(vStr);
+            pdf.text(vStr, x + colW - vW - 8, yPosition);
+            pdf.text(vStr, x + colW - vW - 7.92, yPosition);
+            drawText("/100", x + colW - 6, yPosition, { size: 7, color: T.textFaint });
+            const barY = yPosition + 2;
+            pdf.setFillColor(...T.dividerLight);
+            pdf.roundedRect(x, barY, colW, 1.8, 0.9, 0.9, "F");
+            pdf.setFillColor(...brand);
+            pdf.roundedRect(x, barY, Math.max(2, colW * ((s.v as number) / 100)), 1.8, 0.9, 0.9, "F");
+          }
+          yPosition += 13;
+        }
+
+        // Analysis text — darker for legibility
+        if (analysisLines.length) {
+          pdf.setFontSize(9);
+          pdf.setTextColor(...T.textBody);
+          for (const ln of analysisLines) {
+            checkNewPage(5);
+            pdf.text(ln, margin, yPosition);
+            yPosition += 4.4;
+          }
+        }
+        yPosition += 4;
+      };
+
+      renderCommercializationBlock();
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  CONTENT SECTIONS                        ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       const lines = content.split("\n");
@@ -411,7 +490,7 @@ export function PdfGenerator({
 
           // Section header: green vertical bar + title
           checkNewPage(18);
-          yPosition += 4;
+          yPosition += 6;
           const headerY = yPosition;
           // Left vertical bar
           pdf.setFillColor(...brand);
@@ -420,9 +499,9 @@ export function PdfGenerator({
           pdf.setFontSize(12);
           pdf.setTextColor(...T.textDark);
           pdf.text(sectionTitle, margin + 4, headerY);
-          pdf.text(sectionTitle, margin + 4.18, headerY);
+          pdf.text(sectionTitle, margin + 4.08, headerY);
 
-          yPosition = headerY + 5.5;
+          yPosition = headerY + 8.5;
 
           if (
             (sectionTitle === "발명요약 및 특징" ||
@@ -433,84 +512,8 @@ export function PdfGenerator({
             await insertImages();
           }
         } else if (cleanLine.trim()) {
-          addWrappedText(cleanLine, cfg.body_font_size, T.textBody, cfg.line_height, margin);
+          addWrappedText(cleanLine, cfg.body_font_size, T.textDark, cfg.line_height, margin);
           yPosition += 1.4;
-        }
-      }
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  AI COMMERCIALIZATION SCORE DETAIL       ██
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      if (
-        cfg.show_commercialization_score &&
-        commercializationScore != null &&
-        commercializationDetails &&
-        (commercializationDetails.technologyScore != null ||
-          commercializationDetails.marketScore != null ||
-          commercializationDetails.businessScore != null)
-      ) {
-        const subs = [
-          { label: "기술성", v: commercializationDetails.technologyScore },
-          { label: "시장성", v: commercializationDetails.marketScore },
-          { label: "사업성", v: commercializationDetails.businessScore },
-        ].filter((s) => typeof s.v === "number");
-
-        let analysisLines: string[] = [];
-        if (commercializationDetails.analysis) {
-          pdf.setFontSize(8.5);
-          analysisLines = pdf.splitTextToSize(commercializationDetails.analysis.replace(/\*\*/g, ""), contentWidth - 8).slice(0, 6);
-        }
-
-        const blockH = 6 + (subs.length ? 16 : 0) + (analysisLines.length ? analysisLines.length * 4 + 4 : 0);
-        checkNewPage(blockH + 14);
-
-        // Section header
-        yPosition += 6;
-        const headerY = yPosition;
-        pdf.setFillColor(...brand);
-        pdf.rect(margin, headerY - 4.6, 1.6, 5.6, "F");
-        pdf.setFontSize(12);
-        pdf.setTextColor(...T.textDark);
-        pdf.text("AI 사업화 분석", margin + 4, headerY);
-        pdf.text("AI 사업화 분석", margin + 4.18, headerY);
-        yPosition = headerY + 6;
-
-        // Sub scores
-        if (subs.length) {
-          const colGap = 6;
-          const colW = (contentWidth - colGap * (subs.length - 1)) / subs.length;
-          for (let i = 0; i < subs.length; i++) {
-            const s = subs[i];
-            const x = margin + i * (colW + colGap);
-            // label
-            drawText(s.label, x, yPosition, { size: 7.5, color: T.textMuted });
-            // value
-            const vStr = `${Math.round(s.v as number)}`;
-            pdf.setFontSize(11);
-            pdf.setTextColor(...T.textDark);
-            const vW = pdf.getTextWidth(vStr);
-            pdf.text(vStr, x + colW - vW - 8, yPosition);
-            pdf.text(vStr, x + colW - vW - 7.85, yPosition);
-            drawText("/100", x + colW - 6, yPosition, { size: 6.8, color: T.textFaint });
-            // bar
-            const barY = yPosition + 2;
-            pdf.setFillColor(...T.dividerLight);
-            pdf.roundedRect(x, barY, colW, 1.8, 0.9, 0.9, "F");
-            pdf.setFillColor(...brand);
-            pdf.roundedRect(x, barY, Math.max(2, colW * ((s.v as number) / 100)), 1.8, 0.9, 0.9, "F");
-          }
-          yPosition += 11;
-        }
-
-        // Analysis text
-        if (analysisLines.length) {
-          pdf.setFontSize(8.5);
-          pdf.setTextColor(...T.textBody);
-          for (const ln of analysisLines) {
-            checkNewPage(5);
-            pdf.text(ln, margin, yPosition);
-            yPosition += 4;
-          }
         }
       }
 
