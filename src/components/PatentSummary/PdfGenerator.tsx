@@ -260,7 +260,7 @@ export function PdfGenerator({
       pdf.text(badgeText, margin + 4, badgeY + 4.4);
       pdf.text(badgeText, margin + 4.1, badgeY + 4.4);
 
-      yPosition = badgeY + badgeH + 6;
+      yPosition = badgeY + badgeH + 10;
 
       // Title — large, bold, multi-line
       const title = patentData?.titleKo || patentData?.title || "특허 요약";
