@@ -666,6 +666,19 @@ export function PdfGenerator({
         pdf.textWithLink("→ KIPRIS 특허상세보기", margin, yPosition, { url: kiprisUrl });
       }
 
+      // ── End of build attempt: check fit and retry if overflow ──
+      const pageCount = pdf.getNumberOfPages();
+      if (pageCount <= TARGET_PAGES || attempt === MAX_ATTEMPTS - 1) break;
+      // Shrink for next attempt — favor margin/line-height before font.
+      cfg = {
+        ...cfg,
+        page_margin: Math.max(10, +(cfg.page_margin * 0.9).toFixed(1)),
+        line_height: Math.max(1.25, +(cfg.line_height * 0.95).toFixed(2)),
+        body_font_size: Math.max(7, +(cfg.body_font_size * 0.94).toFixed(2)),
+        section_title_size: Math.max(9, +(cfg.section_title_size * 0.96).toFixed(2)),
+      };
+      } // end for-loop
+
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  FOOTER                                  ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
