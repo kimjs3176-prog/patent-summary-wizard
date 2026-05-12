@@ -23,11 +23,7 @@ const hexToRgb = (hex: string): [number, number, number] => {
 };
 
 // ─── Toss-style Minimal Design System ───
-const T = {
-  textDark: [31, 41, 55] as [number, number, number],       // #1F2937
-  textBody: [55, 65, 81] as [number, number, number],       // #374151
-  textMuted: [107, 114, 128] as [number, number, number],   // #6B7280
-  textFaint: [156, 163, 175] as [number, number, number],   // #9CA3AF
+  // (T defined at module scope)
   divider: [229, 231, 235] as [number, number, number],     // #E5E7EB
   dividerLight: [243, 244, 246] as [number, number, number],// #F3F4F6
   bandBg: [248, 250, 252] as [number, number, number],      // #F8FAFC
