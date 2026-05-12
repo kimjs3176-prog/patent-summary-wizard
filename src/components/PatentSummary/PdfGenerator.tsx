@@ -22,6 +22,21 @@ const hexToRgb = (hex: string): [number, number, number] => {
   return [parseInt(h.substring(0, 2), 16), parseInt(h.substring(2, 4), 16), parseInt(h.substring(4, 6), 16)];
 };
 
+// ─── Convert citation markers like [^1], [^2] into circled numerals ───
+// Falls back to "⑴⑵..." for 21–50 and to "(N)" beyond that.
+const CIRCLED = [
+  "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩",
+  "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
+];
+const toCircledNumber = (n: number): string => {
+  if (n >= 1 && n <= 20) return CIRCLED[n - 1];
+  return `(${n})`;
+};
+const renderCitations = (text: string): string => {
+  if (!text) return text;
+  return text.replace(/\[\^(\d+)\]/g, (_m, d) => toCircledNumber(parseInt(d, 10)));
+};
+
 // ─── Toss-style Minimal Design System ───
 const T = {
   textDark: [17, 24, 39] as [number, number, number],         // #111827 (darker for legibility)
