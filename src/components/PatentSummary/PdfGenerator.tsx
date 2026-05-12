@@ -501,7 +501,32 @@ export function PdfGenerator({
           pdf.text(sectionTitle, margin + 4, headerY);
           pdf.text(sectionTitle, margin + 4.08, headerY);
 
-          yPosition = headerY + 8.5;
+          // ── Auto-balanced gap between section title and body ──
+          // Lookahead: peek the first paragraph(s) of this section, count
+          // wrapped lines, then scale the gap so short bodies stay tight
+          // and longer bodies get extra breathing room.
+          let firstParagraph = "";
+          for (let lk = li + 1; lk < lines.length; lk++) {
+            const peek = lines[lk];
+            if (peek.startsWith("## ")) break;
+            if (isDuplicatePatentInfo(peek)) continue;
+            const cleanPeek = peek.replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "").trim();
+            if (!cleanPeek) {
+              if (firstParagraph) break; // blank line ends first paragraph
+              continue;
+            }
+            firstParagraph += (firstParagraph ? " " : "") + cleanPeek.replace(/\*\*/g, "");
+            if (firstParagraph.length > 240) break;
+          }
+          let gapAfterTitle = 7.5;
+          if (firstParagraph) {
+            pdf.setFontSize(cfg.body_font_size);
+            const wrapped = pdf.splitTextToSize(firstParagraph, contentWidth);
+            const lineCount = Math.min(wrapped.length, 8);
+            // 1 line → 6.5mm, 2 → 7.5mm, 3 → 8.5mm, 4+ → up to 11mm
+            gapAfterTitle = Math.min(11, 5.5 + lineCount * 1.0);
+          }
+          yPosition = headerY + gapAfterTitle;
 
           if (
             (sectionTitle === "발명요약 및 특징" ||
