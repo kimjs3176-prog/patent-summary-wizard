@@ -5,7 +5,7 @@ import jsPDF from "jspdf";
 import { PatentData } from "./types";
 import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
 import { CommercializationDetails } from "./TechnologyCommercializationScore";
-import { DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
+import { DEFAULT_PDF_CONFIG, TOSS_TEMPLATE_VERSION, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 
 interface PdfGeneratorProps {
   content: string;
@@ -46,7 +46,27 @@ export function PdfGenerator({
   commercializationDetails,
   layoutConfig,
 }: PdfGeneratorProps) {
-  const cfg = { ...DEFAULT_PDF_CONFIG, ...layoutConfig };
+  // Force the latest Toss-style visual template. If the saved layoutConfig
+  // was created before the current template version, drop its stale visual
+  // fields (colors, sizes, margins) and only keep visibility/text toggles.
+  const STYLE_KEYS: (keyof PdfLayoutConfig)[] = [
+    "header_bg_color",
+    "section_accent_color",
+    "meta_accent_color",
+    "body_font_size",
+    "line_height",
+    "page_margin",
+    "section_title_size",
+  ];
+  const isLatestTemplate = layoutConfig?.template_version === TOSS_TEMPLATE_VERSION;
+  const sanitizedLayout: Partial<PdfLayoutConfig> = !layoutConfig
+    ? {}
+    : isLatestTemplate
+      ? layoutConfig
+      : Object.fromEntries(
+          Object.entries(layoutConfig).filter(([k]) => !STYLE_KEYS.includes(k as keyof PdfLayoutConfig))
+        );
+  const cfg = { ...DEFAULT_PDF_CONFIG, ...sanitizedLayout, template_version: TOSS_TEMPLATE_VERSION };
 
   const handlePdfDownload = async () => {
     if (!content) {
