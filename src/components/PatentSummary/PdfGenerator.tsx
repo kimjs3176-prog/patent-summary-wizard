@@ -140,12 +140,13 @@ export function PdfGenerator({
 
       // ── Inline bold text renderer ──
       const addWrappedText = (
-        text: string,
+        rawText: string,
         fontSize: number,
         color: [number, number, number],
         lineHeight = 1.65,
         indentX = margin
       ) => {
+        const text = renderCitations(rawText);
         const maxW = pageWidth - indentX - margin;
         const lhMm = fontSize * 0.352778 * lineHeight;
         const segments = text.split(/(\*\*[^*]+\*\*)/g);
@@ -366,7 +367,10 @@ export function PdfGenerator({
         let analysisLines: string[] = [];
         if (commercializationDetails.analysis) {
           pdf.setFontSize(9);
-          analysisLines = pdf.splitTextToSize(commercializationDetails.analysis.replace(/\*\*/g, ""), contentWidth - 8).slice(0, 6);
+          analysisLines = pdf.splitTextToSize(
+            renderCitations(commercializationDetails.analysis.replace(/\*\*/g, "")),
+            contentWidth - 8
+          ).slice(0, 6);
         }
 
         const blockH = 10 + (subs.length ? 18 : 0) + (analysisLines.length ? analysisLines.length * 4.4 + 4 : 0);
@@ -565,7 +569,7 @@ export function PdfGenerator({
         yPosition += 8;
         pdf.setFontSize(7.5);
         pdf.setTextColor(...T.textFaint);
-        const dLines = pdf.splitTextToSize(cfg.disclaimer_text, contentWidth);
+        const dLines = pdf.splitTextToSize(renderCitations(cfg.disclaimer_text), contentWidth);
         for (const ln of dLines) {
           checkNewPage(5);
           pdf.text(ln, margin, yPosition);
