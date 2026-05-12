@@ -50,6 +50,7 @@ export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
   show_patent_meta: true,
   show_claims: true,
   show_trl: false,
+  show_commercialization_score: true,
   footer_text: "© 농식품 특허 요약 서비스 | AI 기반 특허 분석",
   footer_show_date: true,
   footer_show_page: true,
@@ -202,6 +203,7 @@ export function PdfLayoutSettings({ apiCall, initialConfig }: PdfLayoutSettingsP
             { key: "show_patent_meta" as const, label: "특허 기본 정보 (출원인, 일자 등)" },
             { key: "show_claims" as const, label: "청구항" },
             { key: "show_trl" as const, label: "기술성숙도(TRL) 섹션" },
+            { key: "show_commercialization_score" as const, label: "AI 사업화 점수 섹션" },
           ].map(item => (
             <div key={item.key} className="flex items-center justify-between py-1">
               <span className="text-sm">{item.label}</span>
