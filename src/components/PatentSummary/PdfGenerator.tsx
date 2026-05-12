@@ -583,10 +583,7 @@ export function PdfGenerator({
 
           // Left accent — thick vertical bar with gold trim
           pdf.setFillColor(...accentColor);
-          pdf.rect(margin, bandY, 3, sectionHeaderH, "F");
-          // Gold cap on accent bar
-          pdf.setFillColor(...THEME.gold);
-          pdf.rect(margin, bandY, 3, 1.2, "F");
+          pdf.rect(margin, bandY, 2.5, sectionHeaderH, "F");
 
           // Section title — clean, bold, editorial
           const stitleX = margin + 8;
