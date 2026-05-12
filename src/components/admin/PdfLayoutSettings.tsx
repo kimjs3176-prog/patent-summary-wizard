@@ -9,7 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Save, Loader2, FileDown, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
+// ─── Toss-style template version ───
+// Bump this whenever the visual design system changes so that older saved
+// configs (with stale colors/sizes) are automatically migrated to the
+// latest Toss-style defaults instead of overriding the new look.
+export const TOSS_TEMPLATE_VERSION = "toss-v1";
+
 export interface PdfLayoutConfig {
+  template_version?: string;
   header_title: string;
   header_subtitle: string;
   header_bg_color: string;
@@ -37,15 +44,16 @@ export interface PdfLayoutConfig {
 }
 
 export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
+  template_version: TOSS_TEMPLATE_VERSION,
   header_title: "농식품 특허 요약서",
   header_subtitle: "Agri-Food Patent Summary Report",
-  header_bg_color: "#008c82",
+  header_bg_color: "#10AD7F",
   body_font_size: 9.5,
   line_height: 1.7,
   page_margin: 18,
   section_title_size: 10.5,
-  section_accent_color: "#00785a",
-  meta_accent_color: "#3278c8",
+  section_accent_color: "#10AD7F",
+  meta_accent_color: "#10AD7F",
   show_patent_images: true,
   show_patent_meta: true,
   show_claims: true,
@@ -77,8 +85,11 @@ export function PdfLayoutSettings({ apiCall, initialConfig }: PdfLayoutSettingsP
 
   const handleSave = async () => {
     setIsSaving(true);
+    // Always stamp the latest template version on save so future loads keep
+    // the current Toss-style template.
+    const payload = { ...config, template_version: TOSS_TEMPLATE_VERSION };
     const result = await apiCall("update-settings", {
-      pdf_layout_config: JSON.stringify(config),
+      pdf_layout_config: JSON.stringify(payload),
     });
     if (result.success) {
       toast.success("PDF 레이아웃 설정이 저장되었습니다.");
