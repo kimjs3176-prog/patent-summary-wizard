@@ -581,7 +581,23 @@ export function PdfGenerator({
           // ends up alone at the bottom of a page.
           const bodyLhMm = cfg.body_font_size * 0.352778 * cfg.line_height;
           const keepWithNextLines = Math.min(firstBodyLineCount || 2, 2);
-          const reserved = 6 /* pre-title gap */ + gapAfterTitle + keepWithNextLines * bodyLhMm + 2;
+          // If this section triggers image insertion before body, also
+          // reserve the image strip height so the title is not orphaned
+          // above an image-only page break.
+          const willInsertImagesHere =
+            !imageInserted &&
+            cfg.show_patent_images &&
+            (sectionTitle === "발명요약 및 특징" ||
+              sectionTitle === "발명의 요약" ||
+              sectionTitle === "발명의 요약 및 기술적 특징") &&
+            (patentData?.images?.length || patentData?.representativeImage);
+          const imageReserve = willInsertImagesHere ? 56 : 0;
+          const reserved =
+            6 /* pre-title gap */ +
+            gapAfterTitle +
+            keepWithNextLines * bodyLhMm +
+            imageReserve +
+            2;
           checkNewPage(reserved);
 
           // Section header: green vertical bar + title
