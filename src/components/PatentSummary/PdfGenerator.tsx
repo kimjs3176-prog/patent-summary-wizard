@@ -548,23 +548,10 @@ export function PdfGenerator({
             continue;
           }
 
-          // Section header: green vertical bar + title
-          checkNewPage(18);
-          yPosition += 6;
-          const headerY = yPosition;
-          // Left vertical bar
-          pdf.setFillColor(...brand);
-          pdf.rect(margin, headerY - 4.6, 1.6, 5.6, "F");
-          // Title
-          pdf.setFontSize(12);
-          pdf.setTextColor(...T.textDark);
-          pdf.text(sectionTitle, margin + 4, headerY);
-          pdf.text(sectionTitle, margin + 4.08, headerY);
-
           // ── Auto-balanced gap between section title and body ──
-          // Lookahead: peek the first paragraph(s) of this section, count
-          // wrapped lines, then scale the gap so short bodies stay tight
-          // and longer bodies get extra breathing room.
+          // Lookahead first so we can both (a) scale the gap to body length
+          // and (b) reserve enough page space to keep the title with at
+          // least the first lines of body — preventing orphaned headings.
           let firstParagraph = "";
           for (let lk = li + 1; lk < lines.length; lk++) {
             const peek = lines[lk];
@@ -579,13 +566,36 @@ export function PdfGenerator({
             if (firstParagraph.length > 240) break;
           }
           let gapAfterTitle = 7.5;
+          let firstBodyLineCount = 0;
           if (firstParagraph) {
             pdf.setFontSize(cfg.body_font_size);
             const wrapped = pdf.splitTextToSize(firstParagraph, contentWidth);
+            firstBodyLineCount = wrapped.length;
             const lineCount = Math.min(wrapped.length, 8);
             // 1 line → 6.5mm, 2 → 7.5mm, 3 → 8.5mm, 4+ → up to 11mm
             gapAfterTitle = Math.min(11, 5.5 + lineCount * 1.0);
           }
+
+          // Keep-with-next: reserve title block + gap + at least the first
+          // 2 body lines (or all of them if fewer) so the heading never
+          // ends up alone at the bottom of a page.
+          const bodyLhMm = cfg.body_font_size * 0.352778 * cfg.line_height;
+          const keepWithNextLines = Math.min(firstBodyLineCount || 2, 2);
+          const reserved = 6 /* pre-title gap */ + gapAfterTitle + keepWithNextLines * bodyLhMm + 2;
+          checkNewPage(reserved);
+
+          // Section header: green vertical bar + title
+          yPosition += 6;
+          const headerY = yPosition;
+          // Left vertical bar
+          pdf.setFillColor(...brand);
+          pdf.rect(margin, headerY - 4.6, 1.6, 5.6, "F");
+          // Title
+          pdf.setFontSize(12);
+          pdf.setTextColor(...T.textDark);
+          pdf.text(sectionTitle, margin + 4, headerY);
+          pdf.text(sectionTitle, margin + 4.08, headerY);
+
           yPosition = headerY + gapAfterTitle;
 
           if (
