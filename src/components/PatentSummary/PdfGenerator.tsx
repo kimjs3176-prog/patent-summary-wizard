@@ -92,7 +92,10 @@ export function PdfGenerator({
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = Math.max(16, cfg.page_margin);
       const contentWidth = pageWidth - margin * 2;
-      let yPosition = margin + 4;
+      // Top reserve matches the section-block rhythm used elsewhere
+      // (sections start with `yPosition += 6` after a divider/gap),
+      // so we keep ~6mm above the badge for visual consistency.
+      let yPosition = margin + 6;
 
       // brand color (use cfg.section_accent_color or header_bg_color)
       const brand = hexToRgb(cfg.section_accent_color || "#10AD7F");
@@ -260,22 +263,46 @@ export function PdfGenerator({
       pdf.text(badgeText, margin + 4, badgeY + 4.4);
       pdf.text(badgeText, margin + 4.1, badgeY + 4.4);
 
-      yPosition = badgeY + badgeH + 10;
-
-      // Title — large, bold, multi-line
+      // Title — large, bold, multi-line.
+      // Auto-shrink the font so long titles wrap naturally without truncation,
+      // and scale the badge↔title and title↔meta gaps to the resulting block.
       const title = patentData?.titleKo || patentData?.title || "특허 요약";
-      pdf.setFontSize(18);
-      const titleLines = pdf.splitTextToSize(title, contentWidth).slice(0, 3);
-      for (const tLine of titleLines) {
-        checkNewPage(8);
-        pdf.setTextColor(...T.textDark);
-        pdf.setFontSize(18);
-        pdf.text(tLine, margin, yPosition);
-        pdf.text(tLine, margin + 0.18, yPosition);
-        yPosition += 8;
+      const titleCandidates: Array<{ size: number; lh: number; maxLines: number }> = [
+        { size: 18, lh: 8.0, maxLines: 2 },
+        { size: 16, lh: 7.2, maxLines: 3 },
+        { size: 14, lh: 6.4, maxLines: 4 },
+        { size: 12.5, lh: 5.8, maxLines: 5 },
+      ];
+      let titleSize = 18;
+      let titleLh = 8.0;
+      let titleLines: string[] = [];
+      for (const c of titleCandidates) {
+        pdf.setFontSize(c.size);
+        const wrapped = pdf.splitTextToSize(title, contentWidth);
+        if (wrapped.length <= c.maxLines || c === titleCandidates[titleCandidates.length - 1]) {
+          titleSize = c.size;
+          titleLh = c.lh;
+          titleLines = wrapped.slice(0, c.maxLines);
+          break;
+        }
       }
 
-      yPosition += 1;
+      // Scale badge → title gap with title block height (more title = more breathing room)
+      const badgeToTitleGap = titleLines.length <= 1 ? 8 : titleLines.length === 2 ? 10 : 12;
+      yPosition = badgeY + badgeH + badgeToTitleGap;
+
+      pdf.setFontSize(titleSize);
+      for (const tLine of titleLines) {
+        checkNewPage(titleLh);
+        pdf.setTextColor(...T.textDark);
+        pdf.setFontSize(titleSize);
+        pdf.text(tLine, margin, yPosition);
+        pdf.text(tLine, margin + 0.18, yPosition);
+        yPosition += titleLh;
+      }
+
+      // Scale title → meta gap with the wrapped title length
+      yPosition += titleLines.length <= 1 ? 1.5 : titleLines.length === 2 ? 2.5 : 3.5;
 
       // Meta line
       const metaParts: string[] = [];
