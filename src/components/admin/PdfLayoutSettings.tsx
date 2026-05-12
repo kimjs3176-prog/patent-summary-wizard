@@ -26,6 +26,7 @@ export interface PdfLayoutConfig {
   show_patent_meta: boolean;
   show_claims: boolean;
   show_trl: boolean;
+  show_commercialization_score: boolean;
   // Footer
   footer_text: string;
   footer_show_date: boolean;
