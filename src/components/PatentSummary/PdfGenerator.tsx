@@ -354,9 +354,134 @@ export function PdfGenerator({
         yPosition = cardStartY + metaCardH + 6;
       }
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  CONTENT SECTIONS                   ██
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ── AI COMMERCIALIZATION SCORE ──
+      if (cfg.show_commercialization_score && commercializationScore != null) {
+        const score = Math.round(commercializationScore);
+        const grade = score >= 85 ? "S" : score >= 75 ? "A" : score >= 65 ? "B" : "C";
+        const gradeLabel = score >= 85 ? "매우 우수" : score >= 75 ? "우수" : score >= 65 ? "양호" : "보통";
+        const gradeColor: [number, number, number] =
+          score >= 80 ? [16, 122, 87] : score >= 65 ? [201, 145, 24] : [200, 70, 70];
+
+        const subs = commercializationDetails
+          ? [
+              { label: "기술성", v: commercializationDetails.technologyScore },
+              { label: "시장성", v: commercializationDetails.marketScore },
+              { label: "사업성", v: commercializationDetails.businessScore },
+            ]
+          : [];
+
+        let cardH = 26;
+        if (subs.length) cardH += 14;
+        let analysisLines: string[] = [];
+        if (commercializationDetails?.analysis) {
+          pdf.setFontSize(8);
+          analysisLines = pdf.splitTextToSize(commercializationDetails.analysis.replace(/\*\*/g, ""), contentWidth - 16);
+          analysisLines = analysisLines.slice(0, 6);
+          cardH += analysisLines.length * 3.8 + 6;
+        }
+
+        checkNewPage(cardH + 6);
+        const cY = yPosition;
+
+        pdf.setFillColor(...THEME.paper);
+        pdf.setDrawColor(...THEME.border);
+        pdf.setLineWidth(0.35);
+        pdf.roundedRect(margin, cY, contentWidth, cardH, 2, 2, "FD");
+
+        pdf.setFillColor(...accentColor);
+        pdf.rect(margin, cY, 2.5, cardH, "F");
+
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(...THEME.navy);
+        pdf.text("AI 사업화 점수", margin + 7, cY + 6);
+        pdf.text("AI 사업화 점수", margin + 7.12, cY + 6);
+
+        pdf.setFontSize(6.5);
+        pdf.setTextColor(...THEME.textMuted);
+        pdf.text("AI Commercialization Score", margin + 7, cY + 9.6);
+
+        // Score block (right side)
+        const scoreBoxW = 52;
+        const scoreBoxH = 16;
+        const scoreBoxX = pageWidth - margin - scoreBoxW - 4;
+        const scoreBoxY = cY + 4;
+
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(...THEME.borderLight);
+        pdf.setLineWidth(0.25);
+        pdf.roundedRect(scoreBoxX, scoreBoxY, scoreBoxW, scoreBoxH, 1.5, 1.5, "FD");
+
+        pdf.setFontSize(18);
+        pdf.setTextColor(...gradeColor);
+        const scoreStr = String(score);
+        pdf.text(scoreStr, scoreBoxX + 6, scoreBoxY + 12);
+        pdf.text(scoreStr, scoreBoxX + 6.18, scoreBoxY + 12);
+        const scoreW = pdf.getTextWidth(scoreStr);
+        pdf.setFontSize(7);
+        pdf.setTextColor(...THEME.textMuted);
+        pdf.text("/ 100", scoreBoxX + 6 + scoreW + 1.2, scoreBoxY + 12);
+
+        const pillW = 16;
+        const pillH = 6.2;
+        const pillX = scoreBoxX + scoreBoxW - pillW - 4;
+        const pillY = scoreBoxY + 3.2;
+        pdf.setFillColor(...gradeColor);
+        pdf.roundedRect(pillX, pillY, pillW, pillH, 1.4, 1.4, "F");
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(255, 255, 255);
+        const gW = pdf.getTextWidth(grade);
+        pdf.text(grade, pillX + (pillW - gW) / 2, pillY + 4.4);
+        pdf.setFontSize(6.2);
+        pdf.setTextColor(...THEME.textMuted);
+        const glW = pdf.getTextWidth(gradeLabel);
+        pdf.text(gradeLabel, pillX + (pillW - glW) / 2, pillY + 9.8);
+
+        let innerY = cY + 22;
+
+        if (subs.length) {
+          const colGap = 5;
+          const colW = (contentWidth - 14 - colGap * (subs.length - 1)) / subs.length;
+          for (let i = 0; i < subs.length; i++) {
+            const s = subs[i];
+            const x = margin + 7 + i * (colW + colGap);
+            pdf.setFontSize(7);
+            pdf.setTextColor(...THEME.textMuted);
+            pdf.text(s.label, x, innerY);
+            const vStr = `${Math.round(s.v)}`;
+            pdf.setFontSize(9);
+            pdf.setTextColor(...THEME.navy);
+            const vW = pdf.getTextWidth(vStr);
+            pdf.text(vStr, x + colW - vW - 7, innerY);
+            pdf.setFontSize(6.2);
+            pdf.setTextColor(...THEME.textMuted);
+            pdf.text("/100", x + colW - 6.5, innerY);
+            const barY = innerY + 2;
+            pdf.setFillColor(...THEME.borderLight);
+            pdf.rect(x, barY, colW, 1.6, "F");
+            const barColor: [number, number, number] = s.v >= 80 ? [16, 122, 87] : s.v >= 65 ? [201, 145, 24] : [200, 110, 80];
+            pdf.setFillColor(...barColor);
+            pdf.rect(x, barY, Math.max(2, colW * (s.v / 100)), 1.6, "F");
+          }
+          innerY += 10;
+        }
+
+        if (analysisLines.length) {
+          pdf.setDrawColor(...THEME.borderLight);
+          pdf.setLineWidth(0.2);
+          pdf.line(margin + 7, innerY, margin + contentWidth - 6, innerY);
+          innerY += 4;
+          pdf.setFontSize(8);
+          pdf.setTextColor(...THEME.textSecondary);
+          for (const ln of analysisLines) {
+            pdf.text(ln, margin + 7, innerY);
+            innerY += 3.8;
+          }
+        }
+
+        yPosition = cY + cardH + 6;
+      }
+
+      // ── CONTENT SECTIONS ──
       const lines = content.split("\n");
       let skipSection = false;
       let imageInserted = false;
