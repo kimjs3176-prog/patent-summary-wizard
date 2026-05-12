@@ -22,6 +22,21 @@ const hexToRgb = (hex: string): [number, number, number] => {
   return [parseInt(h.substring(0, 2), 16), parseInt(h.substring(2, 4), 16), parseInt(h.substring(4, 6), 16)];
 };
 
+// ─── Convert citation markers like [^1], [^2] into circled numerals ───
+// Falls back to "⑴⑵..." for 21–50 and to "(N)" beyond that.
+const CIRCLED = [
+  "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩",
+  "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
+];
+const toCircledNumber = (n: number): string => {
+  if (n >= 1 && n <= 20) return CIRCLED[n - 1];
+  return `(${n})`;
+};
+const renderCitations = (text: string): string => {
+  if (!text) return text;
+  return text.replace(/\[\^(\d+)\]/g, (_m, d) => toCircledNumber(parseInt(d, 10)));
+};
+
 // ─── Toss-style Minimal Design System ───
 const T = {
   textDark: [17, 24, 39] as [number, number, number],         // #111827 (darker for legibility)
@@ -125,12 +140,13 @@ export function PdfGenerator({
 
       // ── Inline bold text renderer ──
       const addWrappedText = (
-        text: string,
+        rawText: string,
         fontSize: number,
         color: [number, number, number],
         lineHeight = 1.65,
         indentX = margin
       ) => {
+        const text = renderCitations(rawText);
         const maxW = pageWidth - indentX - margin;
         const lhMm = fontSize * 0.352778 * lineHeight;
         const segments = text.split(/(\*\*[^*]+\*\*)/g);
@@ -351,7 +367,10 @@ export function PdfGenerator({
         let analysisLines: string[] = [];
         if (commercializationDetails.analysis) {
           pdf.setFontSize(9);
-          analysisLines = pdf.splitTextToSize(commercializationDetails.analysis.replace(/\*\*/g, ""), contentWidth - 8).slice(0, 6);
+          analysisLines = pdf.splitTextToSize(
+            renderCitations(commercializationDetails.analysis.replace(/\*\*/g, "")),
+            contentWidth - 8
+          ).slice(0, 6);
         }
 
         const blockH = 10 + (subs.length ? 18 : 0) + (analysisLines.length ? analysisLines.length * 4.4 + 4 : 0);
@@ -550,7 +569,7 @@ export function PdfGenerator({
         yPosition += 8;
         pdf.setFontSize(7.5);
         pdf.setTextColor(...T.textFaint);
-        const dLines = pdf.splitTextToSize(cfg.disclaimer_text, contentWidth);
+        const dLines = pdf.splitTextToSize(renderCitations(cfg.disclaimer_text), contentWidth);
         for (const ln of dLines) {
           checkNewPage(5);
           pdf.text(ln, margin, yPosition);
