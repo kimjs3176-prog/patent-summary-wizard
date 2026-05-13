@@ -9,7 +9,7 @@ createRoot(document.getElementById("root")!).render(<App />);
 // their (possibly stale) service worker + caches exactly once.
 // Bump KILL_SWITCH_VERSION whenever stale SWs are suspected.
 // ============================================================
-const KILL_SWITCH_VERSION = "2026-05-09-a";
+const KILL_SWITCH_VERSION = "2026-05-13-a";
 (() => {
   try {
     const key = "sw-kill-switch";
@@ -58,8 +58,8 @@ const isAppBusy = (): boolean => {
   if ((window as any).__APP_BUSY__ === true) return true;
   // Any in-flight network request to our edge functions = treat as busy.
   if ((window as any).__APP_INFLIGHT__ > 0) return true;
-  // User actively interacting in the last 90s.
-  if (Date.now() - lastInteraction < 90 * 1000) return true;
+  // User actively interacting in the last 30s.
+  if (Date.now() - lastInteraction < 30 * 1000) return true;
   // Visible streaming/loading UI present (defensive selectors).
   if (document.querySelector('[data-app-busy="true"], .animate-spin')) return true;
   return false;
@@ -111,8 +111,8 @@ const safeReload = (opts: { maxWaitMs?: number; toastSec?: number } = {}) => {
   if (pendingReload) return;
   pendingReload = true;
   const start = Date.now();
-  const maxWaitMs = opts.maxWaitMs ?? 3 * 60 * 1000; // 3 min hard cap
-  const toastSec = opts.toastSec ?? 5;
+  const maxWaitMs = opts.maxWaitMs ?? 45 * 1000; // 45s hard cap
+  const toastSec = opts.toastSec ?? 3;
 
   const fire = () => {
     showUpdateToast(toastSec);
@@ -125,7 +125,7 @@ const safeReload = (opts: { maxWaitMs?: number; toastSec?: number } = {}) => {
       fire();
       return;
     }
-    setTimeout(tryReload, 10 * 1000);
+    setTimeout(tryReload, 3 * 1000);
   };
   tryReload();
 };
@@ -192,10 +192,10 @@ const checkForUpdate = async () => {
     }
   } catch { /* ignore */ }
 };
-// Reduced cadence: first check after 30s, then every 5 minutes. Combined with
-// safeReload(), this avoids interrupting active analysis sessions.
-setTimeout(checkForUpdate, 30 * 1000);
-setInterval(checkForUpdate, 5 * 60 * 1000);
+// Aggressive cadence: first check after 5s, then every 60 seconds. safeReload()
+// still defers when the user is actively analyzing, but with a shorter cap.
+setTimeout(checkForUpdate, 5 * 1000);
+setInterval(checkForUpdate, 60 * 1000);
 window.addEventListener("focus", checkForUpdate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") checkForUpdate();
