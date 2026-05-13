@@ -13,7 +13,7 @@ import { toast } from "sonner";
 // Bump this whenever the visual design system changes so that older saved
 // configs (with stale colors/sizes) are automatically migrated to the
 // latest Toss-style defaults instead of overriding the new look.
-export const TOSS_TEMPLATE_VERSION = "toss-v2";
+export const TOSS_TEMPLATE_VERSION = "toss-v3";
 
 export interface PdfLayoutConfig {
   template_version?: string;
