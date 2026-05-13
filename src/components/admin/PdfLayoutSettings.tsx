@@ -13,7 +13,7 @@ import { toast } from "sonner";
 // Bump this whenever the visual design system changes so that older saved
 // configs (with stale colors/sizes) are automatically migrated to the
 // latest Toss-style defaults instead of overriding the new look.
-export const TOSS_TEMPLATE_VERSION = "toss-v2";
+export const TOSS_TEMPLATE_VERSION = "toss-v3";
 
 export interface PdfLayoutConfig {
   template_version?: string;
@@ -48,10 +48,10 @@ export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
   header_title: "농식품 특허 요약서",
   header_subtitle: "Agri-Food Patent Summary Report",
   header_bg_color: "#10AD7F",
-  body_font_size: 9.5,
+  body_font_size: 10.5,
   line_height: 1.7,
   page_margin: 18,
-  section_title_size: 10.5,
+  section_title_size: 11.5,
   section_accent_color: "#10AD7F",
   meta_accent_color: "#10AD7F",
   show_patent_images: true,
