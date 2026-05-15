@@ -333,22 +333,33 @@ JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
       for (const results of perInst) allPatents.push(...results);
     }
 
-    // Fallback 4: list latest patents per institute (no keyword) — minimum context
-    if (allPatents.length === 0) {
-      console.log("Per-institute keyword search empty — listing latest from institutes");
-      const tasks = ALLOWED_APPLICANT_IDS.map((inst) => searchKipris([""], 9, "*", inst));
-      const perInst = await Promise.all(tasks);
-      for (const results of perInst) allPatents.push(...results);
-    }
+    // Note: we intentionally do NOT fall back to "latest patents per institute" here.
+    // That fallback returns topically-unrelated patents (e.g. extracts/compositions
+    // for a feather-removal apparatus patent) which confuses users.
+
+    // Filter results by topical relevance: result title must share at least one
+    // grounded keyword with the source patent's vocabulary.
+    const filterByRelevance = (list: SimilarPatent[]) => {
+      if (groundingVocab.size === 0) return list;
+      return list.filter((p) => {
+        const t = (p.title || "").toLowerCase();
+        for (const kw of groundingVocab) {
+          if (kw && t.includes(kw.toLowerCase())) return true;
+        }
+        return false;
+      });
+    };
+    const relevantPatents = filterByRelevance(allPatents);
+    console.log(`Relevance filter: ${allPatents.length} -> ${relevantPatents.length}`);
 
     // Deduplicate and prioritize by relevance group
     const seen = new Set<string>();
     const uniquePatents: SimilarPatent[] = [];
-    
+
     // Sort by relevance group (lower = more relevant)
-    allPatents.sort((a, b) => a.relevanceGroup - b.relevanceGroup);
-    
-    for (const patent of allPatents) {
+    relevantPatents.sort((a, b) => a.relevanceGroup - b.relevanceGroup);
+
+    for (const patent of relevantPatents) {
       if (!seen.has(patent.patentId)) {
         seen.add(patent.patentId);
         uniquePatents.push(patent);
