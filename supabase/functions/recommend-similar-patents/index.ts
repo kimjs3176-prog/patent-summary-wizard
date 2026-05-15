@@ -56,19 +56,23 @@ serve(async (req) => {
 
     // Step 1: Use AI to generate search queries for similar patents
     const classInfo = classifications?.length > 0 ? `IPC 분류: ${classifications.join(", ")}` : "";
-    const prompt = `다음 특허와 유사한 특허를 찾기 위한 검색 키워드 3세트를 생성해주세요.
+    const prompt = `다음 한국 특허와 기술적으로 유사한 특허를 KIPRIS에서 찾기 위한 검색 키워드 3세트를 생성하세요.
 
 특허 제목: ${title || "없음"}
-초록: ${(abstract || "").substring(0, 500)}
+초록: ${(abstract || "").substring(0, 600)}
 ${classInfo}
 
-각 키워드 세트는 KIPRIS 한국 특허 검색에서 AND 검색으로 사용됩니다.
-서로 다른 관점에서 유사 특허를 찾을 수 있도록 다양하게 구성해주세요.
-- 첫 번째: 핵심 기술 키워드 (가장 관련도 높은)
-- 두 번째: 응용 분야 키워드
-- 세 번째: 대체 기술 키워드
+【매우 중요한 규칙】
+1. 반드시 위 제목·초록에 실제로 등장하는 명사·기술용어만 사용하세요. 본문에 없는 단어를 임의로 만들어내지 마세요.
+2. 특허에서 실제로 다루는 "물리적 장치/구성/공정"에 집중하세요. 단어를 다른 의미로 해석하지 마세요.
+   - 예: "탈모기"는 "도계(닭 도축) 공정에서 깃털을 제거하는 기계"를 의미합니다. "두피 탈모/모발"과 무관합니다.
+3. 본 특허와 산업 분야가 전혀 다른 키워드(예: 깃털 제거 장치 특허인데 "추출물", "프리바이오틱스", "조성물" 등)는 절대 사용하지 마세요.
+4. 각 키워드는 2~6자의 한국어 명사·복합명사로 구성하세요. 조사·동사·서술어 금지.
 
-JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3", "keyword4"], ["keyword5", "keyword6"]]}`;
+JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
+- 첫 번째 세트: 핵심 장치/구성 키워드
+- 두 번째 세트: 핵심 공정/기능 키워드
+- 세 번째 세트: 동일 산업분야의 유사 장치 키워드`;
 
     const recCtrl = new AbortController();
     const recTimer = setTimeout(() => recCtrl.abort(), 30000);
@@ -106,7 +110,7 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "";
     const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-    
+
     let searchQueries: string[][] = [];
     if (jsonMatch) {
       try {
@@ -117,13 +121,41 @@ JSON 형식으로만 응답: {"queries": [["keyword1", "keyword2"], ["keyword3",
       }
     }
 
-    if (searchQueries.length === 0) {
-      // Fallback: extract words from title
-      const words = (title || "").split(/\s+/).filter((w: string) => w.length >= 2).slice(0, 3);
-      searchQueries = [words];
+    // Validate AI keywords: each must appear in source title or abstract.
+    // Drops hallucinated terms (e.g. "추출물" for a feather-removal apparatus patent).
+    const sourceText = `${title || ""} ${abstract || ""}`.toLowerCase();
+    const validateKw = (kw: string) => {
+      const k = (kw || "").trim();
+      if (k.length < 2) return false;
+      return sourceText.includes(k.toLowerCase());
+    };
+    searchQueries = searchQueries
+      .map((set) => (Array.isArray(set) ? set.filter(validateKw) : []))
+      .filter((set) => set.length > 0);
+
+    // Extract meaningful nouns from the title as a guaranteed-grounded fallback / supplement
+    const stopWords = new Set([
+      "방법", "장치", "시스템", "기술", "이용", "위한", "관한", "관련", "포함", "제공",
+      "그리고", "또는", "있는", "되는", "사용", "통해", "통한", "및", "이를", "이의",
+    ]);
+    const titleTokens = (title || "")
+      .replace(/[\[\](),.·\-/]/g, " ")
+      .split(/\s+/)
+      .map((t: string) => t.trim())
+      .filter((t: string) => t.length >= 2 && !stopWords.has(t));
+
+    if (searchQueries.length === 0 && titleTokens.length) {
+      const sorted = [...titleTokens].sort((a, b) => b.length - a.length);
+      searchQueries = [sorted.slice(0, 3)];
     }
 
+    // Build the canonical "grounding vocabulary" used to filter result titles later
+    const groundingVocab = new Set<string>();
+    for (const t of titleTokens) groundingVocab.add(t);
+    for (const set of searchQueries) for (const k of set) if (k && k.length >= 2) groundingVocab.add(k);
+
     console.log("AI generated search queries:", JSON.stringify(searchQueries));
+    console.log("Grounding vocab:", JSON.stringify([...groundingVocab]));
 
     // Step 2: Search KIPRIS with generated queries
     let KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
