@@ -501,7 +501,8 @@ function extractKeywordsFromPatent(
   const productPatterns: [RegExp, string][] = [
     [/건강기능식품|건기식|기능성\s*식품/, "건강기능식품"],
     [/음료|드링크|차\s*제품|주스|스무디/, "음료"],
-    [/조성물|제형|제제|정제|캡슐|환|시럽|연고|크림/, "제형 제품"],
+    // NOTE: '환' 단독은 "환기/환경/순환" 등에 오매칭되므로 사용 금지. 환제(丸劑) 의도일 때만 '환제/환약'으로 매칭.
+    [/조성물|제형|제제(?![가-힣])|정제(?![가-힣])|캡슐|환제|환약|시럽|연고|크림/, "제형 제품"],
     [/화장품|스킨케어|크림|로션|에센스|마스크팩|세럼/, "화장품"],
     [/사료|배합사료|반려동물\s*사료|펫푸드/, "사료"],
     [/비료|퇴비|토양개량제/, "비료"],
@@ -578,8 +579,9 @@ function extractKeywordsFromPatent(
     else industryKws.push("농식품산업");
   }
   if (productKws.length === 0) {
-    if (/조성물|제형|정제|캡슐|시럽/.test(text)) productKws.push("제형 제품");
-    else if (/장치|시스템|설비|기계|모듈/.test(text)) productKws.push("장치·시스템");
+    // 장치·시스템을 제형보다 먼저 판정 (장치특허에서 '환기' 등이 '제형'으로 오인되는 것 방지)
+    if (/장치|시스템|설비|기계|모듈|하우징|챔버/.test(text)) productKws.push("장치·시스템");
+    else if (/조성물|제형|정제|캡슐|시럽|환제|환약/.test(text)) productKws.push("제형 제품");
     else if (/추출물|분말|원료|성분/.test(text)) productKws.push("원료 소재");
     else if (/식품|음료|가공/.test(text)) productKws.push("가공식품");
     else if (/사료/.test(text)) productKws.push("사료");
