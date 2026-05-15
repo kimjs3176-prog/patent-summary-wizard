@@ -579,8 +579,9 @@ function extractKeywordsFromPatent(
     else industryKws.push("농식품산업");
   }
   if (productKws.length === 0) {
-    if (/조성물|제형|정제|캡슐|시럽/.test(text)) productKws.push("제형 제품");
-    else if (/장치|시스템|설비|기계|모듈/.test(text)) productKws.push("장치·시스템");
+    // 장치·시스템을 제형보다 먼저 판정 (장치특허에서 '환기' 등이 '제형'으로 오인되는 것 방지)
+    if (/장치|시스템|설비|기계|모듈|하우징|챔버/.test(text)) productKws.push("장치·시스템");
+    else if (/조성물|제형|정제|캡슐|시럽|환제|환약/.test(text)) productKws.push("제형 제품");
     else if (/추출물|분말|원료|성분/.test(text)) productKws.push("원료 소재");
     else if (/식품|음료|가공/.test(text)) productKws.push("가공식품");
     else if (/사료/.test(text)) productKws.push("사료");
