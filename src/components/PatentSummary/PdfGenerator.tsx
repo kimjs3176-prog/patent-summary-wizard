@@ -238,13 +238,53 @@ export function PdfGenerator({
           if (!res.ok) return null;
           const ct = (res.headers.get("content-type") || "").toLowerCase();
           const blob = await res.blob();
-          const dataUrl = await new Promise<string>((resolve, reject) => {
+          const rawDataUrl = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(String(reader.result));
             reader.onerror = () => reject(new Error("FileReader failed"));
             reader.readAsDataURL(blob);
           });
-          return { dataUrl, format: ct.includes("png") ? "PNG" : "JPEG" };
+          // ── Upscale to ~300 DPI for print-grade quality ──
+          // Render the source bitmap into a high-resolution canvas so that
+          // when jsPDF embeds it at small physical dimensions (mm), the
+          // effective pixel density meets booklet print standards (≥300 DPI).
+          try {
+            const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+              const im = new Image();
+              im.crossOrigin = "anonymous";
+              im.onload = () => resolve(im);
+              im.onerror = () => reject(new Error("Image decode failed"));
+              im.src = rawDataUrl;
+            });
+            // Target ~300 DPI at the largest physical width we render (~80mm)
+            // → 80mm / 25.4 * 300 ≈ 945px. Use 1400px as a safe ceiling so
+            // line art (KIPRIS drawings) stays crisp without bloating files.
+            const TARGET_PX = 1400;
+            const scale = Math.min(
+              4,
+              Math.max(1, TARGET_PX / Math.max(img.naturalWidth, img.naturalHeight))
+            );
+            const w = Math.round(img.naturalWidth * scale);
+            const h = Math.round(img.naturalHeight * scale);
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = "high";
+              // White matte for transparent PNGs (avoids gray on print)
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              // PNG preserves crisp lines/text in patent drawings
+              const hiResDataUrl = canvas.toDataURL("image/png");
+              return { dataUrl: hiResDataUrl, format: "PNG" };
+            }
+          } catch {
+            // Fall through to raw data URL if upscaling fails
+          }
+          return { dataUrl: rawDataUrl, format: ct.includes("png") ? "PNG" : "JPEG" };
         } catch {
           return null;
         }
