@@ -438,6 +438,16 @@ function extractKeywordsFromPatent(
     [/흡착|흡수/, "흡착기능"], [/소취|탈취|냄새/, "소취기능"],
     [/진통|통증/, "진통효과"], [/이뇨|배뇨/, "이뇨작용"],
     [/간보호|간기능/, "간기능개선"], [/골[밀다]|뼈/, "골건강"],
+    // 축산·가금 가공 공정
+    [/도계|도축|도살/, "도축공정"],
+    [/탈모(?:기|봉|공정)?|탈피|깃털\s*제거|모(?:털)?\s*제거/, "깃털제거"],
+    [/내장\s*제거|박피|해체|발골/, "해체가공"],
+    // 일반 가공·자동화 공정
+    [/선별|정선|등급\s*판정/, "선별처리"],
+    [/포장|패킹/, "포장공정"],
+    [/세척|세정|클리닝/, "세척처리"],
+    [/이송|운반|컨베이어/, "이송처리"],
+    [/배출|배합|혼합/, "배출처리"],
   ];
   funcPatterns.forEach(([p, l]) => { if (p.test(text) && !funcKws.includes(l)) funcKws.push(l); });
 
@@ -456,6 +466,13 @@ function extractKeywordsFromPatent(
     [/블록체인|이력추적/, "이력추적"], [/빅데이터|데이터분석/, "빅데이터"],
     [/복합|융합|하이브리드/, "복합기술"], [/모니터링|실시간/, "실시간모니터링"],
     [/영상|이미지|비전/, "영상분석"], [/스펙트럼|분광/, "분광분석"],
+    // 기계·구동 메커니즘
+    [/회전\s*플레이트|회전체|회전\s*가능|회전.*구동/, "회전구동"],
+    [/구동\s*모터|구동\s*유닛|구동력|모터/, "모터구동"],
+    [/브러쉬|브러시|솔/, "브러시처리"],
+    [/하우징|챔버|공간/, "하우징구조"],
+    [/플레이트|디스크|드럼/, "회전체구조"],
+    [/안내홀|배출구|배출\s*공간/, "배출구조"],
   ];
   featPatterns.forEach(([p, l]) => { if (p.test(text) && !featKws.includes(l)) featKws.push(l); });
 
@@ -467,14 +484,18 @@ function extractKeywordsFromPatent(
     [/토마토/, "토마토"], [/감자/, "감자"], [/고구마/, "고구마"],
     [/딸기/, "딸기"], [/사과/, "사과"], [/포도/, "포도"], [/감귤|귤/, "감귤"],
     [/블루베리/, "블루베리"], [/버섯/, "버섯"], [/김치/, "김치"],
-    [/한우|소고기/, "한우"], [/돼지|돈육/, "돼지"], [/닭|가금/, "닭"],
+    [/한우|소고기/, "한우"], [/돼지|돈육/, "돼지"], [/닭|가금|육계|산란계|오리|메추리/, "가금"],
     [/우유|원유|유청/, "우유"], [/계란|달걀/, "계란"],
     [/새우/, "새우"], [/김|해조류/, "해조류"], [/미역/, "미역"],
     [/꿀|벌꿀/, "꿀"], [/유산균|젖산균/, "유산균"], [/효모/, "효모"],
     [/키토산/, "키토산"], [/펙틴/, "펙틴"], [/폴리페놀/, "폴리페놀"],
     [/단백질/, "단백질"], [/전분/, "전분"], [/셀룰로오스|섬유소/, "셀룰로오스"],
   ];
+  // 소재는 제목 우선, 미매칭 시 본문에서도 매칭
   subjectPatterns.forEach(([p, l]) => { if (p.test(title) && !subjectKws.includes(l)) subjectKws.push(l); });
+  if (subjectKws.length === 0) {
+    subjectPatterns.forEach(([p, l]) => { if (p.test(text) && !subjectKws.includes(l)) subjectKws.push(l); });
+  }
 
   // 6) 제목+초록 → 최종제품 (소비자 형태로 출시될 산출물)
   const productPatterns: [RegExp, string][] = [
@@ -496,24 +517,61 @@ function extractKeywordsFromPatent(
   productPatterns.forEach(([p, l]) => { if (p.test(text) && !productKws.includes(l)) productKws.push(l); });
 
   // ----- 폴백: 핵심 4개 카테고리(소재·주요기능·활용산업·최종제품)는 최소 1개 보장 -----
+  // 제목에서 의미있는 명사 추출 (의미 없는 "핵심 소재"/"핵심 기능" 라벨을 피하기 위함)
+  const extractTitleNouns = (): string[] => {
+    if (!title) return [];
+    const STOP = new Set([
+      "발명", "본", "방법", "장치", "시스템", "이를", "포함", "포함하는", "제공", "관한",
+      "그", "및", "또는", "위한", "사용", "이용", "구비", "구성", "기술", "특징", "수단",
+      "구비하는", "구성된", "이루어진", "사용하는", "이용하는",
+    ]);
+    const cleaned = title
+      .replace(/[\[\](){}<>"'`·,.\-—–:;?!]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const tokens = cleaned.split(/\s+/).filter(t => /[가-힣A-Za-z]/.test(t));
+    const nouns: string[] = [];
+    for (const t of tokens) {
+      // 조사 제거: ~의/~를/~을/~이/~가/~에서/~로/~으로
+      const stem = t.replace(/(?:으로|에서|로서|로써|에게|에서|에|의|를|을|이|가|와|과|로|은|는)$/u, "");
+      if (stem.length < 2 || stem.length > 8) continue;
+      if (STOP.has(stem)) continue;
+      if (/^\d+$/.test(stem)) continue;
+      if (!nouns.includes(stem)) nouns.push(stem);
+      if (nouns.length >= 3) break;
+    }
+    return nouns;
+  };
+
   if (subjectKws.length === 0) {
     if (/식품|음료|건기식|발효|가공/.test(text)) subjectKws.push("식품 원료");
     else if (/작물|재배|농산물|곡물|채소|과일/.test(text)) subjectKws.push("농산 원료");
-    else if (/축산|가축|사료/.test(text)) subjectKws.push("축산 원료");
+    else if (/축산|가축|사료|도계|도축|가금/.test(text)) subjectKws.push("축산 원료");
     else if (/소재|재료|성분|물질|추출물|분말/.test(text)) subjectKws.push("기능성 소재");
-    else subjectKws.push("핵심 소재");
+    else {
+      // 마지막 폴백: 제목 명사 사용 (의미 없는 "핵심 소재" 라벨 회피)
+      const titleNouns = extractTitleNouns();
+      if (titleNouns.length > 0) subjectKws.push(titleNouns[0]);
+      else subjectKws.push("처리 대상");
+    }
   }
   if (funcKws.length === 0) {
     if (/측정|분석|감지|판별|진단|검출|모니터링/.test(text)) funcKws.push("측정·분석");
     else if (/제어|관리|운영|자동/.test(text)) funcKws.push("제어·관리");
     else if (/처리|가공|공정|제조/.test(text)) funcKws.push("가공·처리");
     else if (/개선|향상|증대|효율|최적화|품질/.test(text)) funcKws.push("성능 개선");
-    else funcKws.push("핵심 기능");
+    else {
+      const titleNouns = extractTitleNouns();
+      // 제목에 '~기' 또는 '~장치' 등이 있으면 그것 자체가 핵심 기능을 함의
+      const fnNoun = titleNouns.find(n => /기$|장치$|시스템$|모듈$|유닛$/.test(n)) || titleNouns[0];
+      if (fnNoun) funcKws.push(fnNoun);
+      else funcKws.push("핵심 기능");
+    }
   }
   if (industryKws.length === 0) {
     if (/식품|음료|건기식|발효/.test(text)) industryKws.push("식품산업");
     else if (/작물|재배|농산|곡물|채소|과일|스마트팜/.test(text)) industryKws.push("농업");
-    else if (/축산|가축|사료/.test(text)) industryKws.push("축산업");
+    else if (/축산|가축|사료|도계|도축|가금|육계|닭|오리/.test(text)) industryKws.push("축산업");
     else if (/의약|제약|치료|진단/.test(text)) industryKws.push("제약·의료");
     else if (/화장품|미용|뷰티/.test(text)) industryKws.push("화장품산업");
     else if (/환경|폐수|폐기물/.test(text)) industryKws.push("환경산업");
