@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.recommend-similar-patents]
 verify_jwt = false
+
+[functions.analyze-pivoting]
+verify_jwt = false

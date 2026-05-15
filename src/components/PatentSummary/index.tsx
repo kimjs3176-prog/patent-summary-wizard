@@ -16,6 +16,7 @@ import { PrintableContent } from "./PrintableContent";
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { CompetitorComparisonTable } from "./CompetitorComparisonTable";
 import { PatentFamilyTree } from "./PatentFamilyTree";
+import { PivotingAnalysis } from "./PivotingAnalysis";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
@@ -1065,6 +1066,18 @@ export function PatentSummary({
       {patentData?.assignee && !isStreaming && content && visibleSections.familyTree !== false && (
         <div id="sec-family" className="mt-4 scroll-mt-24 print:hidden">
           <PatentFamilyTree patentData={patentData} onPatentClick={onRelatedPatentClick} />
+        </div>
+      )}
+
+      {/* 8. AI Pivoting (Use-case transfer) — always last */}
+      {patentData && !isStreaming && content && (
+        <div className="mt-4">
+          <PivotingAnalysis
+            patentNumber={patentNumber}
+            patentData={patentData}
+            isStreaming={isStreaming}
+            contentReady={!!content}
+          />
         </div>
       )}
 
