@@ -583,13 +583,14 @@ function extractKeywordsFromPatent(
     else industryKws.push("농식품산업");
   }
   if (productKws.length === 0) {
-    // 장치·시스템을 제형보다 먼저 판정 (장치특허에서 '환기' 등이 '제형'으로 오인되는 것 방지)
-    if (/장치|시스템|설비|기계|모듈|하우징|챔버/.test(text)) productKws.push("장치·시스템");
-    else if (/조성물|제형|정제|캡슐|시럽|환제|환약/.test(text)) productKws.push("제형 제품");
-    else if (/추출물|분말|원료|성분/.test(text)) productKws.push("원료 소재");
-    else if (/식품|음료|가공/.test(text)) productKws.push("가공식품");
+    // 우선순위: 진단키트·장치 → 사료/비료 → 가공식품 → 제형(약학) → 원료 소재
+    if (/진단\s*키트|판별\s*키트|검출\s*키트|프라이머\s*세트|판별\s*용\s*조성물/.test(text)) productKws.push("진단·검사 키트");
+    else if (/장치|시스템|설비|기계|모듈|하우징|챔버/.test(text)) productKws.push("장치·시스템");
     else if (/사료/.test(text)) productKws.push("사료");
-    else if (/비료/.test(text)) productKws.push("비료");
+    else if (/비료|퇴비/.test(text)) productKws.push("비료");
+    else if (/식품|음료|가공\s*식품/.test(text)) productKws.push("가공식품");
+    else if (/약학(?:적|용)?\s*조성물|환제|환약|시럽\s*제|연고\s*제/.test(text)) productKws.push("제형 제품");
+    else if (/추출물|분말|원료\s*소재|기능성\s*성분/.test(text)) productKws.push("원료 소재");
     else productKws.push("응용 제품");
   }
 
