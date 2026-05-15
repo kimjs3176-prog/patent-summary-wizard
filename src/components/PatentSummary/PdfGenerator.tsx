@@ -97,7 +97,14 @@ export function PdfGenerator({
       const MAX_ATTEMPTS = 5;
 
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-      pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+        precision: 16,
+        putOnlyUsedFonts: true,
+      });
       addKoreanFontToDoc(pdf, koreanFontBase64);
 
       pageWidth = pdf.internal.pageSize.getWidth();
@@ -545,7 +552,7 @@ export function PdfGenerator({
             const imgX = margin + i * (imgW + gap);
             pdf.setFillColor(...T.dividerLight);
             pdf.roundedRect(imgX, yPosition, imgW, imgH, 2, 2, "F");
-            pdf.addImage(img.dataUrl, img.format, imgX + 1.5, yPosition + 1.5, imgW - 3, imgH - 3);
+            pdf.addImage(img.dataUrl, img.format, imgX + 1.5, yPosition + 1.5, imgW - 3, imgH - 3, undefined, "SLOW");
           }
           yPosition += imgH + 4;
         } else {
@@ -556,7 +563,7 @@ export function PdfGenerator({
             const imgX = (pageWidth - imgW) / 2;
             pdf.setFillColor(...T.dividerLight);
             pdf.roundedRect(imgX, yPosition, imgW, imgH, 2, 2, "F");
-            pdf.addImage(img.dataUrl, img.format, imgX + 2, yPosition + 2, imgW - 4, imgH - 4);
+            pdf.addImage(img.dataUrl, img.format, imgX + 2, yPosition + 2, imgW - 4, imgH - 4, undefined, "SLOW");
             yPosition += imgH + 4;
           }
         }
