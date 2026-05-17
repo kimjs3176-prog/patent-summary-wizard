@@ -47,19 +47,26 @@ async function callAI(payload: Record<string, unknown> & { model: string }): Pro
   });
 }
 
-async function extractKeywords(title: string, abstract: string): Promise<string[]> {
-  const prompt = `다음 농업·식품·바이오 특허의 "최종 제품·산출물"을 표현하는 영어 이미지 검색 키워드 2개를 추출해줘.
+async function extractKeywords(
+  title: string,
+  abstract: string,
+  industryKeywords: string[] = [],
+  productKeywords: string[] = [],
+): Promise<string[]> {
+  const industryHint = industryKeywords.length > 0 ? `\n농산업 활용 키워드(우선): ${industryKeywords.join(", ")}` : "";
+  const productHint = productKeywords.length > 0 ? `\n최종 제품 키워드(참고): ${productKeywords.join(", ")}` : "";
+  const prompt = `다음 농업·식품·바이오 특허의 "농산업 활용 분야"를 표현하는 영어 이미지 검색 키워드 2개를 추출해줘.
 규칙:
-- 모든 키워드는 "최종 제품 형태" 중심 (소재/원료 단독 금지)
-- 1번: 가장 구체적인 최종 제품명 (예: "health supplement capsule", "herbal extract powder", "rice cake snack", "diagnostic test kit", "agricultural drone")
-- 2번: 같은 제품의 다른 시각적 표현·소비자 형태 (예: "herbal tea bag", "functional food product", "skincare cream jar")
+- 키워드는 아래 "농산업 활용 키워드"가 실제로 활용되는 산업 현장·응용 제품 풍경 중심
+- 1번: 가장 핵심적인 활용 산업/제품 현장 (예: "functional food factory", "smart farm greenhouse", "livestock feed production", "cosmetic manufacturing", "pharmaceutical lab")
+- 2번: 동일 산업의 소비자 제품 형태 (예: "health supplement bottle", "fresh produce market", "skincare product", "feed pellet")
 - 각 1~3단어, 구체적이고 시각적인 명사구
-- 금지어: technology, system, method, innovation, process, composition, invention, abstract, plant, root, raw material
-- 한국 한약재 제품은 영문 통용명 사용 (오가피→eleuthero supplement, 황기→astragalus capsule, 인삼→ginseng extract)
-JSON만 반환: {"product1":"...", "product2":"..."}
+- 금지어: technology, system, method, innovation, process, composition, invention, abstract, raw material
+- 한국 한약재 제품은 영문 통용명 사용 (오가피→eleuthero, 황기→astragalus, 인삼→ginseng)
+JSON만 반환: {"industry":"...", "product":"..."}
 
 제목: ${title}
-초록: ${abstract.slice(0, 600)}`;
+초록: ${abstract.slice(0, 500)}${industryHint}${productHint}`;
   const res = await callAI({
     model: "google/gemini-2.5-flash-lite",
     messages: [
@@ -82,9 +89,10 @@ JSON만 반환: {"product1":"...", "product2":"..."}
   const push = (v: any) => {
     if (typeof v === "string" && v.trim().length > 0 && !out.includes(v.trim())) out.push(v.trim());
   };
+  push(parsed.industry);
+  push(parsed.product);
   push(parsed.product1);
   push(parsed.product2);
-  push(parsed.product);
   push(parsed.material);
   push(parsed.keyword);
   if (Array.isArray(parsed.keywords)) parsed.keywords.forEach(push);
@@ -133,7 +141,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { patentNumber, title, abstract } = body;
+    const { patentNumber, title, abstract, industryKeywords, productKeywords } = body;
     if (!patentNumber || typeof patentNumber !== "string") {
       return new Response(JSON.stringify({ error: "patentNumber required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -147,13 +155,20 @@ serve(async (req) => {
     }
 
     const supabase = getSupabaseClient();
+    const safeIndustryKws = Array.isArray(industryKeywords)
+      ? industryKeywords.filter((k: any) => typeof k === "string" && k.trim().length > 0).slice(0, 5)
+      : [];
+    const safeProductKws = Array.isArray(productKeywords)
+      ? productKeywords.filter((k: any) => typeof k === "string" && k.trim().length > 0).slice(0, 5)
+      : [];
+    const cacheSuffix = safeIndustryKws.length > 0 ? `__${safeIndustryKws.join("|")}` : "";
 
     // cache lookup
     try {
       const { data: cached } = await supabase
         .from("product_image_cache")
         .select("keywords, images, expires_at")
-        .eq("patent_number", trimmed)
+        .eq("patent_number", trimmed + cacheSuffix)
         .maybeSingle();
       if (cached && new Date(cached.expires_at).getTime() > Date.now()) {
         return new Response(
@@ -170,12 +185,14 @@ serve(async (req) => {
 
     let keywords: string[] = [];
     try {
-      keywords = await extractKeywords(safeTitle, safeAbstract);
+      keywords = await extractKeywords(safeTitle, safeAbstract, safeIndustryKws, safeProductKws);
     } catch (e) {
       console.error("keyword extraction failed", e);
     }
     if (keywords.length === 0) {
-      keywords = [safeTitle.split(/\s+/).slice(0, 3).join(" ") || "agriculture technology"];
+      keywords = safeIndustryKws.length > 0
+        ? [safeIndustryKws[0]]
+        : [safeTitle.split(/\s+/).slice(0, 3).join(" ") || "agriculture industry"];
     }
 
     // 소재·제품 각 키워드에서 Pexels 상위 1개씩 추출 → 총 2개 이미지 (관련도 우선)
@@ -191,7 +208,7 @@ serve(async (req) => {
 
     try {
       await supabase.from("product_image_cache").upsert({
-        patent_number: trimmed,
+        patent_number: trimmed + cacheSuffix,
         keywords,
         images: filtered,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),

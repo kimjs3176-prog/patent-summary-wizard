@@ -1181,6 +1181,8 @@ export function TossPatentSummary({
                   patentNumber={patentNumber}
                   title={patentData.titleKo || patentData.title}
                   abstract={patentData.abstract}
+                  industryKeywords={keywords.filter(k => k.cat === "industry").map(k => k.word)}
+                  productKeywords={keywords.filter(k => k.cat === "product").map(k => k.word)}
                 />
               </SoftCard>
             </section>
