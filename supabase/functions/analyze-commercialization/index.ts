@@ -491,6 +491,11 @@ JSON형식:
     }
 
     const result = await response.json();
+    const finishReason = result.choices?.[0]?.finish_reason || result.choices?.[0]?.finishReason || result.candidates?.[0]?.finishReason;
+    const tokenLimitHit = typeof finishReason === "string" && /length|max_tokens|max_output_tokens/i.test(finishReason);
+    if (tokenLimitHit) {
+      console.warn(`[AI] output may be truncated for ${trimmedPatent}: finishReason=${finishReason}, max_tokens=${scoreMaxTokens}`);
+    }
     const content = result.choices?.[0]?.message?.content;
 
     if (!content) {
@@ -541,6 +546,18 @@ JSON형식:
         scores.technologyScore * 0.35 + scores.marketScore * 0.35 + scores.businessScore * 0.3
       );
     }
+
+    // 문구 후처리: 초록 복사/중단 문장을 UI에 저장하지 않도록 완결된 평가문으로 보정
+    const normalizedTrl = Math.max(1, Math.min(9, Number(scores.trl) || 5));
+    const hasDataEvidence = /실험|데이터|수치|효능|효율|수율|비교예|대조군/.test(`${data.abstract || ""} ${data.description || ""} ${(data.claims || []).join(" ")}`);
+    const multiIpcEvidence = ipcSections.size >= 2 || (data.classifications || []).length >= 2;
+    const techFallback = makeTechnologyFallback(Number(scores.technologyScore) || 65, claimsCount, hasDataEvidence, multiIpcEvidence);
+    scores.trl = normalizedTrl;
+    scores.technologyReason = looksLikePatentSummary(scores.technologyReason)
+      ? techFallback
+      : ensureCompleteSentence(scores.technologyReason, techFallback);
+    scores.trlReason = ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
+    scores.analysis = normalizeAnalysis(scores.analysis, makeAnalysisFallback(scores));
 
     // Save to cache
     try {
