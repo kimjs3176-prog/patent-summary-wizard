@@ -224,10 +224,10 @@ serve(async (req) => {
 
     // 4) 모드별 기본 범위에 배수 적용
     const round = (n: number) => Math.round(n / 5) * 5;
-    // analysis는 3줄 이내(≈120자)로 간결화
+    // analysis는 매우 컴팩트하게(2문장, ≈60~90자)
     const baseRanges = isDetailedScore
-      ? { reason: [55, 85], trl: [100, 150], analysis: [90, 130] }
-      : { reason: [40, 55], trl: [80, 100], analysis: [80, 120] };
+      ? { reason: [55, 85], trl: [100, 150], analysis: [60, 95] }
+      : { reason: [40, 55], trl: [80, 100], analysis: [55, 85] };
 
     const reasonMin = round(baseRanges.reason[0] * lengthMultiplier);
     const reasonMax = round(baseRanges.reason[1] * lengthMultiplier);
@@ -280,8 +280,12 @@ TRL(1-9): 특허 텍스트에서 확인 가능한 기술 완성도만 기준으�
 analysis 필드 작성 규칙(매우 중요):
 - 발명/초록 요약 금지. "~에 관한 것이다 / ~을 포함한다 / ~하는 방법이다" 같은 발명 서술 어투 금지.
 - 평가·전망 어투의 자연스러운 한국어 평어체("~다" / "~할 만하다" / "~가 기대된다" / "~가 관건이다")로 작성.
-- 구조: ①핵심 강점 한 문장 → ②시장·수요 가능성 한 문장 → ③사업화 시 유의점 또는 추진 제언 한 문장. 총 2~3문장(${analysisMin}~${analysisMax}자).
-- 불필요한 수식어("매우", "굉장히", "다양한") 남발 금지. 항목 라벨(①②③, "강점:", "제언:" 등) 붙이지 말고 매끄럽게 이어 쓸 것.
+- 매우 컴팩트하게: 정확히 2문장(${analysisMin}~${analysisMax}자). 첫 문장은 핵심 강점+시장 가능성을 한 호흡으로, 둘째 문장은 사업화 유의점·제언.
+- 불필요한 수식어("매우", "굉장히", "다양한") 남발 금지. 항목 라벨(①②③, "강점:", "제언:" 등) 붙이지 말 것.
+
+businessReason 작성 규칙(중요):
+- 발명/조성물 구성 설명 금지. "~을 유효성분으로 포함하는 조성물을 개발할 수 있다 / ~을 위해 ~을 포함한다" 같은 명세서·청구항 서술 어투 금지.
+- 사업성 관점의 평가 어투로만 서술: 기술구현 난이도, 기존 설비 활용성, 라이선싱·기술이전 용이성, 투자회수·상용화 속도. 예) "기존 양봉 설비로 즉시 적용 가능해 상용화 진입장벽이 낮고, 양봉농가 대상 라이선싱·기술이전 수요가 명확하다."
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
@@ -304,7 +308,9 @@ TRL(1-9): 특허 텍스트 기반 기술 완성도만 판단. 개념→2~3, 실�
 
 analysis 필드 작성 규칙(중요):
 - 발명/초록 요약 금지. "~에 관한 것이다 / ~포함한다 / ~방법이다" 어투 금지.
-- 자연스러운 평가 어투로 ①강점 → ②시장 가능성 → ③추진 시 유의점 / 제언을 2~3문장(${analysisMin}~${analysisMax}자)으로 매끄럽게 서술. 항목 라벨이나 번호 붙이지 말 것.
+- 매우 컴팩트하게 정확히 2문장(${analysisMin}~${analysisMax}자). 첫 문장 강점+시장 가능성, 둘째 문장 유의점·제언. 항목 라벨/번호 금지.
+
+businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 작성.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
