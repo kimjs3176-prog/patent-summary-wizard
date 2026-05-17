@@ -6,6 +6,50 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Try personal Gemini API first (if GEMINI_API_KEY set), fall back to Lovable AI Gateway.
+// Both endpoints are OpenAI-compatible.
+async function callAIChatCompletions(
+  payload: Record<string, unknown> & { model: string },
+  init: { signal?: AbortSignal } = {},
+): Promise<Response> {
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (GEMINI_API_KEY) {
+    try {
+      const geminiModel = payload.model.replace(/^google\//, "");
+      const r = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        {
+          method: "POST",
+          signal: init.signal,
+          headers: {
+            Authorization: `Bearer ${GEMINI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...payload, model: geminiModel }),
+        },
+      );
+      if (r.ok) {
+        console.log("[AI] using personal Gemini API");
+        return r;
+      }
+      const errText = await r.text().catch(() => "");
+      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
+    } catch (e) {
+      console.warn("[AI] personal Gemini error, falling back:", e);
+    }
+  }
+  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    signal: init.signal,
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
 // AbortController-based timeout for fetch
 async function fetchWithTimeout(
   url: string,
@@ -260,22 +304,25 @@ serve(async (req) => {
       : `특허 ${patentNumber} 요약서 작성.`;
 
     // 60s timeout to start streaming; once streaming starts the body is read by reader
-    const response = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: aiModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        stream: true,
-        max_tokens: maxTokens,
-      }),
-    }, 60000);
+    const aiCtrl = new AbortController();
+    const aiTimer = setTimeout(() => aiCtrl.abort(), 60000);
+    let response: Response;
+    try {
+      response = await callAIChatCompletions(
+        {
+          model: aiModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+          stream: true,
+          max_tokens: maxTokens,
+        },
+        { signal: aiCtrl.signal },
+      );
+    } finally {
+      clearTimeout(aiTimer);
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
