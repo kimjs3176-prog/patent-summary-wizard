@@ -48,14 +48,15 @@ async function callAI(payload: Record<string, unknown> & { model: string }): Pro
 }
 
 async function extractKeywords(title: string, abstract: string): Promise<string[]> {
-  const prompt = `다음 농업·식품·바이오 특허의 핵심 시각 요소를 표현하는 영어 이미지 검색 키워드 2개를 추출해줘.
+  const prompt = `다음 농업·식품·바이오 특허의 "최종 제품·산출물"을 표현하는 영어 이미지 검색 키워드 2개를 추출해줘.
 규칙:
-- 1번 키워드: "핵심 소재/원료" 자체 (예: "eleuthero plant", "ginseng root", "rice grains", "fresh strawberry")
-- 2번 키워드: "최종 제품/응용 형태" (예: "herbal extract powder", "health supplement capsule", "rice cake snack", "agricultural drone")
+- 모든 키워드는 "최종 제품 형태" 중심 (소재/원료 단독 금지)
+- 1번: 가장 구체적인 최종 제품명 (예: "health supplement capsule", "herbal extract powder", "rice cake snack", "diagnostic test kit", "agricultural drone")
+- 2번: 같은 제품의 다른 시각적 표현·소비자 형태 (예: "herbal tea bag", "functional food product", "skincare cream jar")
 - 각 1~3단어, 구체적이고 시각적인 명사구
-- 금지어: technology, system, method, innovation, process, composition, invention, abstract
-- 한국 한약재/식물명은 영문 학명·통용명 사용 (오가피→eleuthero, 황기→astragalus, 당귀→angelica, 구기자→goji berry, 오미자→schisandra)
-JSON만 반환: {"material":"...", "product":"..."}
+- 금지어: technology, system, method, innovation, process, composition, invention, abstract, plant, root, raw material
+- 한국 한약재 제품은 영문 통용명 사용 (오가피→eleuthero supplement, 황기→astragalus capsule, 인삼→ginseng extract)
+JSON만 반환: {"product1":"...", "product2":"..."}
 
 제목: ${title}
 초록: ${abstract.slice(0, 600)}`;
@@ -81,8 +82,10 @@ JSON만 반환: {"material":"...", "product":"..."}
   const push = (v: any) => {
     if (typeof v === "string" && v.trim().length > 0 && !out.includes(v.trim())) out.push(v.trim());
   };
-  push(parsed.material);
+  push(parsed.product1);
+  push(parsed.product2);
   push(parsed.product);
+  push(parsed.material);
   push(parsed.keyword);
   if (Array.isArray(parsed.keywords)) parsed.keywords.forEach(push);
   return out.slice(0, 2);
