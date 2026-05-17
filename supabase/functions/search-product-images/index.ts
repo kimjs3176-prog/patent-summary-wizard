@@ -48,22 +48,25 @@ async function callAI(payload: Record<string, unknown> & { model: string }): Pro
 }
 
 async function extractKeywords(title: string, abstract: string): Promise<string[]> {
-  const prompt = `다음 특허의 "최종 제품" 또는 "핵심 응용 산업"을 가장 잘 표현하는 영어 이미지 검색 키워드 1개만 추출해줘.
-- 1~3 단어, 일반적이고 시각적인 영어 표현
-- 너무 추상적인 단어 금지 (예: "technology", "system", "method", "innovation")
-- 가능한 구체적 산출물·제품·산업 풍경을 묘사 (예: "rice cake snack", "chicken farm", "gene sequencing lab", "agricultural drone")
-JSON만 반환: {"keyword":"..."}
+  const prompt = `다음 농업·식품·바이오 특허의 핵심 시각 요소를 표현하는 영어 이미지 검색 키워드 2개를 추출해줘.
+규칙:
+- 1번 키워드: "핵심 소재/원료" 자체 (예: "eleuthero plant", "ginseng root", "rice grains", "fresh strawberry")
+- 2번 키워드: "최종 제품/응용 형태" (예: "herbal extract powder", "health supplement capsule", "rice cake snack", "agricultural drone")
+- 각 1~3단어, 구체적이고 시각적인 명사구
+- 금지어: technology, system, method, innovation, process, composition, invention, abstract
+- 한국 한약재/식물명은 영문 학명·통용명 사용 (오가피→eleuthero, 황기→astragalus, 당귀→angelica, 구기자→goji berry, 오미자→schisandra)
+JSON만 반환: {"material":"...", "product":"..."}
 
 제목: ${title}
 초록: ${abstract.slice(0, 600)}`;
   const res = await callAI({
     model: "google/gemini-2.5-flash-lite",
     messages: [
-      { role: "system", content: "특허 → 최종 제품/응용 산업의 단일 영어 이미지 검색 키워드 추출기. JSON으로만 응답." },
+      { role: "system", content: "특허 → 소재·제품 영어 이미지 검색 키워드 추출기. JSON으로만 응답." },
       { role: "user", content: prompt },
     ],
     temperature: 0.3,
-    max_tokens: 100,
+    max_tokens: 120,
     response_format: { type: "json_object" },
   });
   if (!res.ok) throw new Error("AI keyword extraction failed");
@@ -74,10 +77,15 @@ JSON만 반환: {"keyword":"..."}
     const m = content.match(/\{[\s\S]*\}/);
     if (m) parsed = JSON.parse(m[0]);
   }
-  const single = typeof parsed.keyword === "string" ? parsed.keyword.trim() : "";
-  if (single) return [single];
-  const arr = Array.isArray(parsed.keywords) ? parsed.keywords : [];
-  return arr.filter((k: any) => typeof k === "string" && k.trim().length > 0).slice(0, 1);
+  const out: string[] = [];
+  const push = (v: any) => {
+    if (typeof v === "string" && v.trim().length > 0 && !out.includes(v.trim())) out.push(v.trim());
+  };
+  push(parsed.material);
+  push(parsed.product);
+  push(parsed.keyword);
+  if (Array.isArray(parsed.keywords)) parsed.keywords.forEach(push);
+  return out.slice(0, 2);
 }
 
 interface PexelsPhoto {
@@ -92,7 +100,8 @@ interface PexelsPhoto {
 async function searchPexels(keyword: string, perPage = 3): Promise<any[]> {
   const PEXELS_API_KEY = Deno.env.get("PEXELS_API_KEY");
   if (!PEXELS_API_KEY) throw new Error("PEXELS_API_KEY not configured");
-  const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=${perPage}&orientation=landscape`;
+  // Pexels 자체 관련도 순(기본)을 사용하고 가로형만 필터
+  const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=${perPage}&orientation=landscape&size=medium`;
   const r = await fetch(url, { headers: { Authorization: PEXELS_API_KEY } });
   if (!r.ok) {
     console.warn(`[Pexels] ${keyword} -> ${r.status}`);
@@ -166,11 +175,16 @@ serve(async (req) => {
       keywords = [safeTitle.split(/\s+/).slice(0, 3).join(" ") || "agriculture technology"];
     }
 
-    // 단일 키워드에 대해 상위 2개 이미지만 사용 (관련도 우선)
+    // 소재·제품 각 키워드에서 Pexels 상위 1개씩 추출 → 총 2개 이미지 (관련도 우선)
+    const targetKeywords = keywords.slice(0, 2);
     const groups = await Promise.all(
-      keywords.slice(0, 1).map(async (k) => ({ keyword: k, images: await searchPexels(k, 2) })),
+      targetKeywords.map(async (k) => ({ keyword: k, images: (await searchPexels(k, 1)) })),
     );
-    const filtered = groups.filter((g) => g.images.length > 0);
+    // 중복 이미지 ID 제거
+    const seenIds = new Set<number>();
+    const filtered = groups
+      .map((g) => ({ ...g, images: g.images.filter((im: any) => { if (seenIds.has(im.id)) return false; seenIds.add(im.id); return true; }) }))
+      .filter((g) => g.images.length > 0);
 
     try {
       await supabase.from("product_image_cache").upsert({
