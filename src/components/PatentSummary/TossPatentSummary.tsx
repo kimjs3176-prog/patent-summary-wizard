@@ -383,7 +383,8 @@ function extractKeywordsFromPatent(
   // 1) IPC → 활용가능 산업
   if (patentData.classifications?.length) {
     const ipcIndustryMap: Record<string, string> = {
-      A23L: "건강기능식품", A23B: "식품저장", A23C: "유제품", A23D: "유지식품",
+      // A23L = 일반 식품(시리얼·떡·면 등). 건강기능식품은 A23L 33/* 등 하위코드만 해당.
+      A23L: "식품산업", A23B: "식품저장", A23C: "유제품", A23D: "유지식품",
       A23F: "음료", A23G: "제과", A23J: "단백질식품", A23K: "사료",
       A23P: "식품가공", A22C: "축산식품", A22B: "도축",
       A01G: "스마트팜", A01H: "품종개량", A01K: "스마트축산",
