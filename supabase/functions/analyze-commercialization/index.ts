@@ -89,6 +89,88 @@ interface PatentData {
   description?: string;
 }
 
+function cleanKoreanText(value: unknown): string {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/^[①-⑨\d]+[).]\s*/g, "")
+    .replace(/^(강점|제언|분석|근거|평가|의견)\s*[:：-]\s*/g, "")
+    .trim();
+}
+
+function isIncompleteSentence(value: unknown): boolean {
+  const text = cleanKoreanText(value);
+  if (!text || text.length < 18) return true;
+  if (/[,(·•및와과의로]$/.test(text)) return true;
+  if (/(이며|하고|또는|및|으로|에서|하는|된|되어|통해|위해|관련된|필요한)$/.test(text)) return true;
+  return !/(다|된다|있다|없다|필요하다|판단된다|기대된다|관건이다|수준이다)[.!?。]?$/.test(text);
+}
+
+function ensureCompleteSentence(value: unknown, fallback: string): string {
+  const text = cleanKoreanText(value);
+  if (isIncompleteSentence(text)) return fallback;
+  return /[.!?。]$/.test(text) ? text : `${text}.`;
+}
+
+function looksLikePatentSummary(value: unknown): boolean {
+  const text = cleanKoreanText(value);
+  const summaryTone = /(본\s*발명|에\s*관한\s*것|포함한다|포함하는|유효성분|분리하였|확인하였|확인되었|화합물인|계열\s*화합물|NO\s*생성|조성물|방법이다|특허\s*기능)/.test(text);
+  const evaluationTone = /(근거|검증|차별|진보|구체|제한|보완|상용|사업|시장|평가|판단|수준|장벽|실증|데이터|리스크|청구항\s*구체성|재현성)/.test(text);
+  return summaryTone && !evaluationTone;
+}
+
+function makeTechnologyFallback(score: number, claimsCount: number, hasData: boolean, multiIpc: boolean): string {
+  const evidence = `${claimsCount >= 10 ? "청구항 수" : "청구항 구성"}와 ${hasData ? "실험 데이터" : "실시예"}${multiIpc ? ", 복수 IPC 적용성" : ""}`;
+  if (score >= 80) return `${evidence}에서 검증 근거가 확인돼 기술성은 양호하다. 선행기술 대비 차별성은 추가 실증으로 더 선명해질 수 있다.`;
+  if (score >= 70) return `${evidence}는 확인되지만 차별성·재현성 근거가 제한적이어서 기술성은 보통 수준이다. 후속 실험 데이터 보강이 필요하다.`;
+  return `청구항과 실시예만으로는 검증 근거가 충분하지 않아 기술성은 제한적으로 판단된다. 선행기술 대비 차별성과 반복 실험 보완이 필요하다.`;
+}
+
+function makeTrlFallback(trl: number): string {
+  if (trl <= 2) return `기술 원리와 개념 중심의 서술에 머물러 실험 검증 근거가 부족하므로 TRL ${trl} 수준으로 판단된다.`;
+  if (trl === 3) return `핵심 원리에 대한 제한적 실험은 확인되지만 반복 데이터와 통합 검증이 부족해 TRL 3으로 판단된다.`;
+  if (trl === 4) return `실험실 수준의 데이터가 확인되지만 통합 실시예나 파일럿 검증 근거는 부족해 TRL 4로 판단된다.`;
+  if (trl === 5) return `복수 실시예와 구성 검증은 확인되지만 실제 환경 실증 근거가 제한적이어서 TRL 5로 판단된다.`;
+  if (trl === 6) return `시작품·파일럿 또는 현장 적용 가능성이 제시되지만 실환경 운영 데이터는 부족해 TRL 6으로 판단된다.`;
+  if (trl === 7) return `실환경 적용 또는 상용화 가능성은 제시되지만 동일 형태의 안정적 유통 근거는 제한적이어서 TRL 7로 판단된다.`;
+  if (trl === 8) return `제조방법과 실시예가 구체적이고 기존 설비 적용성이 보여 상용화 직전 단계인 TRL 8로 판단된다.`;
+  return `동일 형태의 시판·유통 근거가 확인되는 수준이므로 TRL 9로 판단된다.`;
+}
+
+function makeMarketFallback(score: number): string {
+  if (score >= 80) return `적용 산업과 수요처가 비교적 명확해 시장 진입 가능성은 양호하다. 다만 실제 구매 수요와 경쟁 대체재 검증이 필요하다.`;
+  if (score >= 70) return `관련 산업 적용성은 확인되지만 수요 규모와 차별적 구매 요인은 제한적이다. 목표 시장을 좁혀 검증할 필요가 있다.`;
+  return `적용처가 협소하거나 수요 근거가 부족해 시장성은 제한적으로 판단된다. 우선 수요처와 활용 시나리오 검증이 필요하다.`;
+}
+
+function makeBusinessFallback(score: number): string {
+  if (score >= 80) return `기존 공정·설비 활용 여지가 있어 사업화 진입장벽은 비교적 낮다. 기술이전 조건과 초기 수요처 확보가 관건이다.`;
+  if (score >= 70) return `구현 가능성은 있으나 양산 조건과 투자회수 근거가 아직 충분하지 않다. 파일럿 적용과 원가 검증이 필요하다.`;
+  return `상용화에 필요한 공정·비용·수요처 근거가 부족해 사업성은 제한적이다. 후속 실증과 이전 전략 보완이 필요하다.`;
+}
+
+function normalizeReason(value: unknown, fallback: string): string {
+  if (looksLikePatentSummary(value) || isIncompleteSentence(value)) return fallback;
+  return ensureCompleteSentence(value, fallback);
+}
+
+function makeAnalysisFallback(scores: any): string {
+  const techScore = Number(scores.technologyScore) || 65;
+  const marketScore = Number(scores.marketScore) || 65;
+  const tech = techScore >= 80 ? "기술 검증 근거는 양호하고" : techScore >= 70 ? "기술 근거는 일부 확보됐지만" : "기술 근거는 보완이 필요하지만";
+  const market = marketScore >= 80 ? "시장 적용성은 기대된다" : marketScore >= 70 ? "시장 적용성은 보통이다" : "시장 적용성은 더 확인해야 한다";
+  const action = scores.businessScore >= 75 ? "상용화는 적용처 검증과 이전 전략이 관건이다" : "후속 실증과 수요처 검증이 필요하다";
+  return `${tech} ${market}. ${action}.`;
+}
+
+function normalizeAnalysis(value: unknown, fallback: string): string {
+  let text = cleanKoreanText(value);
+  const sentenceCount = (text.match(/[.!?。]/g) || []).length;
+  if (looksLikePatentSummary(text) || isIncompleteSentence(text) || sentenceCount < 2 || text.length > 95) return fallback;
+  const sentences = text.match(/[^.!?。]+[.!?。]+/g);
+  if (sentences && sentences.length > 2) text = sentences.slice(0, 2).join(" ");
+  return ensureCompleteSentence(text, fallback);
+}
+
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -224,10 +306,10 @@ serve(async (req) => {
 
     // 4) 모드별 기본 범위에 배수 적용
     const round = (n: number) => Math.round(n / 5) * 5;
-    // analysis는 매우 컴팩트하게(2문장, ≈60~90자)
+    // 근거/분석 문구는 UI에서 잘리지 않도록 짧은 완결문으로 제한
     const baseRanges = isDetailedScore
-      ? { reason: [55, 85], trl: [100, 150], analysis: [60, 95] }
-      : { reason: [40, 55], trl: [80, 100], analysis: [55, 85] };
+      ? { reason: [45, 70], trl: [55, 85], analysis: [50, 80] }
+      : { reason: [35, 55], trl: [45, 70], analysis: [45, 75] };
 
     const reasonMin = round(baseRanges.reason[0] * lengthMultiplier);
     const reasonMax = round(baseRanges.reason[1] * lengthMultiplier);
@@ -318,6 +400,15 @@ analysis 필드 작성 규칙(매우 중요):
 - 매우 컴팩트하게: 정확히 2문장(${analysisMin}~${analysisMax}자). 첫 문장은 핵심 강점+시장 가능성을 한 호흡으로, 둘째 문장은 사업화 유의점·제언.
 - 불필요한 수식어("매우", "굉장히", "다양한") 남발 금지. 항목 라벨(①②③, "강점:", "제언:" 등) 붙이지 말 것.
 
+technologyReason 작성 규칙(매우 중요):
+- 특허 기능·성분·작용을 그대로 요약하지 말 것. "본 발명은...", "~을 분리하였다", "~을 확인하였다" 같은 초록 복사 어투 금지.
+- 반드시 평가 근거로 작성: 청구항 구체성, 실험/수치 데이터, 비교예, 재현성, 선행기술 대비 차별성 중 확인된 증거와 부족한 증거를 함께 언급.
+- 한 문단의 완결된 평가문으로 끝낼 것. 문장 중간에서 끊기지 않게 마지막은 반드시 "다."로 종료.
+
+trlReason 작성 규칙(매우 중요):
+- 정확히 1문장(${trlMin}~${trlMax}자). 선택한 TRL의 결정 기준(실험실 데이터/통합 실시예/파일럿/실환경/시판 근거)을 명시.
+- "실험실데이터 다수"처럼 라벨만 쓰지 말고, 왜 그 단계인지 완결된 문장으로 작성. 마지막은 반드시 "TRL n으로 판단된다." 또는 "TRL n 수준이다."로 종료.
+
 businessReason 작성 규칙(중요):
 - 발명/조성물 구성 설명 금지. "~을 유효성분으로 포함하는 조성물을 개발할 수 있다 / ~을 위해 ~을 포함한다" 같은 명세서·청구항 서술 어투 금지.
 - 사업성 관점의 평가 어투로만 서술: 기술구현 난이도, 기존 설비 활용성, 라이선싱·기술이전 용이성, 투자회수·상용화 속도. 예) "기존 양봉 설비로 즉시 적용 가능해 상용화 진입장벽이 낮고, 양봉농가 대상 라이선싱·기술이전 수요가 명확하다."
@@ -351,6 +442,9 @@ TRL(1-9) 결정론적 판정(충족되는 가장 높은 단계 하나만, 경과
 analysis 필드 작성 규칙(중요):
 - 발명/초록 요약 금지. "~에 관한 것이다 / ~포함한다 / ~방법이다" 어투 금지.
 - 매우 컴팩트하게 정확히 2문장(${analysisMin}~${analysisMax}자). 첫 문장 강점+시장 가능성, 둘째 문장 유의점·제언. 항목 라벨/번호 금지.
+
+technologyReason 규칙: 특허 기능·성분·작용 요약 금지. 청구항 구체성, 실험/수치 데이터, 재현성, 선행기술 대비 차별성 기준의 평가문으로만 작성하고 반드시 완결문으로 끝낼 것.
+trlReason 규칙: 라벨 금지. 정확히 1문장(${trlMin}~${trlMax}자)으로 왜 해당 TRL인지 쓰고 반드시 "TRL n으로 판단된다." 또는 "TRL n 수준이다."로 끝낼 것.
 
 businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 작성.
 
@@ -416,6 +510,11 @@ JSON형식:
     }
 
     const result = await response.json();
+    const finishReason = result.choices?.[0]?.finish_reason || result.choices?.[0]?.finishReason || result.candidates?.[0]?.finishReason;
+    const tokenLimitHit = typeof finishReason === "string" && /length|max_tokens|max_output_tokens/i.test(finishReason);
+    if (tokenLimitHit) {
+      console.warn(`[AI] output may be truncated for ${trimmedPatent}: finishReason=${finishReason}, max_tokens=${scoreMaxTokens}`);
+    }
     const content = result.choices?.[0]?.message?.content;
 
     if (!content) {
@@ -442,7 +541,7 @@ JSON형식:
 
     // 점수-근거 정합성 보정: 근거 텍스트가 강한 긍정인데 점수가 낮으면 끌어올림
     const STRONG_TOP = /(매우\s*우수|매우\s*뛰어|독보적|독보|최고|최상|광범위한|매우\s*광범|시장\s*검증\s*완료|즉시\s*상용)/;
-    const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요\s*명확|높은\s*확장|상용화\s*용이|즉시\s*적용)/;
+    const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요[가\s]*명확|높은\s*확장|상용화\s*용이|즉시\s*적용)/;
     const enforceConsistency = (score: number, reason: string): number => {
       if (!reason || typeof score !== "number") return score;
       if (STRONG_TOP.test(reason) && score < 85) return 85;
@@ -466,6 +565,20 @@ JSON형식:
         scores.technologyScore * 0.35 + scores.marketScore * 0.35 + scores.businessScore * 0.3
       );
     }
+
+    // 문구 후처리: 초록 복사/중단 문장을 UI에 저장하지 않도록 완결된 평가문으로 보정
+    const normalizedTrl = Math.max(1, Math.min(9, Number(scores.trl) || 5));
+    const hasDataEvidence = /실험|데이터|수치|효능|효율|수율|비교예|대조군/.test(`${data.abstract || ""} ${data.description || ""} ${(data.claims || []).join(" ")}`);
+    const multiIpcEvidence = ipcSections.size >= 2 || (data.classifications || []).length >= 2;
+    const techFallback = makeTechnologyFallback(Number(scores.technologyScore) || 65, claimsCount, hasDataEvidence, multiIpcEvidence);
+    const marketFallback = makeMarketFallback(Number(scores.marketScore) || 65);
+    const businessFallback = makeBusinessFallback(Number(scores.businessScore) || 65);
+    scores.trl = normalizedTrl;
+    scores.technologyReason = normalizeReason(scores.technologyReason, techFallback);
+    scores.marketReason = normalizeReason(scores.marketReason, marketFallback);
+    scores.businessReason = normalizeReason(scores.businessReason, businessFallback);
+    scores.trlReason = ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
+    scores.analysis = normalizeAnalysis(scores.analysis, makeAnalysisFallback(scores));
 
     // Save to cache
     try {
