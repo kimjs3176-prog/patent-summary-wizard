@@ -383,7 +383,8 @@ function extractKeywordsFromPatent(
   // 1) IPC → 활용가능 산업
   if (patentData.classifications?.length) {
     const ipcIndustryMap: Record<string, string> = {
-      A23L: "건강기능식품", A23B: "식품저장", A23C: "유제품", A23D: "유지식품",
+      // A23L = 일반 식품(시리얼·떡·면 등). 건강기능식품은 A23L 33/* 등 하위코드만 해당.
+      A23L: "식품산업", A23B: "식품저장", A23C: "유제품", A23D: "유지식품",
       A23F: "음료", A23G: "제과", A23J: "단백질식품", A23K: "사료",
       A23P: "식품가공", A22C: "축산식품", A22B: "도축",
       A01G: "스마트팜", A01H: "품종개량", A01K: "스마트축산",
@@ -408,7 +409,11 @@ function extractKeywordsFromPatent(
     };
     patentData.classifications.forEach((cls) => {
       const c = cls.replace(/\s/g, "");
-      const k = ipcIndustryMap[c.slice(0, 4)] || ipcIndustryMap[c.slice(0, 3)];
+      // 정밀 하위코드 우선 매칭 (예: A23L 33/* = 건강기능식품)
+      let k: string | undefined;
+      if (/^A23L\s*33/.test(cls)) k = "건강기능식품";
+      else if (/^A23L\s*2/.test(cls)) k = "음료";
+      else k = ipcIndustryMap[c.slice(0, 4)] || ipcIndustryMap[c.slice(0, 3)];
       if (k && !industryKws.includes(k)) industryKws.push(k);
     });
   }
@@ -437,6 +442,8 @@ function extractKeywordsFromPatent(
     [/콜라겐|피부\s*탄력|탄력\s*개선/, "피부탄력"], [/노화\s*방지|안티에이징|항노화/, "항노화"],
     [/수분\s*보유|보수력/, "보수성"], [/유화\s*안정|유화\s*분산/, "유화안정"],
     [/점도\s*조절|겔화|겔형/, "점도조절"], [/방부|보존성|저장성|장기\s*보관/, "보존성향상"],
+    [/장기\s*유통|상온\s*유통|상온\s*보관|유통\s*기한\s*연장/, "유통기한 연장"],
+    [/후살균|살균\s*공정|레토르트|초고온\s*살균|UHT/, "살균공정"],
     [/흡착\s*제거|흡착\s*능|흡수\s*촉진/, "흡착기능"], [/소취|탈취|악취\s*제거/, "소취기능"],
     [/진통|통증\s*완화/, "진통효과"], [/이뇨|배뇨/, "이뇨작용"],
     [/간\s*보호|간\s*기능\s*개선/, "간기능개선"], [/골밀도|골다공|뼈\s*건강|골\s*건강/, "골건강"],
@@ -482,6 +489,7 @@ function extractKeywordsFromPatent(
   // 주의: '김','밀','솔' 같은 1글자 토큰은 다른 단어의 일부에 매칭되므로 복합어 형태로만 사용한다.
   const subjectPatterns: [RegExp, string][] = [
     [/쌀|미곡|현미|백미/, "쌀"], [/밀가루|소맥분|밀\s*기울|밀\s*짚|소맥/, "밀"], [/보리|맥주\s*보리/, "보리"], [/옥수수/, "옥수수"],
+    [/떡(?:볶이|국|류|살)?|쌀가루|쌀\s*반죽|가래떡/, "쌀"],
     [/대두|콩(?:나물|기름|가루|류|즙|단백)?|검정콩|서리태/, "콩"], [/인삼|홍삼|수삼|산양삼/, "인삼"], [/녹차|차(?:잎|나무|류)/, "차"],
     [/고추(?!장)|고춧가루/, "고추"], [/마늘/, "마늘"], [/양파/, "양파"], [/배추/, "배추"],
     [/토마토/, "토마토"], [/감자(?!튀김)/, "감자"], [/고구마/, "고구마"],
