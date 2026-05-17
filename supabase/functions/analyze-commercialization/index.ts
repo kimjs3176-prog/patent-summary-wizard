@@ -154,16 +154,16 @@ function normalizeReason(value: unknown, fallback: string): string {
 }
 
 function makeAnalysisFallback(scores: any): string {
-  const tech = scores.technologyScore >= 80 ? "기술 검증 근거는 비교적 탄탄하고" : scores.technologyScore >= 70 ? "기술 검증 근거는 일부 확보됐지만" : "기술 검증 근거가 제한적이어서";
-  const market = scores.marketScore >= 80 ? "시장 진입 여지도 크다" : scores.marketScore >= 70 ? "시장 적용성은 보통 수준이다" : "시장 적용성은 추가 확인이 필요하다";
-  const action = scores.businessScore >= 75 ? "상용화는 적용처 검증과 기술이전 전략을 구체화하는 것이 관건이다" : "후속 실증과 수요처 검증을 보완해야 사업화 판단이 선명해진다";
+  const tech = scores.technologyScore >= 80 ? "검증 근거는 양호하고" : scores.technologyScore >= 70 ? "기술 근거는 일부 확보됐지만" : "기술 근거가 제한적이어서";
+  const market = scores.marketScore >= 80 ? "시장 적용성도 기대된다" : scores.marketScore >= 70 ? "시장 적용성은 보통이다" : "시장 적용성은 더 확인해야 한다";
+  const action = scores.businessScore >= 75 ? "상용화는 적용처 검증과 이전 전략이 관건이다" : "후속 실증과 수요처 검증이 필요하다";
   return `${tech} ${market}. ${action}.`;
 }
 
 function normalizeAnalysis(value: unknown, fallback: string): string {
   let text = cleanKoreanText(value);
   const sentenceCount = (text.match(/[.!?。]/g) || []).length;
-  if (looksLikePatentSummary(text) || isIncompleteSentence(text) || sentenceCount < 2 || text.length > 160) return fallback;
+  if (looksLikePatentSummary(text) || isIncompleteSentence(text) || sentenceCount < 2 || text.length > 115) return fallback;
   const sentences = text.match(/[^.!?。]+[.!?。]+/g);
   if (sentences && sentences.length > 2) text = sentences.slice(0, 2).join(" ");
   return ensureCompleteSentence(text, fallback);
