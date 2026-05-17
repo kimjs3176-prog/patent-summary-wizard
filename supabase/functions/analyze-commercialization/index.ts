@@ -32,9 +32,35 @@ async function callAIChatCompletions(
         return r;
       }
       const errText = await r.text().catch(() => "");
-      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
+      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — trying Groq next`);
     } catch (e) {
-      console.warn("[AI] personal Gemini error, falling back:", e);
+      console.warn("[AI] personal Gemini error, trying Groq:", e);
+    }
+  }
+  const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+  if (GROQ_API_KEY) {
+    try {
+      const m = payload.model;
+      const groqModel = m.includes("flash-lite") || m.includes("nano") || m.includes("mini")
+        ? "llama-3.1-8b-instant"
+        : "llama-3.3-70b-versatile";
+      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        signal: init.signal,
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...payload, model: groqModel }),
+      });
+      if (r.ok) {
+        console.log(`[AI] using personal Groq API (${groqModel})`);
+        return r;
+      }
+      const errText = await r.text().catch(() => "");
+      console.warn(`[AI] personal Groq failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
+    } catch (e) {
+      console.warn("[AI] personal Groq error, falling back:", e);
     }
   }
   return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
