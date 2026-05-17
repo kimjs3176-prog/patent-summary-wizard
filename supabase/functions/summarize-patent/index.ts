@@ -50,6 +50,58 @@ async function callAIChatCompletions(
   });
 }
 
+async function callAISummaryCompletions(
+  payload: Record<string, unknown> & { model: string },
+  init: { signal?: AbortSignal } = {},
+): Promise<Response> {
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  if (GEMINI_API_KEY) {
+    try {
+      const geminiModel = payload.model.replace(/^google\//, "");
+      const r = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        {
+          method: "POST",
+          signal: init.signal,
+          headers: {
+            Authorization: `Bearer ${GEMINI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...payload, model: geminiModel, stream: false }),
+        },
+      );
+      if (r.ok) {
+        const data = await r.json();
+        const content = data.choices?.[0]?.message?.content ?? "";
+        const finishReason = data.choices?.[0]?.finish_reason ?? "stop";
+        if (content) {
+          console.log("[AI] using personal Gemini API (non-streaming summary)");
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              for (let i = 0; i < content.length; i += 80) {
+                const chunk = content.slice(i, i + 80);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+              }
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ finish_reason: finishReason }] })}\n\n`));
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+            },
+          });
+          return new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+        }
+        console.warn("[AI] personal Gemini returned empty summary — falling back to Lovable AI");
+      } else {
+        const errText = await r.text().catch(() => "");
+        console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
+      }
+    } catch (e) {
+      console.warn("[AI] personal Gemini summary error, falling back:", e);
+    }
+  }
+  return await callAIChatCompletions(payload, init);
+}
+
 // AbortController-based timeout for fetch
 async function fetchWithTimeout(
   url: string,
