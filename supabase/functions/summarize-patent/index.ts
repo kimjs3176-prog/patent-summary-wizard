@@ -169,7 +169,7 @@ serve(async (req) => {
 
     // Read custom prompt additions, total max tokens, model, and per-section length settings.
     let customPromptExtra = "";
-    let maxTokens = 6000;
+    let maxTokens = 12000;
     let aiModel = "google/gemini-2.5-flash";
     let sectionLengthSettings: Record<string, number> = {};
     try {
@@ -183,7 +183,7 @@ serve(async (req) => {
           if (row.key === "summary_ai_prompt_extra" && row.value) customPromptExtra = row.value;
           if (row.key === "summary_max_tokens" && row.value) {
             const parsed = parseInt(row.value, 10);
-            if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = parsed;
+            if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = Math.max(parsed, 8000);
           }
           if (row.key === "ai_model" && row.value) aiModel = row.value;
           if (row.key === "summary_section_lengths" && row.value) {
@@ -360,7 +360,7 @@ serve(async (req) => {
     const aiTimer = setTimeout(() => aiCtrl.abort(), 60000);
     let response: Response;
     try {
-      response = await callAIChatCompletions(
+      response = await callAISummaryCompletions(
         {
           model: aiModel,
           messages: [
