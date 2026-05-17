@@ -277,7 +277,13 @@ TRL(1-9): 특허 텍스트에서 확인 가능한 기술 완성도만 기준으�
 주의: 시장 규모·성장률 등 특허 문서에 없는 외부 데이터를 추측하여 근거로 제시하지 말 것. IPC 분류와 기술 특성에서 추론 가능한 산업 적용성만 평가할 것.
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가: 기술적 차별성, 시장 적용 가능성, 사업화 전략을 종합적으로 분석","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
+analysis 필드 작성 규칙(매우 중요):
+- 절대 발명/초록의 내용을 요약·재서술하지 말 것. "~에 관한 것이다", "~을 포함한다", "~하는 방법이다" 등 발명 요약 어투 금지.
+- "이 기술은 ~한 강점이 있다", "사업화 시 ~한 기회/리스크가 있다", "~분야 진입이 유망하다" 같은 평가·전망 어투로 작성.
+- 반드시 다음 4요소를 모두 포함: ①기술적 차별성·강점 ②시장 진입 가능성·수요 ③사업화 시 핵심 리스크·과제 ④우선 추진 전략·제언.
+
+JSON형식:
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
       : `특허 기술사업화 평가 전문가. JSON으로만 응답.
 
 평가기준(0-100):
@@ -296,7 +302,12 @@ TRL(1-9): 특허 텍스트 기반 기술 완성도만 판단. 개념→2~3, 실�
 주의: 특허문서에 없는 시장규모 등 외부데이터 추측 금지. IPC·기술특성 기반 산업적용성만 평가.
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
+analysis 필드 작성 규칙(중요):
+- 발명/초록 요약 금지. "~에 관한 것이다/포함한다/방법이다" 어투 금지.
+- 평가·전망 어투로 ①기술 강점 ②시장 가능성 ③사업화 리스크 ④추진 제언 4요소 포함.
+
+JSON형식:
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
 
 
     // Read AI model from settings
