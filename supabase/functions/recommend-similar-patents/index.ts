@@ -201,21 +201,33 @@ JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
       "방법", "장치", "시스템", "기술", "이용", "위한", "관한", "관련", "포함", "제공",
       "그리고", "또는", "있는", "되는", "사용", "통해", "통한", "및", "이를", "이의",
     ]);
-    const titleTokens = (title || "")
+    // 너무 일반적이라 단독으로는 "유사" 판정 근거가 되면 안 되는 도메인 공통어.
+    // 이런 단어가 제목·키워드에 있어도 grounding vocab에 넣지 않는다.
+    const genericTerms = new Set([
+      "조성물", "유효성분", "추출물", "혼합물", "함유", "기능성", "건강기능", "화합물",
+      "제조방법", "제조", "성분", "원료", "재료", "물질", "용액", "용도", "발명",
+      "예방", "치료", "개선", "효과", "방제", "처리",
+    ]);
+    const titleTokensRaw = (title || "")
       .replace(/[\[\](),.·\-/]/g, " ")
       .split(/\s+/)
       .map((t: string) => t.trim())
       .filter((t: string) => t.length >= 2 && !stopWords.has(t));
+    const titleTokens = titleTokensRaw.filter((t: string) => !genericTerms.has(t));
 
     if (searchQueries.length === 0 && titleTokens.length) {
       const sorted = [...titleTokens].sort((a, b) => b.length - a.length);
       searchQueries = [sorted.slice(0, 3)];
     }
 
-    // Build the canonical "grounding vocabulary" used to filter result titles later
+    // Build the canonical "grounding vocabulary" used to filter result titles later.
+    // Generic 도메인어(조성물·유효성분·추출물 등)는 제외해 무관 특허(예: 일반 건강기능 조성물)가
+    // 단어 하나 겹친다고 통과되는 것을 방지.
     const groundingVocab = new Set<string>();
     for (const t of titleTokens) groundingVocab.add(t);
-    for (const set of searchQueries) for (const k of set) if (k && k.length >= 2) groundingVocab.add(k);
+    for (const set of searchQueries)
+      for (const k of set)
+        if (k && k.length >= 2 && !genericTerms.has(k)) groundingVocab.add(k);
 
     console.log("AI generated search queries:", JSON.stringify(searchQueries));
     console.log("Grounding vocab:", JSON.stringify([...groundingVocab]));
