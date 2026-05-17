@@ -350,6 +350,7 @@ serve(async (req) => {
     const decoder = new TextDecoder();
     let fullContent = "";
     let sseBuffer = ""; // Buffer to handle SSE lines split across chunks
+    let finishReason: string | null = null;
 
     const stream = new ReadableStream({
       async pull(controller) {
@@ -363,11 +364,16 @@ serve(async (req) => {
                 const parsed = JSON.parse(remaining.slice(6));
                 const content = parsed.choices?.[0]?.delta?.content;
                 if (content) fullContent += content;
+                const fr = parsed.choices?.[0]?.finish_reason;
+                if (fr) finishReason = fr;
               } catch { /* ignore */ }
             }
           }
           controller.close();
           if (fullContent.length > 0) {
+            if (finishReason && finishReason !== "stop") {
+              console.warn(`[TRUNCATED] ${trimmedPatent} finish_reason=${finishReason} chars=${fullContent.length} maxTokens=${maxTokens} — skipping cache save so it regenerates next time`);
+            } else {
             try {
               const supabase = getSupabaseClient();
               await supabase.from("patent_ai_cache").upsert({
@@ -378,6 +384,7 @@ serve(async (req) => {
               console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
             } catch (saveErr) {
               console.error("Cache save error:", saveErr);
+            }
             }
           }
           return;
@@ -397,6 +404,8 @@ serve(async (req) => {
               const parsed = JSON.parse(line.slice(6));
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) fullContent += content;
+              const fr = parsed.choices?.[0]?.finish_reason;
+              if (fr) finishReason = fr;
             } catch {
               // Incomplete JSON - put it back and wait for more data
               sseBuffer = line + "\n" + sseBuffer;
