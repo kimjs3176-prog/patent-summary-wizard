@@ -208,7 +208,7 @@ serve(async (req) => {
 
     try {
       await supabase.from("product_image_cache").upsert({
-        patent_number: trimmed,
+        patent_number: trimmed + cacheSuffix,
         keywords,
         images: filtered,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
