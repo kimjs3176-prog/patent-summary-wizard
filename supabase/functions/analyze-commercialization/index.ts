@@ -154,8 +154,10 @@ function normalizeReason(value: unknown, fallback: string): string {
 }
 
 function makeAnalysisFallback(scores: any): string {
-  const tech = scores.technologyScore >= 80 ? "검증 근거는 양호하고" : scores.technologyScore >= 70 ? "기술 근거는 일부 확보됐지만" : "기술 근거가 제한적이어서";
-  const market = scores.marketScore >= 80 ? "시장 적용성도 기대된다" : scores.marketScore >= 70 ? "시장 적용성은 보통이다" : "시장 적용성은 더 확인해야 한다";
+  const techScore = Number(scores.technologyScore) || 65;
+  const marketScore = Number(scores.marketScore) || 65;
+  const tech = techScore >= 80 ? "기술 검증 근거는 양호하고" : techScore >= 70 ? "기술 근거는 일부 확보됐지만" : "기술 근거는 보완이 필요하지만";
+  const market = marketScore >= 80 ? "시장 적용성은 기대된다" : marketScore >= 70 ? "시장 적용성은 보통이다" : "시장 적용성은 더 확인해야 한다";
   const action = scores.businessScore >= 75 ? "상용화는 적용처 검증과 이전 전략이 관건이다" : "후속 실증과 수요처 검증이 필요하다";
   return `${tech} ${market}. ${action}.`;
 }
