@@ -89,6 +89,69 @@ interface PatentData {
   description?: string;
 }
 
+function cleanKoreanText(value: unknown): string {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/^[①-⑨\d]+[).]\s*/g, "")
+    .replace(/^(강점|제언|분석|근거|평가|의견)\s*[:：-]\s*/g, "")
+    .trim();
+}
+
+function isIncompleteSentence(value: unknown): boolean {
+  const text = cleanKoreanText(value);
+  if (!text || text.length < 18) return true;
+  if (/[,(·•및와과의로]$/.test(text)) return true;
+  if (/(이며|하고|또는|및|으로|에서|하는|된|되어|통해|위해|관련된|필요한)$/.test(text)) return true;
+  return !/(다|된다|있다|없다|필요하다|판단된다|기대된다|관건이다|수준이다)[.!?。]?$/.test(text);
+}
+
+function ensureCompleteSentence(value: unknown, fallback: string): string {
+  const text = cleanKoreanText(value);
+  if (isIncompleteSentence(text)) return fallback;
+  return /[.!?。]$/.test(text) ? text : `${text}.`;
+}
+
+function looksLikePatentSummary(value: unknown): boolean {
+  const text = cleanKoreanText(value);
+  const summaryTone = /(본\s*발명|에\s*관한\s*것|포함한다|포함하는|유효성분|분리하였|확인하였|조성물|방법이다|특허\s*기능)/.test(text);
+  const evaluationTone = /(근거|검증|차별|진보|구체|제한|보완|상용|사업|시장|평가|판단|수준|장벽|실증|데이터|리스크)/.test(text);
+  return summaryTone && !evaluationTone;
+}
+
+function makeTechnologyFallback(score: number, claimsCount: number, hasData: boolean, multiIpc: boolean): string {
+  const evidence = `${claimsCount >= 10 ? "청구항 수" : "청구항 구성"}와 ${hasData ? "실험 데이터" : "실시예"}${multiIpc ? ", 복수 IPC 적용성" : ""}`;
+  if (score >= 80) return `${evidence}에서 검증 근거가 확인돼 기술성은 양호하다. 선행기술 대비 차별성은 추가 실증으로 더 선명해질 수 있다.`;
+  if (score >= 70) return `${evidence}는 확인되지만 차별성·재현성 근거가 제한적이어서 기술성은 보통 수준이다. 후속 실험 데이터 보강이 필요하다.`;
+  return `청구항과 실시예만으로는 검증 근거가 충분하지 않아 기술성은 제한적으로 판단된다. 선행기술 대비 차별성과 반복 실험 보완이 필요하다.`;
+}
+
+function makeTrlFallback(trl: number): string {
+  if (trl <= 2) return `기술 원리와 개념 중심의 서술에 머물러 실험 검증 근거가 부족하므로 TRL ${trl} 수준으로 판단된다.`;
+  if (trl === 3) return `핵심 원리에 대한 제한적 실험은 확인되지만 반복 데이터와 통합 검증이 부족해 TRL 3으로 판단된다.`;
+  if (trl === 4) return `실험실 수준의 데이터가 확인되지만 통합 실시예나 파일럿 검증 근거는 부족해 TRL 4로 판단된다.`;
+  if (trl === 5) return `복수 실시예와 구성 검증은 확인되지만 실제 환경 실증 근거가 제한적이어서 TRL 5로 판단된다.`;
+  if (trl === 6) return `시작품·파일럿 또는 현장 적용 가능성이 제시되지만 실환경 운영 데이터는 부족해 TRL 6으로 판단된다.`;
+  if (trl === 7) return `실환경 적용 또는 상용화 가능성은 제시되지만 동일 형태의 안정적 유통 근거는 제한적이어서 TRL 7로 판단된다.`;
+  if (trl === 8) return `제조방법과 실시예가 구체적이고 기존 설비 적용성이 보여 상용화 직전 단계인 TRL 8로 판단된다.`;
+  return `동일 형태의 시판·유통 근거가 확인되는 수준이므로 TRL 9로 판단된다.`;
+}
+
+function makeAnalysisFallback(scores: any): string {
+  const tech = scores.technologyScore >= 80 ? "기술 검증 근거는 비교적 탄탄하고" : scores.technologyScore >= 70 ? "기술 검증 근거는 일부 확보됐지만" : "기술 검증 근거가 제한적이어서";
+  const market = scores.marketScore >= 80 ? "시장 진입 여지도 크다" : scores.marketScore >= 70 ? "시장 적용성은 보통 수준이다" : "시장 적용성은 추가 확인이 필요하다";
+  const action = scores.businessScore >= 75 ? "상용화는 적용처 검증과 기술이전 전략을 구체화하는 것이 관건이다" : "후속 실증과 수요처 검증을 보완해야 사업화 판단이 선명해진다";
+  return `${tech} ${market}. ${action}.`;
+}
+
+function normalizeAnalysis(value: unknown, fallback: string): string {
+  let text = cleanKoreanText(value);
+  const sentenceCount = (text.match(/[.!?。]/g) || []).length;
+  if (looksLikePatentSummary(text) || isIncompleteSentence(text) || sentenceCount < 2 || text.length > 160) return fallback;
+  const sentences = text.match(/[^.!?。]+[.!?。]+/g);
+  if (sentences && sentences.length > 2) text = sentences.slice(0, 2).join(" ");
+  return ensureCompleteSentence(text, fallback);
+}
+
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
