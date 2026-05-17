@@ -5,6 +5,48 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function callAIChatCompletions(
+  payload: Record<string, unknown> & { model: string },
+  init: { signal?: AbortSignal } = {},
+): Promise<Response> {
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (GEMINI_API_KEY) {
+    try {
+      const geminiModel = payload.model.replace(/^google\//, "");
+      const r = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        {
+          method: "POST",
+          signal: init.signal,
+          headers: {
+            Authorization: `Bearer ${GEMINI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...payload, model: geminiModel }),
+        },
+      );
+      if (r.ok) {
+        console.log("[AI] using personal Gemini API");
+        return r;
+      }
+      const errText = await r.text().catch(() => "");
+      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
+    } catch (e) {
+      console.warn("[AI] personal Gemini error, falling back:", e);
+    }
+  }
+  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    signal: init.signal,
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
 interface PatentData {
   title?: string;
   titleKo?: string;
@@ -76,14 +118,8 @@ pivots 배열은 정확히 4개.`;
     const aiTimer = setTimeout(() => aiController.abort(), 45000);
     let response: Response;
     try {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        signal: aiController.signal,
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      response = await callAIChatCompletions(
+        {
           model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
@@ -92,8 +128,9 @@ pivots 배열은 정확히 4개.`;
           temperature: 0.85,
           max_tokens: 1500,
           response_format: { type: "json_object" },
-        }),
-      });
+        },
+        { signal: aiController.signal },
+      );
     } finally {
       clearTimeout(aiTimer);
     }
