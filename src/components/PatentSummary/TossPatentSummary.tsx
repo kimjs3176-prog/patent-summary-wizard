@@ -513,7 +513,7 @@ function extractKeywordsFromPatent(
     [/화장품|스킨\s*케어|스킨\s*크림|로션|에센스|마스크팩|미용\s*세럼/, "화장품"],
     [/사료|배합\s*사료|반려동물\s*사료|펫푸드/, "사료"],
     [/비료|퇴비|토양\s*개량제/, "비료"],
-    [/스낵|과자|간식|빵|면류|국수|만두|소스|장류|발효식품|김치/, "가공식품"],
+    [/떡(?:볶이|국|류|살)?|즉석\s*밥|즉석\s*죽|HMR|가정\s*간편식|스낵|과자|간식|빵|면류|국수|라면|만두|부침|소스|장류|발효식품|김치|반찬|밀키트|냉동\s*식품/, "가공식품"],
     [/유제품|치즈|요거트|버터|분유/, "유제품"],
     [/의약품|치료제|진단\s*키트|의료기기|의료용품/, "의료제품"],
     [/포장\s*필름|포장\s*시트|패키징|포장재|보관\s*용기|식품\s*용기/, "포장·소재 제품"],
@@ -595,7 +595,38 @@ function extractKeywordsFromPatent(
     else if (/식품|음료|가공\s*식품/.test(text)) productKws.push("가공식품");
     else if (/약학(?:적|용)?\s*조성물|환제|환약|시럽\s*제|연고\s*제/.test(text)) productKws.push("제형 제품");
     else if (/추출물|분말|원료\s*소재|기능성\s*성분/.test(text)) productKws.push("원료 소재");
-    else productKws.push("응용 제품");
+    else {
+      // 최종 폴백: 제목에서 산출물 명사 추출
+      // 1) "~제조방법/~조성물/~키트/~용도/~방법/~시스템/~장치" 직전 토큰이 보통 산출물 핵심
+      const productNoun = (() => {
+        if (!title) return "";
+        const STOP_LOCAL = new Set(["및","또는","이의","그","위한","사용","이용","포함","관한","본","발명","제공","구비","구성"]);
+        const tokens = title
+          .replace(/[\[\](){}<>"'`·,.\-—–:;?!]/g, " ")
+          .split(/\s+/)
+          .filter(Boolean);
+        const SUFFIX = /(제조방법|제조법|조성물|키트|용도|방법|시스템|장치|모듈|제형|제제|마커)$/;
+        // 단어 자체가 접미어로 끝나면 그 단어 직전 토큰
+        for (let i = tokens.length - 1; i >= 0; i--) {
+          if (SUFFIX.test(tokens[i])) {
+            // 동일 토큰 안에 산출물이 함께 있는 경우 (예: "유전자마커")
+            const m = tokens[i].match(/^([가-힣A-Za-z]{1,6})(마커|키트|장치|시스템)$/);
+            if (m) return m[2] === "마커" ? "마커" : m[1] + m[2];
+            for (let j = i - 1; j >= 0; j--) {
+              const stem = tokens[j].replace(/(?:으로|에서|로서|로써|에게|에|의|를|을|이|가|와|과|로|은|는|용)$/u, "");
+              if (stem.length < 2 || stem.length > 8) continue;
+              if (STOP_LOCAL.has(stem)) continue;
+              if (/^\d+$/.test(stem)) continue;
+              return stem;
+            }
+          }
+        }
+        // 2) 그래도 못 찾으면 제목의 마지막 의미있는 명사
+        const nouns = extractTitleNouns();
+        return nouns[nouns.length - 1] || "";
+      })();
+      productKws.push(productNoun || "최종 산출물");
+    }
   }
 
   // 조합: 소재 → 주요기능 → 활용산업 → 최종제품 → 기술특징
