@@ -277,10 +277,11 @@ TRL(1-9): 특허 텍스트에서 확인 가능한 기술 완성도만 기준으�
 
 주의: 시장 규모·성장률 등 특허 문서에 없는 외부 데이터를 추측하여 근거로 제시하지 말 것. IPC 분류와 기술 특성에서 추론 가능한 산업 적용성만 평가할 것.
 
-JSON형식:
 analysis 필드 작성 규칙(매우 중요):
-- 발명/초록 요약 금지. "~에 관한 것이다/포함한다/방법이다" 어투 금지. 평가·전망 어투.
-- 최대 3문장(${analysisMin}~${analysisMax}자) 이내로 간결하게. 핵심 강점 + 시장 가능성 + 리스크/제언을 압축 서술.
+- 발명/초록 요약 금지. "~에 관한 것이다 / ~을 포함한다 / ~하는 방법이다" 같은 발명 서술 어투 금지.
+- 평가·전망 어투의 자연스러운 한국어 평어체("~다" / "~할 만하다" / "~가 기대된다" / "~가 관건이다")로 작성.
+- 구조: ①핵심 강점 한 문장 → ②시장·수요 가능성 한 문장 → ③사업화 시 유의점 또는 추진 제언 한 문장. 총 2~3문장(${analysisMin}~${analysisMax}자).
+- 불필요한 수식어("매우", "굉장히", "다양한") 남발 금지. 항목 라벨(①②③, "강점:", "제언:" 등) 붙이지 말고 매끄럽게 이어 쓸 것.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
@@ -301,10 +302,9 @@ TRL(1-9): 특허 텍스트 기반 기술 완성도만 판단. 개념→2~3, 실�
 
 주의: 특허문서에 없는 시장규모 등 외부데이터 추측 금지. IPC·기술특성 기반 산업적용성만 평가.
 
-JSON형식:
 analysis 필드 작성 규칙(중요):
-- 발명/초록 요약 금지. "~에 관한 것이다/포함한다/방법이다" 어투 금지.
-- 최대 3문장(${analysisMin}~${analysisMax}자) 이내. 강점·시장 가능성·리스크/제언을 압축 서술.
+- 발명/초록 요약 금지. "~에 관한 것이다 / ~포함한다 / ~방법이다" 어투 금지.
+- 자연스러운 평가 어투로 ①강점 → ②시장 가능성 → ③추진 시 유의점 / 제언을 2~3문장(${analysisMin}~${analysisMax}자)으로 매끄럽게 서술. 항목 라벨이나 번호 붙이지 말 것.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
