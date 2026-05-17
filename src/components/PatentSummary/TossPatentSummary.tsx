@@ -503,6 +503,8 @@ function extractKeywordsFromPatent(
   // 6) 제목+초록 → 최종제품 (소비자 형태로 출시될 산출물)
   // 주의: '환','크림','시트','솔루션','서비스' 같은 단어는 산업 일반에서 다른 의미로 흔히 사용되므로 반드시 복합어 형태로 매칭.
   const productPatterns: [RegExp, string][] = [
+    // 유전자/바이오 마커 — 진단·연구용 최종 산출물. '마커' 단독은 마킹펜에 오매칭되므로 복합어로만.
+    [/유전자\s*마커|바이오\s*마커|분자\s*마커|진단\s*마커|SNP\s*마커|단일염기다형성\s*마커|마커\s*세트|마커\s*조성물|마커\s*키트/, "마커"],
     [/건강기능식품|건기식|기능성\s*식품/, "건강기능식품"],
     [/음료(?!수)|드링크|차\s*제품|주스|스무디/, "음료"],
     // NOTE: '조성물'은 특허 청구항의 일반 용어(프라이머·키트·비료·사료에도 사용)이므로 단독 매칭 금지.
@@ -584,8 +586,9 @@ function extractKeywordsFromPatent(
     else industryKws.push("농식품산업");
   }
   if (productKws.length === 0) {
-    // 우선순위: 진단키트·장치 → 사료/비료 → 가공식품 → 제형(약학) → 원료 소재
-    if (/진단\s*키트|판별\s*키트|검출\s*키트|프라이머\s*세트|판별\s*용\s*조성물/.test(text)) productKws.push("진단·검사 키트");
+    // 우선순위: 마커 → 진단키트·장치 → 사료/비료 → 가공식품 → 제형(약학) → 원료 소재
+    if (/유전자\s*마커|바이오\s*마커|분자\s*마커|진단\s*마커|마커/.test(title)) productKws.push("마커");
+    else if (/진단\s*키트|판별\s*키트|검출\s*키트|프라이머\s*세트|판별\s*용\s*조성물/.test(text)) productKws.push("진단·검사 키트");
     else if (/장치|시스템|설비|기계|모듈|하우징|챔버/.test(text)) productKws.push("장치·시스템");
     else if (/사료/.test(text)) productKws.push("사료");
     else if (/비료|퇴비/.test(text)) productKws.push("비료");
