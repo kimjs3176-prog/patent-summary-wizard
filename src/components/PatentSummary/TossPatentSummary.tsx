@@ -409,7 +409,11 @@ function extractKeywordsFromPatent(
     };
     patentData.classifications.forEach((cls) => {
       const c = cls.replace(/\s/g, "");
-      const k = ipcIndustryMap[c.slice(0, 4)] || ipcIndustryMap[c.slice(0, 3)];
+      // 정밀 하위코드 우선 매칭 (예: A23L 33/* = 건강기능식품)
+      let k: string | undefined;
+      if (/^A23L\s*33/.test(cls)) k = "건강기능식품";
+      else if (/^A23L\s*2/.test(cls)) k = "음료";
+      else k = ipcIndustryMap[c.slice(0, 4)] || ipcIndustryMap[c.slice(0, 3)];
       if (k && !industryKws.includes(k)) industryKws.push(k);
     });
   }
