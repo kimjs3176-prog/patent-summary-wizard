@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
 import type { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { RelatedPatentsCompact } from "./RelatedPatentsCompact";
-import { IndustryImageGallery } from "./IndustryImageGallery";
+
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
@@ -1169,25 +1169,6 @@ export function TossPatentSummary({
                   {details.analysis}
                 </p>
               </div>
-            </section>
-          )}
-
-          {/* 관련 특허 — 기능·특징이 유사한 특허 */}
-          {patentData && (
-            <section className="mb-10">
-              <SectionTitle kicker="활용 산업·제품">실제 시장에서 보는 응용 분야</SectionTitle>
-              <SoftCard className="!p-0">
-                <IndustryImageGallery
-                  patentNumber={patentNumber}
-                  title={patentData.titleKo || patentData.title}
-                  abstract={patentData.abstract}
-                  industryKeywords={keywords.filter(k => k.cat === "industry").map(k => k.word)}
-                  productKeywords={keywords.filter(k => k.cat === "product").map(k => k.word)}
-                  materialKeywords={keywords.filter(k => k.cat === "material").map(k => k.word)}
-                  functionKeywords={keywords.filter(k => k.cat === "function").map(k => k.word)}
-                  techKeywords={keywords.filter(k => k.cat === "tech").map(k => k.word)}
-                />
-              </SoftCard>
             </section>
           )}
 
