@@ -325,9 +325,11 @@ JSON형식:
     const scoreModel = isDetailedScore ? configuredModel : "google/gemini-2.5-flash-lite";
     // max_tokens도 길이 배수에 비례하여 동적 조절
     // 최소 토큰 보장: JSON 스키마 자체가 길어 너무 적으면 응답이 잘려 파싱 실패
-    const baseMaxTokens = isDetailedScore ? 1200 : 900;
+    // 충분한 출력 토큰 확보 — 'analysis' 필드 강화로 응답 길이가 늘어남.
+    // 한국어 한 글자 ≈ 1~2 토큰. trlReason+analysis+3개 reason 합계 최대 ~700자 → 안전 마진 포함.
+    const baseMaxTokens = isDetailedScore ? 2400 : 1800;
     const scoreMaxTokens = Math.max(
-      isDetailedScore ? 1000 : 800,
+      isDetailedScore ? 2000 : 1500,
       Math.round(baseMaxTokens * lengthMultiplier),
     );
 
