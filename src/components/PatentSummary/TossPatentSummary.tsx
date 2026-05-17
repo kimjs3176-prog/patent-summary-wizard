@@ -25,6 +25,22 @@ interface TossPatentSummaryProps extends BasePatentSummaryProps {
 const SOFT = "#F2F4F6";
 const ACCENT_HEX = "#10B981";
 
+function formatAiModelLabel(model?: string): string {
+  if (!model) return "Gemini 2.5 Flash";
+  const map: Record<string, string> = {
+    "google/gemini-3.1-pro-preview": "Gemini 3.1 Pro",
+    "google/gemini-3-flash-preview": "Gemini 3 Flash",
+    "google/gemini-2.5-pro": "Gemini 2.5 Pro",
+    "google/gemini-2.5-flash": "Gemini 2.5 Flash",
+    "google/gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite",
+    "openai/gpt-5": "GPT-5",
+    "openai/gpt-5-mini": "GPT-5 Mini",
+    "openai/gpt-5-nano": "GPT-5 Nano",
+    "openai/gpt-5.2": "GPT-5.2",
+  };
+  return map[model] || model.replace(/^.*\//, "");
+}
+
 function SectionTitle({ children, kicker }: { children: React.ReactNode; kicker?: string }) {
   return (
     <div className="mb-5">
@@ -1175,6 +1191,18 @@ export function TossPatentSummary({
                 <Share2 className="w-[18px] h-[18px]" />
                 이메일·QR로 전송하기
               </button>
+            </section>
+          )}
+
+          {/* 분석 모델 표기 */}
+          {!isStreaming && content && (
+            <section className="mt-6 mb-2">
+              <div className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#8B95A1]">
+                <Sparkles className="w-3 h-3" style={{ color: ACCENT_HEX }} />
+                <span>
+                  본 분석은 <span className="font-semibold text-[#4E5968]">{formatAiModelLabel(settings.ai_model)}</span> 모델로 생성되었습니다
+                </span>
+              </div>
             </section>
           )}
 
