@@ -113,8 +113,8 @@ function ensureCompleteSentence(value: unknown, fallback: string): string {
 
 function looksLikePatentSummary(value: unknown): boolean {
   const text = cleanKoreanText(value);
-  const summaryTone = /(본\s*발명|에\s*관한\s*것|포함한다|포함하는|유효성분|분리하였|확인하였|조성물|방법이다|특허\s*기능)/.test(text);
-  const evaluationTone = /(근거|검증|차별|진보|구체|제한|보완|상용|사업|시장|평가|판단|수준|장벽|실증|데이터|리스크)/.test(text);
+  const summaryTone = /(본\s*발명|에\s*관한\s*것|포함한다|포함하는|유효성분|분리하였|확인하였|확인되었|화합물인|계열\s*화합물|NO\s*생성|조성물|방법이다|특허\s*기능)/.test(text);
+  const evaluationTone = /(근거|검증|차별|진보|구체|제한|보완|상용|사업|시장|평가|판단|수준|장벽|실증|데이터|리스크|청구항\s*구체성|재현성)/.test(text);
   return summaryTone && !evaluationTone;
 }
 
@@ -134,6 +134,23 @@ function makeTrlFallback(trl: number): string {
   if (trl === 7) return `실환경 적용 또는 상용화 가능성은 제시되지만 동일 형태의 안정적 유통 근거는 제한적이어서 TRL 7로 판단된다.`;
   if (trl === 8) return `제조방법과 실시예가 구체적이고 기존 설비 적용성이 보여 상용화 직전 단계인 TRL 8로 판단된다.`;
   return `동일 형태의 시판·유통 근거가 확인되는 수준이므로 TRL 9로 판단된다.`;
+}
+
+function makeMarketFallback(score: number): string {
+  if (score >= 80) return `적용 산업과 수요처가 비교적 명확해 시장 진입 가능성은 양호하다. 다만 실제 구매 수요와 경쟁 대체재 검증이 필요하다.`;
+  if (score >= 70) return `관련 산업 적용성은 확인되지만 수요 규모와 차별적 구매 요인은 제한적이다. 목표 시장을 좁혀 검증할 필요가 있다.`;
+  return `적용처가 협소하거나 수요 근거가 부족해 시장성은 제한적으로 판단된다. 우선 수요처와 활용 시나리오 검증이 필요하다.`;
+}
+
+function makeBusinessFallback(score: number): string {
+  if (score >= 80) return `기존 공정·설비 활용 여지가 있어 사업화 진입장벽은 비교적 낮다. 기술이전 조건과 초기 수요처 확보가 관건이다.`;
+  if (score >= 70) return `구현 가능성은 있으나 양산 조건과 투자회수 근거가 아직 충분하지 않다. 파일럿 적용과 원가 검증이 필요하다.`;
+  return `상용화에 필요한 공정·비용·수요처 근거가 부족해 사업성은 제한적이다. 후속 실증과 이전 전략 보완이 필요하다.`;
+}
+
+function normalizeReason(value: unknown, fallback: string): string {
+  if (looksLikePatentSummary(value) || isIncompleteSentence(value)) return fallback;
+  return ensureCompleteSentence(value, fallback);
 }
 
 function makeAnalysisFallback(scores: any): string {
