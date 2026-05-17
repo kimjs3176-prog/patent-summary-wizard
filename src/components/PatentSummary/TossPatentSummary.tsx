@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
 import type { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { RelatedPatentsCompact } from "./RelatedPatentsCompact";
+import { IndustryImageGallery } from "./IndustryImageGallery";
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
