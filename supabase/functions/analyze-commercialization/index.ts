@@ -224,9 +224,10 @@ serve(async (req) => {
 
     // 4) 모드별 기본 범위에 배수 적용
     const round = (n: number) => Math.round(n / 5) * 5;
+    // analysis는 3줄 이내(≈120자)로 간결화
     const baseRanges = isDetailedScore
-      ? { reason: [55, 85], trl: [100, 150], analysis: [180, 250] }
-      : { reason: [40, 55], trl: [80, 100], analysis: [120, 160] };
+      ? { reason: [55, 85], trl: [100, 150], analysis: [90, 130] }
+      : { reason: [40, 55], trl: [80, 100], analysis: [80, 120] };
 
     const reasonMin = round(baseRanges.reason[0] * lengthMultiplier);
     const reasonMax = round(baseRanges.reason[1] * lengthMultiplier);
@@ -278,9 +279,8 @@ TRL(1-9): 특허 텍스트에서 확인 가능한 기술 완성도만 기준으�
 
 JSON형식:
 analysis 필드 작성 규칙(매우 중요):
-- 절대 발명/초록의 내용을 요약·재서술하지 말 것. "~에 관한 것이다", "~을 포함한다", "~하는 방법이다" 등 발명 요약 어투 금지.
-- "이 기술은 ~한 강점이 있다", "사업화 시 ~한 기회/리스크가 있다", "~분야 진입이 유망하다" 같은 평가·전망 어투로 작성.
-- 반드시 다음 4요소를 모두 포함: ①기술적 차별성·강점 ②시장 진입 가능성·수요 ③사업화 시 핵심 리스크·과제 ④우선 추진 전략·제언.
+- 발명/초록 요약 금지. "~에 관한 것이다/포함한다/방법이다" 어투 금지. 평가·전망 어투.
+- 최대 3문장(${analysisMin}~${analysisMax}자) 이내로 간결하게. 핵심 강점 + 시장 가능성 + 리스크/제언을 압축 서술.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
@@ -304,7 +304,7 @@ TRL(1-9): 특허 텍스트 기반 기술 완성도만 판단. 개념→2~3, 실�
 JSON형식:
 analysis 필드 작성 규칙(중요):
 - 발명/초록 요약 금지. "~에 관한 것이다/포함한다/방법이다" 어투 금지.
-- 평가·전망 어투로 ①기술 강점 ②시장 가능성 ③사업화 리스크 ④추진 제언 4요소 포함.
+- 최대 3문장(${analysisMin}~${analysisMax}자) 이내. 강점·시장 가능성·리스크/제언을 압축 서술.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
@@ -323,13 +323,12 @@ JSON형식:
     } catch { /* use default */ }
 
     const scoreModel = isDetailedScore ? configuredModel : "google/gemini-2.5-flash-lite";
-    // max_tokens도 길이 배수에 비례하여 동적 조절
-    // 최소 토큰 보장: JSON 스키마 자체가 길어 너무 적으면 응답이 잘려 파싱 실패
-    // 충분한 출력 토큰 확보 — 'analysis' 필드 강화로 응답 길이가 늘어남.
-    // 한국어 한 글자 ≈ 1~2 토큰. trlReason+analysis+3개 reason 합계 최대 ~700자 → 안전 마진 포함.
-    const baseMaxTokens = isDetailedScore ? 2400 : 1800;
+    // max_tokens — 절대 잘리지 않도록 충분한 한도 확보.
+    // 한국어 1글자 ≈ 2~3 토큰(JSON 이스케이프 포함). 5개 필드 합계 최대 ~600자 → 약 2,000토큰.
+    // 안전 마진 2배 적용하여 detailed 4,800 / lite 3,600 기본.
+    const baseMaxTokens = isDetailedScore ? 4800 : 3600;
     const scoreMaxTokens = Math.max(
-      isDetailedScore ? 2000 : 1500,
+      isDetailedScore ? 4000 : 3000,
       Math.round(baseMaxTokens * lengthMultiplier),
     );
 
