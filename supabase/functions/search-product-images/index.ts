@@ -48,20 +48,22 @@ async function callAI(payload: Record<string, unknown> & { model: string }): Pro
 }
 
 async function extractKeywords(title: string, abstract: string): Promise<string[]> {
-  const prompt = `다음 특허가 활용될 "산업 분야" 또는 "최종 제품"을 영어 검색 키워드 3개로 추출해줘.
-각 키워드는 1~3 단어의 일반적이고 시각적인 영어 표현 (예: "smart farm drone", "vertical farming", "automated greenhouse").
-JSON 배열만 반환: {"keywords":["...","...","..."]}
+  const prompt = `다음 특허의 "최종 제품" 또는 "핵심 응용 산업"을 가장 잘 표현하는 영어 이미지 검색 키워드 1개만 추출해줘.
+- 1~3 단어, 일반적이고 시각적인 영어 표현
+- 너무 추상적인 단어 금지 (예: "technology", "system", "method", "innovation")
+- 가능한 구체적 산출물·제품·산업 풍경을 묘사 (예: "rice cake snack", "chicken farm", "gene sequencing lab", "agricultural drone")
+JSON만 반환: {"keyword":"..."}
 
 제목: ${title}
 초록: ${abstract.slice(0, 600)}`;
   const res = await callAI({
     model: "google/gemini-2.5-flash-lite",
     messages: [
-      { role: "system", content: "특허 → 응용 산업/제품 영어 키워드 추출기. JSON으로만 응답." },
+      { role: "system", content: "특허 → 최종 제품/응용 산업의 단일 영어 이미지 검색 키워드 추출기. JSON으로만 응답." },
       { role: "user", content: prompt },
     ],
     temperature: 0.3,
-    max_tokens: 200,
+    max_tokens: 100,
     response_format: { type: "json_object" },
   });
   if (!res.ok) throw new Error("AI keyword extraction failed");
@@ -72,8 +74,10 @@ JSON 배열만 반환: {"keywords":["...","...","..."]}
     const m = content.match(/\{[\s\S]*\}/);
     if (m) parsed = JSON.parse(m[0]);
   }
+  const single = typeof parsed.keyword === "string" ? parsed.keyword.trim() : "";
+  if (single) return [single];
   const arr = Array.isArray(parsed.keywords) ? parsed.keywords : [];
-  return arr.filter((k: any) => typeof k === "string" && k.trim().length > 0).slice(0, 3);
+  return arr.filter((k: any) => typeof k === "string" && k.trim().length > 0).slice(0, 1);
 }
 
 interface PexelsPhoto {
@@ -162,8 +166,9 @@ serve(async (req) => {
       keywords = [safeTitle.split(/\s+/).slice(0, 3).join(" ") || "agriculture technology"];
     }
 
+    // 단일 키워드에 대해 상위 2개 이미지만 사용 (관련도 우선)
     const groups = await Promise.all(
-      keywords.map(async (k) => ({ keyword: k, images: await searchPexels(k, 3) })),
+      keywords.slice(0, 1).map(async (k) => ({ keyword: k, images: await searchPexels(k, 2) })),
     );
     const filtered = groups.filter((g) => g.images.length > 0);
 
