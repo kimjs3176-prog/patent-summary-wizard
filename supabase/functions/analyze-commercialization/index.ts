@@ -569,10 +569,12 @@ JSON형식:
     const hasDataEvidence = /실험|데이터|수치|효능|효율|수율|비교예|대조군/.test(`${data.abstract || ""} ${data.description || ""} ${(data.claims || []).join(" ")}`);
     const multiIpcEvidence = ipcSections.size >= 2 || (data.classifications || []).length >= 2;
     const techFallback = makeTechnologyFallback(Number(scores.technologyScore) || 65, claimsCount, hasDataEvidence, multiIpcEvidence);
+    const marketFallback = makeMarketFallback(Number(scores.marketScore) || 65);
+    const businessFallback = makeBusinessFallback(Number(scores.businessScore) || 65);
     scores.trl = normalizedTrl;
-    scores.technologyReason = looksLikePatentSummary(scores.technologyReason)
-      ? techFallback
-      : ensureCompleteSentence(scores.technologyReason, techFallback);
+    scores.technologyReason = normalizeReason(scores.technologyReason, techFallback);
+    scores.marketReason = normalizeReason(scores.marketReason, marketFallback);
+    scores.businessReason = normalizeReason(scores.businessReason, businessFallback);
     scores.trlReason = ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
     scores.analysis = normalizeAnalysis(scores.analysis, makeAnalysisFallback(scores));
 
