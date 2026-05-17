@@ -1178,6 +1178,18 @@ export function TossPatentSummary({
             </section>
           )}
 
+          {/* 분석 모델 표기 */}
+          {!isStreaming && content && (
+            <section className="mt-6 mb-2">
+              <div className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#8B95A1]">
+                <Sparkles className="w-3 h-3" style={{ color: ACCENT_HEX }} />
+                <span>
+                  본 분석은 <span className="font-semibold text-[#4E5968]">{formatAiModelLabel(settings.ai_model)}</span> 모델로 생성되었습니다
+                </span>
+              </div>
+            </section>
+          )}
+
           <p className="text-[12px] text-[#8B95A1] text-center leading-relaxed mt-8">
             ※ 본 분석은 특허명세서를 바탕으로 실시하여<br />실제 연구 및 개발 단계와는 상이할 수 있습니다.
           </p>
