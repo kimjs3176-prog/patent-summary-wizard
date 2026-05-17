@@ -78,7 +78,7 @@ export function IndustryImageGallery({ patentNumber, title, abstract }: Props) {
             <ImageIcon className="w-3.5 h-3.5 text-[#10B981]" />
             <span className="text-[13px] font-bold text-[#191F28]">{g.keyword}</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {g.images.map((img) => (
               <a
                 key={img.id}
