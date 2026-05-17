@@ -25,6 +25,22 @@ interface TossPatentSummaryProps extends BasePatentSummaryProps {
 const SOFT = "#F2F4F6";
 const ACCENT_HEX = "#10B981";
 
+function formatAiModelLabel(model?: string): string {
+  if (!model) return "Gemini 2.5 Flash";
+  const map: Record<string, string> = {
+    "google/gemini-3.1-pro-preview": "Gemini 3.1 Pro",
+    "google/gemini-3-flash-preview": "Gemini 3 Flash",
+    "google/gemini-2.5-pro": "Gemini 2.5 Pro",
+    "google/gemini-2.5-flash": "Gemini 2.5 Flash",
+    "google/gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite",
+    "openai/gpt-5": "GPT-5",
+    "openai/gpt-5-mini": "GPT-5 Mini",
+    "openai/gpt-5-nano": "GPT-5 Nano",
+    "openai/gpt-5.2": "GPT-5.2",
+  };
+  return map[model] || model.replace(/^.*\//, "");
+}
+
 function SectionTitle({ children, kicker }: { children: React.ReactNode; kicker?: string }) {
   return (
     <div className="mb-5">
