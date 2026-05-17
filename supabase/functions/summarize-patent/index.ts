@@ -50,6 +50,58 @@ async function callAIChatCompletions(
   });
 }
 
+async function callAISummaryCompletions(
+  payload: Record<string, unknown> & { model: string },
+  init: { signal?: AbortSignal } = {},
+): Promise<Response> {
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  if (GEMINI_API_KEY) {
+    try {
+      const geminiModel = payload.model.replace(/^google\//, "");
+      const r = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        {
+          method: "POST",
+          signal: init.signal,
+          headers: {
+            Authorization: `Bearer ${GEMINI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...payload, model: geminiModel, stream: false }),
+        },
+      );
+      if (r.ok) {
+        const data = await r.json();
+        const content = data.choices?.[0]?.message?.content ?? "";
+        const finishReason = data.choices?.[0]?.finish_reason ?? "stop";
+        if (content) {
+          console.log("[AI] using personal Gemini API (non-streaming summary)");
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              for (let i = 0; i < content.length; i += 80) {
+                const chunk = content.slice(i, i + 80);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+              }
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ finish_reason: finishReason }] })}\n\n`));
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+            },
+          });
+          return new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+        }
+        console.warn("[AI] personal Gemini returned empty summary — falling back to Lovable AI");
+      } else {
+        const errText = await r.text().catch(() => "");
+        console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
+      }
+    } catch (e) {
+      console.warn("[AI] personal Gemini summary error, falling back:", e);
+    }
+  }
+  return await callAIChatCompletions(payload, init);
+}
+
 // AbortController-based timeout for fetch
 async function fetchWithTimeout(
   url: string,
@@ -117,7 +169,7 @@ serve(async (req) => {
 
     // Read custom prompt additions, total max tokens, model, and per-section length settings.
     let customPromptExtra = "";
-    let maxTokens = 6000;
+    let maxTokens = 12000;
     let aiModel = "google/gemini-2.5-flash";
     let sectionLengthSettings: Record<string, number> = {};
     try {
@@ -131,7 +183,7 @@ serve(async (req) => {
           if (row.key === "summary_ai_prompt_extra" && row.value) customPromptExtra = row.value;
           if (row.key === "summary_max_tokens" && row.value) {
             const parsed = parseInt(row.value, 10);
-            if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = parsed;
+            if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = Math.max(parsed, 8000);
           }
           if (row.key === "ai_model" && row.value) aiModel = row.value;
           if (row.key === "summary_section_lengths" && row.value) {
@@ -308,7 +360,7 @@ serve(async (req) => {
     const aiTimer = setTimeout(() => aiCtrl.abort(), 60000);
     let response: Response;
     try {
-      response = await callAIChatCompletions(
+      response = await callAISummaryCompletions(
         {
           model: aiModel,
           messages: [
