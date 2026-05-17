@@ -163,7 +163,7 @@ function makeAnalysisFallback(scores: any): string {
 function normalizeAnalysis(value: unknown, fallback: string): string {
   let text = cleanKoreanText(value);
   const sentenceCount = (text.match(/[.!?。]/g) || []).length;
-  if (looksLikePatentSummary(text) || isIncompleteSentence(text) || sentenceCount < 2 || text.length > 115) return fallback;
+  if (looksLikePatentSummary(text) || isIncompleteSentence(text) || sentenceCount < 2 || text.length > 95) return fallback;
   const sentences = text.match(/[^.!?。]+[.!?。]+/g);
   if (sentences && sentences.length > 2) text = sentences.slice(0, 2).join(" ");
   return ensureCompleteSentence(text, fallback);
@@ -539,7 +539,7 @@ JSON형식:
 
     // 점수-근거 정합성 보정: 근거 텍스트가 강한 긍정인데 점수가 낮으면 끌어올림
     const STRONG_TOP = /(매우\s*우수|매우\s*뛰어|독보적|독보|최고|최상|광범위한|매우\s*광범|시장\s*검증\s*완료|즉시\s*상용)/;
-    const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요\s*명확|높은\s*확장|상용화\s*용이|즉시\s*적용)/;
+    const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요[가\s]*명확|높은\s*확장|상용화\s*용이|즉시\s*적용)/;
     const enforceConsistency = (score: number, reason: string): number => {
       if (!reason || typeof score !== "number") return score;
       if (STRONG_TOP.test(reason) && score < 85) return 85;
