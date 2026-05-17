@@ -1,0 +1,1 @@
+DELETE FROM public.product_image_cache;
