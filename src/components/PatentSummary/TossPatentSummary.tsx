@@ -1183,6 +1183,9 @@ export function TossPatentSummary({
                   abstract={patentData.abstract}
                   industryKeywords={keywords.filter(k => k.cat === "industry").map(k => k.word)}
                   productKeywords={keywords.filter(k => k.cat === "product").map(k => k.word)}
+                  materialKeywords={keywords.filter(k => k.cat === "material").map(k => k.word)}
+                  functionKeywords={keywords.filter(k => k.cat === "function").map(k => k.word)}
+                  techKeywords={keywords.filter(k => k.cat === "tech").map(k => k.word)}
                 />
               </SoftCard>
             </section>

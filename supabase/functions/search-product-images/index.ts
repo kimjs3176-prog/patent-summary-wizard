@@ -52,29 +52,42 @@ async function extractKeywords(
   abstract: string,
   industryKeywords: string[] = [],
   productKeywords: string[] = [],
+  materialKeywords: string[] = [],
+  functionKeywords: string[] = [],
+  techKeywords: string[] = [],
 ): Promise<string[]> {
-  const industryHint = industryKeywords.length > 0 ? `\n농산업 활용 키워드(우선): ${industryKeywords.join(", ")}` : "";
-  const productHint = productKeywords.length > 0 ? `\n최종 제품 키워드(참고): ${productKeywords.join(", ")}` : "";
-  const prompt = `다음 농업·식품·바이오 특허의 "농산업 활용 분야"를 표현하는 영어 이미지 검색 키워드 2개를 추출해줘.
-규칙:
-- 키워드는 아래 "농산업 활용 키워드"가 실제로 활용되는 산업 현장·응용 제품 풍경 중심
-- 1번: 가장 핵심적인 활용 산업/제품 현장 (예: "functional food factory", "smart farm greenhouse", "livestock feed production", "cosmetic manufacturing", "pharmaceutical lab")
-- 2번: 동일 산업의 소비자 제품 형태 (예: "health supplement bottle", "fresh produce market", "skincare product", "feed pellet")
-- 각 1~3단어, 구체적이고 시각적인 명사구
-- 금지어: technology, system, method, innovation, process, composition, invention, abstract, raw material
-- 한국 한약재 제품은 영문 통용명 사용 (오가피→eleuthero, 황기→astragalus, 인삼→ginseng)
-JSON만 반환: {"industry":"...", "product":"..."}
+  const hint = (label: string, arr: string[]) =>
+    arr.length > 0 ? `\n- ${label}: ${arr.join(", ")}` : "";
+  const prompt = `당신은 농업·식품·바이오 특허의 "실제 산업 응용 현장"을 영어 이미지 검색 키워드로 변환하는 전문가다.
+아래 키워드 카테고리를 모두 종합해서, 이 기술이 실제로 사용되는 "구체적 응용 현장·설비·제품"을 표현하는 영어 검색어 2개를 만들어라.
+
+카테고리 키워드:${hint("핵심 소재/원료", materialKeywords)}${hint("주요 기능", functionKeywords)}${hint("활용 산업", industryKeywords)}${hint("최종 제품", productKeywords)}${hint("기술 특징", techKeywords)}
+
+키워드 구성 규칙:
+- 단순히 "소재"나 "산업명"만 쓰지 말고, **기능·기술특징·소재·제품을 결합한 응용 장면**으로 작성
+  예시:
+  · "가시광선 LED + 떡 + 유통기한 연장" → "LED illuminated food display", "bakery refrigerated showcase"
+  · "오가피 + 추출 + 건강기능식품" → "herbal capsule supplement", "ginseng extract bottle"
+  · "드론 + 농약 살포 + 작물" → "agricultural spraying drone", "smart farm field"
+  · "유전자 마커 + 품종 판별" → "DNA sequencing lab", "genetic test kit"
+- 각 1~4단어, 구체적이고 시각적으로 식별 가능한 명사구
+- 시설·장비·실제 제품 풍경 우선 (사람 단독, 추상적 아이콘 금지)
+- 금지어: technology, system, method, innovation, process, composition, invention, abstract, raw material, generic
+- 한국 한약재는 영문 통용명 (오가피→eleuthero, 황기→astragalus, 인삼→ginseng, 오미자→schisandra)
+- 2개 키워드는 서로 다른 시각적 장면이어야 함 (현장/설비 1개 + 제품/소비자 형태 1개 권장)
+
+JSON만 반환: {"scene":"현장/설비 영어 키워드", "product":"제품/소비자 형태 영어 키워드"}
 
 제목: ${title}
-초록: ${abstract.slice(0, 500)}${industryHint}${productHint}`;
+초록: ${abstract.slice(0, 400)}`;
   const res = await callAI({
     model: "google/gemini-2.5-flash-lite",
     messages: [
-      { role: "system", content: "특허 → 소재·제품 영어 이미지 검색 키워드 추출기. JSON으로만 응답." },
+      { role: "system", content: "특허 키워드 → 실제 응용 현장 영어 이미지 검색어 변환기. JSON으로만 응답." },
       { role: "user", content: prompt },
     ],
-    temperature: 0.3,
-    max_tokens: 120,
+    temperature: 0.4,
+    max_tokens: 150,
     response_format: { type: "json_object" },
   });
   if (!res.ok) throw new Error("AI keyword extraction failed");
@@ -89,8 +102,9 @@ JSON만 반환: {"industry":"...", "product":"..."}
   const push = (v: any) => {
     if (typeof v === "string" && v.trim().length > 0 && !out.includes(v.trim())) out.push(v.trim());
   };
-  push(parsed.industry);
+  push(parsed.scene);
   push(parsed.product);
+  push(parsed.industry);
   push(parsed.product1);
   push(parsed.product2);
   push(parsed.material);
@@ -141,7 +155,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { patentNumber, title, abstract, industryKeywords, productKeywords } = body;
+    const { patentNumber, title, abstract, industryKeywords, productKeywords, materialKeywords, functionKeywords, techKeywords } = body;
     if (!patentNumber || typeof patentNumber !== "string") {
       return new Response(JSON.stringify({ error: "patentNumber required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -155,13 +169,18 @@ serve(async (req) => {
     }
 
     const supabase = getSupabaseClient();
-    const safeIndustryKws = Array.isArray(industryKeywords)
-      ? industryKeywords.filter((k: any) => typeof k === "string" && k.trim().length > 0).slice(0, 5)
-      : [];
-    const safeProductKws = Array.isArray(productKeywords)
-      ? productKeywords.filter((k: any) => typeof k === "string" && k.trim().length > 0).slice(0, 5)
-      : [];
-    const cacheSuffix = safeIndustryKws.length > 0 ? `__${safeIndustryKws.join("|")}` : "";
+    const sanitize = (arr: any): string[] =>
+      Array.isArray(arr)
+        ? arr.filter((k: any) => typeof k === "string" && k.trim().length > 0).slice(0, 5)
+        : [];
+    const safeIndustryKws = sanitize(industryKeywords);
+    const safeProductKws = sanitize(productKeywords);
+    const safeMaterialKws = sanitize(materialKeywords);
+    const safeFunctionKws = sanitize(functionKeywords);
+    const safeTechKws = sanitize(techKeywords);
+    // 캐시 키: 핵심 4개 카테고리를 모두 포함해 키워드 변화 시 자동 무효화
+    const cacheParts = [...safeMaterialKws, ...safeFunctionKws, ...safeIndustryKws, ...safeProductKws];
+    const cacheSuffix = cacheParts.length > 0 ? `__${cacheParts.join("|").slice(0, 100)}` : "";
 
     // cache lookup
     try {
@@ -185,7 +204,11 @@ serve(async (req) => {
 
     let keywords: string[] = [];
     try {
-      keywords = await extractKeywords(safeTitle, safeAbstract, safeIndustryKws, safeProductKws);
+      keywords = await extractKeywords(
+        safeTitle, safeAbstract,
+        safeIndustryKws, safeProductKws,
+        safeMaterialKws, safeFunctionKws, safeTechKws,
+      );
     } catch (e) {
       console.error("keyword extraction failed", e);
     }
