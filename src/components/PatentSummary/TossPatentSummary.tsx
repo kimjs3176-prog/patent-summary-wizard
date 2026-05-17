@@ -1101,6 +1101,20 @@ export function TossPatentSummary({
           {/* 관련 특허 — 기능·특징이 유사한 특허 */}
           {patentData && (
             <section className="mb-10">
+              <SectionTitle kicker="활용 산업·제품">실제 시장에서 보는 응용 분야</SectionTitle>
+              <SoftCard className="!p-0">
+                <IndustryImageGallery
+                  patentNumber={patentNumber}
+                  title={patentData.titleKo || patentData.title}
+                  abstract={patentData.abstract}
+                />
+              </SoftCard>
+            </section>
+          )}
+
+          {/* 관련 특허 — 기능·특징이 유사한 특허 */}
+          {patentData && (
+            <section className="mb-10">
               <SectionTitle kicker="관련 특허"><span className="inline-flex items-center gap-2"><Link2 className="w-5 h-5" style={{ color: ACCENT_HEX }} />기능·특징이 유사한 특허</span></SectionTitle>
               <SoftCard className="!p-3">
                 <RelatedPatentsCompact patentData={patentData} onPatentClick={onRelatedPatentClick} />
