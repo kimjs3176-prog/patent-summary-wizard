@@ -239,6 +239,33 @@ export type Database = {
         }
         Relationships: []
       }
+      product_image_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          images: Json
+          keywords: Json
+          patent_number: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          images?: Json
+          keywords?: Json
+          patent_number: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          images?: Json
+          keywords?: Json
+          patent_number?: string
+        }
+        Relationships: []
+      }
       rda_patents_cache: {
         Row: {
           category: string
