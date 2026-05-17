@@ -23,9 +23,12 @@ interface Props {
   abstract?: string;
   industryKeywords?: string[];
   productKeywords?: string[];
+  materialKeywords?: string[];
+  functionKeywords?: string[];
+  techKeywords?: string[];
 }
 
-export function IndustryImageGallery({ patentNumber, title, abstract, industryKeywords, productKeywords }: Props) {
+export function IndustryImageGallery({ patentNumber, title, abstract, industryKeywords, productKeywords, materialKeywords, functionKeywords, techKeywords }: Props) {
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<ImageGroup[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +39,7 @@ export function IndustryImageGallery({ patentNumber, title, abstract, industryKe
     setError(null);
     supabase.functions
       .invoke("search-product-images", {
-        body: { patentNumber, title, abstract, industryKeywords, productKeywords },
+        body: { patentNumber, title, abstract, industryKeywords, productKeywords, materialKeywords, functionKeywords, techKeywords },
       })
       .then(({ data, error: invokeError }) => {
         if (cancelled) return;
