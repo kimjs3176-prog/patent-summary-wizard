@@ -190,7 +190,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { patentNumber, patentData } = body;
+    const { patentNumber, patentData, summaryContent } = body;
 
     if (!patentNumber || typeof patentNumber !== "string" || !patentData) {
       return new Response(
@@ -251,6 +251,9 @@ serve(async (req) => {
     }
 
     const data = patentData as PatentData;
+    const summaryText = typeof summaryContent === "string"
+      ? summaryContent.replace(/\s+/g, " ").trim().slice(0, 3500)
+      : "";
 
     let yearsSinceFiling = 0;
     if (data.filingDate) {
@@ -331,6 +334,9 @@ IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
 초록: ${(data.abstract || "없음").substring(0, abstractLimit)}`;
     if (isDetailedScore && data.claims?.length) {
       patentContext += `\n대표청구항: ${data.claims[0].substring(0, 200)}`;
+    }
+    if (summaryText) {
+      patentContext += `\n\n[AI 요약서 본문 — analysis 필드는 반드시 이 내용을 압축·정리할 것]\n${summaryText}`;
     }
 
     // System prompt - richer for detailed mode
