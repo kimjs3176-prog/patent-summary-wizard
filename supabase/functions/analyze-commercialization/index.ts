@@ -165,7 +165,13 @@ function makeAnalysisFallback(scores: any): string {
 function normalizeAnalysis(value: unknown, fallback: string): string {
   let text = cleanKoreanText(value);
   const sentenceCount = (text.match(/[.!?。]/g) || []).length;
-  if (looksLikePatentSummary(text) || isIncompleteSentence(text) || sentenceCount < 2 || text.length > 95) return fallback;
+  // analysis는 요약서를 압축한 결과이므로 발명 어투 검출은 적용하지 않음(요약서 용어 그대로 포함될 수 있음).
+  if (isIncompleteSentence(text) || sentenceCount < 2) return fallback;
+  // 길이 상한은 여유롭게(요약을 두 문장으로 압축한 결과)
+  if (text.length > 220) {
+    const sentences = text.match(/[^.!?。]+[.!?。]+/g);
+    if (sentences && sentences.length >= 2) text = sentences.slice(0, 2).join(" ").trim();
+  }
   const sentences = text.match(/[^.!?。]+[.!?。]+/g);
   if (sentences && sentences.length > 2) text = sentences.slice(0, 2).join(" ");
   return ensureCompleteSentence(text, fallback);
