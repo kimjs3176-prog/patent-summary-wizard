@@ -746,7 +746,7 @@ export function TossPatentSummary({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ patentNumber, patentData }),
+            body: JSON.stringify({ patentNumber, patentData, summaryContent: content }),
           }
         );
         const json = await res.json();
@@ -763,7 +763,7 @@ export function TossPatentSummary({
     };
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patentData, patentNumber, isStreaming]);
+  }, [patentData, patentNumber, isStreaming, content]);
 
   const trl = details?.trl ?? null;
   const trlColor = trl == null ? "#9CA3AF" : trl <= 3 ? "#EF4444" : trl <= 6 ? "#F59E0B" : ACCENT_HEX;

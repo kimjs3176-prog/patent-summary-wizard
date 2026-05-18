@@ -105,7 +105,7 @@ export function PatentSummary({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ patentNumber, patentData }),
+            body: JSON.stringify({ patentNumber, patentData, summaryContent: content }),
           }
         );
 
@@ -123,7 +123,7 @@ export function PatentSummary({
     };
 
     analyzeCommercialization();
-  }, [patentData, patentNumber, isStreaming]);
+  }, [patentData, patentNumber, isStreaming, content]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
