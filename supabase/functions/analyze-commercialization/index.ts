@@ -564,17 +564,33 @@ JSON형식:
 
     // 점수-근거 정합성 보정: 근거 텍스트가 강한 긍정인데 점수가 낮으면 끌어올림
     const STRONG_TOP = /(매우\s*우수|매우\s*뛰어|독보적|독보|최고|최상|광범위한|매우\s*광범|시장\s*검증\s*완료|즉시\s*상용)/;
-    const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요[가\s]*명확|높은\s*확장|상용화\s*용이|즉시\s*적용)/;
+    const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요[가\s]*명확|높은\s*확장|상용화\s*용이|즉시\s*적용|구현\s*가능성[이가]?\s*(?:매우\s*)?높|완성도[가이]?\s*(?:매우\s*)?높|차별성[이가]?\s*(?:매우\s*)?높|확장성[이가]?\s*(?:매우\s*)?높|상용화\s*가능성[이가]?\s*(?:매우\s*)?높|기술[적성]?\s*완성도[가이]?\s*(?:매우\s*)?높)/;
     const enforceConsistency = (score: number, reason: string): number => {
       if (!reason || typeof score !== "number") return score;
       if (STRONG_TOP.test(reason) && score < 85) return 85;
       if (STRONG_POS.test(reason) && score < 80) return 80;
       return score;
     };
+    // 거꾸로: 점수가 보통/낮은데 문구가 과도하게 단정적이면 어조를 완화.
+    const softenIfOverclaim = (score: number, reason: string): string => {
+      if (!reason || typeof score !== "number") return reason;
+      if (score >= 78) return reason;
+      let out = reason;
+      // "~가 매우 높다 / 매우 우수하다" 등을 보통 수준 어조로 치환
+      out = out.replace(/매우\s*(높|우수|뛰어|탁월)/g, "일정 수준 $1");
+      // "기술적 구현 가능성이 높다" → "기술적 구현 가능성은 보통 수준이다"
+      out = out.replace(/(구현\s*가능성|완성도|차별성|확장성|상용화\s*가능성|경쟁력)([이가])?\s*높다/g, "$1은 보통 수준이다");
+      out = out.replace(/(우수|탁월)하다/g, "양호하다");
+      out = out.replace(/(뛰어나다|뛰어남)/g, "안정적이다");
+      return out;
+    };
     const beforeMarket = scores.marketScore;
     scores.technologyScore = enforceConsistency(scores.technologyScore, scores.technologyReason || "");
     scores.marketScore = enforceConsistency(scores.marketScore, scores.marketReason || "");
     scores.businessScore = enforceConsistency(scores.businessScore, scores.businessReason || "");
+    scores.technologyReason = softenIfOverclaim(scores.technologyScore, scores.technologyReason || "");
+    scores.marketReason = softenIfOverclaim(scores.marketScore, scores.marketReason || "");
+    scores.businessReason = softenIfOverclaim(scores.businessScore, scores.businessReason || "");
     if (beforeMarket !== scores.marketScore) {
       console.log(`[CONSISTENCY] market ${beforeMarket} -> ${scores.marketScore} (reason matched strong-positive)`);
     }

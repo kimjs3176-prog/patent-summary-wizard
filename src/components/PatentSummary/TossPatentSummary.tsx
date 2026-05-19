@@ -16,6 +16,7 @@ import { PrintableContent } from "./PrintableContent";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
+import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
@@ -161,7 +162,8 @@ function PatentTimeline({
 }
 
 function renderBold(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const cleaned = sanitizeBoldMarkers(text);
+  const parts = cleaned.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((p, i) =>
     p.startsWith("**") && p.endsWith("**")
       ? <strong key={i} className="font-semibold text-[#191F28]">{p.slice(2, -2)}</strong>
@@ -264,6 +266,36 @@ function ScoreRow({ label, value, color, reason }: { label: string; value: numbe
       {reason && (
         <p className="mt-2.5 text-[13px] leading-[1.7] text-[#4E5968]">{renderBold(reason)}</p>
       )}
+    </div>
+  );
+}
+
+// 컴팩트 원형 게이지 — 종합 사업화 점수용
+function MiniGauge({ score }: { score: number }) {
+  const r = 32;
+  const c = 2 * Math.PI * r;
+  const pct = Math.max(0, Math.min(100, score));
+  const offset = c - (pct / 100) * c;
+  const color = pct >= 80 ? "#10B981" : pct >= 65 ? "#3B82F6" : pct >= 50 ? "#F59E0B" : "#EF4444";
+  return (
+    <div className="relative w-[78px] h-[78px] sm:w-[88px] sm:h-[88px] shrink-0">
+      <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+        <circle cx="40" cy="40" r={r} fill="none" stroke="#E5E8EB" strokeWidth="7" />
+        <circle
+          cx="40" cy="40" r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 900ms ease-out" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+        <span className="text-[22px] sm:text-[24px] font-bold tabular-nums" style={{ color }}>{score}</span>
+        <span className="text-[9px] text-[#8B95A1] font-semibold mt-0.5">/ 100</span>
+      </div>
     </div>
   );
 }
@@ -572,6 +604,8 @@ function extractKeywordsFromPatent(
       "발명", "본", "방법", "장치", "시스템", "이를", "포함", "포함하는", "제공", "관한",
       "그", "및", "또는", "위한", "사용", "이용", "구비", "구성", "기술", "특징", "수단",
       "구비하는", "구성된", "이루어진", "사용하는", "이용하는",
+      // 산출물 접미어성 단어 — 그 자체는 카테고리 라벨로 부적절
+      "제조방법", "제조법", "제조", "조성물", "키트", "용도", "제형", "제제", "모듈",
     ]);
     const cleaned = title
       .replace(/[\[\](){}<>"'`·,.\-—–:;?!]/g, " ")
@@ -579,12 +613,15 @@ function extractKeywordsFromPatent(
       .trim();
     const tokens = cleaned.split(/\s+/).filter(t => /[가-힣A-Za-z]/.test(t));
     const nouns: string[] = [];
+    const SUFFIX_LIKE = /(제조방법|제조법|조성물|키트|용도|방법|시스템|장치|모듈|제형|제제|마커)$/;
     for (const t of tokens) {
       // 조사 제거: ~의/~를/~을/~이/~가/~에서/~로/~으로
       const stem = t.replace(/(?:으로|에서|로서|로써|에게|에서|에|의|를|을|이|가|와|과|로|은|는)$/u, "");
       if (stem.length < 2 || stem.length > 8) continue;
       if (STOP.has(stem)) continue;
       if (/^\d+$/.test(stem)) continue;
+      // 접미어성 토큰 자체("제조방법", "~키트")는 명사 후보에서 제외
+      if (SUFFIX_LIKE.test(stem) && stem.length <= 4) continue;
       if (!nouns.includes(stem)) nouns.push(stem);
       if (nouns.length >= 3) break;
     }
@@ -663,7 +700,11 @@ function extractKeywordsFromPatent(
         }
         // 2) 그래도 못 찾으면 제목의 마지막 의미있는 명사
         const nouns = extractTitleNouns();
-        return nouns[nouns.length - 1] || "";
+        const FORBIDDEN = /(제조방법|제조법|제조|조성물|키트|용도|방법|시스템|장치|모듈|제형|제제)/;
+        for (let k = nouns.length - 1; k >= 0; k--) {
+          if (!FORBIDDEN.test(nouns[k])) return nouns[k];
+        }
+        return "";
       })();
       productKws.push(productNoun || "최종 산출물");
     }
@@ -964,12 +1005,7 @@ export function TossPatentSummary({
                   )}
                 </div>
                 {score != null && (
-                  <div className="flex items-end gap-1 shrink-0">
-                    <span className="text-[44px] sm:text-[52px] font-bold leading-none tabular-nums tracking-tight" style={{ color: ACCENT_HEX }}>
-                      {score}
-                    </span>
-                    <span className="text-[14px] text-[#8B95A1] font-semibold mb-1.5">/100</span>
-                  </div>
+                  <MiniGauge score={score} />
                 )}
               </div>
 
