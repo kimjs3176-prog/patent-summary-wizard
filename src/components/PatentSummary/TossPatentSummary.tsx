@@ -670,7 +670,11 @@ function extractKeywordsFromPatent(
         }
         // 2) 그래도 못 찾으면 제목의 마지막 의미있는 명사
         const nouns = extractTitleNouns();
-        return nouns[nouns.length - 1] || "";
+        const FORBIDDEN = /(제조방법|제조법|제조|조성물|키트|용도|방법|시스템|장치|모듈|제형|제제)/;
+        for (let k = nouns.length - 1; k >= 0; k--) {
+          if (!FORBIDDEN.test(nouns[k])) return nouns[k];
+        }
+        return "";
       })();
       productKws.push(productNoun || "최종 산출물");
     }
