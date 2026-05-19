@@ -20,6 +20,7 @@ import { PivotingAnalysis } from "./PivotingAnalysis";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
+import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
 
 export function PatentSummary({
   content,
