@@ -574,6 +574,8 @@ function extractKeywordsFromPatent(
       "발명", "본", "방법", "장치", "시스템", "이를", "포함", "포함하는", "제공", "관한",
       "그", "및", "또는", "위한", "사용", "이용", "구비", "구성", "기술", "특징", "수단",
       "구비하는", "구성된", "이루어진", "사용하는", "이용하는",
+      // 산출물 접미어성 단어 — 그 자체는 카테고리 라벨로 부적절
+      "제조방법", "제조법", "제조", "조성물", "키트", "용도", "제형", "제제", "모듈",
     ]);
     const cleaned = title
       .replace(/[\[\](){}<>"'`·,.\-—–:;?!]/g, " ")
@@ -581,12 +583,15 @@ function extractKeywordsFromPatent(
       .trim();
     const tokens = cleaned.split(/\s+/).filter(t => /[가-힣A-Za-z]/.test(t));
     const nouns: string[] = [];
+    const SUFFIX_LIKE = /(제조방법|제조법|조성물|키트|용도|방법|시스템|장치|모듈|제형|제제|마커)$/;
     for (const t of tokens) {
       // 조사 제거: ~의/~를/~을/~이/~가/~에서/~로/~으로
       const stem = t.replace(/(?:으로|에서|로서|로써|에게|에서|에|의|를|을|이|가|와|과|로|은|는)$/u, "");
       if (stem.length < 2 || stem.length > 8) continue;
       if (STOP.has(stem)) continue;
       if (/^\d+$/.test(stem)) continue;
+      // 접미어성 토큰 자체("제조방법", "~키트")는 명사 후보에서 제외
+      if (SUFFIX_LIKE.test(stem) && stem.length <= 4) continue;
       if (!nouns.includes(stem)) nouns.push(stem);
       if (nouns.length >= 3) break;
     }
