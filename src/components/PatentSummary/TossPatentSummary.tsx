@@ -270,6 +270,36 @@ function ScoreRow({ label, value, color, reason }: { label: string; value: numbe
   );
 }
 
+// 컴팩트 원형 게이지 — 종합 사업화 점수용
+function MiniGauge({ score }: { score: number }) {
+  const r = 32;
+  const c = 2 * Math.PI * r;
+  const pct = Math.max(0, Math.min(100, score));
+  const offset = c - (pct / 100) * c;
+  const color = pct >= 80 ? "#10B981" : pct >= 65 ? "#3B82F6" : pct >= 50 ? "#F59E0B" : "#EF4444";
+  return (
+    <div className="relative w-[78px] h-[78px] sm:w-[88px] sm:h-[88px] shrink-0">
+      <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+        <circle cx="40" cy="40" r={r} fill="none" stroke="#E5E8EB" strokeWidth="7" />
+        <circle
+          cx="40" cy="40" r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 900ms ease-out" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+        <span className="text-[22px] sm:text-[24px] font-bold tabular-nums" style={{ color }}>{score}</span>
+        <span className="text-[9px] text-[#8B95A1] font-semibold mt-0.5">/ 100</span>
+      </div>
+    </div>
+  );
+}
+
 type KeywordCategory = "function" | "industry" | "material" | "product" | "tech" | "general";
 
 const CATEGORY_STYLE: Record<KeywordCategory, { bg: string; text: string; border: string; label: string }> = {
