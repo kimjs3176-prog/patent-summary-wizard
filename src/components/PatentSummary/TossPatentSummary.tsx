@@ -1005,12 +1005,7 @@ export function TossPatentSummary({
                   )}
                 </div>
                 {score != null && (
-                  <div className="flex items-end gap-1 shrink-0">
-                    <span className="text-[44px] sm:text-[52px] font-bold leading-none tabular-nums tracking-tight" style={{ color: ACCENT_HEX }}>
-                      {score}
-                    </span>
-                    <span className="text-[14px] text-[#8B95A1] font-semibold mb-1.5">/100</span>
-                  </div>
+                  <MiniGauge score={score} />
                 )}
               </div>
 
