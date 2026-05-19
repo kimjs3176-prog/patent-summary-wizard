@@ -197,6 +197,8 @@ export function PatentSummary({
   };
 
   const renderMarkdown = (text: string): { body: JSX.Element[]; footnotes: { num: string; text: string }[] } => {
+    // Sanitize AI-generated bolds so awkward josa/connectives don't end up bolded.
+    text = sanitizeBoldMarkers(text);
     // Pre-process: strip trailing source/reference sections that have no real body content
     // (only footnote definitions or whitespace), so empty "## 출처" / "### 참고문헌" headings don't render.
     const sourceHeadingRe = /^#{2,3}\s*\**\s*(출처|참고문헌|참고\s*자료|참고|references?|sources?)\s*\**\s*$/i;
