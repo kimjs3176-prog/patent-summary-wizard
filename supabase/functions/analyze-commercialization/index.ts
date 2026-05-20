@@ -664,6 +664,13 @@ JSON형식:
     scores.trlReason = ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
     scores.analysis = normalizeAnalysis(scores.analysis, makeAnalysisFallback(scores));
 
+    // 한글 조사(은/는, 이/가, 을/를, 와/과, 으로/로 등) 교정
+    scores.technologyReason = fixKoreanParticles(scores.technologyReason);
+    scores.marketReason = fixKoreanParticles(scores.marketReason);
+    scores.businessReason = fixKoreanParticles(scores.businessReason);
+    scores.trlReason = fixKoreanParticles(scores.trlReason);
+    scores.analysis = fixKoreanParticles(scores.analysis);
+
     // Save to cache
     try {
       const supabase = getSupabaseClient();
