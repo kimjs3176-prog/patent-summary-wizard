@@ -119,10 +119,15 @@ function looksLikePatentSummary(value: unknown): boolean {
 }
 
 function makeTechnologyFallback(score: number, claimsCount: number, hasData: boolean, multiIpc: boolean): string {
-  const evidence = `${claimsCount >= 10 ? `청구항 ${claimsCount}건` : "청구항 구성"}, ${hasData ? "실험 수치" : "실시예"}${multiIpc ? ", 복수 IPC 적용성" : ""}`;
-  if (score >= 80) return `${evidence}이 확인돼 기술 완성도는 일정 수준 이상으로 평가되어 ${score}점대에 해당한다. 다만 선행기술 대비 차별성을 더 선명히 하려면 비교실험·재현 데이터 보강이 필요하다.`;
-  if (score >= 70) return `${evidence}은 확인되지만 차별성·재현성 근거가 제한적이어서 ${score}점대 보통 수준으로 평가된다. 80점대 진입에는 비교예와 진보성 근거의 구체화가 추가로 요구된다.`;
-  return `청구항과 실시예만으로는 검증 근거가 부족해 기술성은 ${score}점대로 평가된다. 점수 상향을 위해서는 비교예 확보와 반복 실험·진보성 서술 보완이 필요하다.`;
+  const claimPart = claimsCount >= 10 ? `청구항 ${claimsCount}건의 권리 범위` : claimsCount >= 5 ? `청구항 ${claimsCount}건` : "제한된 청구항 구성";
+  const dataPart = hasData ? "실험 수치 기반의 검증 근거" : "원리 중심의 실시예";
+  const ipcPart = multiIpc ? "와 복수 IPC 적용성" : "";
+  const evidence = `${claimPart}, ${dataPart}${ipcPart}`;
+  if (score >= 85) return `${evidence}이 폭넓게 확인돼 기술 완성도가 분명히 드러나며, 이러한 근거가 결합돼 ${score}점의 높은 수준으로 평가된다. 다만 후속 비교 실험과 재현 데이터가 더해지면 권리 범위와 진보성을 한층 견고하게 다질 수 있다.`;
+  if (score >= 78) return `${evidence}이 함께 확인돼 기술적 완결성이 어느 정도 갖춰진 편이며, 그 흐름이 ${score}점 수준의 평가로 이어진다. 다만 선행기술과의 차별성을 더 선명히 보여줄 비교 실험과 재현 데이터가 보완되면 상위 점수대까지 노려볼 수 있다.`;
+  if (score >= 70) return `${evidence}은 확인되지만 차별성과 재현성을 뒷받침할 근거가 다소 제한적이라, ${score}점의 보통 수준에 머문다. 비교예와 진보성 서술이 구체화되어야 상위 점수대로 올라설 수 있다.`;
+  if (score >= 60) return `${claimPart}과 ${dataPart}만으로는 기술 완성도를 단정하기 어려워 ${score}점의 다소 미흡한 수준으로 평가된다. 비교예 확보와 반복 실험, 진보성 서술 보완이 함께 이뤄져야 점수 상향을 기대할 수 있다.`;
+  return `청구항과 실시예의 깊이가 얕아 기술적 근거가 충분히 드러나지 않으며, 그 결과 ${score}점의 낮은 수준에 그친다. 비교 실험, 재현 데이터, 진보성 서술이 모두 보강되어야 의미 있는 평가가 가능하다.`;
 }
 
 function makeTrlFallback(trl: number): string {
@@ -137,15 +142,19 @@ function makeTrlFallback(trl: number): string {
 }
 
 function makeMarketFallback(score: number): string {
-  if (score >= 80) return `적용 산업과 수요처가 비교적 명확하고 차별적 우위가 본문에 드러나 시장성은 ${score}점대로 평가된다. 다만 실제 구매 수요와 경쟁 대체재 검증이 보강되어야 상위 점수대 진입이 가능하다.`;
-  if (score >= 70) return `관련 산업 적용성은 확인되지만 수요 규모와 차별적 구매 요인이 제한적이어서 시장성은 ${score}점대 보통 수준으로 평가된다. 목표 시장을 좁혀 차별점을 구체화하면 점수 상향 여지가 있다.`;
-  return `적용처가 협소하거나 수요 근거가 부족해 시장성은 ${score}점대로 평가된다. 점수 개선을 위해서는 수요처·활용 시나리오와 차별적 우위를 본문에서 명확히 제시해야 한다.`;
+  if (score >= 85) return `적용 산업과 수요처가 명확히 드러나고 차별적 우위가 본문에 충분히 서술돼, 시장성이 ${score}점의 우수한 수준으로 평가된다. 실제 구매 수요와 경쟁 대체재 분석이 더해지면 시장 진입 시 강한 추진력을 확보할 수 있다.`;
+  if (score >= 78) return `적용 산업과 수요처가 어느 정도 구체화돼 있고 차별적 우위도 본문에서 확인되는 흐름이라, 시장성이 ${score}점의 양호한 수준으로 평가된다. 다만 실제 구매 수요와 경쟁 대체재 검증이 보강되면 상위 점수대 진입도 노려볼 수 있다.`;
+  if (score >= 70) return `관련 산업 적용성은 확인되지만 수요 규모와 차별적 구매 요인이 제한적이라, 시장성이 ${score}점의 보통 수준에 머문다. 목표 시장을 좁혀 차별점을 구체화하면 점수 상향 여지가 생긴다.`;
+  if (score >= 60) return `적용처가 다소 협소하고 수요 근거가 약해 시장성이 ${score}점의 미흡한 수준으로 평가된다. 수요처와 활용 시나리오, 차별적 우위를 본문에서 보다 명확히 제시해야 점수 개선이 가능하다.`;
+  return `적용처와 수요 근거가 거의 드러나지 않아 시장성이 ${score}점의 낮은 수준에 그친다. 활용 시나리오와 차별적 우위, 목표 수요처를 함께 구체화해야 의미 있는 평가가 가능하다.`;
 }
 
 function makeBusinessFallback(score: number): string {
-  if (score >= 80) return `기존 공정·설비 활용 여지가 있고 인허가 장벽이 낮아 사업성은 ${score}점대로 평가된다. 기술이전 조건 정비와 초기 수요처 확보가 마무리되면 상용화 속도를 더 끌어올릴 수 있다.`;
-  if (score >= 70) return `구현 가능성은 확인되지만 양산 조건과 투자회수 근거가 부족해 사업성은 ${score}점대 보통 수준으로 평가된다. 파일럿 단가 검증과 라이선싱 수요 구체화가 점수 상향의 관건이다.`;
-  return `공정·비용·수요처 근거가 부족해 사업성은 ${score}점대로 평가된다. 점수 상향을 위해서는 후속 실증과 기술이전 전략, 단가 경쟁력 분석 보완이 필요하다.`;
+  if (score >= 85) return `기존 설비·공정 활용 여지가 분명하고 인허가 장벽이 낮은 영역이라, 사업성이 ${score}점의 우수한 수준으로 평가된다. 기술이전 조건과 초기 수요처 확보가 정리되면 빠른 상용화 흐름까지 기대할 수 있다.`;
+  if (score >= 78) return `기존 설비 활용성과 낮은 인허가 장벽이 함께 확인되는 흐름이라, 사업성이 ${score}점의 양호한 수준으로 평가된다. 기술이전 조건 정비와 초기 수요처 확보가 마무리되면 상용화 속도를 한층 끌어올릴 수 있다.`;
+  if (score >= 70) return `구현 가능성은 확인되지만 양산 조건과 투자회수 근거가 부족해, 사업성이 ${score}점의 보통 수준에 머문다. 파일럿 단가 검증과 라이선싱 수요 구체화가 점수 상향의 관건이다.`;
+  if (score >= 60) return `공정·비용·수요처 근거가 다소 약해 사업성이 ${score}점의 미흡한 수준으로 평가된다. 후속 실증과 기술이전 전략, 단가 경쟁력 분석이 함께 보완되어야 점수 상향이 가능하다.`;
+  return `구현 조건과 사업화 근거가 충분히 드러나지 않아 사업성이 ${score}점의 낮은 수준에 그친다. 파일럿 검증과 단가 경쟁력 분석, 기술이전 전략이 모두 갖춰져야 의미 있는 사업성 평가가 가능하다.`;
 }
 
 function normalizeReason(value: unknown, fallback: string): string {
@@ -621,12 +630,28 @@ JSON형식:
       if (!reason || typeof score !== "number") return reason;
       if (score >= 78) return reason;
       let out = reason;
-      // "~가 매우 높다 / 매우 우수하다" 등을 보통 수준 어조로 치환
-      out = out.replace(/매우\s*(높|우수|뛰어|탁월)/g, "일정 수준 $1");
-      // "기술적 구현 가능성이 높다" → "기술적 구현 가능성은 보통 수준이다"
-      out = out.replace(/(구현\s*가능성|완성도|차별성|확장성|상용화\s*가능성|경쟁력)([이가])?\s*높다/g, "$1은 보통 수준이다");
+      // 60~77점대: 강한 긍정 어휘를 보통 수준 어조로 치환
+      out = out.replace(/매우\s*(높|우수|뛰어|탁월|광범위)/g, "어느 정도 $1");
+      out = out.replace(/(독보적|탁월|최상|최고)(이|인|이며|이고|이다|하다)?/g, "양호$2");
+      out = out.replace(/광범위(하|한|하게|하다)/g, "일정 범위$1");
+      out = out.replace(/(구현\s*가능성|완성도|차별성|확장성|상용화\s*가능성|경쟁력|시장성|사업성|기술성)([이가])?\s*(매우\s*)?높다/g, "$1은 보통 수준이다");
       out = out.replace(/(우수|탁월)하다/g, "양호하다");
       out = out.replace(/(뛰어나다|뛰어남)/g, "안정적이다");
+      // 60점 미만이면 더 보수적으로 톤다운
+      if (score < 60) {
+        out = out.replace(/양호하다/g, "보완이 필요하다");
+        out = out.replace(/보통\s*수준이다/g, "미흡한 수준이다");
+      }
+      return out;
+    };
+    // 점수는 높은데 문구가 지나치게 소극적이면 어조를 끌어올림
+    const upliftIfUnderclaim = (score: number, reason: string): string => {
+      if (!reason || typeof score !== "number") return reason;
+      if (score < 80) return reason;
+      let out = reason;
+      out = out.replace(/미흡한\s*수준이다/g, "양호한 수준이다");
+      out = out.replace(/부족한\s*편이다/g, "어느 정도 갖춰진 편이다");
+      out = out.replace(/(보완이\s*필요하다)(?=[\s.])/g, "추가 보강의 여지가 있다");
       return out;
     };
     const beforeMarket = scores.marketScore;
@@ -636,6 +661,9 @@ JSON형식:
     scores.technologyReason = softenIfOverclaim(scores.technologyScore, scores.technologyReason || "");
     scores.marketReason = softenIfOverclaim(scores.marketScore, scores.marketReason || "");
     scores.businessReason = softenIfOverclaim(scores.businessScore, scores.businessReason || "");
+    scores.technologyReason = upliftIfUnderclaim(scores.technologyScore, scores.technologyReason);
+    scores.marketReason = upliftIfUnderclaim(scores.marketScore, scores.marketReason);
+    scores.businessReason = upliftIfUnderclaim(scores.businessScore, scores.businessReason);
     if (beforeMarket !== scores.marketScore) {
       console.log(`[CONSISTENCY] market ${beforeMarket} -> ${scores.marketScore} (reason matched strong-positive)`);
     }
