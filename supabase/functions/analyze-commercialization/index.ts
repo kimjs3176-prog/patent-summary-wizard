@@ -177,6 +177,51 @@ function normalizeAnalysis(value: unknown, fallback: string): string {
   return ensureCompleteSentence(text, fallback);
 }
 
+// ============ 한글 조사 자동 교정 ============
+// 마지막 한글 글자에 받침이 있는지 판별해 은/는, 이/가, 을/를, 와/과, 으로/로 등을 올바른 형태로 보정.
+function hasJongseong(ch: string): boolean | null {
+  if (!ch) return null;
+  const code = ch.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return null; // not a Hangul syllable
+  return ((code - 0xac00) % 28) !== 0;
+}
+function jongseongIsRieul(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return false;
+  return ((code - 0xac00) % 28) === 8; // ㄹ
+}
+export function fixKoreanParticles(input: string): string {
+  if (!input) return input;
+  // 한글 글자 뒤에 오는 조사 쌍을 받침 유무에 따라 교정.
+  // 경계: 뒤가 공백/구두점/문장끝/한자/영문/숫자가 아닌 한글이면 단어 일부일 수 있어 보수적으로 처리.
+  const PAIRS: Array<[RegExp, (jong: boolean, isRieul: boolean) => string]> = [
+    // 은/는
+    [/([\uac00-\ud7a3])(은|는)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "은" : "는")],
+    // 이/가
+    [/([\uac00-\ud7a3])(이|가)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "이" : "가")],
+    // 을/를
+    [/([\uac00-\ud7a3])(을|를)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "을" : "를")],
+    // 와/과
+    [/([\uac00-\ud7a3])(와|과)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "과" : "와")],
+    // 으로/로 (ㄹ받침은 '로')
+    [/([\uac00-\ud7a3])(으로|로)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j, r) => (j && !r ? "으로" : "로")],
+    // 이라/라, 이며/며, 이고/고, 이나/나, 이란/란 (받침 있을 때 '이' 형태)
+    [/([\uac00-\ud7a3])(이라|라)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "이라" : "라")],
+    [/([\uac00-\ud7a3])(이며|며)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "이며" : "며")],
+    [/([\uac00-\ud7a3])(이고|고)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "이고" : "고")],
+  ];
+  let out = input;
+  for (const [re, pick] of PAIRS) {
+    out = out.replace(re, (_m, ch: string, _p: string) => {
+      const jong = hasJongseong(ch);
+      if (jong === null) return _m; // not Hangul, leave as-is
+      const rieul = jongseongIsRieul(ch);
+      return ch + pick(jong, rieul);
+    });
+  }
+  return out;
+}
+
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -618,6 +663,13 @@ JSON형식:
     scores.businessReason = normalizeReason(scores.businessReason, businessFallback);
     scores.trlReason = ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
     scores.analysis = normalizeAnalysis(scores.analysis, makeAnalysisFallback(scores));
+
+    // 한글 조사(은/는, 이/가, 을/를, 와/과, 으로/로 등) 교정
+    scores.technologyReason = fixKoreanParticles(scores.technologyReason);
+    scores.marketReason = fixKoreanParticles(scores.marketReason);
+    scores.businessReason = fixKoreanParticles(scores.businessReason);
+    scores.trlReason = fixKoreanParticles(scores.trlReason);
+    scores.analysis = fixKoreanParticles(scores.analysis);
 
     // Save to cache
     try {
