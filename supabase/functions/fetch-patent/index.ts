@@ -311,13 +311,13 @@ serve(async (req) => {
       // displayNumber 재설정
       if (registrationNumber && registrationNumber.length >= 7) {
         const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
-        if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
-          patentData.displayNumber = `10-${cleanNum.slice(2, 9)}`;
+        if (cleanNum.length >= 9 && (cleanNum.startsWith("10") || cleanNum.startsWith("20"))) {
+          patentData.displayNumber = `${cleanNum.slice(0, 2)}-${cleanNum.slice(2, 9)}`;
         }
       } else if (applicationNumber && applicationNumber.length >= 11) {
         const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
-        if (cleanNum.startsWith("10")) {
-          patentData.displayNumber = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
+        if (cleanNum.startsWith("10") || cleanNum.startsWith("20")) {
+          patentData.displayNumber = `${cleanNum.slice(0, 2)}-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
         }
       }
 
