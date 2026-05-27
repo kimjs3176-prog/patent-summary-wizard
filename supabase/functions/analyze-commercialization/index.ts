@@ -306,9 +306,9 @@ serve(async (req) => {
               analysis: cached.analysis,
               trl: cached.trl,
               trlReason: cached.trl_reason || "",
-              technologyReason: cached.technology_reason || "",
-              marketReason: cached.market_reason || "",
-              businessReason: cached.business_reason || "",
+              technologyReason: stripTrlMentions(cached.technology_reason || ""),
+              marketReason: stripTrlMentions(cached.market_reason || ""),
+              businessReason: stripTrlMentions(cached.business_reason || ""),
             },
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
