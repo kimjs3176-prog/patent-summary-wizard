@@ -422,22 +422,29 @@ serve(async (req) => {
 
         if (registrationNumber && registrationNumber.length >= 7) {
           const cleanNum = registrationNumber.replace(/[^0-9]/g, "");
-          if (cleanNum.length >= 9 && cleanNum.startsWith("10")) {
-            displayNumber = `10-${cleanNum.slice(2, 9)}`;
+          // Preserve original prefix: 10 = 특허, 20 = 실용신안
+          const prefix = (cleanNum.length >= 9 && (cleanNum.startsWith("10") || cleanNum.startsWith("20")))
+            ? cleanNum.slice(0, 2)
+            : "10";
+          if (cleanNum.length >= 9 && (cleanNum.startsWith("10") || cleanNum.startsWith("20"))) {
+            displayNumber = `${prefix}-${cleanNum.slice(2, 9)}`;
           } else if (cleanNum.length >= 7) {
-            displayNumber = `10-${cleanNum.slice(-7)}`;
+            displayNumber = `${prefix}-${cleanNum.slice(-7)}`;
           }
           patentId = displayNumber;
         } else if (applicationNumber && applicationNumber.length >= 7) {
           const cleanNum = applicationNumber.replace(/[^0-9]/g, "");
-          if (cleanNum.length === 13 && cleanNum.startsWith("10")) {
-            displayNumber = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
-          } else if (cleanNum.length > 13 && cleanNum.startsWith("10")) {
-            displayNumber = `10-${cleanNum.slice(2, 6)}-${cleanNum.slice(6, 13)}`;
+          const prefix = (cleanNum.startsWith("10") || cleanNum.startsWith("20"))
+            ? cleanNum.slice(0, 2)
+            : "10";
+          if (cleanNum.length === 13 && (cleanNum.startsWith("10") || cleanNum.startsWith("20"))) {
+            displayNumber = `${prefix}-${cleanNum.slice(2, 6)}-${cleanNum.slice(6)}`;
+          } else if (cleanNum.length > 13 && (cleanNum.startsWith("10") || cleanNum.startsWith("20"))) {
+            displayNumber = `${prefix}-${cleanNum.slice(2, 6)}-${cleanNum.slice(6, 13)}`;
           } else if (cleanNum.length >= 11) {
-            displayNumber = `10-${cleanNum.slice(0, 4)}-${cleanNum.slice(4, 11)}`;
+            displayNumber = `${prefix}-${cleanNum.slice(0, 4)}-${cleanNum.slice(4, 11)}`;
           } else {
-            displayNumber = `10-${cleanNum}`;
+            displayNumber = `${prefix}-${cleanNum}`;
           }
           patentId = displayNumber;
         }
