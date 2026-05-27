@@ -488,6 +488,9 @@ marketReason 작성 규칙(중요):
 - 3단 흐름 필수: (1) IPC·수요처·차별적 우위 등 본문에서 확인된 시장 근거 → (2) 산출 점수대(예: 70점대/80점대)를 문장 안에 명시해 "그래서 시장성은 ~점대로 평가된다" 식으로 연결 → (3) 상위 점수대 진입에 필요한 보완점(수요 검증·경쟁 대체재 분석 등).
 - 정확히 2문장. 시장규모 추정 등 외부 데이터 금지.
 
+공통 금지 규칙(매우 중요):
+- technologyReason / marketReason / businessReason 안에는 절대로 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. TRL 언급은 오직 trlReason 필드에서만 한다.
+
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
        : `특허 기술사업화 평가 전문가. JSON으로만 응답.
@@ -524,6 +527,8 @@ technologyReason 규칙: 특허 기능·성분·작용 요약 금지. 청구항 
 trlReason 규칙: 라벨 금지. 정확히 1문장(${trlMin}~${trlMax}자)으로 왜 해당 TRL인지 쓰고 반드시 "TRL n으로 판단된다." 또는 "TRL n 수준이다."로 끝낼 것.
 
 businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 작성.
+
+공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. TRL 언급은 오직 trlReason 필드에서만 허용.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
