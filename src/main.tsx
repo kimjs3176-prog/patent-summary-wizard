@@ -65,6 +65,13 @@ const isAppBusy = (): boolean => {
   return false;
 };
 
+// True whenever an analysis result is on screen. We must NEVER auto-reload in
+// this state — reloading would wipe the in-memory summary and (via the
+// ?patent= query param) re-trigger a full analysis from scratch.
+const hasVisibleResults = (): boolean => {
+  return !!document.querySelector('[data-results-visible="true"]');
+};
+
 let pendingReload = false;
 const showUpdateToast = (countdownSec: number) => {
   // Lightweight, dependency-free toast so the user sees the auto-refresh.
@@ -121,6 +128,13 @@ const safeReload = (opts: { maxWaitMs?: number; toastSec?: number } = {}) => {
 
   const tryReload = () => {
     const waited = Date.now() - start;
+    // Hard skip: if the user is viewing an analysis result, do not reload.
+    // Reset the pending flag so a future check can try again once results
+    // are dismissed.
+    if (hasVisibleResults()) {
+      pendingReload = false;
+      return;
+    }
     if (!isAppBusy() || waited >= maxWaitMs) {
       fire();
       return;
