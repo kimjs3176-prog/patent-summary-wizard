@@ -90,49 +90,49 @@ function formatDate(dateStr: string): string {
 // 특허번호에서 검색용 번호 추출
 function parsePatentNumber(input: string): { searchNumber: string; displayNumber: string; searchType: 'registration' | 'application' } {
   const trimmed = input.trim();
-  
-  // 등록번호 형식: 10-1234567
-  const regMatch = trimmed.match(/^10-(\d{7})$/);
+
+  // 등록번호 형식: 10-1234567 또는 20-1234567 (실용신안)
+  const regMatch = trimmed.match(/^(10|20)-(\d{7})$/);
   if (regMatch) {
     return {
-      searchNumber: `10${regMatch[1]}`,
+      searchNumber: `${regMatch[1]}${regMatch[2]}`,
       displayNumber: trimmed,
       searchType: 'registration'
     };
   }
-  
+
   // 등록번호 형식 (6자리): 10-186227 -> 10-0186227
-  const regMatch6 = trimmed.match(/^10-(\d{6})$/);
+  const regMatch6 = trimmed.match(/^(10|20)-(\d{6})$/);
   if (regMatch6) {
-    const paddedNum = regMatch6[1].padStart(7, '0');
+    const paddedNum = regMatch6[2].padStart(7, '0');
     return {
-      searchNumber: `10${paddedNum}`,
-      displayNumber: `10-${paddedNum}`,
+      searchNumber: `${regMatch6[1]}${paddedNum}`,
+      displayNumber: `${regMatch6[1]}-${paddedNum}`,
       searchType: 'registration'
     };
   }
-  
+
   // 출원번호 형식: 10-2023-0123456 (standard 7-digit serial)
-  const appMatch = trimmed.match(/^10-(\d{4})-(\d{7})$/);
+  const appMatch = trimmed.match(/^(10|20)-(\d{4})-(\d{7})$/);
   if (appMatch) {
     return {
-      searchNumber: `10${appMatch[1]}${appMatch[2]}`,
+      searchNumber: `${appMatch[1]}${appMatch[2]}${appMatch[3]}`,
       displayNumber: trimmed,
       searchType: 'application'
     };
   }
-  
-  // 출원번호 형식 (longer serial, e.g. 10-2019-840009315): truncate to 13-digit standard
-  const appMatchLong = trimmed.match(/^10-(\d{4})-(\d{7,})$/);
+
+  // 출원번호 형식 (longer serial)
+  const appMatchLong = trimmed.match(/^(10|20)-(\d{4})-(\d{7,})$/);
   if (appMatchLong) {
-    const serial = appMatchLong[2].slice(0, 7);
+    const serial = appMatchLong[3].slice(0, 7);
     return {
-      searchNumber: `10${appMatchLong[1]}${serial}`,
-      displayNumber: `10-${appMatchLong[1]}-${serial}`,
+      searchNumber: `${appMatchLong[1]}${appMatchLong[2]}${serial}`,
+      displayNumber: `${appMatchLong[1]}-${appMatchLong[2]}-${serial}`,
       searchType: 'application'
     };
   }
-  
+
   // 순수 7자리 숫자 (등록번호)
   const pureRegMatch = trimmed.match(/^(\d{7})$/);
   if (pureRegMatch) {
