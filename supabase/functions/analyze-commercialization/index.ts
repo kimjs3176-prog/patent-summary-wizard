@@ -141,6 +141,23 @@ function makeTrlFallback(trl: number): string {
   return `본 기술이 동일 형태로 시판·유통되는 근거가 확인돼 상용화 완료 단계인 TRL 9로 판단된다.`;
 }
 
+// technology/market/business 평가 코멘트에서 TRL 관련 문구를 제거한다.
+// (TRL은 별도의 trlReason 필드에서만 노출되어야 함)
+function stripTrlMentions(text: string): string {
+  if (!text) return text;
+  let out = String(text);
+  // "TRL 6 수준이다.", "TRL 6으로 판단된다." 같은 마지막 문장 제거
+  out = out.replace(/(?:^|\s)(?:이는\s*|따라서\s*|그래서\s*)?TRL\s*\d+\s*[^.。!?]*[.。!?]/g, "");
+  // 문장 중간의 "TRL n 수준의/단계의/에 해당하는" 등도 제거
+  out = out.replace(/\s*TRL\s*\d+\s*(?:수준|단계|에\s*해당하는|으로\s*판단되며|이며)?[^.,。!?]*/g, "");
+  // 남은 "TRL n" 토큰 자체도 제거
+  out = out.replace(/TRL\s*\d+/gi, "");
+  // 정리: 중복 공백, 떠도는 구두점
+  out = out.replace(/\s{2,}/g, " ").replace(/\s+([,.。!?])/g, "$1").trim();
+  // 마지막 문장이 "다."로 끝나지 않으면 그대로 둠(이후 normalizeReason/ensureCompleteSentence가 처리)
+  return out;
+}
+
 function makeMarketFallback(score: number): string {
   if (score >= 85) return `적용 산업과 수요처가 명확히 드러나고 차별적 우위가 본문에 충분히 서술돼, 시장성이 ${score}점의 우수한 수준으로 평가된다. 실제 구매 수요와 경쟁 대체재 분석이 더해지면 시장 진입 시 강한 추진력을 확보할 수 있다.`;
   if (score >= 78) return `적용 산업과 수요처가 어느 정도 구체화돼 있고 차별적 우위도 본문에서 확인되는 흐름이라, 시장성이 ${score}점의 양호한 수준으로 평가된다. 다만 실제 구매 수요와 경쟁 대체재 검증이 보강되면 상위 점수대 진입도 노려볼 수 있다.`;
@@ -289,9 +306,9 @@ serve(async (req) => {
               analysis: cached.analysis,
               trl: cached.trl,
               trlReason: cached.trl_reason || "",
-              technologyReason: cached.technology_reason || "",
-              marketReason: cached.market_reason || "",
-              businessReason: cached.business_reason || "",
+              technologyReason: stripTrlMentions(cached.technology_reason || ""),
+              marketReason: stripTrlMentions(cached.market_reason || ""),
+              businessReason: stripTrlMentions(cached.business_reason || ""),
             },
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -488,6 +505,9 @@ marketReason 작성 규칙(중요):
 - 3단 흐름 필수: (1) IPC·수요처·차별적 우위 등 본문에서 확인된 시장 근거 → (2) 산출 점수대(예: 70점대/80점대)를 문장 안에 명시해 "그래서 시장성은 ~점대로 평가된다" 식으로 연결 → (3) 상위 점수대 진입에 필요한 보완점(수요 검증·경쟁 대체재 분석 등).
 - 정확히 2문장. 시장규모 추정 등 외부 데이터 금지.
 
+공통 금지 규칙(매우 중요):
+- technologyReason / marketReason / businessReason 안에는 절대로 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. TRL 언급은 오직 trlReason 필드에서만 한다.
+
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
        : `특허 기술사업화 평가 전문가. JSON으로만 응답.
@@ -524,6 +544,8 @@ technologyReason 규칙: 특허 기능·성분·작용 요약 금지. 청구항 
 trlReason 규칙: 라벨 금지. 정확히 1문장(${trlMin}~${trlMax}자)으로 왜 해당 TRL인지 쓰고 반드시 "TRL n으로 판단된다." 또는 "TRL n 수준이다."로 끝낼 것.
 
 businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 작성.
+
+공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. TRL 언급은 오직 trlReason 필드에서만 허용.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
@@ -698,6 +720,11 @@ JSON형식:
     scores.businessReason = fixKoreanParticles(scores.businessReason);
     scores.trlReason = fixKoreanParticles(scores.trlReason);
     scores.analysis = fixKoreanParticles(scores.analysis);
+
+    // TRL 언급은 trlReason에서만 노출
+    scores.technologyReason = stripTrlMentions(scores.technologyReason);
+    scores.marketReason = stripTrlMentions(scores.marketReason);
+    scores.businessReason = stripTrlMentions(scores.businessReason);
 
     // Save to cache
     try {
