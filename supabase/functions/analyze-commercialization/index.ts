@@ -721,6 +721,11 @@ JSON형식:
     scores.trlReason = fixKoreanParticles(scores.trlReason);
     scores.analysis = fixKoreanParticles(scores.analysis);
 
+    // TRL 언급은 trlReason에서만 노출
+    scores.technologyReason = stripTrlMentions(scores.technologyReason);
+    scores.marketReason = stripTrlMentions(scores.marketReason);
+    scores.businessReason = stripTrlMentions(scores.businessReason);
+
     // Save to cache
     try {
       const supabase = getSupabaseClient();
