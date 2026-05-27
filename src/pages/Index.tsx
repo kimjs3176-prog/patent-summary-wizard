@@ -237,7 +237,7 @@ const Index = () => {
             </div>
           </>
         ) : (
-          <div ref={resultRef}>
+          <div ref={resultRef} data-results-visible="true">
             {isLoading && (<AnalysisProgressStepper currentStep={analysisStep} />)}
             <div className="sticky top-2 z-30 mb-5 md:mb-7">
               <div className="max-w-2xl mx-auto rounded-2xl bg-background/85 backdrop-blur-md p-1.5">
