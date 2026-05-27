@@ -141,6 +141,23 @@ function makeTrlFallback(trl: number): string {
   return `본 기술이 동일 형태로 시판·유통되는 근거가 확인돼 상용화 완료 단계인 TRL 9로 판단된다.`;
 }
 
+// technology/market/business 평가 코멘트에서 TRL 관련 문구를 제거한다.
+// (TRL은 별도의 trlReason 필드에서만 노출되어야 함)
+function stripTrlMentions(text: string): string {
+  if (!text) return text;
+  let out = String(text);
+  // "TRL 6 수준이다.", "TRL 6으로 판단된다." 같은 마지막 문장 제거
+  out = out.replace(/(?:^|\s)(?:이는\s*|따라서\s*|그래서\s*)?TRL\s*\d+\s*[^.。!?]*[.。!?]/g, "");
+  // 문장 중간의 "TRL n 수준의/단계의/에 해당하는" 등도 제거
+  out = out.replace(/\s*TRL\s*\d+\s*(?:수준|단계|에\s*해당하는|으로\s*판단되며|이며)?[^.,。!?]*/g, "");
+  // 남은 "TRL n" 토큰 자체도 제거
+  out = out.replace(/TRL\s*\d+/gi, "");
+  // 정리: 중복 공백, 떠도는 구두점
+  out = out.replace(/\s{2,}/g, " ").replace(/\s+([,.。!?])/g, "$1").trim();
+  // 마지막 문장이 "다."로 끝나지 않으면 그대로 둠(이후 normalizeReason/ensureCompleteSentence가 처리)
+  return out;
+}
+
 function makeMarketFallback(score: number): string {
   if (score >= 85) return `적용 산업과 수요처가 명확히 드러나고 차별적 우위가 본문에 충분히 서술돼, 시장성이 ${score}점의 우수한 수준으로 평가된다. 실제 구매 수요와 경쟁 대체재 분석이 더해지면 시장 진입 시 강한 추진력을 확보할 수 있다.`;
   if (score >= 78) return `적용 산업과 수요처가 어느 정도 구체화돼 있고 차별적 우위도 본문에서 확인되는 흐름이라, 시장성이 ${score}점의 양호한 수준으로 평가된다. 다만 실제 구매 수요와 경쟁 대체재 검증이 보강되면 상위 점수대 진입도 노려볼 수 있다.`;
