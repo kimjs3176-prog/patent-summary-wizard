@@ -7,7 +7,19 @@
 const LEADING_CONNECTIVES = [
   "아니라", "또한", "그리고", "하지만", "그러나", "다만", "한편", "반면", "나아가",
   "특히", "구체적으로", "이와", "이러한", "이는", "그러한", "이와 달리",
+  "따라서", "그래서", "결국", "즉", "또", "더불어", "아울러",
+  "해당", "본", "이", "그", "동", "당해",
 ];
+
+// Generic / filler words that are not informative as a bold highlight.
+// If after trimming the core ends up being one of these, unwrap entirely.
+const GENERIC_BOLD_WORDS = new Set([
+  "기술", "기술적", "발명", "특허", "방법", "방식", "장치", "시스템",
+  "제품", "제품군", "구성", "구조", "공정", "과정", "단계", "요소",
+  "분야", "산업", "영역", "내용", "사항", "부분", "측면", "경우",
+  "특징", "효과", "결과", "수단", "원리", "기능", "성능", "용도",
+  "본 기술", "해당 기술", "이 기술", "본 발명", "해당 발명", "이 발명",
+]);
 
 // Predicate / clause fragments that mean the bold is wrapping a clause, not a term.
 const CLAUSE_MARKERS = /(았|었|였|있었|있던|있는|있다|되었|되는|된다|이었|이며|이고|이지만|있었으나|되며|이라는|이라고|이나|그러나|하지만|아니라|및|또한)/;
@@ -59,6 +71,8 @@ export function sanitizeBoldMarkers(text: string): string {
     if (!core) return lead + trail;
     // After trimming, if it's basically a single particle, just unwrap.
     if (core.length < 2) return lead + core + trail;
+    // Unwrap when bold content is a generic filler noun with no informational value.
+    if (GENERIC_BOLD_WORDS.has(core)) return lead + core + trail;
     return `${lead}**${core}**${trail}`;
   });
 }
