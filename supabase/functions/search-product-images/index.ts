@@ -14,7 +14,6 @@ function getSupabaseClient() {
 
 async function callAI(payload: Record<string, unknown> & { model: string }): Promise<Response> {
   const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-  const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (GEMINI_API_KEY) {
     try {
@@ -27,16 +26,6 @@ async function callAI(payload: Record<string, unknown> & { model: string }): Pro
           body: JSON.stringify({ ...payload, model: geminiModel }),
         },
       );
-      if (r.ok) return r;
-    } catch (_) { /* fall through */ }
-  }
-  if (GROQ_API_KEY) {
-    try {
-      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, model: "llama-3.1-8b-instant" }),
-      });
       if (r.ok) return r;
     } catch (_) { /* fall through */ }
   }
