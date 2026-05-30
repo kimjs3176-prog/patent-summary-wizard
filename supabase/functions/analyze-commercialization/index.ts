@@ -9,15 +9,11 @@ const corsHeaders = {
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
 // skip that provider for a short period so subsequent requests don't pay the failure latency.
 let geminiCooldownUntil = 0;
-let groqCooldownUntil = 0;
 const PROVIDER_COOLDOWN_MS = 90_000; // 90s
-function markCooldown(provider: "gemini" | "groq", ms = PROVIDER_COOLDOWN_MS) {
-  const until = Date.now() + ms;
-  if (provider === "gemini") geminiCooldownUntil = until;
-  else groqCooldownUntil = until;
+function markCooldown(_provider: "gemini", ms = PROVIDER_COOLDOWN_MS) {
+  geminiCooldownUntil = Date.now() + ms;
 }
 const GEMINI_TIMEOUT_MS = 8_000;
-const GROQ_TIMEOUT_MS = 8_000;
 
 function withTimeout(parent: AbortSignal | undefined, ms: number): { signal: AbortSignal; cancel: () => void } {
   const ctrl = new AbortController();
@@ -65,42 +61,10 @@ async function callAIChatCompletions(
       }
       const errText = await r.text().catch(() => "");
       if (r.status >= 500 || r.status === 429) markCooldown("gemini");
-      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — trying Groq next`);
+      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
     } catch (e) {
       markCooldown("gemini");
-      console.warn("[AI] personal Gemini error, trying Groq:", e);
-    } finally {
-      t.cancel();
-    }
-  }
-  const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-  if (GROQ_API_KEY && Date.now() >= groqCooldownUntil) {
-    const t = withTimeout(init.signal, GROQ_TIMEOUT_MS);
-    try {
-      const m = payload.model;
-      const groqModel = m.includes("flash-lite") || m.includes("nano") || m.includes("mini")
-        ? "llama-3.1-8b-instant"
-        : "llama-3.3-70b-versatile";
-      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        signal: t.signal,
-        headers: {
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...payload, model: groqModel }),
-      });
-      if (r.ok) {
-        console.log(`[AI] using personal Groq API (${groqModel})`);
-        t.cancel();
-        return r;
-      }
-      const errText = await r.text().catch(() => "");
-      if (r.status >= 500 || r.status === 429) markCooldown("groq");
-      console.warn(`[AI] personal Groq failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
-    } catch (e) {
-      markCooldown("groq");
-      console.warn("[AI] personal Groq error, falling back:", e);
+      console.warn("[AI] personal Gemini error, falling back:", e);
     } finally {
       t.cancel();
     }
