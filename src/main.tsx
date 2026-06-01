@@ -26,8 +26,11 @@ const KILL_SWITCH_VERSION = "2026-05-13-a";
         }
       } finally {
         localStorage.setItem(key, KILL_SWITCH_VERSION);
-        // Bypass HTTP cache on reload
-        window.location.replace(window.location.pathname + "?_swreset=" + Date.now());
+        // Bypass HTTP cache on reload — preserve existing query params (e.g. ?patent=...)
+        const sep = window.location.search ? "&" : "?";
+        window.location.replace(
+          window.location.pathname + window.location.search + sep + "_swreset=" + Date.now() + window.location.hash
+        );
       }
     };
     run();
