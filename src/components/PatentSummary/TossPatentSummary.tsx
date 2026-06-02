@@ -184,9 +184,10 @@ function renderBold(text: string) {
 
 // ============ 본문 자동 하이라이트 — 다층 패턴 매칭 ============
 // 카테고리 → 시각 처리
-type HLType = "metric" | "superlative" | "solution" | "problem" | "compare" | "concept" | "quote";
+type HLType = "money" | "metric" | "superlative" | "solution" | "problem" | "compare" | "concept" | "quote";
 
 const HL_STYLE: Record<HLType, string> = {
+  money:       "font-bold text-[#0B7C5C] bg-[#10B98129] px-1.5 rounded-[5px] tabular-nums ring-1 ring-[#10B98140]", // 시장규모/금액
   metric:      "font-bold text-[#0B7C5C] bg-[#10B9811F] px-1 rounded-[4px] tabular-nums", // 수치+단위
   compare:     "font-bold text-[#0B7C5C] bg-[#10B98114] px-1 rounded-[4px]",               // N배/대비/이상 향상
   superlative: "font-bold text-[#B45309] bg-[#FEF3C7] px-1 rounded-[4px]",                 // 최초/유일/독보적
@@ -200,16 +201,22 @@ const HL_STYLE: Record<HLType, string> = {
 const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
   // 1) 인용 부호 안의 핵심 용어
   { type: "quote",       regex: /([「『"][^「『"\n]{1,30}[」』"])/g },
-  // 2) 비교/향상 표현 (수치 + 향상/감소)
-  { type: "compare",     regex: /(\d+(?:\.\d+)?\s?(?:배|%|퍼센트)\s*(?:이상|이하)?\s*(?:향상|증가|개선|증대|상승|단축|감소|절감|저감))/g },
-  // 3) 단순 수치+단위
-  { type: "metric",      regex: /(\d+(?:\.\d+)?(?:\s?(?:%|배|개|건|회|차|년|개월|월|일|주|시간|분|초|kg|g|mg|mm|cm|m|km|ml|L|°C|℃|kW|W|kWh|Hz|MHz|GHz|원|만원|억원|건당|점)))/g },
+  // 2) 시장규모/금액 — 조/억/만 + 원/달러/유로/위안/엔 (복합 표기 포함, 선행 '약' 포함)
+  { type: "money",       regex: /((?:약\s*)?(?:\d[\d,]*(?:\.\d+)?\s*(?:조|억|만|천)\s*)+(?:\d[\d,]*(?:\.\d+)?\s*)?(?:원|달러|USD|유로|EUR|위안|엔|파운드))/g },
+  // 2-b) 통화 + 숫자 (USD 12.5억 등) 및 단순 금액 ($1.2B, 12억원)
+  { type: "money",       regex: /((?:USD|US\$|\$|€|￥|¥)\s?\d[\d,]*(?:\.\d+)?\s?(?:[KMB]|조|억|만|천)?)/g },
+  // 3) 비교/향상 표현 (수치 + 향상/감소)
+  { type: "compare",     regex: /(\d+(?:\.\d+)?\s?(?:배|%|퍼센트|%p|%P|퍼센트포인트)\s*(?:이상|이하)?\s*(?:향상|증가|개선|증대|상승|단축|감소|절감|저감|성장|확대|점유|차지))/g },
+  // 4) 단순 수치+단위 (CAGR/점유율/연도 포함)
+  { type: "metric",      regex: /(\d+(?:\.\d+)?(?:\s?(?:%|%p|배|개|건|회|차|년|년도|개월|월|일|주|시간|분|초|kg|g|mg|t|톤|mm|cm|m|km|ml|L|°C|℃|kW|W|kWh|Hz|MHz|GHz|원|만원|억원|조원|건당|점|명|곳|종)))/g },
   // 4) 최상급/유일성 표현
-  { type: "superlative", regex: /(세계\s*최초|국내\s*최초|업계\s*최초|세계\s*최고|국내\s*최고|세계\s*유일|국내\s*유일|독보적인?|차별화된|혁신적인?|획기적인?|최고\s*수준|최상위|유일한|독점적인?)/g },
+  { type: "superlative", regex: /(세계\s*최초|국내\s*최초|업계\s*최초|세계\s*최고|국내\s*최고|세계\s*유일|국내\s*유일|독보적인?|차별화된|혁신적인?|획기적인?|최고\s*수준|최상위|유일한|독점적인?|핵심\s*관건|핵심\s*요인|핵심\s*기술|원천\s*기술|진입\s*장벽)/g },
   // 5) 문제/한계 표현
-  { type: "problem",     regex: /([가-힣A-Za-z]{2,12}(?:의)?\s*(?:문제점?|한계점?|어려움|단점|취약점|부족|불편|손실|오류|결함)|기존\s*기술의?\s*[가-힣]{0,10}한계|종래\s*기술|종래\s*방식)/g },
+  { type: "problem",     regex: /([가-힣A-Za-z]{2,12}(?:의)?\s*(?:문제점?|한계점?|어려움|단점|취약점|부족|불편|손실|오류|결함|리스크|위험)|기존\s*기술의?\s*[가-힣]{0,10}한계|종래\s*기술|종래\s*방식)/g },
+  // 6) 해결/달성 동사구 — 본문 내 임팩트 표현
+  { type: "solution",    regex: /([가-힣A-Za-z]{2,12}(?:을|를|이|가)?\s*(?:해결|극복|개선|달성|확보|구현|실현|돌파|상용화|국산화|대체))/g },
   // 7) 핵심 개념 명사구 (… 기술/시스템/공법/방식/장치/모듈/메커니즘/알고리즘/플랫폼/구조)
-  { type: "concept",     regex: /([가-힣A-Za-z]{2,15}(?:\s*[가-힣A-Za-z]{1,10}){0,2}\s*(?:기술|시스템|공법|방식|장치|모듈|메커니즘|알고리즘|플랫폼|구조|구성|프로세스|솔루션))/g },
+  { type: "concept",     regex: /([가-힣A-Za-z]{2,15}(?:\s*[가-힣A-Za-z]{1,10}){0,2}\s*(?:기술|시스템|공법|방식|장치|모듈|메커니즘|알고리즘|플랫폼|구조|구성|프로세스|솔루션|키트|센서))/g },
 ];
 
 interface HLMatch { start: number; end: number; type: HLType; text: string; }
