@@ -163,12 +163,23 @@ function PatentTimeline({
 
 function renderBold(text: string) {
   const cleaned = sanitizeBoldMarkers(text);
-  const parts = cleaned.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((p, i) =>
-    p.startsWith("**") && p.endsWith("**")
-      ? <strong key={i} className="font-semibold text-[#191F28]">{p.slice(2, -2)}</strong>
-      : <span key={i}>{p}</span>
-  );
+  // Split on bold+italic (***...***), bold (**...**), and italic (*...*)
+  const parts = cleaned.split(/(\*{1,3}[^*\n]+\*{1,3})/g);
+  return parts.map((p, i) => {
+    const m = p.match(/^(\*{1,3})([^*\n]+)\1$/);
+    if (m) {
+      const stars = m[1].length;
+      const inner = m[2];
+      if (stars === 3) {
+        return <strong key={i} className="font-semibold text-[#191F28]"><em className="italic">{inner}</em></strong>;
+      }
+      if (stars === 2) {
+        return <strong key={i} className="font-semibold text-[#191F28]">{inner}</strong>;
+      }
+      return <em key={i} className="italic">{inner}</em>;
+    }
+    return <span key={i}>{p}</span>;
+  });
 }
 
 // ============ 본문 자동 하이라이트 — 다층 패턴 매칭 ============
