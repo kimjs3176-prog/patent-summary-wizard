@@ -1165,10 +1165,27 @@ export function TossPatentSummary({
                             </sup>,
                           );
                         } else if (part) {
-                          // 2) 일반 텍스트 부분만 용어집/하이라이트 적용
-                          const annotated = annotate(part);
-                          const nodes = Array.isArray(annotated) ? annotated : [annotated];
-                          processed.push(...highlightImportant(nodes as React.ReactNode[]));
+                          // 2) 학명 등 이탤릭 마커(*...*) 분리 후, 나머지에만 용어집/하이라이트 적용
+                          const italicParts = part.split(/(\*[^*\n]+\*)/g);
+                          italicParts.forEach((ip, k) => {
+                            if (!ip) return;
+                            const im = ip.match(/^\*([^*\n]+)\*$/);
+                            if (im) {
+                              processed.push(
+                                <em
+                                  key={`it-${i}-${j}-${k}`}
+                                  className="italic"
+                                  style={{ fontStyle: "italic" }}
+                                >
+                                  {im[1]}
+                                </em>,
+                              );
+                            } else {
+                              const annotated = annotate(ip);
+                              const nodes = Array.isArray(annotated) ? annotated : [annotated];
+                              processed.push(...highlightImportant(nodes as React.ReactNode[]));
+                            }
+                          });
                         }
                       });
                       return (
