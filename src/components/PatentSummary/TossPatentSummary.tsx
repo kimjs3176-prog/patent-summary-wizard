@@ -163,12 +163,23 @@ function PatentTimeline({
 
 function renderBold(text: string) {
   const cleaned = sanitizeBoldMarkers(text);
-  const parts = cleaned.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((p, i) =>
-    p.startsWith("**") && p.endsWith("**")
-      ? <strong key={i} className="font-semibold text-[#191F28]">{p.slice(2, -2)}</strong>
-      : <span key={i}>{p}</span>
-  );
+  // Split on bold+italic (***...***), bold (**...**), and italic (*...*)
+  const parts = cleaned.split(/(\*{1,3}[^*\n]+\*{1,3})/g);
+  return parts.map((p, i) => {
+    const m = p.match(/^(\*{1,3})([^*\n]+)\1$/);
+    if (m) {
+      const stars = m[1].length;
+      const inner = m[2];
+      if (stars === 3) {
+        return <strong key={i} className="font-semibold text-[#191F28]"><em className="italic">{inner}</em></strong>;
+      }
+      if (stars === 2) {
+        return <strong key={i} className="font-semibold text-[#191F28]">{inner}</strong>;
+      }
+      return <em key={i} className="italic">{inner}</em>;
+    }
+    return <span key={i}>{p}</span>;
+  });
 }
 
 // ============ 본문 자동 하이라이트 — 다층 패턴 매칭 ============
@@ -1154,10 +1165,27 @@ export function TossPatentSummary({
                             </sup>,
                           );
                         } else if (part) {
-                          // 2) 일반 텍스트 부분만 용어집/하이라이트 적용
-                          const annotated = annotate(part);
-                          const nodes = Array.isArray(annotated) ? annotated : [annotated];
-                          processed.push(...highlightImportant(nodes as React.ReactNode[]));
+                          // 2) 학명 등 이탤릭 마커(*...*) 분리 후, 나머지에만 용어집/하이라이트 적용
+                          const italicParts = part.split(/(\*[^*\n]+\*)/g);
+                          italicParts.forEach((ip, k) => {
+                            if (!ip) return;
+                            const im = ip.match(/^\*([^*\n]+)\*$/);
+                            if (im) {
+                              processed.push(
+                                <em
+                                  key={`it-${i}-${j}-${k}`}
+                                  className="italic"
+                                  style={{ fontStyle: "italic" }}
+                                >
+                                  {im[1]}
+                                </em>,
+                              );
+                            } else {
+                              const annotated = annotate(ip);
+                              const nodes = Array.isArray(annotated) ? annotated : [annotated];
+                              processed.push(...highlightImportant(nodes as React.ReactNode[]));
+                            }
+                          });
                         }
                       });
                       return (

@@ -68,13 +68,29 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
                 marginBottom: "6px",
               }}
             >
-              {cleanLine}
+              {renderInline(cleanLine)}
             </p>
           );
         }
       });
 
       return elements;
+    };
+
+    // Convert *italic* markers (scientific names) into <em> nodes for print output
+    const renderInline = (text: string): React.ReactNode[] => {
+      const parts = text.split(/(\*[^*\n]+\*)/g);
+      return parts.map((p, i) => {
+        const m = p.match(/^\*([^*\n]+)\*$/);
+        if (m) {
+          return (
+            <em key={i} style={{ fontStyle: "italic" }}>
+              {m[1]}
+            </em>
+          );
+        }
+        return <span key={i}>{p}</span>;
+      });
     };
 
     const displayNumber = patentData?.displayNumber || patentNumber;
