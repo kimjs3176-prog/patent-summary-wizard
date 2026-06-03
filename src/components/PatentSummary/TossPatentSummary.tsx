@@ -189,11 +189,11 @@ type HLType = "money" | "metric" | "superlative" | "solution" | "problem" | "com
 const HL_STYLE: Record<HLType, string> = {
   money:       "font-bold text-[#0B7C5C] bg-[#10B98129] px-1.5 rounded-[5px] tabular-nums ring-1 ring-[#10B98140]", // 시장규모/금액
   metric:      "font-bold text-[#0B7C5C] bg-[#10B9811F] px-1 rounded-[4px] tabular-nums", // 수치+단위
-  compare:     "font-bold text-[#0B7C5C] bg-[#10B98114] px-1 rounded-[4px]",               // N배/대비/이상 향상
+  compare:     "font-bold text-[#0B7C5C] bg-[#10B98124] px-1 rounded-[4px]",               // N배/대비/이상 향상 (중간 강도)
   superlative: "font-bold text-[#B45309] bg-[#FEF3C7] px-1 rounded-[4px]",                 // 최초/유일/독보적
-  solution:    "font-semibold text-[#047857] underline decoration-[#10B98166] decoration-2 underline-offset-[3px]", // 해결/개선/극복/달성
-  problem:     "font-semibold text-[#B91C1C]",                                              // 문제/한계/어려움
-  concept:     "font-semibold text-[#191F28]",                                              // 핵심 개념(명사+기술/공법…)
+  solution:    "font-semibold text-[#047857] bg-[#10B9811A] px-1 rounded-[4px] decoration-[#10B98166] decoration-1 underline underline-offset-[3px]", // 해결/개선 — 중간 강도(연한 배경 + 얇은 밑줄)
+  problem:     "font-semibold text-[#B91C1C] bg-[#FEE2E21F] px-1 rounded-[4px] decoration-[#FCA5A5] decoration-1 underline underline-offset-[3px]", // 문제/한계 — 중간 강도
+  concept:     "font-medium text-[#191F28] decoration-[#CBD5E1] decoration-dotted underline underline-offset-[3px]", // 핵심 개념 — 약한 강도(점선 밑줄)
   quote:       "font-semibold text-[#191F28] bg-[#F2F4F6] px-1 rounded-[4px]",              // 「…」, '…' 인용
 };
 
