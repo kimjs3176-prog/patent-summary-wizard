@@ -12,6 +12,7 @@ import { NoticeManager } from "@/components/admin/NoticeManager";
 import { PdfLayoutSettings, DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 import { toast } from "sonner";
 import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FeaturedPatent {
   id: string;
@@ -880,21 +881,79 @@ const Admin = () => {
 
               {/* Video Management */}
               <div className="pt-4 border-t border-border/50">
-                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> 기술소개영상 관리 (최대 9개 · 홈 상위 3개 노출 / 전체는 온라인 기술 홍보관에 표시)</h3>
-                <div className="space-y-2 mb-3">
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> 기술소개영상 관리 (홈 상위 3개 노출 / 전체는 온라인 기술 홍보관 · 9개 초과 시 세로 스크롤)</h3>
+
+                {/* Drag & drop zone */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('ring-2','ring-primary'); }}
+                  onDragLeave={(e) => { e.currentTarget.classList.remove('ring-2','ring-primary'); }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('ring-2','ring-primary');
+                    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('video/'));
+                    if (files.length === 0) { toast.error('동영상 파일만 업로드 가능합니다.'); return; }
+                    for (const file of files) {
+                      const ext = file.name.split('.').pop() || 'mp4';
+                      const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+                      toast.message(`업로드 중: ${file.name}`);
+                      const { error } = await supabase.storage.from('tech-videos').upload(path, file, { contentType: file.type, upsert: false });
+                      if (error) { toast.error(`업로드 실패: ${file.name} — ${error.message}`); continue; }
+                      const titleGuess = file.name.replace(/\.[^.]+$/, '');
+                      setTechVideos(prev => [...prev, { title: titleGuess, url: `storage://${path}` }]);
+                      toast.success(`업로드 완료: ${file.name}`);
+                    }
+                  }}
+                  className="rounded-xl border-2 border-dashed border-border bg-secondary/30 p-6 text-center mb-3 transition-all"
+                >
+                  <Video className="w-8 h-8 mx-auto mb-2 text-muted-foreground/60" />
+                  <p className="text-sm font-medium text-foreground">동영상 파일을 여기로 드래그하세요</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">또는 아래에서 파일 선택 / YouTube URL 직접 입력</p>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    id="tech-video-file-input"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      for (const file of files) {
+                        const ext = file.name.split('.').pop() || 'mp4';
+                        const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+                        toast.message(`업로드 중: ${file.name}`);
+                        const { error } = await supabase.storage.from('tech-videos').upload(path, file, { contentType: file.type, upsert: false });
+                        if (error) { toast.error(`업로드 실패: ${file.name} — ${error.message}`); continue; }
+                        const titleGuess = file.name.replace(/\.[^.]+$/, '');
+                        setTechVideos(prev => [...prev, { title: titleGuess, url: `storage://${path}` }]);
+                        toast.success(`업로드 완료: ${file.name}`);
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                  <Button variant="outline" size="sm" className="mt-3" onClick={() => document.getElementById('tech-video-file-input')?.click()}>
+                    파일 선택
+                  </Button>
+                </div>
+
+                <div className="space-y-2 mb-3 max-h-[420px] overflow-y-auto pr-1">
                   {techVideos.map((v, idx) => (
                     <div key={idx} className="flex items-center gap-2">
+                      <span className="text-[11px] text-muted-foreground w-6 text-center">{idx + 1}</span>
                       <Input placeholder="영상 제목" value={v.title} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, title: e.target.value } : item))} className="flex-1" />
-                      <Input placeholder="YouTube URL" value={v.url} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, url: e.target.value } : item))} className="flex-1" />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive" onClick={() => setTechVideos(prev => prev.filter((_, i) => i !== idx))}><X className="w-3.5 h-3.5" /></Button>
+                      <Input placeholder="YouTube URL 또는 storage://경로" value={v.url} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, url: e.target.value } : item))} className="flex-1" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive" onClick={async () => {
+                        const item = techVideos[idx];
+                        if (item?.url?.startsWith('storage://')) {
+                          const path = item.url.replace('storage://', '');
+                          await supabase.storage.from('tech-videos').remove([path]).catch(() => {});
+                        }
+                        setTechVideos(prev => prev.filter((_, i) => i !== idx));
+                      }}><X className="w-3.5 h-3.5" /></Button>
                     </div>
                   ))}
                 </div>
-                {techVideos.length < 9 && (
-                  <Button variant="outline" size="sm" onClick={() => setTechVideos(prev => [...prev, { title: "", url: "" }])}>
-                    <Plus className="w-3.5 h-3.5 mr-1" /> 영상 추가
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={() => setTechVideos(prev => [...prev, { title: "", url: "" }])}>
+                  <Plus className="w-3.5 h-3.5 mr-1" /> URL 직접 추가
+                </Button>
               </div>
 
               {/* Chatbot Settings */}
