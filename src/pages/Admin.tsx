@@ -880,7 +880,7 @@ const Admin = () => {
 
               {/* Video Management */}
               <div className="pt-4 border-t border-border/50">
-                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> 기술소개영상 관리 (최대 3개)</h3>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> 기술소개영상 관리 (최대 9개 · 홈 상위 3개 노출 / 전체는 온라인 기술 홍보관에 표시)</h3>
                 <div className="space-y-2 mb-3">
                   {techVideos.map((v, idx) => (
                     <div key={idx} className="flex items-center gap-2">
@@ -890,7 +890,7 @@ const Admin = () => {
                     </div>
                   ))}
                 </div>
-                {techVideos.length < 3 && (
+                {techVideos.length < 9 && (
                   <Button variant="outline" size="sm" onClick={() => setTechVideos(prev => [...prev, { title: "", url: "" }])}>
                     <Plus className="w-3.5 h-3.5 mr-1" /> 영상 추가
                   </Button>
