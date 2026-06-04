@@ -1,4 +1,5 @@
-import { Play, Video } from "lucide-react";
+import { Play, Video, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface TechVideo {
   title: string;
@@ -20,13 +21,29 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
   return (
     <section className="max-w-5xl mx-auto mt-8 md:mt-16 mb-8 md:mb-16 animate-fade-up" style={{ animationDelay: "0.3s" }}>
       <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-2.5 mb-1.5">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(0 84% 60% / 0.1)' }}>
-            <Video className="w-4 h-4" style={{ color: 'hsl(0 84% 60%)' }} />
-          </div>
-          <h3 className="text-lg md:text-xl font-bold text-foreground tracking-tight">주요 기술소개</h3>
+        <div className="flex items-end justify-between gap-3 mb-1.5">
+          <Link
+            to="/tech-videos"
+            className="group inline-flex items-center gap-2.5 hover:opacity-90 transition-opacity"
+            aria-label="온라인 기술 홍보관으로 이동"
+          >
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(0 84% 60% / 0.1)' }}>
+              <Video className="w-4 h-4" style={{ color: 'hsl(0 84% 60%)' }} />
+            </div>
+            <h3 className="text-lg md:text-xl font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+              주요 기술소개
+            </h3>
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+          </Link>
+          <Link
+            to="/tech-videos"
+            className="text-[12px] md:text-[13px] font-medium text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
+          >
+            전체 보기
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
-        <p className="text-[13px] text-muted-foreground ml-[42px]">농식품 분야 주요 기술 소개</p>
+        <p className="text-[13px] text-muted-foreground ml-[42px]">농식품 분야 주요 기술 소개 — 클릭하여 온라인 기술 홍보관 전체보기</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {videos.slice(0, 3).map((video, idx) => {
