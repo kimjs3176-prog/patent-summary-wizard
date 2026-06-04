@@ -12,6 +12,7 @@ import { NoticeManager } from "@/components/admin/NoticeManager";
 import { PdfLayoutSettings, DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 import { toast } from "sonner";
 import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FeaturedPatent {
   id: string;
