@@ -1,5 +1,7 @@
 import { Play, Video, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TechVideo {
   title: string;
@@ -15,8 +17,25 @@ function getYouTubeId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+const isStorageUrl = (url: string) => url.startsWith("storage://");
+
 export function TechVideoSection({ videos }: TechVideoSectionProps) {
   if (!videos || videos.length === 0) return null;
+  const preview = videos.slice(0, 3);
+  const [resolved, setResolved] = useState<Record<string, string>>({});
+  useEffect(() => {
+    (async () => {
+      const map: Record<string, string> = {};
+      await Promise.all(preview.map(async (v) => {
+        if (!isStorageUrl(v.url)) return;
+        const path = v.url.replace("storage://", "");
+        const { data } = await supabase.storage.from("tech-videos").createSignedUrl(path, 60 * 60 * 24);
+        if (data?.signedUrl) map[v.url] = data.signedUrl;
+      }));
+      setResolved(map);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videos.map(v => v.url).join("|")]);
 
   return (
     <section className="max-w-5xl mx-auto mt-8 md:mt-16 mb-8 md:mb-16 animate-fade-up" style={{ animationDelay: "0.3s" }}>
@@ -46,16 +65,41 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
         <p className="text-[13px] text-muted-foreground ml-[42px]">농식품 분야 주요 기술 소개 — 클릭하여 온라인 기술 홍보관 전체보기</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-        {videos.slice(0, 3).map((video, idx) => {
+        {preview.map((video, idx) => {
           const videoId = getYouTubeId(video.url);
           const thumbnail = videoId
             ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
             : null;
+          const storage = isStorageUrl(video.url);
+          const playSrc = storage ? resolved[video.url] : video.url;
+
+          if (storage) {
+            return (
+              <div
+                key={idx}
+                className="group relative rounded-2xl overflow-hidden border border-border/40 bg-card hover:border-border/70 hover:shadow-lg transition-all duration-300 card-interactive"
+                style={{ boxShadow: 'var(--shadow-glossy)' }}
+              >
+                <div className="aspect-video bg-black flex items-center justify-center overflow-hidden relative">
+                  {playSrc ? (
+                    <video src={playSrc} controls preload="metadata" className="w-full h-full object-cover" />
+                  ) : (
+                    <Play className="w-10 h-10 text-muted-foreground/30" />
+                  )}
+                </div>
+                {video.title && (
+                  <div className="px-4 py-3.5">
+                    <p className="text-[13px] font-medium text-foreground line-clamp-2 leading-relaxed">{video.title}</p>
+                  </div>
+                )}
+              </div>
+            );
+          }
 
           return (
             <a
               key={idx}
-              href={video.url}
+              href={playSrc}
               target="_blank"
               rel="noopener noreferrer"
               className="group relative rounded-2xl overflow-hidden border border-border/40 bg-card hover:border-border/70 hover:shadow-lg transition-all duration-300 card-interactive"
