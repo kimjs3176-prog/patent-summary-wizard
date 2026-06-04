@@ -20,8 +20,7 @@ function getYouTubeId(url: string): string | null {
 const isStorageUrl = (url: string) => url.startsWith("storage://");
 
 export function TechVideoSection({ videos }: TechVideoSectionProps) {
-  if (!videos || videos.length === 0) return null;
-  const preview = videos.slice(0, 3);
+  const preview = (videos || []).slice(0, 3);
   const [resolved, setResolved] = useState<Record<string, string>>({});
   useEffect(() => {
     (async () => {
@@ -35,7 +34,8 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
       setResolved(map);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videos.map(v => v.url).join("|")]);
+  }, [(videos || []).map(v => v.url).join("|")]);
+  if (!videos || videos.length === 0) return null;
 
   return (
     <section className="max-w-5xl mx-auto mt-8 md:mt-16 mb-8 md:mb-16 animate-fade-up" style={{ animationDelay: "0.3s" }}>
