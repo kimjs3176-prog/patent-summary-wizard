@@ -61,9 +61,10 @@ export function sanitizeBoldMarkers(text: string): string {
     const inner = raw.trim();
     if (!inner) return "";
 
-    // Count tokens — if too many words or contains a clause marker, unwrap entirely.
+    // Count tokens — only unwrap when bold spans clause-level content.
+    // Allow up to 6 tokens so noun phrases like "신규 펩타이드 프로테티아마이신 2" survive.
     const tokenCount = inner.split(/\s+/).filter(Boolean).length;
-    if (tokenCount >= 4 || CLAUSE_MARKERS.test(inner)) {
+    if (tokenCount > 6 || CLAUSE_MARKERS.test(inner)) {
       return inner;
     }
 
