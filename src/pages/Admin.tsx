@@ -98,7 +98,8 @@ const Admin = () => {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORY_OPTIONS);
-  const [techVideos, setTechVideos] = useState<{ title: string; url: string }[]>([]);
+  const [techVideos, setTechVideos] = useState<{ title: string; url: string; description?: string }[]>([]);
+  const [dragVideoIdx, setDragVideoIdx] = useState<number | null>(null);
   const [cacheCounts, setCacheCounts] = useState<CacheCounts>({ data: 0, ai: 0, score: 0 });
   const [cacheItems, setCacheItems] = useState<CacheItem[]>([]);
   const [cacheLoading, setCacheLoading] = useState(false);
@@ -934,20 +935,45 @@ const Admin = () => {
                   </Button>
                 </div>
 
-                <div className="space-y-2 mb-3 max-h-[420px] overflow-y-auto pr-1">
+                <p className="text-[11px] text-muted-foreground mb-2">왼쪽 ⋮⋮ 핸들을 드래그하여 순서를 변경할 수 있습니다.</p>
+                <div className="space-y-3 mb-3 max-h-[520px] overflow-y-auto pr-1">
                   {techVideos.map((v, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground w-6 text-center">{idx + 1}</span>
-                      <Input placeholder="영상 제목" value={v.title} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, title: e.target.value } : item))} className="flex-1" />
-                      <Input placeholder="YouTube URL 또는 storage://경로" value={v.url} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, url: e.target.value } : item))} className="flex-1" />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive" onClick={async () => {
-                        const item = techVideos[idx];
-                        if (item?.url?.startsWith('storage://')) {
-                          const path = item.url.replace('storage://', '');
-                          await supabase.storage.from('tech-videos').remove([path]).catch(() => {});
-                        }
-                        setTechVideos(prev => prev.filter((_, i) => i !== idx));
-                      }}><X className="w-3.5 h-3.5" /></Button>
+                    <div
+                      key={idx}
+                      draggable
+                      onDragStart={() => setDragVideoIdx(idx)}
+                      onDragOver={(e) => { e.preventDefault(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragVideoIdx === null || dragVideoIdx === idx) return;
+                        setTechVideos(prev => {
+                          const next = [...prev];
+                          const [moved] = next.splice(dragVideoIdx, 1);
+                          next.splice(idx, 0, moved);
+                          return next;
+                        });
+                        setDragVideoIdx(null);
+                      }}
+                      onDragEnd={() => setDragVideoIdx(null)}
+                      className={`rounded-lg border border-border/50 bg-card p-2.5 ${dragVideoIdx === idx ? 'opacity-50' : ''}`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="cursor-grab active:cursor-grabbing text-muted-foreground select-none px-1" title="드래그하여 순서 변경">⋮⋮</span>
+                        <span className="text-[11px] text-muted-foreground w-6 text-center">{idx + 1}</span>
+                        <Input placeholder="영상 제목" value={v.title} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, title: e.target.value } : item))} className="flex-1" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive" onClick={async () => {
+                          if (!confirm(`'${v.title || '제목 없음'}' 영상을 삭제하시겠습니까?`)) return;
+                          const item = techVideos[idx];
+                          if (item?.url?.startsWith('storage://')) {
+                            const path = item.url.replace('storage://', '');
+                            await supabase.storage.from('tech-videos').remove([path]).catch(() => {});
+                          }
+                          setTechVideos(prev => prev.filter((_, i) => i !== idx));
+                          toast.success('삭제되었습니다.');
+                        }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
+                      <Input placeholder="YouTube URL 또는 storage://경로" value={v.url} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, url: e.target.value } : item))} className="mb-2 text-[12px]" />
+                      <Textarea placeholder="영상 설명 (선택 · 홍보관 카드에 표시됩니다)" rows={2} value={v.description || ''} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, description: e.target.value } : item))} className="text-[12px]" />
                     </div>
                   ))}
                 </div>
