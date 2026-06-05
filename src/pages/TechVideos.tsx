@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface TechVideo {
   title: string;
   url: string;
+  description?: string;
 }
 
 function getYouTubeId(url: string): string | null {
@@ -141,11 +142,18 @@ const TechVideos = () => {
                         </a>
                       )}
                     </div>
-                    {video.title && (
+                    {(video.title || video.description) && (
                       <div className="px-4 py-3.5">
-                        <p className="text-[13px] font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-relaxed">
-                          {video.title}
-                        </p>
+                        {video.title && (
+                          <p className="text-[13px] font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-relaxed">
+                            {video.title}
+                          </p>
+                        )}
+                        {video.description && (
+                          <p className="mt-1 text-[12px] text-muted-foreground line-clamp-3 leading-relaxed whitespace-pre-line">
+                            {video.description}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
