@@ -39,7 +39,8 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const alreadyShown = sessionStorage.getItem("splash-shown") === "1";
-  const [showSplash, setShowSplash] = useState(!alreadyShown);
+  const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const [showSplash, setShowSplash] = useState(!alreadyShown && !isAdminRoute);
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem("splash-shown", "1");
