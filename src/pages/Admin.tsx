@@ -98,7 +98,8 @@ const Admin = () => {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({});
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<string[]>(DEFAULT_CATEGORY_OPTIONS);
-  const [techVideos, setTechVideos] = useState<{ title: string; url: string }[]>([]);
+  const [techVideos, setTechVideos] = useState<{ title: string; url: string; description?: string }[]>([]);
+  const [dragVideoIdx, setDragVideoIdx] = useState<number | null>(null);
   const [cacheCounts, setCacheCounts] = useState<CacheCounts>({ data: 0, ai: 0, score: 0 });
   const [cacheItems, setCacheItems] = useState<CacheItem[]>([]);
   const [cacheLoading, setCacheLoading] = useState(false);
