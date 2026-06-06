@@ -114,6 +114,9 @@ const TechVideos = () => {
                             src={playSrc}
                             controls
                             preload="metadata"
+                            controlsList="nodownload noremoteplayback"
+                            disablePictureInPicture
+                            onContextMenu={(e) => e.preventDefault()}
                             className="w-full h-full object-cover bg-black"
                           />
                         ) : (
