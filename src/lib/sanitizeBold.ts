@@ -19,7 +19,16 @@ const GENERIC_BOLD_WORDS = new Set([
   "분야", "산업", "영역", "내용", "사항", "부분", "측면", "경우",
   "특징", "효과", "결과", "수단", "원리", "기능", "성능", "용도",
   "본 기술", "해당 기술", "이 기술", "본 발명", "해당 발명", "이 발명",
+  "시장", "수요", "공급", "가격", "비용", "사용", "활용", "적용",
+  "개발", "연구", "도입", "필요", "중요", "가능", "이러한", "그러한",
+  "다양한", "여러", "관련", "기존", "최근", "향후", "전반", "전체",
+  "또한", "따라서", "그러나", "한편", "특히", "아울러", "나아가",
+  "반면", "즉", "이를 통해", "결과적으로", "구체적으로", "예를 들어",
 ]);
+
+// Pure IPC / CPC classification codes — should never be bolded.
+// Examples: C07K 7/08, A61K 38/10, G06N 3/04
+const IPC_CODE_RE = /^[A-H]\d{2}[A-Z]\s*\d+\/\d+$/;
 
 // Predicate / clause fragments that mean the bold is wrapping a clause, not a term.
 const CLAUSE_MARKERS = /(았|었|였|있었|있던|있는|있다|되었|되는|된다|이었|이며|이고|이지만|있었으나|되며|이라는|이라고|이나|그러나|하지만|아니라|및|또한)/;
@@ -74,6 +83,8 @@ export function sanitizeBoldMarkers(text: string): string {
     if (core.length < 2) return lead + core + trail;
     // Unwrap when bold content is a generic filler noun with no informational value.
     if (GENERIC_BOLD_WORDS.has(core)) return lead + core + trail;
+    // Unwrap IPC / CPC classification codes — keep as plain text.
+    if (IPC_CODE_RE.test(core)) return lead + core + trail;
     return `${lead}**${core}**${trail}`;
   });
 }
