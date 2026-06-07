@@ -884,6 +884,45 @@ const Admin = () => {
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> 기술소개영상 관리 (홈 상위 3개 노출 / 전체는 온라인 기술 홍보관 · 9개 초과 시 세로 스크롤)</h3>
 
+				{/* Video Category Management */}
+				{(() => {
+					let videoCats: string[] = [];
+					try { videoCats = JSON.parse(siteSettings.video_categories || "[]"); } catch { videoCats = []; }
+					if (!Array.isArray(videoCats)) videoCats = [];
+					const updateCats = (next: string[]) => setSiteSettings(s => ({ ...s, video_categories: JSON.stringify(next) }));
+					return (
+						<div className="mb-4 p-3 rounded-lg bg-secondary/30 border border-border/40">
+							<p className="text-[12px] font-medium mb-2">영상 카테고리 (온라인 기술 홍보관 상단 탭)</p>
+							<div className="flex flex-wrap gap-1.5 mb-2">
+								{videoCats.map((cat, i) => (
+									<div key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-background border border-border/50">
+										<span>{cat}</span>
+										<button onClick={() => updateCats(videoCats.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
+											<X className="w-3 h-3" />
+										</button>
+									</div>
+								))}
+								{videoCats.length === 0 && <span className="text-[11px] text-muted-foreground">카테고리를 추가하면 홍보관 페이지 상단에 탭으로 표시됩니다.</span>}
+							</div>
+							<div className="flex gap-2">
+								<Input placeholder="새 영상 카테고리 입력" id="new-video-category-input" onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										const val = (e.target as HTMLInputElement).value.trim();
+										if (val && !videoCats.includes(val)) { updateCats([...videoCats, val]); (e.target as HTMLInputElement).value = ""; }
+									}
+								}} />
+								<Button variant="outline" size="sm" onClick={() => {
+									const input = document.getElementById("new-video-category-input") as HTMLInputElement;
+									const val = input?.value.trim();
+									if (val && !videoCats.includes(val)) { updateCats([...videoCats, val]); input.value = ""; }
+								}}>
+									<Plus className="w-3.5 h-3.5 mr-1" /> 추가
+								</Button>
+							</div>
+						</div>
+					);
+				})()}
+
                 {/* Drag & drop zone */}
                 <div
                   onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('ring-2','ring-primary'); }}
