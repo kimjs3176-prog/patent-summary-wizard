@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { safeFetch } from "@/lib/safeFetch";
 
 interface RdaPatent {
   patentId: string;
@@ -32,7 +33,7 @@ export function RdaLatestPatents({ onPatentSelect }: RdaLatestPatentsProps) {
   useEffect(() => {
     const fetchRdaPatents = async () => {
       try {
-        const response = await fetch(
+        const response = await safeFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rda-latest-patents`,
           {
             method: "POST",
@@ -40,6 +41,8 @@ export function RdaLatestPatents({ onPatentSelect }: RdaLatestPatentsProps) {
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
+            timeoutMs: 30000,
+            retries: 2,
           }
         );
         const result = await response.json();

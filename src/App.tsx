@@ -1,17 +1,17 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import Admin from "./pages/Admin";
-import Compare from "./pages/Compare";
-import Insights from "./pages/Insights";
-import SearchResults from "./pages/SearchResults";
-import SummarySample from "./pages/SummarySample";
-import TechVideos from "./pages/TechVideos";
-import NotFound from "./pages/NotFound";
+const Admin = lazy(() => import("./pages/Admin"));
+const Compare = lazy(() => import("./pages/Compare"));
+const Insights = lazy(() => import("./pages/Insights"));
+const SearchResults = lazy(() => import("./pages/SearchResults"));
+const SummarySample = lazy(() => import("./pages/SummarySample"));
+const TechVideos = lazy(() => import("./pages/TechVideos"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 import { FloatingChatbot } from "./components/FloatingChatbot";
 import { SplashScreen } from "./components/SplashScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -56,6 +56,7 @@ const App = () => {
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
           <BrowserRouter>
             <ErrorBoundary>
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/admin" element={<Admin />} />
@@ -66,6 +67,7 @@ const App = () => {
                 <Route path="/tech-videos" element={<TechVideos />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </ErrorBoundary>
             <FloatingChatbot />
           </BrowserRouter>
