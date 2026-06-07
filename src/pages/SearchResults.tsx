@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PatentInput } from "@/components/PatentInput";
+import { safeFetch } from "@/lib/safeFetch";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -26,7 +27,7 @@ export default function SearchResults() {
     const doSearch = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(
+        const response = await safeFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-patents`,
           {
             method: "POST",
@@ -35,6 +36,8 @@ export default function SearchResults() {
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
             body: JSON.stringify({ keyword }),
+            timeoutMs: 45000,
+            retries: 2,
           }
         );
         const result = await response.json();
