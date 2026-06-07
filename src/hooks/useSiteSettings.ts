@@ -43,6 +43,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   chatbot_height: "92",
   chatbot_visible: "true",
   ai_model: "google/gemini-2.5-flash",
+  video_categories: "[]",
 };
 
 // Shared cache to prevent multiple fetches
