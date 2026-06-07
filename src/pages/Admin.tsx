@@ -1012,6 +1012,24 @@ const Admin = () => {
                         }}><Trash2 className="w-3.5 h-3.5" /></Button>
                       </div>
                       <Input placeholder="YouTube URL 또는 storage://경로" value={v.url} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, url: e.target.value } : item))} className="mb-2 text-[12px]" />
+                      {(() => {
+                        let videoCats: string[] = [];
+                        try { videoCats = JSON.parse(siteSettings.video_categories || "[]"); } catch { videoCats = []; }
+                        if (!Array.isArray(videoCats)) videoCats = [];
+                        const cur = (v as any).category || "";
+                        return (
+                          <select
+                            value={cur}
+                            onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, category: e.target.value } as any : item))}
+                            className="mb-2 w-full h-9 rounded-md border border-input bg-background px-2 text-[12px]"
+                          >
+                            <option value="">카테고리 선택 안 함 (미분류)</option>
+                            {videoCats.map((cat, i) => (
+                              <option key={i} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                        );
+                      })()}
                       <Textarea placeholder="영상 설명 (선택 · 홍보관 카드에 표시됩니다)" rows={2} value={v.description || ''} onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, description: e.target.value } : item))} className="text-[12px]" />
                     </div>
                   ))}
