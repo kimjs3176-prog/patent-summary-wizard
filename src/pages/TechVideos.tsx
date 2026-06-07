@@ -10,6 +10,7 @@ interface TechVideo {
   title: string;
   url: string;
   description?: string;
+  category?: string;
 }
 
 function getYouTubeId(url: string): string | null {
@@ -30,6 +31,24 @@ const TechVideos = () => {
       return [];
     }
   }, [settings.tech_videos]);
+
+  const categories = useMemo<string[]>(() => {
+    try {
+      const parsed = JSON.parse(settings.video_categories || "[]");
+      return Array.isArray(parsed) ? parsed.filter((c: unknown) => typeof c === "string" && c.trim().length > 0) : [];
+    } catch {
+      return [];
+    }
+  }, [settings.video_categories]);
+
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const hasUncategorized = useMemo(() => videos.some(v => !v.category || !categories.includes(v.category!)), [videos, categories]);
+
+  const filteredVideos = useMemo(() => {
+    if (activeCategory === "all") return videos;
+    if (activeCategory === "__uncat__") return videos.filter(v => !v.category || !categories.includes(v.category!));
+    return videos.filter(v => v.category === activeCategory);
+  }, [videos, activeCategory, categories]);
 
   // Resolve storage:// URLs to signed URLs for playback
   const [resolved, setResolved] = useState<Record<string, string>>({});
@@ -58,7 +77,7 @@ const TechVideos = () => {
   );
 
   // Show all videos; pad to at least 9 slots for a complete 3x3 visual when fewer exist
-  const slots = Array.from({ length: Math.max(9, videos.length) }, (_, i) => videos[i] || null);
+  const slots = Array.from({ length: Math.max(9, filteredVideos.length) }, (_, i) => filteredVideos[i] || null);
 
   return (
     <PageLayout headerRight={headerRight}>
@@ -76,13 +95,43 @@ const TechVideos = () => {
         </section>
 
         <section className="max-w-6xl mx-auto animate-fade-up" style={{ animationDelay: "0.05s" }}>
-          {videos.length > 9 && (
-            <p className="text-[11px] text-muted-foreground mb-3 text-right">총 {videos.length}개 · 아래로 스크롤하여 더 보기</p>
+          {categories.length > 0 && (
+            <div className="mb-5 flex flex-wrap gap-2">
+              <button
+                onClick={() => setActiveCategory("all")}
+                className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium border transition-all ${activeCategory === "all" ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-card text-foreground border-border/60 hover:border-primary/40 hover:text-primary"}`}
+              >
+                전체 ({videos.length})
+              </button>
+              {categories.map((cat) => {
+                const count = videos.filter(v => v.category === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium border transition-all ${activeCategory === cat ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-card text-foreground border-border/60 hover:border-primary/40 hover:text-primary"}`}
+                  >
+                    {cat} ({count})
+                  </button>
+                );
+              })}
+              {hasUncategorized && (
+                <button
+                  onClick={() => setActiveCategory("__uncat__")}
+                  className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium border transition-all ${activeCategory === "__uncat__" ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-card text-muted-foreground border-border/60 hover:border-primary/40 hover:text-primary"}`}
+                >
+                  미분류
+                </button>
+              )}
+            </div>
           )}
-          {videos.length === 0 ? (
+          {filteredVideos.length > 9 && (
+            <p className="text-[11px] text-muted-foreground mb-3 text-right">총 {filteredVideos.length}개 · 아래로 스크롤하여 더 보기</p>
+          )}
+          {filteredVideos.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/60 bg-card p-10 md:p-16 text-center">
               <Video className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">등록된 홍보 영상이 아직 없습니다.</p>
+              <p className="text-sm text-muted-foreground">{videos.length === 0 ? "등록된 홍보 영상이 아직 없습니다." : "이 카테고리에 등록된 영상이 없습니다."}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
