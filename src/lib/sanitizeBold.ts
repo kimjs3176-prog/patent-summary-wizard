@@ -9,6 +9,11 @@ const LEADING_CONNECTIVES = [
   "특히", "구체적으로", "이와", "이러한", "이는", "그러한", "이와 달리",
   "따라서", "그래서", "결국", "즉", "또", "더불어", "아울러",
   "해당", "본", "이", "그", "동", "당해",
+  "현재", "최근", "기존", "향후", "전반", "전체", "실제로", "결과적으로",
+  "종합하면", "종합적으로", "예를 들어", "한마디로", "무엇보다", "참고로",
+  "현재 본", "기존 본", "최근 본", "이번", "여기서", "이를", "이로써",
+  "본 기술은", "본 기술", "본 발명은", "본 발명", "해당 기술", "해당 발명",
+  "이 기술", "이 발명", "그 기술", "그 발명",
 ];
 
 // Generic / filler words that are not informative as a bold highlight.
@@ -24,6 +29,13 @@ const GENERIC_BOLD_WORDS = new Set([
   "다양한", "여러", "관련", "기존", "최근", "향후", "전반", "전체",
   "또한", "따라서", "그러나", "한편", "특히", "아울러", "나아가",
   "반면", "즉", "이를 통해", "결과적으로", "구체적으로", "예를 들어",
+  // Verb-noun fragments often emitted as standalone bolds
+  "확보", "구성", "수립", "달성", "형성", "제공", "수행", "분석", "측정",
+  "추정", "예측", "판별", "선발", "절감", "향상", "개선", "강화",
+  "급여", "활용", "적용", "사용", "도입", "구축", "마련", "확립",
+  "공정 확보", "단계 확보", "단계에서 확보", "이를 해결", "해결",
+  "현재 본 기술", "종합하면 본 기술", "본 기술은", "본 발명은",
+  "농가의 수익 구조", "수익 구조",
 ]);
 
 // Pure IPC / CPC classification codes — should never be bolded.
@@ -31,7 +43,17 @@ const GENERIC_BOLD_WORDS = new Set([
 const IPC_CODE_RE = /^[A-H]\d{2}[A-Z]\s*\d+\/\d+$/;
 
 // Predicate / clause fragments that mean the bold is wrapping a clause, not a term.
-const CLAUSE_MARKERS = /(았|었|였|있었|있던|있는|있다|되었|되는|된다|이었|이며|이고|이지만|있었으나|되며|이라는|이라고|이나|그러나|하지만|아니라|및|또한)/;
+const CLAUSE_MARKERS = /(았|었|였|있었|있던|있는|있다|되었|되는|된다|이었|이며|이고|이지만|있었으나|되며|이라는|이라고|이나|그러나|하지만|아니라|및|또한|하여|하며|하면|함으로써|함에|함을|하는|할\s*수|시키는|시키며|시킴|되어|되면)/;
+
+// Korean spatial/relational particles inside the bold core that suggest a clause-fragment
+// rather than a clean noun phrase. Used to detect and unwrap.
+const MID_PARTICLE_RE = /(에서|에게|으로부터|로부터|와의|과의|로의|에의|을\s|를\s)/;
+
+// Generic trailing nouns we trim off the END of a bold core (e.g. "유전체 분석 기술" → "유전체 분석").
+const TRAILING_GENERIC_SUFFIX_RE = /\s+(기술|기술적|발명|특허|방법|방식|장치|시스템|제품|제품군|구조|공정|과정|단계|분야|산업|영역|내용|사항|부분|측면|경우|특징|효과|결과|수단|원리|기능|성능|용도|구성|요소)$/u;
+
+// Verbal-noun stems that, when ending the bold core, indicate it's a verb phrase fragment.
+const TRAILING_VERB_NOUN_RE = /(확보|구성|수립|달성|형성|제공|수행|분석|측정|추정|예측|판별|선발|절감|향상|개선|강화|급여|활용|적용|사용|도입|구축|마련|확립|해결|개발|연구|운영|관리|진행|실시|시행|검증|검토|조사|평가)$/u;
 
 // Trailing Korean particles / endings that should be moved outside the bold.
 // Order matters — longest match first.
@@ -81,10 +103,35 @@ export function sanitizeBoldMarkers(text: string): string {
     if (!core) return lead + trail;
     // After trimming, if it's basically a single particle, just unwrap.
     if (core.length < 2) return lead + core + trail;
+
+    // Mid-string spatial/relational particle → clause fragment, unwrap.
+    if (MID_PARTICLE_RE.test(core)) return lead + core + trail;
+
+    // Trim trailing generic suffix nouns ("... 기술" / "... 방식" 등).
+    let trimmedCore = core;
+    for (let i = 0; i < 2; i++) {
+      const next = trimmedCore.replace(TRAILING_GENERIC_SUFFIX_RE, "").trim();
+      if (next === trimmedCore || next.length < 2) break;
+      trimmedCore = next;
+    }
+
+    // If the bold ends with a verbal noun (e.g. "단계에서 확보", "프라이머 세트 구성"),
+    // treat it as a verb-phrase fragment and unwrap.
+    if (TRAILING_VERB_NOUN_RE.test(trimmedCore) && trimmedCore.split(/\s+/).length >= 2) {
+      return lead + core + trail;
+    }
+
+    // If after trimming generic suffixes the core became a pure single verbal noun, unwrap.
+    if (TRAILING_VERB_NOUN_RE.test(trimmedCore) && trimmedCore.split(/\s+/).length === 1) {
+      return lead + core + trail;
+    }
+
     // Unwrap when bold content is a generic filler noun with no informational value.
-    if (GENERIC_BOLD_WORDS.has(core)) return lead + core + trail;
+    if (GENERIC_BOLD_WORDS.has(trimmedCore) || GENERIC_BOLD_WORDS.has(core)) return lead + core + trail;
     // Unwrap IPC / CPC classification codes — keep as plain text.
-    if (IPC_CODE_RE.test(core)) return lead + core + trail;
-    return `${lead}**${core}**${trail}`;
+    if (IPC_CODE_RE.test(trimmedCore)) return lead + core + trail;
+    // Preserve any text we trimmed off (suffix) as plain text after the bold.
+    const suffix = core.slice(trimmedCore.length);
+    return `${lead}**${trimmedCore}**${suffix}${trail}`;
   });
 }
