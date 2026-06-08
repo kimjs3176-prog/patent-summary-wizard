@@ -1,137 +1,186 @@
-// Post-process AI-generated markdown so bold ranges fall on natural word boundaries.
-// - Unwrap bolds that span too many tokens or grammar fragments (e.g. "**위험이 있었으나 본 기술**")
-// - Move trailing Korean particles outside of bold (e.g. "**바이오매스를**" → "**바이오매스**를")
-// - Move leading connective words outside of bold (e.g. "**아니라 높은 내구성**" → "아니라 **높은 내구성**")
+// =============================================================================
+// Auto-highlight engine
+// -----------------------------------------------------------------------------
+// The AI model is instructed to NOT emit any **bold** markers. This module
+// strips any leftover bolds and then applies deterministic, pattern-based
+// highlighting to high-signal spans only.
+//
+// Strategy:
+//   (A) Quantitative data — numbers + unit, year, percent, multiplier, seq#
+//   (B) Proper nouns / scientific terms — English noun phrases, ALL-CAPS
+//       abbreviations, strain IDs
+//   (C) Domain noun-phrases — curated dictionary (e.g. "정밀 사양 관리",
+//       "맞춤형 비육 전략", "고급육 출현율")
+//   (D) Decisive comparators — "세계 최초", "핵심 과제" 등 (in dictionary)
+//
+// Constraints:
+//   - Skip italic spans (*..*) — scientific names are already styled.
+//   - Skip headers / lists / footnote rows / code fences / tables.
+//   - Per-sentence cap: 2 bolds. Per-paragraph cap: 4. Each unique span
+//     is bolded at most once per paragraph.
+// =============================================================================
 
-// Conjunctions/connectives we never want to lead a bold range.
-const LEADING_CONNECTIVES = [
-  "아니라", "또한", "그리고", "하지만", "그러나", "다만", "한편", "반면", "나아가",
-  "특히", "구체적으로", "이와", "이러한", "이는", "그러한", "이와 달리",
-  "따라서", "그래서", "결국", "즉", "또", "더불어", "아울러",
-  "해당", "본", "이", "그", "동", "당해",
-  "현재", "최근", "기존", "향후", "전반", "전체", "실제로", "결과적으로",
-  "종합하면", "종합적으로", "예를 들어", "한마디로", "무엇보다", "참고로",
-  "현재 본", "기존 본", "최근 본", "이번", "여기서", "이를", "이로써",
-  "본 기술은", "본 기술", "본 발명은", "본 발명", "해당 기술", "해당 발명",
-  "이 기술", "이 발명", "그 기술", "그 발명",
+// ----- (A) Quantitative patterns ---------------------------------------------
+const QUANT_PATTERNS: RegExp[] = [
+  // "기존 대비 2.5배" / "약 15% 이상 향상"
+  /기존\s*대비\s*\d+(?:\.\d+)?\s*(?:배|%|퍼센트)(?:\s*(?:이상|이하|향상|증가|감소))?/g,
+  /약\s*\d+(?:\.\d+)?\s*%\s*(?:이상|이하)?\s*(?:향상|증가|감소|개선|절감)/g,
+  // 서열번호 1 (내지 6)
+  /서열번호\s*\d+(?:\s*내지\s*\d+)?/g,
+  // 금액 단위
+  /\d{1,3}(?:,\d{3})*(?:\.\d+)?\s*(?:조|억|만)\s*(?:원|달러|위안|엔)/g,
+  // 연도
+  /(?:19|20)\d{2}\s*년/g,
+  // 기간·수량 + 단위
+  /\d+(?:\.\d+)?\s*(?:개월|개체|마리|단계|회|kg|mg|ml|μm|nm|cm|mm|°C)\b/g,
+  /\d+\s*년(?!대)/g,
+  // % / 배
+  /\d+(?:\.\d+)?\s*(?:%|퍼센트|배|배가량)/g,
 ];
 
-// Generic / filler words that are not informative as a bold highlight.
-// If after trimming the core ends up being one of these, unwrap entirely.
-const GENERIC_BOLD_WORDS = new Set([
-  "기술", "기술적", "발명", "특허", "방법", "방식", "장치", "시스템",
-  "제품", "제품군", "구성", "구조", "공정", "과정", "단계", "요소",
-  "분야", "산업", "영역", "내용", "사항", "부분", "측면", "경우",
-  "특징", "효과", "결과", "수단", "원리", "기능", "성능", "용도",
-  "본 기술", "해당 기술", "이 기술", "본 발명", "해당 발명", "이 발명",
-  "시장", "수요", "공급", "가격", "비용", "사용", "활용", "적용",
-  "개발", "연구", "도입", "필요", "중요", "가능", "이러한", "그러한",
-  "다양한", "여러", "관련", "기존", "최근", "향후", "전반", "전체",
-  "또한", "따라서", "그러나", "한편", "특히", "아울러", "나아가",
-  "반면", "즉", "이를 통해", "결과적으로", "구체적으로", "예를 들어",
-  // Verb-noun fragments often emitted as standalone bolds
-  "확보", "구성", "수립", "달성", "형성", "제공", "수행", "분석", "측정",
-  "추정", "예측", "판별", "선발", "절감", "향상", "개선", "강화",
-  "급여", "활용", "적용", "사용", "도입", "구축", "마련", "확립",
-  "공정 확보", "단계 확보", "단계에서 확보", "이를 해결", "해결",
-  "현재 본 기술", "종합하면 본 기술", "본 기술은", "본 발명은",
-  "농가의 수익 구조", "수익 구조",
-]);
+// ----- (B) Proper-noun / scientific term patterns ----------------------------
+const PROPER_PATTERNS: RegExp[] = [
+  // 학술적 영문 구: "Fibronectin 1", "Matrix metallopeptidase 7"
+  /\b[A-Z][a-z]{2,}(?:\s+[a-z]+){0,3}(?:\s+\d+)?\b/g,
+  // ALL-CAPS 약어 (2~6자) — 단독 의미 명확
+  /\b[A-Z]{2,6}(?:-\d+)?\b/g,
+  // 균주 ID
+  /\b(?:KCTC|KACC|KCCM|ATCC|NRRL)\s*\d+\b/g,
+];
 
-// Pure IPC / CPC classification codes — should never be bolded.
-// Examples: C07K 7/08, A61K 38/10, G06N 3/04
-const IPC_CODE_RE = /^[A-H]\d{2}[A-Z]\s*\d+\/\d+$/;
+// ----- (C) Domain noun-phrase dictionary -------------------------------------
+const DOMAIN_PHRASES: string[] = [
+  // 정밀 농축산
+  "개체별 맞춤형 비육 전략", "맞춤형 비육 전략", "정밀 사양 관리",
+  "스마트 축산", "고급육 출현율", "마블링 점수", "근육 내 지방 축적",
+  "근내지방도", "유전체 분석", "고부가가치 바이오 진단", "현장 진단 키트",
+  "비육 기간 단축", "사료비 절감", "수익 구조 안정화", "출하 시기 최적화",
+  // 효능·기능
+  "항균 활성", "항산화 활성", "항염 활성", "항암 활성", "생체이용률",
+  "내구성", "내열성", "내수성", "내약품성", "저독성", "고수율",
+  "정확도", "민감도", "특이도", "재현성", "안정성", "신뢰성",
+  "상관관계", "통계적 유의성", "유효 성분", "활성 성분",
+  // 산업·시장
+  "친환경 농약", "사료 첨가제", "기능성 식품", "기능성 소재",
+  "장염 치료제", "백신 후보", "프리미엄 시장", "B2B 공급",
+  "라이선싱 모델", "기술이전", "OEM 공급",
+  // 결정·평가
+  "세계 최초", "국내 최초", "업계 최초", "핵심 과제", "차별적 강점",
+  "시장 안착의 핵심", "결정적 차별점",
+];
 
-// Predicate / clause fragments that mean the bold is wrapping a clause, not a term.
-const CLAUSE_MARKERS = /(았|었|였|있었|있던|있는|있다|되었|되는|된다|이었|이며|이고|이지만|있었으나|되며|이라는|이라고|이나|그러나|하지만|아니라|및|또한|하여|하며|하면|함으로써|함에|함을|하는|할\s*수|시키는|시키며|시킴|되어|되면)/;
+const SKIP_LINE_RE = /^(\s*#|\s*\||\s*```|\s*-\s|\s*\d+\.\s|\s*\[\^|\s*>\s|\s*###)/;
 
-// Korean spatial/relational particles inside the bold core that suggest a clause-fragment
-// rather than a clean noun phrase. Used to detect and unwrap.
-const MID_PARTICLE_RE = /(에서|에게|으로부터|로부터|와의|과의|로의|에의|을\s|를\s)/;
-
-// Generic trailing nouns we trim off the END of a bold core (e.g. "유전체 분석 기술" → "유전체 분석").
-const TRAILING_GENERIC_SUFFIX_RE = /\s+(기술|기술적|발명|특허|방법|방식|장치|시스템|제품|제품군|구조|공정|과정|단계|분야|산업|영역|내용|사항|부분|측면|경우|특징|효과|결과|수단|원리|기능|성능|용도|구성|요소)$/u;
-
-// Verbal-noun stems that, when ending the bold core, indicate it's a verb phrase fragment.
-const TRAILING_VERB_NOUN_RE = /(확보|구성|수립|달성|형성|제공|수행|분석|측정|추정|예측|판별|선발|절감|향상|개선|강화|급여|활용|적용|사용|도입|구축|마련|확립|해결|개발|연구|운영|관리|진행|실시|시행|검증|검토|조사|평가)$/u;
-
-// Trailing Korean particles / endings that should be moved outside the bold.
-// Order matters — longest match first.
-const TRAILING_JOSA = /(으로써|으로서|으로부터|에서의|에서|에게|이라는|이라고|이라|라는|로서|로써|으로|로|이며|이고|이나|이라|이다|입니다|하는|하여|하면|할\s*수|을|를|이|가|은|는|의|에|와|과|도|만|이나|나|이며|며|이고|고)$/u;
-
-function trimBold(inner: string): { lead: string; core: string; trail: string } {
-  let core = inner.trim();
-  let lead = "";
-  let trail = "";
-
-  // Move leading connective words out
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const hit = LEADING_CONNECTIVES.find(c => core === c || core.startsWith(c + " "));
-    if (!hit) break;
-    lead += hit + " ";
-    core = core.slice(hit.length).trimStart();
-  }
-
-  // Strip trailing particles repeatedly (e.g. "바이오매스를" → "바이오매스")
-  for (let i = 0; i < 2; i++) {
-    const m = core.match(TRAILING_JOSA);
-    if (!m) break;
-    // Don't strip if doing so leaves <2 chars
-    if (core.length - m[0].length < 2) break;
-    trail = m[0] + trail;
-    core = core.slice(0, core.length - m[0].length);
-  }
-
-  return { lead, core, trail };
+function stripExistingBold(text: string): string {
+  // Remove ** markers but keep inner text.
+  return text.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
 }
 
-export function sanitizeBoldMarkers(text: string): string {
-  if (!text || !text.includes("**")) return text;
-  return text.replace(/\*\*([^*\n]{1,80})\*\*/g, (_match, raw: string) => {
-    const inner = raw.trim();
-    if (!inner) return "";
-
-    // Count tokens — only unwrap when bold spans clause-level content.
-    // Allow up to 6 tokens so noun phrases like "신규 펩타이드 프로테티아마이신 2" survive.
-    const tokenCount = inner.split(/\s+/).filter(Boolean).length;
-    if (tokenCount > 6 || CLAUSE_MARKERS.test(inner)) {
-      return inner;
-    }
-
-    const { lead, core, trail } = trimBold(inner);
-    if (!core) return lead + trail;
-    // After trimming, if it's basically a single particle, just unwrap.
-    if (core.length < 2) return lead + core + trail;
-
-    // Mid-string spatial/relational particle → clause fragment, unwrap.
-    if (MID_PARTICLE_RE.test(core)) return lead + core + trail;
-
-    // Trim trailing generic suffix nouns ("... 기술" / "... 방식" 등).
-    let trimmedCore = core;
-    for (let i = 0; i < 2; i++) {
-      const next = trimmedCore.replace(TRAILING_GENERIC_SUFFIX_RE, "").trim();
-      if (next === trimmedCore || next.length < 2) break;
-      trimmedCore = next;
-    }
-
-    // If the bold ends with a verbal noun (e.g. "단계에서 확보", "프라이머 세트 구성"),
-    // treat it as a verb-phrase fragment and unwrap.
-    if (TRAILING_VERB_NOUN_RE.test(trimmedCore) && trimmedCore.split(/\s+/).length >= 2) {
-      return lead + core + trail;
-    }
-
-    // If after trimming generic suffixes the core became a pure single verbal noun, unwrap.
-    if (TRAILING_VERB_NOUN_RE.test(trimmedCore) && trimmedCore.split(/\s+/).length === 1) {
-      return lead + core + trail;
-    }
-
-    // Unwrap when bold content is a generic filler noun with no informational value.
-    if (GENERIC_BOLD_WORDS.has(trimmedCore) || GENERIC_BOLD_WORDS.has(core)) return lead + core + trail;
-    // Unwrap IPC / CPC classification codes — keep as plain text.
-    if (IPC_CODE_RE.test(trimmedCore)) return lead + core + trail;
-    // Preserve any text we trimmed off (suffix) as plain text after the bold.
-    const suffix = core.slice(trimmedCore.length);
-    return `${lead}**${trimmedCore}**${suffix}${trail}`;
+function maskItalics(text: string): { masked: string; spans: string[] } {
+  const spans: string[] = [];
+  const masked = text.replace(/\*([^*\n]+?)\*/g, (m) => {
+    spans.push(m);
+    return `\u0001${spans.length - 1}\u0002`;
   });
+  return { masked, spans };
+}
+
+function unmaskItalics(text: string, spans: string[]): string {
+  return text.replace(/\u0001(\d+)\u0002/g, (_, i) => spans[Number(i)] ?? "");
+}
+
+function splitSentences(paragraph: string): string[] {
+  const parts = paragraph.split(/(?<=[.!?。．！？])\s+/);
+  return parts.length ? parts : [paragraph];
+}
+
+function highlightSentence(
+  sentence: string,
+  paragraphSeen: Set<string>,
+  paragraphBudget: { remaining: number },
+): string {
+  if (sentence.length < 8) return sentence;
+
+  const occupied: Array<[number, number]> = [];
+  const overlaps = (s: number, e: number) =>
+    occupied.some(([a, b]) => s < b && e > a);
+
+  const inserts: Array<{ start: number; end: number; text: string }> = [];
+  let sentenceBudget = 2;
+
+  const tryAdd = (start: number, end: number, raw: string) => {
+    if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) return false;
+    if (overlaps(start, end)) return false;
+    const key = raw.trim();
+    if (!key || key.length < 2) return false;
+    if (paragraphSeen.has(key)) return false;
+    if (/^[\s.,;:()[\]{}'"`~!@#$%^&*]+$/.test(key)) return false;
+    occupied.push([start, end]);
+    inserts.push({ start, end, text: `**${raw}**` });
+    paragraphSeen.add(key);
+    sentenceBudget--;
+    paragraphBudget.remaining--;
+    return true;
+  };
+
+  const scan = (patterns: RegExp[]) => {
+    for (const p of patterns) {
+      p.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = p.exec(sentence)) !== null) {
+        if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) return;
+        tryAdd(m.index, m.index + m[0].length, m[0]);
+      }
+    }
+  };
+
+  // (A) numbers first — highest precedence
+  scan(QUANT_PATTERNS);
+
+  // (C) curated noun-phrases (longest first)
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    const sorted = [...DOMAIN_PHRASES].sort((a, b) => b.length - a.length);
+    for (const phrase of sorted) {
+      if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) break;
+      const idx = sentence.indexOf(phrase);
+      if (idx !== -1) tryAdd(idx, idx + phrase.length, phrase);
+    }
+  }
+
+  // (B) proper nouns / scientific abbreviations
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    scan(PROPER_PATTERNS);
+  }
+
+  if (inserts.length === 0) return sentence;
+
+  inserts.sort((a, b) => b.start - a.start);
+  let out = sentence;
+  for (const ins of inserts) {
+    out = out.slice(0, ins.start) + ins.text + out.slice(ins.end);
+  }
+  return out;
+}
+
+function highlightParagraph(paragraph: string): string {
+  if (SKIP_LINE_RE.test(paragraph)) return paragraph;
+  const seen = new Set<string>();
+  const budget = { remaining: 4 };
+  const sentences = splitSentences(paragraph);
+  return sentences.map((s) => highlightSentence(s, seen, budget)).join(" ");
+}
+
+/**
+ * Public API — keeps the name `sanitizeBoldMarkers` for backward compatibility.
+ * 1) Strip any model-emitted **bold** 2) Mask italics 3) Auto-highlight 4) Restore italics.
+ */
+export function sanitizeBoldMarkers(text: string): string {
+  if (!text) return text;
+  const stripped = stripExistingBold(text);
+  const { masked, spans } = maskItalics(stripped);
+  const paragraphs = masked.split(/(\n{2,})/);
+  const processed = paragraphs
+    .map((chunk) => (/^\n{2,}$/.test(chunk) ? chunk : highlightParagraph(chunk)))
+    .join("");
+  return unmaskItalics(processed, spans);
 }
