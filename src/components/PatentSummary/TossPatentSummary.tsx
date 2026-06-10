@@ -194,7 +194,7 @@ const HL_STYLE: Record<HLType, string> = {
   superlative: "font-bold text-[#B45309] bg-[#FEF3C7] px-1 rounded-[4px]",                 // 최초/유일/독보적
   solution:    "font-semibold text-[#047857] bg-[#10B9811A] px-1 rounded-[4px] decoration-[#10B98166] decoration-1 underline underline-offset-[3px]", // 해결/개선 — 중간 강도(연한 배경 + 얇은 밑줄)
   problem:     "font-semibold text-[#B91C1C] bg-[#FEE2E21F] px-1 rounded-[4px] decoration-[#FCA5A5] decoration-1 underline underline-offset-[3px]", // 문제/한계 — 중간 강도
-  concept:     "font-medium text-[#191F28] decoration-[#CBD5E1] decoration-dotted underline underline-offset-[3px]", // 핵심 개념 — 약한 강도(점선 밑줄)
+  concept:     "font-semibold text-[#191F28] bg-[#F2F4F6] px-1 rounded-[4px] decoration-[#CBD5E1] decoration-dotted underline underline-offset-[3px]", // 핵심 개념
   quote:       "font-semibold text-[#191F28] bg-[#F2F4F6] px-1 rounded-[4px]",              // 「…」, '…' 인용
 };
 
@@ -213,6 +213,10 @@ const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
   { type: "metric",      regex: /(\d+(?:\.\d+)?(?:\s?(?:%|%p|배|건|개월|kg|g|mg|t|톤|mm|cm|km|ml|L|°C|℃|kW|kWh|Hz|MHz|GHz|만원|억원|조원|건당|점|명|곳|종)))/g },
   // 4) 최상급/유일성 표현
   { type: "superlative", regex: /(세계\s*최초|국내\s*최초|업계\s*최초|세계\s*최고|국내\s*최고|세계\s*유일|국내\s*유일|독보적인?|차별화된|혁신적인?|획기적인?|최고\s*수준|최상위|유일한|독점적인?|핵심\s*관건|핵심\s*요인|핵심\s*기술|원천\s*기술|진입\s*장벽)/g },
+  // 5) 완성된 기술·시장 명사구 — 단어 조각이 아니라 의미 단위만 강조
+  { type: "concept",     regex: /((?:인공지능|AI|객체\s*탐지|영상\s*분석|무인\s*비행장치|드론|열화상|초분광|근적외선|라이다|LiDAR|스마트\s*방제|유해\s*생물\s*모니터링|병해충\s*예찰|농업용\s*드론|스마트\s*농업|재난\s*안전)(?:\s*(?:기반|활용|결합|탐지|분석|제어|관리|시장|시스템|솔루션|장치|기술|분야|모듈))?)/g },
+  { type: "solution",    regex: /([가-힣A-Za-z0-9()·\s]{2,28}(?:자동\s*탐지|원격\s*탐색|실시간\s*분석|위치\s*파악|경로\s*자동\s*생성|다각도\s*영상\s*촬영|피해\s*예방|안전\s*확보|방제\s*계획\s*수립))/g },
+  { type: "solution",    regex: /([가-힣A-Za-z0-9()·\s]{2,24}(?:을|를)\s*(?:조기\s*탐지|자동\s*탐지|원격\s*탐색|실시간\s*분석|정확하게\s*파악|신속하게\s*공유|효율적으로\s*방제|획기적으로\s*개선|예방|확보|최적화|강화|극대화))/g },
   // 5) 문제/한계 — 명사 단어 직전이 공백/문장 시작이며, 명사 1개 + 한계어 1개로 한정
   { type: "problem",     regex: /(?:^|[\s,.;:()「『"])([가-힣]{2,8}(?:의)?\s*(?:문제점?|한계점?|어려움|단점|취약점|결함|리스크))/g },
   // 6) 해결/달성/강화 동사구 — "X을/를 [동사]" 형태로 한정 (앞뒤 공백/시작 경계 필수, 명사 최대 8자)
@@ -230,7 +234,11 @@ function collectMatches(text: string): HLMatch[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
       if (m[0].length === 0) { re.lastIndex++; continue; }
-      all.push({ start: m.index, end: m.index + m[0].length, type, text: m[0] });
+      const matchedText = (m[1] || m[0]).trim();
+      if (!matchedText || /(통해\s*개발된\s*만큼\s*기술|본\s*기술|농업\s*분야에서\s*본\s*기술)$/.test(matchedText)) continue;
+      const offset = m[0].indexOf(m[1] || m[0]);
+      const start = m.index + Math.max(0, offset);
+      all.push({ start, end: start + matchedText.length, type, text: matchedText });
     }
   }
   // 정렬 후 겹침 제거 — 더 길고 우선순위 높은(앞 카테고리) 매칭 우선
