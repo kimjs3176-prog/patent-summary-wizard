@@ -214,7 +214,7 @@ serve(async (req) => {
 
     // Read custom prompt additions, total max tokens, model, and per-section length settings.
     let customPromptExtra = "";
-    let maxTokens = 12000;
+    let maxTokens = 6000;
     // 분석 모델은 비용/성능/안정성 균형이 가장 우수한 Gemini 2.5 Flash Lite로 고정한다.
     // (Flash는 장문 프롬프트에서 stall 빈도가 높아 Lite가 더 안정적)
     const aiModel = "google/gemini-2.5-flash-lite";
