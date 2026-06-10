@@ -376,7 +376,17 @@ function parseSections(md: string): MdSection[] {
     buf = "";
   };
   for (const raw of lines) {
-    const line = raw.replace(/\*\*/g, "");
+    // 1) 모델이 출력한 마크다운 강조 표기를 본문에서 제거한다.
+    //    - `**...**` (볼드)는 무조건 평문화 — 사용자 요청에 따라 모델 측 볼드는 금지
+    //    - `*...*` (이탤릭)는 라틴어 학명(영문자/공백/온점/하이픈만)일 때만 유지하고,
+    //      그 외(한글이 1자 이상 포함되거나 길이 30자 초과)는 평문화하여
+    //      "통해 개발된 만큼 기술" 같은 문장 일부가 의도치 않게 이탤릭/강조되는 문제를 방지.
+    let line = raw.replace(/\*\*\*([^*\n]+?)\*\*\*/g, "$1"); // ***x*** → x
+    line = line.replace(/\*\*([^*\n]+?)\*\*/g, "$1");        // **x**  → x
+    line = line.replace(/\*([^*\n]{1,80})\*/g, (full, inner: string) => {
+      const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .\-]{1,60}$/.test(inner.trim());
+      return looksLikeLatin ? `*${inner}*` : inner;
+    });
     const h2 = line.match(/^##\s+(.+?)\s*$/);
     if (h2) {
       flush();
