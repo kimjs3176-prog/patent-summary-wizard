@@ -572,12 +572,14 @@ analysis 필드 작성 규칙(중요):
 - 정확히 2문장(${analysisMin}~${analysisMax}자). 첫 문장: 요약서가 짚은 강점+활용 가능성, 둘째 문장: 요약서가 언급한 유의점·기대효과. 항목 라벨/번호 금지.
 - 요약서가 비어있거나 매우 짧을 때만 특허 데이터로 보완.
 
-technologyReason 규칙: 특허 기능·성분·작용 요약 금지. 청구항 구체성, 실험/수치 데이터, 재현성, 선행기술 대비 차별성 기준의 평가문으로만 작성하고 반드시 완결문으로 끝낼 것.
+technologyReason 규칙: 특허 기능·성분·작용 요약 금지. 청구항 구체성, 실험/수치 데이터, 재현성, 선행기술 대비 차별성 기준의 평가문으로만 2문장 작성하고 반드시 완결문으로 끝낼 것.
 trlReason 규칙: 라벨 금지. 정확히 1문장(${trlMin}~${trlMax}자)으로 왜 해당 TRL인지 쓰고 반드시 "TRL n으로 판단된다." 또는 "TRL n 수준이다."로 끝낼 것.
 
-businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 작성.
+marketReason 규칙: IPC·수요처·차별적 우위 등 본문에서 확인된 시장 근거와 보완점을 2문장으로 작성. 시장규모 추정 등 외부 데이터 금지.
 
-공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. TRL 언급은 오직 trlReason 필드에서만 허용.
+businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 2문장 작성.
+
+공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 점수 숫자·점수대·"~점이다" 표현과 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. 점수는 별도 숫자 필드에서만 허용.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
