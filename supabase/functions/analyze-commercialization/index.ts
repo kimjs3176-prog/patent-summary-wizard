@@ -316,6 +316,14 @@ serve(async (req) => {
 
       if (cached) {
         console.log(`[CACHE HIT] score for ${trimmedPatent}`);
+        const cachedTechnologyReason = stripScoreMentions(stripTrlMentions(cached.technology_reason || ""));
+        const cachedMarketReason = stripScoreMentions(stripTrlMentions(cached.market_reason || ""));
+        const cachedBusinessReason = stripScoreMentions(stripTrlMentions(cached.business_reason || ""));
+        const cachedAnalysis = stripScoreMentions(cached.analysis || "");
+        if (isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
+          console.log(`[CACHE STALE] score too short for ${trimmedPatent} — regenerating`);
+          await supabase.from("patent_score_cache").delete().eq("patent_number", trimmedPatent);
+        } else {
         return new Response(
           JSON.stringify({
             success: true,
@@ -324,16 +332,17 @@ serve(async (req) => {
               technologyScore: cached.technology_score,
               marketScore: cached.market_score,
               businessScore: cached.business_score,
-              analysis: cached.analysis,
+              analysis: cachedAnalysis,
               trl: cached.trl,
               trlReason: cached.trl_reason || "",
-              technologyReason: stripTrlMentions(cached.technology_reason || ""),
-              marketReason: stripTrlMentions(cached.market_reason || ""),
-              businessReason: stripTrlMentions(cached.business_reason || ""),
+              technologyReason: cachedTechnologyReason,
+              marketReason: cachedMarketReason,
+              businessReason: cachedBusinessReason,
             },
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+        }
       }
     } catch (cacheErr) {
       console.error("Cache read error (continuing):", cacheErr);
