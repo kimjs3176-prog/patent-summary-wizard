@@ -86,58 +86,19 @@ async function callAISummaryCompletions(
   payload: Record<string, unknown> & { model: string },
   init: { signal?: AbortSignal } = {},
 ): Promise<Response> {
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-  if (GEMINI_API_KEY && Date.now() >= geminiCooldownUntil) {
-    const t = withTimeout(init.signal, GEMINI_TIMEOUT_MS);
-    try {
-      const geminiModel = payload.model.replace(/^google\//, "");
-      const r = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        {
-          method: "POST",
-          signal: t.signal,
-          headers: {
-            Authorization: `Bearer ${GEMINI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...payload, model: geminiModel, stream: false }),
-        },
-      );
-      if (r.ok) {
-        const data = await r.json();
-        const content = data.choices?.[0]?.message?.content ?? "";
-        const finishReason = data.choices?.[0]?.finish_reason ?? "stop";
-        if (content) {
-          console.log("[AI] using personal Gemini API (non-streaming summary)");
-          t.cancel();
-          const encoder = new TextEncoder();
-          const stream = new ReadableStream({
-            start(controller) {
-              for (let i = 0; i < content.length; i += 80) {
-                const chunk = content.slice(i, i + 80);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
-              }
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ finish_reason: finishReason }] })}\n\n`));
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-              controller.close();
-            },
-          });
-          return new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } });
-        }
-        console.warn("[AI] personal Gemini returned empty summary — falling back to Lovable AI");
-      } else {
-        const errText = await r.text().catch(() => "");
-        if (r.status >= 500 || r.status === 429) markCooldown("gemini");
-        console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
-      }
-    } catch (e) {
-      markCooldown("gemini");
-      console.warn("[AI] personal Gemini summary error, falling back:", e);
-    } finally {
-      t.cancel();
-    }
-  }
-  return await callAIChatCompletions(payload, init);
+  // Summaries are long and streamed. Personal Gemini's non-streaming summary path
+  // routinely exceeded the 8s timeout and aborted mid-flight. Route summary requests
+  // directly to the Lovable AI Gateway with streaming enabled — far more reliable.
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    signal: init.signal,
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 }
 
 // AbortController-based timeout for fetch
