@@ -214,7 +214,7 @@ serve(async (req) => {
 
     // Read custom prompt additions, total max tokens, model, and per-section length settings.
     let customPromptExtra = "";
-    let maxTokens = 6000;
+    let maxTokens = 4000;
     // 분석 모델은 비용/성능 균형이 좋은 Gemini 2.5 Flash로 고정한다.
     // (시스템 프롬프트를 축소(~15KB → ~4KB), max_tokens 6000으로 낮춰 stall 방지)
     const aiModel = "google/gemini-2.5-flash";
@@ -230,7 +230,7 @@ serve(async (req) => {
           if (row.key === "summary_ai_prompt_extra" && row.value) customPromptExtra = row.value;
           if (row.key === "summary_max_tokens" && row.value) {
             const parsed = parseInt(row.value, 10);
-            if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = Math.max(parsed, 8000);
+            if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = Math.max(3000, Math.min(parsed, 6000));
           }
           if (row.key === "summary_section_lengths" && row.value) {
             try {
