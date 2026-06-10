@@ -45,8 +45,10 @@ const getLoadedBuild = (): string | null => {
   const link = document.querySelector('link[rel="stylesheet"][href*="/assets/index-"]') as HTMLLinkElement | null;
   const jsM = (script?.src || "").match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/);
   const cssM = (link?.href || "").match(/\/assets\/(index-[A-Za-z0-9_-]+\.css)/);
-  if (!jsM && !cssM) return null;
-  return `${jsM?.[1] || "-"}|${cssM?.[1] || "-"}`;
+  const sha =
+    (document.querySelector('script[data-commit-sha]') as HTMLScriptElement | null)?.dataset?.commitSha || "";
+  if (!jsM && !cssM && !sha) return null;
+  return `${sha || "-"}::${jsM?.[1] || "-"}|${cssM?.[1] || "-"}`;
 };
 (window as any).__APP_BUILD__ = (window as any).__APP_BUILD__ || getLoadedBuild();
 
@@ -220,8 +222,9 @@ let checkInFlight = false;
 const parseBuildSignature = (html: string): string | null => {
   const jsM = html.match(/src="\/assets\/(index-[A-Za-z0-9_-]+\.js)"/);
   const cssM = html.match(/href="\/assets\/(index-[A-Za-z0-9_-]+\.css)"/);
-  if (!jsM && !cssM) return null;
-  return `${jsM?.[1] || "-"}|${cssM?.[1] || "-"}`;
+  const shaM = html.match(/data-commit-sha="([a-f0-9]{6,40})"/i);
+  if (!jsM && !cssM && !shaM) return null;
+  return `${shaM?.[1] || "-"}::${jsM?.[1] || "-"}|${cssM?.[1] || "-"}`;
 };
 
 const checkForUpdate = async () => {
