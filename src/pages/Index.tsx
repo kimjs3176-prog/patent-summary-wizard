@@ -14,6 +14,7 @@ import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { KeywordExplorer } from "@/components/KeywordExplorer";
+import { KineticHeroTitle } from "@/components/KineticHeroTitle";
 
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
