@@ -184,6 +184,9 @@ export function usePatentSummary() {
             : `요약서가 생성되었습니다! (재시도 ${attempt - 1}회)`
         );
 
+        setIsLoading(false);
+        if (typeof window !== "undefined") (window as any).__APP_BUSY__ = false;
+
         return {
           summary: fullContent,
           patentData: fetchedPatentData,
