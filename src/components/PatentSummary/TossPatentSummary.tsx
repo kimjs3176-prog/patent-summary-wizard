@@ -390,7 +390,9 @@ function parseSections(md: string): MdSection[] {
     //    - `*...*` (이탤릭)는 라틴어 학명(영문자/공백/온점/하이픈만)일 때만 유지하고,
     //      그 외(한글이 1자 이상 포함되거나 길이 30자 초과)는 평문화하여
     //      "통해 개발된 만큼 기술" 같은 문장 일부가 의도치 않게 이탤릭/강조되는 문제를 방지.
-    let line = raw.replace(/\*\*\*([^*\n]+?)\*\*\*/g, "$1"); // ***x*** → x
+    let line = raw.replace(/^\s*\*\s+/, "");                    // * bullet → plain text
+    line = line.replace(/([.!?。．！？])\s+\*\s+/g, "$1 ");       // mid-line pseudo bullet
+    line = line.replace(/\*\*\*([^*\n]+?)\*\*\*/g, "$1"); // ***x*** → x
     line = line.replace(/\*\*([^*\n]+?)\*\*/g, "$1");        // **x**  → x
     line = line.replace(/\*([^*\n]{1,80})\*/g, (full, inner: string) => {
       const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .\-]{1,60}$/.test(inner.trim());
@@ -428,7 +430,7 @@ function parseSections(md: string): MdSection[] {
       }
       continue;
     }
-    const cleaned = line.replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "").replace(/[`_]/g, "").trim();
+    const cleaned = line.replace(/^\s*[-•*]\s+/, "").replace(/^\s*\d+\.\s+/, "").replace(/[`_]/g, "").trim();
     buf += (buf ? " " : "") + cleaned;
   }
   flush();
