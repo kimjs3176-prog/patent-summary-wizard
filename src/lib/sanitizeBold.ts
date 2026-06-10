@@ -138,6 +138,52 @@ function stripExistingBold(text: string): string {
   return text.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
 }
 
+// -----------------------------------------------------------------------------
+// fixBoldBoundaries — LLM이 잘못 친 볼드 범위를 명사구 단위로 교정한다.
+//   1) 꼬리 자르기: **명사 + 조사 + 서술어** → **명사**조사 서술어
+//   2) 머리 확장: "A 및 **B**" → "**A 및 B**" (선행 명사구 흡수)
+// 두 규칙을 안정화될 때까지 반복 적용한다.
+// -----------------------------------------------------------------------------
+function fixBoldBoundaries(text: string): string {
+  if (!text || text.indexOf("**") === -1) return text;
+
+  // 1) 꼬리 자르기 — 볼드 안에 [명사 + 조사 + 공백 + 추가 어절]이 있으면 명사까지만 남김.
+  const tailRe = /\*\*([가-힣A-Za-z0-9][가-힣A-Za-z0-9\s]*?)(을|를|이|가|은|는|에|의|으로|로)\s+([^*\n]+?)\*\*/g;
+
+  // 2) 머리 확장 — 볼드 바로 앞에 "X (및|과|와) " 형태의 선행 명사구를 흡수.
+  const headRe = /((?:[가-힣A-Za-z0-9]+\s+){1,4}(?:및|과|와)\s+)\*\*([가-힣A-Za-z0-9][가-힣A-Za-z0-9\s]*?)\*\*/g;
+
+  let out = text;
+  for (let i = 0; i < 4; i++) {
+    const before = out;
+    out = out.replace(tailRe, (_m, noun: string, particle: string, rest: string) => {
+      const n = noun.trim();
+      if (!n || n.length < 2) return `**${noun}${particle} ${rest}**`;
+      return `**${n}**${particle} ${rest}`;
+    });
+    out = out.replace(headRe, (_m, prefix: string, inner: string) => {
+      const merged = `${prefix}${inner}`.replace(/\s+/g, " ").trim();
+      if (merged.length > 40) return _m; // 과도한 흡수 방지
+      return `**${merged}**`;
+    });
+    if (out === before) break;
+  }
+  return out;
+}
+
+// 이미 교정된 **...** 영역을 자동 하이라이팅 단계 동안 보존하기 위한 마스킹.
+function maskBolds(text: string): { masked: string; spans: string[] } {
+  const spans: string[] = [];
+  const masked = text.replace(/\*\*([^*\n]+?)\*\*/g, (_m, inner: string) => {
+    spans.push(inner);
+    return `\u0003${spans.length - 1}\u0004`;
+  });
+  return { masked, spans };
+}
+function unmaskBolds(text: string, spans: string[]): string {
+  return text.replace(/\u0003(\d+)\u0004/g, (_m, i) => `**${spans[Number(i)] ?? ""}**`);
+}
+
 // Bullet-like single `*` at line start (or after sentence end inside a paragraph)
 // were being misread as italic openers and italicizing entire paragraphs.
 // Convert them to plain text so only true `*word*` italic spans (with no
@@ -328,12 +374,16 @@ export function sanitizeBoldMarkers(text: string): string {
   if (!text) return text;
   // 0) 규칙 기반 오타/맞춤법 사전 치환 (전체 요약서 텍스트에 일괄 적용)
   const corrected = correctTypos(text);
-  const stripped = stripExistingBold(corrected);
-  const debulleted = stripBulletStars(stripped);
+  // 1) LLM이 잘못 친 볼드 범위를 먼저 교정한다 (꼬리 자르기 + 머리 확장).
+  const fixed = fixBoldBoundaries(corrected);
+  // 2) 교정된 볼드 영역은 자동 하이라이트 단계에서 건드리지 않도록 마스킹.
+  const { masked: boldMasked, spans: boldSpans } = maskBolds(fixed);
+  const debulleted = stripBulletStars(boldMasked);
   const { masked, spans } = maskItalics(debulleted);
   const paragraphs = masked.split(/(\n{2,})/);
   const processed = paragraphs
     .map((chunk) => (/^\n{2,}$/.test(chunk) ? chunk : highlightParagraph(chunk)))
     .join("");
-  return unmaskItalics(processed, spans);
+  const withItalics = unmaskItalics(processed, spans);
+  return unmaskBolds(withItalics, boldSpans);
 }
