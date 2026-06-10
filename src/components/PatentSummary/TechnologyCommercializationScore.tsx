@@ -4,6 +4,7 @@ import { CircularGauge } from "./CircularGauge";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
+import { renderBold } from "./_highlight";
 
 export interface CommercializationDetails {
   technologyScore: number;
@@ -64,8 +65,6 @@ const SUB_COLORS = [
   { stroke: 'hsl(160 84% 39%)', bg: 'hsl(160 84% 97%)', border: 'hsl(160 84% 90%)', icon: '📈' },
   { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 97%)', border: 'hsl(25 90% 90%)', icon: '💼' },
 ];
-
-import { renderBold } from "./_highlight";
 
 function renderBoldText(text: string) {
   // 통합 하이라이트 규칙(런타임 규칙 + 패턴) 적용 — 검은색 볼드 처리.
