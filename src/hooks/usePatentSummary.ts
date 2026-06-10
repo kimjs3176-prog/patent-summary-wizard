@@ -13,7 +13,8 @@ export function usePatentSummary() {
   const [relatedPatents, setRelatedPatents] = useState<RelatedPatent[]>([]);
   const [analysisStep, setAnalysisStep] = useState<AnalysisStep>("idle");
 
-  const generateSummary = useCallback(async (patentNumber: string) => {
+  const generateSummary = useCallback(async (patentNumber: string, options: { forceRegenerate?: boolean } = {}) => {
+    const force = !!options.forceRegenerate;
     setIsLoading(true);
     setIsFetching(true);
     // Mark app as busy so the global auto-update loop won't reload mid-analysis.
@@ -38,7 +39,7 @@ export function usePatentSummary() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ patentNumber }),
+          body: JSON.stringify({ patentNumber, forceRegenerate: force }),
           timeoutMs: 45000,
           retries: 1,
         }
@@ -82,6 +83,7 @@ export function usePatentSummary() {
           body: JSON.stringify({ 
             patentNumber,
             patentData: fetchedPatentData,
+            forceRegenerate: force,
           }),
           // Only the initial request needs a timeout; the streamed body is read by `reader` afterwards
           timeoutMs: 60000,
