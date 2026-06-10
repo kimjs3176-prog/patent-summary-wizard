@@ -108,6 +108,10 @@ const IPC_CODE_RE = /\b[A-H]\d{2}[A-Z](?:\s?\d+\/\d+)?\b/;
 // ---------------------------------------------------------------------------
 let RUNTIME_EXCLUDES: string[] = [];
 let RUNTIME_INCLUDES: { phrase: string; weight: number }[] = [];
+// 사전 컴파일된 RUNTIME_INCLUDES 정규식 (collectMatches 호출마다 new RegExp 비용 제거)
+let RUNTIME_INCLUDE_REGEXES: { re: RegExp; weight: number }[] = [];
+// 사전 정규화된 RUNTIME_EXCLUDES (공백 제거 버전 캐시)
+let RUNTIME_EXCLUDE_NORMALIZED: string[] = [];
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -118,21 +122,28 @@ export function setRuntimeHighlightRules(
 ) {
   RUNTIME_EXCLUDES = [];
   RUNTIME_INCLUDES = [];
+  RUNTIME_INCLUDE_REGEXES = [];
+  RUNTIME_EXCLUDE_NORMALIZED = [];
   for (const r of rules) {
     const p = (r.phrase || "").trim();
     if (!p) continue;
-    if (r.kind === "exclude") RUNTIME_EXCLUDES.push(p);
-    else RUNTIME_INCLUDES.push({ phrase: p, weight: Math.min(3, Math.max(1, r.weight ?? 2)) });
+    if (r.kind === "exclude") {
+      RUNTIME_EXCLUDES.push(p);
+      const np = p.replace(/\s+/g, "");
+      if (np) RUNTIME_EXCLUDE_NORMALIZED.push(np);
+    } else {
+      const weight = Math.min(3, Math.max(1, r.weight ?? 2));
+      RUNTIME_INCLUDES.push({ phrase: p, weight });
+      const flexible = p.split(/\s+/).filter(Boolean).map(escapeRegExp).join("\\s+");
+      if (flexible) RUNTIME_INCLUDE_REGEXES.push({ re: new RegExp(flexible, "g"), weight });
+    }
   }
 }
 
 function matchesRuntimeExclude(text: string): boolean {
-  if (RUNTIME_EXCLUDES.length === 0) return false;
+  if (RUNTIME_EXCLUDE_NORMALIZED.length === 0) return false;
   const norm = text.replace(/\s+/g, "");
-  return RUNTIME_EXCLUDES.some((p) => {
-    const np = p.replace(/\s+/g, "");
-    return np.length > 0 && norm.includes(np);
-  });
+  return RUNTIME_EXCLUDE_NORMALIZED.some((np) => norm.includes(np));
 }
 
 function trimTrailingParticle(s: string): string {
@@ -142,14 +153,14 @@ function trimTrailingParticle(s: string): string {
 export function collectMatches(text: string): HLMatch[] {
   const all: HLMatch[] = [];
   // 0) 관리자가 승인한 'include' 문구를 강제 매치(공백 유연 매칭)
-  for (const item of RUNTIME_INCLUDES) {
-    const trimmed = item.phrase.trim();
-    if (!trimmed) continue;
-    const flexible = trimmed.split(/\s+/).map(escapeRegExp).join("\\s+");
-    const re = new RegExp(flexible, "g");
+  for (const item of RUNTIME_INCLUDE_REGEXES) {
+    const re = item.re;
+    re.lastIndex = 0;
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(text)) !== null) {
       if (!mm[0]) { re.lastIndex++; continue; }
+      // IPC 코드는 런타임 규칙에서도 제외
+      if (IPC_CODE_RE.test(mm[0])) continue;
       all.push({ start: mm.index, end: mm.index + mm[0].length, type: "solution", text: mm[0], weight: item.weight });
     }
   }
@@ -158,7 +169,8 @@ export function collectMatches(text: string): HLMatch[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
       if (m[0].length === 0) { re.lastIndex++; continue; }
-      const rawMatched = (m[1] || m[0]).trim();
+      const rawGroup = m[1] || m[0];
+      const rawMatched = rawGroup.trim();
       // 1) 디스코스 접두어 제거 후 평가 ("결론적으로 본 기술" → "본 기술")
       const stripped = rawMatched.replace(DISCOURSE_PREFIX_RE, "").trim();
       // 2) 일반명사 단독/필러는 제외 ("본 기술", "본 발명", "모델", "구조", "기술 이전" 등)
@@ -168,8 +180,10 @@ export function collectMatches(text: string): HLMatch[] {
       const matchedText = rawMatched;
       // 매치 본문이 결국 필러로 끝나면 제외
       if (FILLER_RE.test(trimTrailingParticle(matchedText))) continue;
-      const offset = m[0].indexOf(m[1] || m[0]);
-      const start = m.index + Math.max(0, offset);
+      // 캡처 그룹의 원위치 + trim으로 잘린 선행 공백만큼 보정
+      const offset = m[0].indexOf(rawGroup);
+      const leadingWs = rawGroup.length - rawGroup.trimStart().length;
+      const start = m.index + Math.max(0, offset) + leadingWs;
       // 4) 명시 제외 문구는 폐기.
       if (EXCLUDE_MATCH_RE.test(matchedText)) continue;
       // 4-a) IPC 분류 코드 포함 시 폐기.
