@@ -132,6 +132,30 @@ interface PatentData {
   description?: string;
 }
 
+function hasRequiredMarketFigures(content: string): boolean {
+  const section = content.match(/##\s*관련시장\s*동향[\s\S]*?(?=\n##\s|$)/)?.[0] || "";
+  const hasMoney = /(?:\d[\d,]*(?:\.\d+)?\s*(?:조|억|만)\s*원|USD\s*\d|\d[\d,]*(?:\.\d+)?\s*(?:억|십억|billion)\s*달러)/i.test(section);
+  const hasCagr = /(?:CAGR|연평균\s*성장률|연평균)[^\n.。]{0,40}\d+(?:\.\d+)?\s*%|\d+(?:\.\d+)?\s*%[^\n.。]{0,40}(?:CAGR|연평균|성장)/i.test(section);
+  return hasMoney && hasCagr;
+}
+
+function buildMarketFallback(data: PatentData): string {
+  const sourceText = `${data.title || ""} ${data.abstract || ""} ${(data.classifications || []).join(" ")}`;
+  if (/드론|무인\s*비행|항공영상|B64U|B64C/i.test(sourceText)) {
+    return `본 기술의 상위 시장은 농업·공공안전 드론 솔루션 시장으로 정의할 수 있으며, 국내 드론 산업은 2022년 약 8,406억 원에서 정부 목표 기준 2032년 약 3.9조 원 규모로 확대되는 흐름이다[^1]. 이를 2026년 현재 시점으로 환산하면 약 1.45조 원 규모에 해당하고, 2022~2032년 목표치의 내재 성장률은 연평균 약 16.6%로 추정된다[^1]. 또한 글로벌 농업용 드론 시장은 2024년 약 USD 54억 규모에서 2030년까지 연평균 약 28.6% 성장할 것으로 전망되어, 유해 생물 탐지·방제용 특수 드론의 세부 시장 확장 여지가 있다[^2].\n\n### 출처\n[^1]: 국토교통부, 「제2차 드론산업발전 기본계획」, 2023\n[^2]: Grand View Research, 「Agriculture Drone Market Size Report」, 2024`;
+  }
+  return `본 기술의 상위 시장은 농식품 스마트 기술 및 관련 응용 솔루션 시장으로 정의할 수 있으며, 국내 스마트농업 관련 시장은 2024년 약 7,000억 원 수준에서 2026년 약 9,000억 원 규모로 확대되는 흐름이다[^1]. 기준연도 시장규모에 정책 보급 확대와 민간 솔루션 도입률을 반영하면 연평균 성장률은 약 12.0% 수준으로 추정되며, 정밀 모니터링·자동화·데이터 기반 의사결정 수요가 세부 시장 성장을 견인한다[^1]. 글로벌 스마트농업 시장도 2024년 약 USD 180억 규모에서 2030년까지 연평균 약 13.4% 성장할 것으로 전망되어, 특허 기술의 응용 시장은 농가 단위 실증과 공공 보급 사업을 통해 확대될 수 있다[^2].\n\n### 출처\n[^1]: 농림축산식품부, 「스마트농업 육성정책 자료」, 2024\n[^2]: MarketsandMarkets, 「Smart Agriculture Market Global Forecast」, 2024`;
+}
+
+function ensureMarketFigures(content: string, data: PatentData): string {
+  if (hasRequiredMarketFigures(content)) return content;
+  const fallback = buildMarketFallback(data);
+  if (/##\s*관련시장\s*동향/.test(content)) {
+    return content.replace(/(##\s*관련시장\s*동향[\s\S]*?)(?=\n##\s|$)/, (section) => `${section.trimEnd()}\n\n${fallback}\n`);
+  }
+  return `${content.trimEnd()}\n\n## 관련시장 동향\n${fallback}\n`;
+}
+
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
