@@ -24,20 +24,18 @@ import { correctTypos } from "./typoCorrections";
 
 // ----- (A) Quantitative patterns ---------------------------------------------
 const QUANT_PATTERNS: RegExp[] = [
-  // "기존 대비 2.5배" / "약 15% 이상 향상"
-  /기존\s*대비\s*\d+(?:\.\d+)?\s*(?:배|%|퍼센트)(?:\s*(?:이상|이하|향상|증가|감소))?/g,
-  /약\s*\d+(?:\.\d+)?\s*%\s*(?:이상|이하)?\s*(?:향상|증가|감소|개선|절감)/g,
+  // 엄격: [숫자 + 단위 명사]만 캡처. 주변 동사/연결어를 절대 포함하지 않음.
   // 서열번호 1 (내지 6)
   /서열번호\s*\d+(?:\s*내지\s*\d+)?/g,
-  // 금액 단위
-  /\d{1,3}(?:,\d{3})*(?:\.\d+)?\s*(?:조|억|만)\s*(?:원|달러|위안|엔)/g,
-  // 연도
-  /(?:19|20)\d{2}\s*년/g,
-  // 기간·수량 + 단위
-  /\d+(?:\.\d+)?\s*(?:개월|개체|마리|단계|회|kg|mg|ml|μm|nm|cm|mm|°C)\b/g,
-  /\d+\s*년(?!대)/g,
-  // % / 배
-  /\d+(?:\.\d+)?\s*(?:%|퍼센트|배|배가량)/g,
+  // 금액: 약? + 숫자 + (조|억|만|천)? + 원/달러/위안/엔
+  /약\s?\d{1,3}(?:,\d{3})*(?:\.\d+)?\s?(?:조|억|만|천)?\s?(?:원|달러|위안|엔)/g,
+  /\d{1,3}(?:,\d{3})*(?:\.\d+)?\s?(?:조|억|만|천)?\s?(?:원|달러|위안|엔)/g,
+  // 연도 (4자리)
+  /(?:19|20)\d{2}년/g,
+  // 수량 + 단위 (단위 직후 경계: 공백/구두점/끝)
+  /\d+(?:\.\d+)?\s?(?:개월|개체|마리|단계|회|kg|mg|ml|μm|nm|cm|mm|°C)(?=[\s.,;:)\]"'」』]|$)/g,
+  // % / 배 / 퍼센트
+  /\d+(?:\.\d+)?\s?(?:%|퍼센트|배)(?=[\s.,;:)\]"'」』]|$)/g,
 ];
 
 // ----- (B) Proper-noun / scientific term patterns ----------------------------
@@ -72,6 +70,34 @@ const DOMAIN_PHRASES: string[] = [
 ];
 
 const SKIP_LINE_RE = /^(\s*#|\s*\||\s*```|\s*-\s|\s*\d+\.\s|\s*\[\^|\s*>\s|\s*###)/;
+
+// 한국어 조사/어미 — 매칭 결과 끝에서 탈락시킬 접미사 목록 (긴 것부터)
+const TRAILING_PARTICLES = [
+  "덕분에", "에서", "으로", "이며", "하며", "하는", "되는", "이다",
+  "이고", "이라", "이란", "이나", "라는", "라고",
+  "을", "를", "이", "가", "은", "는", "에", "의", "로", "고", "며",
+  "된", "한", "적", "와", "과", "도", "만", "랑", "야", "여", "서",
+];
+
+// 매칭 결과가 일반 명사구로 적합한지 검증 (동사/형용사 어미·조사 포함 시 거부)
+const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|없다|된다|한다|하다|되다|위해|위한|통해|통한|확보가|확보를|가능한|불가능|때문에)/;
+
+function trimTrailingParticles(s: string): string {
+  let out = s;
+  // 반복 적용 (예: "메커니즘을" → "메커니즘")
+  for (let i = 0; i < 3; i++) {
+    let changed = false;
+    for (const p of TRAILING_PARTICLES) {
+      if (out.length > p.length + 1 && out.endsWith(p)) {
+        out = out.slice(0, -p.length);
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) break;
+  }
+  return out.trimEnd();
+}
 
 function stripExistingBold(text: string): string {
   // Remove ** markers but keep inner text.
@@ -131,12 +157,21 @@ function highlightSentence(
   const tryAdd = (start: number, end: number, raw: string) => {
     if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) return false;
     if (overlaps(start, end)) return false;
-    const key = raw.trim();
+    let key = raw.trim();
     if (!key || key.length < 2) return false;
+    // 조사/어미 끝부분 탈락 → 길이 차이만큼 end 축소
+    const trimmed = trimTrailingParticles(key);
+    if (!trimmed || trimmed.length < 2) return false;
+    // 문장형(동사·서술어 포함) 거부
+    if (SENTENCEY_RE.test(trimmed)) return false;
+    // 공백을 끝에서 제거한 만큼 end 보정
+    const dropped = key.length - trimmed.length;
+    const adjustedEnd = end - dropped;
+    key = trimmed;
     if (paragraphSeen.has(key)) return false;
     if (/^[\s.,;:()[\]{}'"`~!@#$%^&*]+$/.test(key)) return false;
-    occupied.push([start, end]);
-    inserts.push({ start, end, text: `**${raw}**` });
+    occupied.push([start, adjustedEnd]);
+    inserts.push({ start, end: adjustedEnd, text: `**${key}**` });
     paragraphSeen.add(key);
     sentenceBudget--;
     paragraphBudget.remaining--;
@@ -159,11 +194,15 @@ function highlightSentence(
 
   // (C) curated noun-phrases (longest first)
   if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
-    const sorted = [...DOMAIN_PHRASES].sort((a, b) => b.length - a.length);
+    // 사전은 순수 명사구만 허용 — 동사·조사 포함 항목은 제외
+    const cleanDict = DOMAIN_PHRASES.filter((p) => !SENTENCEY_RE.test(p));
+    const sorted = [...cleanDict].sort((a, b) => b.length - a.length);
     for (const phrase of sorted) {
       if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) break;
       const idx = sentence.indexOf(phrase);
-      if (idx !== -1) tryAdd(idx, idx + phrase.length, phrase);
+      if (idx === -1) continue;
+      // 매칭 직후가 한국어 조사로 이어지더라도 phrase 자체만 강조 (조사는 자연히 바깥)
+      tryAdd(idx, idx + phrase.length, phrase);
     }
   }
 
