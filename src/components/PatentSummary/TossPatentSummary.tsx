@@ -910,6 +910,21 @@ export function TossPatentSummary({
             <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
               <Printer className="w-3.5 h-3.5" /> 인쇄
             </Button>
+            {onRegenerate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (window.confirm("기존 요약서 캐시를 삭제하고 새로 생성합니다. 진행할까요?")) {
+                    onRegenerate();
+                  }
+                }}
+                className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]"
+                title="요약서를 새로 생성합니다"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> 재생성
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={() => setShareOpen(true)} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
               <Share2 className="w-3.5 h-3.5" /> 공유
             </Button>
