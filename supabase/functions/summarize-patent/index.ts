@@ -522,8 +522,17 @@ serve(async (req) => {
     const encoder = new TextEncoder();
     const saveCache = async () => {
       if (!fullContent) return;
-      if (finishReason && finishReason !== "stop") {
-        console.warn(`[TRUNCATED] ${trimmedPatent} finish_reason=${finishReason} chars=${fullContent.length} maxTokens=${maxTokens} — skipping cache save so it regenerates next time`);
+      // Only cache if upstream signaled a clean stop. null/undefined finish_reason
+      // means the stream was cut mid-flight (network/abort) — never cache that.
+      if (finishReason !== "stop") {
+        console.warn(`[TRUNCATED] ${trimmedPatent} finish_reason=${finishReason ?? "null"} chars=${fullContent.length} maxTokens=${maxTokens} — skipping cache save so it regenerates next time`);
+        return;
+      }
+      // Sanity check: a complete summary must include all 5 sections. If not, treat as truncated.
+      const requiredSections = ["## 기술분야", "## 발명요약", "## 관련시장 동향", "## 농산업활용", "## 상용화전망"];
+      const missing = requiredSections.filter((s) => !fullContent.includes(s));
+      if (missing.length > 0) {
+        console.warn(`[INCOMPLETE] ${trimmedPatent} missing sections=${missing.join(",")} — skipping cache save`);
         return;
       }
       try {
@@ -552,36 +561,58 @@ serve(async (req) => {
 
     const stream = new ReadableStream<Uint8Array>({
       async pull(controller) {
-        const { done, value } = await reader.read();
-        if (done) {
-          emitMarketFallbackIfNeeded(controller);
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          controller.close();
-          await saveCache();
-          return;
-        }
-
-        sseBuffer += decoder.decode(value, { stream: true });
-        let newlineIndex: number;
-        while ((newlineIndex = sseBuffer.indexOf("\n")) !== -1) {
-          const line = sseBuffer.slice(0, newlineIndex).replace(/\r$/, "");
-          sseBuffer = sseBuffer.slice(newlineIndex + 1);
-          if (!line.trim()) continue;
-          if (!line.startsWith("data: ")) continue;
-          const payload = line.slice(6).trim();
-          if (payload === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(payload);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) fullContent += content;
-            const fr = parsed.choices?.[0]?.finish_reason;
-            if (fr) finishReason = fr;
-            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
-          } catch {
-            sseBuffer = line + "\n" + sseBuffer;
-            break;
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            // Upstream closed. If finish_reason wasn't "stop", treat as network truncation.
+            if (finishReason === "stop") {
+              emitMarketFallbackIfNeeded(controller);
+            } else {
+              console.warn(`[STREAM CUT] ${trimmedPatent} upstream closed without finish_reason=stop (got=${finishReason ?? "null"}, chars=${fullContent.length})`);
+              const errMsg = JSON.stringify({ error: "stream_truncated", message: "업스트림 응답이 중단되었습니다. 자동 재시도합니다." });
+              controller.enqueue(encoder.encode(`data: ${errMsg}\n\n`));
+            }
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+            await saveCache();
+            return;
           }
+
+          sseBuffer += decoder.decode(value, { stream: true });
+          let newlineIndex: number;
+          while ((newlineIndex = sseBuffer.indexOf("\n")) !== -1) {
+            const line = sseBuffer.slice(0, newlineIndex).replace(/\r$/, "");
+            sseBuffer = sseBuffer.slice(newlineIndex + 1);
+            if (!line.trim()) continue;
+            if (!line.startsWith("data: ")) continue;
+            const payload = line.slice(6).trim();
+            if (payload === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(payload);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) fullContent += content;
+              const fr = parsed.choices?.[0]?.finish_reason;
+              if (fr) finishReason = fr;
+              controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+            } catch {
+              sseBuffer = line + "\n" + sseBuffer;
+              break;
+            }
+          }
+        } catch (err) {
+          // Upstream read failed (abort / network). Do NOT save partial cache.
+          console.error(`[STREAM ERROR] ${trimmedPatent}`, err);
+          try {
+            const errMsg = JSON.stringify({ error: "stream_error", message: String(err) });
+            controller.enqueue(encoder.encode(`data: ${errMsg}\n\n`));
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          } catch { /* controller may be closed */ }
+          try { controller.close(); } catch { /* ignore */ }
         }
+      },
+      cancel(reason) {
+        console.warn(`[STREAM CANCELLED] ${trimmedPatent} reason=${reason}`);
+        try { reader.cancel(reason); } catch { /* ignore */ }
       },
     });
 
