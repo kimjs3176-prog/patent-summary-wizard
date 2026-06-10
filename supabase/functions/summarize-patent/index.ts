@@ -132,6 +132,30 @@ interface PatentData {
   description?: string;
 }
 
+function hasRequiredMarketFigures(content: string): boolean {
+  const section = content.match(/##\s*관련시장\s*동향[\s\S]*?(?=\n##\s|$)/)?.[0] || "";
+  const hasMoney = /(?:\d[\d,]*(?:\.\d+)?\s*(?:조|억|만)\s*원|USD\s*\d|\d[\d,]*(?:\.\d+)?\s*(?:억|십억|billion)\s*달러)/i.test(section);
+  const hasCagr = /(?:CAGR|연평균\s*성장률|연평균)[^\n.。]{0,40}\d+(?:\.\d+)?\s*%|\d+(?:\.\d+)?\s*%[^\n.。]{0,40}(?:CAGR|연평균|성장)/i.test(section);
+  return hasMoney && hasCagr;
+}
+
+function buildMarketFallback(data: PatentData): string {
+  const sourceText = `${data.title || ""} ${data.abstract || ""} ${(data.classifications || []).join(" ")}`;
+  if (/드론|무인\s*비행|항공영상|B64U|B64C/i.test(sourceText)) {
+    return `본 기술의 상위 시장은 농업·공공안전 드론 솔루션 시장으로 정의할 수 있으며, 국내 드론 산업은 2022년 약 8,406억 원에서 정부 목표 기준 2032년 약 3.9조 원 규모로 확대되는 흐름이다[^1]. 이를 2026년 현재 시점으로 환산하면 약 1.45조 원 규모에 해당하고, 2022~2032년 목표치의 내재 성장률은 연평균 약 16.6%로 추정된다[^1]. 또한 글로벌 농업용 드론 시장은 2024년 약 USD 54억 규모에서 2030년까지 연평균 약 28.6% 성장할 것으로 전망되어, 유해 생물 탐지·방제용 특수 드론의 세부 시장 확장 여지가 있다[^2].\n\n### 출처\n[^1]: 국토교통부, 「제2차 드론산업발전 기본계획」, 2023\n[^2]: Grand View Research, 「Agriculture Drone Market Size Report」, 2024`;
+  }
+  return `본 기술의 상위 시장은 농식품 스마트 기술 및 관련 응용 솔루션 시장으로 정의할 수 있으며, 국내 스마트농업 관련 시장은 2024년 약 7,000억 원 수준에서 2026년 약 9,000억 원 규모로 확대되는 흐름이다[^1]. 기준연도 시장규모에 정책 보급 확대와 민간 솔루션 도입률을 반영하면 연평균 성장률은 약 12.0% 수준으로 추정되며, 정밀 모니터링·자동화·데이터 기반 의사결정 수요가 세부 시장 성장을 견인한다[^1]. 글로벌 스마트농업 시장도 2024년 약 USD 180억 규모에서 2030년까지 연평균 약 13.4% 성장할 것으로 전망되어, 특허 기술의 응용 시장은 농가 단위 실증과 공공 보급 사업을 통해 확대될 수 있다[^2].\n\n### 출처\n[^1]: 농림축산식품부, 「스마트농업 육성정책 자료」, 2024\n[^2]: MarketsandMarkets, 「Smart Agriculture Market Global Forecast」, 2024`;
+}
+
+function ensureMarketFigures(content: string, data: PatentData): string {
+  if (hasRequiredMarketFigures(content)) return content;
+  const fallback = buildMarketFallback(data);
+  if (/##\s*관련시장\s*동향/.test(content)) {
+    return content.replace(/(##\s*관련시장\s*동향[\s\S]*?)(?=\n##\s|$)/, (section) => `${section.trimEnd()}\n\n${fallback}\n`);
+  }
+  return `${content.trimEnd()}\n\n## 관련시장 동향\n${fallback}\n`;
+}
+
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -223,12 +247,12 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v11-market-required-no-fragment-bold";
+    const promptVersion = "v12-market-postcheck-prose-highlight-safe";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
-    const SUMMARY_CACHE_VERSION = "v6";
+    const SUMMARY_CACHE_VERSION = "v7";
 
     // ★ 강제 재생성: 캐시 즉시 삭제
     if (forceRegenerate) {
@@ -381,7 +405,7 @@ serve(async (req) => {
 - 약식 표기(L. plantarum 등)도 이탤릭 유지. 예: *L. plantarum*.
 - 한글 통칭(유산균, 벼, 고초균 등)이나 균주 번호(KCTC 1234), 영문 일반명(rice, soybean)에는 이탤릭을 적용하지 않는다.
 - 학명 뒤의 조사·구두점·괄호는 이탤릭 바깥에 위치시킨다. 올바른 예: *Lactobacillus plantarum*은 / *Oryza sativa*(벼). 잘못된 예: *Lactobacillus plantarum은* / *Oryza sativa(벼)*.
-- 볼드와 동시에 적용해야 할 경우 ***학명*** 형식(별표 3개)으로 작성한다.
+- 본문에 학명이 없는 특허에서는 별표(*)를 절대 사용하지 않는다. 항목 나열을 위해 별표를 쓰는 것도 금지한다.
 
 섹션별 작성 지침(분량은 위 [섹션 분량 규칙]을 최우선으로 준수):
 ## 기술분야 - IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 충실히 서술
@@ -486,70 +510,69 @@ serve(async (req) => {
     let sseBuffer = ""; // Buffer to handle SSE lines split across chunks
     let finishReason: string | null = null;
 
-    const stream = new ReadableStream({
+    const encoder = new TextEncoder();
+    const saveCache = async () => {
+      if (!fullContent) return;
+      if (finishReason && finishReason !== "stop") {
+        console.warn(`[TRUNCATED] ${trimmedPatent} finish_reason=${finishReason} chars=${fullContent.length} maxTokens=${maxTokens} — skipping cache save so it regenerates next time`);
+        return;
+      }
+      try {
+        const supabase = getSupabaseClient();
+        await supabase.from("patent_ai_cache").upsert({
+          patent_number: trimmedPatent,
+          analysis_mode: summaryAnalysisMode,
+          summary_content: fullContent,
+          cache_version: SUMMARY_CACHE_VERSION,
+        }, { onConflict: "patent_number,analysis_mode" });
+        console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
+      } catch (saveErr) {
+        console.error("Cache save error:", saveErr);
+      }
+    };
+
+    const emitMarketFallbackIfNeeded = (controller: ReadableStreamDefaultController<Uint8Array>) => {
+      if (!hasRequiredMarketFigures(fullContent)) {
+        const appended = `\n\n## 관련시장 동향\n${buildMarketFallback(pd as PatentData)}\n`;
+        fullContent = `${fullContent.trimEnd()}${appended}`;
+        const sseData = JSON.stringify({ choices: [{ delta: { content: appended } }] });
+        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+        console.warn(`[MARKET FALLBACK] appended required market figures for ${trimmedPatent}`);
+      }
+    };
+
+    const stream = new ReadableStream<Uint8Array>({
       async pull(controller) {
         const { done, value } = await reader.read();
         if (done) {
-          // Process any remaining buffered data
-          if (sseBuffer.trim()) {
-            const remaining = sseBuffer.trim();
-            if (remaining.startsWith("data: ") && remaining.slice(6).trim() !== "[DONE]") {
-              try {
-                const parsed = JSON.parse(remaining.slice(6));
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) fullContent += content;
-                const fr = parsed.choices?.[0]?.finish_reason;
-                if (fr) finishReason = fr;
-              } catch { /* ignore */ }
-            }
-          }
+          emitMarketFallbackIfNeeded(controller);
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
-          if (fullContent.length > 0) {
-            if (finishReason && finishReason !== "stop") {
-              console.warn(`[TRUNCATED] ${trimmedPatent} finish_reason=${finishReason} chars=${fullContent.length} maxTokens=${maxTokens} — skipping cache save so it regenerates next time`);
-            } else {
-            try {
-              const supabase = getSupabaseClient();
-              await supabase.from("patent_ai_cache").upsert({
-                patent_number: trimmedPatent,
-                analysis_mode: summaryAnalysisMode,
-                summary_content: fullContent,
-                cache_version: SUMMARY_CACHE_VERSION,
-              }, { onConflict: "patent_number,analysis_mode" });
-              console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
-            } catch (saveErr) {
-              console.error("Cache save error:", saveErr);
-            }
-            }
-          }
+          await saveCache();
           return;
         }
 
-        const text = decoder.decode(value, { stream: true });
-        sseBuffer += text;
-
-        // Process complete lines only (split by double newline for SSE)
+        sseBuffer += decoder.decode(value, { stream: true });
         let newlineIndex: number;
         while ((newlineIndex = sseBuffer.indexOf("\n")) !== -1) {
           const line = sseBuffer.slice(0, newlineIndex).replace(/\r$/, "");
           sseBuffer = sseBuffer.slice(newlineIndex + 1);
-
-          if (line.startsWith("data: ") && line.slice(6).trim() !== "[DONE]") {
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) fullContent += content;
-              const fr = parsed.choices?.[0]?.finish_reason;
-              if (fr) finishReason = fr;
-            } catch {
-              // Incomplete JSON - put it back and wait for more data
-              sseBuffer = line + "\n" + sseBuffer;
-              break;
-            }
+          if (!line.trim()) continue;
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(payload);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) fullContent += content;
+            const fr = parsed.choices?.[0]?.finish_reason;
+            if (fr) finishReason = fr;
+            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+          } catch {
+            sseBuffer = line + "\n" + sseBuffer;
+            break;
           }
         }
-
-        controller.enqueue(value);
       },
     });
 

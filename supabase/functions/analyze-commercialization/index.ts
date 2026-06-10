@@ -164,20 +164,35 @@ function stripTrlMentions(text: string): string {
   return out;
 }
 
+function stripScoreMentions(s: string | undefined | null): string {
+  if (!s) return s ?? "";
+  let out = s;
+  out = out.replace(/(?:,?\s*(?:그래서|따라서|이에|결과적으로|종합하면|이로써))?\s*[가-힣]{0,8}(?:성|점수)?(?:은|는|이|가)?\s*\(?\d{2,3}\)?\s*점대?로?\s*(?:평가|산출|판단|분류|책정)(?:된다|되며|되어|됨)\.?/g, "");
+  out = out.replace(/\s*\d{2,3}\s*점(?:대|이다|으로|에)\s*[가-힣]{0,8}(?:평가된다|산출된다|판단된다|책정된다|된다)?\.?/g, "");
+  out = out.replace(/총점[은이]?\s*\d{2,3}\s*점\.?/g, "");
+  out = out.replace(/\b\d{2,3}\s*점대\b/g, "");
+  out = out.replace(/\s{2,}/g, " ").replace(/\s+([.,])/g, "$1").replace(/\.{2,}/g, ".").trim();
+  return out.replace(/,\s*$/, ".");
+}
+
+function isReasonTooShort(...values: Array<string | null | undefined>): boolean {
+  return values.some((value) => cleanKoreanText(value).length < 70);
+}
+
 function makeMarketFallback(score: number): string {
-  if (score >= 85) return `적용 산업과 수요처가 명확히 드러나고 차별적 우위가 본문에 충분히 서술돼, 시장성이 ${score}점의 우수한 수준으로 평가된다. 실제 구매 수요와 경쟁 대체재 분석이 더해지면 시장 진입 시 강한 추진력을 확보할 수 있다.`;
-  if (score >= 78) return `적용 산업과 수요처가 어느 정도 구체화돼 있고 차별적 우위도 본문에서 확인되는 흐름이라, 시장성이 ${score}점의 양호한 수준으로 평가된다. 다만 실제 구매 수요와 경쟁 대체재 검증이 보강되면 상위 점수대 진입도 노려볼 수 있다.`;
-  if (score >= 70) return `관련 산업 적용성은 확인되지만 수요 규모와 차별적 구매 요인이 제한적이라, 시장성이 ${score}점의 보통 수준에 머문다. 목표 시장을 좁혀 차별점을 구체화하면 점수 상향 여지가 생긴다.`;
-  if (score >= 60) return `적용처가 다소 협소하고 수요 근거가 약해 시장성이 ${score}점의 미흡한 수준으로 평가된다. 수요처와 활용 시나리오, 차별적 우위를 본문에서 보다 명확히 제시해야 점수 개선이 가능하다.`;
-  return `적용처와 수요 근거가 거의 드러나지 않아 시장성이 ${score}점의 낮은 수준에 그친다. 활용 시나리오와 차별적 우위, 목표 수요처를 함께 구체화해야 의미 있는 평가가 가능하다.`;
+  if (score >= 85) return `적용 산업과 수요처가 명확히 드러나고 차별적 우위가 본문에 충분히 서술돼 시장 진입 매력이 높은 편이다. 실제 구매 주체와 경쟁 대체재 분석이 더해지면 초기 수요 검증과 보급 전략을 더 설득력 있게 제시할 수 있다.`;
+  if (score >= 78) return `적용 산업과 수요처가 어느 정도 구체화돼 있고 차별적 우위도 본문에서 확인되어 시장 진입 가능성이 양호하다. 다만 실구매 수요, 운영 비용, 기존 방제·관리 방식 대비 전환 이익을 보강하면 확산 논리가 더 분명해진다.`;
+  if (score >= 70) return `관련 산업 적용성은 확인되지만 수요 규모와 차별적 구매 요인이 제한적으로 제시되어 시장성은 보통 수준이다. 목표 수요처를 공공기관·농가·서비스 사업자 등으로 좁히고 대체 솔루션 대비 효익을 수치화해야 한다.`;
+  if (score >= 60) return `적용처가 다소 협소하고 수요 근거가 약해 시장 진입 논리가 아직 충분하지 않다. 활용 시나리오, 구매 의사, 경쟁 대체재 대비 비용 절감 효과를 함께 제시해야 사업화 설득력이 높아진다.`;
+  return `적용처와 수요 근거가 거의 드러나지 않아 시장성 판단에 필요한 기반 정보가 부족하다. 목표 고객, 반복 구매 가능성, 대체재 대비 차별적 효익을 구체화해야 의미 있는 시장 평가가 가능하다.`;
 }
 
 function makeBusinessFallback(score: number): string {
-  if (score >= 85) return `기존 설비·공정 활용 여지가 분명하고 인허가 장벽이 낮은 영역이라, 사업성이 ${score}점의 우수한 수준으로 평가된다. 기술이전 조건과 초기 수요처 확보가 정리되면 빠른 상용화 흐름까지 기대할 수 있다.`;
-  if (score >= 78) return `기존 설비 활용성과 낮은 인허가 장벽이 함께 확인되는 흐름이라, 사업성이 ${score}점의 양호한 수준으로 평가된다. 기술이전 조건 정비와 초기 수요처 확보가 마무리되면 상용화 속도를 한층 끌어올릴 수 있다.`;
-  if (score >= 70) return `구현 가능성은 확인되지만 양산 조건과 투자회수 근거가 부족해, 사업성이 ${score}점의 보통 수준에 머문다. 파일럿 단가 검증과 라이선싱 수요 구체화가 점수 상향의 관건이다.`;
-  if (score >= 60) return `공정·비용·수요처 근거가 다소 약해 사업성이 ${score}점의 미흡한 수준으로 평가된다. 후속 실증과 기술이전 전략, 단가 경쟁력 분석이 함께 보완되어야 점수 상향이 가능하다.`;
-  return `구현 조건과 사업화 근거가 충분히 드러나지 않아 사업성이 ${score}점의 낮은 수준에 그친다. 파일럿 검증과 단가 경쟁력 분석, 기술이전 전략이 모두 갖춰져야 의미 있는 사업성 평가가 가능하다.`;
+  if (score >= 85) return `기존 설비·공정 활용 여지가 분명하고 인허가 장벽이 낮은 영역이라 사업화 실행성이 높다. 기술이전 조건, 초기 수요처, 운영·유지보수 체계가 정리되면 빠른 실증과 보급형 상용화 흐름까지 기대할 수 있다.`;
+  if (score >= 78) return `기존 설비 활용성과 낮은 인허가 장벽이 함께 확인되어 사업화 추진 여건은 양호한 편이다. 기술이전 조건, 파일럿 운영 비용, 초기 구매처 확보 전략이 마무리되면 상용화 속도를 한층 높일 수 있다.`;
+  if (score >= 70) return `구현 가능성은 확인되지만 양산 조건과 투자회수 근거가 아직 제한적이어서 사업성은 보통 수준이다. 파일럿 단가 검증, 유지보수 방식, 라이선싱 수요 구체화가 후속 사업화의 핵심 보완점이다.`;
+  if (score >= 60) return `공정·비용·수요처 근거가 다소 약해 사업화 실행 계획을 바로 확정하기는 어렵다. 후속 실증, 기술이전 패키지, 단가 경쟁력 분석이 함께 보완되어야 실제 도입 가능성이 높아진다.`;
+  return `구현 조건과 사업화 근거가 충분히 드러나지 않아 사업성 판단에 필요한 실행 정보가 부족하다. 파일럿 검증, 단가 경쟁력 분석, 기술이전 전략이 모두 갖춰져야 의미 있는 사업화 평가가 가능하다.`;
 }
 
 function normalizeReason(value: unknown, fallback: string): string {
@@ -301,6 +316,14 @@ serve(async (req) => {
 
       if (cached) {
         console.log(`[CACHE HIT] score for ${trimmedPatent}`);
+        const cachedTechnologyReason = stripScoreMentions(stripTrlMentions(cached.technology_reason || ""));
+        const cachedMarketReason = stripScoreMentions(stripTrlMentions(cached.market_reason || ""));
+        const cachedBusinessReason = stripScoreMentions(stripTrlMentions(cached.business_reason || ""));
+        const cachedAnalysis = stripScoreMentions(cached.analysis || "");
+        if (isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
+          console.log(`[CACHE STALE] score too short for ${trimmedPatent} — regenerating`);
+          await supabase.from("patent_score_cache").delete().eq("patent_number", trimmedPatent);
+        } else {
         return new Response(
           JSON.stringify({
             success: true,
@@ -309,16 +332,17 @@ serve(async (req) => {
               technologyScore: cached.technology_score,
               marketScore: cached.market_score,
               businessScore: cached.business_score,
-              analysis: cached.analysis,
+              analysis: cachedAnalysis,
               trl: cached.trl,
               trlReason: cached.trl_reason || "",
-              technologyReason: stripTrlMentions(cached.technology_reason || ""),
-              marketReason: stripTrlMentions(cached.market_reason || ""),
-              businessReason: stripTrlMentions(cached.business_reason || ""),
+              technologyReason: cachedTechnologyReason,
+              marketReason: cachedMarketReason,
+              businessReason: cachedBusinessReason,
             },
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+        }
       }
     } catch (cacheErr) {
       console.error("Cache read error (continuing):", cacheErr);
@@ -394,8 +418,8 @@ serve(async (req) => {
     const round = (n: number) => Math.round(n / 5) * 5;
     // 근거/분석 문구는 UI에서 잘리지 않도록 짧은 완결문으로 제한
     const baseRanges = isDetailedScore
-      ? { reason: [45, 70], trl: [55, 85], analysis: [50, 80] }
-      : { reason: [35, 55], trl: [45, 70], analysis: [45, 75] };
+      ? { reason: [55, 85], trl: [65, 95], analysis: [70, 105] }
+      : { reason: [45, 70], trl: [55, 80], analysis: [55, 90] };
 
     const reasonMin = round(baseRanges.reason[0] * lengthMultiplier);
     const reasonMax = round(baseRanges.reason[1] * lengthMultiplier);
@@ -548,12 +572,14 @@ analysis 필드 작성 규칙(중요):
 - 정확히 2문장(${analysisMin}~${analysisMax}자). 첫 문장: 요약서가 짚은 강점+활용 가능성, 둘째 문장: 요약서가 언급한 유의점·기대효과. 항목 라벨/번호 금지.
 - 요약서가 비어있거나 매우 짧을 때만 특허 데이터로 보완.
 
-technologyReason 규칙: 특허 기능·성분·작용 요약 금지. 청구항 구체성, 실험/수치 데이터, 재현성, 선행기술 대비 차별성 기준의 평가문으로만 작성하고 반드시 완결문으로 끝낼 것.
+technologyReason 규칙: 특허 기능·성분·작용 요약 금지. 청구항 구체성, 실험/수치 데이터, 재현성, 선행기술 대비 차별성 기준의 평가문으로만 2문장 작성하고 반드시 완결문으로 끝낼 것.
 trlReason 규칙: 라벨 금지. 정확히 1문장(${trlMin}~${trlMax}자)으로 왜 해당 TRL인지 쓰고 반드시 "TRL n으로 판단된다." 또는 "TRL n 수준이다."로 끝낼 것.
 
-businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 작성.
+marketReason 규칙: IPC·수요처·차별적 우위 등 본문에서 확인된 시장 근거와 보완점을 2문장으로 작성. 시장규모 추정 등 외부 데이터 금지.
 
-공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. TRL 언급은 오직 trlReason 필드에서만 허용.
+businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 2문장 작성.
+
+공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 점수 숫자·점수대·"~점이다" 표현과 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. 점수는 별도 숫자 필드에서만 허용.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
