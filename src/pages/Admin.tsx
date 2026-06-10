@@ -1377,7 +1377,6 @@ const Admin = () => {
 
           {/* ===== Output Tab (Print + PDF) ===== */}
           <TabsContent value="output">
-            {/* placeholder anchor */}
             <Accordion type="multiple" defaultValue={["print"]} className="space-y-3">
               <AccordionItem value="print" className="border rounded-lg px-4">
                 <AccordionTrigger className="text-sm font-semibold gap-2">
