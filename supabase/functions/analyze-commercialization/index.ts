@@ -523,7 +523,7 @@ analysis 필드 작성 규칙(매우 중요):
 technologyReason 작성 규칙(매우 중요):
 - 특허 기능·성분·작용을 그대로 요약하지 말 것. "본 발명은...", "~을 분리하였다", "~을 확인하였다" 같은 초록 복사 어투 금지.
 - 반드시 아래 2단 흐름으로 작성(평가결과와 코멘트의 비약 방지):
-  1) 확인된 증거 명시(청구항 수·실시예·실험 수치·비교예·IPC 범위 중 실제 본문에서 확인된 것)와 그에 따른 기술성 판단(우수/보통/미흡 등 정성적 표현).
+  1) 확인된 증거 명시(독립항의 차별적 구성·권리범위 표현·핵심 구성의 필수성·실시예·실험 수치·비교예 중 실제 본문에서 확인된 것)와 그에 따른 기술성 판단(우수/보통/미흡 등 정성적 표현). 청구항 '개수'는 근거로 쓰지 말 것.
   2) 상위 평가로 진입하기 위해 필요한 보완점(추가 실험·재현성 검증 등)을 짧게 서술.
 - **[엄격 금지]** 코멘트 안에 점수 숫자(예: 72점, 80점), 점수대 표현("70점대", "80점대로 평가된다", "~점이다", "~점으로 산출된다")을 절대 사용하지 말 것. 점수는 별도 숫자 필드로만 노출하고 텍스트에는 정성 표현만 사용.
 - 정확히 2문장. 마지막은 반드시 "다."로 종료.
@@ -552,7 +552,7 @@ marketReason 작성 규칙(중요):
 - "~합니다", "~습니다", "~입니다", "~됩니다" 등 합쇼체 종결은 절대 금지.
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 청구항 독창성, 실시예 구체성, 선행기술 대비 진보성을 간결하게 분석","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 독립항의 차별성·권리범위의 넓이·회피설계 난이도 관점으로 간결 분석(청구항 개수 언급 금지)","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
        : `특허 기술사업화 평가 전문가. JSON으로만 응답.
 
 결정론적 채점(체크리스트 합산, 동일 입력→동일 점수, 추정 금지):
@@ -595,7 +595,7 @@ businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분
 공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 점수 숫자·점수대·"~점이다" 표현과 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. 점수는 별도 숫자 필드에서만 허용.
 
 JSON형식:
-{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
+{"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자: 독립항 차별성·권리범위·회피설계 난이도 기준 핵심근거(청구항 개수 언급 금지)","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
 
 
     // 분석 모델은 가격/성능 균형이 가장 우수한 Gemini 3 Flash Preview로 고정한다.
