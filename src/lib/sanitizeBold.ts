@@ -82,8 +82,12 @@ const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|
 // 구절 '중간'에 등장하는 연결 용언/어미 — 문장형 오버매칭 차단용
 const VERB_MIDPHRASE_RE = /(?:제공하며|활발해지며|대응한|어렵다는|해결하고|확보하고|있으며|위한|통해|기반으로|따라)/;
 
-// 문장형 구절 강화 차단: 관형형 어미, 목적격 조사, 동사성 명사 마감 패턴
-const INVALID_SENTENCE_RE = /(?:제공하며|활발해지며|대응한|어렵다는|해결하고|확보하고|있으며|위한|통해|기반으로|따라|조절하는|있는|하는|되는|된|할|시킨)\s+|(?:\S+를|\S+만을|\S+과정을)\s+|\s+(?:억제|활용|구현|제시|방지|유지|촉진|해결)$/;
+// 문장형 구절 강화 차단: 관형형 어미, 목적격 조사, 동사성/부정 추상 명사 마감 패턴
+const INVALID_SENTENCE_RE = /(?:[가-힣]+(?:을|를|으로|덕분에)\s+)|(?:[가-힣]+(?:하며|하고|있어|있으며|지며|삼아|하는|되는|된|할|시킨|다는|따르는|따른|위한|통해|대해|관한|대응한|기반으로)\s+)|\s+(?:억제|활용|구현|제시|방지|유지|촉진|해결|극대화|향상|절감|관리|기반|도입|적용|제어|한계|문제|리스크|어려움|부담|요인)$/;
+// 주어(명사+이/가) + 서술어 구조 차단
+const SUBJECT_PREDICATE_RE = /[가-힣]+(?:이|가)\s+[가-힣]+/;
+// 어절 경계가 깨져 조사/의존명사 한 글자로 시작하는 구절 차단
+const BROKEN_BOUNDARY_RE = /^(?:는|중|을|를|가|이|에|과|와|고|의)\s+/;
 
 // 연결명사구의 마지막 토큰으로 허용되는 명사 어미 — 기술 핵심·특장점 시사어 포함
 const COMPOUND_TAIL_NOUNS = [
@@ -195,7 +199,13 @@ function highlightSentence(
     const spaceCount = (trimmedRaw.match(/\s/g) || []).length;
     if (spaceCount >= 2 && VERB_MIDPHRASE_RE.test(trimmedRaw)) return false;
     // 강화된 문장형 구절 차단 — 관형형 어미/목적격 조사/동사성 마감
-    if (INVALID_SENTENCE_RE.test(trimmedRaw)) return false;
+    if (
+      INVALID_SENTENCE_RE.test(trimmedRaw) ||
+      SUBJECT_PREDICATE_RE.test(trimmedRaw) ||
+      BROKEN_BOUNDARY_RE.test(trimmedRaw)
+    ) {
+      return false;
+    }
     // 어절 경계 보호: 매치 시작 직전이 한글이면 어절 중간 시작 → 거부
     const firstCh = trimmedRaw.charAt(0);
     const beforeCh = start > 0 ? sentence.charAt(start - 1) : "";
