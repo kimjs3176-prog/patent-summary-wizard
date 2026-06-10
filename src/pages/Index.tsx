@@ -167,11 +167,9 @@ const Index = () => {
                 <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 AI 기반 특허 분석
               </div>
-              <h2 className="text-[20px] sm:text-[26px] md:text-[38px] lg:text-[44px] font-extrabold text-foreground mb-2 md:mb-4 leading-[1.15] md:leading-[1.1] tracking-[-0.02em] md:tracking-[-0.03em] px-2 whitespace-pre-line">
-                {settings.hero_title}
-                <br />
-                <span className="gradient-text gradient-shimmer">{settings.hero_title_accent}</span> {settings.hero_title_suffix}
-              </h2>
+              <div className="mb-2 md:mb-4">
+                <KineticHeroTitle />
+              </div>
               <p className="text-[11px] sm:text-xs md:text-sm font-normal leading-relaxed max-w-[280px] sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight">
                 {settings.hero_description}
               </p>
