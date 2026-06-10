@@ -89,67 +89,111 @@ function formatDate(dateStr: string): string {
 
 // 특허번호에서 검색용 번호 추출
 function parsePatentNumber(input: string): { searchNumber: string; displayNumber: string; searchType: 'registration' | 'application' } {
-  const trimmed = input.trim();
+  // 사용자 입력 정규화: 공백/괄호/접두어/접미어 제거 후 숫자·하이픈만 남김
+  // 예) "제 10-2024-0080354 호" → "10-2024-0080354", "KR1020230012345" → "1020230012345"
+  const cleaned = input
+    .trim()
+    .replace(/^(KR|kr)\s*/, "")
+    .replace(/^제\s*/, "")
+    .replace(/\s*호\s*$/, "")
+    .replace(/[()\s]/g, "");
 
-  // 등록번호 형식: 10-1234567 또는 20-1234567 (실용신안)
-  const regMatch = trimmed.match(/^(10|20)-(\d{7})$/);
-  if (regMatch) {
+  // 1) 하이픈이 있는 경우
+  const dashed = cleaned.match(/^(10|20)-(\d{4})-(\d+)$/);
+  if (dashed) {
+    const [, prefix, year, serialRaw] = dashed;
+    const serial = serialRaw.length >= 7 ? serialRaw.slice(0, 7) : serialRaw.padStart(7, "0");
     return {
-      searchNumber: `${regMatch[1]}${regMatch[2]}`,
-      displayNumber: trimmed,
-      searchType: 'registration'
+      searchNumber: `${prefix}${year}${serial}`,
+      displayNumber: `${prefix}-${year}-${serial}`,
+      searchType: "application",
     };
   }
 
-  // 등록번호 형식 (6자리): 10-186227 -> 10-0186227
-  const regMatch6 = trimmed.match(/^(10|20)-(\d{6})$/);
-  if (regMatch6) {
-    const paddedNum = regMatch6[2].padStart(7, '0');
+  const regDashed = cleaned.match(/^(10|20)-(\d+)$/);
+  if (regDashed) {
+    const [, prefix, numRaw] = regDashed;
+    // 4자리 연도로 시작하고 11자리 이상이면 출원번호로 간주: 10-20230012345
+    if (numRaw.length >= 11 && /^(19|20)\d{2}/.test(numRaw)) {
+      const year = numRaw.slice(0, 4);
+      const serial = numRaw.slice(4, 11).padStart(7, "0");
+      return {
+        searchNumber: `${prefix}${year}${serial}`,
+        displayNumber: `${prefix}-${year}-${serial}`,
+        searchType: "application",
+      };
+    }
+    const padded = numRaw.padStart(7, "0").slice(-7);
     return {
-      searchNumber: `${regMatch6[1]}${paddedNum}`,
-      displayNumber: `${regMatch6[1]}-${paddedNum}`,
-      searchType: 'registration'
+      searchNumber: `${prefix}${padded}`,
+      displayNumber: `${prefix}-${padded}`,
+      searchType: "registration",
     };
   }
 
-  // 출원번호 형식: 10-2023-0123456 (standard 7-digit serial)
-  const appMatch = trimmed.match(/^(10|20)-(\d{4})-(\d{7})$/);
-  if (appMatch) {
-    return {
-      searchNumber: `${appMatch[1]}${appMatch[2]}${appMatch[3]}`,
-      displayNumber: trimmed,
-      searchType: 'application'
-    };
+  // 2) 하이픈 없이 들어온 경우 — 숫자만
+  const digitsOnly = cleaned.replace(/-/g, "");
+  if (/^\d+$/.test(digitsOnly)) {
+    // 13자리: 10 + 4자리연도 + 7자리 일련번호 → 출원번호
+    if (digitsOnly.length === 13 && (digitsOnly.startsWith("10") || digitsOnly.startsWith("20"))) {
+      const prefix = digitsOnly.slice(0, 2);
+      const year = digitsOnly.slice(2, 6);
+      const serial = digitsOnly.slice(6, 13);
+      return {
+        searchNumber: `${prefix}${year}${serial}`,
+        displayNumber: `${prefix}-${year}-${serial}`,
+        searchType: "application",
+      };
+    }
+    // 11자리: 4자리연도 + 7자리 일련번호 → 출원번호 (앞 10 가정)
+    if (digitsOnly.length === 11 && /^(19|20)\d{2}/.test(digitsOnly)) {
+      const year = digitsOnly.slice(0, 4);
+      const serial = digitsOnly.slice(4, 11);
+      return {
+        searchNumber: `10${year}${serial}`,
+        displayNumber: `10-${year}-${serial}`,
+        searchType: "application",
+      };
+    }
+    // 9자리: 10/20 + 7자리 → 등록번호
+    if (digitsOnly.length === 9 && (digitsOnly.startsWith("10") || digitsOnly.startsWith("20"))) {
+      const prefix = digitsOnly.slice(0, 2);
+      const num = digitsOnly.slice(2);
+      return {
+        searchNumber: `${prefix}${num}`,
+        displayNumber: `${prefix}-${num}`,
+        searchType: "registration",
+      };
+    }
+    // 7자리: 등록번호 본체 → 10- 자동 부여
+    if (digitsOnly.length === 7) {
+      return {
+        searchNumber: `10${digitsOnly}`,
+        displayNumber: `10-${digitsOnly}`,
+        searchType: "registration",
+      };
+    }
+    // 6자리: 등록번호(레거시) → 0 패딩
+    if (digitsOnly.length === 6) {
+      const padded = digitsOnly.padStart(7, "0");
+      return {
+        searchNumber: `10${padded}`,
+        displayNumber: `10-${padded}`,
+        searchType: "registration",
+      };
+    }
   }
 
-  // 출원번호 형식 (longer serial)
-  const appMatchLong = trimmed.match(/^(10|20)-(\d{4})-(\d{7,})$/);
-  if (appMatchLong) {
-    const serial = appMatchLong[3].slice(0, 7);
-    return {
-      searchNumber: `${appMatchLong[1]}${appMatchLong[2]}${serial}`,
-      displayNumber: `${appMatchLong[1]}-${appMatchLong[2]}-${serial}`,
-      searchType: 'application'
-    };
-  }
-
-  // 순수 7자리 숫자 (등록번호)
-  const pureRegMatch = trimmed.match(/^(\d{7})$/);
-  if (pureRegMatch) {
-    return {
-      searchNumber: `10${pureRegMatch[1]}`,
-      displayNumber: `10-${pureRegMatch[1]}`,
-      searchType: 'registration'
-    };
-  }
-  
   // 기본값
   return {
-    searchNumber: trimmed.replace(/-/g, ''),
-    displayNumber: trimmed,
-    searchType: 'application'
+    searchNumber: digitsOnly || cleaned.replace(/-/g, ""),
+    displayNumber: cleaned,
+    searchType: "application",
   };
 }
+
+// 캐시 버전 — 데이터 캐시 포맷이 바뀔 때마다 증가시켜 자동 무효화
+const DATA_CACHE_VERSION = "v2";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
