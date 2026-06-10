@@ -1,4 +1,6 @@
 // =============================================================================
+import { correctTypos } from "./typoCorrections";
+
 // Auto-highlight engine
 // -----------------------------------------------------------------------------
 // The AI model is instructed to NOT emit any **bold** markers. This module
@@ -194,7 +196,9 @@ function highlightParagraph(paragraph: string): string {
  */
 export function sanitizeBoldMarkers(text: string): string {
   if (!text) return text;
-  const stripped = stripExistingBold(text);
+  // 0) 규칙 기반 오타/맞춤법 사전 치환 (전체 요약서 텍스트에 일괄 적용)
+  const corrected = correctTypos(text);
+  const stripped = stripExistingBold(corrected);
   const debulleted = stripBulletStars(stripped);
   const { masked, spans } = maskItalics(debulleted);
   const paragraphs = masked.split(/(\n{2,})/);
