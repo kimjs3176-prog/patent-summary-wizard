@@ -585,18 +585,8 @@ JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자 핵심근거","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
 
 
-    // Read AI model from settings
-    let configuredModel = "google/gemini-2.5-flash";
-    try {
-      const supabase2 = getSupabaseClient();
-      const { data: modelSetting } = await supabase2
-        .from("site_settings")
-        .select("value")
-        .eq("key", "ai_model")
-        .maybeSingle();
-      if (modelSetting?.value) configuredModel = modelSetting.value;
-    } catch { /* use default */ }
-
+    // 분석 모델은 가격/성능 균형이 가장 우수한 Gemini 3 Flash Preview로 고정한다.
+    const configuredModel = "google/gemini-3-flash-preview";
     const scoreModel = isDetailedScore ? configuredModel : "google/gemini-2.5-flash-lite";
     // max_tokens — 절대 잘리지 않도록 충분한 한도 확보.
     // 한국어 1글자 ≈ 2~3 토큰(JSON 이스케이프 포함). 5개 필드 합계 최대 ~600자 → 약 2,000토큰.
