@@ -534,7 +534,7 @@ serve(async (req) => {
     const emitMarketFallbackIfNeeded = (controller: ReadableStreamDefaultController<Uint8Array>) => {
       if (!hasRequiredMarketFigures(fullContent)) {
         const appended = `\n\n## 관련시장 동향\n${buildMarketFallback(pd as PatentData)}\n`;
-        fullContent = ensureMarketFigures(fullContent, pd as PatentData);
+        fullContent = `${fullContent.trimEnd()}${appended}`;
         const sseData = JSON.stringify({ choices: [{ delta: { content: appended } }] });
         controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
         console.warn(`[MARKET FALLBACK] appended required market figures for ${trimmedPatent}`);
