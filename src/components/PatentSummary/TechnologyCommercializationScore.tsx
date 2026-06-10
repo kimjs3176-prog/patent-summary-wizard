@@ -4,6 +4,7 @@ import { CircularGauge } from "./CircularGauge";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
+import { renderBold } from "./_highlight";
 
 export interface CommercializationDetails {
   technologyScore: number;
@@ -66,13 +67,8 @@ const SUB_COLORS = [
 ];
 
 function renderBoldText(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-semibold text-foreground/85">{part.slice(2, -2)}</strong>;
-    }
-    return <span key={i}>{part}</span>;
-  });
+  // 통합 하이라이트 규칙(런타임 규칙 + 패턴) 적용 — 검은색 볼드 처리.
+  return renderBold(text);
 }
 
 function SubScoreCard({ label, score, reason, colorIndex }: { label: string; score: number; reason?: string; colorIndex: number }) {
