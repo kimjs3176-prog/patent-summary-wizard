@@ -120,6 +120,71 @@ const CROSS_LINE_RE = /[\r\n]/;
 // "본 기술/발명/특허"로 시작하는 매치 폐기.
 const LEADING_SELF_REF_RE = /^(?:(?:현재\s*)?(?:본|이|그|해당|동)\s*)?(?:기술|발명|특허)(?:은|는|이|가|을|를|의|에|로)?(?:\s|$)/;
 
+// =============================================================================
+// 출력 검증(Output validation) — 사용자 정의 "절대 금지 규칙"
+// -----------------------------------------------------------------------------
+// Bold 적용 후보가 다음 중 하나라도 해당하면 폐기한다.
+//   (a) 조사/접속어로 시작 또는 종료
+//   (b) 동사 활용형(어미)으로 종료 — "기반한", "한정된", "예측하는", "될 것이며" 등
+//   (c) 일반 표현으로 종료 — "것이다", "가능하다", "기반한", "것이며", "것으로"
+//   (d) 의미 단위가 불완전 — 어절이 1개뿐이고 명사가 아닌 부사·동사 어간만 남는 경우
+// =============================================================================
+
+// 종료 어미(동사 활용형) — 매치 끝이 이 패턴이면 "문장 중간 잘림"으로 간주.
+// 단, 명사 뒤에 자연스럽게 붙는 "-된 / -한 / -하는 / -되는" 활용은 뒤에 다른 명사가
+// 이어져야 하는데 매치가 거기서 끝나버린 경우(예: "기반한", "한정된", "예측하는")만 폐기.
+const TRAILING_VERB_TAIL_RE = /(?:[가-힣]{1,8})(?:하는|되는|한|된|하여|되어|하며|되며|하고|되고|함으로써|됨으로써|하면|되면|할|될|기반한|한정된|예측하는|기반으로|기반한다|것이며|것이다|것으로|가능하다|가능하며|될\s*것이며|될\s*것이다)$/;
+
+// 종료 조사/접속어 — 매치 끝이 순수 조사/접속어로 끝나면 폐기.
+const TRAILING_PARTICLE_RE = /(?:[은는이가을를의에서와과로으로에게부터까지마다처럼보다조차]|및|또는|혹은|그리고|따라서|즉|등의|등을|등이|등은)$/;
+
+// 시작 어미·부사·접속어 (보강) — "신속하게", "정밀하게", "효과적으로" 등 부사 단독 시작 폐기.
+const LEADING_ADVERB_RE = /^(?:[가-힣]{2,8}(?:하게|되게|적으로|스럽게|롭게|이|히))\s+/;
+
+// 일반 표현(의미 약한 상투어) — 매치에 이 표현이 포함되면 폐기.
+const GENERIC_PHRASE_RE = /(?:것이다|것이며|것으로|가능하다|가능하며|될\s*것|할\s*수\s*있다|할\s*수\s*있는|기반한(?!\s*[가-힣])|한정된(?!\s*[가-힣])|예측하는(?!\s*[가-힣]))/;
+
+/**
+ * 최종 출력 검증. 통과해야만 Bold 후보로 인정.
+ * 반환: true=유효, false=폐기.
+ */
+function isValidHighlightPhrase(phrase: string): boolean {
+  const p = phrase.trim();
+  if (p.length < 3) return false;
+  // (a) 조사/접속어로 시작·종료
+  if (LEADING_TRIM_RE.test(p + " ")) return false;
+  if (LEADING_ADVERB_RE.test(p + " ")) return false;
+  if (TRAILING_PARTICLE_RE.test(p)) return false;
+  // (b) 동사 활용형으로 종료
+  if (TRAILING_VERB_TAIL_RE.test(p)) return false;
+  // (c) 일반 표현 포함
+  if (GENERIC_PHRASE_RE.test(p)) return false;
+  // (d) 어절이 1개뿐인 경우 — 단일 명사/약어/정량값만 허용
+  const words = p.split(/\s+/);
+  if (words.length === 1) {
+    // 한글 단일 어절은 명사형(받침 또는 명사 접미사)만 허용. 조사·동사형은 위에서 제외됨.
+    // 영문 약어(SNP, HRM 등)와 정량값(\d 포함)은 허용.
+    if (/^[A-Z0-9][A-Z0-9\-\/]*$/.test(p)) return true;
+    if (/\d/.test(p)) return true;
+    // 한글 단어 단독은 너무 짧으면 폐기
+    if (p.length < 4) return false;
+  }
+  return true;
+}
+
+// 종료부의 조사·일반어미를 잘라낸다(시도 1회). 잘라낸 뒤 다시 검증.
+function trimTrailingNoise(s: string): string {
+  let out = s;
+  // 후행 공백 정리
+  out = out.replace(/\s+$/, "");
+  // 후행 조사 제거 (단, 명사 뒤 1글자 조사만)
+  out = out.replace(/([가-힣A-Za-z0-9])(?:[은는이가을를의]|에서|에게|으로|로|와|과)$/u, "$1");
+  // 후행 일반 표현 제거
+  out = out.replace(/\s*(?:것이다|것이며|것으로|가능하다|가능하며|기반한|한정된|예측하는)$/u, "");
+  return out.trim();
+}
+
+
 // 의미가 빈약하거나 사용자가 명시적으로 제외 요청한 표현 — 매치되더라도 강조하지 않음.
 // 예) "거듭날 기회를 제공", "차별적 효과를 제공" 같은 상투적 효익 표현,
 //     "수치는 2021년의 52억 달러 시장" 처럼 본문 흐름상 강조 가치가 낮은 수치 인용.
@@ -240,7 +305,15 @@ export function collectMatches(text: string): HLMatch[] {
       // 5) 직전 컨텍스트 기반 제외 ("수치는 ... 52억 달러 시장" 류).
       const preceding = text.slice(Math.max(0, start - 12), start);
       if (EXCLUDE_CONTEXT_RE.test(preceding)) continue;
-      all.push({ start, end: start + workText.length, type, text: workText });
+      // 6) 출력 검증 — 종료부 노이즈 1회 정리 후 최종 유효성 검사.
+      let finalText = trimTrailingNoise(workText);
+      if (finalText.length < workText.length) {
+        // 길이 축소된 만큼 end 좌표 갱신
+        // (start는 동일, finalText는 workText의 prefix이므로 안전)
+        if (!workText.startsWith(finalText)) finalText = workText; // 안전망
+      }
+      if (!isValidHighlightPhrase(finalText)) continue;
+      all.push({ start, end: start + finalText.length, type, text: finalText });
     }
   }
   all.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
