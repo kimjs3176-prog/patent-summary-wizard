@@ -195,12 +195,14 @@ export function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] 
     let cursor = 0;
     for (const m of matches) {
       if (m.start > cursor) out.push(text.slice(cursor, m.start));
+      // 방어: m.text 대신 원문 슬라이스를 사용해 문자 누락/중복 가능성을 원천 차단.
+      const sliced = text.slice(m.start, m.end);
       out.push(
         <mark
           key={`hl-${key++}`}
           className={`bg-transparent ${HL_STYLE[m.type]}`}
         >
-          {m.text}
+          {sliced}
         </mark>,
       );
       cursor = m.end;
