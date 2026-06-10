@@ -187,7 +187,7 @@ const Admin = () => {
   const [isSavingSummarySettings, setIsSavingSummarySettings] = useState(false);
   const [newSectionKey, setNewSectionKey] = useState("");
   const [summaryMaxTokens, setSummaryMaxTokens] = useState(3000);
-  const [aiModel, setAiModel] = useState("google/gemini-2.5-flash");
+  // AI 분석 모델은 고정값으로 사용한다.
   const [printSections, setPrintSections] = useState<Record<string, boolean>>(DEFAULT_PRINT_SECTIONS);
   const [isSavingPrintSettings, setIsSavingPrintSettings] = useState(false);
   const [newAdminPassword, setNewAdminPassword] = useState("");
@@ -261,9 +261,6 @@ const Admin = () => {
         if (settingsResult.settings?.summary_max_tokens) {
           const v = parseInt(settingsResult.settings.summary_max_tokens, 10);
           if (!isNaN(v)) setSummaryMaxTokens(v);
-        }
-        if (settingsResult.settings?.ai_model) {
-          setAiModel(settingsResult.settings.ai_model);
         }
         if (settingsResult.settings?.score_settings) {
           try { setScoreConfig({ ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settingsResult.settings.score_settings) }); } catch {}
