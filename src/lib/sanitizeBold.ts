@@ -82,6 +82,9 @@ const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|
 // 구절 '중간'에 등장하는 연결 용언/어미 — 문장형 오버매칭 차단용
 const VERB_MIDPHRASE_RE = /(?:제공하며|활발해지며|대응한|어렵다는|해결하고|확보하고|있으며|위한|통해|기반으로|따라)/;
 
+// 문장형 구절 강화 차단: 관형형 어미, 목적격 조사, 동사성 명사 마감 패턴
+const INVALID_SENTENCE_RE = /(?:제공하며|활발해지며|대응한|어렵다는|해결하고|확보하고|있으며|위한|통해|기반으로|따라|조절하는|있는|하는|되는|된|할|시킨)\s+|(?:\S+를|\S+만을|\S+과정을)\s+|\s+(?:억제|활용|구현|제시|방지|유지|촉진|해결)$/;
+
 // 연결명사구의 마지막 토큰으로 허용되는 명사 어미 — 기술 핵심·특장점 시사어 포함
 const COMPOUND_TAIL_NOUNS = [
   "기술", "체인", "문제", "시스템", "전략", "모델", "구조", "관리", "분석",
@@ -191,6 +194,8 @@ function highlightSentence(
     // 문장형 오버매칭 차단: 띄어쓰기 2개 이상 + 중간에 연결 용언/어미 포함 시 거부
     const spaceCount = (trimmedRaw.match(/\s/g) || []).length;
     if (spaceCount >= 2 && VERB_MIDPHRASE_RE.test(trimmedRaw)) return false;
+    // 강화된 문장형 구절 차단 — 관형형 어미/목적격 조사/동사성 마감
+    if (INVALID_SENTENCE_RE.test(trimmedRaw)) return false;
     // 어절 경계 보호: 매치 시작 직전이 한글이면 어절 중간 시작 → 거부
     const firstCh = trimmedRaw.charAt(0);
     const beforeCh = start > 0 ? sentence.charAt(start - 1) : "";
