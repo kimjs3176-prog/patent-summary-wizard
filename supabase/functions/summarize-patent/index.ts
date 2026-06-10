@@ -94,12 +94,11 @@ async function callAISummaryCompletions(
     method: "POST",
     signal: init.signal,
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Lovable-API-Key": LOVABLE_API_KEY ?? "",
       "X-Lovable-AIG-SDK": "edge-fetch",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ ...payload, model: "google/gemini-2.5-flash" }),
+    body: JSON.stringify(payload),
   });
 }
 
