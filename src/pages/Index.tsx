@@ -251,7 +251,30 @@ const Index = () => {
               </div>
             </div>
             <section className="mb-8">
-              <TossPatentSummary content={summary} patentNumber={currentPatent} isStreaming={isLoading} patentData={patentData} relatedPatents={relatedPatents} onRelatedPatentClick={handleSubmit} onKeywordClick={handleKeywordTagClick} onScoreReady={handleScoreReady} featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }} />
+              <TossPatentSummary
+                content={summary}
+                patentNumber={currentPatent}
+                isStreaming={isLoading}
+                patentData={patentData}
+                relatedPatents={relatedPatents}
+                onRelatedPatentClick={handleSubmit}
+                onKeywordClick={handleKeywordTagClick}
+                onScoreReady={handleScoreReady}
+                onRegenerate={async () => {
+                  if (!currentPatent) return;
+                  toast.info("요약서를 새로 생성합니다...");
+                  const result = await generateSummary(currentPatent, { forceRegenerate: true });
+                  if (result && result.patentData) {
+                    addToHistory({
+                      patentNumber: currentPatent,
+                      patentData: result.patentData,
+                      summary: result.summary,
+                      relatedPatents: result.relatedPatents || [],
+                    });
+                  }
+                }}
+                featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }}
+              />
             </section>
           </div>
         )}

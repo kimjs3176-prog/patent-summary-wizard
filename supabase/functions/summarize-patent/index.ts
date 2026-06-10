@@ -188,7 +188,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { patentNumber, patentData } = body;
+    const { patentNumber, patentData, forceRegenerate } = body;
 
     if (!patentNumber || typeof patentNumber !== "string") {
       return new Response(
@@ -198,7 +198,7 @@ serve(async (req) => {
     }
 
     const trimmedPatent = patentNumber.trim();
-    if (trimmedPatent.length > 50 || !/^[0-9-]+$/.test(trimmedPatent)) {
+    if (trimmedPatent.length > 50 || !/^[0-9A-Za-z가-힣\-\s제호]+$/.test(trimmedPatent)) {
       return new Response(
         JSON.stringify({ error: "유효하지 않은 특허 번호 형식입니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -245,18 +245,33 @@ serve(async (req) => {
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
+    const SUMMARY_CACHE_VERSION = "v2";
+
+    // ★ 강제 재생성: 캐시 즉시 삭제
+    if (forceRegenerate) {
+      try {
+        const supabase = getSupabaseClient();
+        await supabase
+          .from("patent_ai_cache")
+          .delete()
+          .eq("patent_number", trimmedPatent);
+        console.log(`[CACHE CLEARED] ${trimmedPatent} (forceRegenerate)`);
+      } catch (e) {
+        console.error("Cache clear error:", e);
+      }
+    }
 
     // Check cache first, scoped to settings that affect generated content.
-    try {
+    if (!forceRegenerate) try {
       const supabase = getSupabaseClient();
       const { data: cached } = await supabase
         .from("patent_ai_cache")
-        .select("summary_content")
+        .select("summary_content, cache_version")
         .eq("patent_number", trimmedPatent)
         .eq("analysis_mode", summaryAnalysisMode)
         .maybeSingle();
 
-      if (cached?.summary_content) {
+      if (cached?.summary_content && (cached.cache_version || "v1") === SUMMARY_CACHE_VERSION) {
         console.log(`[CACHE HIT] ${trimmedPatent}`);
         const content = cached.summary_content;
         const encoder = new TextEncoder();
@@ -277,6 +292,13 @@ serve(async (req) => {
         return new Response(stream, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
+      } else if (cached) {
+        console.log(`[CACHE STALE] ${trimmedPatent} version=${cached.cache_version} — regenerating`);
+        await supabase
+          .from("patent_ai_cache")
+          .delete()
+          .eq("patent_number", trimmedPatent)
+          .eq("analysis_mode", summaryAnalysisMode);
       }
     } catch (cacheErr) {
       console.error("Cache read error (continuing without cache):", cacheErr);
@@ -503,6 +525,7 @@ serve(async (req) => {
                 patent_number: trimmedPatent,
                 analysis_mode: summaryAnalysisMode,
                 summary_content: fullContent,
+                cache_version: SUMMARY_CACHE_VERSION,
               }, { onConflict: "patent_number,analysis_mode" });
               console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
             } catch (saveErr) {

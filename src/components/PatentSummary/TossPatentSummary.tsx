@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Sparkles, Share2, Loader2, Lightbulb, TrendingUp, Leaf, Rocket, FileText, Mail,
-  QrCode, X, Copy, Check, Heart, ExternalLink, Printer, Link2,
+  QrCode, X, Copy, Check, Heart, ExternalLink, Printer, Link2, RefreshCw,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
   onScoreReady?: (score: number) => void;
+  onRegenerate?: () => void;
 }
 
 const SOFT = "#F2F4F6";
@@ -763,6 +764,7 @@ export function TossPatentSummary({
   onRelatedPatentClick,
   onKeywordClick,
   onScoreReady,
+  onRegenerate,
   featureFlags = { pdfEnabled: true, pptEnabled: true },
 }: TossPatentSummaryProps) {
   const { settings } = useSiteSettings();
@@ -908,6 +910,21 @@ export function TossPatentSummary({
             <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
               <Printer className="w-3.5 h-3.5" /> 인쇄
             </Button>
+            {onRegenerate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (window.confirm("기존 요약서 캐시를 삭제하고 새로 생성합니다. 진행할까요?")) {
+                    onRegenerate();
+                  }
+                }}
+                className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]"
+                title="요약서를 새로 생성합니다"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> 재생성
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={() => setShareOpen(true)} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
               <Share2 className="w-3.5 h-3.5" /> 공유
             </Button>

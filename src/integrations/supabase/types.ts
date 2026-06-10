@@ -119,6 +119,7 @@ export type Database = {
       patent_ai_cache: {
         Row: {
           analysis_mode: string
+          cache_version: string
           created_at: string
           id: string
           patent_number: string
@@ -126,6 +127,7 @@ export type Database = {
         }
         Insert: {
           analysis_mode?: string
+          cache_version?: string
           created_at?: string
           id?: string
           patent_number: string
@@ -133,6 +135,7 @@ export type Database = {
         }
         Update: {
           analysis_mode?: string
+          cache_version?: string
           created_at?: string
           id?: string
           patent_number?: string
@@ -142,6 +145,7 @@ export type Database = {
       }
       patent_data_cache: {
         Row: {
+          cache_version: string
           created_at: string
           id: string
           patent_data: Json
@@ -149,6 +153,7 @@ export type Database = {
           related_patents: Json
         }
         Insert: {
+          cache_version?: string
           created_at?: string
           id?: string
           patent_data?: Json
@@ -156,6 +161,7 @@ export type Database = {
           related_patents?: Json
         }
         Update: {
+          cache_version?: string
           created_at?: string
           id?: string
           patent_data?: Json
