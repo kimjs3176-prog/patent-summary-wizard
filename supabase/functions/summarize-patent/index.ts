@@ -95,9 +95,11 @@ async function callAISummaryCompletions(
     signal: init.signal,
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Lovable-API-Key": LOVABLE_API_KEY ?? "",
+      "X-Lovable-AIG-SDK": "edge-fetch",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, model: "google/gemini-3-flash-preview" }),
   });
 }
 
@@ -279,7 +281,7 @@ serve(async (req) => {
     if (patentData) {
       const data = patentData as PatentData;
       const parts: string[] = [];
-      parts.push(`번호: ${data.patentNumber || patentNumber}`);
+      parts.push(`번호: ${data.patentNumber || data.applicationNumber || patentNumber}`);
       if (data.title) parts.push(`명칭: ${data.title}`);
       if (data.assignee) parts.push(`출원인: ${data.assignee}`);
       if (data.filingDate) parts.push(`출원일: ${data.filingDate}`);
@@ -290,10 +292,10 @@ serve(async (req) => {
         patentContext += `\n\n초록:\n${data.abstract.substring(0, 750)}`;
       }
       if (data.claims?.length) {
-        patentContext += `\n\n청구항:\n${data.claims.slice(0, 3).map((c, i) => `${i + 1}. ${c.substring(0, 300)}`).join("\n")}`;
+        patentContext += `\n\n청구항:\n${data.claims.slice(0, 8).map((c, i) => `${i + 1}. ${c.substring(0, 700)}`).join("\n")}`;
       }
       if (data.description) {
-        patentContext += `\n\n설명(일부):\n${data.description.substring(0, 500)}`;
+        patentContext += `\n\n설명(일부):\n${data.description.substring(0, 1200)}`;
       }
     }
 
@@ -406,7 +408,7 @@ serve(async (req) => {
 기술적 깊이와 실용적 인사이트를 균형있게 포함.${lengthInstruction}${sectionLengthInstruction}${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
 
     const userMessage = patentData
-      ? `분석:\n${patentContext}`
+      ? `아래 실제 특허 데이터만 근거로 요약서를 작성한다. 테스트 데이터로 간주하거나 특허 기본 정보 섹션을 만들지 말고, 반드시 ## 기술분야 / ## 발명요약 및 특징 / ## 관련시장 동향 / ## 농산업활용 가능성 / ## 상용화전망 5개 섹션만 출력한다.\n\n${patentContext}`
       : `특허 ${patentNumber} 요약서 작성.`;
 
     // 60s timeout to start streaming; once streaming starts the body is read by reader
