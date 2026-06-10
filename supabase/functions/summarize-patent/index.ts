@@ -215,14 +215,15 @@ serve(async (req) => {
     // Read custom prompt additions, total max tokens, model, and per-section length settings.
     let customPromptExtra = "";
     let maxTokens = 12000;
-    let aiModel = "google/gemini-2.5-flash";
+    // 분석 모델은 가격/성능 균형이 가장 우수한 Gemini 3 Flash Preview로 고정한다.
+    const aiModel = "google/gemini-3-flash-preview";
     let sectionLengthSettings: Record<string, number> = {};
     try {
       const supabase = getSupabaseClient();
       const { data: settings } = await supabase
         .from("site_settings")
         .select("key, value")
-        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens", "ai_model", "summary_section_lengths"]);
+        .in("key", ["summary_ai_prompt_extra", "summary_max_tokens", "summary_section_lengths"]);
       if (settings) {
         for (const row of settings) {
           if (row.key === "summary_ai_prompt_extra" && row.value) customPromptExtra = row.value;
@@ -230,7 +231,6 @@ serve(async (req) => {
             const parsed = parseInt(row.value, 10);
             if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = Math.max(parsed, 8000);
           }
-          if (row.key === "ai_model" && row.value) aiModel = row.value;
           if (row.key === "summary_section_lengths" && row.value) {
             try {
               const parsed = JSON.parse(row.value);
@@ -252,7 +252,7 @@ serve(async (req) => {
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
-    const SUMMARY_CACHE_VERSION = "v7";
+    const SUMMARY_CACHE_VERSION = "v8";
 
     // ★ 강제 재생성: 캐시 즉시 삭제
     if (forceRegenerate) {
