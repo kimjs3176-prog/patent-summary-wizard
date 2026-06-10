@@ -85,6 +85,24 @@ export const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
   { type: "concept",     regex: /([가-힣]{2,8}(?:히|이)?\s*하는\s+[가-힣A-Za-z0-9]{2,10}\s+(?:모델|체계|구조|전략|솔루션))/g },
   // "X 위험 / X 한계 / X 구조 / X 모델" 등 단일명사 강조가 어색하므로, 앞의 수식어를 포함하여 통째로 강조.
   { type: "concept",     regex: /([가-힣A-Za-z0-9]{2,10}(?:\s+[가-힣A-Za-z0-9]{2,10}){1,3}\s+(?:위험|한계|구조|모델|체계|시장|생태계|기반|공정|회수율|효능|치료제|소비\s*구조|수익\s*구조|공급\s*모델|원료\s*공급|추출\s*공정))/g },
+  // -------------------------------------------------------------------------
+  // 사용자 정의 규칙 (특허 명세서 요약 6대 카테고리)
+  // 1) 기술 핵심 개념: "SNP 마커 기술", "분자마커 기반 선발 기술", "HRM 분석법"
+  { type: "concept",     regex: /((?:[A-Z]{2,6}|[가-힣A-Za-z0-9]{2,12})(?:\s+[가-힣A-Za-z0-9]{1,10}){0,2}\s+(?:마커\s*기술|분석법|분석\s*기술|선발\s*기술|예측\s*방법|예측\s*모델|진단\s*키트|육종\s*시스템|선발\s*시스템|프라이머\s*세트|평가\s*기법|판별\s*기법|검출\s*기법|판별\s*기술|검출\s*기술|기반\s*기술))/g },
+  // 2) 해결 문제: "수개월의 검증 기간", "대규모 노동력 소요", "병 저항성 판별의 어려움"
+  { type: "problem",     regex: /(수개월(?:의)?\s*[가-힣]{2,8}\s*기간)/g },
+  { type: "problem",     regex: /(대규모\s*[가-힣]{2,8}(?:\s*소요|\s*투입|\s*필요))/g },
+  { type: "problem",     regex: /([가-힣A-Za-z0-9]{2,10}(?:\s+[가-힣A-Za-z0-9]{2,10}){0,2}\s*판별(?:의)?\s*(?:어려움|난점|한계))/g },
+  // 3) 핵심 해결 수단: "12개 SNP 마커", "유전자형 예측 방법", "비교유전체 분석 기술"
+  { type: "solution",    regex: /(\d+개\s*(?:SNP|InDel|SSR|CAPS|[A-Z]{2,6})?\s*마커)/g },
+  { type: "solution",    regex: /(전용\s*프라이머\s*세트)/g },
+  // 4) 정량 정보 보강: "1~12번 서열번호", "수백 개 샘플 동시 분석"
+  { type: "metric",      regex: /(\d+\s*[~∼–\-]\s*\d+\s*번\s*서열번호)/g },
+  { type: "metric",      regex: /(수[백천만]\s*개?\s*(?:샘플|마커|품종|개체|유전자)(?:\s*동시\s*분석)?)/g },
+  // 5) 주요 효과: "분석 시간 단축", "육종 효율 향상", "정확도 향상", "재현성 확보", "현장 적용성 증대"
+  { type: "solution",    regex: /([가-힣A-Za-z0-9]{2,8}\s*(?:시간|효율|정확도|민감도|특이도|재현성|적용성|생산성|수율|안정성|신뢰성|완성도|편의성)\s*(?:단축|향상|확보|증대|개선|제고|상승))/g },
+  // 6) 활용 분야: "종자 육종 기업", "분자진단 키트", "농업 바이오 산업", "품종 선발 시스템"
+  { type: "concept",     regex: /([가-힣A-Za-z0-9]{2,10}(?:\s+[가-힣A-Za-z0-9]{2,10}){0,2}\s+(?:육종\s*기업|진단\s*키트|바이오\s*산업|선발\s*시스템|관리\s*시스템|진단\s*시장|육종\s*산업|종자\s*시장|식품\s*산업))/g },
 ];
 
 interface HLMatch { start: number; end: number; type: HLType; text: string; weight?: number; }
@@ -233,7 +251,93 @@ export function collectMatches(text: string): HLMatch[] {
     filtered.push(m);
     cursor = m.end;
   }
-  return filtered;
+  return applyDensityCaps(filtered, text);
+}
+
+// 우선순위(낮을수록 우선): 정량(metric/money/compare) > 차별성(superlative) >
+// 핵심개념(concept) > 해결수단(solution) > 문제(problem) > 인용(quote)
+const TYPE_PRIORITY: Record<HLType, number> = {
+  metric: 1, money: 1, compare: 1,
+  superlative: 2,
+  concept: 3,
+  solution: 4,
+  problem: 5,
+  quote: 6,
+};
+
+/**
+ * 사용자 정의 강조 비율 규칙:
+ *  - 한 문장 내 최대 2개
+ *  - 인접 문장을 연속으로 Bold 처리하지 않음 (직전 문장이 Bold면 다음 문장 스킵)
+ *  - 전체 텍스트의 15%를 초과하지 않음
+ *  - 충돌 시 우선순위(TYPE_PRIORITY)로 선택
+ */
+function applyDensityCaps(matches: HLMatch[], text: string): HLMatch[] {
+  if (matches.length === 0) return matches;
+  // 문장 경계 인덱스 사전 계산
+  const breaks: number[] = [0];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    // .  !  ?  。  ．  ！  ？  \n
+    if (ch === 46 || ch === 33 || ch === 63 || ch === 0x3002 || ch === 0xFF0E || ch === 0xFF01 || ch === 0xFF1F || ch === 10) {
+      breaks.push(i + 1);
+    }
+  }
+  if (breaks[breaks.length - 1] !== text.length) breaks.push(text.length);
+  const sentenceOf = (pos: number) => {
+    // breaks[i] = sentence i 시작 위치. 마지막 항목은 text.length.
+    let lo = 0, hi = breaks.length - 1;
+    while (lo < hi - 1) {
+      const mid = (lo + hi) >> 1;
+      if (breaks[mid] <= pos) lo = mid; else hi = mid;
+    }
+    return lo;
+  };
+
+  // 문장별로 후보 그룹화
+  const groups = new Map<number, HLMatch[]>();
+  for (const m of matches) {
+    const idx = sentenceOf(m.start);
+    if (!groups.has(idx)) groups.set(idx, []);
+    groups.get(idx)!.push(m);
+  }
+
+  const maxBoldedChars = Math.floor(text.length * 0.15);
+  const final: HLMatch[] = [];
+  let boldedChars = 0;
+  let lastBoldedSentence = -2;
+  const sortedIdx = Array.from(groups.keys()).sort((a, b) => a - b);
+
+  for (const sIdx of sortedIdx) {
+    // 인접 문장 연속 강조 금지 — 단, 직전 문장과 1칸 차이일 때만 스킵
+    if (sIdx === lastBoldedSentence + 1) continue;
+    const cands = groups.get(sIdx)!.slice().sort((a, b) => {
+      const pa = TYPE_PRIORITY[a.type] ?? 9;
+      const pb = TYPE_PRIORITY[b.type] ?? 9;
+      if (pa !== pb) return pa - pb;
+      // 같은 우선순위 → 더 긴 의미 단위 우선
+      return (b.end - b.start) - (a.end - a.start);
+    });
+    let picked = 0;
+    const pickedRanges: HLMatch[] = [];
+    for (const c of cands) {
+      if (picked >= 2) break;
+      // 같은 문장 내 위치 겹침 방지
+      if (pickedRanges.some((p) => c.start < p.end && c.end > p.start)) continue;
+      // 15% 총량 캡
+      if (boldedChars + (c.end - c.start) > maxBoldedChars) continue;
+      pickedRanges.push(c);
+      picked++;
+      boldedChars += c.end - c.start;
+    }
+    if (pickedRanges.length > 0) {
+      // 원위치 순서로 다시 정렬해 푸시
+      pickedRanges.sort((a, b) => a.start - b.start);
+      final.push(...pickedRanges);
+      lastBoldedSentence = sIdx;
+    }
+  }
+  return final;
 }
 
 export function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] {
