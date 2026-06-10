@@ -402,164 +402,103 @@ serve(async (req) => {
       ? `아래 실제 특허 데이터만 근거로 요약서를 작성한다. 테스트 데이터로 간주하거나 특허 기본 정보 섹션을 만들지 말고, 반드시 ## 기술분야 / ## 발명요약 및 특징 / ## 관련시장 동향 / ## 농산업활용 가능성 / ## 상용화전망 5개 섹션만 출력한다.\n\n${patentContext}`
       : `특허 ${patentNumber} 요약서 작성.`;
 
-    // 60s timeout to start streaming; once streaming starts the body is read by reader
-    const aiCtrl = new AbortController();
-    const aiTimer = setTimeout(() => aiCtrl.abort(), 60000);
-    let response: Response;
-    try {
-      response = await callAISummaryCompletions(
-        {
-          model: aiModel,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-          stream: true,
-          max_tokens: maxTokens,
-        },
-        { signal: aiCtrl.signal },
-      );
-    } finally {
-      clearTimeout(aiTimer);
-    }
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "서비스 크레딧이 부족합니다." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
-      return new Response(
-        JSON.stringify({ error: "AI 서비스 오류가 발생했습니다." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Intercept stream to collect full content for caching
-    const reader = response.body!.getReader();
-    const decoder = new TextDecoder();
-    let fullContent = "";
-    let sseBuffer = ""; // Buffer to handle SSE lines split across chunks
-    let finishReason: string | null = null;
-
     const encoder = new TextEncoder();
-    const saveCache = async () => {
-      if (!fullContent) return;
-      // Only cache if upstream signaled a clean stop. null/undefined finish_reason
-      // means the stream was cut mid-flight (network/abort) — never cache that.
-      if (finishReason !== "stop") {
-        console.warn(`[TRUNCATED] ${trimmedPatent} finish_reason=${finishReason ?? "null"} chars=${fullContent.length} maxTokens=${maxTokens} — skipping cache save so it regenerates next time`);
-        return;
+    const emitText = (controller: ReadableStreamDefaultController<Uint8Array>, content: string) => {
+      const chunkSize = 90;
+      for (let i = 0; i < content.length; i += chunkSize) {
+        const chunk = content.slice(i, i + chunkSize);
+        const sseData = JSON.stringify({ choices: [{ delta: { content: chunk } }] });
+        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
       }
-      // Sanity check: a complete summary must include all 5 sections. If not, treat as truncated.
+    };
+    const isCompleteSummary = (content: string) => {
       const requiredSections = ["## 기술분야", "## 발명요약", "## 관련시장 동향", "## 농산업활용", "## 상용화전망"];
-      const missing = requiredSections.filter((s) => !fullContent.includes(s));
-      if (missing.length > 0) {
-        console.warn(`[INCOMPLETE] ${trimmedPatent} missing sections=${missing.join(",")} — skipping cache save`);
-        return;
-      }
+      const missing = requiredSections.filter((s) => !content.includes(s));
+      if (missing.length > 0) console.warn(`[INCOMPLETE] ${trimmedPatent} missing sections=${missing.join(",")}`);
+      return missing.length === 0;
+    };
+    const saveCache = async (content: string) => {
+      if (!content || !isCompleteSummary(content)) return;
       try {
         const supabase = getSupabaseClient();
         await supabase.from("patent_ai_cache").upsert({
           patent_number: trimmedPatent,
           analysis_mode: summaryAnalysisMode,
-          summary_content: fullContent,
+          summary_content: content,
           cache_version: SUMMARY_CACHE_VERSION,
         }, { onConflict: "patent_number,analysis_mode" });
-        console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
+        console.log(`[CACHE SAVED] ${trimmedPatent} (${content.length} chars)`);
       } catch (saveErr) {
         console.error("Cache save error:", saveErr);
       }
     };
 
-    const emitMarketFallbackIfNeeded = (controller: ReadableStreamDefaultController<Uint8Array>) => {
-      if (!hasRequiredMarketFigures(fullContent)) {
-        const appended = `\n\n## 관련시장 동향\n${buildMarketFallback(pd as PatentData)}\n`;
-        fullContent = `${fullContent.trimEnd()}${appended}`;
-        const sseData = JSON.stringify({ choices: [{ delta: { content: appended } }] });
-        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-        console.warn(`[MARKET FALLBACK] appended required market figures for ${trimmedPatent}`);
-      }
-    };
-
     const stream = new ReadableStream<Uint8Array>({
-      // 30s 무응답 타임아웃: 업스트림이 chunk를 멈춘 채 idle하면 끊어 클라이언트 재시도 유도
-      async pull(controller) {
+      async start(controller) {
+        const keepAlive = setInterval(() => {
+          try { controller.enqueue(encoder.encode(": keepalive\n\n")); } catch { /* stream may be closed */ }
+        }, 10000);
+        const aiCtrl = new AbortController();
+        const aiTimer = setTimeout(() => aiCtrl.abort(), 150000);
         try {
-          const IDLE_MS = 30000;
-          const idlePromise = new Promise<{ done: true; value: undefined; __idle: true }>((resolve) =>
-            setTimeout(() => resolve({ done: true, value: undefined, __idle: true } as any), IDLE_MS)
+          const response = await callAISummaryCompletions(
+            {
+              model: aiModel,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage },
+              ],
+              stream: false,
+              max_tokens: maxTokens,
+            },
+            { signal: aiCtrl.signal },
           );
-          const result: any = await Promise.race([reader.read(), idlePromise]);
-          if (result.__idle) {
-            console.warn(`[STREAM IDLE] ${trimmedPatent} no chunk for ${IDLE_MS}ms (chars=${fullContent.length})`);
-            try { await reader.cancel("idle-timeout"); } catch { /* ignore */ }
-            const errMsg = JSON.stringify({ error: "stream_truncated", message: "응답이 정체되어 중단되었습니다. 자동 재시도합니다." });
-            controller.enqueue(encoder.encode(`data: ${errMsg}\n\n`));
+
+          if (!response.ok) {
+            const text = await response.text().catch(() => "");
+            console.error("AI gateway error:", response.status, text);
+            const message = response.status === 429
+              ? "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."
+              : response.status === 402
+                ? "서비스 크레딧이 부족합니다."
+                : "AI 서비스 오류가 발생했습니다.";
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "ai_error", message })}\n\n`));
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             controller.close();
-            return;
-          }
-          const { done, value } = result;
-          if (done) {
-            // Upstream closed. If finish_reason wasn't "stop", treat as network truncation.
-            if (finishReason === "stop") {
-              emitMarketFallbackIfNeeded(controller);
-            } else {
-              console.warn(`[STREAM CUT] ${trimmedPatent} upstream closed without finish_reason=stop (got=${finishReason ?? "null"}, chars=${fullContent.length})`);
-              const errMsg = JSON.stringify({ error: "stream_truncated", message: "업스트림 응답이 중단되었습니다. 자동 재시도합니다." });
-              controller.enqueue(encoder.encode(`data: ${errMsg}\n\n`));
-            }
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            controller.close();
-            await saveCache();
             return;
           }
 
-          sseBuffer += decoder.decode(value, { stream: true });
-          let newlineIndex: number;
-          while ((newlineIndex = sseBuffer.indexOf("\n")) !== -1) {
-            const line = sseBuffer.slice(0, newlineIndex).replace(/\r$/, "");
-            sseBuffer = sseBuffer.slice(newlineIndex + 1);
-            if (!line.trim()) continue;
-            if (!line.startsWith("data: ")) continue;
-            const payload = line.slice(6).trim();
-            if (payload === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(payload);
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) fullContent += content;
-              const fr = parsed.choices?.[0]?.finish_reason;
-              if (fr) finishReason = fr;
-              controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
-            } catch {
-              sseBuffer = line + "\n" + sseBuffer;
-              break;
-            }
+          const result = await response.json();
+          const finishReason = result?.choices?.[0]?.finish_reason ?? null;
+          let fullContent = String(result?.choices?.[0]?.message?.content || "").trim();
+          console.log(`[AI COMPLETE] ${trimmedPatent} finish=${finishReason ?? "null"} chars=${fullContent.length}`);
+
+          if (!fullContent || fullContent.length < 200) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "empty_response", message: "AI 응답이 비어 있습니다. 자동 재시도합니다." })}\n\n`));
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+            return;
           }
+
+          fullContent = ensureMarketFigures(fullContent, pd as PatentData);
+          emitText(controller, fullContent);
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+          await saveCache(fullContent);
         } catch (err) {
-          // Upstream read failed (abort / network). Do NOT save partial cache.
-          console.error(`[STREAM ERROR] ${trimmedPatent}`, err);
+          console.error(`[SUMMARY COMPLETE ERROR] ${trimmedPatent}`, err);
           try {
-            const errMsg = JSON.stringify({ error: "stream_error", message: String(err) });
-            controller.enqueue(encoder.encode(`data: ${errMsg}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "stream_error", message: "요약 생성 중 오류가 발생했습니다. 자동 재시도합니다." })}\n\n`));
             controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           } catch { /* controller may be closed */ }
           try { controller.close(); } catch { /* ignore */ }
+        } finally {
+          clearInterval(keepAlive);
+          clearTimeout(aiTimer);
         }
       },
       cancel(reason) {
-        console.warn(`[STREAM CANCELLED] ${trimmedPatent} reason=${reason}`);
-        try { reader.cancel(reason); } catch { /* ignore */ }
+        console.warn(`[SUMMARY STREAM CANCELLED] ${trimmedPatent} reason=${reason}`);
       },
     });
 
