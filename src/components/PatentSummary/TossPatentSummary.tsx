@@ -414,10 +414,20 @@ function parseSections(md: string): MdSection[] {
   }
   flush();
   if (cur) sections.push(cur);
-  return sections.filter(s =>
+  const parsed = sections.filter(s =>
     !/특허\s*기본\s*정보/i.test(s.title) &&
     (s.paragraphs.length > 0 || (s.footnotes && s.footnotes.length > 0))
   );
+  if (parsed.length > 0) return parsed;
+
+  const fallback = md
+    .replace(/\*\*/g, "")
+    .split("\n")
+    .map((line) => line.replace(/^#{1,6}\s+/, "").replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "").trim())
+    .filter(Boolean)
+    .filter((line) => !/^[-–—]{3,}$/.test(line))
+    .filter((line) => !/^특허\s*기본\s*정보$/i.test(line));
+  return fallback.length > 0 ? [{ title: "AI 요약", paragraphs: fallback, footnotes: [] }] : [];
 }
 
 
