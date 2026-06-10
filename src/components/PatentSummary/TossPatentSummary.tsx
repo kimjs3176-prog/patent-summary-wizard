@@ -17,7 +17,9 @@ import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
-import { renderBold, highlightImportant } from "./_highlight";
+import { renderBold, highlightImportant, setRuntimeHighlightRules } from "./_highlight";
+import { HighlightProposer } from "./HighlightProposer";
+import { useHighlightRules } from "@/hooks/useHighlightRules";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
