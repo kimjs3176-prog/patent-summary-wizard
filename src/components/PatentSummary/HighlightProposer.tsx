@@ -28,36 +28,27 @@ export function HighlightProposer({ containerRef, patentNumber }: HighlightPropo
   const popRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleMouseUp = (e: MouseEvent) => {
-      // 팝오버 내부 클릭은 무시
-      if (popRef.current && popRef.current.contains(e.target as Node)) return;
-
+    // 문서 레벨에서 듣고 컨테이너 내부 선택만 처리한다.
+    // (컨테이너 mouseup은 중간 요소의 stopPropagation 등으로 막힐 수 있음)
+    const evaluate = () => {
+      const container = containerRef.current;
+      if (!container) return;
       const sel = window.getSelection();
-      if (!sel || sel.isCollapsed) { setPopover(null); return; }
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) { setPopover(null); return; }
       const text = sel.toString().trim();
       if (text.length < 2 || text.length > 200) { setPopover(null); return; }
-
       const range = sel.getRangeAt(0);
-      // 컨테이너 외부 선택은 무시
-      if (!container.contains(range.commonAncestorContainer)) {
-        setPopover(null);
-        return;
-      }
+      const anchor = range.commonAncestorContainer;
+      const anchorEl = anchor.nodeType === 1 ? (anchor as Element) : anchor.parentElement;
+      if (!anchorEl || !container.contains(anchorEl)) { return; }
       const rect = range.getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) return;
-
-      // 주변 문맥(앞뒤 60자) 추출
-      const parentText = (range.commonAncestorContainer.textContent ?? "");
+      const parentText = (anchor.textContent ?? "");
       const idx = parentText.indexOf(text);
       const ctx = idx >= 0
         ? parentText.slice(Math.max(0, idx - 60), Math.min(parentText.length, idx + text.length + 60))
         : text;
-
       setPopover({
-        // position: fixed 기준이므로 viewport 좌표(getBoundingClientRect) 그대로 사용
         x: rect.left + rect.width / 2,
         y: rect.top - 8,
         text,
@@ -65,20 +56,26 @@ export function HighlightProposer({ containerRef, patentNumber }: HighlightPropo
       });
     };
 
-    const handleScroll = () => setPopover(null);
-    const handleClickAway = (e: MouseEvent) => {
+    const handlePointerUp = (e: PointerEvent | MouseEvent) => {
       if (popRef.current && popRef.current.contains(e.target as Node)) return;
+      // 선택 확정까지 한 프레임 대기
+      requestAnimationFrame(evaluate);
+    };
+    const handleScroll = () => setPopover(null);
+    const handleSelectionChange = () => {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed) setPopover(null);
     };
 
-    container.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mouseup", handlePointerUp);
+    document.addEventListener("touchend", handlePointerUp as EventListener);
+    document.addEventListener("selectionchange", handleSelectionChange);
     window.addEventListener("scroll", handleScroll, true);
-    document.addEventListener("mousedown", handleClickAway);
     return () => {
-      container.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseup", handlePointerUp);
+      document.removeEventListener("touchend", handlePointerUp as EventListener);
+      document.removeEventListener("selectionchange", handleSelectionChange);
       window.removeEventListener("scroll", handleScroll, true);
-      document.removeEventListener("mousedown", handleClickAway);
     };
   }, [containerRef]);
 
