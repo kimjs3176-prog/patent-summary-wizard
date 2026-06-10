@@ -45,11 +45,20 @@ export const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
   { type: "solution",    regex: /([가-힣A-Za-z0-9()·\s]{2,28}(?:자동\s*탐지|원격\s*탐색|실시간\s*분석|위치\s*파악|경로\s*자동\s*생성|다각도\s*영상\s*촬영|피해\s*예방|안전\s*확보|방제\s*계획\s*수립))/g },
   { type: "solution",    regex: /([가-힣A-Za-z0-9()·\s]{2,24}(?:을|를)\s*(?:조기\s*탐지|자동\s*탐지|원격\s*탐색|실시간\s*분석|정확하게\s*파악|신속하게\s*공유|효율적으로\s*방제|획기적으로\s*개선|예방|확보|최적화|강화|극대화))/g },
   { type: "problem",     regex: /(?:^|[\s,.;:()「『"])([가-힣]{2,8}(?:의)?\s*(?:문제점?|한계점?|어려움|단점|취약점|결함|리스크))/g },
-  { type: "solution",    regex: /(?:^|[\s,.;:()「『"])([가-힣]{2,8}(?:을|를|이|가)\s*(?:해결|극복|개선|달성|확보|구현|실현|돌파|상용화|국산화|대체|강화|향상|극대화|최적화|증대|확대|단축|절감))/g },
+  // 의미 있는 "X을/를 + 동사" 구만 강조 (이/가 주어구는 동사와의 의미 결합이 약해 제외).
+  { type: "solution",    regex: /(?:^|[\s,.;:()「『"])([가-힣]{2,8}(?:을|를)\s*(?:해결|극복|개선|달성|확보|구현|실현|돌파|상용화|국산화|대체|강화|향상|극대화|최적화|증대|확대|단축|절감))/g },
   { type: "solution",    regex: /([가-힣]{2,10}(?:화|성)된\s*(?:기술|시스템|공법|방식|구조|솔루션))/g },
 ];
 
 interface HLMatch { start: number; end: number; type: HLType; text: string; }
+
+// 의미가 약한 디스코스 마커/필러 — 강조 대상에서 제외.
+const FILLER_RE = /^(?:현재\s*)?(?:본\s*)?(?:기술|발명|특허|연구|논문|장치|시스템|모델|구조|방식|방법|단계|분야|영역|구성|형태|형식)$/;
+const DISCOURSE_PREFIX_RE = /^(?:현재|향후|기존|결론적으로|종합적으로|전반적으로|단기적으로|중기적으로|장기적으로|특히|또한|그리고|따라서|이는)\s+/;
+
+function trimTrailingParticle(s: string): string {
+  return s.replace(/[\s]*[은는이가을를의에서와과로으로]+$/u, "").trim();
+}
 
 export function collectMatches(text: string): HLMatch[] {
   const all: HLMatch[] = [];
@@ -58,8 +67,16 @@ export function collectMatches(text: string): HLMatch[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
       if (m[0].length === 0) { re.lastIndex++; continue; }
-      const matchedText = (m[1] || m[0]).trim();
-      if (!matchedText || /(통해\s*개발된\s*만큼\s*기술|본\s*기술|농업\s*분야에서\s*본\s*기술)$/.test(matchedText)) continue;
+      const rawMatched = (m[1] || m[0]).trim();
+      // 1) 디스코스 접두어 제거 후 평가 ("결론적으로 본 기술" → "본 기술")
+      const stripped = rawMatched.replace(DISCOURSE_PREFIX_RE, "").trim();
+      // 2) 일반명사 단독/필러는 제외 ("본 기술", "본 발명", "모델", "구조", "기술 이전" 등)
+      if (!stripped || FILLER_RE.test(stripped)) continue;
+      if (/(통해\s*개발된\s*만큼\s*기술|본\s*기술|본\s*발명|본\s*특허|농업\s*분야에서\s*본\s*기술)$/.test(rawMatched)) continue;
+      // 3) 후행 조사가 그대로 매치된 경우 잘라낸다 ("확보가 상용화" → 잘라도 의미 흐려지면 폐기)
+      const matchedText = rawMatched;
+      // 매치 본문이 결국 필러로 끝나면 제외
+      if (FILLER_RE.test(trimTrailingParticle(matchedText))) continue;
       const offset = m[0].indexOf(m[1] || m[0]);
       const start = m.index + Math.max(0, offset);
       all.push({ start, end: start + matchedText.length, type, text: matchedText });
