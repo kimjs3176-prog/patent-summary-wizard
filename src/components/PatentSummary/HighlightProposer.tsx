@@ -57,8 +57,9 @@ export function HighlightProposer({ containerRef, patentNumber }: HighlightPropo
         : text;
 
       setPopover({
-        x: rect.left + rect.width / 2 + window.scrollX,
-        y: rect.top + window.scrollY - 8,
+        // position: fixed 기준이므로 viewport 좌표(getBoundingClientRect) 그대로 사용
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
         text,
         context: ctx,
       });
