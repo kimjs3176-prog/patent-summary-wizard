@@ -397,7 +397,11 @@ export function TossPatentSummary({
 
   const title = patentData?.titleKo || patentData?.title || `특허 ${patentNumber}`;
   const sections = useMemo(() => parseSections(content), [content]);
-  const keywords = useMemo(() => extractKeywordsFromPatent(patentData, 8), [patentData]);
+  // 스트리밍 중에는 매 토큰마다 재계산하지 않도록 완료 후에만 요약서 기반으로 추출
+  const keywords = useMemo(
+    () => extractKeywordsFromPatent(patentData, 8, isStreaming ? undefined : content),
+    [patentData, content, isStreaming],
+  );
 
   const drawings: string[] = useMemo(() => {
     const list: string[] = [];
