@@ -203,12 +203,12 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v9-narrative-no-bullets";
+    const promptVersion = "v10-narrative-length-floor";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
-    const SUMMARY_CACHE_VERSION = "v4";
+    const SUMMARY_CACHE_VERSION = "v5";
 
     // ★ 강제 재생성: 캐시 즉시 삭제
     if (forceRegenerate) {
@@ -299,25 +299,21 @@ serve(async (req) => {
       }
     }
 
-    // 섹션 균일화 정책: 가장 분량이 적은 섹션을 기준으로 모든 섹션을 ±1문장 이내로 맞춤
+    // 섹션 분량 정책: 절대 하한 6문장(약 400~600자) 보장. 너무 짧으면 시장규모·CAGR 등 핵심 데이터가 누락됨.
     const sectionKeys = ["기술분야", "발명요약 및 특징", "관련시장 동향", "농산업활용 가능성", "상용화전망"];
-    const baseTarget = maxTokens <= 2000 ? 3 : maxTokens >= 4000 ? 6 : 5;
-    const minSentences = baseTarget;
-    const maxSentences = baseTarget + 1;
-
-    // 사용자 정의 섹션 길이가 있으면 가장 작은 값을 기준으로 통일
-    let uniformMin = minSentences;
-    let uniformMax = maxSentences;
+    let uniformMin = 6;
+    let uniformMax = 8;
     if (Object.keys(sectionLengthSettings).length) {
       const values = Object.values(sectionLengthSettings).filter((n) => Number.isFinite(n) && n > 0);
       if (values.length) {
-        const smallest = Math.max(2, Math.min(...values));
-        uniformMin = smallest;
-        uniformMax = smallest + 1;
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        // 사용자 설정값 1~10 → 문장 6~10. 절대 하한 6 미만 금지(핵심 데이터 누락 방지).
+        uniformMin = Math.max(6, Math.round(4 + avg * 0.6));
+        uniformMax = uniformMin + 2;
       }
     }
 
-    const lengthInstruction = `\n\n[섹션 균일화 규칙 — 최우선 준수]\n- 모든 ## 섹션은 정확히 ${uniformMin}~${uniformMax}문장으로 작성한다.\n- 가장 분량이 적은 섹션의 길이에 다른 섹션을 맞추며, 어떤 섹션도 다른 섹션보다 1문장 이상 길어서는 안 된다.\n- 특정 섹션에 정보가 많아도 핵심만 압축해서 동일한 분량 범위 내에서 서술한다.\n- 섹션별 글자 수 편차가 30% 이내가 되도록 길이를 조절한다.\n- "관련시장 동향"의 출처 목록(### 출처)은 문장 수 계산에서 제외한다.`;
+    const lengthInstruction = `\n\n[섹션 분량 규칙 — 최우선 준수]\n- 모든 ## 섹션은 ${uniformMin}~${uniformMax}문장(섹션당 약 400~700자)으로 충실하게 작성한다. 절대 ${uniformMin}문장 미만으로 줄이지 않는다.\n- "관련시장 동향" 섹션은 시장규모(KRW/USD)·CAGR·경쟁기술·정책 동향을 모두 다뤄야 하므로 분량이 부족하지 않도록 충분히 확보하며, 출처 각주(### 출처) 목록은 문장 수 계산에서 제외한다.\n- 섹션 간 글자 수 편차는 ±30% 이내로 맞추되, "균일화"를 이유로 정보를 누락하거나 핵심 수치를 생략하지 않는다.\n- "압축", "간결" 지시는 군더더기 제거를 의미할 뿐이며 핵심 정보(시장규모·CAGR·구체적 수치·고유명사)는 반드시 포함한다.`;
     const sectionLengthInstruction = "";
 
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
@@ -360,11 +356,11 @@ serve(async (req) => {
 - 학명 뒤의 조사·구두점·괄호는 이탤릭 바깥에 위치시킨다. 올바른 예: *Lactobacillus plantarum*은 / *Oryza sativa*(벼). 잘못된 예: *Lactobacillus plantarum은* / *Oryza sativa(벼)*.
 - 볼드와 동시에 적용해야 할 경우 ***학명*** 형식(별표 3개)으로 작성한다.
 
-섹션별 작성 지침(분량은 위 균일화 규칙을 최우선으로 준수):
-## 기술분야 - IPC 해석, 산업 분야, 응용 영역, 기술적 맥락의 핵심만 압축 서술
-## 발명요약 및 특징 - 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과의 흐름과 핵심 구성요소의 역할·차별점을 **반드시 자연스러운 서술형 산문(prose) 한 문단**으로 압축 서술한다.
-  **[엄격 금지]** "* 핵심 유전자:", "* 표적 식물:", "* 독창성:" 같은 별표·하이픈·번호로 시작하는 항목 나열식 표기 금지. "핵심 유전자는 ~이며, 표적 식물은 ~이다" 식으로 모든 정보를 종속절·연결어구로 이어 단일 문단 안에 녹여 서술한다.
-## 관련시장 동향 - **현재 시점(2026년) 기준 시장 데이터로 환산하여 제시하는 것을 최우선으로 한다.** 국내외 시장 규모/성장률(KRW 단위), CAGR, 경쟁기술 현황, 정책/규제 동향을 핵심 수치 중심으로 간결히 서술.
+섹션별 작성 지침(분량은 위 [섹션 분량 규칙]을 최우선으로 준수):
+## 기술분야 - IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 충실히 서술
+## 발명요약 및 특징 - 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과의 흐름과 핵심 구성요소의 역할·차별점을 충분한 분량의 **자연스러운 서술형 산문(prose)**으로 작성한다(섹션 분량 규칙 준수, 절대 1~2문장으로 줄이지 않음).
+  **[엄격 금지]** "* 핵심 유전자:", "* 표적 식물:", "* 독창성:" 같은 별표·하이픈·번호로 시작하는 항목 나열식 표기 금지. "핵심 유전자는 ~이며, 표적 식물은 ~이다" 식으로 모든 정보를 종속절·연결어구로 이어 서술형 문단으로 녹여낸다.
+## 관련시장 동향 - **현재 시점(2026년) 기준 시장 데이터로 환산하여 제시하는 것을 최우선으로 한다.** 국내외 시장 규모/성장률(KRW 단위), CAGR(%), 경쟁기술 현황, 정책/규제 동향을 **반드시 모두 포함**하여 구체적 수치 중심으로 서술한다. 시장규모 수치(예: "약 2.4조 원", "USD 18.5억")와 CAGR(%) 수치는 본문에 절대 누락 금지 — 누락 시 잘못된 출력으로 간주.
 **[현재시점 환산 규칙 - 필수 준수]**
 - 보고서에 2026년 실측치가 있으면 그대로 사용한다.
 - 2026년 실측치가 없을 경우, 가장 최근 과거 시점(2023~2025년) 시장규모를 기준으로 해당 보고서의 CAGR을 복리 적용하여 **2026년 추정치**로 환산해 제시한다(예: "2024년 ~조원[^1] × (1+CAGR)^2 → 2026년 약 ~조원 규모로 추정된다").
@@ -382,7 +378,7 @@ serve(async (req) => {
 [^1]: 기관명, 「보고서명」, 발행연도
 [^2]: 기관명, 「보고서명」, 발행연도
 출처는 실제 신뢰할 수 있는 기관(KISTEP, KIET, IRS Global, MarketsandMarkets, Grand View Research, Statista, 통계청, 농림축산식품부 등) 사용. 실존하지 않는 출처 금지.**
-## 농산업활용 가능성 - 본 특허의 핵심 기술 원리·구성요소에서 직접 도출 가능한 농산업 활용 시나리오를 **자연스러운 서술형 산문(prose) 한 문단**으로 작성한다. 다음 3요소(직접 적용 분야 → 현장 활용 시나리오 → 기대 효과)를 연결어구로 자연스럽게 잇되, "* 신품종 개발:", "* 환경 정화 조성:" 식의 별표·하이픈·소제목 나열 표기는 절대 사용하지 않는다.
+## 농산업활용 가능성 - 본 특허의 핵심 기술 원리·구성요소에서 직접 도출 가능한 농산업 활용 시나리오를 **자연스러운 서술형 산문(prose)**으로 충실히 작성한다(섹션 분량 규칙 준수). 다음 3요소(직접 적용 분야 → 현장 활용 시나리오 → 기대 효과)를 연결어구로 자연스럽게 잇되, "* 신품종 개발:", "* 환경 정화 조성:" 식의 별표·하이픈·소제목 나열 표기는 절대 사용하지 않는다.
   - 직접 적용 분야: 특허 청구항·기술분야와 직결되는 1차 적용처를 구체적으로 명시
   - 현장 활용 시나리오: 누가/어디서/어떤 문제를 어떻게 해결하는지 핵심만 제시
   - 기대 효과: 수율·품질·인건비·에너지·로스율 등 정량적 지표 중심
