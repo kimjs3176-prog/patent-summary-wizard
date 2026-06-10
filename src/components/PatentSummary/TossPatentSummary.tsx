@@ -31,6 +31,26 @@ interface TossPatentSummaryProps extends BasePatentSummaryProps {
 const SOFT = "#F2F4F6";
 const ACCENT_HEX = "#10B981";
 
+/**
+ * 출원번호: ##-####-####### (13자리)
+ * 등록번호: ##-####### (앞 9자리, 뒤 0000 패딩 제거)
+ */
+function formatPatentNumber(value: string | undefined | null, kind: 'application' | 'registration'): string {
+  if (!value) return '';
+  const digits = String(value).replace(/\D/g, '');
+  if (kind === 'application') {
+    if (digits.length === 13) {
+      return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return String(value);
+  }
+  // registration: 7자리 본번호. 13자리 입력이면 앞 2 + 다음 7만 사용
+  if (digits.length >= 9) {
+    return `${digits.slice(0, 2)}-${digits.slice(2, 9)}`;
+  }
+  return String(value);
+}
+
 function formatAiModelLabel(model?: string): string {
   if (!model) return "Gemini 2.5 Flash";
   const map: Record<string, string> = {
@@ -572,7 +592,7 @@ export function TossPatentSummary({
               {title}
             </h1>
             <p className="text-[14px] text-[#8B95A1] font-medium mb-6 tabular-nums">
-              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {patentNumber}
+              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {formatPatentNumber(patentNumber, patentData?.searchType === 'application' ? 'application' : 'registration')}
             </p>
           </section>
 
@@ -582,9 +602,9 @@ export function TossPatentSummary({
               <SectionTitle kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
               <SoftCard className="!p-2">
                 <div className="bg-white rounded-[16px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-                  {patentData.applicationNumber && <Row label="출원번호" value={patentData.applicationNumber} />}
+                  {patentData.applicationNumber && <Row label="출원번호" value={formatPatentNumber(patentData.applicationNumber, 'application')} />}
                   {patentData.filingDate && <Row label="출원일자" value={patentData.filingDate} />}
-                  {patentData.registrationNumber && <Row label="등록번호" value={patentData.registrationNumber} />}
+                  {patentData.registrationNumber && <Row label="등록번호" value={formatPatentNumber(patentData.registrationNumber, 'registration')} />}
                   {patentData.registrationDate
                     ? <Row label="등록일자" value={patentData.registrationDate} />
                     : (patentData.publicationDate && <Row label="공개일자" value={patentData.publicationDate} />)}
