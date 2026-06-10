@@ -208,7 +208,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { patentNumber } = body;
+    const { patentNumber, forceRegenerate } = body;
 
     if (!patentNumber || typeof patentNumber !== "string") {
       return new Response(
@@ -232,29 +232,35 @@ serve(async (req) => {
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // ★ 캐시 확인: patent_data_cache에서 먼저 조회 (7일 이내)
-    const { data: cached } = await sb
-      .from("patent_data_cache")
-      .select("patent_data, related_patents, created_at")
-      .eq("patent_number", trimmedNumber)
-      .maybeSingle();
-
-    if (cached) {
-      const cacheAge = Date.now() - new Date(cached.created_at).getTime();
-      const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7일
-      if (cacheAge < CACHE_TTL) {
-        console.log("Cache HIT for patent:", trimmedNumber);
-        return new Response(
-          JSON.stringify({ success: true, data: cached.patent_data, relatedPatents: cached.related_patents }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      } else {
-        console.log("Cache EXPIRED for patent:", trimmedNumber);
-        // 만료된 캐시 삭제
-        await sb.from("patent_data_cache").delete().eq("patent_number", trimmedNumber);
-      }
+    // ★ 강제 재생성: 캐시 즉시 삭제
+    if (forceRegenerate) {
+      await sb.from("patent_data_cache").delete().eq("patent_number", trimmedNumber);
+      console.log("Cache forcibly cleared:", trimmedNumber);
     } else {
-      console.log("Cache MISS for patent:", trimmedNumber);
+      // ★ 캐시 확인: patent_data_cache에서 먼저 조회 (7일 이내, 버전 일치)
+      const { data: cached } = await sb
+        .from("patent_data_cache")
+        .select("patent_data, related_patents, created_at, cache_version")
+        .eq("patent_number", trimmedNumber)
+        .maybeSingle();
+
+      if (cached) {
+        const cacheAge = Date.now() - new Date(cached.created_at).getTime();
+        const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7일
+        const versionOk = (cached.cache_version || "v1") === DATA_CACHE_VERSION;
+        if (versionOk && cacheAge < CACHE_TTL) {
+          console.log("Cache HIT for patent:", trimmedNumber);
+          return new Response(
+            JSON.stringify({ success: true, data: cached.patent_data, relatedPatents: cached.related_patents }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        } else {
+          console.log(`Cache invalidated (version=${cached.cache_version}, age=${cacheAge}ms):`, trimmedNumber);
+          await sb.from("patent_data_cache").delete().eq("patent_number", trimmedNumber);
+        }
+      } else {
+        console.log("Cache MISS for patent:", trimmedNumber);
+      }
     }
 
     // Try site_settings first, then env
@@ -681,6 +687,7 @@ serve(async (req) => {
         patent_data: patentData,
         related_patents: relatedPatents,
         created_at: new Date().toISOString(),
+        cache_version: DATA_CACHE_VERSION,
       }, { onConflict: "patent_number" });
       console.log("Patent data cached for:", trimmedNumber);
     } catch (cacheErr) {
