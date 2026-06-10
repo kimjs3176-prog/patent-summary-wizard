@@ -215,9 +215,8 @@ serve(async (req) => {
     // Read custom prompt additions, total max tokens, model, and per-section length settings.
     let customPromptExtra = "";
     let maxTokens = 4000;
-    // 분석 모델은 비용/성능 균형이 좋은 Gemini 2.5 Flash로 고정한다.
-    // (시스템 프롬프트를 축소(~15KB → ~4KB), max_tokens 6000으로 낮춰 stall 방지)
-    const aiModel = "google/gemini-2.5-flash";
+    // 긴 요약은 스트리밍 경로에서 본문이 중간에 닫히는 사례가 있어 기본 Gateway 모델의 비스트리밍 완료 후 전송으로 안정화한다.
+    const aiModel = "google/gemini-3-flash-preview";
     let sectionLengthSettings: Record<string, number> = {};
     try {
       const supabase = getSupabaseClient();
@@ -253,7 +252,7 @@ serve(async (req) => {
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
-    const SUMMARY_CACHE_VERSION = "v9";
+    const SUMMARY_CACHE_VERSION = "v10-nonstream";
 
     // ★ 강제 재생성: 캐시 즉시 삭제
     if (forceRegenerate) {
