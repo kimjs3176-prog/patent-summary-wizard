@@ -24,28 +24,23 @@ import { correctTypos } from "./typoCorrections";
 
 // ----- (A) Quantitative patterns ---------------------------------------------
 const QUANT_PATTERNS: RegExp[] = [
-  // 엄격: [숫자 + 단위 명사]만 캡처. 주변 동사/연결어를 절대 포함하지 않음.
-  // TRL 단계 (영문 약어 + 숫자) — PROPER 패턴보다 먼저 실행되어 "TRL" 단독 매칭을 막는다.
-  /\bTRL\s?\d\b/g,
-  // 서열번호 1 (내지 6)
+  // 엄격: [숫자 + 단위/이상/이하]만 캡처. 주변 동사/서술어는 포함하지 않는다.
+  /기존\s*대비\s*\d+(?:\.\d+)?\s*(?:배|%|퍼센트)(?:\s*(?:이상|이하))?/g,
+  /약\s*\d+(?:\.\d+)?\s*%\s*(?:이상|이하)?/g,
   /서열번호\s*\d+(?:\s*내지\s*\d+)?/g,
-  // 금액: 약? + 숫자 + (조|억|만|천)? + 원/달러/위안/엔
-  /약\s?\d{1,3}(?:,\d{3})*(?:\.\d+)?\s?(?:조|억|만|천)?\s?(?:원|달러|위안|엔)/g,
-  /\d{1,3}(?:,\d{3})*(?:\.\d+)?\s?(?:조|억|만|천)?\s?(?:원|달러|위안|엔)/g,
-  // 연도 (4자리)
-  /(?:19|20)\d{2}년/g,
-  // 수량 + 단위 (단위 직후 경계: 공백/구두점/끝)
-  /\d+(?:\.\d+)?\s?(?:개월|개체|마리|단계|회|kg|mg|ml|μm|nm|cm|mm|°C)(?=[\s.,;:)\]"'」』]|$)/g,
-  // % / 배 / 퍼센트
-  /\d+(?:\.\d+)?\s?(?:%|퍼센트|배)(?=[\s.,;:)\]"'」』]|$)/g,
+  /\d{1,3}(?:,\d{3})*(?:\.\d+)?\s*(?:조|억|만)\s*(?:원|달러|위안|엔)/g,
+  /(?:19|20)\d{2}\s*년/g,
+  /\d+(?:\.\d+)?\s*(?:개월|개체|마리|단계|회|kg|mg|ml|μm|nm|cm|mm|°C)\b/g,
+  /\d+\s*년(?!대)/g,
+  /\d+(?:\.\d+)?\s*(?:%|퍼센트|배|배가량)/g,
 ];
 
 // ----- (B) Proper-noun / scientific term patterns ----------------------------
 const PROPER_PATTERNS: RegExp[] = [
   // 학술적 영문 구: "Fibronectin 1", "Matrix metallopeptidase 7"
   /\b[A-Z][a-z]{2,}(?:\s+[a-z]+){0,3}(?:\s+\d+)?\b/g,
-  // ALL-CAPS 약어 (2~6자) — TRL은 숫자와 함께 QUANT에서 처리되므로 제외
-  /\b(?!TRL\b)[A-Z]{2,6}(?:-\d+)?\b/g,
+  // ALL-CAPS 약어 (2~6자) + 선택적 숫자 (예: "TRL 6", "TRL-6")
+  /\b[A-Z]{2,6}(?:\s*\d+|->\d+|-\d+)?\b/g,
   // 균주 ID
   /\b(?:KCTC|KACC|KCCM|ATCC|NRRL)\s*\d+\b/g,
 ];
@@ -167,32 +162,33 @@ function highlightSentence(
   const tryAdd = (start: number, end: number, raw: string) => {
     if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) return false;
     if (overlaps(start, end)) return false;
-    let key = raw.trim();
-    if (!key || key.length < 2) return false;
+    const trimmedRaw = raw.trim();
+    if (!trimmedRaw || trimmedRaw.length < 2) return false;
     // 매치 길이 상한 — 비정상적으로 긴 캡처(서술어까지 삼킨 경우)는 거부.
-    if (key.length > 30) return false;
-    // 어절 경계 보호:
-    //  (1) 매치 끝이 한글이고 그 직후도 한글이면 어절 잘림 → 거부 (예: "시장" + "성")
-    //  (2) 매치 시작이 한글이고 그 직전도 한글이면 어절 중간에서 시작 → 거부
-    const lastCh = key.charAt(key.length - 1);
-    const firstCh = key.charAt(0);
-    const afterCh = sentence.charAt(end);
+    if (trimmedRaw.length > 30) return false;
+    // 어절 경계 보호: 매치 시작 직전이 한글이면 어절 중간 시작 → 거부
+    const firstCh = trimmedRaw.charAt(0);
     const beforeCh = start > 0 ? sentence.charAt(start - 1) : "";
-    if (isHangulChar(lastCh) && isHangulChar(afterCh)) return false;
     if (isHangulChar(firstCh) && isHangulChar(beforeCh)) return false;
-    // 조사/어미 끝부분 탈락 → 길이 차이만큼 end 축소
-    const trimmed = trimTrailingParticles(key);
-    if (!trimmed || trimmed.length < 2) return false;
-    // 문장형(동사·서술어 포함) 거부
-    if (SENTENCEY_RE.test(trimmed)) return false;
-    // 공백을 끝에서 제거한 만큼 end 보정
-    const dropped = key.length - trimmed.length;
-    const adjustedEnd = end - dropped;
-    key = trimmed;
+
+    // 한국어 조사·연결어미·접미사를 ** 바깥으로 밀어내기 (가장 긴 매칭 우선)
+    const particleRegex = /(?:으로|에서|이며|하며|하는|되는|성은|선은|은|는|이|가|을|를|에|의|과|와|로|고|며|된|한|적)+$/;
+    let targetText = trimmedRaw;
+    let suffixText = "";
+    const pm = trimmedRaw.match(particleRegex);
+    if (pm) {
+      suffixText = pm[0];
+      targetText = trimmedRaw.slice(0, trimmedRaw.length - suffixText.length);
+    }
+
+    const key = targetText.trim();
+    if (!key || key.length < 2) return false;
+    if (SENTENCEY_RE.test(key)) return false;
     if (paragraphSeen.has(key)) return false;
     if (/^[\s.,;:()[\]{}'"`~!@#$%^&*]+$/.test(key)) return false;
-    occupied.push([start, adjustedEnd]);
-    inserts.push({ start, end: adjustedEnd, text: `**${key}**` });
+
+    occupied.push([start, end]);
+    inserts.push({ start, end, text: `**${key}**${suffixText}` });
     paragraphSeen.add(key);
     sentenceBudget--;
     paragraphBudget.remaining--;
