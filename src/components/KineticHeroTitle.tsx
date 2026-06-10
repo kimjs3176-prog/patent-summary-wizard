@@ -1,65 +1,59 @@
 import React from "react";
 
 /**
- * Kinetic typography rendering of the service name.
- * Composes 4 motion registers:
- *   1) Word-level rise + de-blur (stagger)
- *   2) "AI" continuous glow pulse
- *   3) "기술분석" gradient sweep
- *   4) "서비스" character-level drop with elastic settle
- * Underline accent draws in after the title resolves.
+ * Refined kinetic typography — restrained, editorial.
+ *  • Words fade-up with gentle stagger (no rotateX/blur)
+ *  • "AI" gets gradient + breathing accent + a small drop-pulse dot
+ *  • "기술분석" carries a static dark→emerald gradient
+ *  • "서비스" lands character-by-character with a soft micro-stagger
+ *  • No underline. Composition is centered, single typographic block.
  */
 export function KineticHeroTitle() {
-  const line1 = ["농식품분야", "특허"];
-  const ai = "AI";
-  const sweep = "기술분석";
+  const words = ["농식품분야", "특허"];
   const tail = "서비스";
-
-  let wordDelay = 0;
-  const nextDelay = (step = 0.12) => {
-    const d = wordDelay;
-    wordDelay += step;
-    return d;
-  };
 
   return (
     <h2
-      className="font-extrabold text-foreground leading-[1.1] tracking-[-0.03em] px-2 text-[22px] sm:text-[30px] md:text-[44px] lg:text-[52px]"
+      className="font-extrabold text-foreground leading-[1.05] tracking-[-0.035em] text-center text-[24px] sm:text-[32px] md:text-[46px] lg:text-[54px]"
       aria-label="농식품분야 특허 AI 기술분석 서비스"
     >
-      {/* Line 1 — word rise */}
-      <span className="block kinetic-underline pb-1">
-        {line1.map((w, i) => (
+      {/* Line 1 */}
+      <span className="block">
+        {words.map((w, i) => (
           <span
-            key={`l1-${i}`}
-            className="kinetic-word mr-[0.35em] last:mr-0"
-            style={{ animationDelay: `${nextDelay(0.14)}s` }}
+            key={`w-${i}`}
+            className="kinetic-word"
+            style={{
+              animationDelay: `${0.05 + i * 0.12}s`,
+              marginRight: i === words.length - 1 ? 0 : "0.32em",
+            }}
           >
             {w}
           </span>
         ))}
       </span>
 
-      {/* Line 2 — AI glow + gradient sweep + char drop */}
-      <span className="block mt-1 md:mt-2">
+      {/* Line 2 — accent line */}
+      <span className="block mt-1.5 md:mt-3">
         <span
-          className="kinetic-word mr-[0.3em]"
-          style={{ animationDelay: `${nextDelay(0.18)}s` }}
+          className="kinetic-word relative"
+          style={{ animationDelay: "0.32s", marginRight: "0.28em" }}
         >
-          <span className="kinetic-ai">{ai}</span>
+          <span className="kinetic-ai">AI</span>
+          <span className="kinetic-dot" aria-hidden />
         </span>
         <span
-          className="kinetic-word mr-[0.3em]"
-          style={{ animationDelay: `${nextDelay(0.16)}s` }}
+          className="kinetic-word"
+          style={{ animationDelay: "0.46s", marginRight: "0.22em" }}
         >
-          <span className="kinetic-sweep">{sweep}</span>
+          <span className="kinetic-accent">기술분석</span>
         </span>
-        <span className="inline-block align-baseline">
+        <span className="inline-block">
           {tail.split("").map((c, i) => (
             <span
-              key={`tail-${i}`}
+              key={`t-${i}`}
               className="kinetic-char"
-              style={{ animationDelay: `${0.95 + i * 0.07}s` }}
+              style={{ animationDelay: `${0.7 + i * 0.06}s` }}
             >
               {c}
             </span>
