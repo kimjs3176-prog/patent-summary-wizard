@@ -252,7 +252,7 @@ serve(async (req) => {
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
-    const SUMMARY_CACHE_VERSION = "v8";
+    const SUMMARY_CACHE_VERSION = "v9";
 
     // ★ 강제 재생성: 캐시 즉시 삭제
     if (forceRegenerate) {
