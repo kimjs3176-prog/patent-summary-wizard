@@ -79,6 +79,9 @@ const TRAILING_PARTICLES = [
 // 매칭 결과가 일반 명사구로 적합한지 검증 (동사/형용사 어미·서술어 포함 시 거부)
 const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|없다|된다|한다|하다|되다|위해|위한|통해|통한|확보가|확보를|가능한|불가능|때문에|의존|있어|있으며|있고|하여|되어|기반하|따라|관련|사용하여|활용하여)/;
 
+// 구절 '중간'에 등장하는 연결 용언/어미 — 문장형 오버매칭 차단용
+const VERB_MIDPHRASE_RE = /(?:제공하며|활발해지며|대응한|어렵다는|해결하고|확보하고|있으며|위한|통해|기반으로|따라)/;
+
 // 한글 음절(가-힣) — 어절 경계 판정에 사용
 const HANGUL_SYLLABLE_RE = /[\uAC00-\uD7A3]/;
 // 매치 끝이 한국어 접미사(성·적·화·력·률·도) 등 한 글자로 이어져 어절이 잘리는 경우를 막기 위해
@@ -166,6 +169,9 @@ function highlightSentence(
     if (!trimmedRaw || trimmedRaw.length < 2) return false;
     // 매치 길이 상한 — 비정상적으로 긴 캡처(서술어까지 삼킨 경우)는 거부.
     if (trimmedRaw.length > 30) return false;
+    // 문장형 오버매칭 차단: 띄어쓰기 2개 이상 + 중간에 연결 용언/어미 포함 시 거부
+    const spaceCount = (trimmedRaw.match(/\s/g) || []).length;
+    if (spaceCount >= 2 && VERB_MIDPHRASE_RE.test(trimmedRaw)) return false;
     // 어절 경계 보호: 매치 시작 직전이 한글이면 어절 중간 시작 → 거부
     const firstCh = trimmedRaw.charAt(0);
     const beforeCh = start > 0 ? sentence.charAt(start - 1) : "";
@@ -220,6 +226,20 @@ function highlightSentence(
       if (idx === -1) continue;
       // 매칭 직후가 한국어 조사로 이어지더라도 phrase 자체만 강조 (조사는 자연히 바깥)
       tryAdd(idx, idx + phrase.length, phrase);
+    }
+
+    // 병렬 접속사 확장: 사전 표제어가 "A" 일 때, "A 및/과/와/이나/나 B" 형태로
+    // 직후에 또 다른 명사가 이어진다면 한 덩어리로 묶어 볼드 처리한다.
+    const conjRe = /^\s*(?:및|과|와|이나|나)\s+([가-힣A-Za-z][가-힣A-Za-z0-9]{1,15})/;
+    for (const phrase of sorted) {
+      if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) break;
+      const idx = sentence.indexOf(phrase);
+      if (idx === -1) continue;
+      const after = sentence.slice(idx + phrase.length);
+      const cm = after.match(conjRe);
+      if (!cm) continue;
+      const fullLen = phrase.length + cm[0].length;
+      tryAdd(idx, idx + fullLen, sentence.slice(idx, idx + fullLen));
     }
   }
 
