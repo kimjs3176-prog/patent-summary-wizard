@@ -687,7 +687,7 @@ export function TossPatentSummary({
                     (acc[k.cat] ||= []).push(k.word);
                     return acc;
                   }, { function: [], industry: [], material: [], product: [], tech: [], general: [] });
-                  const order: KeywordCategory[] = ["material", "function", "industry", "product", "tech", "general"];
+                  const order: KeywordCategory[] = ["function", "industry", "product", "tech"];
                   const usedCats = order.filter((c) => grouped[c]?.length);
                   return (
                     <div>
