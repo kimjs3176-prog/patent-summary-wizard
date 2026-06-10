@@ -23,7 +23,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
     const body = await req.json();
-    const { action, password, id, status, ids } = body ?? {};
+    const { action, password, id, status, ids, kind, phrase, weight, context, patent_number } = body ?? {};
 
     // Verify admin password
     const adminPassword = Deno.env.get("ADMIN_PASSWORD");
@@ -46,6 +46,86 @@ serve(async (req) => {
         .limit(500);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true, rules: data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "create") {
+      const k = kind === "exclude" ? "exclude" : kind === "include" ? "include" : null;
+      const p = typeof phrase === "string" ? phrase.trim() : "";
+      const w = Number.isFinite(weight) ? Math.min(3, Math.max(1, Number(weight))) : 2;
+      if (!k || p.length < 2 || p.length > 200) {
+        return new Response(JSON.stringify({ success: false, error: "kind/phrase 형식 오류" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data, error } = await supabase
+        .from("highlight_rule_proposals")
+        .upsert(
+          {
+            kind: k,
+            phrase: p,
+            weight: w,
+            status: "approved",
+            reviewed_at: new Date().toISOString(),
+            context: typeof context === "string" ? context.slice(0, 500) : null,
+            patent_number: typeof patent_number === "string" ? patent_number.slice(0, 50) : null,
+          },
+          { onConflict: "kind,phrase", ignoreDuplicates: false } as never,
+        )
+        .select()
+        .maybeSingle();
+      if (error) {
+        // 인덱스가 lower(phrase) 기반이므로 onConflict 미지원 시 fallback
+        const ins = await supabase
+          .from("highlight_rule_proposals")
+          .insert({
+            kind: k, phrase: p, weight: w, status: "approved",
+            reviewed_at: new Date().toISOString(),
+            context: typeof context === "string" ? context.slice(0, 500) : null,
+            patent_number: typeof patent_number === "string" ? patent_number.slice(0, 50) : null,
+          })
+          .select().maybeSingle();
+        if (ins.error) throw ins.error;
+        return new Response(JSON.stringify({ success: true, rule: ins.data }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true, rule: data }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "update-weight") {
+      const w = Number.isFinite(weight) ? Math.min(3, Math.max(1, Number(weight))) : null;
+      if (!id || w === null) {
+        return new Response(JSON.stringify({ success: false, error: "id/weight 필요" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error } = await supabase
+        .from("highlight_rule_proposals")
+        .update({ weight: w })
+        .eq("id", id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "update-phrase") {
+      const p = typeof phrase === "string" ? phrase.trim() : "";
+      if (!id || p.length < 2 || p.length > 200) {
+        return new Response(JSON.stringify({ success: false, error: "id/phrase 형식 오류" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error } = await supabase
+        .from("highlight_rule_proposals")
+        .update({ phrase: p })
+        .eq("id", id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

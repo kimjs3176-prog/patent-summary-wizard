@@ -87,7 +87,7 @@ export const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
   { type: "concept",     regex: /([가-힣A-Za-z0-9]{2,10}(?:\s+[가-힣A-Za-z0-9]{2,10}){1,3}\s+(?:위험|한계|구조|모델|체계|시장|생태계|기반|공정|회수율|효능|치료제|소비\s*구조|수익\s*구조|공급\s*모델|원료\s*공급|추출\s*공정))/g },
 ];
 
-interface HLMatch { start: number; end: number; type: HLType; text: string; }
+interface HLMatch { start: number; end: number; type: HLType; text: string; weight?: number; }
 
 // 의미가 약한 디스코스 마커/필러 — 강조 대상에서 제외.
 // "이 기술", "주된 기술", "본 기술/발명" 등 지시·관형 수식 + 일반명사 단독은 강조 가치가 없음.
@@ -107,14 +107,14 @@ const IPC_CODE_RE = /\b[A-H]\d{2}[A-Z](?:\s?\d+\/\d+)?\b/;
 // useHighlightRules() 훅이 로드한 결과를 setRuntimeHighlightRules()로 주입.
 // ---------------------------------------------------------------------------
 let RUNTIME_EXCLUDES: string[] = [];
-let RUNTIME_INCLUDES: string[] = [];
+let RUNTIME_INCLUDES: { phrase: string; weight: number }[] = [];
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function setRuntimeHighlightRules(
-  rules: { kind: "exclude" | "include"; phrase: string }[],
+  rules: { kind: "exclude" | "include"; phrase: string; weight?: number }[],
 ) {
   RUNTIME_EXCLUDES = [];
   RUNTIME_INCLUDES = [];
@@ -122,7 +122,7 @@ export function setRuntimeHighlightRules(
     const p = (r.phrase || "").trim();
     if (!p) continue;
     if (r.kind === "exclude") RUNTIME_EXCLUDES.push(p);
-    else RUNTIME_INCLUDES.push(p);
+    else RUNTIME_INCLUDES.push({ phrase: p, weight: Math.min(3, Math.max(1, r.weight ?? 2)) });
   }
 }
 
@@ -142,15 +142,15 @@ function trimTrailingParticle(s: string): string {
 export function collectMatches(text: string): HLMatch[] {
   const all: HLMatch[] = [];
   // 0) 관리자가 승인한 'include' 문구를 강제 매치(공백 유연 매칭)
-  for (const phrase of RUNTIME_INCLUDES) {
-    const trimmed = phrase.trim();
+  for (const item of RUNTIME_INCLUDES) {
+    const trimmed = item.phrase.trim();
     if (!trimmed) continue;
     const flexible = trimmed.split(/\s+/).map(escapeRegExp).join("\\s+");
     const re = new RegExp(flexible, "g");
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(text)) !== null) {
       if (!mm[0]) { re.lastIndex++; continue; }
-      all.push({ start: mm.index, end: mm.index + mm[0].length, type: "solution", text: mm[0] });
+      all.push({ start: mm.index, end: mm.index + mm[0].length, type: "solution", text: mm[0], weight: item.weight });
     }
   }
   for (const { type, regex } of HL_PATTERNS) {
@@ -209,7 +209,13 @@ export function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] 
       out.push(
         <mark
           key={`hl-${key++}`}
-          className={`bg-transparent ${HL_STYLE[m.type]}`}
+          className={`bg-transparent ${
+            m.weight === 1
+              ? "font-semibold text-[#191F28]"
+              : m.weight === 3
+              ? "font-extrabold text-[#191F28] underline decoration-2 decoration-emerald-500 underline-offset-2"
+              : HL_STYLE[m.type]
+          }`}
         >
           {sliced}
         </mark>,

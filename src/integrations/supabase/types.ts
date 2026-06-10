@@ -91,6 +91,7 @@ export type Database = {
           phrase: string
           reviewed_at: string | null
           status: string
+          weight: number
         }
         Insert: {
           context?: string | null
@@ -102,6 +103,7 @@ export type Database = {
           phrase: string
           reviewed_at?: string | null
           status?: string
+          weight?: number
         }
         Update: {
           context?: string | null
@@ -113,6 +115,7 @@ export type Database = {
           phrase?: string
           reviewed_at?: string | null
           status?: string
+          weight?: number
         }
         Relationships: []
       }
