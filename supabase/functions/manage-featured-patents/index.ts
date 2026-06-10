@@ -380,13 +380,6 @@ serve(async (req) => {
         .order("search_count", { ascending: false })
         .limit(10);
 
-      // Current model
-      const { data: modelSetting } = await supabase
-        .from("site_settings")
-        .select("value")
-        .eq("key", "ai_model")
-        .maybeSingle();
-
       return new Response(
         JSON.stringify({
           success: true,
@@ -398,7 +391,7 @@ serve(async (req) => {
             recentSummaries,
             recentSearches,
             topSearched: topSearched || [],
-            currentModel: modelSetting?.value || "google/gemini-2.5-flash",
+            currentModel: "google/gemini-3-flash-preview",
           },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
