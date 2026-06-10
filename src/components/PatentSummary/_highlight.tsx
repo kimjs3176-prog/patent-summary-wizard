@@ -172,6 +172,8 @@ export function collectMatches(text: string): HLMatch[] {
       const start = m.index + Math.max(0, offset);
       // 4) 명시 제외 문구는 폐기.
       if (EXCLUDE_MATCH_RE.test(matchedText)) continue;
+      // 4-a) IPC 분류 코드 포함 시 폐기.
+      if (IPC_CODE_RE.test(matchedText)) continue;
       // 4-b) 런타임 승인된 'exclude' 문구와 겹치면 폐기.
       if (matchesRuntimeExclude(matchedText)) continue;
       // 5) 직전 컨텍스트 기반 제외 ("수치는 ... 52억 달러 시장" 류).
