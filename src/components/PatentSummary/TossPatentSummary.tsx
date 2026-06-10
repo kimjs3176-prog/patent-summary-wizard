@@ -572,7 +572,7 @@ export function TossPatentSummary({
               {title}
             </h1>
             <p className="text-[14px] text-[#8B95A1] font-medium mb-6 tabular-nums">
-              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {patentNumber}
+              {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {formatPatentNumber(patentNumber, patentData?.searchType === 'application' ? 'application' : 'registration')}
             </p>
           </section>
 
@@ -582,9 +582,9 @@ export function TossPatentSummary({
               <SectionTitle kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
               <SoftCard className="!p-2">
                 <div className="bg-white rounded-[16px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-                  {patentData.applicationNumber && <Row label="출원번호" value={patentData.applicationNumber} />}
+                  {patentData.applicationNumber && <Row label="출원번호" value={formatPatentNumber(patentData.applicationNumber, 'application')} />}
                   {patentData.filingDate && <Row label="출원일자" value={patentData.filingDate} />}
-                  {patentData.registrationNumber && <Row label="등록번호" value={patentData.registrationNumber} />}
+                  {patentData.registrationNumber && <Row label="등록번호" value={formatPatentNumber(patentData.registrationNumber, 'registration')} />}
                   {patentData.registrationDate
                     ? <Row label="등록일자" value={patentData.registrationDate} />
                     : (patentData.publicationDate && <Row label="공개일자" value={patentData.publicationDate} />)}
