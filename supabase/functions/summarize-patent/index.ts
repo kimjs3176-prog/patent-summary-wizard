@@ -203,12 +203,12 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v7-completeness";
+    const promptVersion = "v8-strict-sections";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
-    const SUMMARY_CACHE_VERSION = "v2";
+    const SUMMARY_CACHE_VERSION = "v3";
 
     // ★ 강제 재생성: 캐시 즉시 삭제
     if (forceRegenerate) {
