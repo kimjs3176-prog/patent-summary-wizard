@@ -68,6 +68,24 @@ export function usePatentSummary() {
     setIsFetching(false);
     setAnalysisStep("summarizing");
 
+    // KIPRIS 데이터 확보 실패 시 요약 호출을 중단(가짜 요약 방지).
+    const hasUsable = !!(
+      fetchedPatentData && (
+        (fetchedPatentData.title && fetchedPatentData.title.trim().length > 1) ||
+        (fetchedPatentData.abstract && fetchedPatentData.abstract.trim().length > 20) ||
+        (Array.isArray(fetchedPatentData.claims) && fetchedPatentData.claims.some((c) => typeof c === "string" && c.trim().length > 20)) ||
+        ((fetchedPatentData as any).description && (fetchedPatentData as any).description.trim().length > 50)
+      )
+    );
+    if (!hasUsable) {
+      toast.error("특허 원문을 가져오지 못했습니다. 번호를 확인하거나 잠시 후 다시 시도해 주세요.");
+      setSummary("");
+      setAnalysisStep("idle");
+      setIsLoading(false);
+      if (typeof window !== "undefined") (window as any).__APP_BUSY__ = false;
+      return null;
+    }
+
     // Step 2: Generate AI summary with patent data (with auto-retry + backoff)
     const MAX_ATTEMPTS = 3; // initial + up to 2 retries
     const isRetryableMessage = (msg: string) => {
