@@ -65,14 +65,11 @@ const SUB_COLORS = [
   { stroke: 'hsl(25 90% 55%)', bg: 'hsl(25 90% 97%)', border: 'hsl(25 90% 90%)', icon: '💼' },
 ];
 
+import { renderBold } from "./_highlight";
+
 function renderBoldText(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-semibold text-foreground/85">{part.slice(2, -2)}</strong>;
-    }
-    return <span key={i}>{part}</span>;
-  });
+  // 통합 하이라이트 규칙(런타임 규칙 + 패턴) 적용 — 검은색 볼드 처리.
+  return renderBold(text);
 }
 
 function SubScoreCard({ label, score, reason, colorIndex }: { label: string; score: number; reason?: string; colorIndex: number }) {
