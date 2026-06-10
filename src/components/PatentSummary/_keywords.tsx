@@ -7,7 +7,7 @@ export const CATEGORY_STYLE: Record<KeywordCategory, { bg: string; text: string;
   industry: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", label: "활용산업" },
   material: { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA", label: "소재" },
   product:  { bg: "#FEF2F2", text: "#B91C1C", border: "#FECACA", label: "최종제품" },
-  tech:     { bg: "#FAF5FF", text: "#7E22CE", border: "#E9D5FF", label: "기술" },
+  tech:     { bg: "#FAF5FF", text: "#7E22CE", border: "#E9D5FF", label: "기술분야" },
   general:  { bg: "#FFFFFF", text: "#4E5968", border: "#E5E8EB", label: "기타" },
 };
 
@@ -322,16 +322,16 @@ export function extractKeywordsFromPatent(
     unique.push({ word, cat });
   };
 
-  push(subjectKws[0], "material");
+  // 카테고리는 주요기능·활용산업·최종제품·기술분야 4종으로 한정
   push(funcKws[0], "function");
   push(industryKws[0], "industry");
   push(productKws[0], "product");
+  push(featKws[0], "tech");
 
-  subjectKws.slice(1, 2).forEach((w) => push(w, "material"));
   funcKws.slice(1, 3).forEach((w) => push(w, "function"));
   industryKws.slice(1, 3).forEach((w) => push(w, "industry"));
   productKws.slice(1, 2).forEach((w) => push(w, "product"));
-  featKws.slice(0, 3).forEach((w) => push(w, "tech"));
+  featKws.slice(1, 3).forEach((w) => push(w, "tech"));
 
   // -------------------------------------------------------------------------
   // 본문 기반 키워드와 특허 명칭 적합성 검증
@@ -352,11 +352,10 @@ export function extractKeywordsFromPatent(
     return (s.match(g) || []).length;
   };
   const isFitForTitle = (item: KwItem): boolean => {
-    if (item.cat !== "material" && item.cat !== "product") return true;
+    if (item.cat !== "product") return true;
     if (!title) return true;
     if (titleNorm.includes(item.word.replace(/\s+/g, ""))) return true;
-    const list = item.cat === "material" ? subjectPatterns : productPatterns;
-    const pat = findPattern(item.word, list);
+    const pat = findPattern(item.word, productPatterns);
     if (pat && pat.test(title)) return true;
     if (pat && countHits(pat, bodyText) >= 2) return true;
     return false;
@@ -380,7 +379,6 @@ export function extractKeywordsFromPatent(
       validated.push({ word: noun, cat });
     }
   };
-  ensureSlot("material", "처리 대상");
   ensureSlot("product", "최종 산출물");
 
   return validated.slice(0, max);
