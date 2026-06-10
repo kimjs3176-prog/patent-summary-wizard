@@ -107,14 +107,14 @@ const IPC_CODE_RE = /\b[A-H]\d{2}[A-Z](?:\s?\d+\/\d+)?\b/;
 // useHighlightRules() 훅이 로드한 결과를 setRuntimeHighlightRules()로 주입.
 // ---------------------------------------------------------------------------
 let RUNTIME_EXCLUDES: string[] = [];
-let RUNTIME_INCLUDES: string[] = [];
+let RUNTIME_INCLUDES: { phrase: string; weight: number }[] = [];
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function setRuntimeHighlightRules(
-  rules: { kind: "exclude" | "include"; phrase: string }[],
+  rules: { kind: "exclude" | "include"; phrase: string; weight?: number }[],
 ) {
   RUNTIME_EXCLUDES = [];
   RUNTIME_INCLUDES = [];
@@ -122,7 +122,7 @@ export function setRuntimeHighlightRules(
     const p = (r.phrase || "").trim();
     if (!p) continue;
     if (r.kind === "exclude") RUNTIME_EXCLUDES.push(p);
-    else RUNTIME_INCLUDES.push(p);
+    else RUNTIME_INCLUDES.push({ phrase: p, weight: Math.min(3, Math.max(1, r.weight ?? 2)) });
   }
 }
 
@@ -142,15 +142,15 @@ function trimTrailingParticle(s: string): string {
 export function collectMatches(text: string): HLMatch[] {
   const all: HLMatch[] = [];
   // 0) 관리자가 승인한 'include' 문구를 강제 매치(공백 유연 매칭)
-  for (const phrase of RUNTIME_INCLUDES) {
-    const trimmed = phrase.trim();
+  for (const item of RUNTIME_INCLUDES) {
+    const trimmed = item.phrase.trim();
     if (!trimmed) continue;
     const flexible = trimmed.split(/\s+/).map(escapeRegExp).join("\\s+");
     const re = new RegExp(flexible, "g");
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(text)) !== null) {
       if (!mm[0]) { re.lastIndex++; continue; }
-      all.push({ start: mm.index, end: mm.index + mm[0].length, type: "solution", text: mm[0] });
+      all.push({ start: mm.index, end: mm.index + mm[0].length, type: "solution", text: mm[0], weight: item.weight });
     }
   }
   for (const { type, regex } of HL_PATTERNS) {
