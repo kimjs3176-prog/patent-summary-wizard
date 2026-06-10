@@ -510,70 +510,70 @@ serve(async (req) => {
     let sseBuffer = ""; // Buffer to handle SSE lines split across chunks
     let finishReason: string | null = null;
 
-    const stream = new ReadableStream({
+    const encoder = new TextEncoder();
+    const saveCache = async () => {
+      if (!fullContent) return;
+      if (finishReason && finishReason !== "stop") {
+        console.warn(`[TRUNCATED] ${trimmedPatent} finish_reason=${finishReason} chars=${fullContent.length} maxTokens=${maxTokens} — skipping cache save so it regenerates next time`);
+        return;
+      }
+      try {
+        const supabase = getSupabaseClient();
+        await supabase.from("patent_ai_cache").upsert({
+          patent_number: trimmedPatent,
+          analysis_mode: summaryAnalysisMode,
+          summary_content: fullContent,
+          cache_version: SUMMARY_CACHE_VERSION,
+        }, { onConflict: "patent_number,analysis_mode" });
+        console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
+      } catch (saveErr) {
+        console.error("Cache save error:", saveErr);
+      }
+    };
+
+    const emitMarketFallbackIfNeeded = (controller: ReadableStreamDefaultController<Uint8Array>) => {
+      const ensured = ensureMarketFigures(fullContent, pd as PatentData);
+      if (ensured !== fullContent) {
+        const appended = ensured.slice(fullContent.length);
+        fullContent = ensured;
+        const sseData = JSON.stringify({ choices: [{ delta: { content: appended } }] });
+        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+        console.warn(`[MARKET FALLBACK] appended required market figures for ${trimmedPatent}`);
+      }
+    };
+
+    const stream = new ReadableStream<Uint8Array>({
       async pull(controller) {
         const { done, value } = await reader.read();
         if (done) {
-          // Process any remaining buffered data
-          if (sseBuffer.trim()) {
-            const remaining = sseBuffer.trim();
-            if (remaining.startsWith("data: ") && remaining.slice(6).trim() !== "[DONE]") {
-              try {
-                const parsed = JSON.parse(remaining.slice(6));
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) fullContent += content;
-                const fr = parsed.choices?.[0]?.finish_reason;
-                if (fr) finishReason = fr;
-              } catch { /* ignore */ }
-            }
-          }
+          emitMarketFallbackIfNeeded(controller);
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
-          if (fullContent.length > 0) {
-            if (finishReason && finishReason !== "stop") {
-              console.warn(`[TRUNCATED] ${trimmedPatent} finish_reason=${finishReason} chars=${fullContent.length} maxTokens=${maxTokens} — skipping cache save so it regenerates next time`);
-            } else {
-            try {
-              const supabase = getSupabaseClient();
-              await supabase.from("patent_ai_cache").upsert({
-                patent_number: trimmedPatent,
-                analysis_mode: summaryAnalysisMode,
-                summary_content: fullContent,
-                cache_version: SUMMARY_CACHE_VERSION,
-              }, { onConflict: "patent_number,analysis_mode" });
-              console.log(`[CACHE SAVED] ${trimmedPatent} (${fullContent.length} chars)`);
-            } catch (saveErr) {
-              console.error("Cache save error:", saveErr);
-            }
-            }
-          }
+          await saveCache();
           return;
         }
 
-        const text = decoder.decode(value, { stream: true });
-        sseBuffer += text;
-
-        // Process complete lines only (split by double newline for SSE)
+        sseBuffer += decoder.decode(value, { stream: true });
         let newlineIndex: number;
         while ((newlineIndex = sseBuffer.indexOf("\n")) !== -1) {
           const line = sseBuffer.slice(0, newlineIndex).replace(/\r$/, "");
           sseBuffer = sseBuffer.slice(newlineIndex + 1);
-
-          if (line.startsWith("data: ") && line.slice(6).trim() !== "[DONE]") {
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) fullContent += content;
-              const fr = parsed.choices?.[0]?.finish_reason;
-              if (fr) finishReason = fr;
-            } catch {
-              // Incomplete JSON - put it back and wait for more data
-              sseBuffer = line + "\n" + sseBuffer;
-              break;
-            }
+          if (!line.trim()) continue;
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(payload);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) fullContent += content;
+            const fr = parsed.choices?.[0]?.finish_reason;
+            if (fr) finishReason = fr;
+            controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+          } catch {
+            sseBuffer = line + "\n" + sseBuffer;
+            break;
           }
         }
-
-        controller.enqueue(value);
       },
     });
 
