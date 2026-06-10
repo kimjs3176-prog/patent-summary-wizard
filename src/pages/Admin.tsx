@@ -1375,6 +1375,13 @@ const Admin = () => {
             </div>
           </TabsContent>
 
+          {/* ===== Highlight Rules Tab ===== */}
+          <TabsContent value="highlights">
+            <Card className="p-4">
+              <HighlightRulesManager adminPassword={password} />
+            </Card>
+          </TabsContent>
+
           {/* ===== Output Tab (Print + PDF) ===== */}
           <TabsContent value="output">
             <Accordion type="multiple" defaultValue={["print"]} className="space-y-3">
