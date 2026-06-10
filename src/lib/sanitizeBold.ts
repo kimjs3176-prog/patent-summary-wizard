@@ -76,9 +76,27 @@ function stripExistingBold(text: string): string {
   return text.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
 }
 
+// Bullet-like single `*` at line start (or after sentence end inside a paragraph)
+// were being misread as italic openers and italicizing entire paragraphs.
+// Convert them to plain text so only true `*word*` italic spans (with no
+// surrounding whitespace) survive.
+function stripBulletStars(text: string): string {
+  // 1) Line-start bullets: `* 핵심 유전자:` → `핵심 유전자:`
+  let out = text.replace(/^[ \t]*\*[ \t]+/gm, "");
+  // 2) Mid-line pseudo-bullets after sentence break: `... 합니다. * 표적 식물:` → `... 합니다. 표적 식물:`
+  out = out.replace(/([.!?。．！？])\s+\*\s+/g, "$1 ");
+  // 3) Defensive: `*` with whitespace on at least one side that is not part of
+  // a `*word*` italic pair gets removed.
+  out = out.replace(/(^|\s)\*(\s)/g, "$1$2");
+  out = out.replace(/(\s)\*(\s|$)/g, "$1$2");
+  return out;
+}
+
 function maskItalics(text: string): { masked: string; spans: string[] } {
   const spans: string[] = [];
-  const masked = text.replace(/\*([^*\n]+?)\*/g, (m) => {
+  // Italic only when `*` is tight around the content (no leading/trailing whitespace)
+  // — this prevents accidental italicization across bullet markers or sentences.
+  const masked = text.replace(/\*([^\s*\n][^*\n]*?[^\s*\n]|[^\s*\n])\*/g, (m) => {
     spans.push(m);
     return `\u0001${spans.length - 1}\u0002`;
   });
@@ -177,7 +195,8 @@ function highlightParagraph(paragraph: string): string {
 export function sanitizeBoldMarkers(text: string): string {
   if (!text) return text;
   const stripped = stripExistingBold(text);
-  const { masked, spans } = maskItalics(stripped);
+  const debulleted = stripBulletStars(stripped);
+  const { masked, spans } = maskItalics(debulleted);
   const paragraphs = masked.split(/(\n{2,})/);
   const processed = paragraphs
     .map((chunk) => (/^\n{2,}$/.test(chunk) ? chunk : highlightParagraph(chunk)))
