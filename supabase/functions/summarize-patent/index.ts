@@ -335,8 +335,16 @@ serve(async (req) => {
       if (data.abstract) {
         patentContext += `\n\n초록:\n${data.abstract.substring(0, 750)}`;
       }
-      if (data.claims?.length) {
-        patentContext += `\n\n청구항:\n${data.claims.slice(0, 8).map((c, i) => `${i + 1}. ${c.substring(0, 700)}`).join("\n")}`;
+      if (data.claims) {
+        const claimsArr: string[] = Array.isArray(data.claims)
+          ? (data.claims as unknown as string[])
+          : String(data.claims)
+              .split(/\n\s*(?=청구항\s*\d+|\d+\.\s)/)
+              .map((s) => s.trim())
+              .filter(Boolean);
+        if (claimsArr.length) {
+          patentContext += `\n\n청구항:\n${claimsArr.slice(0, 8).map((c, i) => `${i + 1}. ${String(c).substring(0, 700)}`).join("\n")}`;
+        }
       }
       if (data.description) {
         patentContext += `\n\n설명(일부):\n${data.description.substring(0, 1200)}`;
