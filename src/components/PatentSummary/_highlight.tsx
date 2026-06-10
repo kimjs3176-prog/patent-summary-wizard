@@ -210,17 +210,19 @@ export function collectMatches(text: string): HLMatch[] {
       if (CROSS_LINE_RE.test(workText)) continue;
       // 시작 직전 문자가 한글이면 단어 일부만 잡힌 것 → 폐기 ("고부가가치" → "부가가치")
       const prevChar = text.charAt(start - 1);
-      if (/[가-힣]/.
+      if (/[가-힣]/.test(prevChar)) continue;
+      // 시작 직전이 IPC 코드의 영문 대문자(A-H)면 IPC 부분 매치 → 폐기 ("A23L" → "23L")
+      if (IPC_PRECEDING_RE.test(prevChar)) continue;
       // 4) 명시 제외 문구는 폐기.
-      if (EXCLUDE_MATCH_RE.test(matchedText)) continue;
+      if (EXCLUDE_MATCH_RE.test(workText)) continue;
       // 4-a) IPC 분류 코드 포함 시 폐기.
-      if (IPC_CODE_RE.test(matchedText)) continue;
+      if (IPC_CODE_RE.test(workText)) continue;
       // 4-b) 런타임 승인된 'exclude' 문구와 겹치면 폐기.
-      if (matchesRuntimeExclude(matchedText)) continue;
+      if (matchesRuntimeExclude(workText)) continue;
       // 5) 직전 컨텍스트 기반 제외 ("수치는 ... 52억 달러 시장" 류).
       const preceding = text.slice(Math.max(0, start - 12), start);
       if (EXCLUDE_CONTEXT_RE.test(preceding)) continue;
-      all.push({ start, end: start + matchedText.length, type, text: matchedText });
+      all.push({ start, end: start + workText.length, type, text: workText });
     }
   }
   all.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
