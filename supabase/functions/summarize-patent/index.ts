@@ -223,12 +223,12 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v10-narrative-length-floor";
+    const promptVersion = "v11-market-required-no-fragment-bold";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
-    const SUMMARY_CACHE_VERSION = "v5";
+    const SUMMARY_CACHE_VERSION = "v6";
 
     // ★ 강제 재생성: 캐시 즉시 삭제
     if (forceRegenerate) {
@@ -339,6 +339,13 @@ serve(async (req) => {
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터로 상세 요약서 작성.
 규칙: 헤더/작성일 금지, "특허 기본 정보" 금지, 말머리표/번호 금지, 섹션은 ## 사용.
 정보 없으면 "정보 없음" 표기. Abstract 복사 금지, 분석적 재구성 필수.
+
+**[최우선 절대 규칙 - 시장규모 수치 필수]**
+- "## 관련시장 동향" 섹션 본문에는 반드시 다음 두 종류의 수치가 모두 1개 이상 명시되어 있어야 한다:
+  (1) 국내(KRW: 조 원/억 원) 또는 글로벌(USD: 십억 달러/억 달러) 시장규모 수치 — 예: "약 2.4조 원", "USD 18.5억"
+  (2) CAGR(연평균 성장률) % 수치 — 예: "연평균 7.8%로 성장 중이다"
+- 수치가 누락된 출력은 **잘못된 출력으로 간주되어 폐기**되므로, 정확한 통계가 불확실할 경우라도 표준 출처(KISTEP/KREI/Grand View Research/MarketsandMarkets 등)의 가장 근접한 상위 시장 추정치를 활용해 반드시 명시한다.
+- "정보 없음", "추정이 어렵다" 등의 회피 표현 금지. 어떤 경우에도 시장규모·CAGR 수치는 1개 이상 본문에 포함한다.
 
 **문장 연결 규칙 (매우 중요! 반드시 준수!):**
 - 단문을 단순 나열하지 말고, 인과·대조·예시·부연·전환 관계를 명확히 드러내는 연결어구를 적극 활용해 자연스러운 흐름으로 작성한다.
