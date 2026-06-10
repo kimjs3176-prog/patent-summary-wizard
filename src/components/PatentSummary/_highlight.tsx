@@ -87,7 +87,7 @@ export const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
   { type: "concept",     regex: /([가-힣A-Za-z0-9]{2,10}(?:\s+[가-힣A-Za-z0-9]{2,10}){1,3}\s+(?:위험|한계|구조|모델|체계|시장|생태계|기반|공정|회수율|효능|치료제|소비\s*구조|수익\s*구조|공급\s*모델|원료\s*공급|추출\s*공정))/g },
 ];
 
-interface HLMatch { start: number; end: number; type: HLType; text: string; }
+interface HLMatch { start: number; end: number; type: HLType; text: string; weight?: number; }
 
 // 의미가 약한 디스코스 마커/필러 — 강조 대상에서 제외.
 // "이 기술", "주된 기술", "본 기술/발명" 등 지시·관형 수식 + 일반명사 단독은 강조 가치가 없음.
@@ -209,7 +209,13 @@ export function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] 
       out.push(
         <mark
           key={`hl-${key++}`}
-          className={`bg-transparent ${HL_STYLE[m.type]}`}
+          className={`bg-transparent ${
+            m.weight === 1
+              ? "font-semibold text-[#191F28]"
+              : m.weight === 3
+              ? "font-extrabold text-[#191F28] underline decoration-2 decoration-emerald-500 underline-offset-2"
+              : HL_STYLE[m.type]
+          }`}
         >
           {sliced}
         </mark>,
