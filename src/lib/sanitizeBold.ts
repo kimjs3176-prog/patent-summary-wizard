@@ -25,6 +25,8 @@ import { correctTypos } from "./typoCorrections";
 // ----- (A) Quantitative patterns ---------------------------------------------
 const QUANT_PATTERNS: RegExp[] = [
   // 엄격: [숫자 + 단위 명사]만 캡처. 주변 동사/연결어를 절대 포함하지 않음.
+  // TRL 단계 (영문 약어 + 숫자) — PROPER 패턴보다 먼저 실행되어 "TRL" 단독 매칭을 막는다.
+  /\bTRL\s?\d\b/g,
   // 서열번호 1 (내지 6)
   /서열번호\s*\d+(?:\s*내지\s*\d+)?/g,
   // 금액: 약? + 숫자 + (조|억|만|천)? + 원/달러/위안/엔
@@ -42,8 +44,8 @@ const QUANT_PATTERNS: RegExp[] = [
 const PROPER_PATTERNS: RegExp[] = [
   // 학술적 영문 구: "Fibronectin 1", "Matrix metallopeptidase 7"
   /\b[A-Z][a-z]{2,}(?:\s+[a-z]+){0,3}(?:\s+\d+)?\b/g,
-  // ALL-CAPS 약어 (2~6자) — 단독 의미 명확
-  /\b[A-Z]{2,6}(?:-\d+)?\b/g,
+  // ALL-CAPS 약어 (2~6자) — TRL은 숫자와 함께 QUANT에서 처리되므로 제외
+  /\b(?!TRL\b)[A-Z]{2,6}(?:-\d+)?\b/g,
   // 균주 ID
   /\b(?:KCTC|KACC|KCCM|ATCC|NRRL)\s*\d+\b/g,
 ];
@@ -79,8 +81,16 @@ const TRAILING_PARTICLES = [
   "된", "한", "적", "와", "과", "도", "만", "랑", "야", "여", "서",
 ];
 
-// 매칭 결과가 일반 명사구로 적합한지 검증 (동사/형용사 어미·조사 포함 시 거부)
-const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|없다|된다|한다|하다|되다|위해|위한|통해|통한|확보가|확보를|가능한|불가능|때문에)/;
+// 매칭 결과가 일반 명사구로 적합한지 검증 (동사/형용사 어미·서술어 포함 시 거부)
+const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|없다|된다|한다|하다|되다|위해|위한|통해|통한|확보가|확보를|가능한|불가능|때문에|의존|있어|있으며|있고|하여|되어|기반하|따라|관련|사용하여|활용하여)/;
+
+// 한글 음절(가-힣) — 어절 경계 판정에 사용
+const HANGUL_SYLLABLE_RE = /[\uAC00-\uD7A3]/;
+// 매치 끝이 한국어 접미사(성·적·화·력·률·도) 등 한 글자로 이어져 어절이 잘리는 경우를 막기 위해
+// 매치 직후 글자가 한글이면 매칭을 거부한다. 단, 숫자/영문으로 끝나는 매치는 통상 단위 경계가 있어 안전.
+function isHangulChar(ch: string | undefined): boolean {
+  return !!ch && HANGUL_SYLLABLE_RE.test(ch);
+}
 
 function trimTrailingParticles(s: string): string {
   let out = s;
@@ -159,6 +169,17 @@ function highlightSentence(
     if (overlaps(start, end)) return false;
     let key = raw.trim();
     if (!key || key.length < 2) return false;
+    // 매치 길이 상한 — 비정상적으로 긴 캡처(서술어까지 삼킨 경우)는 거부.
+    if (key.length > 30) return false;
+    // 어절 경계 보호:
+    //  (1) 매치 끝이 한글이고 그 직후도 한글이면 어절 잘림 → 거부 (예: "시장" + "성")
+    //  (2) 매치 시작이 한글이고 그 직전도 한글이면 어절 중간에서 시작 → 거부
+    const lastCh = key.charAt(key.length - 1);
+    const firstCh = key.charAt(0);
+    const afterCh = sentence.charAt(end);
+    const beforeCh = start > 0 ? sentence.charAt(start - 1) : "";
+    if (isHangulChar(lastCh) && isHangulChar(afterCh)) return false;
+    if (isHangulChar(firstCh) && isHangulChar(beforeCh)) return false;
     // 조사/어미 끝부분 탈락 → 길이 차이만큼 end 축소
     const trimmed = trimTrailingParticles(key);
     if (!trimmed || trimmed.length < 2) return false;
