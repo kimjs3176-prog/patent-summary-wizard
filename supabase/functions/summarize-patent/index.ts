@@ -560,9 +560,24 @@ serve(async (req) => {
     };
 
     const stream = new ReadableStream<Uint8Array>({
+      // 30s 무응답 타임아웃: 업스트림이 chunk를 멈춘 채 idle하면 끊어 클라이언트 재시도 유도
       async pull(controller) {
         try {
-          const { done, value } = await reader.read();
+          const IDLE_MS = 30000;
+          const idlePromise = new Promise<{ done: true; value: undefined; __idle: true }>((resolve) =>
+            setTimeout(() => resolve({ done: true, value: undefined, __idle: true } as any), IDLE_MS)
+          );
+          const result: any = await Promise.race([reader.read(), idlePromise]);
+          if (result.__idle) {
+            console.warn(`[STREAM IDLE] ${trimmedPatent} no chunk for ${IDLE_MS}ms (chars=${fullContent.length})`);
+            try { await reader.cancel("idle-timeout"); } catch { /* ignore */ }
+            const errMsg = JSON.stringify({ error: "stream_truncated", message: "응답이 정체되어 중단되었습니다. 자동 재시도합니다." });
+            controller.enqueue(encoder.encode(`data: ${errMsg}\n\n`));
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+            return;
+          }
+          const { done, value } = result;
           if (done) {
             // Upstream closed. If finish_reason wasn't "stop", treat as network truncation.
             if (finishReason === "stop") {
