@@ -820,7 +820,7 @@ export function TossPatentSummary({
                   <p className="text-[13px] font-bold" style={{ color: ACCENT_HEX }}>AI 종합 분석</p>
                 </div>
                 <p className="text-[15px] leading-[1.75] text-[#191F28] font-medium">
-                  {details.analysis}
+                  {renderBold(details.analysis)}
                 </p>
               </div>
             </section>
