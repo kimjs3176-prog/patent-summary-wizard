@@ -82,6 +82,25 @@ const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|
 // 구절 '중간'에 등장하는 연결 용언/어미 — 문장형 오버매칭 차단용
 const VERB_MIDPHRASE_RE = /(?:제공하며|활발해지며|대응한|어렵다는|해결하고|확보하고|있으며|위한|통해|기반으로|따라)/;
 
+// 연결명사구의 마지막 토큰으로 허용되는 명사 어미 — 기술 핵심·특장점 시사어 포함
+const COMPOUND_TAIL_NOUNS = [
+  "기술", "체인", "문제", "시스템", "전략", "모델", "구조", "관리", "분석",
+  "솔루션", "플랫폼", "서비스", "제품", "소재", "공정", "장치", "방법",
+  "효과", "성능", "품질", "시장", "산업", "분야", "역량", "기능", "특성",
+  "성분", "성질", "수율", "공급", "수급", "유통", "보존", "보관", "포장",
+  "원료", "장비", "설비", "수단", "방식", "특장점", "강점", "차별점",
+  "핵심", "원천", "독자", "신규", "혁신", "최적화",
+];
+const COMPOUND_TAIL_RE = new RegExp(
+  `(?:${COMPOUND_TAIL_NOUNS.map((s) => s.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")).join("|")})$`,
+);
+
+// 연결명사구 후보 — 한글 토큰 2~5음절이 1~3회 연결되고 마지막이 명사로 끝남
+const COMPOUND_NOUN_RE = /[가-힣]{2,5}(?:\s+[가-힣]{2,5}){1,3}/g;
+
+// 토큰이 동사/형용사/조사로 끝나는지 (연결명사 후보에서 제외)
+const TOKEN_VERBISH_RE = /(?:다|음|함|기|며|고|면|서|아|어|여|게|지|는|던|을|를|이|가|은|에|의|로|와|과|도|만)$/;
+
 // 한글 음절(가-힣) — 어절 경계 판정에 사용
 const HANGUL_SYLLABLE_RE = /[\uAC00-\uD7A3]/;
 // 매치 끝이 한국어 접미사(성·적·화·력·률·도) 등 한 글자로 이어져 어절이 잘리는 경우를 막기 위해
@@ -190,12 +209,14 @@ function highlightSentence(
     const key = targetText.trim();
     if (!key || key.length < 2) return false;
     if (SENTENCEY_RE.test(key)) return false;
-    if (paragraphSeen.has(key)) return false;
+    // 같은 문단 내 중복은 한 번 더(총 2회)까지 허용 — 등가 명사구 병렬 강조 지원
+    const seenCount = paragraphSeen.get(key) ?? 0;
+    if (seenCount >= 2) return false;
     if (/^[\s.,;:()[\]{}'"`~!@#$%^&*]+$/.test(key)) return false;
 
     occupied.push([start, end]);
     inserts.push({ start, end, text: `**${key}**${suffixText}` });
-    paragraphSeen.add(key);
+    paragraphSeen.set(key, seenCount + 1);
     sentenceBudget--;
     paragraphBudget.remaining--;
     return true;
@@ -214,6 +235,24 @@ function highlightSentence(
 
   // (A) numbers first — highest precedence
   scan(QUANT_PATTERNS);
+
+  // (C-pre) 연결명사구 — "해외 대형 마트 체인", "원료 수급 불균형 문제" 등
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    COMPOUND_NOUN_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = COMPOUND_NOUN_RE.exec(sentence)) !== null) {
+      if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) break;
+      const phrase = m[0];
+      const tokens = phrase.split(/\s+/);
+      // 마지막 토큰이 허용된 명사 어미로 끝나야 함
+      if (!COMPOUND_TAIL_RE.test(tokens[tokens.length - 1])) continue;
+      // 어느 토큰이라도 동사/조사형 어미면 제외
+      if (tokens.some((t) => TOKEN_VERBISH_RE.test(t))) continue;
+      // 문장형 어휘 차단
+      if (SENTENCEY_RE.test(phrase) || VERB_MIDPHRASE_RE.test(phrase)) continue;
+      tryAdd(m.index, m.index + phrase.length, phrase);
+    }
+  }
 
   // (C) curated noun-phrases (longest first)
   if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
