@@ -247,12 +247,12 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v11-market-required-no-fragment-bold";
+    const promptVersion = "v12-market-postcheck-prose-highlight-safe";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
-    const SUMMARY_CACHE_VERSION = "v6";
+    const SUMMARY_CACHE_VERSION = "v7";
 
     // ★ 강제 재생성: 캐시 즉시 삭제
     if (forceRegenerate) {
@@ -405,7 +405,7 @@ serve(async (req) => {
 - 약식 표기(L. plantarum 등)도 이탤릭 유지. 예: *L. plantarum*.
 - 한글 통칭(유산균, 벼, 고초균 등)이나 균주 번호(KCTC 1234), 영문 일반명(rice, soybean)에는 이탤릭을 적용하지 않는다.
 - 학명 뒤의 조사·구두점·괄호는 이탤릭 바깥에 위치시킨다. 올바른 예: *Lactobacillus plantarum*은 / *Oryza sativa*(벼). 잘못된 예: *Lactobacillus plantarum은* / *Oryza sativa(벼)*.
-- 볼드와 동시에 적용해야 할 경우 ***학명*** 형식(별표 3개)으로 작성한다.
+- 본문에 학명이 없는 특허에서는 별표(*)를 절대 사용하지 않는다. 항목 나열을 위해 별표를 쓰는 것도 금지한다.
 
 섹션별 작성 지침(분량은 위 [섹션 분량 규칙]을 최우선으로 준수):
 ## 기술분야 - IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 충실히 서술
