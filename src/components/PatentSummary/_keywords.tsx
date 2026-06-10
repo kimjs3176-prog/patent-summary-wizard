@@ -40,10 +40,24 @@ export type KwItem = { word: string; cat: KeywordCategory };
 export function extractKeywordsFromPatent(
   patentData: { titleKo?: string; title?: string; abstract?: string; classifications?: string[] } | null | undefined,
   max = 8,
+  summary?: string,
 ): KwItem[] {
   if (!patentData) return [];
   const title = patentData.titleKo || patentData.title || "";
-  const text = `${title} ${patentData.abstract || ""}`;
+  // 분석된 요약서가 있으면 요약서 본문을 1순위 컨텍스트로 사용 (명칭만으로는 오인식 가능)
+  const cleanedSummary = (summary || "")
+    // 마크다운 헤더/볼드/리스트 마커 제거
+    .replace(/^#{1,6}\s+/gm, " ")
+    .replace(/\*\*?/g, "")
+    .replace(/`+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const hasSummary = cleanedSummary.length > 80;
+  const text = hasSummary
+    ? `${title} ${cleanedSummary} ${patentData.abstract || ""}`
+    : `${title} ${patentData.abstract || ""}`;
+  // 주제(소재) 탐지용 컨텍스트: 요약서가 있으면 요약서 우선, 없으면 명칭만
+  const subjectContext = hasSummary ? `${title} ${cleanedSummary}` : title;
 
   const industryKws: string[] = [];
   const funcKws: string[] = [];
@@ -173,7 +187,7 @@ export function extractKeywordsFromPatent(
     [/(?:주성분|유효\s*성분|핵심\s*성분|고함량|함유한|풍부한)[가-힣\s]{0,6}단백질|단백질\s*(?:추출|분리|정제|소재|원료)/, "단백질"],
     [/전분|녹말/, "전분"], [/셀룰로오스|섬유소/, "셀룰로오스"],
   ];
-  subjectPatterns.forEach(([p, l]) => { if (p.test(title) && !subjectKws.includes(l)) subjectKws.push(l); });
+  subjectPatterns.forEach(([p, l]) => { if (p.test(subjectContext) && !subjectKws.includes(l)) subjectKws.push(l); });
   if (subjectKws.length === 0) {
     subjectPatterns.forEach(([p, l]) => { if (p.test(text) && !subjectKws.includes(l)) subjectKws.push(l); });
   }
