@@ -838,7 +838,7 @@ export function TossPatentSummary({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ patentNumber, patentData, summaryContent: content }),
+            body: JSON.stringify({ patentNumber, patentData, summaryContent: content, analysisMode: "detailed" }),
           }
         );
         const json = await res.json();

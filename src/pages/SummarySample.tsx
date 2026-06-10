@@ -164,7 +164,7 @@ export default function SummarySample() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ patentNumber: SAMPLE_PATENT, patentData }),
+            body: JSON.stringify({ patentNumber: SAMPLE_PATENT, patentData, summaryContent: summary, analysisMode: "detailed" }),
           }
         );
         const json = await res.json();
