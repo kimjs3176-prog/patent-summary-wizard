@@ -37,12 +37,16 @@ const KILL_SWITCH_VERSION = "2026-05-13-a";
   } catch { /* ignore */ }
 })();
 
-// Initialize current build signature from the loaded document (so first check can detect a new version)
+// Initialize current build signature from the loaded document.
+// Combine the main JS bundle hash AND the main CSS hash so we can detect any
+// content-hash change even if only styles were rebuilt.
 const getLoadedBuild = (): string | null => {
   const script = document.querySelector('script[src*="/assets/index-"]') as HTMLScriptElement | null;
-  const src = script?.src || "";
-  const m = src.match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/);
-  return m ? m[1] : null;
+  const link = document.querySelector('link[rel="stylesheet"][href*="/assets/index-"]') as HTMLLinkElement | null;
+  const jsM = (script?.src || "").match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/);
+  const cssM = (link?.href || "").match(/\/assets\/(index-[A-Za-z0-9_-]+\.css)/);
+  if (!jsM && !cssM) return null;
+  return `${jsM?.[1] || "-"}|${cssM?.[1] || "-"}`;
 };
 (window as any).__APP_BUILD__ = (window as any).__APP_BUILD__ || getLoadedBuild();
 
@@ -88,8 +92,8 @@ const showUpdateToast = (countdownSec: number) => {
       "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);" +
       "z-index:2147483647;background:#10B981;color:#fff;padding:10px 16px;" +
       "border-radius:9999px;font:600 13px/1.4 Pretendard,Inter,sans-serif;" +
-      "box-shadow:0 8px 24px rgba(16,185,129,.35);pointer-events:none;" +
-      "opacity:0;transition:opacity .25s ease;";
+      "box-shadow:0 8px 24px rgba(16,185,129,.35);" +
+      "opacity:0;transition:opacity .25s ease;display:flex;align-items:center;gap:10px;";
     el.textContent = `새 버전이 준비되었습니다. ${countdownSec}초 후 자동 새로고침`;
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = "1"; });
@@ -100,6 +104,40 @@ const showUpdateToast = (countdownSec: number) => {
       el.textContent = `새 버전이 준비되었습니다. ${left}초 후 자동 새로고침`;
     }, 1000);
   } catch { /* ignore */ }
+};
+
+// 결과 화면 등으로 자동 새로고침이 보류된 동안 사용자에게 수동 적용 버튼을 노출.
+const showManualUpdateBanner = () => {
+  try {
+    const id = "__app-update-banner__";
+    if (document.getElementById(id)) return;
+    const el = document.createElement("div");
+    el.id = id;
+    el.setAttribute("role", "status");
+    el.style.cssText =
+      "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);" +
+      "z-index:2147483647;background:#10B981;color:#fff;padding:10px 14px 10px 16px;" +
+      "border-radius:9999px;font:600 13px/1.4 Pretendard,Inter,sans-serif;" +
+      "box-shadow:0 8px 24px rgba(16,185,129,.35);display:flex;align-items:center;gap:10px;" +
+      "opacity:0;transition:opacity .25s ease;";
+    const label = document.createElement("span");
+    label.textContent = "새 버전이 준비되었습니다";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "지금 새로고침";
+    btn.style.cssText =
+      "background:#fff;color:#047857;border:0;border-radius:9999px;" +
+      "padding:5px 12px;font:700 12px/1 Pretendard,Inter,sans-serif;cursor:pointer;";
+    btn.onclick = () => { hardReload(); };
+    el.appendChild(label);
+    el.appendChild(btn);
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = "1"; });
+  } catch { /* ignore */ }
+};
+const hideManualUpdateBanner = () => {
+  const el = document.getElementById("__app-update-banner__");
+  if (el && el.parentNode) el.parentNode.removeChild(el);
 };
 
 const hardReload = () => {
@@ -136,8 +174,10 @@ const safeReload = (opts: { maxWaitMs?: number; toastSec?: number } = {}) => {
     // are dismissed.
     if (hasVisibleResults()) {
       pendingReload = false;
+      showManualUpdateBanner();
       return;
     }
+    hideManualUpdateBanner();
     if (!isAppBusy() || waited >= maxWaitMs) {
       fire();
       return;
@@ -172,34 +212,54 @@ if ("serviceWorker" in navigator) {
   }).catch(() => { /* ignore */ });
 }
 
-// Periodic version check — compares index.html asset hash signature
+// ==================== 새 버전 감시 ====================
+// 주 자산(JS + CSS) 해시를 동시에 추출해 비교한다. 일부만 변경돼도 즉시 감지.
+let consecutiveCheckFailures = 0;
+let checkInFlight = false;
+
+const parseBuildSignature = (html: string): string | null => {
+  const jsM = html.match(/src="\/assets\/(index-[A-Za-z0-9_-]+\.js)"/);
+  const cssM = html.match(/href="\/assets\/(index-[A-Za-z0-9_-]+\.css)"/);
+  if (!jsM && !cssM) return null;
+  return `${jsM?.[1] || "-"}|${cssM?.[1] || "-"}`;
+};
+
 const checkForUpdate = async () => {
+  if (checkInFlight) return;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  checkInFlight = true;
   try {
     const res = await fetch(`${window.location.origin}/?_v=${Date.now()}`, {
       cache: "no-store",
       headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      consecutiveCheckFailures++;
+      return;
+    }
     const html = await res.text();
-    const match = html.match(/src="\/assets\/(index-[A-Za-z0-9_-]+\.js)"/);
-    if (!match) return;
-    const latest = match[1];
+    const latest = parseBuildSignature(html);
+    if (!latest) {
+      consecutiveCheckFailures++;
+      return;
+    }
+    consecutiveCheckFailures = 0;
     const current = (window as any).__APP_BUILD__;
     if (!current) {
       (window as any).__APP_BUILD__ = latest;
       return;
     }
     if (current !== latest) {
+      console.info(`[update] new build detected: ${current} → ${latest}`);
       (window as any).__APP_BUILD__ = latest;
-      // Ask SW to update; controllerchange will trigger hardReload.
-      // If no SW, reload directly.
+      // SW가 있으면 업데이트 강제 → controllerchange가 hardReload 트리거.
       if ("serviceWorker" in navigator) {
         try {
           const reg = await navigator.serviceWorker.getRegistration();
           if (reg) {
             await reg.update();
             if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
-            // Fallback in case controllerchange never fires
+            // controllerchange가 안 와도 보장
             setTimeout(safeReload, 2000);
             return;
           }
@@ -207,13 +267,52 @@ const checkForUpdate = async () => {
       }
       safeReload();
     }
-  } catch { /* ignore */ }
+  } catch {
+    consecutiveCheckFailures++;
+  } finally {
+    checkInFlight = false;
+  }
 };
-// Aggressive cadence: first check after 5s, then every 60 seconds. safeReload()
-// still defers when the user is actively analyzing, but with a shorter cap.
-setTimeout(checkForUpdate, 5 * 1000);
-setInterval(checkForUpdate, 60 * 1000);
+
+// 백오프: 연속 실패 시 다음 체크까지 대기시간 증가(최대 5분).
+const scheduleNextCheck = () => {
+  const base = 45 * 1000; // 45초
+  const backoff = Math.min(consecutiveCheckFailures, 6); // 최대 6배
+  const delay = base * Math.max(1, backoff || 1);
+  setTimeout(async () => { await checkForUpdate(); scheduleNextCheck(); }, delay);
+};
+
+// 첫 체크는 빠르게(3초), 이후 주기적 + 이벤트 기반 재확인.
+setTimeout(() => { checkForUpdate().finally(scheduleNextCheck); }, 3 * 1000);
 window.addEventListener("focus", checkForUpdate);
+window.addEventListener("online", checkForUpdate);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") checkForUpdate();
+});
+
+// 동적 import 실패(= 보통 스테일 빌드, 새 청크 경로 사라짐) 시 즉시 업데이트 시도.
+const looksLikeChunkLoadError = (msg: string) => {
+  const m = (msg || "").toLowerCase();
+  return (
+    m.includes("failed to fetch dynamically imported module") ||
+    m.includes("error loading dynamically imported module") ||
+    m.includes("importing a module script failed") ||
+    m.includes("chunkloaderror") ||
+    (m.includes("loading chunk") && m.includes("failed"))
+  );
+};
+window.addEventListener("error", (e) => {
+  const msg = e?.message || (e?.error && (e.error as Error).message) || "";
+  if (looksLikeChunkLoadError(msg)) {
+    console.warn("[update] chunk load error — forcing version check");
+    checkForUpdate();
+  }
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const reason: any = e?.reason;
+  const msg = typeof reason === "string" ? reason : reason?.message || "";
+  if (looksLikeChunkLoadError(msg)) {
+    console.warn("[update] chunk load rejection — forcing version check");
+    checkForUpdate();
+  }
 });
