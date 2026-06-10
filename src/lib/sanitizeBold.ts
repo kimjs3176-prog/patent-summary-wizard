@@ -169,7 +169,7 @@ function splitSentences(paragraph: string): string[] {
 
 function highlightSentence(
   sentence: string,
-  paragraphSeen: Set<string>,
+  paragraphSeen: Map<string, number>,
   paragraphBudget: { remaining: number },
 ): string {
   if (sentence.length < 8) return sentence;
@@ -299,8 +299,8 @@ function highlightSentence(
 
 function highlightParagraph(paragraph: string): string {
   if (SKIP_LINE_RE.test(paragraph)) return paragraph;
-  const seen = new Set<string>();
-  const budget = { remaining: 4 };
+  const seen = new Map<string, number>();
+  const budget = { remaining: 6 };
   const sentences = splitSentences(paragraph);
   return sentences.map((s) => highlightSentence(s, seen, budget)).join(" ");
 }
