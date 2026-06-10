@@ -251,7 +251,93 @@ export function collectMatches(text: string): HLMatch[] {
     filtered.push(m);
     cursor = m.end;
   }
-  return filtered;
+  return applyDensityCaps(filtered, text);
+}
+
+// 우선순위(낮을수록 우선): 정량(metric/money/compare) > 차별성(superlative) >
+// 핵심개념(concept) > 해결수단(solution) > 문제(problem) > 인용(quote)
+const TYPE_PRIORITY: Record<HLType, number> = {
+  metric: 1, money: 1, compare: 1,
+  superlative: 2,
+  concept: 3,
+  solution: 4,
+  problem: 5,
+  quote: 6,
+};
+
+/**
+ * 사용자 정의 강조 비율 규칙:
+ *  - 한 문장 내 최대 2개
+ *  - 인접 문장을 연속으로 Bold 처리하지 않음 (직전 문장이 Bold면 다음 문장 스킵)
+ *  - 전체 텍스트의 15%를 초과하지 않음
+ *  - 충돌 시 우선순위(TYPE_PRIORITY)로 선택
+ */
+function applyDensityCaps(matches: HLMatch[], text: string): HLMatch[] {
+  if (matches.length === 0) return matches;
+  // 문장 경계 인덱스 사전 계산
+  const breaks: number[] = [0];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    // .  !  ?  。  ．  ！  ？  \n
+    if (ch === 46 || ch === 33 || ch === 63 || ch === 0x3002 || ch === 0xFF0E || ch === 0xFF01 || ch === 0xFF1F || ch === 10) {
+      breaks.push(i + 1);
+    }
+  }
+  if (breaks[breaks.length - 1] !== text.length) breaks.push(text.length);
+  const sentenceOf = (pos: number) => {
+    // breaks[i] = sentence i 시작 위치. 마지막 항목은 text.length.
+    let lo = 0, hi = breaks.length - 1;
+    while (lo < hi - 1) {
+      const mid = (lo + hi) >> 1;
+      if (breaks[mid] <= pos) lo = mid; else hi = mid;
+    }
+    return lo;
+  };
+
+  // 문장별로 후보 그룹화
+  const groups = new Map<number, HLMatch[]>();
+  for (const m of matches) {
+    const idx = sentenceOf(m.start);
+    if (!groups.has(idx)) groups.set(idx, []);
+    groups.get(idx)!.push(m);
+  }
+
+  const maxBoldedChars = Math.floor(text.length * 0.15);
+  const final: HLMatch[] = [];
+  let boldedChars = 0;
+  let lastBoldedSentence = -2;
+  const sortedIdx = Array.from(groups.keys()).sort((a, b) => a - b);
+
+  for (const sIdx of sortedIdx) {
+    // 인접 문장 연속 강조 금지 — 단, 직전 문장과 1칸 차이일 때만 스킵
+    if (sIdx === lastBoldedSentence + 1) continue;
+    const cands = groups.get(sIdx)!.slice().sort((a, b) => {
+      const pa = TYPE_PRIORITY[a.type] ?? 9;
+      const pb = TYPE_PRIORITY[b.type] ?? 9;
+      if (pa !== pb) return pa - pb;
+      // 같은 우선순위 → 더 긴 의미 단위 우선
+      return (b.end - b.start) - (a.end - a.start);
+    });
+    let picked = 0;
+    const pickedRanges: HLMatch[] = [];
+    for (const c of cands) {
+      if (picked >= 2) break;
+      // 같은 문장 내 위치 겹침 방지
+      if (pickedRanges.some((p) => c.start < p.end && c.end > p.start)) continue;
+      // 15% 총량 캡
+      if (boldedChars + (c.end - c.start) > maxBoldedChars) continue;
+      pickedRanges.push(c);
+      picked++;
+      boldedChars += c.end - c.start;
+    }
+    if (pickedRanges.length > 0) {
+      // 원위치 순서로 다시 정렬해 푸시
+      pickedRanges.sort((a, b) => a.start - b.start);
+      final.push(...pickedRanges);
+      lastBoldedSentence = sIdx;
+    }
+  }
+  return final;
 }
 
 export function highlightImportant(nodes: React.ReactNode[]): React.ReactNode[] {
