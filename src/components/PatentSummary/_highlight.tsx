@@ -89,6 +89,12 @@ interface HLMatch { start: number; end: number; type: HLType; text: string; }
 const FILLER_RE = /^(?:현재\s*)?(?:본|이|그|해당|동|주된|주요|일반|단순)?\s*(?:기술|발명|특허|연구|논문|장치|시스템|모델|구조|방식|방법|단계|분야|영역|구성|형태|형식|내용|결과|효과|기능|성능)$/;
 const DISCOURSE_PREFIX_RE = /^(?:현재|향후|기존|결론적으로|종합적으로|전반적으로|단기적으로|중기적으로|장기적으로|특히|또한|그리고|따라서|이는|이러한|이와\s*같이|한편|반면)\s+/;
 
+// 의미가 빈약하거나 사용자가 명시적으로 제외 요청한 표현 — 매치되더라도 강조하지 않음.
+// 예) "거듭날 기회를 제공", "차별적 효과를 제공" 같은 상투적 효익 표현,
+//     "수치는 2021년의 52억 달러 시장" 처럼 본문 흐름상 강조 가치가 낮은 수치 인용.
+const EXCLUDE_MATCH_RE = /(?:거듭날\s*기회|차별적\s*효과|기회를\s*제공|효과를\s*제공)/;
+const EXCLUDE_CONTEXT_RE = /수치는\s*$/;
+
 function trimTrailingParticle(s: string): string {
   return s.replace(/[\s]*[은는이가을를의에서와과로으로]+$/u, "").trim();
 }
@@ -112,6 +118,11 @@ export function collectMatches(text: string): HLMatch[] {
       if (FILLER_RE.test(trimTrailingParticle(matchedText))) continue;
       const offset = m[0].indexOf(m[1] || m[0]);
       const start = m.index + Math.max(0, offset);
+      // 4) 명시 제외 문구는 폐기.
+      if (EXCLUDE_MATCH_RE.test(matchedText)) continue;
+      // 5) 직전 컨텍스트 기반 제외 ("수치는 ... 52억 달러 시장" 류).
+      const preceding = text.slice(Math.max(0, start - 12), start);
+      if (EXCLUDE_CONTEXT_RE.test(preceding)) continue;
       all.push({ start, end: start + matchedText.length, type, text: matchedText });
     }
   }
