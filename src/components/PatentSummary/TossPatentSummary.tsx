@@ -539,7 +539,8 @@ export function TossPatentSummary({
         </div>
       )}
 
-      <div className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden max-w-[720px] mx-auto">
+      <div ref={aiBodyRef} className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden max-w-[720px] mx-auto">
+        <HighlightProposer containerRef={aiBodyRef} patentNumber={patentNumber} />
         <div className="px-5 sm:px-7 pb-12">
           {/* HERO */}
           <section className="pt-9 pb-5">
