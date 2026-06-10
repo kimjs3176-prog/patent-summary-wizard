@@ -271,6 +271,13 @@ function parseSections(md: string): MdSection[] {
     if (line.trim() === "") { flush(); continue; }
     // 출처 블록 내 일반 라인 — "1. 기관명, ..." 또는 "- 기관명" 형식도 footnote로 흡수
     if (inSourcesBlock && cur) {
+      // 본문 인용 마커([^N])가 포함되면 본문 문단이 재개된 것 → 출처 모드 종료
+      if (/\[\^\d+\]/.test(line)) {
+        inSourcesBlock = false;
+        const cleaned = line.replace(/^\s*[-•*]\s+/, "").replace(/^\s*\d+\.\s+/, "").replace(/[`_]/g, "").trim();
+        buf += (buf ? " " : "") + cleaned;
+        continue;
+      }
       const numbered = line.match(/^\s*(?:[-•]|\d+\.)\s*(.+?)\s*$/);
       const txt = (numbered ? numbered[1] : line).trim();
       if (txt) {
@@ -284,6 +291,19 @@ function parseSections(md: string): MdSection[] {
   }
   flush();
   if (cur) sections.push(cur);
+  // 각주 정리: (1) 동일 텍스트 중복 제거, (2) 1부터 재번호
+  for (const s of sections) {
+    if (!s.footnotes || s.footnotes.length === 0) continue;
+    const seen = new Set<string>();
+    const dedup: { num: number; text: string }[] = [];
+    for (const f of s.footnotes) {
+      const key = f.text.replace(/\s+/g, " ").trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      dedup.push({ num: dedup.length + 1, text: f.text });
+    }
+    s.footnotes = dedup;
+  }
   const parsed = sections.filter(s =>
     !/특허\s*기본\s*정보/i.test(s.title) &&
     (s.paragraphs.length > 0 || (s.footnotes && s.footnotes.length > 0))
