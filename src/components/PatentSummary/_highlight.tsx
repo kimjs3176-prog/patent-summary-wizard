@@ -92,7 +92,15 @@ interface HLMatch { start: number; end: number; type: HLType; text: string; weig
 // 의미가 약한 디스코스 마커/필러 — 강조 대상에서 제외.
 // "이 기술", "주된 기술", "본 기술/발명" 등 지시·관형 수식 + 일반명사 단독은 강조 가치가 없음.
 const FILLER_RE = /^(?:현재\s*)?(?:본|이|그|해당|동|주된|주요|일반|단순)?\s*(?:기술|발명|특허|연구|논문|장치|시스템|모델|구조|방식|방법|단계|분야|영역|구성|형태|형식|내용|결과|효과|기능|성능)$/;
-const DISCOURSE_PREFIX_RE = /^(?:현재|향후|기존|결론적으로|종합적으로|전반적으로|단기적으로|중기적으로|장기적으로|특히|또한|그리고|따라서|이는|이러한|이와\s*같이|한편|반면)\s+/;
+const DISCOURSE_PREFIX_RE = /^(?:현재|향후|기존|기존의|결론적으로|종합적으로|전반적으로|단기적으로|중기적으로|장기적으로|특히|또한|그리고|따라서|이는|이러한|이와\s*같이|한편|반면|또는|또|그러나|하지만|즉|만약|뿐만\s*아니라)\s+/;
+// 매치 시작부에서 잘라내야 하는 조사·접속사·디스코스 마커 (start 오프셋 보정).
+const LEADING_TRIM_RE = /^(?:현재|향후|기존|기존의|결론적으로|종합적으로|전반적으로|단기적으로|중기적으로|장기적으로|특히|또한|그리고|따라서|이는|이러한|이와\s*같이|한편|반면|또는|또|그러나|하지만|즉|만약|뿐만\s*아니라|에서|에는|에도|에게|에서는|에서도|동안|만큼|보다|처럼|부터|까지|마다|조차|로서|로써|이며|이고|이나|이라|에|와|과|로|으로|의|은|는|이|가|을|를)\s+/;
+// 매치가 동사 활용형(어미)로 시작하면 자연스럽지 않음 → 폐기.
+const LEADING_VERB_RE = /^(?:[가-힣]{2,8})(?:하여|되어|하며|되며|하고|되고|하면서|되면서|함으로써|됨으로써|한다면|된다면|할\s|될\s|하는\s|되는\s|한\s|된\s|하기|되기)/;
+// 매치 본문에 줄바꿈이 포함되면 폐기.
+const CROSS_LINE_RE = /[\r\n]/;
+// "본 기술/발명/특허"로 시작하는 매치 폐기.
+const LEADING_SELF_REF_RE = /^(?:현재\s*)?(?:본|이|그|해당|동)\s*(?:기술|발명|특허)/;
 
 // 의미가 빈약하거나 사용자가 명시적으로 제외 요청한 표현 — 매치되더라도 강조하지 않음.
 // 예) "거듭날 기회를 제공", "차별적 효과를 제공" 같은 상투적 효익 표현,
@@ -101,6 +109,8 @@ const EXCLUDE_MATCH_RE = /(?:거듭날\s*기회|차별적\s*효과|기회를\s*�
 const EXCLUDE_CONTEXT_RE = /수치는\s*$/;
 // IPC 분류 코드(예: A61K, A61K 36/00, A61P 35/00) — 강조 대상에서 제외.
 const IPC_CODE_RE = /\b[A-H]\d{2}[A-Z](?:\s?\d+\/\d+)?\b/;
+// 시작 위치 바로 앞이 영문 대문자(IPC 코드의 'A' 등)이면 부분 매치 — 폐기.
+const IPC_PRECEDING_RE = /[A-H]$/;
 
 // ---------------------------------------------------------------------------
 // 런타임 동적 규칙: 관리자 승인된 제외/추가 문구.
@@ -183,7 +193,24 @@ export function collectMatches(text: string): HLMatch[] {
       // 캡처 그룹의 원위치 + trim으로 잘린 선행 공백만큼 보정
       const offset = m[0].indexOf(rawGroup);
       const leadingWs = rawGroup.length - rawGroup.trimStart().length;
-      const start = m.index + Math.max(0, offset) + leadingWs;
+      let start = m.index + Math.max(0, offset) + leadingWs;
+      let workText = matchedText;
+      // 매치 시작부의 조사/접속사/디스코스 마커를 잘라내고 start 보정 (반복 적용).
+      for (let i = 0; i < 3; i++) {
+        const lm = workText.match(LEADING_TRIM_RE);
+        if (!lm) break;
+        start += lm[0].length;
+        workText = workText.slice(lm[0].length);
+      }
+      if (workText.length < 2) continue;
+      // 정제된 본문 재평가
+      if (FILLER_RE.test(workText) || FILLER_RE.test(trimTrailingParticle(workText))) continue;
+      if (LEADING_SELF_REF_RE.test(workText)) continue;
+      if (LEADING_VERB_RE.test(workText)) continue;
+      if (CROSS_LINE_RE.test(workText)) continue;
+      // 시작 직전 문자가 한글이면 단어 일부만 잡힌 것 → 폐기 ("고부가가치" → "부가가치")
+      const prevChar = text.charAt(start - 1);
+      if (/[가-힣]/.
       // 4) 명시 제외 문구는 폐기.
       if (EXCLUDE_MATCH_RE.test(matchedText)) continue;
       // 4-a) IPC 분류 코드 포함 시 폐기.
