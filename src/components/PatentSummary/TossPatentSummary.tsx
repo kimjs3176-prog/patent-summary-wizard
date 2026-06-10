@@ -31,6 +31,26 @@ interface TossPatentSummaryProps extends BasePatentSummaryProps {
 const SOFT = "#F2F4F6";
 const ACCENT_HEX = "#10B981";
 
+/**
+ * 출원번호: ##-####-####### (13자리)
+ * 등록번호: ##-####### (앞 9자리, 뒤 0000 패딩 제거)
+ */
+function formatPatentNumber(value: string | undefined | null, kind: 'application' | 'registration'): string {
+  if (!value) return '';
+  const digits = String(value).replace(/\D/g, '');
+  if (kind === 'application') {
+    if (digits.length === 13) {
+      return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return String(value);
+  }
+  // registration: 7자리 본번호. 13자리 입력이면 앞 2 + 다음 7만 사용
+  if (digits.length >= 9) {
+    return `${digits.slice(0, 2)}-${digits.slice(2, 9)}`;
+  }
+  return String(value);
+}
+
 function formatAiModelLabel(model?: string): string {
   if (!model) return "Gemini 2.5 Flash";
   const map: Record<string, string> = {
