@@ -99,7 +99,7 @@ async function callAISummaryCompletions(
       "X-Lovable-AIG-SDK": "edge-fetch",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ ...payload, model: "google/gemini-3-flash-preview" }),
+    body: JSON.stringify({ ...payload, model: "google/gemini-2.5-flash" }),
   });
 }
 
@@ -216,7 +216,7 @@ serve(async (req) => {
     let customPromptExtra = "";
     let maxTokens = 12000;
     // 분석 모델은 가격/성능 균형이 가장 우수한 Gemini 3 Flash Preview로 고정한다.
-    const aiModel = "google/gemini-3-flash-preview";
+    const aiModel = "google/gemini-2.5-flash";
     let sectionLengthSettings: Record<string, number> = {};
     try {
       const supabase = getSupabaseClient();
