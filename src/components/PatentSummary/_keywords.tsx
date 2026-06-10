@@ -331,5 +331,55 @@ export function extractKeywordsFromPatent(
   productKws.slice(1, 2).forEach((w) => push(w, "product"));
   featKws.slice(0, 3).forEach((w) => push(w, "tech"));
 
-  return unique;
+  // -------------------------------------------------------------------------
+  // 본문 기반 키워드와 특허 명칭 적합성 검증
+  //   material/product 카테고리는 명칭과 직결되는 의미 단위 → 명칭과 어긋나면 폐기.
+  //   검증 통과 조건(택1):
+  //     1) 키워드 표기가 명칭에 그대로 포함
+  //     2) 같은 카테고리의 소스 패턴이 명칭에 매치
+  //     3) 본문(요약서+초록)에서 동일 패턴이 2회 이상 매치 (강한 본문 근거)
+  //   조건을 모두 충족하지 못하면 부적합으로 간주하고 폐기.
+  //   단, 각 카테고리의 최소 1개는 유지(빈 슬롯 방지)하기 위해 명칭 nouns 폴백 적용.
+  // -------------------------------------------------------------------------
+  const titleNorm = title.replace(/\s+/g, "");
+  const bodyText = `${cleanedSummary} ${patentData.abstract || ""}`;
+  const findPattern = (label: string, list: [RegExp, string][]): RegExp | undefined =>
+    list.find(([, l]) => l === label)?.[0];
+  const countHits = (re: RegExp, s: string): number => {
+    const g = new RegExp(re.source, re.flags.includes("g") ? re.flags : re.flags + "g");
+    return (s.match(g) || []).length;
+  };
+  const isFitForTitle = (item: KwItem): boolean => {
+    if (item.cat !== "material" && item.cat !== "product") return true;
+    if (!title) return true;
+    if (titleNorm.includes(item.word.replace(/\s+/g, ""))) return true;
+    const list = item.cat === "material" ? subjectPatterns : productPatterns;
+    const pat = findPattern(item.word, list);
+    if (pat && pat.test(title)) return true;
+    if (pat && countHits(pat, bodyText) >= 2) return true;
+    return false;
+  };
+
+  const validated: KwItem[] = [];
+  const validatedSeen = new Set<string>();
+  for (const item of unique) {
+    if (!isFitForTitle(item)) continue;
+    if (validatedSeen.has(item.word)) continue;
+    validatedSeen.add(item.word);
+    validated.push(item);
+  }
+
+  // 폴백: material/product 슬롯이 비면 명칭 nouns에서 보강
+  const ensureSlot = (cat: KeywordCategory, fallback: string) => {
+    if (validated.some((v) => v.cat === cat)) return;
+    const noun = extractTitleNouns()[0] || fallback;
+    if (noun && !validatedSeen.has(noun)) {
+      validatedSeen.add(noun);
+      validated.push({ word: noun, cat });
+    }
+  };
+  ensureSlot("material", "처리 대상");
+  ensureSlot("product", "최종 산출물");
+
+  return validated.slice(0, max);
 }
