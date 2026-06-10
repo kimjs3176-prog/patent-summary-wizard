@@ -168,6 +168,26 @@ serve(async (req) => {
       );
     }
 
+    // 가드: 실제 특허 데이터가 없으면 AI가 가짜 요약을 만들어내므로 즉시 실패한다.
+    const pd = (patentData ?? null) as PatentData | null;
+    const hasUsableData = !!(
+      pd && (
+        (pd.title && pd.title.trim().length > 1) ||
+        (pd.abstract && pd.abstract.trim().length > 20) ||
+        (Array.isArray(pd.claims) && pd.claims.some((c) => typeof c === "string" && c.trim().length > 20)) ||
+        (pd.description && pd.description.trim().length > 50)
+      )
+    );
+    if (!hasUsableData) {
+      console.warn(`[summary] refused: missing patentData for ${trimmedPatent}`);
+      return new Response(
+        JSON.stringify({
+          error: "특허 원문 데이터를 가져오지 못해 요약을 생성할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+        }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Read custom prompt additions, total max tokens, model, and per-section length settings.
     let customPromptExtra = "";
     let maxTokens = 12000;
