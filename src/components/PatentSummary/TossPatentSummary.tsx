@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Sparkles, Share2, Loader2, Lightbulb, TrendingUp, Leaf, Rocket, FileText, Mail,
-  QrCode, X, Copy, Check, Heart, ExternalLink, Printer, Link2,
+  QrCode, X, Copy, Check, Heart, ExternalLink, Printer, Link2, RefreshCw,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
   onScoreReady?: (score: number) => void;
+  onRegenerate?: () => void;
 }
 
 const SOFT = "#F2F4F6";
@@ -763,6 +764,7 @@ export function TossPatentSummary({
   onRelatedPatentClick,
   onKeywordClick,
   onScoreReady,
+  onRegenerate,
   featureFlags = { pdfEnabled: true, pptEnabled: true },
 }: TossPatentSummaryProps) {
   const { settings } = useSiteSettings();
