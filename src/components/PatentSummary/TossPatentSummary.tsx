@@ -336,6 +336,13 @@ export function TossPatentSummary({
   const [copied, setCopied] = useState(false);
 
   const printRef = useRef<HTMLDivElement>(null);
+  const aiBodyRef = useRef<HTMLDivElement>(null);
+
+  // 관리자 승인된 하이라이트 규칙(제외/추가)을 런타임에 주입.
+  const { data: highlightRules } = useHighlightRules();
+  useEffect(() => {
+    setRuntimeHighlightRules(highlightRules ?? []);
+  }, [highlightRules]);
 
   const favoritesEnabled = settings.feature_favorites !== "false";
   const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
