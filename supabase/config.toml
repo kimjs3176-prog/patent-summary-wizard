@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.analyze-pivoting]
 verify_jwt = false
+
+[functions.manage-highlight-rules]
+verify_jwt = false
