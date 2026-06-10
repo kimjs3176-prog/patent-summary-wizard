@@ -305,7 +305,15 @@ export function collectMatches(text: string): HLMatch[] {
       // 5) 직전 컨텍스트 기반 제외 ("수치는 ... 52억 달러 시장" 류).
       const preceding = text.slice(Math.max(0, start - 12), start);
       if (EXCLUDE_CONTEXT_RE.test(preceding)) continue;
-      all.push({ start, end: start + workText.length, type, text: workText });
+      // 6) 출력 검증 — 종료부 노이즈 1회 정리 후 최종 유효성 검사.
+      let finalText = trimTrailingNoise(workText);
+      if (finalText.length < workText.length) {
+        // 길이 축소된 만큼 end 좌표 갱신
+        // (start는 동일, finalText는 workText의 prefix이므로 안전)
+        if (!workText.startsWith(finalText)) finalText = workText; // 안전망
+      }
+      if (!isValidHighlightPhrase(finalText)) continue;
+      all.push({ start, end: start + finalText.length, type, text: finalText });
     }
   }
   all.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
