@@ -5,6 +5,7 @@ export interface HighlightRule {
   id: string;
   kind: "exclude" | "include";
   phrase: string;
+  weight?: number;
 }
 
 /**
@@ -17,7 +18,7 @@ export function useHighlightRules() {
     queryFn: async (): Promise<HighlightRule[]> => {
       const { data, error } = await supabase
         .from("highlight_rule_proposals")
-        .select("id, kind, phrase")
+        .select("id, kind, phrase, weight")
         .eq("status", "approved")
         .limit(1000);
       if (error) throw error;
