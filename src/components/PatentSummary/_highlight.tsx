@@ -4,34 +4,39 @@ import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
 export function renderBold(text: string) {
   const cleaned = sanitizeBoldMarkers(text);
   const parts = cleaned.split(/(\*{1,3}[^*\n]+\*{1,3})/g);
-  return parts.map((p, i) => {
+  const nodes: React.ReactNode[] = [];
+  parts.forEach((p, i) => {
     const m = p.match(/^(\*{1,3})([^*\n]+)\1$/);
     if (m) {
       const stars = m[1].length;
       const inner = m[2];
       if (stars === 3) {
-        return <strong key={i} className="font-semibold text-[#191F28]"><em className="italic">{inner}</em></strong>;
+        nodes.push(<strong key={`b-${i}`} className="font-bold text-[#191F28]"><em className="italic">{inner}</em></strong>);
+      } else if (stars === 2) {
+        nodes.push(<strong key={`b-${i}`} className="font-bold text-[#191F28]">{inner}</strong>);
+      } else {
+        nodes.push(<em key={`b-${i}`} className="italic">{inner}</em>);
       }
-      if (stars === 2) {
-        return <strong key={i} className="font-semibold text-[#191F28]">{inner}</strong>;
-      }
-      return <em key={i} className="italic">{inner}</em>;
+    } else if (p) {
+      nodes.push(p);
     }
-    return <span key={i}>{p}</span>;
   });
+  // 비-볼드 텍스트 노드에 패턴 기반 하이라이트 적용 → 통일된 검은색 볼드 처리
+  return highlightImportant(nodes);
 }
 
 export type HLType = "money" | "metric" | "superlative" | "solution" | "problem" | "compare" | "concept" | "quote";
 
 export const HL_STYLE: Record<HLType, string> = {
-  money:       "font-bold text-[#0B7C5C] bg-[#10B98129] px-1.5 rounded-[5px] tabular-nums ring-1 ring-[#10B98140]",
-  metric:      "font-bold text-[#0B7C5C] bg-[#10B9811F] px-1 rounded-[4px] tabular-nums",
-  compare:     "font-bold text-[#0B7C5C] bg-[#10B98124] px-1 rounded-[4px]",
-  superlative: "font-bold text-[#B45309] bg-[#FEF3C7] px-1 rounded-[4px]",
-  solution:    "font-semibold text-[#047857] bg-[#10B9811A] px-1 rounded-[4px] decoration-[#10B98166] decoration-1 underline underline-offset-[3px]",
-  problem:     "font-semibold text-[#B91C1C] bg-[#FEE2E21F] px-1 rounded-[4px] decoration-[#FCA5A5] decoration-1 underline underline-offset-[3px]",
-  concept:     "font-semibold text-[#191F28] bg-[#F2F4F6] px-1 rounded-[4px] decoration-[#CBD5E1] decoration-dotted underline underline-offset-[3px]",
-  quote:       "font-semibold text-[#191F28] bg-[#F2F4F6] px-1 rounded-[4px]",
+  // 분야 구분 없이 일괄 검은색 볼드 처리
+  money:       "font-bold text-[#191F28]",
+  metric:      "font-bold text-[#191F28]",
+  compare:     "font-bold text-[#191F28]",
+  superlative: "font-bold text-[#191F28]",
+  solution:    "font-bold text-[#191F28]",
+  problem:     "font-bold text-[#191F28]",
+  concept:     "font-bold text-[#191F28]",
+  quote:       "font-bold text-[#191F28]",
 };
 
 export const HL_PATTERNS: { type: HLType; regex: RegExp }[] = [
