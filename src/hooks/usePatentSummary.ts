@@ -217,42 +217,6 @@ export function usePatentSummary() {
     }
   }, [relatedPatents]);
 
-  // Note: original finally block split into success/failure paths above.
-  // Ensure loading flag is cleared on the success return path as well.
-  // (Wrapped via a thin helper to avoid duplicating logic.)
-  const _ = () => {
-    setIsLoading(false);
-    if (typeof window !== "undefined") (window as any).__APP_BUSY__ = false;
-  };
-  void _;
-
-  // (No-op placeholder to preserve original useCallback dep array structure.)
-  const __unused = useCallback(() => {}, []);
-  void __unused;
-
-  // Reassign to keep code below unchanged.
-  const reset = useCallback(() => {
-    setSummary("");
-    setCurrentPatent("");
-    setPatentData(null);
-    setRelatedPatents([]);
-    setAnalysisStep("idle");
-  }, []);
-
-  // Loading flag cleanup for the success path
-  // (handled inline before each return inside generateSummary above)
-  void 0;
-
-  // ----- The legacy block below is intentionally left as no-ops to keep diff minimal -----
-  const __legacy = async () => {
-    try {} catch (_e) {}
-    finally {
-      setIsLoading(false);
-      if (typeof window !== "undefined") (window as any).__APP_BUSY__ = false;
-    }
-  };
-  void __legacy;
-
   const loadFromHistory = useCallback((historyItem: {
     summary: string;
     patentData: PatentData;
