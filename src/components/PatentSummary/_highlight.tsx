@@ -95,12 +95,57 @@ const DISCOURSE_PREFIX_RE = /^(?:현재|향후|기존|결론적으로|종합적�
 const EXCLUDE_MATCH_RE = /(?:거듭날\s*기회|차별적\s*효과|기회를\s*제공|효과를\s*제공)/;
 const EXCLUDE_CONTEXT_RE = /수치는\s*$/;
 
+// ---------------------------------------------------------------------------
+// 런타임 동적 규칙: 관리자 승인된 제외/추가 문구.
+// useHighlightRules() 훅이 로드한 결과를 setRuntimeHighlightRules()로 주입.
+// ---------------------------------------------------------------------------
+let RUNTIME_EXCLUDES: string[] = [];
+let RUNTIME_INCLUDES: string[] = [];
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function setRuntimeHighlightRules(
+  rules: { kind: "exclude" | "include"; phrase: string }[],
+) {
+  RUNTIME_EXCLUDES = [];
+  RUNTIME_INCLUDES = [];
+  for (const r of rules) {
+    const p = (r.phrase || "").trim();
+    if (!p) continue;
+    if (r.kind === "exclude") RUNTIME_EXCLUDES.push(p);
+    else RUNTIME_INCLUDES.push(p);
+  }
+}
+
+function matchesRuntimeExclude(text: string): boolean {
+  if (RUNTIME_EXCLUDES.length === 0) return false;
+  const norm = text.replace(/\s+/g, "");
+  return RUNTIME_EXCLUDES.some((p) => {
+    const np = p.replace(/\s+/g, "");
+    return np.length > 0 && norm.includes(np);
+  });
+}
+
 function trimTrailingParticle(s: string): string {
   return s.replace(/[\s]*[은는이가을를의에서와과로으로]+$/u, "").trim();
 }
 
 export function collectMatches(text: string): HLMatch[] {
   const all: HLMatch[] = [];
+  // 0) 관리자가 승인한 'include' 문구를 강제 매치(공백 유연 매칭)
+  for (const phrase of RUNTIME_INCLUDES) {
+    const trimmed = phrase.trim();
+    if (!trimmed) continue;
+    const flexible = trimmed.split(/\s+/).map(escapeRegExp).join("\\s+");
+    const re = new RegExp(flexible, "g");
+    let mm: RegExpExecArray | null;
+    while ((mm = re.exec(text)) !== null) {
+      if (!mm[0]) { re.lastIndex++; continue; }
+      all.push({ start: mm.index, end: mm.index + mm[0].length, type: "solution", text: mm[0] });
+    }
+  }
   for (const { type, regex } of HL_PATTERNS) {
     const re = new RegExp(regex.source, regex.flags);
     let m: RegExpExecArray | null;
@@ -120,6 +165,8 @@ export function collectMatches(text: string): HLMatch[] {
       const start = m.index + Math.max(0, offset);
       // 4) 명시 제외 문구는 폐기.
       if (EXCLUDE_MATCH_RE.test(matchedText)) continue;
+      // 4-b) 런타임 승인된 'exclude' 문구와 겹치면 폐기.
+      if (matchesRuntimeExclude(matchedText)) continue;
       // 5) 직전 컨텍스트 기반 제외 ("수치는 ... 52억 달러 시장" 류).
       const preceding = text.slice(Math.max(0, start - 12), start);
       if (EXCLUDE_CONTEXT_RE.test(preceding)) continue;
