@@ -16,11 +16,22 @@ import { PrintableContent } from "./PrintableContent";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
-import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
-import { renderBold, highlightImportant, setRuntimeHighlightRules } from "./_highlight";
-import { HighlightProposer } from "./HighlightProposer";
-import { useHighlightRules } from "@/hooks/useHighlightRules";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
+
+// Plain renderer — highlight feature removed.
+function sanitizeBoldMarkers(text: string): string {
+  return text ? text.replace(/\*\*([^*\n]+?)\*\*/g, "$1") : text;
+}
+function renderBold(text: string): React.ReactNode {
+  if (!text) return text;
+  const stripped = sanitizeBoldMarkers(text);
+  const parts = stripped.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+  return parts.map((p, i) => {
+    const m = p.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+    if (m) return <em key={i} className="italic">{m[1]}</em>;
+    return <span key={i}>{p}</span>;
+  });
+}
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
@@ -401,12 +412,6 @@ export function TossPatentSummary({
   const printRef = useRef<HTMLDivElement>(null);
   const aiBodyRef = useRef<HTMLDivElement>(null);
 
-  // 관리자 승인된 하이라이트 규칙(제외/추가)을 런타임에 주입.
-  const { data: highlightRules } = useHighlightRules();
-  useEffect(() => {
-    setRuntimeHighlightRules(highlightRules ?? []);
-  }, [highlightRules]);
-
   const favoritesEnabled = settings.feature_favorites !== "false";
   const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
   const glossaryEnabled = settings.feature_glossary !== "false";
@@ -607,7 +612,6 @@ export function TossPatentSummary({
       )}
 
       <div ref={aiBodyRef} className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden max-w-[720px] mx-auto">
-        <HighlightProposer containerRef={aiBodyRef} patentNumber={patentNumber} />
         <div className="px-5 sm:px-7 pb-12">
           {/* HERO */}
           <section className="pt-9 pb-5">
@@ -840,7 +844,7 @@ export function TossPatentSummary({
                             } else {
                               const annotated = annotate(ip);
                               const nodes = Array.isArray(annotated) ? annotated : [annotated];
-                              processed.push(...highlightImportant(nodes as React.ReactNode[]));
+                              processed.push(...(nodes as React.ReactNode[]));
                             }
                           });
                         }

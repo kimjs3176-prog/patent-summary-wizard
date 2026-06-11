@@ -10,7 +10,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Lock, Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, Save, X, Loader2, Search, Settings, Star, Video, ToggleLeft, ToggleRight, Database, RefreshCw, FileText, FileDown, Printer, KeyRound, MessageCircle, BarChart3, TrendingUp, Zap, Calendar, Megaphone, Highlighter } from "lucide-react";
 import { NoticeManager } from "@/components/admin/NoticeManager";
 import { PdfLayoutSettings, DEFAULT_PDF_CONFIG, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
-import { HighlightRulesManager } from "@/components/admin/HighlightRulesManager";
 import { toast } from "sonner";
 import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { supabase } from "@/integrations/supabase/client";
@@ -535,9 +534,6 @@ const Admin = () => {
               </TabsTrigger>
               <TabsTrigger value="summary" className="gap-1.5 text-xs sm:text-sm">
                 <FileText className="w-3.5 h-3.5" /> 요약서
-              </TabsTrigger>
-              <TabsTrigger value="highlights" className="gap-1.5 text-xs sm:text-sm">
-                <Highlighter className="w-3.5 h-3.5" /> 강조규칙
               </TabsTrigger>
               <TabsTrigger value="output" className="gap-1.5 text-xs sm:text-sm">
                 <Printer className="w-3.5 h-3.5" /> 출력
@@ -1373,13 +1369,6 @@ const Admin = () => {
                 요약서 설정 저장
               </Button>
             </div>
-          </TabsContent>
-
-          {/* ===== Highlight Rules Tab ===== */}
-          <TabsContent value="highlights">
-            <Card className="p-4">
-              <HighlightRulesManager adminPassword={password} />
-            </Card>
           </TabsContent>
 
           {/* ===== Output Tab (Print + PDF) ===== */}

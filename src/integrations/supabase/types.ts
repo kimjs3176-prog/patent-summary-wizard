@@ -80,45 +80,6 @@ export type Database = {
         }
         Relationships: []
       }
-      highlight_rule_proposals: {
-        Row: {
-          context: string | null
-          created_at: string
-          id: string
-          kind: string
-          note: string | null
-          patent_number: string | null
-          phrase: string
-          reviewed_at: string | null
-          status: string
-          weight: number
-        }
-        Insert: {
-          context?: string | null
-          created_at?: string
-          id?: string
-          kind: string
-          note?: string | null
-          patent_number?: string | null
-          phrase: string
-          reviewed_at?: string | null
-          status?: string
-          weight?: number
-        }
-        Update: {
-          context?: string | null
-          created_at?: string
-          id?: string
-          kind?: string
-          note?: string | null
-          patent_number?: string | null
-          phrase?: string
-          reviewed_at?: string | null
-          status?: string
-          weight?: number
-        }
-        Relationships: []
-      }
       notices: {
         Row: {
           content: string | null
