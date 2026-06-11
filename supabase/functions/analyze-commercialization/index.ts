@@ -418,8 +418,8 @@ serve(async (req) => {
     const round = (n: number) => Math.round(n / 5) * 5;
     // 근거/분석 문구는 UI에서 잘리지 않도록 짧은 완결문으로 제한
     const baseRanges = isDetailedScore
-      ? { reason: [55, 85], trl: [65, 95], analysis: [70, 105] }
-      : { reason: [45, 70], trl: [55, 80], analysis: [55, 90] };
+      ? { reason: [40, 60], trl: [65, 95], analysis: [70, 105] }
+      : { reason: [32, 50], trl: [55, 80], analysis: [55, 90] };
 
     const reasonMin = round(baseRanges.reason[0] * lengthMultiplier);
     const reasonMax = round(baseRanges.reason[1] * lengthMultiplier);
