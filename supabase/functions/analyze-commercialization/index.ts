@@ -513,6 +513,10 @@ marketReason 작성 규칙(중요):
 - 모든 텍스트 필드(analysis / technologyReason / marketReason / businessReason / trlReason)는 반드시 평서형 해라체("~한다." / "~있다." / "~된다." / "~이다.")로만 종료한다.
 - "~합니다", "~습니다", "~입니다", "~됩니다" 등 합쇼체 종결은 절대 금지.
 
+한국어 맞춤법·조사 규칙(매우 중요):
+- 출력 전 모든 문장의 조사(은/는, 이/가, 을/를, 와/과, 으로/로)가 앞 단어의 받침과 일치하는지 검증한다. 예: "증가가"(O)/"증가이"(X), "농가는"(O)/"농가은"(X), "단가 경쟁력"(O)/"단이 경쟁력"(X).
+- "증가, 농가, 단가, 평가, 효과, 차이"처럼 단어 자체가 가/과/이로 끝나는 명사를 임의로 변형하지 말 것. 오타·탈자 없는 완성된 문장만 출력한다.
+
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 독립항의 차별성·권리범위의 넓이·회피설계 난이도 관점으로 간결 분석(청구항 개수 언급 금지)","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
        : `특허 기술사업화 평가 전문가. JSON으로만 응답.
