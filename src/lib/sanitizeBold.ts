@@ -270,7 +270,7 @@ function highlightSentence(
   const inserts: Array<{ start: number; end: number; text: string }> = [];
   let sentenceBudget = 3;
 
-  const tryAdd = (start: number, end: number, raw: string) => {
+  const tryAdd = (start: number, end: number, raw: string, opts?: { allowModifier?: boolean }) => {
     if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) return false;
     if (overlaps(start, end)) return false;
     const trimmedRaw = raw.trim();
@@ -281,7 +281,16 @@ function highlightSentence(
     const spaceCount = (trimmedRaw.match(/\s/g) || []).length;
     if (spaceCount >= 2 && VERB_MIDPHRASE_RE.test(trimmedRaw)) return false;
     // 강화된 문장형 구절 차단 — 관형형 어미/목적격 조사/동사성 마감
-    if (
+    // allowModifier=true: 수식어(된/한/는/인)+명사구 패턴은 INVALID_SENTENCE_RE를 우회한다.
+    // 단, 마지막 토큰이 명사로 끝나는지(=서술어가 아닌지)를 별도 확인.
+    if (opts?.allowModifier) {
+      const lastToken = trimmedRaw.split(/\s+/).pop() ?? "";
+      // 마지막 토큰이 동사/조사 어미로 끝나면 문장 — 거부
+      if (TOKEN_VERBISH_RE.test(lastToken)) return false;
+      if (SUBJECT_PREDICATE_RE.test(trimmedRaw) || BROKEN_BOUNDARY_RE.test(trimmedRaw)) return false;
+      // 부정 마감(한계/문제/리스크 등)은 여전히 차단
+      if (/\s+(?:한계|문제|리스크|어려움|부담|요인)$/.test(trimmedRaw)) return false;
+    } else if (
       INVALID_SENTENCE_RE.test(trimmedRaw) ||
       SUBJECT_PREDICATE_RE.test(trimmedRaw) ||
       BROKEN_BOUNDARY_RE.test(trimmedRaw)
@@ -319,13 +328,13 @@ function highlightSentence(
     return true;
   };
 
-  const scan = (patterns: RegExp[]) => {
+  const scan = (patterns: RegExp[], opts?: { allowModifier?: boolean }) => {
     for (const p of patterns) {
       p.lastIndex = 0;
       let m: RegExpExecArray | null;
       while ((m = p.exec(sentence)) !== null) {
         if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) return;
-        tryAdd(m.index, m.index + m[0].length, m[0]);
+        tryAdd(m.index, m.index + m[0].length, m[0], opts);
       }
     }
   };
@@ -340,12 +349,12 @@ function highlightSentence(
 
   // (F) 수식어 + 명사구 — "혁신적인 활용 가능성", "최적화된 프로모터 서열"
   if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
-    scan(MODIFIER_NOUN_PATTERNS);
+    scan(MODIFIER_NOUN_PATTERNS, { allowModifier: true });
   }
 
   // (G) 병렬 명사구 — "스마트팜 및 정밀농업", "가뭄이나 염분 스트레스"
   if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
-    scan(PARALLEL_NOUN_PATTERNS);
+    scan(PARALLEL_NOUN_PATTERNS, { allowModifier: true });
   }
 
   // (D) 결정적 강점 키워드 단독 매칭
