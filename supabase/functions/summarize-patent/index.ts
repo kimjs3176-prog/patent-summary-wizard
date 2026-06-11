@@ -530,7 +530,7 @@ serve(async (req) => {
 
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
           fullContent = mergeMarketParagraphs(fullContent);
-          fullContent = renumberMarketFootnotes(fullContent);
+          fullContent = inlineMarketCitations(fullContent);
           emitText(controller, fullContent);
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
