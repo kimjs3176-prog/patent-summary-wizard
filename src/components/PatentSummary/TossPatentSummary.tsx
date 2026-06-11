@@ -316,13 +316,36 @@ function parseSections(md: string): MdSection[] {
     if (!s.footnotes || s.footnotes.length === 0) continue;
     const seen = new Set<string>();
     const dedup: { num: number; text: string }[] = [];
+    const renumber = new Map<number, number>(); // 원본 num → 새 num
     for (const f of s.footnotes) {
       const key = f.text.replace(/\s+/g, " ").trim();
-      if (!key || seen.has(key)) continue;
+      if (!key) continue;
+      if (seen.has(key)) {
+        // 중복 출처 — 기존 번호로 매핑
+        const existing = dedup.find((d) => d.text.replace(/\s+/g, " ").trim() === key);
+        if (existing) renumber.set(f.num, existing.num);
+        continue;
+      }
       seen.add(key);
-      dedup.push({ num: dedup.length + 1, text: f.text });
+      const newNum = dedup.length + 1;
+      renumber.set(f.num, newNum);
+      dedup.push({ num: newNum, text: f.text });
     }
     s.footnotes = dedup;
+    // 본문 단락의 [^N] 인라인 마커를 재번호에 맞춰 갱신
+    s.paragraphs = s.paragraphs.map((p) =>
+      p.replace(/\[\^(\d+)\]/g, (m, n) => {
+        const mapped = renumber.get(parseInt(n, 10));
+        return mapped ? `[^${mapped}]` : m;
+      }),
+    );
+    // 본문에 인라인 각주 마커가 하나도 없으면, 마지막 단락 끝에 모든 출처 번호를 자동 부착
+    const hasInline = s.paragraphs.some((p) => /\[\^\d+\]/.test(p));
+    if (!hasInline && dedup.length > 0 && s.paragraphs.length > 0) {
+      const markers = dedup.map((d) => `[^${d.num}]`).join("");
+      const lastIdx = s.paragraphs.length - 1;
+      s.paragraphs[lastIdx] = s.paragraphs[lastIdx].replace(/\s*$/, "") + markers;
+    }
   }
   const parsed = sections.filter(s =>
     !/특허\s*기본\s*정보/i.test(s.title) &&
