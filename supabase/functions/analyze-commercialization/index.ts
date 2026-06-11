@@ -565,6 +565,8 @@ businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분
 
 공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 점수 숫자·점수대·"~점이다" 표현과 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. 점수는 별도 숫자 필드에서만 허용.
 
+한국어 맞춤법·조사 규칙(매우 중요): 모든 문장의 조사(은/는, 이/가, 을/를, 와/과, 으로/로)가 앞 단어의 받침과 일치하는지 출력 전 검증한다. "증가, 농가, 단가, 평가, 효과"처럼 가/과로 끝나는 명사를 변형하지 말 것. 오타·탈자 없는 완성된 문장만 출력한다.
+
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자: 독립항 차별성·권리범위·회피설계 난이도 기준 핵심근거(청구항 개수 언급 금지)","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
 
