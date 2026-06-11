@@ -16,11 +16,22 @@ import { PrintableContent } from "./PrintableContent";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
-import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
-import { renderBold, highlightImportant, setRuntimeHighlightRules } from "./_highlight";
-import { HighlightProposer } from "./HighlightProposer";
-import { useHighlightRules } from "@/hooks/useHighlightRules";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
+
+// Plain renderer — highlight feature removed.
+function sanitizeBoldMarkers(text: string): string {
+  return text ? text.replace(/\*\*([^*\n]+?)\*\*/g, "$1") : text;
+}
+function renderBold(text: string): React.ReactNode {
+  if (!text) return text;
+  const stripped = sanitizeBoldMarkers(text);
+  const parts = stripped.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+  return parts.map((p, i) => {
+    const m = p.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+    if (m) return <em key={i} className="italic">{m[1]}</em>;
+    return <span key={i}>{p}</span>;
+  });
+}
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;

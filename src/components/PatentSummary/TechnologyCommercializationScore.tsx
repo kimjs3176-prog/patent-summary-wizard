@@ -4,7 +4,19 @@ import { CircularGauge } from "./CircularGauge";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
-import { renderBold } from "./_highlight";
+
+// Plain renderer — highlight feature removed.
+// Strips ** markdown bold and renders *Latin* segments as <em>.
+function renderBold(text: string): React.ReactNode {
+  if (!text) return text;
+  const stripped = text.replace(/\*\*([^*\n]+?)\*\*/g, "$1");
+  const parts = stripped.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+  return parts.map((p, i) => {
+    const m = p.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+    if (m) return <em key={i} className="italic">{m[1]}</em>;
+    return <span key={i}>{p}</span>;
+  });
+}
 
 export interface CommercializationDetails {
   technologyScore: number;
