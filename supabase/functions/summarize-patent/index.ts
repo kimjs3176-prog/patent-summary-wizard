@@ -141,9 +141,9 @@ function hasRequiredMarketFigures(content: string): boolean {
 function buildMarketFallback(data: PatentData): string {
   const sourceText = `${data.title || ""} ${data.abstract || ""} ${(data.classifications || []).join(" ")}`;
   if (/드론|무인\s*비행|항공영상|B64U|B64C/i.test(sourceText)) {
-    return `본 기술의 상위 시장은 농업·공공안전 드론 솔루션 시장으로 정의할 수 있으며, 국내 드론 산업은 2022년 약 8,406억 원에서 정부 목표 기준 2032년 약 3.9조 원 규모로 확대되는 흐름이다[^1]. 이를 2026년 현재 시점으로 환산하면 약 1.45조 원 규모에 해당하고, 2022~2032년 목표치의 내재 성장률은 연평균 약 16.6%로 추정된다[^1]. 또한 글로벌 농업용 드론 시장은 2024년 약 USD 54억 규모에서 2030년까지 연평균 약 28.6% 성장할 것으로 전망되어, 유해 생물 탐지·방제용 특수 드론의 세부 시장 확장 여지가 있다[^2].\n\n### 출처\n[^1]: 국토교통부, 「제2차 드론산업발전 기본계획」, 2023\n[^2]: Grand View Research, 「Agriculture Drone Market Size Report」, 2024`;
+    return `본 기술의 상위 시장은 농업·공공안전 드론 솔루션 시장으로 정의할 수 있으며, 국내 드론 산업은 2022년 약 8,406억 원에서 정부 목표 기준 2032년 약 3.9조 원 규모로 확대되는 흐름이다(국토교통부 「제2차 드론산업발전 기본계획」, 2023). 이를 2026년 현재 시점으로 환산하면 약 1.45조 원 규모에 해당하고, 2022~2032년 목표치의 내재 성장률은 연평균 약 16.6%로 추정된다(국토교통부 「제2차 드론산업발전 기본계획」, 2023). 또한 글로벌 농업용 드론 시장은 2024년 약 USD 54억 규모에서 2030년까지 연평균 약 28.6% 성장할 것으로 전망되어, 유해 생물 탐지·방제용 특수 드론의 세부 시장 확장 여지가 있다(Grand View Research 「Agriculture Drone Market Size Report」, 2024).`;
   }
-  return `본 기술의 상위 시장은 농식품 스마트 기술 및 관련 응용 솔루션 시장으로 정의할 수 있으며, 국내 스마트농업 관련 시장은 2024년 약 7,000억 원 수준에서 2026년 약 9,000억 원 규모로 확대되는 흐름이다[^1]. 기준연도 시장규모에 정책 보급 확대와 민간 솔루션 도입률을 반영하면 연평균 성장률은 약 12.0% 수준으로 추정되며, 정밀 모니터링·자동화·데이터 기반 의사결정 수요가 세부 시장 성장을 견인한다[^1]. 글로벌 스마트농업 시장도 2024년 약 USD 180억 규모에서 2030년까지 연평균 약 13.4% 성장할 것으로 전망되어, 특허 기술의 응용 시장은 농가 단위 실증과 공공 보급 사업을 통해 확대될 수 있다[^2].\n\n### 출처\n[^1]: 농림축산식품부, 「스마트농업 육성정책 자료」, 2024\n[^2]: MarketsandMarkets, 「Smart Agriculture Market Global Forecast」, 2024`;
+  return `본 기술의 상위 시장은 농식품 스마트 기술 및 관련 응용 솔루션 시장으로 정의할 수 있으며, 국내 스마트농업 관련 시장은 2024년 약 7,000억 원 수준에서 2026년 약 9,000억 원 규모로 확대되는 흐름이다(농림축산식품부 「스마트농업 육성정책 자료」, 2024). 기준연도 시장규모에 정책 보급 확대와 민간 솔루션 도입률을 반영하면 연평균 성장률은 약 12.0% 수준으로 추정되며, 정밀 모니터링·자동화·데이터 기반 의사결정 수요가 세부 시장 성장을 견인한다(농림축산식품부 「스마트농업 육성정책 자료」, 2024). 글로벌 스마트농업 시장도 2024년 약 USD 180억 규모에서 2030년까지 연평균 약 13.4% 성장할 것으로 전망되어, 특허 기술의 응용 시장은 농가 단위 실증과 공공 보급 사업을 통해 확대될 수 있다(MarketsandMarkets 「Smart Agriculture Market Global Forecast」, 2024).`;
 }
 
 function ensureMarketFigures(content: string, data: PatentData): string {
@@ -174,49 +174,31 @@ function mergeMarketParagraphs(content: string): string {
   });
 }
 
-// "관련시장 동향" 섹션의 각주 번호를 본문 등장 순서대로 1..N으로 재정렬하고,
-// ### 출처 목록도 동일하게 재번호한다. 본문이 참조하지 않는 출처는 제거하고,
-// 본문이 참조하지만 출처 목록에 없는 번호는 본문에서 제거한다.
-function renumberMarketFootnotes(content: string): string {
+// "관련시장 동향" 섹션에서 레거시 [^N] 각주 + "### 출처" 블록을
+// 본문 내 괄호 출처 표기로 변환한다. (예: "...이다[^1]" + "[^1]: A, 2024" → "...이다(A, 2024)")
+// 출처 블록이 없으면 본문의 [^N]만 제거한다.
+function inlineMarketCitations(content: string): string {
   return content.replace(/(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/, (_m, header, body) => {
-    const sourceMatch = body.match(/\n###\s*출처[^\n]*\n([\s\S]*)$/);
-    if (!sourceMatch) return `${header}${body}`;
-    const mainPart = body.slice(0, body.indexOf(sourceMatch[0]));
-    const sourceBlockHeader = body.slice(body.indexOf(sourceMatch[0]), body.indexOf(sourceMatch[0]) + sourceMatch[0].indexOf(sourceMatch[1]));
-    const sourcesRaw = sourceMatch[1];
+    const sourceMatch = body.match(/\n+###\s*출처[^\n]*\n([\s\S]*)$/);
+    const sourcesRaw = sourceMatch ? sourceMatch[1] : "";
+    const mainPart = sourceMatch ? body.slice(0, body.indexOf(sourceMatch[0])) : body;
 
-    // 출처 목록 파싱: "[^N]: ..." 라인들
     const sourceMap = new Map<string, string>();
     const sourceLineRe = /\[\^(\d+)\]\s*:\s*([^\n]+)/g;
     let sm: RegExpExecArray | null;
     while ((sm = sourceLineRe.exec(sourcesRaw)) !== null) {
-      sourceMap.set(sm[1], sm[2].trim());
-    }
-    if (sourceMap.size === 0) return `${header}${body}`;
-
-    // 본문 등장 순서대로 원본 번호 → 신규 번호 매핑 생성 (출처에 존재하는 것만)
-    const remap = new Map<string, number>();
-    let next = 1;
-    const refRe = /\[\^(\d+)\]/g;
-    let rm: RegExpExecArray | null;
-    while ((rm = refRe.exec(mainPart)) !== null) {
-      const orig = rm[1];
-      if (!sourceMap.has(orig)) continue;
-      if (!remap.has(orig)) remap.set(orig, next++);
+      // 정리: 앞뒤 공백/쉼표 정돈
+      const cleaned = sm[2].trim().replace(/[、,，]\s*$/, "");
+      sourceMap.set(sm[1], cleaned);
     }
 
-    // 본문 각주 치환: 매핑 없는 번호는 제거
-    const newMain = mainPart.replace(/\[\^(\d+)\]/g, (full, n: string) => {
-      const mapped = remap.get(n);
-      return mapped ? `[^${mapped}]` : "";
-    }).replace(/\s+([.,。、])/g, "$1").replace(/\s{2,}/g, " ");
+    // 본문의 [^N]을 (source) 로 치환. 매핑 없으면 제거.
+    const newMain = mainPart.replace(/\s*\[\^(\d+)\]/g, (_full, n: string) => {
+      const src = sourceMap.get(n);
+      return src ? `(${src})` : "";
+    }).replace(/\s+([.,。、])/g, "$1").replace(/\s{2,}/g, " ").trimEnd();
 
-    // 출처 목록 재구성: 본문에서 참조된 항목만, 새 번호 순서대로
-    const ordered = Array.from(remap.entries()).sort((a, b) => a[1] - b[1]);
-    const newSources = ordered.map(([orig, n]) => `[^${n}]: ${sourceMap.get(orig)}`).join("\n");
-
-    const tail = ordered.length > 0 ? `${sourceBlockHeader}${newSources}\n` : "";
-    return `${header}${newMain.trimEnd()}${tail ? `\n\n${tail.replace(/^\n+/, "")}` : "\n"}`;
+    return `${header}${newMain}\n`;
   });
 }
 
@@ -429,7 +411,7 @@ serve(async (req) => {
       }
     }
 
-    const lengthInstruction = `\n\n[섹션 분량 규칙 — 최우선 준수]\n- 모든 ## 섹션은 ${uniformMin}~${uniformMax}문장(섹션당 약 400~700자)으로 충실하게 작성한다. 절대 ${uniformMin}문장 미만으로 줄이지 않는다.\n- "관련시장 동향" 섹션은 시장규모(KRW/USD)·CAGR·경쟁기술·정책 동향을 모두 다뤄야 하므로 분량이 부족하지 않도록 충분히 확보하며, 출처 각주(### 출처) 목록은 문장 수 계산에서 제외한다.\n- 섹션 간 글자 수 편차는 ±30% 이내로 맞추되, "균일화"를 이유로 정보를 누락하거나 핵심 수치를 생략하지 않는다.\n- "압축", "간결" 지시는 군더더기 제거를 의미할 뿐이며 핵심 정보(시장규모·CAGR·구체적 수치·고유명사)는 반드시 포함한다.`;
+    const lengthInstruction = `\n\n[섹션 분량 규칙 — 최우선 준수]\n- 모든 ## 섹션은 ${uniformMin}~${uniformMax}문장(섹션당 약 400~700자)으로 충실하게 작성한다. 절대 ${uniformMin}문장 미만으로 줄이지 않는다.\n- "관련시장 동향" 섹션은 시장규모(KRW/USD)·CAGR·경쟁기술·정책 동향을 모두 다뤄야 하므로 분량이 부족하지 않도록 충분히 확보한다.\n- 섹션 간 글자 수 편차는 ±30% 이내로 맞추되, "균일화"를 이유로 정보를 누락하거나 핵심 수치를 생략하지 않는다.\n- "압축", "간결" 지시는 군더더기 제거를 의미할 뿐이며 핵심 정보(시장규모·CAGR·구체적 수치·고유명사)는 반드시 포함한다.`;
     const sectionLengthInstruction = "";
 
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터만으로 5개 섹션 보고서를 작성한다.
@@ -443,17 +425,17 @@ serve(async (req) => {
 
 [표기]
 - 본문에서 마크다운 볼드(**...**) 절대 사용 금지(강조는 시스템 후처리).
-- 별표·하이픈·번호 등 항목 나열 금지. 모든 본문은 서술형 산문. 소제목성 라벨("핵심 유전자:") 행 분리 금지. (예외: "관련시장 동향" 말미의 "### 출처" 각주 목록만 허용)
+- 별표·하이픈·번호 등 항목 나열 금지. 모든 본문은 서술형 산문. 소제목성 라벨("핵심 유전자:") 행 분리 금지.
 - 학명(라틴어 속명·종명)은 이탤릭 *..* 사용. 속명 첫글자 대문자, 종소명 소문자. 조사·구두점·괄호는 이탤릭 바깥. 예: *Lactobacillus plantarum*은 / *Oryza sativa*(벼). 학명이 없는 특허에서는 별표를 전혀 사용하지 않는다.
 
 [섹션 지침]
 ## 기술분야 — IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 충실히 서술.
 ## 발명요약 및 특징 — 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과를 서술형 산문으로 충분히 작성. 핵심 구성요소의 역할·차별점을 종속절·연결어구로 녹여낸다.
 ## 관련시장 동향 — 2026년 현재시점 기준으로 시장규모·CAGR·경쟁기술·정책동향을 수치 중심으로 서술. 본문에 (1) KRW 또는 USD 시장규모 수치 1개 이상, (2) CAGR(%) 수치 1개 이상이 반드시 포함되어야 한다(누락 시 잘못된 출력으로 간주). 회피 표현("정보 없음"·"추정이 어렵다") 금지.
-  · 본문은 반드시 하나의 단일 문단으로 작성한다. 본문 중간에 빈 줄(문단 구분) 절대 금지 — 상위 시장 정의·국내 시장규모·글로벌 시장규모·CAGR·경쟁/정책동향을 연결어구로 이어 하나의 문단에 통합한다. "### 출처" 블록 앞에서만 빈 줄을 허용한다.
+  · 본문은 반드시 하나의 단일 문단으로 작성한다. 본문 중간에 빈 줄(문단 구분) 절대 금지 — 상위 시장 정의·국내 시장규모·글로벌 시장규모·CAGR·경쟁/정책동향을 연결어구로 이어 하나의 문단에 통합한다.
   · 2026년 실측치 없으면 최근(2023~2025) 기준값에 CAGR 복리 적용해 환산하고 산출 근거(기준연도·기준값·CAGR)를 한 문장으로 명시.
   · 동일 상위 시장(프로바이오틱스/스마트팜/기능성식품 등)은 항상 동일 표준 출처로 일관 산출. 출처 우선순위: ① KISTEP/KIET/KREI/농식품부 → ② Grand View Research·MarketsandMarkets·IRS Global·Statista·Mordor → ③ 학회/협회 백서. 세부 시장은 "상위 시장 × 비중(%)" 형태로 도출.
-  · 모든 수치 뒤에 [^N] 각주를 달고 섹션 말미에 "### 출처" 블록으로 "[^N]: 기관명, 「보고서명」, 발행연도" 형식. 최소 2개 이상(국내 1차 + 글로벌 2차 권장). 실존하지 않는 출처 금지.
+  · 출처는 본문 내 괄호 표기만 사용한다. 형식: "(기관명, 발행연도)" 또는 "(기관명 「보고서명」, 발행연도)". 예: "국내 건강기능식품 시장 규모는 약 6조 2,022억 원이다(한국건강기능식품협회, 2023)". 동일 문장에 여러 출처가 필요하면 ";"로 구분해 한 괄호에 합친다. [^N] 형식의 각주, "### 출처" 블록, 별도 출처 목록은 절대 사용하지 않는다. 가공된/허위 출처 금지(실존 기관·보고서만 인용).
   · 과거 보고 사실만 과거형, 환산된 2026년 수치 및 전망은 현재형·미래형.
 ## 농산업활용 가능성 — 청구항·기술원리에서 직접 도출되는 적용 분야 → 현장 시나리오(누가/어디서/어떤 문제를 어떻게) → 기대 효과(수율·품질·인건비·에너지·로스율 등 정량 지표)를 연결어구로 자연스럽게 잇는다. 기술 원리와 무관한 비약(토양센서를 의료·우주에 적용 등) 금지. 확장 시 "기술원리가 동일하게 적용 가능한 인접 분야"임을 명시.
 ## 상용화전망 — 다음 4요소를 모두 포함: (1) 기술완성도(실험실/파일럿/실증/양산준비)와 남은 핵심 과제 1개 이상, (2) 단기(1~2년)·중기(3~5년) 상용화 경로·사업화 단계(라이선싱·기술이전·자체양산·합작), (3) 1차 수요처와 수익모델(B2B·로열티·OEM·구독), (4) 마지막 1~2문장은 "본 기술은 ~한 강점과 ~한 한계를 동시에 가지며, ~ 조건이 충족될 경우 ~ 영역에서 우선 상용화가 유망하다" 형태로 강점·한계·성공조건·유망 적용영역을 모두 포함. TRL 숫자 직접 언급 금지, "발전 가능성이 크다"식 막연한 마무리 금지.
@@ -548,7 +530,7 @@ serve(async (req) => {
 
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
           fullContent = mergeMarketParagraphs(fullContent);
-          fullContent = renumberMarketFootnotes(fullContent);
+          fullContent = inlineMarketCitations(fullContent);
           emitText(controller, fullContent);
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
