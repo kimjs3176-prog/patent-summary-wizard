@@ -101,7 +101,9 @@ const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|
 const VERB_MIDPHRASE_RE = /(?:제공하며|활발해지며|대응한|어렵다는|해결하고|확보하고|있으며|위한|통해|기반으로|따라)/;
 
 // 문장형 구절 강화 차단: 관형형 어미, 목적격 조사, 동사성/부정 추상 명사 마감 패턴
-const INVALID_SENTENCE_RE = /(?:[가-힣]+(?:을|를|으로|덕분에)\s+)|(?:[가-힣]+(?:하며|하고|있어|있으며|지며|삼아|하는|되는|된|할|시킨|다는|따르는|따른|위한|통해|대해|관한|대응한|기반으로)\s+)|\s+(?:억제|활용|구현|제시|방지|유지|촉진|해결|극대화|향상|절감|관리|기반|도입|적용|제어|한계|문제|리스크|어려움|부담|요인)$/;
+// 마감 동사성 명사 중 부정/추상어만 차단(한계·문제·리스크 등).
+// 효과·이점(향상·절감·단축·극대화 등)은 EFFECT_PATTERNS에서 별도로 강조하므로 허용.
+const INVALID_SENTENCE_RE = /(?:[가-힣]+(?:을|를|으로|덕분에)\s+)|(?:[가-힣]+(?:하며|하고|있어|있으며|지며|삼아|하는|되는|된|할|시킨|다는|따르는|따른|위한|통해|대해|관한|대응한|기반으로)\s+)|\s+(?:한계|문제|리스크|어려움|부담|요인)$/;
 // 주어(명사+이/가) + 서술어 구조 차단
 const SUBJECT_PREDICATE_RE = /[가-힣]+(?:이|가)\s+[가-힣]+/;
 // 어절 경계가 깨져 조사/의존명사 한 글자로 시작하는 구절 차단
@@ -258,7 +260,7 @@ function highlightSentence(
     const trimmedRaw = raw.trim();
     if (!trimmedRaw || trimmedRaw.length < 2) return false;
     // 매치 길이 상한 — 비정상적으로 긴 캡처(서술어까지 삼킨 경우)는 거부.
-    if (trimmedRaw.length > 30) return false;
+    if (trimmedRaw.length > 32) return false;
     // 문장형 오버매칭 차단: 띄어쓰기 2개 이상 + 중간에 연결 용언/어미 포함 시 거부
     const spaceCount = (trimmedRaw.match(/\s/g) || []).length;
     if (spaceCount >= 2 && VERB_MIDPHRASE_RE.test(trimmedRaw)) return false;
@@ -314,6 +316,20 @@ function highlightSentence(
 
   // (A) numbers first — highest precedence
   scan(QUANT_PATTERNS);
+
+  // (E) 기술 효과·특장점 — "수율 향상", "비용 절감" 등 이점 명사구를 적극 강조
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    scan(EFFECT_PATTERNS);
+  }
+
+  // (D) 결정적 강점 키워드 단독 매칭
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    for (const kw of DECISIVE_KEYWORDS) {
+      const idx = sentence.indexOf(kw);
+      if (idx === -1) continue;
+      tryAdd(idx, idx + kw.length, kw);
+    }
+  }
 
   // (C-pre) 연결명사구 — "해외 대형 마트 체인", "원료 수급 불균형 문제" 등
   if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
@@ -379,7 +395,7 @@ function highlightSentence(
 function highlightParagraph(paragraph: string): string {
   if (SKIP_LINE_RE.test(paragraph)) return paragraph;
   const seen = new Map<string, number>();
-  const budget = { remaining: 6 };
+  const budget = { remaining: 9 };
   const sentences = splitSentences(paragraph);
   return sentences.map((s) => highlightSentence(s, seen, budget)).join(" ");
 }
