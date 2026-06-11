@@ -155,6 +155,25 @@ function ensureMarketFigures(content: string, data: PatentData): string {
   return `${content.trimEnd()}\n\n## 관련시장 동향\n${fallback}\n`;
 }
 
+// "관련시장 동향" 섹션의 본문(### 출처 이전)을 단일 문단으로 강제 병합한다.
+function mergeMarketParagraphs(content: string): string {
+  return content.replace(/(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/, (_m, header, body) => {
+    // 본문과 출처 블록을 분리
+    const sourceIdx = body.search(/\n###\s*출처/);
+    const mainPart = sourceIdx >= 0 ? body.slice(0, sourceIdx) : body;
+    const tailPart = sourceIdx >= 0 ? body.slice(sourceIdx) : "";
+    // 본문 내 모든 줄바꿈(빈 줄 포함)을 단일 공백으로 합쳐 한 문단으로 구성
+    const merged = mainPart
+      .split(/\n+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    return `${header}${merged}${tailPart ? `\n\n${tailPart.replace(/^\n+/, "")}` : "\n"}`;
+  });
+}
+
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -385,6 +404,7 @@ serve(async (req) => {
 ## 기술분야 — IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 충실히 서술.
 ## 발명요약 및 특징 — 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과를 서술형 산문으로 충분히 작성. 핵심 구성요소의 역할·차별점을 종속절·연결어구로 녹여낸다.
 ## 관련시장 동향 — 2026년 현재시점 기준으로 시장규모·CAGR·경쟁기술·정책동향을 수치 중심으로 서술. 본문에 (1) KRW 또는 USD 시장규모 수치 1개 이상, (2) CAGR(%) 수치 1개 이상이 반드시 포함되어야 한다(누락 시 잘못된 출력으로 간주). 회피 표현("정보 없음"·"추정이 어렵다") 금지.
+  · 본문은 반드시 하나의 단일 문단으로 작성한다. 본문 중간에 빈 줄(문단 구분) 절대 금지 — 상위 시장 정의·국내 시장규모·글로벌 시장규모·CAGR·경쟁/정책동향을 연결어구로 이어 하나의 문단에 통합한다. "### 출처" 블록 앞에서만 빈 줄을 허용한다.
   · 2026년 실측치 없으면 최근(2023~2025) 기준값에 CAGR 복리 적용해 환산하고 산출 근거(기준연도·기준값·CAGR)를 한 문장으로 명시.
   · 동일 상위 시장(프로바이오틱스/스마트팜/기능성식품 등)은 항상 동일 표준 출처로 일관 산출. 출처 우선순위: ① KISTEP/KIET/KREI/농식품부 → ② Grand View Research·MarketsandMarkets·IRS Global·Statista·Mordor → ③ 학회/협회 백서. 세부 시장은 "상위 시장 × 비중(%)" 형태로 도출.
   · 모든 수치 뒤에 [^N] 각주를 달고 섹션 말미에 "### 출처" 블록으로 "[^N]: 기관명, 「보고서명」, 발행연도" 형식. 최소 2개 이상(국내 1차 + 글로벌 2차 권장). 실존하지 않는 출처 금지.
@@ -481,6 +501,7 @@ serve(async (req) => {
           }
 
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
+          fullContent = mergeMarketParagraphs(fullContent);
           emitText(controller, fullContent);
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
