@@ -66,6 +66,24 @@ const DOMAIN_PHRASES: string[] = [
   "시장 안착의 핵심", "결정적 차별점",
 ];
 
+// ----- (E) 기술 효과·특장점 패턴 ---------------------------------------------
+// "수율 30% 향상", "비용 절감", "공정 단축", "품질 개선" 등 효과/이점 명사구.
+// 마지막 토큰이 효과 동사성 명사로 끝나는 짧은 구절(최대 3어절, 20자)만 캡처.
+const EFFECT_TAIL = "(?:향상|증가|증대|확대|개선|제고|강화|극대화|최대화|최소화|최적화|절감|단축|간소화|자동화|효율화|확보|달성|구현|실현|입증|선점|돌파|혁신|차별화)";
+const EFFECT_PATTERNS: RegExp[] = [
+  // [숫자+단위] + 명사 + 효과동사 (예: "30% 수율 향상", "2배 생산성 증대")
+  new RegExp(`\\d+(?:\\.\\d+)?\\s*(?:%|배|개월|일|시간)\\s+[가-힣A-Za-z]{2,10}\\s+${EFFECT_TAIL}`, "g"),
+  // [명사 1~2어절] + 효과동사 (예: "사료비 절감", "비육 기간 단축", "고급육 출현율 향상")
+  new RegExp(`[가-힣A-Za-z]{2,10}(?:\\s+[가-힣A-Za-z]{2,10}){0,2}\\s+${EFFECT_TAIL}`, "g"),
+];
+
+// 결정적 강점 키워드 — 단독으로도 강조 (특장점/차별점 강화)
+const DECISIVE_KEYWORDS = [
+  "세계 최초", "국내 최초", "업계 최초", "세계 최고", "국내 최고",
+  "독자 개발", "독자적", "원천 기술", "핵심 원천", "차별화된",
+  "유일한", "유일무이", "압도적", "획기적", "혁신적",
+];
+
 const SKIP_LINE_RE = /^(\s*#|\s*\||\s*```|\s*-\s|\s*\d+\.\s|\s*\[\^|\s*>\s|\s*###)/;
 
 // 한국어 조사/어미 — 매칭 결과 끝에서 탈락시킬 접미사 목록 (긴 것부터)
@@ -83,7 +101,9 @@ const SENTENCEY_RE = /(?:다는|라는|어려운|어렵다|쉽다|않다|있다|
 const VERB_MIDPHRASE_RE = /(?:제공하며|활발해지며|대응한|어렵다는|해결하고|확보하고|있으며|위한|통해|기반으로|따라)/;
 
 // 문장형 구절 강화 차단: 관형형 어미, 목적격 조사, 동사성/부정 추상 명사 마감 패턴
-const INVALID_SENTENCE_RE = /(?:[가-힣]+(?:을|를|으로|덕분에)\s+)|(?:[가-힣]+(?:하며|하고|있어|있으며|지며|삼아|하는|되는|된|할|시킨|다는|따르는|따른|위한|통해|대해|관한|대응한|기반으로)\s+)|\s+(?:억제|활용|구현|제시|방지|유지|촉진|해결|극대화|향상|절감|관리|기반|도입|적용|제어|한계|문제|리스크|어려움|부담|요인)$/;
+// 마감 동사성 명사 중 부정/추상어만 차단(한계·문제·리스크 등).
+// 효과·이점(향상·절감·단축·극대화 등)은 EFFECT_PATTERNS에서 별도로 강조하므로 허용.
+const INVALID_SENTENCE_RE = /(?:[가-힣]+(?:을|를|으로|덕분에)\s+)|(?:[가-힣]+(?:하며|하고|있어|있으며|지며|삼아|하는|되는|된|할|시킨|다는|따르는|따른|위한|통해|대해|관한|대응한|기반으로)\s+)|\s+(?:한계|문제|리스크|어려움|부담|요인)$/;
 // 주어(명사+이/가) + 서술어 구조 차단
 const SUBJECT_PREDICATE_RE = /[가-힣]+(?:이|가)\s+[가-힣]+/;
 // 어절 경계가 깨져 조사/의존명사 한 글자로 시작하는 구절 차단
@@ -232,7 +252,7 @@ function highlightSentence(
     occupied.some(([a, b]) => s < b && e > a);
 
   const inserts: Array<{ start: number; end: number; text: string }> = [];
-  let sentenceBudget = 2;
+  let sentenceBudget = 3;
 
   const tryAdd = (start: number, end: number, raw: string) => {
     if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) return false;
@@ -240,7 +260,7 @@ function highlightSentence(
     const trimmedRaw = raw.trim();
     if (!trimmedRaw || trimmedRaw.length < 2) return false;
     // 매치 길이 상한 — 비정상적으로 긴 캡처(서술어까지 삼킨 경우)는 거부.
-    if (trimmedRaw.length > 30) return false;
+    if (trimmedRaw.length > 32) return false;
     // 문장형 오버매칭 차단: 띄어쓰기 2개 이상 + 중간에 연결 용언/어미 포함 시 거부
     const spaceCount = (trimmedRaw.match(/\s/g) || []).length;
     if (spaceCount >= 2 && VERB_MIDPHRASE_RE.test(trimmedRaw)) return false;
@@ -296,6 +316,20 @@ function highlightSentence(
 
   // (A) numbers first — highest precedence
   scan(QUANT_PATTERNS);
+
+  // (E) 기술 효과·특장점 — "수율 향상", "비용 절감" 등 이점 명사구를 적극 강조
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    scan(EFFECT_PATTERNS);
+  }
+
+  // (D) 결정적 강점 키워드 단독 매칭
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    for (const kw of DECISIVE_KEYWORDS) {
+      const idx = sentence.indexOf(kw);
+      if (idx === -1) continue;
+      tryAdd(idx, idx + kw.length, kw);
+    }
+  }
 
   // (C-pre) 연결명사구 — "해외 대형 마트 체인", "원료 수급 불균형 문제" 등
   if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
@@ -361,7 +395,7 @@ function highlightSentence(
 function highlightParagraph(paragraph: string): string {
   if (SKIP_LINE_RE.test(paragraph)) return paragraph;
   const seen = new Map<string, number>();
-  const budget = { remaining: 6 };
+  const budget = { remaining: 9 };
   const sentences = splitSentences(paragraph);
   return sentences.map((s) => highlightSentence(s, seen, budget)).join(" ");
 }
