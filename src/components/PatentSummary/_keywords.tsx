@@ -39,7 +39,7 @@ export type KwItem = { word: string; cat: KeywordCategory };
 
 export function extractKeywordsFromPatent(
   patentData: { titleKo?: string; title?: string; abstract?: string; classifications?: string[] } | null | undefined,
-  max = 8,
+  max = 4,
   summary?: string,
 ): KwItem[] {
   if (!patentData) return [];
@@ -323,15 +323,11 @@ export function extractKeywordsFromPatent(
   };
 
   // 카테고리는 주요기능·활용산업·최종제품·기술분야 4종으로 한정
+  // 카테고리별 최상위 1개씩만 선정 — 총 4개로 한정한다.
   push(funcKws[0], "function");
   push(industryKws[0], "industry");
   push(productKws[0], "product");
   push(featKws[0], "tech");
-
-  funcKws.slice(1, 3).forEach((w) => push(w, "function"));
-  industryKws.slice(1, 3).forEach((w) => push(w, "industry"));
-  productKws.slice(1, 2).forEach((w) => push(w, "product"));
-  featKws.slice(1, 3).forEach((w) => push(w, "tech"));
 
   // -------------------------------------------------------------------------
   // 본문 기반 키워드와 특허 명칭 적합성 검증
@@ -381,5 +377,14 @@ export function extractKeywordsFromPatent(
   };
   ensureSlot("product", "최종 산출물");
 
-  return validated.slice(0, max);
+  // 카테고리당 1개씩만 남겨 총 4개로 한정한다.
+  const perCat = new Set<KeywordCategory>();
+  const limited: KwItem[] = [];
+  for (const item of validated) {
+    if (perCat.has(item.cat)) continue;
+    perCat.add(item.cat);
+    limited.push(item);
+    if (limited.length >= 4) break;
+  }
+  return limited.slice(0, Math.min(max, 4));
 }
