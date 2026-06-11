@@ -174,49 +174,31 @@ function mergeMarketParagraphs(content: string): string {
   });
 }
 
-// "관련시장 동향" 섹션의 각주 번호를 본문 등장 순서대로 1..N으로 재정렬하고,
-// ### 출처 목록도 동일하게 재번호한다. 본문이 참조하지 않는 출처는 제거하고,
-// 본문이 참조하지만 출처 목록에 없는 번호는 본문에서 제거한다.
-function renumberMarketFootnotes(content: string): string {
+// "관련시장 동향" 섹션에서 레거시 [^N] 각주 + "### 출처" 블록을
+// 본문 내 괄호 출처 표기로 변환한다. (예: "...이다[^1]" + "[^1]: A, 2024" → "...이다(A, 2024)")
+// 출처 블록이 없으면 본문의 [^N]만 제거한다.
+function inlineMarketCitations(content: string): string {
   return content.replace(/(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/, (_m, header, body) => {
-    const sourceMatch = body.match(/\n###\s*출처[^\n]*\n([\s\S]*)$/);
-    if (!sourceMatch) return `${header}${body}`;
-    const mainPart = body.slice(0, body.indexOf(sourceMatch[0]));
-    const sourceBlockHeader = body.slice(body.indexOf(sourceMatch[0]), body.indexOf(sourceMatch[0]) + sourceMatch[0].indexOf(sourceMatch[1]));
-    const sourcesRaw = sourceMatch[1];
+    const sourceMatch = body.match(/\n+###\s*출처[^\n]*\n([\s\S]*)$/);
+    const sourcesRaw = sourceMatch ? sourceMatch[1] : "";
+    const mainPart = sourceMatch ? body.slice(0, body.indexOf(sourceMatch[0])) : body;
 
-    // 출처 목록 파싱: "[^N]: ..." 라인들
     const sourceMap = new Map<string, string>();
     const sourceLineRe = /\[\^(\d+)\]\s*:\s*([^\n]+)/g;
     let sm: RegExpExecArray | null;
     while ((sm = sourceLineRe.exec(sourcesRaw)) !== null) {
-      sourceMap.set(sm[1], sm[2].trim());
-    }
-    if (sourceMap.size === 0) return `${header}${body}`;
-
-    // 본문 등장 순서대로 원본 번호 → 신규 번호 매핑 생성 (출처에 존재하는 것만)
-    const remap = new Map<string, number>();
-    let next = 1;
-    const refRe = /\[\^(\d+)\]/g;
-    let rm: RegExpExecArray | null;
-    while ((rm = refRe.exec(mainPart)) !== null) {
-      const orig = rm[1];
-      if (!sourceMap.has(orig)) continue;
-      if (!remap.has(orig)) remap.set(orig, next++);
+      // 정리: 앞뒤 공백/쉼표 정돈
+      const cleaned = sm[2].trim().replace(/[、,，]\s*$/, "");
+      sourceMap.set(sm[1], cleaned);
     }
 
-    // 본문 각주 치환: 매핑 없는 번호는 제거
-    const newMain = mainPart.replace(/\[\^(\d+)\]/g, (full, n: string) => {
-      const mapped = remap.get(n);
-      return mapped ? `[^${mapped}]` : "";
-    }).replace(/\s+([.,。、])/g, "$1").replace(/\s{2,}/g, " ");
+    // 본문의 [^N]을 (source) 로 치환. 매핑 없으면 제거.
+    const newMain = mainPart.replace(/\s*\[\^(\d+)\]/g, (_full, n: string) => {
+      const src = sourceMap.get(n);
+      return src ? `(${src})` : "";
+    }).replace(/\s+([.,。、])/g, "$1").replace(/\s{2,}/g, " ").trimEnd();
 
-    // 출처 목록 재구성: 본문에서 참조된 항목만, 새 번호 순서대로
-    const ordered = Array.from(remap.entries()).sort((a, b) => a[1] - b[1]);
-    const newSources = ordered.map(([orig, n]) => `[^${n}]: ${sourceMap.get(orig)}`).join("\n");
-
-    const tail = ordered.length > 0 ? `${sourceBlockHeader}${newSources}\n` : "";
-    return `${header}${newMain.trimEnd()}${tail ? `\n\n${tail.replace(/^\n+/, "")}` : "\n"}`;
+    return `${header}${newMain}\n`;
   });
 }
 
