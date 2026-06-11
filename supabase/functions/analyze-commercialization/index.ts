@@ -224,51 +224,6 @@ function normalizeAnalysis(value: unknown, fallback: string): string {
   return ensureCompleteSentence(text, fallback);
 }
 
-// ============ 한글 조사 자동 교정 ============
-// 마지막 한글 글자에 받침이 있는지 판별해 은/는, 이/가, 을/를, 와/과, 으로/로 등을 올바른 형태로 보정.
-function hasJongseong(ch: string): boolean | null {
-  if (!ch) return null;
-  const code = ch.charCodeAt(0);
-  if (code < 0xac00 || code > 0xd7a3) return null; // not a Hangul syllable
-  return ((code - 0xac00) % 28) !== 0;
-}
-function jongseongIsRieul(ch: string): boolean {
-  const code = ch.charCodeAt(0);
-  if (code < 0xac00 || code > 0xd7a3) return false;
-  return ((code - 0xac00) % 28) === 8; // ㄹ
-}
-export function fixKoreanParticles(input: string): string {
-  if (!input) return input;
-  // 한글 글자 뒤에 오는 조사 쌍을 받침 유무에 따라 교정.
-  // 경계: 뒤가 공백/구두점/문장끝/한자/영문/숫자가 아닌 한글이면 단어 일부일 수 있어 보수적으로 처리.
-  const PAIRS: Array<[RegExp, (jong: boolean, isRieul: boolean) => string]> = [
-    // 은/는
-    [/([\uac00-\ud7a3])(은|는)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "은" : "는")],
-    // 이/가
-    [/([\uac00-\ud7a3])(이|가)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "이" : "가")],
-    // 을/를
-    [/([\uac00-\ud7a3])(을|를)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "을" : "를")],
-    // 와/과
-    [/([\uac00-\ud7a3])(와|과)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "과" : "와")],
-    // 으로/로 (ㄹ받침은 '로')
-    [/([\uac00-\ud7a3])(으로|로)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j, r) => (j && !r ? "으로" : "로")],
-    // 이라/라, 이며/며, 이고/고, 이나/나, 이란/란 (받침 있을 때 '이' 형태)
-    [/([\uac00-\ud7a3])(이라|라)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "이라" : "라")],
-    [/([\uac00-\ud7a3])(이며|며)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "이며" : "며")],
-    [/([\uac00-\ud7a3])(이고|고)(?=[\s.,!?;:)\]\}"'’”·…\-]|$)/g, (j) => (j ? "이고" : "고")],
-  ];
-  let out = input;
-  for (const [re, pick] of PAIRS) {
-    out = out.replace(re, (_m, ch: string, _p: string) => {
-      const jong = hasJongseong(ch);
-      if (jong === null) return _m; // not Hangul, leave as-is
-      const rieul = jongseongIsRieul(ch);
-      return ch + pick(jong, rieul);
-    });
-  }
-  return out;
-}
-
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -558,6 +513,10 @@ marketReason 작성 규칙(중요):
 - 모든 텍스트 필드(analysis / technologyReason / marketReason / businessReason / trlReason)는 반드시 평서형 해라체("~한다." / "~있다." / "~된다." / "~이다.")로만 종료한다.
 - "~합니다", "~습니다", "~입니다", "~됩니다" 등 합쇼체 종결은 절대 금지.
 
+한국어 맞춤법·조사 규칙(매우 중요):
+- 출력 전 모든 문장의 조사(은/는, 이/가, 을/를, 와/과, 으로/로)가 앞 단어의 받침과 일치하는지 검증한다. 예: "증가가"(O)/"증가이"(X), "농가는"(O)/"농가은"(X), "단가 경쟁력"(O)/"단이 경쟁력"(X).
+- "증가, 농가, 단가, 평가, 효과, 차이"처럼 단어 자체가 가/과/이로 끝나는 명사를 임의로 변형하지 말 것. 오타·탈자 없는 완성된 문장만 출력한다.
+
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 상세근거: 기술 완성도, 실증 수준, 상용화 단계를 구체적으로 서술","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 평가·전망 어투): 기술적 차별성·강점, 시장 진입 가능성, 사업화 리스크, 추진 전략 제언을 종합 서술","technologyReason":"${reasonMin}~${reasonMax}자: 독립항의 차별성·권리범위의 넓이·회피설계 난이도 관점으로 간결 분석(청구항 개수 언급 금지)","marketReason":"${reasonMin}~${reasonMax}자: IPC 기반 산업 적용 범위, 차별적 우위, 확장 가능성을 간결하게 분석","businessReason":"${reasonMin}~${reasonMax}자: 기술구현 난이도, 라이선싱·투자회수 가능성을 간결하게 분석"}`
        : `특허 기술사업화 평가 전문가. JSON으로만 응답.
@@ -605,6 +564,8 @@ marketReason 규칙: IPC·수요처·차별적 우위 등 본문에서 확인된
 businessReason 규칙: 발명·조성물 구성 설명 금지("~을 유효성분으로 포함하는 조성물을 개발할 수 있다" 류 금지). 구현 난이도, 기존 설비 활용성, 라이선싱·이전 용이성, 투자회수 관점의 평가 어투로만 2문장 작성.
 
 공통 금지 규칙(매우 중요): technologyReason / marketReason / businessReason 안에는 점수 숫자·점수대·"~점이다" 표현과 "TRL", "TRL n", "성숙도" 등 TRL 관련 표현을 쓰지 말 것. 점수는 별도 숫자 필드에서만 허용.
+
+한국어 맞춤법·조사 규칙(매우 중요): 모든 문장의 조사(은/는, 이/가, 을/를, 와/과, 으로/로)가 앞 단어의 받침과 일치하는지 출력 전 검증한다. "증가, 농가, 단가, 평가, 효과"처럼 가/과로 끝나는 명사를 변형하지 말 것. 오타·탈자 없는 완성된 문장만 출력한다.
 
 JSON형식:
 {"technologyScore":72,"marketScore":65,"businessScore":78,"totalScore":71,"trl":6,"trlReason":"${trlMin}~${trlMax}자 근거","analysis":"${analysisMin}~${analysisMax}자 종합평가(발명요약 금지, 강점·시장·리스크·제언 포함)","technologyReason":"${reasonMin}~${reasonMax}자: 독립항 차별성·권리범위·회피설계 난이도 기준 핵심근거(청구항 개수 언급 금지)","marketReason":"${reasonMin}~${reasonMax}자 핵심근거","businessReason":"${reasonMin}~${reasonMax}자 핵심근거"}`;
@@ -762,13 +723,6 @@ JSON형식:
     scores.businessReason = normalizeReason(scores.businessReason, businessFallback);
     scores.trlReason = ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
     scores.analysis = normalizeAnalysis(scores.analysis, makeAnalysisFallback(scores));
-
-    // 한글 조사(은/는, 이/가, 을/를, 와/과, 으로/로 등) 교정
-    scores.technologyReason = fixKoreanParticles(scores.technologyReason);
-    scores.marketReason = fixKoreanParticles(scores.marketReason);
-    scores.businessReason = fixKoreanParticles(scores.businessReason);
-    scores.trlReason = fixKoreanParticles(scores.trlReason);
-    scores.analysis = fixKoreanParticles(scores.analysis);
 
     // TRL 언급은 trlReason에서만 노출
     scores.technologyReason = stripTrlMentions(scores.technologyReason);
