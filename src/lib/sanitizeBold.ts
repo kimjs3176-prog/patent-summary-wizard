@@ -77,6 +77,22 @@ const EFFECT_PATTERNS: RegExp[] = [
   new RegExp(`[가-힣A-Za-z]{2,10}(?:\\s+[가-힣A-Za-z]{2,10}){0,2}\\s+${EFFECT_TAIL}`, "g"),
 ];
 
+// ----- (F) 수식어 + 명사구 패턴 ---------------------------------------------
+// "혁신적인 활용 가능성", "다양한 작물 종", "지속가능한 농업 시스템",
+// "최적화된 프로모터 서열", "긍정적인 전망" 같이 형용사형 수식어가 명사구를
+// 이끄는 짧은 구절을 캡처한다. 마지막 토큰은 반드시 명사로 끝나야 한다.
+const MODIFIER_HEAD = "[가-힣]{2,6}(?:적인|스러운|로운|다운|되는|하는|인|된|한|할|적)";
+const NOUN_TOKEN = "[가-힣]{2,8}";
+const MODIFIER_NOUN_PATTERNS: RegExp[] = [
+  new RegExp(`${MODIFIER_HEAD}\\s+${NOUN_TOKEN}(?:\\s+${NOUN_TOKEN}){0,2}`, "g"),
+];
+
+// ----- (G) 병렬 명사구 패턴 (및/과/와/이나/나) -----------------------------
+// "스마트팜 및 정밀농업", "가뭄이나 염분 스트레스", "발현 및 생산성 향상"
+const PARALLEL_NOUN_PATTERNS: RegExp[] = [
+  new RegExp(`${NOUN_TOKEN}(?:\\s+${NOUN_TOKEN})?\\s+(?:및|과|와|이나|나)\\s+${NOUN_TOKEN}(?:\\s+${NOUN_TOKEN}){0,2}`, "g"),
+];
+
 // 결정적 강점 키워드 — 단독으로도 강조 (특장점/차별점 강화)
 const DECISIVE_KEYWORDS = [
   "세계 최초", "국내 최초", "업계 최초", "세계 최고", "국내 최고",
@@ -320,6 +336,16 @@ function highlightSentence(
   // (E) 기술 효과·특장점 — "수율 향상", "비용 절감" 등 이점 명사구를 적극 강조
   if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
     scan(EFFECT_PATTERNS);
+  }
+
+  // (F) 수식어 + 명사구 — "혁신적인 활용 가능성", "최적화된 프로모터 서열"
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    scan(MODIFIER_NOUN_PATTERNS);
+  }
+
+  // (G) 병렬 명사구 — "스마트팜 및 정밀농업", "가뭄이나 염분 스트레스"
+  if (sentenceBudget > 0 && paragraphBudget.remaining > 0) {
+    scan(PARALLEL_NOUN_PATTERNS);
   }
 
   // (D) 결정적 강점 키워드 단독 매칭
