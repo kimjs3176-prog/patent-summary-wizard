@@ -155,6 +155,25 @@ function ensureMarketFigures(content: string, data: PatentData): string {
   return `${content.trimEnd()}\n\n## 관련시장 동향\n${fallback}\n`;
 }
 
+// "관련시장 동향" 섹션의 본문(### 출처 이전)을 단일 문단으로 강제 병합한다.
+function mergeMarketParagraphs(content: string): string {
+  return content.replace(/(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/, (_m, header, body) => {
+    // 본문과 출처 블록을 분리
+    const sourceIdx = body.search(/\n###\s*출처/);
+    const mainPart = sourceIdx >= 0 ? body.slice(0, sourceIdx) : body;
+    const tailPart = sourceIdx >= 0 ? body.slice(sourceIdx) : "";
+    // 본문 내 모든 줄바꿈(빈 줄 포함)을 단일 공백으로 합쳐 한 문단으로 구성
+    const merged = mainPart
+      .split(/\n+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    return `${header}${merged}${tailPart ? `\n\n${tailPart.replace(/^\n+/, "")}` : "\n"}`;
+  });
+}
+
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
