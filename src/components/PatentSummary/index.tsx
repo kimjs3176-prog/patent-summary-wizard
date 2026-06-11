@@ -20,7 +20,11 @@ import { PivotingAnalysis } from "./PivotingAnalysis";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
-import { sanitizeBoldMarkers } from "@/lib/sanitizeBold";
+
+// Plain sanitizer — highlight feature removed. Strips ** markdown bold.
+function sanitizeBoldMarkers(text: string): string {
+  return text ? text.replace(/\*\*([^*\n]+?)\*\*/g, "$1") : text;
+}
 
 export function PatentSummary({
   content,
