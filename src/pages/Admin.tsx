@@ -535,9 +535,6 @@ const Admin = () => {
               <TabsTrigger value="summary" className="gap-1.5 text-xs sm:text-sm">
                 <FileText className="w-3.5 h-3.5" /> 요약서
               </TabsTrigger>
-              <TabsTrigger value="highlights" className="gap-1.5 text-xs sm:text-sm">
-                <Highlighter className="w-3.5 h-3.5" /> 강조규칙
-              </TabsTrigger>
               <TabsTrigger value="output" className="gap-1.5 text-xs sm:text-sm">
                 <Printer className="w-3.5 h-3.5" /> 출력
               </TabsTrigger>
@@ -1372,13 +1369,6 @@ const Admin = () => {
                 요약서 설정 저장
               </Button>
             </div>
-          </TabsContent>
-
-          {/* ===== Highlight Rules Tab ===== */}
-          <TabsContent value="highlights">
-            <Card className="p-4">
-              <HighlightRulesManager adminPassword={password} />
-            </Card>
           </TabsContent>
 
           {/* ===== Output Tab (Print + PDF) ===== */}
