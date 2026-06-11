@@ -252,7 +252,7 @@ function highlightSentence(
     occupied.some(([a, b]) => s < b && e > a);
 
   const inserts: Array<{ start: number; end: number; text: string }> = [];
-  let sentenceBudget = 2;
+  let sentenceBudget = 3;
 
   const tryAdd = (start: number, end: number, raw: string) => {
     if (sentenceBudget <= 0 || paragraphBudget.remaining <= 0) return false;
