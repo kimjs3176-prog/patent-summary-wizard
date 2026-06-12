@@ -1,8 +1,10 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { FileText, Tablet } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useKioskMode } from "@/hooks/useKioskMode";
+import { KioskKeyboard } from "@/components/KioskKeyboard";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -12,6 +14,7 @@ interface PageLayoutProps {
 
 export function PageLayout({ children, headerRight, showFooterLogo = true }: PageLayoutProps) {
   const { settings, isLoading } = useSiteSettings();
+  const { enabled: kioskEnabled, toggle: toggleKiosk } = useKioskMode();
 
   if (isLoading) {
     return (
@@ -49,11 +52,29 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               </p>
             </div>
           </Link>
-          {headerRight && <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">{headerRight}</div>}
+          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={toggleKiosk}
+              aria-pressed={kioskEnabled}
+              title={kioskEnabled ? "태블릿 모드 끄기" : "태블릿 모드 켜기 (터치 키보드)"}
+              className={`inline-flex items-center gap-1.5 rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-3 font-medium border transition-all ${
+                kioskEnabled
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-card text-foreground border-border/60 hover:bg-accent/30"
+              }`}
+            >
+              <Tablet className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <span className="hidden sm:inline">태블릿</span>
+            </button>
+            {headerRight}
+          </div>
         </div>
       </header>
 
-      {children}
+      <div style={{ paddingBottom: kioskEnabled ? "340px" : undefined }}>
+        {children}
+      </div>
 
       {/* Footer — generous spacing, readable text */}
       <footer className="mt-auto relative z-10 border-t border-border/20">
@@ -71,6 +92,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
           <p className="text-[11px] md:text-xs text-muted-foreground/60 mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground/70 transition-colors">kimjs1408@koat.or.kr</a></p>
         </div>
       </footer>
+      <KioskKeyboard />
     </div>
   );
 }
