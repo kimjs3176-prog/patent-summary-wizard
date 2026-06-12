@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Hangul from "hangul-js";
-import { X, Delete, CornerDownLeft, Space, ChevronUp } from "lucide-react";
+import { X, Delete, CornerDownLeft, ChevronUp } from "lucide-react";
 import { useKioskMode } from "@/hooks/useKioskMode";
 
 type Layout = "ko" | "en" | "num";
