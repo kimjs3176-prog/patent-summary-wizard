@@ -82,7 +82,13 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
               >
                 <div className="aspect-video bg-black flex items-center justify-center overflow-hidden relative">
                   {playSrc ? (
-                    <video src={playSrc} controls preload="metadata" className="w-full h-full object-cover" />
+                    <video
+                      src={playSrc}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-contain"
+                    />
                   ) : (
                     <Play className="w-10 h-10 text-muted-foreground/30" />
                   )}

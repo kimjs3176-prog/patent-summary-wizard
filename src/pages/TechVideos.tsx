@@ -162,11 +162,12 @@ const TechVideos = () => {
                           <video
                             src={playSrc}
                             controls
+                            playsInline
                             preload="metadata"
                             controlsList="nodownload noremoteplayback"
                             disablePictureInPicture
                             onContextMenu={(e) => e.preventDefault()}
-                            className="w-full h-full object-cover bg-black"
+                            className="w-full h-full object-contain bg-black"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground/50 text-[11px]">불러오는 중…</div>
