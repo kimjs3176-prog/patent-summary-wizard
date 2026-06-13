@@ -12,6 +12,17 @@ html, body {
   overflow-wrap: break-word;
 }
 
+/* Mobile fullscreen video — prevent page-zoom / overflow when entering native fullscreen */
+video:fullscreen,
+video:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  object-fit: contain !important;
+  background: #000;
+}
+
 /* Readability polish — pretty wrapping, tabular numbers in UI chrome */
 p, li, dd, blockquote { text-wrap: pretty; }
 h1, h2, h3, h4, h5, h6 { text-wrap: balance; }
