@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { safeFetch } from "@/lib/safeFetch";
-import { Download, FileText, Search, Loader2 } from "lucide-react";
+import { Download, FileText, Search, Loader2, MapPin } from "lucide-react";
 
 type Category = "국유-농진청" | "국유-검역본부" | "국유-품관원" | "국유-종자원" | "비국유";
 type CategoryAction = "출원" | "등록";
@@ -39,11 +39,10 @@ interface FormState {
   applicant: string;
   email: string;
   contact: string;
-  mobile: string;
-  postalCode: string;
-  address: string;
-  estimate: string;
+  quantity: string;
+  unitPrice: string;
   sharePct: string;
+  ownershipPct: string;
   companyName: string;
   established: string;
   ownerKind: OwnerKind;
@@ -51,10 +50,10 @@ interface FormState {
   corporateNo: string;
   representative: string;
   hqAddress: string;
+  hqPostalCode: string;
   phone: string;
   fax: string;
   plannedProducts: string;
-  postalCode2: string;
   products: string;
 }
 
@@ -81,11 +80,10 @@ const initial: FormState = {
   applicant: "",
   email: "",
   contact: "",
-  mobile: "",
-  postalCode: "",
-  address: "",
-  estimate: "0",
-  sharePct: "0.0",
+  quantity: "0",
+  unitPrice: "0",
+  sharePct: "100",
+  ownershipPct: "100",
   companyName: "",
   established: "",
   ownerKind: "",
@@ -93,10 +91,10 @@ const initial: FormState = {
   corporateNo: "",
   representative: "",
   hqAddress: "",
+  hqPostalCode: "",
   phone: "",
   fax: "",
   plannedProducts: "",
-  postalCode2: "",
   products: "",
 };
 
@@ -113,6 +111,41 @@ function Field({ label, children, required }: { label: string; children: React.R
 
 const CATS: Category[] = ["국유-농진청", "국유-검역본부", "국유-품관원", "국유-종자원", "비국유"];
 
+const BASE_RATE = 0.03; // 기본율 3% 고정
+
+// 농촌진흥청 지분율을 출원인 문자열에서 계산
+function calcRdaShare(applicantStr: string): number {
+  if (!applicantStr) return 100;
+  const parts = applicantStr.split(/[,;\/·및\n]+/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 0) return 100;
+  const rdaCount = parts.filter((p) => /농촌진흥청|농진청|Rural Development Administration|RDA/i.test(p)).length;
+  if (rdaCount === 0) return 0;
+  if (parts.length === 1) return 100;
+  // 균등 지분으로 가정
+  return Math.round((rdaCount / parts.length) * 1000) / 10;
+}
+
+// Daum 우편번호 스크립트 동적 로드
+function loadDaumPostcode(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const w = window as any;
+    if (w.daum?.Postcode) return resolve(w.daum);
+    const existing = document.getElementById("daum-postcode-script") as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener("load", () => resolve((window as any).daum));
+      existing.addEventListener("error", reject);
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = "daum-postcode-script";
+    s.src = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    s.async = true;
+    s.onload = () => resolve((window as any).daum);
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
 export default function Apply() {
   const [f, setF] = useState<FormState>(initial);
   const [generating, setGenerating] = useState(false);
@@ -120,6 +153,32 @@ export default function Apply() {
   const [agreed, setAgreed] = useState(false);
 
   const upd = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((p) => ({ ...p, [k]: v }));
+
+  // 견적금액 = 예정수량 × 단가 × 점유율(%) × 지분율(%) × 기본율(3%)
+  const estimate = Math.round(
+    (Number(f.quantity) || 0) *
+      (Number(f.unitPrice) || 0) *
+      ((Number(f.sharePct) || 0) / 100) *
+      ((Number(f.ownershipPct) || 0) / 100) *
+      BASE_RATE
+  );
+
+  const openPostcode = async (target: "company") => {
+    try {
+      const daum: any = await loadDaumPostcode();
+      new daum.Postcode({
+        oncomplete: (data: any) => {
+          const addr = data.roadAddress || data.jibunAddress || data.address || "";
+          if (target === "company") {
+            setF((p) => ({ ...p, hqAddress: addr, hqPostalCode: data.zonecode || "" }));
+          }
+        },
+      }).open();
+    } catch (e) {
+      console.error(e);
+      toast.error("우편번호 검색을 불러오지 못했습니다");
+    }
+  };
 
   const handleKiprisLookup = async () => {
     const query = (f.applicationNo || f.registrationNo).trim();
@@ -148,18 +207,21 @@ export default function Apply() {
         return;
       }
       const d = result.data;
+      const applicantStr = d.applicant || d.assignee || "";
+      const ownership = calcRdaShare(applicantStr);
       setF((p) => ({
         ...p,
         inventionTitle: d.titleKo || d.title || p.inventionTitle,
         inventor: Array.isArray(d.inventors) ? d.inventors.join(", ") : p.inventor,
-        applicantOrg: d.applicant || d.assignee || p.applicantOrg,
+        applicantOrg: applicantStr || p.applicantOrg,
         registrantHolder: d.assignee || d.applicant || p.registrantHolder,
         inventionOrg: d.applicant || d.assignee || p.inventionOrg,
         applicationNo: d.applicationNumber || d.displayNumber || p.applicationNo,
         registrationNo: d.registrationNumber || p.registrationNo,
         categoryAction: d.registrationNumber ? "등록" : "출원",
+        ownershipPct: String(ownership),
       }));
-      toast.success("KIPRIS 정보를 자동입력했습니다");
+      toast.success(`KIPRIS 자동입력 완료 (농진청 지분율 ${ownership}%)`);
     } catch (e) {
       console.error(e);
       toast.error("KIPRIS 조회에 실패했습니다");
@@ -196,19 +258,20 @@ export default function Apply() {
         ["계약의 종류", f.contractKind, "처분의 종류", f.dispoKind],
         ["유무상 여부", f.payKind, "실시 기간", period],
         ["실시 지역", f.region, "실시 내용", f.scope],
-        ["견적금액(원)", Number(f.estimate || 0), "점유율(%)", Number(f.sharePct || 0)],
+        ["예정수량", Number(f.quantity || 0), "단가(원)", Number(f.unitPrice || 0)],
+        ["점유율(%)", Number(f.sharePct || 0), "지분율(%)", Number(f.ownershipPct || 0)],
+        ["기본율(%)", BASE_RATE * 100, "견적금액(원)", estimate],
         [],
         ["[계약 신청 정보]"],
         ["신청자", f.applicant, "이메일", f.email],
-        ["연락처", f.contact, "휴대폰", f.mobile],
-        ["우편번호", f.postalCode, "주소", f.address],
+        ["연락처", f.contact, "", ""],
         [],
         ["[신청 업체 정보]"],
         ["회사명", f.companyName, "설립년월일", f.established],
         ["소유여부", f.ownerKind, "대표자", f.representative],
         ["사업자등록번호", f.businessNo, "법인등록번호", f.corporateNo],
         ["전화번호", f.phone, "FAX", f.fax],
-        ["본사 주소", f.hqAddress, "생산품목", f.products],
+        ["본사 주소", `${f.hqPostalCode ? `(${f.hqPostalCode}) ` : ""}${f.hqAddress}`, "생산품목", f.products],
         ["사업화예정제품", f.plannedProducts, "", ""],
         [],
         ["[개인정보 수집·이용 동의]"],
@@ -216,14 +279,11 @@ export default function Apply() {
       ];
       const ws = XLSX.utils.aoa_to_sheet(rows);
       ws["!cols"] = [{ wch: 18 }, { wch: 38 }, { wch: 18 }, { wch: 38 }];
-      ws["!merges"] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
-        { s: { r: 10, c: 0 }, e: { r: 10, c: 3 } },
-        { s: { r: 16, c: 0 }, e: { r: 16, c: 3 } },
-        { s: { r: 21, c: 0 }, e: { r: 21, c: 3 } },
-        { s: { r: 29, c: 0 }, e: { r: 29, c: 3 } },
-      ];
+      // 섹션 헤더 전체 병합 (제목/각 [..] 라인)
+      const mergeRows = rows
+        .map((r, idx) => (typeof r[0] === "string" && (idx === 0 || (r[0] as string).startsWith("[")) ? idx : -1))
+        .filter((i) => i >= 0);
+      ws["!merges"] = mergeRows.map((r) => ({ s: { r, c: 0 }, e: { r, c: 3 } }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "기술이전신청서");
       const fileName = `기술이전신청서_${f.companyName || "신청"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -338,23 +398,48 @@ export default function Apply() {
               <div className="sm:col-span-2 md:col-span-3">
                 <Field label="실시 내용"><Input value={f.scope} onChange={(e) => upd("scope", e.target.value)} /></Field>
               </div>
-              <Field label="견적금액 (원)"><Input type="number" value={f.estimate} onChange={(e) => upd("estimate", e.target.value)} /></Field>
-              <Field label="점유율 (%)"><Input type="number" step="0.1" value={f.sharePct} onChange={(e) => upd("sharePct", e.target.value)} /></Field>
+              <Field label="예정수량">
+                <Input type="number" min="0" value={f.quantity} onChange={(e) => upd("quantity", e.target.value)} />
+              </Field>
+              <Field label="단가 (원)">
+                <Input type="number" min="0" value={f.unitPrice} onChange={(e) => upd("unitPrice", e.target.value)} />
+              </Field>
+              <Field label="점유율 (%)">
+                <Input type="number" step="0.1" min="0" max="100" value={f.sharePct} onChange={(e) => upd("sharePct", e.target.value)} />
+              </Field>
+              <Field label="지분율 (%) · 농진청">
+                <Input type="number" step="0.1" min="0" max="100" value={f.ownershipPct} onChange={(e) => upd("ownershipPct", e.target.value)} />
+              </Field>
+              <Field label="기본율 (%)">
+                <Input type="number" value={(BASE_RATE * 100).toFixed(1)} readOnly className="bg-muted/40" />
+              </Field>
+              <div className="sm:col-span-2 md:col-span-3">
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-[12px] text-muted-foreground leading-relaxed">
+                    <span className="font-medium text-foreground">견적금액 산식</span> ={" "}
+                    예정수량 × 단가 × 점유율 × 지분율 × 기본율(3%)
+                    <div className="mt-1 text-foreground/70">
+                      {Number(f.quantity || 0).toLocaleString()} × {Number(f.unitPrice || 0).toLocaleString()} ×{" "}
+                      {f.sharePct}% × {f.ownershipPct}% × 3%
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] text-muted-foreground">견적금액</div>
+                    <div className="text-xl font-bold text-primary">{estimate.toLocaleString()} 원</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
           {/* 계약 신청 정보 */}
           <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
-            <h2 className="text-sm font-semibold mb-4 text-foreground/90">계약 신청 정보</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <h2 className="text-sm font-semibold mb-1 text-foreground/90">계약 신청자 정보</h2>
+            <p className="text-[11px] text-muted-foreground mb-4">이름 · 이메일 · 연락처만 입력합니다.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Field label="신청자" required><Input value={f.applicant} onChange={(e) => upd("applicant", e.target.value)} /></Field>
               <Field label="이메일"><Input type="email" value={f.email} onChange={(e) => upd("email", e.target.value)} /></Field>
-              <Field label="연락처"><Input value={f.contact} onChange={(e) => upd("contact", e.target.value)} /></Field>
-              <Field label="휴대폰"><Input value={f.mobile} onChange={(e) => upd("mobile", e.target.value)} /></Field>
-              <Field label="우편번호"><Input value={f.postalCode} onChange={(e) => upd("postalCode", e.target.value)} /></Field>
-              <div className="sm:col-span-2 md:col-span-3">
-                <Field label="주소"><Input value={f.address} onChange={(e) => upd("address", e.target.value)} /></Field>
-              </div>
+              <Field label="연락처"><Input value={f.contact} onChange={(e) => upd("contact", e.target.value)} placeholder="010-0000-0000" /></Field>
             </div>
           </section>
 
@@ -374,8 +459,18 @@ export default function Apply() {
               <Field label="대표자"><Input value={f.representative} onChange={(e) => upd("representative", e.target.value)} /></Field>
               <Field label="전화번호"><Input value={f.phone} onChange={(e) => upd("phone", e.target.value)} /></Field>
               <Field label="FAX"><Input value={f.fax} onChange={(e) => upd("fax", e.target.value)} /></Field>
-              <div className="sm:col-span-2 md:col-span-3">
-                <Field label="본사 주소"><Input value={f.hqAddress} onChange={(e) => upd("hqAddress", e.target.value)} /></Field>
+              <Field label="우편번호">
+                <div className="flex gap-2">
+                  <Input value={f.hqPostalCode} readOnly placeholder="검색" className="bg-muted/40" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => openPostcode("company")} className="shrink-0 h-9 px-2.5 gap-1">
+                    <MapPin className="w-3.5 h-3.5" /> 검색
+                  </Button>
+                </div>
+              </Field>
+              <div className="sm:col-span-2 md:col-span-2">
+                <Field label="본사 주소 (도로명)">
+                  <Input value={f.hqAddress} onChange={(e) => upd("hqAddress", e.target.value)} placeholder="우편번호 검색을 사용해 주세요" />
+                </Field>
               </div>
               <div className="sm:col-span-2 md:col-span-3">
                 <Field label="사업화예정제품"><Input value={f.plannedProducts} onChange={(e) => upd("plannedProducts", e.target.value)} placeholder="예: 기능성 가공식품, 농업용 자재 등" /></Field>
