@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Tablet } from "lucide-react";
+import { FileText, Tablet, FilePlus } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKioskMode } from "@/hooks/useKioskMode";
@@ -53,6 +53,14 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
             </div>
           </Link>
           <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+            <Link
+              to="/apply"
+              title="기술이전 신청서 작성"
+              className="inline-flex items-center gap-1.5 rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-3 font-medium border bg-card text-foreground border-border/60 hover:bg-accent/30 transition-all"
+            >
+              <FilePlus className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <span className="hidden sm:inline">기술이전 신청</span>
+            </Link>
             <button
               type="button"
               onClick={toggleKiosk}
