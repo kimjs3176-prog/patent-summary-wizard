@@ -1,12 +1,13 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import { Download, FileText } from "lucide-react";
+import * as XLSX from "xlsx";
+import { safeFetch } from "@/lib/safeFetch";
+import { Download, FileText, Search, Loader2 } from "lucide-react";
 
 type Category = "국유-농진청" | "국유-검역본부" | "국유-품관원" | "국유-종자원" | "비국유";
 type CategoryAction = "출원" | "등록";
@@ -20,7 +21,6 @@ interface FormState {
   categoryAction: CategoryAction;
   caseType: string;
   rightType: string;
-  receiptNo: string;
   applicationNo: string;
   registrationNo: string;
   inventionOrg: string;
@@ -50,14 +50,11 @@ interface FormState {
   businessNo: string;
   corporateNo: string;
   representative: string;
-  industry: string;
-  businessItem: string;
   hqAddress: string;
   phone: string;
   fax: string;
-  plan: string;
+  plannedProducts: string;
   postalCode2: string;
-  homepage: string;
   products: string;
 }
 
@@ -66,7 +63,6 @@ const initial: FormState = {
   categoryAction: "출원",
   caseType: "국내",
   rightType: "특허",
-  receiptNo: "",
   applicationNo: "",
   registrationNo: "",
   inventionOrg: "",
@@ -96,14 +92,11 @@ const initial: FormState = {
   businessNo: "",
   corporateNo: "",
   representative: "",
-  industry: "",
-  businessItem: "",
   hqAddress: "",
   phone: "",
   fax: "",
-  plan: "",
+  plannedProducts: "",
   postalCode2: "",
-  homepage: "",
   products: "",
 };
 
@@ -123,61 +116,126 @@ const CATS: Category[] = ["국유-농진청", "국유-검역본부", "국유-품
 export default function Apply() {
   const [f, setF] = useState<FormState>(initial);
   const [generating, setGenerating] = useState(false);
-  const sheetRef = useRef<HTMLDivElement>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const upd = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((p) => ({ ...p, [k]: v }));
 
+  const handleKiprisLookup = async () => {
+    const query = (f.applicationNo || f.registrationNo).trim();
+    if (!query) {
+      toast.error("출원번호 또는 등록번호를 입력하세요");
+      return;
+    }
+    setLookingUp(true);
+    try {
+      const res = await safeFetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-patent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ patentNumber: query }),
+          timeoutMs: 30000,
+          retries: 1,
+        }
+      );
+      const result = await res.json().catch(() => ({ success: false }));
+      if (!result.success || !result.data) {
+        toast.error(result.error || "특허 정보를 찾을 수 없습니다");
+        return;
+      }
+      const d = result.data;
+      setF((p) => ({
+        ...p,
+        inventionTitle: d.titleKo || d.title || p.inventionTitle,
+        inventor: Array.isArray(d.inventors) ? d.inventors.join(", ") : p.inventor,
+        applicantOrg: d.applicant || d.assignee || p.applicantOrg,
+        registrantHolder: d.assignee || d.applicant || p.registrantHolder,
+        inventionOrg: d.applicant || d.assignee || p.inventionOrg,
+        applicationNo: d.applicationNumber || d.displayNumber || p.applicationNo,
+        registrationNo: d.registrationNumber || p.registrationNo,
+        categoryAction: d.registrationNumber ? "등록" : "출원",
+      }));
+      toast.success("KIPRIS 정보를 자동입력했습니다");
+    } catch (e) {
+      console.error(e);
+      toast.error("KIPRIS 조회에 실패했습니다");
+    } finally {
+      setLookingUp(false);
+    }
+  };
+
   const handleGenerate = async () => {
-    if (!sheetRef.current) return;
+    if (!agreed) {
+      toast.error("개인정보 수집·이용에 동의해 주세요");
+      return;
+    }
     if (!f.applicant.trim() || !f.companyName.trim()) {
       toast.error("신청자와 회사명은 필수입니다");
       return;
     }
     setGenerating(true);
     try {
-      // Make sheet temporarily visible offscreen-friendly
-      const node = sheetRef.current;
-      node.style.display = "block";
-      const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-      node.style.display = "none";
-
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const imgW = pageW - 10;
-      const imgH = (canvas.height * imgW) / canvas.width;
-      const finalH = Math.min(imgH, pageH - 10);
-      const finalW = (canvas.width * finalH) / canvas.height;
-      const x = (pageW - Math.min(imgW, finalW)) / 2;
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", x, 5, Math.min(imgW, finalW), Math.min(imgH, finalH));
-      const fileName = `기술이전신청서_${f.companyName || "신청"}_${new Date().toISOString().slice(0, 10)}.pdf`;
-      pdf.save(fileName);
-      toast.success("신청서가 생성되었습니다");
+      const categoryLabel = `${f.category} / ${f.categoryAction}`;
+      const period = [f.periodStart, f.periodEnd].filter(Boolean).join(" ~ ");
+      const rows: (string | number)[][] = [
+        ["기술이전(실시) 신청서"],
+        [],
+        ["[관련 특허 정보]"],
+        ["구분", categoryLabel, "회사명", f.companyName],
+        ["사건구분", f.caseType, "권리", f.rightType],
+        ["출원번호", f.applicationNo, "등록번호", f.registrationNo],
+        ["발명기관", f.inventionOrg, "발명의 명칭", f.inventionTitle],
+        ["발명자", f.inventor, "전화번호", f.inventorPhone],
+        ["출원인", f.applicantOrg, "등록권리자", f.registrantHolder],
+        [],
+        ["[실시 신청 내용]"],
+        ["계약의 종류", f.contractKind, "처분의 종류", f.dispoKind],
+        ["유무상 여부", f.payKind, "실시 기간", period],
+        ["실시 지역", f.region, "실시 내용", f.scope],
+        ["견적금액(원)", Number(f.estimate || 0), "점유율(%)", Number(f.sharePct || 0)],
+        [],
+        ["[계약 신청 정보]"],
+        ["신청자", f.applicant, "이메일", f.email],
+        ["연락처", f.contact, "휴대폰", f.mobile],
+        ["우편번호", f.postalCode, "주소", f.address],
+        [],
+        ["[신청 업체 정보]"],
+        ["회사명", f.companyName, "설립년월일", f.established],
+        ["소유여부", f.ownerKind, "대표자", f.representative],
+        ["사업자등록번호", f.businessNo, "법인등록번호", f.corporateNo],
+        ["전화번호", f.phone, "FAX", f.fax],
+        ["본사 주소", f.hqAddress, "생산품목", f.products],
+        ["사업화예정제품", f.plannedProducts, "", ""],
+        [],
+        ["[개인정보 수집·이용 동의]"],
+        ["동의 여부", agreed ? "동의함" : "미동의", "동의 일시", new Date().toLocaleString("ko-KR")],
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws["!cols"] = [{ wch: 18 }, { wch: 38 }, { wch: 18 }, { wch: 38 }];
+      ws["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+        { s: { r: 10, c: 0 }, e: { r: 10, c: 3 } },
+        { s: { r: 16, c: 0 }, e: { r: 16, c: 3 } },
+        { s: { r: 21, c: 0 }, e: { r: 21, c: 3 } },
+        { s: { r: 29, c: 0 }, e: { r: 29, c: 3 } },
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "기술이전신청서");
+      const fileName = `기술이전신청서_${f.companyName || "신청"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      toast.success("신청서 엑셀 파일이 생성되었습니다");
     } catch (e) {
       console.error(e);
-      toast.error("PDF 생성에 실패했습니다");
+      toast.error("엑셀 생성에 실패했습니다");
     } finally {
       setGenerating(false);
     }
   };
-
-  const cellStyle: React.CSSProperties = {
-    border: "1px solid #555",
-    padding: "4px 6px",
-    fontSize: 11,
-    verticalAlign: "middle",
-    color: "#000",
-    background: "#fff",
-  };
-  const labelCell: React.CSSProperties = {
-    ...cellStyle,
-    background: "#e8e8e8",
-    textAlign: "center",
-    fontWeight: 600,
-    whiteSpace: "nowrap",
-  };
-  const dot = (on: boolean) => (on ? "●" : "○");
-  const chk = (on: boolean) => (on ? "■" : "□");
 
   return (
     <PageLayout>
@@ -190,7 +248,7 @@ export default function Apply() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">기술이전 신청</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            입력 정보를 바탕으로 기술이전(실시) 신청서 PDF 파일을 생성합니다. 입력 데이터는 저장되지 않습니다.
+            입력 정보를 바탕으로 기술이전(실시) 신청서 엑셀 파일을 생성합니다. 입력 데이터는 어디에도 저장되지 않습니다.
           </p>
         </div>
 
