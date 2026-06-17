@@ -258,19 +258,20 @@ export default function Apply() {
         ["계약의 종류", f.contractKind, "처분의 종류", f.dispoKind],
         ["유무상 여부", f.payKind, "실시 기간", period],
         ["실시 지역", f.region, "실시 내용", f.scope],
-        ["견적금액(원)", Number(f.estimate || 0), "점유율(%)", Number(f.sharePct || 0)],
+        ["예정수량", Number(f.quantity || 0), "단가(원)", Number(f.unitPrice || 0)],
+        ["점유율(%)", Number(f.sharePct || 0), "지분율(%)", Number(f.ownershipPct || 0)],
+        ["기본율(%)", BASE_RATE * 100, "견적금액(원)", estimate],
         [],
         ["[계약 신청 정보]"],
         ["신청자", f.applicant, "이메일", f.email],
-        ["연락처", f.contact, "휴대폰", f.mobile],
-        ["우편번호", f.postalCode, "주소", f.address],
+        ["연락처", f.contact, "", ""],
         [],
         ["[신청 업체 정보]"],
         ["회사명", f.companyName, "설립년월일", f.established],
         ["소유여부", f.ownerKind, "대표자", f.representative],
         ["사업자등록번호", f.businessNo, "법인등록번호", f.corporateNo],
         ["전화번호", f.phone, "FAX", f.fax],
-        ["본사 주소", f.hqAddress, "생산품목", f.products],
+        ["본사 주소", `${f.hqPostalCode ? `(${f.hqPostalCode}) ` : ""}${f.hqAddress}`, "생산품목", f.products],
         ["사업화예정제품", f.plannedProducts, "", ""],
         [],
         ["[개인정보 수집·이용 동의]"],
@@ -278,14 +279,11 @@ export default function Apply() {
       ];
       const ws = XLSX.utils.aoa_to_sheet(rows);
       ws["!cols"] = [{ wch: 18 }, { wch: 38 }, { wch: 18 }, { wch: 38 }];
-      ws["!merges"] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
-        { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
-        { s: { r: 10, c: 0 }, e: { r: 10, c: 3 } },
-        { s: { r: 16, c: 0 }, e: { r: 16, c: 3 } },
-        { s: { r: 21, c: 0 }, e: { r: 21, c: 3 } },
-        { s: { r: 29, c: 0 }, e: { r: 29, c: 3 } },
-      ];
+      // 섹션 헤더 전체 병합 (제목/각 [..] 라인)
+      const mergeRows = rows
+        .map((r, idx) => (typeof r[0] === "string" && (idx === 0 || (r[0] as string).startsWith("[")) ? idx : -1))
+        .filter((i) => i >= 0);
+      ws["!merges"] = mergeRows.map((r) => ({ s: { r, c: 0 }, e: { r, c: 3 } }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "기술이전신청서");
       const fileName = `기술이전신청서_${f.companyName || "신청"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
