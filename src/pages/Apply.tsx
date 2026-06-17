@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { safeFetch } from "@/lib/safeFetch";
-import { Download, FileText, Search, Loader2 } from "lucide-react";
+import { Download, FileText, Search, Loader2, MapPin } from "lucide-react";
 
 type Category = "국유-농진청" | "국유-검역본부" | "국유-품관원" | "국유-종자원" | "비국유";
 type CategoryAction = "출원" | "등록";
@@ -39,11 +39,10 @@ interface FormState {
   applicant: string;
   email: string;
   contact: string;
-  mobile: string;
-  postalCode: string;
-  address: string;
-  estimate: string;
+  quantity: string;
+  unitPrice: string;
   sharePct: string;
+  ownershipPct: string;
   companyName: string;
   established: string;
   ownerKind: OwnerKind;
@@ -51,10 +50,10 @@ interface FormState {
   corporateNo: string;
   representative: string;
   hqAddress: string;
+  hqPostalCode: string;
   phone: string;
   fax: string;
   plannedProducts: string;
-  postalCode2: string;
   products: string;
 }
 
@@ -81,11 +80,10 @@ const initial: FormState = {
   applicant: "",
   email: "",
   contact: "",
-  mobile: "",
-  postalCode: "",
-  address: "",
-  estimate: "0",
-  sharePct: "0.0",
+  quantity: "0",
+  unitPrice: "0",
+  sharePct: "100",
+  ownershipPct: "100",
   companyName: "",
   established: "",
   ownerKind: "",
@@ -93,10 +91,10 @@ const initial: FormState = {
   corporateNo: "",
   representative: "",
   hqAddress: "",
+  hqPostalCode: "",
   phone: "",
   fax: "",
   plannedProducts: "",
-  postalCode2: "",
   products: "",
 };
 
@@ -113,6 +111,41 @@ function Field({ label, children, required }: { label: string; children: React.R
 
 const CATS: Category[] = ["국유-농진청", "국유-검역본부", "국유-품관원", "국유-종자원", "비국유"];
 
+const BASE_RATE = 0.03; // 기본율 3% 고정
+
+// 농촌진흥청 지분율을 출원인 문자열에서 계산
+function calcRdaShare(applicantStr: string): number {
+  if (!applicantStr) return 100;
+  const parts = applicantStr.split(/[,;\/·및\n]+/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 0) return 100;
+  const rdaCount = parts.filter((p) => /농촌진흥청|농진청|Rural Development Administration|RDA/i.test(p)).length;
+  if (rdaCount === 0) return 0;
+  if (parts.length === 1) return 100;
+  // 균등 지분으로 가정
+  return Math.round((rdaCount / parts.length) * 1000) / 10;
+}
+
+// Daum 우편번호 스크립트 동적 로드
+function loadDaumPostcode(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const w = window as any;
+    if (w.daum?.Postcode) return resolve(w.daum);
+    const existing = document.getElementById("daum-postcode-script") as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener("load", () => resolve((window as any).daum));
+      existing.addEventListener("error", reject);
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = "daum-postcode-script";
+    s.src = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    s.async = true;
+    s.onload = () => resolve((window as any).daum);
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
 export default function Apply() {
   const [f, setF] = useState<FormState>(initial);
   const [generating, setGenerating] = useState(false);
@@ -120,6 +153,32 @@ export default function Apply() {
   const [agreed, setAgreed] = useState(false);
 
   const upd = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((p) => ({ ...p, [k]: v }));
+
+  // 견적금액 = 예정수량 × 단가 × 점유율(%) × 지분율(%) × 기본율(3%)
+  const estimate = Math.round(
+    (Number(f.quantity) || 0) *
+      (Number(f.unitPrice) || 0) *
+      ((Number(f.sharePct) || 0) / 100) *
+      ((Number(f.ownershipPct) || 0) / 100) *
+      BASE_RATE
+  );
+
+  const openPostcode = async (target: "company") => {
+    try {
+      const daum: any = await loadDaumPostcode();
+      new daum.Postcode({
+        oncomplete: (data: any) => {
+          const addr = data.roadAddress || data.jibunAddress || data.address || "";
+          if (target === "company") {
+            setF((p) => ({ ...p, hqAddress: addr, hqPostalCode: data.zonecode || "" }));
+          }
+        },
+      }).open();
+    } catch (e) {
+      console.error(e);
+      toast.error("우편번호 검색을 불러오지 못했습니다");
+    }
+  };
 
   const handleKiprisLookup = async () => {
     const query = (f.applicationNo || f.registrationNo).trim();
@@ -148,18 +207,21 @@ export default function Apply() {
         return;
       }
       const d = result.data;
+      const applicantStr = d.applicant || d.assignee || "";
+      const ownership = calcRdaShare(applicantStr);
       setF((p) => ({
         ...p,
         inventionTitle: d.titleKo || d.title || p.inventionTitle,
         inventor: Array.isArray(d.inventors) ? d.inventors.join(", ") : p.inventor,
-        applicantOrg: d.applicant || d.assignee || p.applicantOrg,
+        applicantOrg: applicantStr || p.applicantOrg,
         registrantHolder: d.assignee || d.applicant || p.registrantHolder,
         inventionOrg: d.applicant || d.assignee || p.inventionOrg,
         applicationNo: d.applicationNumber || d.displayNumber || p.applicationNo,
         registrationNo: d.registrationNumber || p.registrationNo,
         categoryAction: d.registrationNumber ? "등록" : "출원",
+        ownershipPct: String(ownership),
       }));
-      toast.success("KIPRIS 정보를 자동입력했습니다");
+      toast.success(`KIPRIS 자동입력 완료 (농진청 지분율 ${ownership}%)`);
     } catch (e) {
       console.error(e);
       toast.error("KIPRIS 조회에 실패했습니다");
