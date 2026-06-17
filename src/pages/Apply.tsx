@@ -459,8 +459,18 @@ export default function Apply() {
               <Field label="대표자"><Input value={f.representative} onChange={(e) => upd("representative", e.target.value)} /></Field>
               <Field label="전화번호"><Input value={f.phone} onChange={(e) => upd("phone", e.target.value)} /></Field>
               <Field label="FAX"><Input value={f.fax} onChange={(e) => upd("fax", e.target.value)} /></Field>
-              <div className="sm:col-span-2 md:col-span-3">
-                <Field label="본사 주소"><Input value={f.hqAddress} onChange={(e) => upd("hqAddress", e.target.value)} /></Field>
+              <Field label="우편번호">
+                <div className="flex gap-2">
+                  <Input value={f.hqPostalCode} readOnly placeholder="검색" className="bg-muted/40" />
+                  <Button type="button" variant="outline" size="sm" onClick={() => openPostcode("company")} className="shrink-0 h-9 px-2.5 gap-1">
+                    <MapPin className="w-3.5 h-3.5" /> 검색
+                  </Button>
+                </div>
+              </Field>
+              <div className="sm:col-span-2 md:col-span-2">
+                <Field label="본사 주소 (도로명)">
+                  <Input value={f.hqAddress} onChange={(e) => upd("hqAddress", e.target.value)} placeholder="우편번호 검색을 사용해 주세요" />
+                </Field>
               </div>
               <div className="sm:col-span-2 md:col-span-3">
                 <Field label="사업화예정제품"><Input value={f.plannedProducts} onChange={(e) => upd("plannedProducts", e.target.value)} placeholder="예: 기능성 가공식품, 농업용 자재 등" /></Field>
