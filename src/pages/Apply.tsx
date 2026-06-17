@@ -398,23 +398,48 @@ export default function Apply() {
               <div className="sm:col-span-2 md:col-span-3">
                 <Field label="실시 내용"><Input value={f.scope} onChange={(e) => upd("scope", e.target.value)} /></Field>
               </div>
-              <Field label="견적금액 (원)"><Input type="number" value={f.estimate} onChange={(e) => upd("estimate", e.target.value)} /></Field>
-              <Field label="점유율 (%)"><Input type="number" step="0.1" value={f.sharePct} onChange={(e) => upd("sharePct", e.target.value)} /></Field>
+              <Field label="예정수량">
+                <Input type="number" min="0" value={f.quantity} onChange={(e) => upd("quantity", e.target.value)} />
+              </Field>
+              <Field label="단가 (원)">
+                <Input type="number" min="0" value={f.unitPrice} onChange={(e) => upd("unitPrice", e.target.value)} />
+              </Field>
+              <Field label="점유율 (%)">
+                <Input type="number" step="0.1" min="0" max="100" value={f.sharePct} onChange={(e) => upd("sharePct", e.target.value)} />
+              </Field>
+              <Field label="지분율 (%) · 농진청">
+                <Input type="number" step="0.1" min="0" max="100" value={f.ownershipPct} onChange={(e) => upd("ownershipPct", e.target.value)} />
+              </Field>
+              <Field label="기본율 (%)">
+                <Input type="number" value={(BASE_RATE * 100).toFixed(1)} readOnly className="bg-muted/40" />
+              </Field>
+              <div className="sm:col-span-2 md:col-span-3">
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-[12px] text-muted-foreground leading-relaxed">
+                    <span className="font-medium text-foreground">견적금액 산식</span> ={" "}
+                    예정수량 × 단가 × 점유율 × 지분율 × 기본율(3%)
+                    <div className="mt-1 text-foreground/70">
+                      {Number(f.quantity || 0).toLocaleString()} × {Number(f.unitPrice || 0).toLocaleString()} ×{" "}
+                      {f.sharePct}% × {f.ownershipPct}% × 3%
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] text-muted-foreground">견적금액</div>
+                    <div className="text-xl font-bold text-primary">{estimate.toLocaleString()} 원</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
           {/* 계약 신청 정보 */}
           <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
-            <h2 className="text-sm font-semibold mb-4 text-foreground/90">계약 신청 정보</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <h2 className="text-sm font-semibold mb-1 text-foreground/90">계약 신청자 정보</h2>
+            <p className="text-[11px] text-muted-foreground mb-4">이름 · 이메일 · 연락처만 입력합니다.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Field label="신청자" required><Input value={f.applicant} onChange={(e) => upd("applicant", e.target.value)} /></Field>
               <Field label="이메일"><Input type="email" value={f.email} onChange={(e) => upd("email", e.target.value)} /></Field>
-              <Field label="연락처"><Input value={f.contact} onChange={(e) => upd("contact", e.target.value)} /></Field>
-              <Field label="휴대폰"><Input value={f.mobile} onChange={(e) => upd("mobile", e.target.value)} /></Field>
-              <Field label="우편번호"><Input value={f.postalCode} onChange={(e) => upd("postalCode", e.target.value)} /></Field>
-              <div className="sm:col-span-2 md:col-span-3">
-                <Field label="주소"><Input value={f.address} onChange={(e) => upd("address", e.target.value)} /></Field>
-              </div>
+              <Field label="연락처"><Input value={f.contact} onChange={(e) => upd("contact", e.target.value)} placeholder="010-0000-0000" /></Field>
             </div>
           </section>
 
