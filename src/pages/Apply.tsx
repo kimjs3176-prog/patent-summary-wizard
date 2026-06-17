@@ -1,12 +1,13 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import { Download, FileText } from "lucide-react";
+import * as XLSX from "xlsx";
+import { safeFetch } from "@/lib/safeFetch";
+import { Download, FileText, Search, Loader2 } from "lucide-react";
 
 type Category = "국유-농진청" | "국유-검역본부" | "국유-품관원" | "국유-종자원" | "비국유";
 type CategoryAction = "출원" | "등록";
@@ -20,7 +21,6 @@ interface FormState {
   categoryAction: CategoryAction;
   caseType: string;
   rightType: string;
-  receiptNo: string;
   applicationNo: string;
   registrationNo: string;
   inventionOrg: string;
@@ -50,14 +50,11 @@ interface FormState {
   businessNo: string;
   corporateNo: string;
   representative: string;
-  industry: string;
-  businessItem: string;
   hqAddress: string;
   phone: string;
   fax: string;
-  plan: string;
+  plannedProducts: string;
   postalCode2: string;
-  homepage: string;
   products: string;
 }
 
@@ -66,7 +63,6 @@ const initial: FormState = {
   categoryAction: "출원",
   caseType: "국내",
   rightType: "특허",
-  receiptNo: "",
   applicationNo: "",
   registrationNo: "",
   inventionOrg: "",
@@ -96,14 +92,11 @@ const initial: FormState = {
   businessNo: "",
   corporateNo: "",
   representative: "",
-  industry: "",
-  businessItem: "",
   hqAddress: "",
   phone: "",
   fax: "",
-  plan: "",
+  plannedProducts: "",
   postalCode2: "",
-  homepage: "",
   products: "",
 };
 
@@ -123,61 +116,126 @@ const CATS: Category[] = ["국유-농진청", "국유-검역본부", "국유-품
 export default function Apply() {
   const [f, setF] = useState<FormState>(initial);
   const [generating, setGenerating] = useState(false);
-  const sheetRef = useRef<HTMLDivElement>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const upd = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((p) => ({ ...p, [k]: v }));
 
+  const handleKiprisLookup = async () => {
+    const query = (f.applicationNo || f.registrationNo).trim();
+    if (!query) {
+      toast.error("출원번호 또는 등록번호를 입력하세요");
+      return;
+    }
+    setLookingUp(true);
+    try {
+      const res = await safeFetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-patent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ patentNumber: query }),
+          timeoutMs: 30000,
+          retries: 1,
+        }
+      );
+      const result = await res.json().catch(() => ({ success: false }));
+      if (!result.success || !result.data) {
+        toast.error(result.error || "특허 정보를 찾을 수 없습니다");
+        return;
+      }
+      const d = result.data;
+      setF((p) => ({
+        ...p,
+        inventionTitle: d.titleKo || d.title || p.inventionTitle,
+        inventor: Array.isArray(d.inventors) ? d.inventors.join(", ") : p.inventor,
+        applicantOrg: d.applicant || d.assignee || p.applicantOrg,
+        registrantHolder: d.assignee || d.applicant || p.registrantHolder,
+        inventionOrg: d.applicant || d.assignee || p.inventionOrg,
+        applicationNo: d.applicationNumber || d.displayNumber || p.applicationNo,
+        registrationNo: d.registrationNumber || p.registrationNo,
+        categoryAction: d.registrationNumber ? "등록" : "출원",
+      }));
+      toast.success("KIPRIS 정보를 자동입력했습니다");
+    } catch (e) {
+      console.error(e);
+      toast.error("KIPRIS 조회에 실패했습니다");
+    } finally {
+      setLookingUp(false);
+    }
+  };
+
   const handleGenerate = async () => {
-    if (!sheetRef.current) return;
+    if (!agreed) {
+      toast.error("개인정보 수집·이용에 동의해 주세요");
+      return;
+    }
     if (!f.applicant.trim() || !f.companyName.trim()) {
       toast.error("신청자와 회사명은 필수입니다");
       return;
     }
     setGenerating(true);
     try {
-      // Make sheet temporarily visible offscreen-friendly
-      const node = sheetRef.current;
-      node.style.display = "block";
-      const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-      node.style.display = "none";
-
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const imgW = pageW - 10;
-      const imgH = (canvas.height * imgW) / canvas.width;
-      const finalH = Math.min(imgH, pageH - 10);
-      const finalW = (canvas.width * finalH) / canvas.height;
-      const x = (pageW - Math.min(imgW, finalW)) / 2;
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", x, 5, Math.min(imgW, finalW), Math.min(imgH, finalH));
-      const fileName = `기술이전신청서_${f.companyName || "신청"}_${new Date().toISOString().slice(0, 10)}.pdf`;
-      pdf.save(fileName);
-      toast.success("신청서가 생성되었습니다");
+      const categoryLabel = `${f.category} / ${f.categoryAction}`;
+      const period = [f.periodStart, f.periodEnd].filter(Boolean).join(" ~ ");
+      const rows: (string | number)[][] = [
+        ["기술이전(실시) 신청서"],
+        [],
+        ["[관련 특허 정보]"],
+        ["구분", categoryLabel, "회사명", f.companyName],
+        ["사건구분", f.caseType, "권리", f.rightType],
+        ["출원번호", f.applicationNo, "등록번호", f.registrationNo],
+        ["발명기관", f.inventionOrg, "발명의 명칭", f.inventionTitle],
+        ["발명자", f.inventor, "전화번호", f.inventorPhone],
+        ["출원인", f.applicantOrg, "등록권리자", f.registrantHolder],
+        [],
+        ["[실시 신청 내용]"],
+        ["계약의 종류", f.contractKind, "처분의 종류", f.dispoKind],
+        ["유무상 여부", f.payKind, "실시 기간", period],
+        ["실시 지역", f.region, "실시 내용", f.scope],
+        ["견적금액(원)", Number(f.estimate || 0), "점유율(%)", Number(f.sharePct || 0)],
+        [],
+        ["[계약 신청 정보]"],
+        ["신청자", f.applicant, "이메일", f.email],
+        ["연락처", f.contact, "휴대폰", f.mobile],
+        ["우편번호", f.postalCode, "주소", f.address],
+        [],
+        ["[신청 업체 정보]"],
+        ["회사명", f.companyName, "설립년월일", f.established],
+        ["소유여부", f.ownerKind, "대표자", f.representative],
+        ["사업자등록번호", f.businessNo, "법인등록번호", f.corporateNo],
+        ["전화번호", f.phone, "FAX", f.fax],
+        ["본사 주소", f.hqAddress, "생산품목", f.products],
+        ["사업화예정제품", f.plannedProducts, "", ""],
+        [],
+        ["[개인정보 수집·이용 동의]"],
+        ["동의 여부", agreed ? "동의함" : "미동의", "동의 일시", new Date().toLocaleString("ko-KR")],
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws["!cols"] = [{ wch: 18 }, { wch: 38 }, { wch: 18 }, { wch: 38 }];
+      ws["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+        { s: { r: 10, c: 0 }, e: { r: 10, c: 3 } },
+        { s: { r: 16, c: 0 }, e: { r: 16, c: 3 } },
+        { s: { r: 21, c: 0 }, e: { r: 21, c: 3 } },
+        { s: { r: 29, c: 0 }, e: { r: 29, c: 3 } },
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "기술이전신청서");
+      const fileName = `기술이전신청서_${f.companyName || "신청"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      toast.success("신청서 엑셀 파일이 생성되었습니다");
     } catch (e) {
       console.error(e);
-      toast.error("PDF 생성에 실패했습니다");
+      toast.error("엑셀 생성에 실패했습니다");
     } finally {
       setGenerating(false);
     }
   };
-
-  const cellStyle: React.CSSProperties = {
-    border: "1px solid #555",
-    padding: "4px 6px",
-    fontSize: 11,
-    verticalAlign: "middle",
-    color: "#000",
-    background: "#fff",
-  };
-  const labelCell: React.CSSProperties = {
-    ...cellStyle,
-    background: "#e8e8e8",
-    textAlign: "center",
-    fontWeight: 600,
-    whiteSpace: "nowrap",
-  };
-  const dot = (on: boolean) => (on ? "●" : "○");
-  const chk = (on: boolean) => (on ? "■" : "□");
 
   return (
     <PageLayout>
@@ -190,7 +248,7 @@ export default function Apply() {
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">기술이전 신청</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            입력 정보를 바탕으로 기술이전(실시) 신청서 PDF 파일을 생성합니다. 입력 데이터는 저장되지 않습니다.
+            입력 정보를 바탕으로 기술이전(실시) 신청서 엑셀 파일을 생성합니다. 입력 데이터는 어디에도 저장되지 않습니다.
           </p>
         </div>
 
@@ -234,8 +292,14 @@ export default function Apply() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <Field label="사건구분"><Input value={f.caseType} onChange={(e) => upd("caseType", e.target.value)} placeholder="국내" /></Field>
               <Field label="권리"><Input value={f.rightType} onChange={(e) => upd("rightType", e.target.value)} placeholder="특허" /></Field>
-              <Field label="접수번호"><Input value={f.receiptNo} onChange={(e) => upd("receiptNo", e.target.value)} placeholder="TTMS-2026-0042" /></Field>
-              <Field label="출원번호"><Input value={f.applicationNo} onChange={(e) => upd("applicationNo", e.target.value)} /></Field>
+              <Field label="출원번호">
+                <div className="flex gap-2">
+                  <Input value={f.applicationNo} onChange={(e) => upd("applicationNo", e.target.value)} placeholder="10-2023-0000000" />
+                  <Button type="button" variant="outline" size="sm" onClick={handleKiprisLookup} disabled={lookingUp} className="shrink-0 h-9 px-2.5">
+                    {lookingUp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                  </Button>
+                </div>
+              </Field>
               <Field label="등록번호"><Input value={f.registrationNo} onChange={(e) => upd("registrationNo", e.target.value)} /></Field>
               <Field label="발명기관"><Input value={f.inventionOrg} onChange={(e) => upd("inventionOrg", e.target.value)} /></Field>
               <div className="sm:col-span-2 md:col-span-3">
@@ -246,6 +310,7 @@ export default function Apply() {
               <Field label="출원인"><Input value={f.applicantOrg} onChange={(e) => upd("applicantOrg", e.target.value)} /></Field>
               <Field label="등록권리자"><Input value={f.registrantHolder} onChange={(e) => upd("registrantHolder", e.target.value)} /></Field>
             </div>
+            <p className="mt-3 text-[11px] text-muted-foreground">출원번호를 입력 후 돋보기 버튼을 누르면 KIPRIS에서 특허 정보를 자동으로 불러옵니다.</p>
           </section>
 
           {/* 실시 신청 내용 */}
@@ -307,184 +372,43 @@ export default function Apply() {
               <Field label="사업자등록번호"><Input value={f.businessNo} onChange={(e) => upd("businessNo", e.target.value)} /></Field>
               <Field label="법인등록번호"><Input value={f.corporateNo} onChange={(e) => upd("corporateNo", e.target.value)} /></Field>
               <Field label="대표자"><Input value={f.representative} onChange={(e) => upd("representative", e.target.value)} /></Field>
-              <Field label="업태"><Input value={f.industry} onChange={(e) => upd("industry", e.target.value)} /></Field>
-              <Field label="업종"><Input value={f.businessItem} onChange={(e) => upd("businessItem", e.target.value)} /></Field>
               <Field label="전화번호"><Input value={f.phone} onChange={(e) => upd("phone", e.target.value)} /></Field>
               <Field label="FAX"><Input value={f.fax} onChange={(e) => upd("fax", e.target.value)} /></Field>
               <div className="sm:col-span-2 md:col-span-3">
                 <Field label="본사 주소"><Input value={f.hqAddress} onChange={(e) => upd("hqAddress", e.target.value)} /></Field>
               </div>
               <div className="sm:col-span-2 md:col-span-3">
-                <Field label="사업화 추진 계획"><Input value={f.plan} onChange={(e) => upd("plan", e.target.value)} /></Field>
+                <Field label="사업화예정제품"><Input value={f.plannedProducts} onChange={(e) => upd("plannedProducts", e.target.value)} placeholder="예: 기능성 가공식품, 농업용 자재 등" /></Field>
               </div>
-              <Field label="홈페이지"><Input value={f.homepage} onChange={(e) => upd("homepage", e.target.value)} /></Field>
               <Field label="생산품목"><Input value={f.products} onChange={(e) => upd("products", e.target.value)} /></Field>
             </div>
           </section>
 
+          {/* 개인정보 수집·이용 동의 */}
+          <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+            <h2 className="text-sm font-semibold mb-3 text-foreground/90">개인정보 수집·이용 동의</h2>
+            <div className="text-[12px] leading-relaxed text-muted-foreground bg-muted/30 rounded-lg p-3 mb-3 max-h-40 overflow-y-auto">
+              <p className="font-medium text-foreground mb-1">1. 수집 항목</p>
+              <p>신청자 성명, 회사명, 이메일, 연락처(전화/휴대폰), 주소, 사업자등록번호, 법인등록번호, 대표자, 본사 주소 등 신청서 작성에 필요한 정보</p>
+              <p className="font-medium text-foreground mt-2 mb-1">2. 수집·이용 목적</p>
+              <p>기술이전(실시) 신청서 작성·생성 및 제출, 신청 접수·심사·계약 체결 및 관련 안내</p>
+              <p className="font-medium text-foreground mt-2 mb-1">3. 보유·이용 기간</p>
+              <p>본 서비스는 입력 데이터를 서버에 저장하지 않으며, 생성된 엑셀 파일은 사용자의 단말기에만 저장됩니다. 신청서를 제출한 기관의 보유·이용 기간은 해당 기관의 개인정보 처리방침을 따릅니다.</p>
+              <p className="font-medium text-foreground mt-2 mb-1">4. 동의 거부 권리 및 불이익</p>
+              <p>위 개인정보 수집·이용에 동의하지 않으실 수 있으며, 다만 동의하지 않으실 경우 신청서 생성이 제한됩니다.</p>
+            </div>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <Checkbox checked={agreed} onCheckedChange={(v) => setAgreed(v === true)} className="mt-0.5" />
+              <span className="text-sm text-foreground">위 개인정보 수집·이용 내용을 확인하였으며 이에 <strong>동의합니다.</strong> (필수)</span>
+            </label>
+          </section>
+
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Button variant="outline" onClick={() => setF(initial)}>초기화</Button>
-            <Button onClick={handleGenerate} disabled={generating} className="gap-2">
+            <Button onClick={handleGenerate} disabled={generating || !agreed} className="gap-2">
               <Download className="w-4 h-4" />
-              {generating ? "생성 중..." : "신청서 PDF 다운로드"}
+              {generating ? "생성 중..." : "신청서 엑셀 다운로드"}
             </Button>
-          </div>
-        </div>
-
-        {/* Hidden printable sheet — matches the reference form layout */}
-        <div style={{ position: "fixed", left: -99999, top: 0, display: "none" }}>
-          <div ref={sheetRef} style={{ width: 1400, padding: 24, background: "#fff", color: "#000", fontFamily: "'Malgun Gothic', '맑은 고딕', sans-serif" }}>
-            <h2 style={{ textAlign: "center", fontSize: 22, fontWeight: 700, marginBottom: 16, letterSpacing: 4 }}>기술이전(실시) 신청서</h2>
-            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-              <colgroup>
-                <col style={{ width: 90 }} />
-                <col style={{ width: 80 }} />
-                <col style={{ width: 70 }} />
-                <col style={{ width: 120 }} />
-                <col style={{ width: 120 }} />
-                <col style={{ width: 120 }} />
-                <col style={{ width: 120 }} />
-                <col style={{ width: 80 }} />
-                <col style={{ width: 120 }} />
-                <col style={{ width: 80 }} />
-                <col style={{ width: 120 }} />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <td style={labelCell}>구분</td>
-                  <td colSpan={8} style={cellStyle}>
-                    {CATS.map((c) => (
-                      <span key={c} style={{ marginRight: 14 }}>
-                        {dot(f.category === c)} {c} {chk(f.category === c && f.categoryAction === "출원")} 출원 {chk(f.category === c && f.categoryAction === "등록")} 등록
-                      </span>
-                    ))}
-                  </td>
-                  <td style={labelCell}>회사명</td>
-                  <td style={cellStyle}>{f.companyName}</td>
-                </tr>
-                <tr>
-                  <td rowSpan={5} style={labelCell}>관련<br />특허<br />정보</td>
-                  <td style={labelCell}>사건구분</td>
-                  <td style={cellStyle}>{f.caseType}</td>
-                  <td style={labelCell}>권리</td>
-                  <td style={cellStyle}>{f.rightType}</td>
-                  <td style={labelCell}>접수번호</td>
-                  <td style={cellStyle}>{f.receiptNo}</td>
-                  <td style={labelCell}>출원번호</td>
-                  <td style={cellStyle}>{f.applicationNo}</td>
-                  <td style={labelCell}>설립년월일</td>
-                  <td style={cellStyle}>{f.established} <span style={{ marginLeft: 12 }}>소유: {f.ownerKind}</span></td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>등록번호</td>
-                  <td style={cellStyle}>{f.registrationNo}</td>
-                  <td style={labelCell}>발명기관</td>
-                  <td colSpan={5} style={cellStyle}>{f.inventionOrg}</td>
-                  <td style={labelCell}>사업자등록번호</td>
-                  <td style={cellStyle}>{f.businessNo}</td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>발명의 명칭</td>
-                  <td colSpan={6} style={cellStyle}>{f.inventionTitle}</td>
-                  <td style={labelCell}>법인등록번호</td>
-                  <td style={cellStyle}>{f.corporateNo}</td>
-                  <td style={labelCell}>대표자</td>
-                  <td style={cellStyle}>{f.representative}</td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>발명자</td>
-                  <td colSpan={3} style={cellStyle}>{f.inventor}</td>
-                  <td style={labelCell}>전화번호</td>
-                  <td colSpan={3} style={cellStyle}>{f.inventorPhone}</td>
-                  <td style={labelCell}>업태</td>
-                  <td style={cellStyle}>{f.industry}</td>
-                  <td style={labelCell}>업종</td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>출원인</td>
-                  <td colSpan={3} style={cellStyle}>{f.applicantOrg}</td>
-                  <td style={labelCell}>등록권리자</td>
-                  <td colSpan={3} style={cellStyle}>{f.registrantHolder}</td>
-                  <td colSpan={2} style={cellStyle}>{f.businessItem}</td>
-                  <td style={cellStyle}></td>
-                </tr>
-
-                <tr>
-                  <td rowSpan={6} style={labelCell}>실시<br />신청<br />내용</td>
-                  <td style={labelCell}>계약의 종류</td>
-                  <td colSpan={3} style={cellStyle}>
-                    {dot(f.contractKind === "신규")} 신규 {dot(f.contractKind === "재계약")} 재계약 {dot(f.contractKind === "자동재계약")} 자동재계약
-                  </td>
-                  <td rowSpan={6} style={labelCell}>계약<br />신청<br />정보</td>
-                  <td style={labelCell}>신청자</td>
-                  <td style={cellStyle}>{f.applicant}</td>
-                  <td style={labelCell}>이메일</td>
-                  <td colSpan={2} style={cellStyle}>{f.email}</td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>처분의 종류</td>
-                  <td colSpan={3} style={cellStyle}>
-                    {dot(f.dispoKind === "통상실시")} 통상실시 {dot(f.dispoKind === "전용실시")} 전용실시 {dot(f.dispoKind === "양도")} 양도
-                  </td>
-                  <td style={labelCell}>연락처</td>
-                  <td style={cellStyle}>{f.contact}</td>
-                  <td style={labelCell}>휴대폰</td>
-                  <td colSpan={2} style={cellStyle}>{f.mobile}</td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>유무상 여부</td>
-                  <td colSpan={3} style={cellStyle}>
-                    {dot(f.payKind.startsWith("유상"))} 유상 ({chk(f.payKind === "유상-선납(경상)")} 선납(경상) {chk(f.payKind === "유상-선납(정액)")} 선납(정액)) {dot(f.payKind === "무상")} 무상
-                  </td>
-                  <td style={labelCell}>우편번호</td>
-                  <td colSpan={4} style={cellStyle}>{f.postalCode}</td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>실시 기간</td>
-                  <td colSpan={3} style={cellStyle}>{f.periodStart} ~ {f.periodEnd}</td>
-                  <td style={labelCell}>주소</td>
-                  <td colSpan={4} style={cellStyle}>{f.address}</td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>실시 지역</td>
-                  <td colSpan={3} style={cellStyle}>{f.region}</td>
-                  <td style={labelCell}>본사 주소</td>
-                  <td colSpan={4} style={cellStyle}>{f.hqAddress}</td>
-                </tr>
-                <tr>
-                  <td style={labelCell}>실시 내용</td>
-                  <td colSpan={3} style={cellStyle}>{f.scope}</td>
-                  <td style={labelCell}>견적금액</td>
-                  <td style={cellStyle}>{Number(f.estimate || 0).toLocaleString()}</td>
-                  <td style={labelCell}>점유율</td>
-                  <td colSpan={2} style={cellStyle}>{f.sharePct}</td>
-                </tr>
-
-                <tr>
-                  <td colSpan={5} style={labelCell}>사업화 추진 계획</td>
-                  <td colSpan={6} style={cellStyle}>{f.plan}</td>
-                </tr>
-                <tr>
-                  <td colSpan={2} style={labelCell}>전화번호</td>
-                  <td colSpan={2} style={cellStyle}>{f.phone}</td>
-                  <td style={labelCell}>FAX</td>
-                  <td colSpan={2} style={cellStyle}>{f.fax}</td>
-                  <td style={labelCell}>홈페이지</td>
-                  <td colSpan={3} style={cellStyle}>{f.homepage}</td>
-                </tr>
-                <tr>
-                  <td colSpan={2} style={labelCell}>생산품목</td>
-                  <td colSpan={9} style={cellStyle}>{f.products}</td>
-                </tr>
-              </tbody>
-            </table>
-            <div style={{ marginTop: 28, fontSize: 12, lineHeight: 1.8 }}>
-              <p>위와 같이 기술이전(실시)을 신청합니다.</p>
-              <p style={{ textAlign: "center", marginTop: 16, fontSize: 14 }}>
-                {new Date().getFullYear()}년 {new Date().getMonth() + 1}월 {new Date().getDate()}일
-              </p>
-              <p style={{ textAlign: "right", marginTop: 12 }}>신청자: {f.applicant} (인)</p>
-            </div>
           </div>
         </div>
       </main>
