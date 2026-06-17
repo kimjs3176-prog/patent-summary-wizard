@@ -12,6 +12,7 @@ const SearchResults = lazy(() => import("./pages/SearchResults"));
 const SummarySample = lazy(() => import("./pages/SummarySample"));
 const TechVideos = lazy(() => import("./pages/TechVideos"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Apply = lazy(() => import("./pages/Apply"));
 import { FloatingChatbot } from "./components/FloatingChatbot";
 import { SplashScreen } from "./components/SplashScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -65,6 +66,7 @@ const App = () => {
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/summary-sample" element={<SummarySample />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
+                <Route path="/apply" element={<Apply />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>
