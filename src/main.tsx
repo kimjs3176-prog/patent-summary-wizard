@@ -9,7 +9,9 @@ createRoot(document.getElementById("root")!).render(<App />);
 // their (possibly stale) service worker + caches exactly once.
 // Bump KILL_SWITCH_VERSION whenever stale SWs are suspected.
 // ============================================================
-const KILL_SWITCH_VERSION = "2026-05-13-a";
+// Bumped 2026-06-19: removed app-shell service worker entirely.
+// Existing visitors will unregister the old SW and clear its caches once.
+const KILL_SWITCH_VERSION = "2026-06-19-no-sw";
 (() => {
   try {
     const key = "sw-kill-switch";
