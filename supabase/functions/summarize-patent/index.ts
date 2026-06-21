@@ -520,7 +520,8 @@ serve(async (req) => {
           const result = await response.json();
           const finishReason = result?.choices?.[0]?.finish_reason ?? null;
           let fullContent = String(result?.choices?.[0]?.message?.content || "").trim();
-          console.log(`[AI COMPLETE] ${trimmedPatent} finish=${finishReason ?? "null"} chars=${fullContent.length}`);
+          const usage = result?.usage ?? {};
+          console.log(`[AI COMPLETE] ${trimmedPatent} finish=${finishReason ?? "null"} chars=${fullContent.length} usage=${JSON.stringify(usage)} maxTok=${maxTokens}`);
 
           if (!fullContent || fullContent.length < 200) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "empty_response", message: "AI 응답이 비어 있습니다. 자동 재시도합니다." })}\n\n`));
