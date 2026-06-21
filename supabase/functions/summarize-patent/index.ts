@@ -260,7 +260,7 @@ serve(async (req) => {
 
     // Read custom prompt additions, total max tokens, model, and per-section length settings.
     let customPromptExtra = "";
-    let maxTokens = 12000;
+    let maxTokens = 20000;
     // 긴 요약은 스트리밍 경로에서 본문이 중간에 닫히는 사례가 있어 기본 Gateway 모델의 비스트리밍 완료 후 전송으로 안정화한다.
     const aiModel = "openai/gpt-5-mini";
     let sectionLengthSettings: Record<string, number> = {};
@@ -275,7 +275,7 @@ serve(async (req) => {
           if (row.key === "summary_ai_prompt_extra" && row.value) customPromptExtra = row.value;
           if (row.key === "summary_max_tokens" && row.value) {
             const parsed = parseInt(row.value, 10);
-            if (!isNaN(parsed) && parsed >= 500 && parsed <= 32000) maxTokens = Math.max(6000, Math.min(parsed, 24000));
+            if (!isNaN(parsed) && parsed >= 500 && parsed <= 32000) maxTokens = Math.max(12000, Math.min(parsed, 30000));
           }
           if (row.key === "summary_section_lengths" && row.value) {
             try {
