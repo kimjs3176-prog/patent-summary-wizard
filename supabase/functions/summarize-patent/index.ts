@@ -497,7 +497,7 @@ serve(async (req) => {
                 { role: "user", content: userMessage },
               ],
               stream: false,
-              max_tokens: maxTokens,
+              max_completion_tokens: maxTokens,
             },
             { signal: aiCtrl.signal },
           );
