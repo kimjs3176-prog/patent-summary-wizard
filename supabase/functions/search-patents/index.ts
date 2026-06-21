@@ -125,7 +125,7 @@ async function extractKeywordsWithAI(query: string): Promise<{ keywords: string[
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           {
             role: "system",
@@ -147,8 +147,8 @@ Rules:
             content: query
           }
         ],
-        max_completion_tokens: 400,
-        reasoning_effort: "minimal",
+        temperature: 0.3,
+        max_tokens: 200,
       }),
     }, 8000);
 
@@ -211,7 +211,7 @@ async function recommendQueriesWithAI(
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           {
             role: "system",
@@ -235,8 +235,8 @@ Tasks:
 추출된 키워드 후보: [${baseKeywords.join(", ")}]`,
           },
         ],
-        max_completion_tokens: 500,
-        reasoning_effort: "minimal",
+        temperature: 0.2,
+        max_tokens: 250,
       }),
     }, 7000);
 
