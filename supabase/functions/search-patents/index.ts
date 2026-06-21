@@ -148,6 +148,7 @@ Rules:
           }
         ],
         max_completion_tokens: 400,
+        reasoning_effort: "minimal",
       }),
     }, 8000);
 
@@ -235,6 +236,7 @@ Tasks:
           },
         ],
         max_completion_tokens: 500,
+        reasoning_effort: "minimal",
       }),
     }, 7000);
 
