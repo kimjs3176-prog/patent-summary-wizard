@@ -236,6 +236,7 @@ Tasks:
           },
         ],
         max_completion_tokens: 500,
+        reasoning_effort: "minimal",
       }),
     }, 7000);
 
