@@ -210,7 +210,7 @@ async function recommendQueriesWithAI(
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -234,8 +234,7 @@ Tasks:
 추출된 키워드 후보: [${baseKeywords.join(", ")}]`,
           },
         ],
-        temperature: 0.2,
-        max_tokens: 250,
+        max_completion_tokens: 500,
       }),
     }, 7000);
 
