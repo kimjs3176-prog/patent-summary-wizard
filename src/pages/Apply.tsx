@@ -286,9 +286,183 @@ export default function Apply() {
       ws["!merges"] = mergeRows.map((r) => ({ s: { r, c: 0 }, e: { r, c: 3 } }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "기술이전신청서");
+
+      // ===== [서식 1] 수의계약신청서 =====
+      const today = new Date();
+      const ymd = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+      const rightLabel = f.registrationNo
+        ? `등록 ${f.registrationNo}`
+        : f.applicationNo
+        ? `출원 ${f.applicationNo}`
+        : "";
+      const periodYears =
+        f.periodStart && f.periodEnd
+          ? Math.max(
+              1,
+              Math.round(
+                (new Date(f.periodEnd).getTime() - new Date(f.periodStart).getTime()) /
+                  (365.25 * 24 * 3600 * 1000)
+              )
+            )
+          : "";
+      const periodLine = `기간: ${f.periodStart || "20  .  .  ."} ~ ${f.periodEnd || "20  .  .  ."}${
+        periodYears ? ` (${periodYears}년간)` : ""
+      } / 지역: ${f.region} / 내용: ${f.scope}`;
+      const dispoCheck = (k: DispoKind) => (f.dispoKind === k ? "■" : "□");
+      const form1: (string | number)[][] = [
+        ["[서식 1] 수의계약신청서"],
+        ["수의계약신청서"],
+        [],
+        ["신청인", "", "", ""],
+        ["① 업체명", f.companyName, "② 사업자등록번호", f.businessNo],
+        ["①-1 대표자", f.representative, "②-1 법인등록번호", f.corporateNo],
+        [
+          "③ 사업장소재지 (사업자등록증 기준)",
+          `${f.hqPostalCode ? `(${f.hqPostalCode}) ` : ""}${f.hqAddress}`,
+          "③-1 대표전화",
+          f.phone,
+        ],
+        ["④ 권리의 표시", rightLabel, "⑤ 발명의 명칭", f.inventionTitle],
+        [
+          "⑥ 처분의 종류",
+          `${dispoCheck("양도")} 매수    ${dispoCheck("전용실시")} 전용실시(권)    ${dispoCheck(
+            "통상실시"
+          )} 통상실시(권)`,
+          "",
+          "",
+        ],
+        ["⑦ 실시범위", periodLine, "", ""],
+        ["⑧ 총 견적금액", `${estimate.toLocaleString()} 원`, "", ""],
+        [
+          "⑨ 수의계약의 근거",
+          "「국가공무원 등 직무발명의 처분ㆍ관리 및 보상 등에 관한 규정」 제11조 및 같은 규정 시행규칙 제8조 / 「농촌진흥법」 제13조 제2항 및 같은 법 시행규칙 제8조 제1항",
+          "",
+          "",
+        ],
+        ["※ 국가직무발명특허권등이 적용될 제품명", f.plannedProducts || f.products, "", ""],
+        [],
+        [ymd, "", "", ""],
+        [`신청인: ${f.companyName}  (대표 ${f.representative})  (인)`, "", "", ""],
+        ["한국농업기술진흥원장 귀하", "", "", ""],
+        [],
+        ["※ 첨부서류", "1. 실시료에 대한 견적서 1부   2. 해당 국가직무발명특허권등의 실시에 관한 사업계획서 1부", "", ""],
+      ];
+      const ws1 = XLSX.utils.aoa_to_sheet(form1);
+      ws1["!cols"] = [{ wch: 22 }, { wch: 36 }, { wch: 22 }, { wch: 36 }];
+      ws1["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+        { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } },
+        { s: { r: 8, c: 1 }, e: { r: 8, c: 3 } },
+        { s: { r: 9, c: 1 }, e: { r: 9, c: 3 } },
+        { s: { r: 10, c: 1 }, e: { r: 10, c: 3 } },
+        { s: { r: 11, c: 1 }, e: { r: 11, c: 3 } },
+        { s: { r: 12, c: 1 }, e: { r: 12, c: 3 } },
+        { s: { r: 14, c: 0 }, e: { r: 14, c: 3 } },
+        { s: { r: 15, c: 0 }, e: { r: 15, c: 3 } },
+        { s: { r: 16, c: 0 }, e: { r: 16, c: 3 } },
+        { s: { r: 18, c: 1 }, e: { r: 18, c: 3 } },
+      ];
+      XLSX.utils.book_append_sheet(wb, ws1, "서식1_수의계약신청서");
+
+      // ===== [서식 2] 실시료 견적서 =====
+      const qty = Number(f.quantity || 0);
+      const price = Number(f.unitPrice || 0);
+      const share = Number(f.sharePct || 0);
+      const own = Number(f.ownershipPct || 0);
+      const form2: (string | number)[][] = [
+        ["[서식 2] 실시료 견적서"],
+        ["실시료견적서"],
+        [],
+        ["권리의 표시", rightLabel, "발명의 명칭", f.inventionTitle],
+        ["예정실시료 견적금액", `${estimate.toLocaleString()} 원`, "", ""],
+        [],
+        ["○ 예정실시료의 견적금액 산정근거", "", "", ""],
+        ["- 제품명", f.plannedProducts || f.products, "", ""],
+        ["- 총판매예정수량", qty, "- 예정단가(원)", price],
+        ["- 점유율(%)", share, "- 기본율(%)", BASE_RATE * 100],
+        ["- 지분율(%)", own, "- 실시료 산출금액(원)", estimate],
+        [
+          "산식",
+          `(총판매예정수량 ${qty}) × (예정단가 ${price}) × (점유율 ${share}%) × (기본율 3%) × (지분율 ${own}%) = ${estimate.toLocaleString()} 원`,
+          "",
+          "",
+        ],
+        [],
+        [ymd, "", "", ""],
+        [`신청인: ${f.companyName}  (대표 ${f.representative})  (인)`, "", "", ""],
+        ["한국농업기술진흥원장 귀하", "", "", ""],
+      ];
+      const ws2 = XLSX.utils.aoa_to_sheet(form2);
+      ws2["!cols"] = [{ wch: 22 }, { wch: 36 }, { wch: 22 }, { wch: 36 }];
+      ws2["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+        { s: { r: 4, c: 1 }, e: { r: 4, c: 3 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 3 } },
+        { s: { r: 7, c: 1 }, e: { r: 7, c: 3 } },
+        { s: { r: 11, c: 1 }, e: { r: 11, c: 3 } },
+        { s: { r: 13, c: 0 }, e: { r: 13, c: 3 } },
+        { s: { r: 14, c: 0 }, e: { r: 14, c: 3 } },
+        { s: { r: 15, c: 0 }, e: { r: 15, c: 3 } },
+      ];
+      XLSX.utils.book_append_sheet(wb, ws2, "서식2_실시료견적서");
+
+      // ===== 통상실시권 실시계약서 (요약 양식) =====
+      const contract: (string | number)[][] = [
+        ["국가직무발명특허권의 통상실시권 실시계약서"],
+        [],
+        [
+          "한국농업기술진흥원(이하 '농진원')과 " +
+            `${f.companyName}(대표자: ${f.representative}, 이하 '실시권자')는 아래와 같은 조건으로 ` +
+            "국가직무발명특허권의 통상실시권 허락(이하 '실시')에 관한 계약을 체결한다.",
+        ],
+        [],
+        ["제1조 (실시권의 허락)"],
+        [`○ 특허번호(출원번호): ${f.registrationNo || "-"} (${f.applicationNo || "-"})`],
+        [`○ 발명의 명칭: ${f.inventionTitle}`],
+        [],
+        ["제2조 (실시권의 범위 등)"],
+        [
+          `1. 실시기간: ${f.periodStart || "20  .  .  ."} ~ ${f.periodEnd || "20  .  .  ."}${
+            periodYears ? ` (${periodYears}년간)` : ""
+          }`,
+        ],
+        [`2. 실시료: 금 ${estimate.toLocaleString()} 원`],
+        [`   ○ 총판매예정수량: ${qty.toLocaleString()} 개`],
+        [`   ○ 제품판매단가: ${price.toLocaleString()} 원/개`],
+        [`   ○ 점유율 ${share}%, 기본율 3%, 국가지분율 ${own}%`],
+        [`3. 실시범위 - 지리적 범위: ${f.region} / 실시내용: ${f.scope}`],
+        [`4. 실시제품명: ${f.plannedProducts || f.products}`],
+        [],
+        ["제3조 (제3자에 대한 허락) — 원 계약서 본문 준용"],
+        ["제4조 (실시권의 등록) — 원 계약서 본문 준용"],
+        ["제5조 (실시료의 납부) — 원 계약서 본문 준용"],
+        ["제6조 (실시료의 정산 등) — 원 계약서 본문 준용"],
+        ["제7조 (비밀보장) — 원 계약서 본문 준용"],
+        ["제8조 (면책) — 원 계약서 본문 준용"],
+        ["제9조 (재계약) — 원 계약서 본문 준용"],
+        ["제10조 이하 — 원 계약서 본문 준용"],
+        [],
+        ["※ 본 시트는 입력값을 자동 반영한 계약서 초안입니다. 정식 계약 체결 시 한국농업기술진흥원이 제공하는 원본 계약서 양식을 사용해 주십시오."],
+        [],
+        [ymd],
+        [],
+        [`[농진원]  한국농업기술진흥원장 (인)`],
+        [
+          `[실시권자]  ${f.companyName}  대표자: ${f.representative} (인)`,
+        ],
+        [
+          `주소: ${f.hqPostalCode ? `(${f.hqPostalCode}) ` : ""}${f.hqAddress}  /  전화: ${f.phone}  /  담당: ${f.applicant} (${f.email}, ${f.contact})`,
+        ],
+      ];
+      const ws3 = XLSX.utils.aoa_to_sheet(contract);
+      ws3["!cols"] = [{ wch: 110 }];
+      XLSX.utils.book_append_sheet(wb, ws3, "통상실시권_실시계약서");
+
       const fileName = `기술이전신청서_${f.companyName || "신청"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
       XLSX.writeFile(wb, fileName);
-      toast.success("신청서 엑셀 파일이 생성되었습니다");
+      toast.success("신청서·견적서·계약서 양식이 포함된 엑셀 파일이 생성되었습니다");
     } catch (e) {
       console.error(e);
       toast.error("엑셀 생성에 실패했습니다");
