@@ -676,7 +676,7 @@ export default function Apply() {
             <Button variant="outline" onClick={() => setF(initial)}>초기화</Button>
             <Button onClick={handleGenerate} disabled={generating || !agreed} className="gap-2">
               <Download className="w-4 h-4" />
-              {generating ? "생성 중..." : "신청서 엑셀 다운로드"}
+              {generating ? "생성 중..." : "신청서·계약서 엑셀 다운로드"}
             </Button>
           </div>
         </div>
