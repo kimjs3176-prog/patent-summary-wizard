@@ -170,7 +170,11 @@ const Index = () => {
 
                 <h1 className="text-[36px] sm:text-5xl md:text-[68px] font-black leading-[1.02] tracking-[-0.04em] mb-6 md:mb-10">
                   농업 특허의<br />
-                  <span className="italic font-serif text-primary">새로운 지평</span>을 열다
+                  <span className="relative inline-block text-primary">
+                    새로운 지평
+                    <span aria-hidden className="absolute left-0 right-0 bottom-1 md:bottom-2 h-[6px] md:h-[10px] bg-primary/15 -z-10" />
+                  </span>
+                  <span className="text-foreground">을 열다</span>
                 </h1>
 
                 <p className="text-xs md:text-sm text-muted-foreground/80 max-w-xl mb-7 md:mb-9 leading-relaxed">
@@ -210,7 +214,7 @@ const Index = () => {
             <section className="max-w-5xl mx-auto mb-10 md:mb-14 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <div className="flex items-end justify-between mb-4 md:mb-5">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight">
-                  <span className="text-primary font-serif italic">§</span> 주제별 탐색
+                  <span className="text-primary">§</span> 주제별 탐색
                 </h2>
                 <div className="flex-1 mx-4 h-px bg-foreground/20" />
                 <span className="text-[10px] font-mono text-muted-foreground">/ INDEX</span>
