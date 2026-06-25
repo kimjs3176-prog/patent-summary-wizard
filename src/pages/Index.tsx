@@ -1,5 +1,4 @@
-import { Heart, RotateCcw, Sparkles, BarChart3 } from "lucide-react";
-import { AiHeroAnimation } from "@/components/AiHeroAnimation";
+import { Heart, RotateCcw, BarChart3 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
@@ -14,7 +13,6 @@ import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { KeywordExplorer } from "@/components/KeywordExplorer";
-import { KineticHeroTitle } from "@/components/KineticHeroTitle";
 
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -157,34 +155,70 @@ const Index = () => {
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-5 md:py-8 relative z-10">
         {!summary && !isLoading ? (
           <>
-            {/* Hero — 슬림화 */}
-            <section className="text-center max-w-3xl mx-auto mb-5 md:mb-8 animate-fade-down relative py-4 md:py-8">
-              <div className="absolute -inset-6 md:-inset-16 -z-10 overflow-hidden rounded-[2rem] md:rounded-[3rem]">
-                <AiHeroAnimation />
-              </div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] md:w-[520px] h-[160px] md:h-[280px] rounded-full -z-10 blur-[70px] md:blur-[120px] opacity-35 animate-float" style={{ background: 'radial-gradient(ellipse, hsl(158 64% 40% / 0.18), transparent 70%)' }} />
+            {/* Editorial Hero */}
+            <section className="max-w-5xl mx-auto mb-8 md:mb-12 animate-fade-down">
+              <div className="border-y-2 border-foreground px-1 md:px-2 py-8 md:py-14">
+                <div className="flex items-center justify-between mb-6 md:mb-8">
+                  <span className="text-[10px] md:text-[11px] font-black tracking-[0.2em] uppercase px-2 py-0.5 bg-primary/10 text-primary">
+                    Technical Archive · 2026
+                  </span>
+                  <div className="hidden sm:flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    LIVE · AI Indexing
+                  </div>
+                </div>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 md:py-1.5 rounded-2xl mb-3 md:mb-5 text-[10px] md:text-xs font-semibold border backdrop-blur-xl" style={{ background: 'hsl(158 64% 40% / 0.05)', color: 'hsl(158 64% 40%)', borderColor: 'hsl(158 64% 40% / 0.1)' }}>
-                <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                AI 기반 특허 분석
+                <h1 className="text-[36px] sm:text-5xl md:text-[68px] font-black leading-[1.02] tracking-[-0.04em] mb-6 md:mb-10">
+                  농업 특허의<br />
+                  <span className="relative inline-block text-primary">
+                    새로운 지평
+                    <span aria-hidden className="absolute left-0 right-0 bottom-1 md:bottom-2 h-[6px] md:h-[10px] bg-primary/15 -z-10" />
+                  </span>
+                  <span className="text-foreground">을 열다</span>
+                </h1>
+
+                <p className="text-xs md:text-sm text-muted-foreground/80 max-w-xl mb-7 md:mb-9 leading-relaxed">
+                  {settings.hero_description}
+                </p>
+
+                <div className="max-w-2xl">
+                  <PatentInput
+                    onSubmit={handleSubmit}
+                    isLoading={isLoading}
+                    onKeywordSearch={handleKeywordSearch}
+                    placeholder={settings.search_placeholder}
+                    helperText={settings.search_helper_text}
+                    helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()}
+                  />
+                </div>
               </div>
-              <div className="mb-2 md:mb-4">
-                <KineticHeroTitle />
+
+              {/* Metadata strip */}
+              <div className="grid grid-cols-3 border-b-2 border-foreground divide-x-2 divide-foreground">
+                <div className="px-3 md:px-5 py-3">
+                  <div className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">Coverage</div>
+                  <div className="text-xs md:text-sm font-black tracking-tight">6개 농업기관</div>
+                </div>
+                <div className="px-3 md:px-5 py-3">
+                  <div className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">Engine</div>
+                  <div className="text-xs md:text-sm font-black tracking-tight">Gemini · KIPRIS</div>
+                </div>
+                <div className="px-3 md:px-5 py-3">
+                  <div className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">Edition</div>
+                  <div className="text-xs md:text-sm font-black tracking-tight font-mono">VOL. 2.4</div>
+                </div>
               </div>
-              <p className="text-[11px] sm:text-xs md:text-sm font-normal leading-relaxed max-w-[280px] sm:max-w-md mx-auto text-muted-foreground/70 tracking-tight">
-                {settings.hero_description}
-              </p>
             </section>
 
-            {/* Search bar */}
-            <section className="mb-5 md:mb-7 animate-fade-up relative z-20" style={{ animationDelay: "0.1s" }}>
-              <div className="w-full max-w-2xl mx-auto flex flex-col relative z-40">
-                <PatentInput onSubmit={handleSubmit} isLoading={isLoading} onKeywordSearch={handleKeywordSearch} placeholder={settings.search_placeholder} helperText={settings.search_helper_text} helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()} />
+            {/* 주제별 빠른 탐색 */}
+            <section className="max-w-5xl mx-auto mb-10 md:mb-14 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <div className="flex items-end justify-between mb-4 md:mb-5">
+                <h2 className="text-xl md:text-2xl font-black tracking-tight">
+                  <span className="text-primary">§</span> 주제별 탐색
+                </h2>
+                <div className="flex-1 mx-4 h-px bg-foreground/20" />
+                <span className="text-[10px] font-mono text-muted-foreground">/ INDEX</span>
               </div>
-            </section>
-
-            {/* 주제별 빠른 탐색 (유지) */}
-            <section className="max-w-5xl mx-auto mb-6 md:mb-10 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <KeywordExplorer />
             </section>
 
