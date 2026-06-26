@@ -161,35 +161,41 @@ export function KeywordExplorer() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-        {chips.map((cat) => {
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        {chips.map((cat, idx) => {
           const Icon = cat.icon;
           return (
             <button
               key={cat.label}
               onClick={() => handleClick(cat.keywords)}
-              className="group relative flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border/40 bg-card hover:border-border/80 transition-all duration-300 hover:-translate-y-0.5 text-left animate-fade-up"
-              style={{ boxShadow: "var(--shadow-2xs)" }}
+              className="group relative flex flex-col items-start justify-between p-4 sm:p-5 rounded-2xl border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 text-left animate-fade-up aspect-[5/4] sm:aspect-square overflow-hidden"
+              style={{ boxShadow: "var(--shadow-card)", animationDelay: `${idx * 40}ms` }}
             >
+              {/* Subtle gradient wash on hover */}
               <span
-                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
-                style={{ background: cat.bg, color: cat.color }}
-              >
-                <Icon className="w-3.5 h-3.5" />
-              </span>
-              <span className="text-[12.5px] font-semibold text-foreground/85 group-hover:text-foreground truncate flex-1">
-                {cat.label}
-              </span>
+                aria-hidden
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                style={{ background: `radial-gradient(ellipse 100% 80% at 50% 0%, ${cat.bg}, transparent 70%)` }}
+              />
               {cat.trending && (
                 <span
-                  className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold"
-                  style={{ background: "hsl(var(--primary) / 0.12)", color: "hsl(var(--primary))" }}
+                  className="absolute top-2.5 right-2.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider"
+                  style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
                   title="인기 검색 기반"
                 >
                   <TrendingUp className="w-2.5 h-2.5" />
                   HOT
                 </span>
               )}
+              <span
+                className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+                style={{ background: cat.bg, color: cat.color }}
+              >
+                <Icon className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
+              </span>
+              <span className="relative mt-3 text-[13.5px] sm:text-[14.5px] font-bold text-foreground tracking-tight leading-snug">
+                {cat.label}
+              </span>
             </button>
           );
         })}
