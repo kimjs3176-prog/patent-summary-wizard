@@ -155,57 +155,84 @@ const Index = () => {
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-5 md:py-8 relative z-10">
         {!summary && !isLoading ? (
           <>
-            {/* Editorial Hero */}
-            <section className="max-w-5xl mx-auto mb-8 md:mb-12 animate-fade-down">
-              <div className="border-y-2 border-foreground px-1 md:px-2 py-8 md:py-14">
-                <div className="flex items-center justify-between mb-6 md:mb-8">
-                  <span className="text-[10px] md:text-[11px] font-black tracking-[0.2em] uppercase px-2 py-0.5 bg-primary/10 text-primary">
-                    Technical Archive · 2026
+            {/* Deep Navy Hero */}
+            <section className="relative -mx-3 sm:-mx-4 md:-mx-6 mb-10 md:mb-14 animate-fade-down overflow-hidden rounded-none md:rounded-3xl">
+              <div
+                className="relative px-5 sm:px-10 md:px-16 py-14 md:py-24"
+                style={{
+                  background:
+                    "radial-gradient(ellipse 80% 60% at 80% 20%, hsl(158 64% 40% / 0.28), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 80%, hsl(184 70% 45% / 0.18), transparent 60%), linear-gradient(135deg, #0a1628 0%, #0f2540 50%, #0a1a30 100%)",
+                }}
+              >
+                {/* Grid overlay */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 opacity-[0.07]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(hsl(158 64% 60%) 1px, transparent 1px), linear-gradient(90deg, hsl(158 64% 60%) 1px, transparent 1px)",
+                    backgroundSize: "48px 48px",
+                    maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 80%)",
+                  }}
+                />
+                {/* Glow blobs */}
+                <div aria-hidden className="absolute -top-20 -right-10 w-72 h-72 rounded-full blur-3xl" style={{ background: "hsl(158 64% 45% / 0.35)" }} />
+                <div aria-hidden className="absolute bottom-0 left-1/4 w-96 h-40 rounded-full blur-3xl" style={{ background: "hsl(184 70% 50% / 0.18)" }} />
+
+                <div className="relative max-w-3xl mx-auto text-center">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] font-bold tracking-[0.18em] uppercase px-3 py-1 rounded-full mb-5 md:mb-7"
+                    style={{ background: "hsl(158 64% 45% / 0.18)", color: "hsl(158 70% 75%)", border: "1px solid hsl(158 64% 45% / 0.35)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "hsl(158 70% 65%)" }} />
+                    Agri-Food AI · Live Indexing
                   </span>
-                  <div className="hidden sm:flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    LIVE · AI Indexing
+
+                  <h1 className="text-[32px] sm:text-5xl md:text-[60px] font-black leading-[1.05] tracking-[-0.035em] mb-5 md:mb-7" style={{ color: "#f5f9ff" }}>
+                    농식품분야 특허{" "}
+                    <span
+                      className="inline-block bg-clip-text text-transparent"
+                      style={{ backgroundImage: "linear-gradient(135deg, hsl(158 70% 65%) 0%, hsl(184 80% 70%) 100%)" }}
+                    >
+                      AI 기술분석
+                    </span>
+                    <br className="hidden sm:block" />
+                    <span className="text-white"> 서비스</span>
+                  </h1>
+
+                  <p className="text-sm md:text-base mb-8 md:mb-10 leading-relaxed max-w-xl mx-auto" style={{ color: "hsl(210 30% 78%)" }}>
+                    {settings.hero_description}
+                  </p>
+
+                  <div className="max-w-2xl mx-auto relative">
+                    {/* Emerald glow ring around search */}
+                    <div aria-hidden className="absolute -inset-1.5 rounded-full blur-xl opacity-70"
+                      style={{ background: "linear-gradient(90deg, hsl(158 70% 50% / 0.6), hsl(184 80% 55% / 0.5))" }} />
+                    <div className="relative bg-white rounded-2xl p-1.5" style={{ boxShadow: "0 20px 60px -10px hsl(158 64% 25% / 0.5), 0 0 0 1px hsl(158 64% 60% / 0.3)" }}>
+                      <PatentInput
+                        onSubmit={handleSubmit}
+                        isLoading={isLoading}
+                        onKeywordSearch={handleKeywordSearch}
+                        placeholder={settings.search_placeholder}
+                        helperText={settings.search_helper_text}
+                        helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <h1 className="text-[36px] sm:text-5xl md:text-[68px] font-black leading-[1.02] tracking-[-0.04em] mb-6 md:mb-10">
-                  농업 특허의<br />
-                  <span className="relative inline-block text-primary">
-                    새로운 지평
-                    <span aria-hidden className="absolute left-0 right-0 bottom-1 md:bottom-2 h-[6px] md:h-[10px] bg-primary/15 -z-10" />
-                  </span>
-                  <span className="text-foreground">을 열다</span>
-                </h1>
-
-                <p className="text-xs md:text-sm text-muted-foreground/80 max-w-xl mb-7 md:mb-9 leading-relaxed">
-                  {settings.hero_description}
-                </p>
-
-                <div className="max-w-2xl">
-                  <PatentInput
-                    onSubmit={handleSubmit}
-                    isLoading={isLoading}
-                    onKeywordSearch={handleKeywordSearch}
-                    placeholder={settings.search_placeholder}
-                    helperText={settings.search_helper_text}
-                    helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()}
-                  />
-                </div>
-              </div>
-
-              {/* Metadata strip */}
-              <div className="grid grid-cols-3 border-b-2 border-foreground divide-x-2 divide-foreground">
-                <div className="px-3 md:px-5 py-3">
-                  <div className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">Coverage</div>
-                  <div className="text-xs md:text-sm font-black tracking-tight">6개 농업기관</div>
-                </div>
-                <div className="px-3 md:px-5 py-3">
-                  <div className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">Engine</div>
-                  <div className="text-xs md:text-sm font-black tracking-tight">Gemini · KIPRIS</div>
-                </div>
-                <div className="px-3 md:px-5 py-3">
-                  <div className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">Edition</div>
-                  <div className="text-xs md:text-sm font-black tracking-tight font-mono">VOL. 2.4</div>
+                  {/* Trust strip */}
+                  <div className="mt-8 md:mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] md:text-xs" style={{ color: "hsl(210 25% 70%)" }}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
+                      6개 농업 공공기관
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
+                      KIPRIS 실시간 연동
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
+                      Gemini 2.5 AI 분석
+                    </span>
+                  </div>
                 </div>
               </div>
             </section>
