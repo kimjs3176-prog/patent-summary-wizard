@@ -156,14 +156,16 @@ const Index = () => {
         {!summary && !isLoading ? (
           <>
             {/* Deep Navy Hero */}
-            <section className="relative -mx-3 sm:-mx-4 md:-mx-6 mb-10 md:mb-14 animate-fade-down overflow-hidden rounded-none md:rounded-3xl">
-              <div
-                className="relative px-5 sm:px-10 md:px-16 py-14 md:py-24"
-                style={{
-                  background:
-                    "radial-gradient(ellipse 80% 60% at 80% 20%, hsl(158 64% 40% / 0.28), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 80%, hsl(184 70% 45% / 0.18), transparent 60%), linear-gradient(135deg, #0a1628 0%, #0f2540 50%, #0a1a30 100%)",
-                }}
-              >
+            <section className="relative -mx-3 sm:-mx-4 md:-mx-6 mb-10 md:mb-14 animate-fade-down rounded-none md:rounded-3xl">
+              {/* Background layer: clipped to rounded corners */}
+              <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-3xl">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "radial-gradient(ellipse 80% 60% at 80% 20%, hsl(158 64% 40% / 0.28), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 80%, hsl(184 70% 45% / 0.18), transparent 60%), linear-gradient(135deg, #0a1628 0%, #0f2540 50%, #0a1a30 100%)",
+                  }}
+                />
                 {/* Grid overlay */}
                 <div
                   aria-hidden
@@ -178,7 +180,9 @@ const Index = () => {
                 {/* Glow blobs */}
                 <div aria-hidden className="absolute -top-20 -right-10 w-72 h-72 rounded-full blur-3xl" style={{ background: "hsl(158 64% 45% / 0.35)" }} />
                 <div aria-hidden className="absolute bottom-0 left-1/4 w-96 h-40 rounded-full blur-3xl" style={{ background: "hsl(184 70% 50% / 0.18)" }} />
+              </div>
 
+              <div className="relative px-5 sm:px-10 md:px-16 py-14 md:py-24">
                 <div className="relative max-w-3xl mx-auto text-center">
                   <span className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] font-bold tracking-[0.18em] uppercase px-3 py-1 rounded-full mb-5 md:mb-7"
                     style={{ background: "hsl(158 64% 45% / 0.18)", color: "hsl(158 70% 75%)", border: "1px solid hsl(158 64% 45% / 0.35)" }}>
