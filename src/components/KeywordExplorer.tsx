@@ -168,7 +168,7 @@ export function KeywordExplorer() {
             <button
               key={cat.label}
               onClick={() => handleClick(cat.keywords)}
-              className="group relative flex flex-col items-start justify-between p-4 sm:p-5 rounded-2xl border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 text-left animate-fade-up aspect-[5/4] sm:aspect-square overflow-hidden"
+              className="group relative flex flex-col items-start justify-between p-3 sm:p-4 rounded-2xl border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 text-left animate-fade-up aspect-[4/3] sm:aspect-[5/4] overflow-hidden"
               style={{ boxShadow: "var(--shadow-card)", animationDelay: `${idx * 40}ms` }}
             >
               {/* Subtle gradient wash on hover */}
@@ -193,7 +193,7 @@ export function KeywordExplorer() {
               >
                 <Icon className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
               </span>
-              <span className="relative mt-3 text-[13.5px] sm:text-[14.5px] font-bold text-foreground tracking-tight leading-snug">
+              <span className="relative mt-1.5 text-[13.5px] sm:text-[14.5px] font-bold text-foreground tracking-tight leading-snug">
                 {cat.label}
               </span>
             </button>
