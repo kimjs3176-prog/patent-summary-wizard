@@ -1,4 +1,4 @@
-import { Search, FileEdit, ClipboardCheck, Stamp, Handshake, Wallet, BookOpen } from "lucide-react";
+import { Search, FileEdit, ClipboardCheck, Stamp, Handshake, Wallet, BookOpen, ArrowRight } from "lucide-react";
 
 const steps = [
   { num: 1, icon: Search, title: "이전 기술 탐색", desc: "KIPRIS, NATI 등에서 관심 기술을 검색하고 유망기술 자료집을 참고하세요." },
@@ -32,28 +32,31 @@ export function TechTransferGuide() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 md:gap-4">
-        {steps.map((step) => {
+        {steps.map((step, idx) => {
           const Icon = step.icon;
+          const isLast = idx === steps.length - 1;
           return (
             <div
               key={step.num}
-              className="group rounded-2xl p-5 sm:p-6 md:p-7 bg-card border border-border/40 hover:border-border/70 hover:shadow-lg transition-all duration-300 animate-fade-up card-interactive"
+              className="group relative rounded-2xl p-5 sm:p-6 md:p-7 bg-card border border-border/40 hover:border-primary/30 hover:shadow-lg transition-all duration-300 animate-fade-up card-interactive"
               style={{ animationDelay: `${0.06 * step.num}s`, boxShadow: 'var(--shadow-glossy)' }}
             >
-              <div className="flex items-start gap-4">
-                <div className="relative flex-shrink-0">
-                  <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors duration-300">
-                    <Icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-                  </div>
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center text-primary-foreground" style={{ background: 'var(--gradient-accent)' }}>
-                    {step.num}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-[14px] font-bold text-foreground mb-1.5">{step.title}</h4>
-                  <p className="text-[13px] leading-[1.75] text-muted-foreground">{step.desc}</p>
+              <div className="flex items-start justify-between mb-4">
+                <span
+                  className="font-black text-3xl md:text-4xl leading-none tracking-tighter"
+                  style={{ background: 'var(--gradient-accent)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+                >
+                  {String(step.num).padStart(2, '0')}
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors duration-300">
+                  <Icon className="w-4.5 h-4.5 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
                 </div>
               </div>
+              <h4 className="text-[15px] font-bold text-foreground mb-1.5 tracking-tight">{step.title}</h4>
+              <p className="text-[13px] leading-[1.75] text-muted-foreground">{step.desc}</p>
+              {!isLast && (
+                <ArrowRight aria-hidden className="hidden lg:block absolute top-1/2 -right-2.5 w-5 h-5 text-border/60 -translate-y-1/2 z-10 bg-background rounded-full" />
+              )}
             </div>
           );
         })}

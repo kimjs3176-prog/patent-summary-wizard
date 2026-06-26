@@ -109,6 +109,11 @@ time, .tabular-nums, [data-numeric] {
     --chart-3: 184 48% 44%;
     --chart-4: 38 92% 50%;
     --chart-5: 0 84% 60%;
+
+    /* Deep navy surface — used by hero & dark sections */
+    --surface-dark: 218 50% 10%;
+    --surface-dark-2: 215 48% 15%;
+    --gradient-dark: radial-gradient(ellipse 80% 60% at 80% 20%, hsl(158 64% 40% / 0.22), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 80%, hsl(184 70% 45% / 0.14), transparent 60%), linear-gradient(135deg, #0a1628 0%, #0f2540 50%, #0a1a30 100%);
   }
 
   .dark {
