@@ -52,7 +52,7 @@ const App = () => {
     if (isAdminRoute) return;
     if (sessionStorage.getItem("visit-tracked") === "1") return;
     sessionStorage.setItem("visit-tracked", "1");
-    supabase.rpc("increment_daily_visit").catch(() => {});
+    void supabase.rpc("increment_daily_visit").then(() => {}, () => {});
   }, [isAdminRoute]);
 
   return (
