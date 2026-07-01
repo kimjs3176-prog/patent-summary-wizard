@@ -70,6 +70,16 @@ interface UsageStats {
   currentModel: string;
 }
 
+interface VisitorStats {
+  total: number;
+  today: number;
+  thisMonth: number;
+  thisYear: number;
+  last30: { date: string; count: number }[];
+  monthly: { month: string; count: number }[];
+  yearly: { year: string; count: number }[];
+}
+
 const SETTINGS_FIELDS = [
   { key: "header_title", label: "헤더 타이틀", placeholder: "농식품분야 특허 AI 기술요약" },
   { key: "header_subtitle", label: "헤더 서브타이틀", placeholder: "Agri-Food Patent AI Summary" },
@@ -109,6 +119,7 @@ const Admin = () => {
   // Stats dashboard state
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
 
   const loadUsageStats = async () => {
     setStatsLoading(true);
@@ -117,6 +128,8 @@ const Admin = () => {
       if (result.success) {
         setUsageStats(result.stats);
       }
+      const vr = await apiCall("visitor-stats");
+      if (vr.success) setVisitorStats(vr.visitors);
     } catch {
       toast.error("통계 로딩 실패");
     }
