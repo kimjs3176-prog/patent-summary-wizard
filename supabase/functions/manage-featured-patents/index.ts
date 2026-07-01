@@ -398,6 +398,67 @@ serve(async (req) => {
       );
     }
 
+    // ========== Visitor Stats ==========
+    if (action === "visitor-stats") {
+      const { data: rows, error } = await supabase
+        .from("daily_visits")
+        .select("visit_date, visit_count")
+        .order("visit_date", { ascending: true });
+      if (error) throw error;
+
+      const daily = rows || [];
+      const monthMap: Record<string, number> = {};
+      const yearMap: Record<string, number> = {};
+      let total = 0;
+      for (const r of daily) {
+        const d = String(r.visit_date);
+        const ym = d.slice(0, 7);
+        const y = d.slice(0, 4);
+        monthMap[ym] = (monthMap[ym] || 0) + r.visit_count;
+        yearMap[y] = (yearMap[y] || 0) + r.visit_count;
+        total += r.visit_count;
+      }
+
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const monthKey = todayKey.slice(0, 7);
+      const yearKey = todayKey.slice(0, 4);
+      const today = daily.find((r: { visit_date: string }) => String(r.visit_date) === todayKey)?.visit_count || 0;
+
+      // Last 30 days padded
+      const last30: { date: string; count: number }[] = [];
+      const now = new Date();
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        const rec = daily.find((r: { visit_date: string }) => String(r.visit_date) === key);
+        last30.push({ date: key.slice(5), count: rec?.visit_count || 0 });
+      }
+
+      const monthly = Object.entries(monthMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, count]) => ({ month, count }));
+      const yearly = Object.entries(yearMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([year, count]) => ({ year, count }));
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          visitors: {
+            total,
+            today,
+            thisMonth: monthMap[monthKey] || 0,
+            thisYear: yearMap[yearKey] || 0,
+            last30,
+            monthly,
+            yearly,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ========== Notices ==========
     if (action === "list-notices") {
       const { data: notices, error } = await supabase
