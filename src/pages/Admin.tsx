@@ -70,6 +70,16 @@ interface UsageStats {
   currentModel: string;
 }
 
+interface VisitorStats {
+  total: number;
+  today: number;
+  thisMonth: number;
+  thisYear: number;
+  last30: { date: string; count: number }[];
+  monthly: { month: string; count: number }[];
+  yearly: { year: string; count: number }[];
+}
+
 const SETTINGS_FIELDS = [
   { key: "header_title", label: "헤더 타이틀", placeholder: "농식품분야 특허 AI 기술요약" },
   { key: "header_subtitle", label: "헤더 서브타이틀", placeholder: "Agri-Food Patent AI Summary" },
@@ -109,6 +119,7 @@ const Admin = () => {
   // Stats dashboard state
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
 
   const loadUsageStats = async () => {
     setStatsLoading(true);
@@ -117,6 +128,8 @@ const Admin = () => {
       if (result.success) {
         setUsageStats(result.stats);
       }
+      const vr = await apiCall("visitor-stats");
+      if (vr.success) setVisitorStats(vr.visitors);
     } catch {
       toast.error("통계 로딩 실패");
     }
@@ -1440,6 +1453,77 @@ const Admin = () => {
                         <RefreshCw className={`w-3.5 h-3.5 mr-1 ${statsLoading ? "animate-spin" : ""}`} /> 새로고침
                       </Button>
                     </div>
+
+                    {visitorStats && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {[
+                            { label: "누적 접속자", value: visitorStats.total },
+                            { label: "올해 접속자", value: visitorStats.thisYear },
+                            { label: "이번 달 접속자", value: visitorStats.thisMonth },
+                            { label: "오늘 접속자", value: visitorStats.today },
+                          ].map((s, i) => (
+                            <Card key={i} className="p-4 bg-primary/5 border-primary/20">
+                              <div className="flex items-center gap-2 mb-2 text-primary">
+                                <BarChart3 className="w-4 h-4" />
+                                <span className="text-[10px] font-medium uppercase tracking-wider">{s.label}</span>
+                              </div>
+                              <p className="text-2xl font-bold">{s.value.toLocaleString()}</p>
+                            </Card>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <Card className="p-4">
+                            <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5" /> 연도별 접속자 수
+                            </h3>
+                            {visitorStats.yearly.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {visitorStats.yearly.map((y, i) => {
+                                  const max = Math.max(...visitorStats.yearly.map(x => x.count), 1);
+                                  return (
+                                    <div key={i} className="flex items-center gap-2">
+                                      <span className="text-[11px] text-muted-foreground w-14 flex-shrink-0 font-mono">{y.year}년</span>
+                                      <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                        <div className="h-full bg-primary/70 rounded" style={{ width: `${(y.count / max) * 100}%` }} />
+                                      </div>
+                                      <span className="text-[11px] font-medium w-14 text-right">{y.count.toLocaleString()}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                            )}
+                          </Card>
+
+                          <Card className="p-4">
+                            <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5" /> 월별 접속자 수 (최근 12개월)
+                            </h3>
+                            {visitorStats.monthly.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {visitorStats.monthly.slice(-12).map((m, i, arr) => {
+                                  const max = Math.max(...arr.map(x => x.count), 1);
+                                  return (
+                                    <div key={i} className="flex items-center gap-2">
+                                      <span className="text-[11px] text-muted-foreground w-16 flex-shrink-0 font-mono">{m.month}</span>
+                                      <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                        <div className="h-full bg-accent/70 rounded" style={{ width: `${(m.count / max) * 100}%` }} />
+                                      </div>
+                                      <span className="text-[11px] font-medium w-14 text-right">{m.count.toLocaleString()}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                            )}
+                          </Card>
+                        </div>
+                      </div>
+                    )}
 
                     {statsLoading && !usageStats ? (
                       <div className="text-center py-16 text-muted-foreground text-sm">
