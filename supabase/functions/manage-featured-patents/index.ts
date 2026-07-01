@@ -49,7 +49,7 @@ serve(async (req) => {
       );
     }
 
-    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats", "list-notices", "create-notice", "update-notice", "delete-notice"];
+    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats", "visitor-stats", "list-notices", "create-notice", "update-notice", "delete-notice"];
     if (!action || !validActions.includes(action)) {
       return new Response(
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
