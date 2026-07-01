@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +15,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 import { FloatingChatbot } from "./components/FloatingChatbot";
 import { SplashScreen } from "./components/SplashScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,13 @@ const App = () => {
     sessionStorage.setItem("splash-shown", "1");
     setShowSplash(false);
   }, []);
+
+  useEffect(() => {
+    if (isAdminRoute) return;
+    if (sessionStorage.getItem("visit-tracked") === "1") return;
+    sessionStorage.setItem("visit-tracked", "1");
+    supabase.rpc("increment_daily_visit").catch(() => {});
+  }, [isAdminRoute]);
 
   return (
     <ErrorBoundary>
