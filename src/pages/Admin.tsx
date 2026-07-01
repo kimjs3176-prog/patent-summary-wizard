@@ -1454,6 +1454,77 @@ const Admin = () => {
                       </Button>
                     </div>
 
+                    {visitorStats && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {[
+                            { label: "누적 접속자", value: visitorStats.total },
+                            { label: "올해 접속자", value: visitorStats.thisYear },
+                            { label: "이번 달 접속자", value: visitorStats.thisMonth },
+                            { label: "오늘 접속자", value: visitorStats.today },
+                          ].map((s, i) => (
+                            <Card key={i} className="p-4 bg-primary/5 border-primary/20">
+                              <div className="flex items-center gap-2 mb-2 text-primary">
+                                <BarChart3 className="w-4 h-4" />
+                                <span className="text-[10px] font-medium uppercase tracking-wider">{s.label}</span>
+                              </div>
+                              <p className="text-2xl font-bold">{s.value.toLocaleString()}</p>
+                            </Card>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <Card className="p-4">
+                            <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5" /> 연도별 접속자 수
+                            </h3>
+                            {visitorStats.yearly.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {visitorStats.yearly.map((y, i) => {
+                                  const max = Math.max(...visitorStats.yearly.map(x => x.count), 1);
+                                  return (
+                                    <div key={i} className="flex items-center gap-2">
+                                      <span className="text-[11px] text-muted-foreground w-14 flex-shrink-0 font-mono">{y.year}년</span>
+                                      <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                        <div className="h-full bg-primary/70 rounded" style={{ width: `${(y.count / max) * 100}%` }} />
+                                      </div>
+                                      <span className="text-[11px] font-medium w-14 text-right">{y.count.toLocaleString()}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                            )}
+                          </Card>
+
+                          <Card className="p-4">
+                            <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5" /> 월별 접속자 수 (최근 12개월)
+                            </h3>
+                            {visitorStats.monthly.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {visitorStats.monthly.slice(-12).map((m, i, arr) => {
+                                  const max = Math.max(...arr.map(x => x.count), 1);
+                                  return (
+                                    <div key={i} className="flex items-center gap-2">
+                                      <span className="text-[11px] text-muted-foreground w-16 flex-shrink-0 font-mono">{m.month}</span>
+                                      <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                        <div className="h-full bg-accent/70 rounded" style={{ width: `${(m.count / max) * 100}%` }} />
+                                      </div>
+                                      <span className="text-[11px] font-medium w-14 text-right">{m.count.toLocaleString()}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                            )}
+                          </Card>
+                        </div>
+                      </div>
+                    )}
+
                     {statsLoading && !usageStats ? (
                       <div className="text-center py-16 text-muted-foreground text-sm">
                         <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
