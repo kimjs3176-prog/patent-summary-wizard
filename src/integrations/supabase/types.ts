@@ -32,6 +32,24 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_visits: {
+        Row: {
+          updated_at: string
+          visit_count: number
+          visit_date: string
+        }
+        Insert: {
+          updated_at?: string
+          visit_count?: number
+          visit_date: string
+        }
+        Update: {
+          updated_at?: string
+          visit_count?: number
+          visit_date?: string
+        }
+        Relationships: []
+      }
       featured_patents: {
         Row: {
           category: string | null
@@ -319,6 +337,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_daily_visit: { Args: never; Returns: undefined }
       upsert_search_stat: {
         Args: { p_patent_number: string; p_patent_title?: string }
         Returns: undefined
