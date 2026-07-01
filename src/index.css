@@ -758,3 +758,39 @@ time, .tabular-nums, [data-numeric] {
     display: none;
   }
 }
+
+/* ================= Hero ambient background animations ================= */
+@keyframes hero-drift {
+  0%   { transform: translate3d(0, 0, 0); }
+  50%  { transform: translate3d(6px, -28px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+@keyframes hero-twinkle {
+  0%, 100% { opacity: 0.15; }
+  50%      { opacity: 0.7; }
+}
+@keyframes hero-glow-pulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.08); }
+}
+.hero-particle {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, hsl(158 80% 70% / 0.9) 0%, hsl(158 80% 60% / 0.4) 60%, transparent 100%);
+  will-change: transform, opacity;
+  animation-name: hero-drift, hero-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  pointer-events: none;
+}
+.hero-glow-pulse {
+  animation: hero-glow-pulse 12s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-particle,
+  .hero-glow-pulse {
+    animation: none !important;
+  }
+}

@@ -13,6 +13,7 @@ import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { KeywordExplorer } from "@/components/KeywordExplorer";
+import { HeroParticles } from "@/components/HeroParticles";
 
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -178,8 +179,10 @@ const Index = () => {
                   }}
                 />
                 {/* Glow blobs */}
-                <div aria-hidden className="absolute -top-20 -right-10 w-72 h-72 rounded-full blur-3xl" style={{ background: "hsl(158 64% 45% / 0.35)" }} />
-                <div aria-hidden className="absolute bottom-0 left-1/4 w-96 h-40 rounded-full blur-3xl" style={{ background: "hsl(184 70% 50% / 0.18)" }} />
+                <div aria-hidden className="hero-glow-pulse absolute -top-20 -right-10 w-72 h-72 rounded-full blur-3xl" style={{ background: "hsl(158 64% 45% / 0.35)" }} />
+                <div aria-hidden className="hero-glow-pulse absolute bottom-0 left-1/4 w-96 h-40 rounded-full blur-3xl" style={{ background: "hsl(184 70% 50% / 0.18)", animationDelay: "-6s" }} />
+                {/* Drift particles */}
+                <HeroParticles />
               </div>
 
               <div className="relative px-5 sm:px-10 md:px-16 py-14 md:py-24">
