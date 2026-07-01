@@ -168,7 +168,7 @@ export function KeywordExplorer() {
             <button
               key={cat.label}
               onClick={() => handleClick(cat.keywords)}
-              className="group relative flex flex-col items-start justify-between p-3 sm:p-4 rounded-2xl border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 text-left animate-fade-up aspect-[4/3] sm:aspect-[5/4] overflow-hidden"
+              className="group relative flex flex-col items-start justify-between p-3 sm:p-4 rounded-2xl border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 text-left animate-fade-up aspect-[16/10] sm:aspect-[3/2] overflow-hidden"
               style={{ boxShadow: "var(--shadow-card)", animationDelay: `${idx * 40}ms` }}
             >
               {/* Subtle gradient wash on hover */}

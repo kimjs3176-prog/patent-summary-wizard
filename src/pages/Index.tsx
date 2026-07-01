@@ -191,15 +191,15 @@ const Index = () => {
                   </span>
 
                   <h1 className="text-[32px] sm:text-5xl md:text-[60px] font-black leading-[1.05] tracking-[-0.035em] mb-5 md:mb-7" style={{ color: "#f5f9ff" }}>
-                    농식품분야 특허{" "}
+                    농식품분야 특허&nbsp;
+                    <br className="sm:hidden" />
                     <span
                       className="inline-block bg-clip-text text-transparent"
                       style={{ backgroundImage: "linear-gradient(135deg, hsl(158 70% 65%) 0%, hsl(184 80% 70%) 100%)" }}
                     >
                       AI 기술분석
                     </span>
-                    <br className="hidden sm:block" />
-                    <span className="text-white"> 서비스</span>
+                    &nbsp;서비스
                   </h1>
 
                   <p className="text-sm md:text-base mb-8 md:mb-10 leading-relaxed max-w-xl mx-auto" style={{ color: "hsl(210 30% 78%)" }}>
@@ -226,7 +226,7 @@ const Index = () => {
                   <div className="mt-8 md:mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] md:text-xs" style={{ color: "hsl(210 25% 70%)" }}>
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
-                      6개 농업 공공기관
+                      6개 농업분야 국가연구기관 보유 특허&nbsp;
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
@@ -234,7 +234,7 @@ const Index = () => {
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
-                      Gemini 2.5 AI 분석
+                      Gemini AI 분석
                     </span>
                   </div>
                 </div>
