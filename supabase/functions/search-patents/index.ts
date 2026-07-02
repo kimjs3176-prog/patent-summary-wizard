@@ -478,13 +478,14 @@ serve(async (req) => {
     const kiprisSearch = async (
       kw: string,
       org: { id: string; name: string },
-      field: "title" | "abstract"
+      field: "title" | "abstract" | "inventor"
     ): Promise<KeywordSearchResult[]> => {
       try {
         const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
         url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
         url.searchParams.set("inventionTitle", field === "title" ? kw : "");
         url.searchParams.set("astrtCont", field === "abstract" ? kw : "");
+        url.searchParams.set("inventors", field === "inventor" ? kw : "");
         url.searchParams.set("applicant", org.id);
         url.searchParams.set("pageNo", "1");
         url.searchParams.set("numOfRows", "50");
@@ -532,6 +533,26 @@ serve(async (req) => {
         AGRI_ORGANIZATIONS.map(org => kiprisSearch(queriesToTry[0], org, "title")),
       );
       stage1.forEach(collect);
+    }
+
+    // Stage 1b: inventor-name search — if the raw input looks like a Korean personal name
+    // (2-4 hangul chars, or space-separated hangul names), also query the `inventors` field.
+    const isPersonName = (s: string): boolean => {
+      const t = s.trim();
+      if (!t) return false;
+      // Single Korean name: 2-4 hangul chars
+      if (/^[가-힣]{2,4}$/.test(t)) return true;
+      // Multiple names separated by space/comma: each 2-4 hangul
+      const parts = t.split(/[\s,]+/).filter(Boolean);
+      if (parts.length >= 2 && parts.length <= 5 && parts.every(p => /^[가-힣]{2,4}$/.test(p))) return true;
+      return false;
+    };
+    if (isPersonName(rawInput)) {
+      console.log(`Detected person name, running inventor search: "${rawInput}"`);
+      const stageInv = await Promise.all(
+        AGRI_ORGANIZATIONS.map(org => kiprisSearch(rawInput, org, "inventor")),
+      );
+      stageInv.forEach(collect);
     }
 
     // Stage 2: remaining queries × all orgs (title), batched 4-at-a-time
