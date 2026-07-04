@@ -762,21 +762,43 @@ time, .tabular-nums, [data-numeric] {
 /* ================= Hero ambient background animations ================= */
 @keyframes hero-drift {
   0%   { transform: translate3d(0, 0, 0); }
-  50%  { transform: translate3d(6px, -28px, 0); }
+  50%  { transform: translate3d(14px, -56px, 0); }
   100% { transform: translate3d(0, 0, 0); }
 }
 @keyframes hero-twinkle {
-  0%, 100% { opacity: 0.15; }
-  50%      { opacity: 0.7; }
+  0%, 100% { opacity: 0.1; }
+  50%      { opacity: 0.95; }
 }
 @keyframes hero-glow-pulse {
-  0%, 100% { opacity: 0.85; transform: scale(1); }
-  50%      { opacity: 1;    transform: scale(1.08); }
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+@keyframes hero-aurora-shift {
+  0%   { transform: translate3d(-8%, -6%, 0) rotate(0deg);   opacity: 0.55; }
+  50%  { transform: translate3d(8%, 4%, 0)   rotate(180deg); opacity: 0.9; }
+  100% { transform: translate3d(-8%, -6%, 0) rotate(360deg); opacity: 0.55; }
+}
+@keyframes hero-grid-drift {
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 48px 48px, 48px 48px; }
+}
+@keyframes hero-meteor {
+  0%   { transform: translate3d(0, 0, 0) rotate(215deg); opacity: 0; }
+  8%   { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate3d(-520px, 520px, 0) rotate(215deg); opacity: 0; }
+}
+@keyframes hero-scan {
+  0%   { transform: translateY(-30%); opacity: 0; }
+  15%  { opacity: 0.6; }
+  85%  { opacity: 0.6; }
+  100% { transform: translateY(130%); opacity: 0; }
 }
 .hero-particle {
   position: absolute;
   border-radius: 9999px;
-  background: radial-gradient(circle, hsl(158 80% 70% / 0.9) 0%, hsl(158 80% 60% / 0.4) 60%, transparent 100%);
+  background: radial-gradient(circle, hsl(158 90% 78% / 1) 0%, hsl(158 85% 62% / 0.55) 55%, transparent 100%);
+  box-shadow: 0 0 8px hsl(158 90% 65% / 0.6), 0 0 16px hsl(158 90% 55% / 0.35);
   will-change: transform, opacity;
   animation-name: hero-drift, hero-twinkle;
   animation-timing-function: ease-in-out;
@@ -788,9 +810,49 @@ time, .tabular-nums, [data-numeric] {
   animation: hero-glow-pulse 12s ease-in-out infinite;
   will-change: transform, opacity;
 }
+.hero-aurora {
+  position: absolute;
+  inset: -20%;
+  border-radius: 9999px;
+  filter: blur(60px);
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  animation: hero-aurora-shift 22s ease-in-out infinite;
+  pointer-events: none;
+}
+.hero-grid-drift {
+  animation: hero-grid-drift 24s linear infinite;
+  will-change: background-position;
+}
+.hero-meteor {
+  position: absolute;
+  width: 160px;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, hsl(158 90% 75% / 0.95), hsl(184 90% 75% / 0.6), transparent);
+  filter: drop-shadow(0 0 6px hsl(158 90% 65% / 0.9));
+  transform-origin: left center;
+  animation: hero-meteor 6s linear infinite;
+  pointer-events: none;
+  opacity: 0;
+}
+.hero-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(180deg, transparent, hsl(158 80% 60% / 0.14), transparent);
+  filter: blur(6px);
+  animation: hero-scan 14s ease-in-out infinite;
+  pointer-events: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .hero-particle,
-  .hero-glow-pulse {
+  .hero-glow-pulse,
+  .hero-aurora,
+  .hero-grid-drift,
+  .hero-meteor,
+  .hero-scanline {
     animation: none !important;
   }
 }
