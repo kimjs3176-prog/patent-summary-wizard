@@ -167,17 +167,19 @@ const Index = () => {
                       "radial-gradient(ellipse 80% 60% at 80% 20%, hsl(158 64% 40% / 0.28), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 80%, hsl(184 70% 45% / 0.18), transparent 60%), linear-gradient(135deg, #0a1628 0%, #0f2540 50%, #0a1a30 100%)",
                   }}
                 />
-                {/* Grid overlay */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0 opacity-[0.09] hero-grid-drift"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(hsl(158 64% 60%) 1px, transparent 1px), linear-gradient(90deg, hsl(158 64% 60%) 1px, transparent 1px)",
-                    backgroundSize: "48px 48px",
-                    maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 80%)",
-                  }}
-                />
+                {/* Irregular accent lines */}
+                <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden">
+                  <div className="hero-line hero-line-h" style={{ top: "18%", animationDelay: "-2s", animationDuration: "9s" }} />
+                  <div className="hero-line hero-line-h" style={{ top: "34%", animationDelay: "-5s", animationDuration: "11s" }} />
+                  <div className="hero-line hero-line-h" style={{ top: "52%", animationDelay: "-1s", animationDuration: "8s" }} />
+                  <div className="hero-line hero-line-h" style={{ top: "71%", animationDelay: "-7s", animationDuration: "13s" }} />
+                  <div className="hero-line hero-line-h" style={{ top: "89%", animationDelay: "-3s", animationDuration: "10s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "12%", animationDelay: "-4s", animationDuration: "10s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "31%", animationDelay: "-1s", animationDuration: "9s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "56%", animationDelay: "-6s", animationDuration: "12s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "78%", animationDelay: "-2s", animationDuration: "11s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "93%", animationDelay: "-8s", animationDuration: "14s" }} />
+                </div>
                 {/* Aurora sweeping blobs */}
                 <div
                   aria-hidden
