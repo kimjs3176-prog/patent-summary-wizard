@@ -880,7 +880,8 @@ time, .tabular-nums, [data-numeric] {
   .hero-glow-pulse,
   .hero-aurora,
   .hero-line,
-  .hero-meteor,
+  .hero-crosshatch,
+  .hero-grid-spotlight,
   .hero-scanline {
     animation: none !important;
   }
