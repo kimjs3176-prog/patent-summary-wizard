@@ -864,7 +864,7 @@ time, .tabular-nums, [data-numeric] {
   .hero-particle,
   .hero-glow-pulse,
   .hero-aurora,
-  .hero-grid-drift,
+  .hero-line,
   .hero-meteor,
   .hero-scanline {
     animation: none !important;
