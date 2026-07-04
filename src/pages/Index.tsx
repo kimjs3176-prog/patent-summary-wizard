@@ -255,7 +255,7 @@ const Index = () => {
                   <div className="mt-8 md:mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] md:text-xs" style={{ color: "hsl(210 25% 70%)" }}>
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
-                      6개 농업분야 국가연구기관 보유 특허&nbsp;
+                      농업분야 국가연구기관 보유 특허&nbsp;
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
