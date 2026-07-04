@@ -170,7 +170,7 @@ const Index = () => {
                 {/* Grid overlay */}
                 <div
                   aria-hidden
-                  className="absolute inset-0 opacity-[0.07]"
+                  className="absolute inset-0 opacity-[0.09] hero-grid-drift"
                   style={{
                     backgroundImage:
                       "linear-gradient(hsl(158 64% 60%) 1px, transparent 1px), linear-gradient(90deg, hsl(158 64% 60%) 1px, transparent 1px)",
@@ -178,11 +178,37 @@ const Index = () => {
                     maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 80%)",
                   }}
                 />
+                {/* Aurora sweeping blobs */}
+                <div
+                  aria-hidden
+                  className="hero-aurora"
+                  style={{
+                    background:
+                      "radial-gradient(40% 40% at 30% 40%, hsl(158 80% 55% / 0.45), transparent 60%), radial-gradient(35% 35% at 70% 60%, hsl(184 85% 55% / 0.35), transparent 60%), radial-gradient(30% 30% at 50% 20%, hsl(142 80% 60% / 0.30), transparent 60%)",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="hero-aurora"
+                  style={{
+                    animationDuration: "32s",
+                    animationDirection: "reverse",
+                    animationDelay: "-8s",
+                    background:
+                      "radial-gradient(35% 35% at 20% 70%, hsl(200 90% 60% / 0.28), transparent 60%), radial-gradient(30% 30% at 80% 30%, hsl(158 90% 65% / 0.35), transparent 60%)",
+                  }}
+                />
                 {/* Glow blobs */}
                 <div aria-hidden className="hero-glow-pulse absolute -top-20 -right-10 w-72 h-72 rounded-full blur-3xl" style={{ background: "hsl(158 64% 45% / 0.35)" }} />
                 <div aria-hidden className="hero-glow-pulse absolute bottom-0 left-1/4 w-96 h-40 rounded-full blur-3xl" style={{ background: "hsl(184 70% 50% / 0.18)", animationDelay: "-6s" }} />
+                {/* Vertical scanline */}
+                <div aria-hidden className="hero-scanline" style={{ top: 0 }} />
+                {/* Meteor streaks */}
+                <div aria-hidden className="hero-meteor" style={{ top: "8%",  left: "88%", animationDelay: "0s" }} />
+                <div aria-hidden className="hero-meteor" style={{ top: "24%", left: "72%", animationDelay: "-2.6s", animationDuration: "7s" }} />
+                <div aria-hidden className="hero-meteor" style={{ top: "55%", left: "95%", animationDelay: "-4.2s", animationDuration: "8s" }} />
                 {/* Drift particles */}
-                <HeroParticles />
+                <HeroParticles count={38} />
               </div>
 
               <div className="relative px-5 sm:px-10 md:px-16 py-14 md:py-24">
