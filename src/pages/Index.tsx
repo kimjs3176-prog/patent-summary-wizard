@@ -205,10 +205,11 @@ const Index = () => {
                 <div aria-hidden className="hero-glow-pulse absolute bottom-0 left-1/4 w-96 h-40 rounded-full blur-3xl" style={{ background: "hsl(184 70% 50% / 0.18)", animationDelay: "-6s" }} />
                 {/* Vertical scanline */}
                 <div aria-hidden className="hero-scanline" style={{ top: 0 }} />
-                {/* Meteor streaks */}
-                <div aria-hidden className="hero-meteor" style={{ top: "8%",  left: "88%", animationDelay: "0s" }} />
-                <div aria-hidden className="hero-meteor" style={{ top: "24%", left: "72%", animationDelay: "-2.6s", animationDuration: "7s" }} />
-                <div aria-hidden className="hero-meteor" style={{ top: "55%", left: "95%", animationDelay: "-4.2s", animationDuration: "8s" }} />
+                {/* Crosshatch grid — fine mesh with irregular spotlights */}
+                <div aria-hidden className="hero-crosshatch" />
+                <div aria-hidden className="hero-grid-spotlight" style={{ top: "15%", left: "20%", animationDelay: "-3s", animationDuration: "14s" }} />
+                <div aria-hidden className="hero-grid-spotlight" style={{ top: "60%", left: "70%", animationDelay: "-7s", animationDuration: "18s" }} />
+                <div aria-hidden className="hero-grid-spotlight" style={{ top: "40%", left: "45%", animationDelay: "-1s", animationDuration: "12s" }} />
                 {/* Drift particles */}
                 <HeroParticles count={38} />
               </div>
