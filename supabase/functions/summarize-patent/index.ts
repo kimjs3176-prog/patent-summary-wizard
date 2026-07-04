@@ -293,7 +293,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v13-importance-bold";
+    const promptVersion = "v14-no-exclusive";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -425,6 +425,10 @@ serve(async (req) => {
 
 [표기]
 - 별표·하이픈·번호 등 항목 나열 금지. 모든 본문은 서술형 산문. 소제목성 라벨("핵심 유전자:") 행 분리 금지.
+
+[표현 자제 — 반드시 준수]
+- 기술이전·통상실시가 주된 활용 방식인 농식품 공공기관 특허의 특성상, "독점적 사용", "배타적 독점권", "monopoly", "exclusive right" 등 배타·독점 의미를 암시하는 표현은 절대 사용하지 않는다.
+- 대신 "활용", "적용", "도입", "기술이전", "통상실시" 등 중립적이고 개방적인 표현을 사용한다.
 
 [중요도 볼드 규칙 — 반드시 준수]
 - 본문에서 문장 중 "중요도가 높은 핵심 문구"에만 마크다운 볼드(**...**)를 씌운다. 각 섹션당 2~5개소가 적정하며, 한 섹션에서 전체 글자의 30%를 넘기지 않는다.
