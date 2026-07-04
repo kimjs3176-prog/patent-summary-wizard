@@ -15,11 +15,10 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
       const elements: JSX.Element[] = [];
 
       lines.forEach((line, index) => {
-        // Remove markdown formatting: **, -, numbered lists
+        // Keep **bold**, drop bullet/number prefixes
         let cleanLine = line
-          .replace(/\*\*/g, '') // Remove **
-          .replace(/^\s*[-•]\s+/, '') // Remove bullet points
-          .replace(/^\s*\d+\.\s+/, ''); // Remove numbered lists
+          .replace(/^\s*[-•]\s+/, '')
+          .replace(/^\s*\d+\.\s+/, '');
 
         if (line.startsWith("## ")) {
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
