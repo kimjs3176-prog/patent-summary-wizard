@@ -293,7 +293,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v12-market-postcheck-prose-highlight-safe";
+    const promptVersion = "v13-importance-bold";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -424,9 +424,17 @@ serve(async (req) => {
 - 능동·서술형, 모호한 지시어("이것/그것" 단독) 금지, Abstract 복사 금지(분석적 재구성).
 
 [표기]
-- 본문에서 마크다운 볼드(**...**) 절대 사용 금지(강조는 시스템 후처리).
 - 별표·하이픈·번호 등 항목 나열 금지. 모든 본문은 서술형 산문. 소제목성 라벨("핵심 유전자:") 행 분리 금지.
-- 학명(라틴어 속명·종명)은 이탤릭 *..* 사용. 속명 첫글자 대문자, 종소명 소문자. 조사·구두점·괄호는 이탤릭 바깥. 예: *Lactobacillus plantarum*은 / *Oryza sativa*(벼). 학명이 없는 특허에서는 별표를 전혀 사용하지 않는다.
+
+[중요도 볼드 규칙 — 반드시 준수]
+- 본문에서 문장 중 "중요도가 높은 핵심 문구"에만 마크다운 볼드(**...**)를 씌운다. 각 섹션당 2~5개소가 적정하며, 한 섹션에서 전체 글자의 30%를 넘기지 않는다.
+- 볼드 대상: 핵심 기술수단·차별점, 정량 수치(시장규모·CAGR·성능개선치), 고유명사(균주·품종·기관·보고서), 상용화 단계·수요처·수익모델.
+- 볼드 대상이 아닌 것: 접속사·조사·일반 서술어·수식어만 있는 구절, "매우 중요한", "다양한 산업" 같은 모호한 표현.
+- 의미가 하나로 묶이는 문구는 띄어쓰기·조사가 있어도 하나의 볼드 범위로 묶는다. 예) **국내 프로바이오틱스 시장 규모 6조 2,022억 원**, **Lactobacillus plantarum 균주의 위산 내성**. 절대 "**국내** **프로바이오틱스** **시장**"처럼 조각내지 않는다.
+- 각 볼드 범위는 그 자체만 떼어 읽어도 문장 의미가 유지되는 명사구/수치구여야 한다. 술어(~한다, ~된다)나 조사만으로 끝나는 조각은 볼드 금지.
+- 학명의 이탤릭 *..* 표기와 볼드는 병행 가능하다: **\`*Lactobacillus plantarum*\` 균주**. 볼드 안에 이탤릭을 그대로 유지한다.
+- 볼드 마커는 반드시 한 문장 안에서 열고 닫는다. 문단·문장 경계를 넘지 않는다.
+- 학명(라틴어 속명·종명)은 이탤릭 *..* 사용. 속명 첫글자 대문자, 종소명 소문자. 조사·구두점·괄호는 이탤릭 바깥. 예: *Lactobacillus plantarum*은 / *Oryza sativa*(벼). 학명이 없는 특허에서는 이탤릭 별표를 사용하지 않는다(볼드 **...**는 사용 가능).
 
 [섹션 지침]
 ## 기술분야 — IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 충실히 서술.
