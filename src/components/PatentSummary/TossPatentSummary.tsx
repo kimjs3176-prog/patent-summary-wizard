@@ -846,26 +846,51 @@ export function TossPatentSummary({
                             </sup>,
                           );
                         } else if (part) {
-                          // 2) 학명 등 이탤릭 마커(*...*) 분리 후, 나머지에만 용어집/하이라이트 적용
-                          const italicParts = part.split(/(\*[^*\n]+\*)/g);
-                          italicParts.forEach((ip, k) => {
-                            if (!ip) return;
-                            const im = ip.match(/^\*([^*\n]+)\*$/);
-                            if (im) {
+                          // 2) 볼드(**...**) → 학명 이탤릭(*...*) 순서로 분리.
+                          //    볼드 밖 텍스트는 용어집 주석까지 적용.
+                          const boldParts = part.split(/(\*\*[^*\n]+?\*\*)/g);
+                          boldParts.forEach((bp, bi) => {
+                            if (!bp) return;
+                            const bm = bp.match(/^\*\*([^*\n]+?)\*\*$/);
+                            if (bm) {
+                              // 볼드 내부: 이탤릭만 렌더링 (용어집은 성능/노이즈 회피)
+                              const inner = bm[1];
+                              const italicInside = inner.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
                               processed.push(
-                                <em
-                                  key={`it-${i}-${j}-${k}`}
-                                  className="italic"
-                                  style={{ fontStyle: "italic" }}
+                                <strong
+                                  key={`b-${i}-${j}-${bi}`}
+                                  className="font-bold text-[#191F28]"
                                 >
-                                  {im[1]}
-                                </em>,
+                                  {italicInside.map((ip, ii) => {
+                                    const im = ip.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+                                    if (im) return <em key={ii} className="italic">{im[1]}</em>;
+                                    return <span key={ii}>{ip}</span>;
+                                  })}
+                                </strong>,
                               );
-                            } else {
-                              const annotated = annotate(ip);
-                              const nodes = Array.isArray(annotated) ? annotated : [annotated];
-                              processed.push(...(nodes as React.ReactNode[]));
+                              return;
                             }
+                            // 볼드 바깥: 학명 이탤릭 → 나머지에 용어집 주석
+                            const italicParts = bp.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+                            italicParts.forEach((ip, k) => {
+                              if (!ip) return;
+                              const im = ip.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+                              if (im) {
+                                processed.push(
+                                  <em
+                                    key={`it-${i}-${j}-${bi}-${k}`}
+                                    className="italic"
+                                    style={{ fontStyle: "italic" }}
+                                  >
+                                    {im[1]}
+                                  </em>,
+                                );
+                              } else {
+                                const annotated = annotate(ip);
+                                const nodes = Array.isArray(annotated) ? annotated : [annotated];
+                                processed.push(...(nodes as React.ReactNode[]));
+                              }
+                            });
                           });
                         }
                       });
