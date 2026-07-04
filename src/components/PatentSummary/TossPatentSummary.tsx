@@ -284,18 +284,19 @@ function parseSections(md: string): MdSection[] {
     buf = "";
   };
   for (const raw of lines) {
-    // 1) 모델이 출력한 마크다운 강조 표기를 본문에서 제거한다.
-    //    - `**...**` (볼드)는 무조건 평문화 — 사용자 요청에 따라 모델 측 볼드는 금지
-    //    - `*...*` (이탤릭)는 라틴어 학명(영문자/공백/온점/하이픈만)일 때만 유지하고,
-    //      그 외(한글이 1자 이상 포함되거나 길이 30자 초과)는 평문화하여
-    //      "통해 개발된 만큼 기술" 같은 문장 일부가 의도치 않게 이탤릭/강조되는 문제를 방지.
+    // 마크다운 강조 표기 처리:
+    //  - `**...**` (볼드): 중요도 강조로 유지 (렌더러에서 <strong>)
+    //  - `*...*` (이탤릭): 라틴어 학명만 유지, 그 외는 평문화
     let line = raw.replace(/^\s*\*\s+/, "");                    // * bullet → plain text
     line = line.replace(/([.!?。．！？])\s+\*\s+/g, "$1 ");       // mid-line pseudo bullet
-    line = line.replace(/\*\*\*([^*\n]+?)\*\*\*/g, "$1"); // ***x*** → x
-    line = line.replace(/\*\*([^*\n]+?)\*\*/g, "$1");        // **x**  → x
-    line = line.replace(/\*([^*\n]{1,80})\*/g, (full, inner: string) => {
+    line = line.replace(/\*\*\*([^*\n]+?)\*\*\*/g, "**$1**"); // ***x*** → **x**
+    // 볼드 마커 내부에 개행/빈 볼드는 평문화
+    line = line.replace(/\*\*\s*\*\*/g, "");
+    // 볼드 바깥의 단일 이탤릭 마커만 학명 판정으로 정리
+    // (볼드 안쪽은 renderBold에서 처리)
+    line = line.replace(/(^|[^*])\*([^*\n]{1,80})\*(?!\*)/g, (_full, pre: string, inner: string) => {
       const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .\-]{1,60}$/.test(inner.trim());
-      return looksLikeLatin ? `*${inner}*` : inner;
+      return pre + (looksLikeLatin ? `*${inner}*` : inner);
     });
     const h2 = line.match(/^##\s+(.+?)\s*$/);
     if (h2) {
