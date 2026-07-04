@@ -15,11 +15,10 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
       const elements: JSX.Element[] = [];
 
       lines.forEach((line, index) => {
-        // Remove markdown formatting: **, -, numbered lists
+        // Keep **bold**, drop bullet/number prefixes
         let cleanLine = line
-          .replace(/\*\*/g, '') // Remove **
-          .replace(/^\s*[-•]\s+/, '') // Remove bullet points
-          .replace(/^\s*\d+\.\s+/, ''); // Remove numbered lists
+          .replace(/^\s*[-•]\s+/, '')
+          .replace(/^\s*\d+\.\s+/, '');
 
         if (line.startsWith("## ")) {
           const sectionTitle = line.replace("## ", "").replace(/\*\*/g, '');
@@ -77,20 +76,34 @@ export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps
       return elements;
     };
 
-    // Convert *italic* markers (scientific names) into <em> nodes for print output
+    // Convert **bold** and *italic* markers into <strong>/<em> nodes for print output
     const renderInline = (text: string): React.ReactNode[] => {
-      const parts = text.split(/(\*[^*\n]+\*)/g);
-      return parts.map((p, i) => {
-        const m = p.match(/^\*([^*\n]+)\*$/);
-        if (m) {
-          return (
-            <em key={i} style={{ fontStyle: "italic" }}>
-              {m[1]}
-            </em>
+      const boldParts = text.split(/(\*\*[^*\n]+?\*\*)/g);
+      const out: React.ReactNode[] = [];
+      boldParts.forEach((bp, bi) => {
+        const bm = bp.match(/^\*\*([^*\n]+?)\*\*$/);
+        if (bm) {
+          const inner = bm[1];
+          const italicInside = inner.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+          out.push(
+            <strong key={`b${bi}`} style={{ fontWeight: 700, color: "#1e3a5f" }}>
+              {italicInside.map((ip, ii) => {
+                const im = ip.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+                if (im) return <em key={ii} style={{ fontStyle: "italic" }}>{im[1]}</em>;
+                return <span key={ii}>{ip}</span>;
+              })}
+            </strong>,
           );
+          return;
         }
-        return <span key={i}>{p}</span>;
+        const parts = bp.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+        parts.forEach((p, i) => {
+          const m = p.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+          if (m) out.push(<em key={`i${bi}-${i}`} style={{ fontStyle: "italic" }}>{m[1]}</em>);
+          else if (p) out.push(<span key={`t${bi}-${i}`}>{p}</span>);
+        });
       });
+      return out;
     };
 
     const displayNumber = patentData?.displayNumber || patentNumber;

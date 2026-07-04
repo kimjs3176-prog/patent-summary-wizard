@@ -18,19 +18,38 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
 
-// Plain renderer — highlight feature removed.
-function sanitizeBoldMarkers(text: string): string {
-  return text ? text.replace(/\*\*([^*\n]+?)\*\*/g, "$1") : text;
-}
+// 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
   if (!text) return text;
-  const stripped = sanitizeBoldMarkers(text);
-  const parts = stripped.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
-  return parts.map((p, i) => {
-    const m = p.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
-    if (m) return <em key={i} className="italic">{m[1]}</em>;
-    return <span key={i}>{p}</span>;
+  // 1) 먼저 **...**를 분리
+  const boldParts = text.split(/(\*\*[^*\n]+?\*\*)/g);
+  const nodes: React.ReactNode[] = [];
+  boldParts.forEach((bp, bi) => {
+    const bm = bp.match(/^\*\*([^*\n]+?)\*\*$/);
+    if (bm) {
+      // 볼드 내부에서도 학명 이탤릭 처리
+      const inner = bm[1];
+      const italicInside = inner.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+      nodes.push(
+        <strong key={`b-${bi}`} className="font-bold text-[#191F28]">
+          {italicInside.map((ip, ii) => {
+            const im = ip.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+            if (im) return <em key={ii} className="italic">{im[1]}</em>;
+            return <span key={ii}>{ip}</span>;
+          })}
+        </strong>,
+      );
+      return;
+    }
+    // 2) 볼드가 아닌 조각에서 학명 이탤릭만 처리
+    const italicParts = bp.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+    italicParts.forEach((p, i) => {
+      const m = p.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+      if (m) nodes.push(<em key={`i-${bi}-${i}`} className="italic">{m[1]}</em>);
+      else if (p) nodes.push(<span key={`t-${bi}-${i}`}>{p}</span>);
+    });
   });
+  return nodes;
 }
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
@@ -265,18 +284,19 @@ function parseSections(md: string): MdSection[] {
     buf = "";
   };
   for (const raw of lines) {
-    // 1) 모델이 출력한 마크다운 강조 표기를 본문에서 제거한다.
-    //    - `**...**` (볼드)는 무조건 평문화 — 사용자 요청에 따라 모델 측 볼드는 금지
-    //    - `*...*` (이탤릭)는 라틴어 학명(영문자/공백/온점/하이픈만)일 때만 유지하고,
-    //      그 외(한글이 1자 이상 포함되거나 길이 30자 초과)는 평문화하여
-    //      "통해 개발된 만큼 기술" 같은 문장 일부가 의도치 않게 이탤릭/강조되는 문제를 방지.
+    // 마크다운 강조 표기 처리:
+    //  - `**...**` (볼드): 중요도 강조로 유지 (렌더러에서 <strong>)
+    //  - `*...*` (이탤릭): 라틴어 학명만 유지, 그 외는 평문화
     let line = raw.replace(/^\s*\*\s+/, "");                    // * bullet → plain text
     line = line.replace(/([.!?。．！？])\s+\*\s+/g, "$1 ");       // mid-line pseudo bullet
-    line = line.replace(/\*\*\*([^*\n]+?)\*\*\*/g, "$1"); // ***x*** → x
-    line = line.replace(/\*\*([^*\n]+?)\*\*/g, "$1");        // **x**  → x
-    line = line.replace(/\*([^*\n]{1,80})\*/g, (full, inner: string) => {
+    line = line.replace(/\*\*\*([^*\n]+?)\*\*\*/g, "**$1**"); // ***x*** → **x**
+    // 볼드 마커 내부에 개행/빈 볼드는 평문화
+    line = line.replace(/\*\*\s*\*\*/g, "");
+    // 볼드 바깥의 단일 이탤릭 마커만 학명 판정으로 정리
+    // (볼드 안쪽은 renderBold에서 처리)
+    line = line.replace(/(^|[^*])\*([^*\n]{1,80})\*(?!\*)/g, (_full, pre: string, inner: string) => {
       const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .\-]{1,60}$/.test(inner.trim());
-      return looksLikeLatin ? `*${inner}*` : inner;
+      return pre + (looksLikeLatin ? `*${inner}*` : inner);
     });
     const h2 = line.match(/^##\s+(.+?)\s*$/);
     if (h2) {
@@ -826,26 +846,51 @@ export function TossPatentSummary({
                             </sup>,
                           );
                         } else if (part) {
-                          // 2) 학명 등 이탤릭 마커(*...*) 분리 후, 나머지에만 용어집/하이라이트 적용
-                          const italicParts = part.split(/(\*[^*\n]+\*)/g);
-                          italicParts.forEach((ip, k) => {
-                            if (!ip) return;
-                            const im = ip.match(/^\*([^*\n]+)\*$/);
-                            if (im) {
+                          // 2) 볼드(**...**) → 학명 이탤릭(*...*) 순서로 분리.
+                          //    볼드 밖 텍스트는 용어집 주석까지 적용.
+                          const boldParts = part.split(/(\*\*[^*\n]+?\*\*)/g);
+                          boldParts.forEach((bp, bi) => {
+                            if (!bp) return;
+                            const bm = bp.match(/^\*\*([^*\n]+?)\*\*$/);
+                            if (bm) {
+                              // 볼드 내부: 이탤릭만 렌더링 (용어집은 성능/노이즈 회피)
+                              const inner = bm[1];
+                              const italicInside = inner.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
                               processed.push(
-                                <em
-                                  key={`it-${i}-${j}-${k}`}
-                                  className="italic"
-                                  style={{ fontStyle: "italic" }}
+                                <strong
+                                  key={`b-${i}-${j}-${bi}`}
+                                  className="font-bold text-[#191F28]"
                                 >
-                                  {im[1]}
-                                </em>,
+                                  {italicInside.map((ip, ii) => {
+                                    const im = ip.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+                                    if (im) return <em key={ii} className="italic">{im[1]}</em>;
+                                    return <span key={ii}>{ip}</span>;
+                                  })}
+                                </strong>,
                               );
-                            } else {
-                              const annotated = annotate(ip);
-                              const nodes = Array.isArray(annotated) ? annotated : [annotated];
-                              processed.push(...(nodes as React.ReactNode[]));
+                              return;
                             }
+                            // 볼드 바깥: 학명 이탤릭 → 나머지에 용어집 주석
+                            const italicParts = bp.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
+                            italicParts.forEach((ip, k) => {
+                              if (!ip) return;
+                              const im = ip.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
+                              if (im) {
+                                processed.push(
+                                  <em
+                                    key={`it-${i}-${j}-${bi}-${k}`}
+                                    className="italic"
+                                    style={{ fontStyle: "italic" }}
+                                  >
+                                    {im[1]}
+                                  </em>,
+                                );
+                              } else {
+                                const annotated = annotate(ip);
+                                const nodes = Array.isArray(annotated) ? annotated : [annotated];
+                                processed.push(...(nodes as React.ReactNode[]));
+                              }
+                            });
                           });
                         }
                       });
