@@ -843,17 +843,27 @@ time, .tabular-nums, [data-numeric] {
   width: 1px;
   animation: hero-line-pulse 12s ease-in-out infinite;
 }
-.hero-meteor {
+.hero-crosshatch {
   position: absolute;
-  width: 160px;
-  height: 2px;
-  border-radius: 9999px;
-  background: linear-gradient(90deg, transparent, hsl(158 90% 75% / 0.95), hsl(184 90% 75% / 0.6), transparent);
-  filter: drop-shadow(0 0 6px hsl(158 90% 65% / 0.9));
-  transform-origin: left center;
-  animation: hero-meteor 6s linear infinite;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 47px, hsl(158 64% 60% / 0.18) 47px, hsl(158 64% 60% / 0.18) 48px),
+    repeating-linear-gradient(90deg, transparent, transparent 47px, hsl(158 64% 60% / 0.18) 47px, hsl(158 64% 60% / 0.18) 48px);
+  animation: hero-crosshatch-breathe 10s ease-in-out infinite;
   pointer-events: none;
-  opacity: 0;
+  will-change: opacity;
+}
+.hero-grid-spotlight {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, hsl(158 80% 65% / 0.35) 0%, transparent 70%);
+  filter: blur(24px);
+  mix-blend-mode: screen;
+  animation: hero-grid-spotlight 14s ease-in-out infinite;
+  pointer-events: none;
+  will-change: transform, opacity;
 }
 .hero-scanline {
   position: absolute;
