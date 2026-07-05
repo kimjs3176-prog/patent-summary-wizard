@@ -14,6 +14,7 @@ import { PptGenerator } from "./PptGenerator";
 import { PrintableContent } from "./PrintableContent";
 
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
+import { RegulationAnalysis } from "./RegulationAnalysis";
 import { CompetitorComparisonTable } from "./CompetitorComparisonTable";
 import { PatentFamilyTree } from "./PatentFamilyTree";
 import { PivotingAnalysis } from "./PivotingAnalysis";
@@ -949,6 +950,17 @@ export function PatentSummary({
           isLoading={isAnalyzing}
           details={commercializationDetails}
         />
+      )}
+
+      {/* 사업화 예상 규제 (국가법령정보 API) */}
+      {patentData && !isStreaming && (
+        <div id="sec-regulations" className="scroll-mt-24 print:hidden">
+          <RegulationAnalysis
+            patentNumber={patentNumber}
+            patentData={patentData}
+            isStreaming={isStreaming}
+          />
+        </div>
       )}
 
       {/* 3. AI Summary Card — Dashboard-style */}
