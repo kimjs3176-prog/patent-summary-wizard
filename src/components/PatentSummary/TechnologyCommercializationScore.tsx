@@ -88,24 +88,30 @@ function SubScoreCard({ label, score, reason, colorIndex }: { label: string; sco
   if (!reason) return null;
   return (
     <div
-      className="p-3 sm:p-3.5 rounded-xl"
+      className="flex items-start gap-3 sm:gap-4 p-3 sm:p-3.5 rounded-xl"
       style={{ background: c.bg, border: `1px solid ${c.border}` }}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
+      {/* Left: big score */}
+      <div className="shrink-0 flex flex-col items-center justify-center min-w-[48px]">
+        <span
+          className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight leading-none"
+          style={{ color: c.stroke }}
+        >
+          {score}
+        </span>
+        <span className="text-[9px] text-muted-foreground/50 font-medium mt-0.5">/ 100</span>
+      </div>
+
+      {/* Right: label + reason */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-1">
           <span className="text-xs">{c.icon}</span>
           <p className="text-[11px] sm:text-xs font-bold text-foreground/75">{label}</p>
         </div>
-        <span
-          className="text-xs font-extrabold tabular-nums"
-          style={{ color: c.stroke }}
-        >
-          {score}점
-        </span>
+        <p className="text-[12px] sm:text-[13px] text-foreground/60 leading-[1.75]">
+          {renderBoldText(reason)}
+        </p>
       </div>
-      <p className="text-[12px] sm:text-[13px] text-foreground/60 leading-[1.75]">
-        {renderBoldText(reason)}
-      </p>
     </div>
   );
 }
