@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -115,26 +114,6 @@ serve(async (req) => {
       });
     }
 
-    // Cache
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    const cacheKey = `regulations:${patentNumber}`;
-    const { data: cached } = await supabase
-      .from("patent_ai_cache")
-      .select("result, created_at")
-      .eq("cache_key", cacheKey)
-      .maybeSingle();
-    if (cached?.result) {
-      const ageDays = (Date.now() - new Date(cached.created_at).getTime()) / 86400000;
-      if (ageDays < 30) {
-        return new Response(JSON.stringify({ success: true, ...cached.result, cached: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
     const title = patentData.titleKo || patentData.title || "";
     const abstract = (patentData.abstract || "").slice(0, 1500);
     const claim0 = Array.isArray(patentData.claims) ? patentData.claims[0]?.slice(0, 800) || "" : "";
@@ -191,12 +170,6 @@ JSON 형식:
       laws,
       summary: parsed.summary || "",
     };
-
-    // Upsert cache
-    await supabase.from("patent_ai_cache").upsert(
-      { cache_key: cacheKey, result, created_at: new Date().toISOString() },
-      { onConflict: "cache_key" }
-    );
 
     return new Response(JSON.stringify({ success: true, ...result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
