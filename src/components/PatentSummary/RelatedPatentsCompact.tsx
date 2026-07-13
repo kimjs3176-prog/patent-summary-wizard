@@ -128,9 +128,9 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
               className="w-full flex items-center justify-between gap-3 py-3 px-1 text-left hover:bg-white/60 rounded-lg transition-colors group"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-semibold text-[#191F28] truncate group-hover:text-[#10B981] flex items-center gap-1.5">
-                  <Link2 className="w-3.5 h-3.5 shrink-0 text-[#8B95A1] group-hover:text-[#10B981]" />
-                  {p.title}
+                <p className="text-[14px] font-semibold text-[#191F28] group-hover:text-[#10B981] flex items-start gap-1.5 leading-[1.45]">
+                  <Link2 className="w-3.5 h-3.5 shrink-0 mt-[3px] text-[#8B95A1] group-hover:text-[#10B981]" />
+                  <span className="min-w-0 break-keep">{p.title}</span>
                 </p>
                 <p className="text-[11.5px] text-[#8B95A1] tabular-nums mt-0.5 pl-5">
                   {p.patentId}{p.assignee ? ` · ${truncate(p.assignee, 24)}` : ""}
