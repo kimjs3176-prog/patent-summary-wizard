@@ -952,7 +952,14 @@ export function TossPatentSummary({
                         }
                       });
                       return (
-                        <p key={i} className="text-[15.5px] leading-[1.78] text-[#4E5968]">
+                        <p
+                          key={i}
+                          className={
+                            i === 0
+                              ? "text-[16px] leading-[1.8] text-[#191F28] font-medium"
+                              : "text-[15.5px] leading-[1.8] text-[#333D4B]"
+                          }
+                        >
                           {processed}
                         </p>
                       );
