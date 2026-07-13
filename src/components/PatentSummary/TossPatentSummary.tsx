@@ -101,8 +101,20 @@ function formatAiModelLabel(model?: string): string {
 function SectionTitle({ children, kicker }: { children: React.ReactNode; kicker?: string }) {
   return (
     <div className="mb-5">
-      {kicker && <p className="text-[13px] font-semibold mb-1.5" style={{ color: ACCENT_HEX }}>{kicker}</p>}
-      <h2 className="text-[22px] sm:text-[24px] font-bold text-[#191F28] tracking-[-0.02em] leading-[1.3]">
+      {kicker && (
+        <span
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold mb-2.5"
+          style={{
+            color: ACCENT_HEX,
+            background: `${ACCENT_HEX}14`,
+            letterSpacing: "0.02em",
+          }}
+        >
+          <span className="w-1 h-1 rounded-full" style={{ background: ACCENT_HEX }} />
+          {kicker}
+        </span>
+      )}
+      <h2 className="text-[22px] sm:text-[25px] font-bold text-[#191F28] tracking-[-0.022em] leading-[1.3]">
         {children}
       </h2>
     </div>
@@ -940,7 +952,14 @@ export function TossPatentSummary({
                         }
                       });
                       return (
-                        <p key={i} className="text-[15.5px] leading-[1.78] text-[#4E5968]">
+                        <p
+                          key={i}
+                          className={
+                            i === 0
+                              ? "text-[16px] leading-[1.8] text-[#191F28] font-medium"
+                              : "text-[15.5px] leading-[1.8] text-[#333D4B]"
+                          }
+                        >
                           {processed}
                         </p>
                       );
