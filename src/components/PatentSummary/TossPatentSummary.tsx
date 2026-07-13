@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
 import type { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { RelatedPatentsCompact } from "./RelatedPatentsCompact";
+import { RegulationAnalysis } from "./RegulationAnalysis";
 
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
@@ -219,18 +220,23 @@ function PatentTimeline({
 
 function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
   return (
-    <div>
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="text-[14px] font-semibold text-[#191F28]">{label}</span>
-        <span className="text-[16px] font-bold tabular-nums" style={{ color }}>
-          {value}<span className="text-[12px] text-[#8B95A1] ml-0.5">점</span>
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full bg-[#E5E8EB] overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
+    <div className="min-w-0">
+      <div className="flex items-start gap-3 mb-2.5">
+        <div className="shrink-0 min-w-[46px]">
+          <span className="text-[26px] sm:text-[28px] font-black tabular-nums leading-none" style={{ color }}>
+            {value}
+          </span>
+          <span className="ml-0.5 text-[12px] text-[#8B95A1] font-semibold">점</span>
+        </div>
+        <div className="flex-1 min-w-0 pt-0.5">
+          <p className="text-[14px] font-bold text-[#191F28] leading-tight mb-2">{label}</p>
+          <div className="h-1.5 rounded-full bg-[#E5E8EB] overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
+          </div>
+        </div>
       </div>
       {reason && (
-        <p className="mt-2.5 text-[13px] leading-[1.7] text-[#4E5968]">{renderBold(reason)}</p>
+        <p className="text-[13px] leading-[1.75] text-[#4E5968]">{renderBold(reason)}</p>
       )}
     </div>
   );
@@ -701,9 +707,9 @@ export function TossPatentSummary({
                 )}
               </div>
 
-              {/* 세부 점수 — 컴팩트 그리드 */}
+              {/* 세부 점수 — 실제 요약서 화면에 반영되는 가로 하위 카드 */}
               {details && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 py-5 border-b border-[#E5E8EB]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 py-5 border-b border-[#E5E8EB]">
                   <ScoreRow label="기술성" value={details.technologyScore} color={ACCENT_HEX} reason={details.technologyReason} />
                   <ScoreRow label="시장성" value={details.marketScore} color="#3B82F6" reason={details.marketReason} />
                   <ScoreRow label="사업성" value={details.businessScore} color="#F59E0B" reason={details.businessReason} />
@@ -743,6 +749,13 @@ export function TossPatentSummary({
               )}
             </SoftCard>
           </section>
+
+          {/* 사업화 예상 규제 — 실제 요약서 화면에 연결 */}
+          {patentData && !isStreaming && (
+            <div className="mb-8">
+              <RegulationAnalysis patentNumber={patentNumber} patentData={patentData} isStreaming={isStreaming} />
+            </div>
+          )}
 
           {/* 키워드 */}
           {keywords.length > 0 && (
