@@ -219,24 +219,33 @@ function PatentTimeline({
 
 
 function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
+  // 색상별 은은한 배경(tint) — 세 하위 점수를 시각적으로 분리해 가독성을 높인다
+  const tint = `${color}0D`; // ~5% opacity
+  const border = `${color}26`; // ~15% opacity
   return (
-    <div className="min-w-0">
-      <div className="flex items-start gap-3 mb-2.5">
-        <div className="shrink-0 min-w-[46px]">
-          <span className="text-[26px] sm:text-[28px] font-black tabular-nums leading-none" style={{ color }}>
+    <div
+      className="min-w-0 rounded-[14px] p-4 sm:p-[18px] border"
+      style={{ background: tint, borderColor: border }}
+    >
+      <div className="flex items-baseline justify-between gap-2 mb-2.5">
+        <p className="text-[14px] sm:text-[15px] font-bold text-[#191F28] leading-none">{label}</p>
+        <div className="flex items-baseline gap-0.5 shrink-0">
+          <span className="text-[26px] sm:text-[30px] font-black tabular-nums leading-none" style={{ color }}>
             {value}
           </span>
-          <span className="ml-0.5 text-[12px] text-[#8B95A1] font-semibold">점</span>
-        </div>
-        <div className="flex-1 min-w-0 pt-0.5">
-          <p className="text-[14px] font-bold text-[#191F28] leading-tight mb-2">{label}</p>
-          <div className="h-1.5 rounded-full bg-[#E5E8EB] overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
-          </div>
+          <span className="text-[11px] text-[#8B95A1] font-semibold">/100</span>
         </div>
       </div>
+      <div className="h-[6px] rounded-full bg-white/70 overflow-hidden mb-3">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${value}%`, background: color }}
+        />
+      </div>
       {reason && (
-        <p className="text-[13px] leading-[1.75] text-[#4E5968]">{renderBold(reason)}</p>
+        <p className="text-[12.5px] sm:text-[13px] leading-[1.75] text-[#4E5968]">
+          {renderBold(reason)}
+        </p>
       )}
     </div>
   );
