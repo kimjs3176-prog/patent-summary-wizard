@@ -16,6 +16,24 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
   const { settings, isLoading } = useSiteSettings();
   const { enabled: kioskEnabled, toggle: toggleKiosk } = useKioskMode();
 
+  const forceRefresh = async () => {
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)));
+      }
+    } finally {
+      const sep = window.location.search ? "&" : "?";
+      window.location.replace(
+        window.location.pathname + window.location.search + sep + "_swreset=" + Date.now() + window.location.hash
+      );
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -90,6 +108,16 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
           <p className="text-[11px] md:text-xs text-muted-foreground/50 leading-relaxed">{settings.footer_line1}</p>
           <p className="text-[11px] md:text-xs text-muted-foreground/50 mt-1">{settings.footer_line2}</p>
           <p className="text-[11px] md:text-xs text-muted-foreground/60 mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground/70 transition-colors">kimjs1408@koat.or.kr</a></p>
+          <p className="text-[10.5px] md:text-[11px] text-muted-foreground/50 mt-2">
+            화면이 이전 버전으로 보이나요?{" "}
+            <button
+              type="button"
+              onClick={forceRefresh}
+              className="underline hover:text-foreground/70 transition-colors font-medium"
+            >
+              캐시 초기화 후 새로고침
+            </button>
+          </p>
         </div>
       </footer>
       <KioskKeyboard />
