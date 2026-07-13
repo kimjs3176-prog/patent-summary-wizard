@@ -219,24 +219,33 @@ function PatentTimeline({
 
 
 function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
+  // 색상별 은은한 배경(tint) — 세 하위 점수를 시각적으로 분리해 가독성을 높인다
+  const tint = `${color}0D`; // ~5% opacity
+  const border = `${color}26`; // ~15% opacity
   return (
-    <div className="min-w-0">
-      <div className="flex items-start gap-3 mb-2.5">
-        <div className="shrink-0 min-w-[46px]">
-          <span className="text-[26px] sm:text-[28px] font-black tabular-nums leading-none" style={{ color }}>
+    <div
+      className="min-w-0 rounded-[14px] p-4 sm:p-[18px] border"
+      style={{ background: tint, borderColor: border }}
+    >
+      <div className="flex items-baseline justify-between gap-2 mb-2.5">
+        <p className="text-[14px] sm:text-[15px] font-bold text-[#191F28] leading-none">{label}</p>
+        <div className="flex items-baseline gap-0.5 shrink-0">
+          <span className="text-[26px] sm:text-[30px] font-black tabular-nums leading-none" style={{ color }}>
             {value}
           </span>
-          <span className="ml-0.5 text-[12px] text-[#8B95A1] font-semibold">점</span>
-        </div>
-        <div className="flex-1 min-w-0 pt-0.5">
-          <p className="text-[14px] font-bold text-[#191F28] leading-tight mb-2">{label}</p>
-          <div className="h-1.5 rounded-full bg-[#E5E8EB] overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
-          </div>
+          <span className="text-[11px] text-[#8B95A1] font-semibold">/100</span>
         </div>
       </div>
+      <div className="h-[6px] rounded-full bg-white/70 overflow-hidden mb-3">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${value}%`, background: color }}
+        />
+      </div>
       {reason && (
-        <p className="text-[13px] leading-[1.75] text-[#4E5968]">{renderBold(reason)}</p>
+        <p className="text-[12.5px] sm:text-[13px] leading-[1.75] text-[#4E5968]">
+          {renderBold(reason)}
+        </p>
       )}
     </div>
   );
@@ -719,31 +728,54 @@ export function TossPatentSummary({
               {/* TRL — 같은 카드 내 통합 */}
               {details && (
                 <div className="pt-5">
-                  <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[12px] text-[#8B95A1] font-semibold">기술 성숙도 (TRL)</span>
-                      <span className="text-[18px] font-bold tabular-nums" style={{ color: trlColor }}>{trl ?? "-"}</span>
-                      <span className="text-[#8B95A1] text-[12px] font-semibold">/ 9</span>
+                      <span className="text-[13px] text-[#191F28] font-bold">기술 성숙도</span>
+                      <span className="text-[11px] text-[#8B95A1] font-semibold">TRL</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold text-white" style={{ background: trlColor }}>
-                      {trlStage}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[22px] font-black tabular-nums leading-none" style={{ color: trlColor }}>
+                        {trl ?? "-"}
+                      </span>
+                      <span className="text-[#8B95A1] text-[11px] font-semibold">/ 9</span>
+                      <span
+                        className="ml-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+                        style={{ background: trlColor }}
+                      >
+                        {trlStage}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1.5">
                     {Array.from({ length: 9 }).map((_, i) => {
                       const lvl = i + 1;
                       const active = trl != null && lvl <= trl;
+                      const isCurrent = trl != null && lvl === trl;
                       const c = lvl <= 3 ? "#EF4444" : lvl <= 6 ? "#F59E0B" : ACCENT_HEX;
-                      return <div key={i} className="flex-1 h-1.5 rounded-full" style={{ background: active ? c : "#E5E8EB" }} />;
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 h-7 rounded-[6px] flex items-center justify-center text-[11px] font-bold tabular-nums transition-all"
+                          style={{
+                            background: active ? c : "#F1F3F5",
+                            color: active ? "#FFFFFF" : "#B0B8C1",
+                            boxShadow: isCurrent ? `0 0 0 2px #FFFFFF, 0 0 0 3px ${c}` : "none",
+                          }}
+                        >
+                          {lvl}
+                        </div>
+                      );
                     })}
                   </div>
-                  <div className="flex justify-between mt-1 text-[10px] text-[#8B95A1] font-medium">
-                    <span>1 · 기초</span>
-                    <span>5 · 실증</span>
-                    <span>9 · 상용</span>
+                  <div className="flex justify-between mt-2 text-[10.5px] text-[#8B95A1] font-semibold">
+                    <span>1–3 · 기초 연구</span>
+                    <span>4–6 · 실증</span>
+                    <span>7–9 · 상용화</span>
                   </div>
                   {details.trlReason && (
-                    <p className="mt-3 text-[12.5px] leading-[1.7] text-[#4E5968]">{renderBold(details.trlReason)}</p>
+                    <p className="mt-4 text-[13px] leading-[1.75] text-[#4E5968] bg-[#F9FAFB] rounded-[12px] px-4 py-3">
+                      {renderBold(details.trlReason)}
+                    </p>
                   )}
                 </div>
               )}
