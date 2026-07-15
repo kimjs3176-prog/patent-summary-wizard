@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   hero_title_accent: "AI 기술요약",
   hero_title_suffix: "서비스",
   hero_description: "농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다",
-  header_title: "농식품분야 특허 AI 기술분석(V1.1)",
+  header_title: "농식품분야 특허 AI 기술분석",
   header_subtitle: "Agri-Food Patent AI Summary",
   footer_line1: "본 서비스는 지식재산처/한국특허정보원의 공공데이터를 활용하여 제작되었습니다",
   footer_line2: "KIPRIS(한국특허정보원) 데이터 연동 · AI 기반 특허 분석",

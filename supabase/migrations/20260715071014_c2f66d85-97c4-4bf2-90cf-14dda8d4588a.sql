@@ -1,0 +1,1 @@
+UPDATE public.site_settings SET value = '농식품분야 특허 AI 기술분석' WHERE key = 'header_title';
