@@ -1009,6 +1009,13 @@ export function TossPatentSummary({
             </section>
           )}
 
+          {/* 사업화 예상 규제 — 요약서 하단으로 이동 */}
+          {patentData && !isStreaming && (
+            <section className="mb-10">
+              <RegulationAnalysis patentNumber={patentNumber} patentData={patentData} isStreaming={isStreaming} />
+            </section>
+          )}
+
           {/* 액션 버튼 */}
           {!isStreaming && content && (
             <section className="mb-2">
