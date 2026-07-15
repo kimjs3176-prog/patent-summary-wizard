@@ -658,7 +658,7 @@ export function TossPatentSummary({
         </div>
       )}
 
-      <div ref={aiBodyRef} className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden max-w-[720px] mx-auto">
+      <div ref={aiBodyRef} data-toss-summary data-toss-surface className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden max-w-[720px] mx-auto">
         <div className="px-5 sm:px-7 pb-12">
           {/* HERO */}
           <section className="pt-9 pb-5">
@@ -793,13 +793,6 @@ export function TossPatentSummary({
               )}
             </SoftCard>
           </section>
-
-          {/* 사업화 예상 규제 — 실제 요약서 화면에 연결 */}
-          {patentData && !isStreaming && (
-            <div className="mb-8">
-              <RegulationAnalysis patentNumber={patentNumber} patentData={patentData} isStreaming={isStreaming} />
-            </div>
-          )}
 
           {/* 키워드 */}
           {keywords.length > 0 && (
@@ -1013,6 +1006,13 @@ export function TossPatentSummary({
               <SoftCard className="!p-3">
                 <RelatedPatentsCompact patentData={patentData} onPatentClick={onRelatedPatentClick} />
               </SoftCard>
+            </section>
+          )}
+
+          {/* 사업화 예상 규제 — 요약서 하단으로 이동 */}
+          {patentData && !isStreaming && (
+            <section className="mb-10">
+              <RegulationAnalysis patentNumber={patentNumber} patentData={patentData} isStreaming={isStreaming} />
             </section>
           )}
 
