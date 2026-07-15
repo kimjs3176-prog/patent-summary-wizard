@@ -495,7 +495,11 @@ serve(async (req) => {
         url.searchParams.set("inventionTitle", field === "title" ? kw : "");
         url.searchParams.set("astrtCont", field === "abstract" ? kw : "");
         url.searchParams.set("inventors", field === "inventor" ? kw : "");
-        url.searchParams.set("applicant", org.id);
+        // Use the organization NAME (not the applicant-code) for the applicant filter.
+        // KIPRIS's applicant-code lookup silently misses some filings that are recorded
+        // under legal-name variants like "대한민국(농촌진흥청장)" (e.g. 10-2012-0131498),
+        // whereas the name-based match reliably covers all variants.
+        url.searchParams.set("applicant", org.name);
         url.searchParams.set("pageNo", "1");
         url.searchParams.set("numOfRows", "50");
         url.searchParams.set("sortSpec", "AD");
