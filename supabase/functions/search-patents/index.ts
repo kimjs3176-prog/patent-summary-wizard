@@ -471,7 +471,16 @@ serve(async (req) => {
     };
 
     // Final query set comes from the AI recommender (already deduped, ordered by precision)
-    const uniqueQueries = recommendedQueries.slice(0, 6);
+    // Always include the raw input as a safety-net query so single-token searches
+    // (e.g. "새싹보리") aren't accidentally split into an over-restrictive AND query
+    // (e.g. "새싹*보리") that misses titles containing the compound term verbatim.
+    const safetyNet: string[] = [];
+    const rawTrim = rawInput.trim();
+    if (rawTrim && !recommendedQueries.includes(rawTrim)) safetyNet.push(rawTrim);
+    if (correctedInput && correctedInput !== rawTrim && !recommendedQueries.includes(correctedInput)) {
+      safetyNet.push(correctedInput);
+    }
+    const uniqueQueries = Array.from(new Set([...safetyNet, ...recommendedQueries])).slice(0, 6);
     console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
 
     // KIPRIS 단일 요청 (title 또는 abstract 검색)
@@ -577,14 +586,47 @@ serve(async (req) => {
       stage3.forEach(collect);
     }
 
-    const topPatents = allPatents.slice(0, 50);
-    console.log(`Total unique patents: ${allPatents.length}, returning: ${topPatents.length}`);
+    // Exclude patents that have exceeded the 20-year term from application date
+    // (patents expire 20 years after filing; those are no longer enforceable).
+    const now = Date.now();
+    const TWENTY_YEARS_MS = 20 * 365.25 * 24 * 60 * 60 * 1000;
+    const parseKrDate = (s?: string): number | null => {
+      if (!s) return null;
+      const digits = s.replace(/[^0-9]/g, "");
+      if (digits.length < 8) return null;
+      const y = Number(digits.slice(0, 4));
+      const m = Number(digits.slice(4, 6)) - 1;
+      const d = Number(digits.slice(6, 8));
+      if (!y || Number.isNaN(m) || !d) return null;
+      const t = Date.UTC(y, m, d);
+      return Number.isFinite(t) ? t : null;
+    };
+    const activePatents = allPatents.filter((p) => {
+      // Prefer explicit application date; fall back to applicationNumber year (YYYY in positions 2-6 of 13-digit AN).
+      let appMs = parseKrDate(p.applicationDate);
+      if (appMs === null && p.applicationNumber) {
+        const digits = p.applicationNumber.replace(/[^0-9]/g, "");
+        if (digits.length >= 6) {
+          const y = Number(digits.slice(2, 6));
+          if (y >= 1970 && y <= 2100) appMs = Date.UTC(y, 0, 1);
+        }
+      }
+      if (appMs === null) return true; // unknown date -> keep
+      return now - appMs < TWENTY_YEARS_MS;
+    });
+    const expiredCount = allPatents.length - activePatents.length;
+    if (expiredCount > 0) {
+      console.log(`Filtered ${expiredCount} expired (>20y) patents`);
+    }
+    const topPatents = activePatents.slice(0, 50);
+    console.log(`Total unique patents: ${activePatents.length} (of ${allPatents.length}), returning: ${topPatents.length}`);
 
     const payload = {
       success: true,
       patents: topPatents,
       keyword: keyword.trim(),
-      totalCount: allPatents.length,
+      totalCount: activePatents.length,
+      expiredExcluded: expiredCount,
       recommendedQueries: uniqueQueries,
       ...(correctedInput && correctedInput !== rawInput ? { correctedInput } : {}),
       mustKeywords: refined.must,
