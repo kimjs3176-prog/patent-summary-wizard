@@ -794,13 +794,6 @@ export function TossPatentSummary({
             </SoftCard>
           </section>
 
-          {/* 사업화 예상 규제 — 실제 요약서 화면에 연결 */}
-          {patentData && !isStreaming && (
-            <div className="mb-8">
-              <RegulationAnalysis patentNumber={patentNumber} patentData={patentData} isStreaming={isStreaming} />
-            </div>
-          )}
-
           {/* 키워드 */}
           {keywords.length > 0 && (
             <section className="mb-8">
