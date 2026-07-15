@@ -886,3 +886,92 @@ time, .tabular-nums, [data-numeric] {
     animation: none !important;
   }
 }
+
+/* =====================================================================
+   Dark-mode readability overrides for the Toss-style patent summary.
+   The summary components use hardcoded Toss neutrals (#191F28, #333D4B,
+   #4E5968, #8B95A1, #B0B8C1, #E5E8EB, #F2F4F6, #F9FAFB, and white bg)
+   throughout inline styles and arbitrary Tailwind classes. Instead of
+   rewriting every component, we remap those specific values under `.dark`
+   so text stays legible and surfaces have proper contrast.
+   ===================================================================== */
+.dark {
+  /* Text colors (foreground scale, darkest → lightest) */
+  --toss-fg-1: #F5F7FA;   /* was #191F28 — primary heading / body */
+  --toss-fg-2: #D6DCE3;   /* was #333D4B — secondary body */
+  --toss-fg-3: #B8C0CC;   /* was #4E5968 — tertiary / captions */
+  --toss-fg-4: #8892A0;   /* was #8B95A1 — muted meta */
+  --toss-fg-5: #6B7381;   /* was #B0B8C1 — disabled */
+  /* Surfaces */
+  --toss-bg-card: #14202E;
+  --toss-bg-soft: #1A2636;
+  --toss-bg-softer: #202D3F;
+  --toss-border: #2A394E;
+}
+
+/* Text color remaps */
+.dark .text-\[\#191F28\] { color: var(--toss-fg-1) !important; }
+.dark .text-\[\#333D4B\] { color: var(--toss-fg-2) !important; }
+.dark .text-\[\#4E5968\] { color: var(--toss-fg-3) !important; }
+.dark .text-\[\#8B95A1\] { color: var(--toss-fg-4) !important; }
+.dark .text-\[\#B0B8C1\] { color: var(--toss-fg-5) !important; }
+
+/* Background remaps for the soft/card layers */
+.dark .bg-\[\#F9FAFB\] { background-color: var(--toss-bg-soft) !important; }
+.dark .bg-\[\#F2F4F6\] { background-color: var(--toss-bg-soft) !important; }
+.dark .bg-\[\#F1F3F5\] { background-color: var(--toss-bg-softer) !important; }
+.dark .bg-\[\#E5E8EB\] { background-color: var(--toss-border) !important; }
+.dark .hover\:bg-\[\#E5E8EB\]:hover { background-color: var(--toss-border) !important; }
+.dark .hover\:bg-\[\#F2F4F6\]:hover { background-color: var(--toss-bg-soft) !important; }
+
+/* Borders */
+.dark .border-\[\#E5E8EB\] { border-color: var(--toss-border) !important; }
+.dark .border-\[\#F1F3F5\] { border-color: var(--toss-border) !important; }
+.dark .border-\[\#F2F4F6\] { border-color: var(--toss-border) !important; }
+
+/* SoftCard uses inline bg white; scope by data attribute if present, else
+   catch elements with class `bg-white` inside the summary root. Applying
+   globally would break intentional whites (logos, QR), so we scope it. */
+.dark [data-toss-summary] .bg-white,
+.dark [data-toss-surface] {
+  background-color: var(--toss-bg-card) !important;
+  color: var(--toss-fg-1);
+}
+.dark [data-toss-summary] .bg-white .bg-white {
+  background-color: var(--toss-bg-soft) !important;
+}
+
+/* Drawing panels inside the summary should not be pure white */
+.dark [data-toss-summary] img[alt^="도면"] {
+  background: #0F1826;
+  border-radius: 12px;
+}
+
+/* AI 종합 의견 gradient card — lift text off dark bg */
+.dark [data-toss-summary] .text-\[\#191F28\].font-medium {
+  color: var(--toss-fg-1) !important;
+}
+
+/* Score cards & TRL bar labels should stay legible */
+.dark [data-toss-summary] [style*="#F9FAFB"] {
+  background-color: var(--toss-bg-soft) !important;
+  color: var(--toss-fg-2) !important;
+}
+.dark [data-toss-summary] [style*="#F1F3F5"] {
+  background-color: var(--toss-bg-softer) !important;
+}
+
+/* Modal (share) — keep white but ensure enough contrast for text */
+.dark [role="dialog"] .bg-white,
+.dark .fixed.inset-0 > .bg-white {
+  background-color: #1B2735 !important;
+  color: var(--toss-fg-1);
+}
+
+/* Related patents & compact lists — soften white item backgrounds */
+.dark [data-toss-summary] a.bg-white,
+.dark [data-toss-summary] button.bg-white,
+.dark [data-toss-summary] div.bg-white {
+  background-color: var(--toss-bg-card) !important;
+  color: var(--toss-fg-1);
+}
