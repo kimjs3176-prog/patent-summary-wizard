@@ -74,9 +74,12 @@ interface VisitorStats {
   total: number;
   today: number;
   thisMonth: number;
+  thisQuarter: number;
   thisYear: number;
   last30: { date: string; count: number }[];
+  daily: { date: string; count: number }[];
   monthly: { month: string; count: number }[];
+  quarterly: { quarter: string; count: number }[];
   yearly: { year: string; count: number }[];
 }
 
