@@ -236,6 +236,27 @@ export type Database = {
         }
         Relationships: []
       }
+      patent_search_events: {
+        Row: {
+          id: number
+          patent_number: string
+          patent_title: string | null
+          searched_at: string
+        }
+        Insert: {
+          id?: number
+          patent_number: string
+          patent_title?: string | null
+          searched_at?: string
+        }
+        Update: {
+          id?: number
+          patent_number?: string
+          patent_title?: string | null
+          searched_at?: string
+        }
+        Relationships: []
+      }
       patent_search_stats: {
         Row: {
           created_at: string
@@ -337,6 +358,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_monthly_popular_searches: {
+        Args: { p_limit?: number }
+        Returns: {
+          patent_number: string
+          patent_title: string
+          search_count: number
+        }[]
+      }
       increment_daily_visit: { Args: never; Returns: undefined }
       upsert_search_stat: {
         Args: { p_patent_number: string; p_patent_title?: string }
