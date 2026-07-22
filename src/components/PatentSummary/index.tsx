@@ -21,6 +21,7 @@ import { PivotingAnalysis } from "./PivotingAnalysis";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
+import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 
 // Plain sanitizer — highlight feature removed. Strips ** markdown bold.
 function sanitizeBoldMarkers(text: string): string {
@@ -75,7 +76,14 @@ export function PatentSummary({
   const favoritesEnabled = settings.feature_favorites !== "false";
   const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
   const glossaryEnabled = settings.feature_glossary !== "false";
-  const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text) : text);
+  const autoGlossary = useAutoGlossary(
+    patentNumber,
+    content,
+    !!isStreaming,
+    glossaryEnabled,
+    patentData?.titleKo || patentData?.title,
+  );
+  const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text, autoGlossary) : text);
 
   const printSections = useMemo(() => {
     const defaults = {
