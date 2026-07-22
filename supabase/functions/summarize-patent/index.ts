@@ -275,7 +275,7 @@ serve(async (req) => {
           if (row.key === "summary_ai_prompt_extra" && row.value) customPromptExtra = row.value;
           if (row.key === "summary_max_tokens" && row.value) {
             const parsed = parseInt(row.value, 10);
-            if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = Math.max(3000, Math.min(parsed, 6000));
+            if (!isNaN(parsed) && parsed >= 500 && parsed <= 16000) maxTokens = Math.max(6000, Math.min(parsed, 12000));
           }
           if (row.key === "summary_section_lengths" && row.value) {
             try {
@@ -510,6 +510,9 @@ serve(async (req) => {
               ],
               stream: false,
               max_tokens: maxTokens,
+              // Gemini 3.x thinking 토큰이 max_tokens를 소모해 본문이 200자 근방에서 잘리는
+              // 현상(finish=length)이 관측되어 reasoning 예산을 최소화한다.
+              reasoning_effort: "low",
             },
             { signal: aiCtrl.signal },
           );
