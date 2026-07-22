@@ -95,29 +95,43 @@ const glossary: Record<string, string> = {
 // don't need this because Hangul characters never sit adjacent to ASCII identifiers.
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isAsciiTerm = (s: string) => /^[A-Za-z0-9]+$/.test(s);
-const sortedTerms = Object.keys(glossary).sort((a, b) => b.length - a.length);
-const glossaryPattern = sortedTerms
-  .map((t) => {
-    const esc = escapeRe(t);
-    return isAsciiTerm(t) ? `(?<![A-Za-z0-9])${esc}(?![A-Za-z0-9])` : esc;
-  })
-  .join('|');
-const glossaryRegex = new RegExp(`(${glossaryPattern})`, 'g');
+function buildRegex(terms: string[]): RegExp | null {
+  if (terms.length === 0) return null;
+  const sorted = [...terms].sort((a, b) => b.length - a.length);
+  const pattern = sorted
+    .map((t) => {
+      const esc = escapeRe(t);
+      return isAsciiTerm(t) ? `(?<![A-Za-z0-9])${esc}(?![A-Za-z0-9])` : esc;
+    })
+    .join('|');
+  return new RegExp(`(${pattern})`, 'g');
+}
+const defaultRegex = buildRegex(Object.keys(glossary));
 
 /**
  * Takes a plain text string and returns React nodes with glossary terms wrapped in tooltips.
+ * Optionally accepts an `extra` glossary (e.g. AI-extracted terms for the current patent)
+ * which is merged with the built-in dictionary. Extra entries override built-ins.
  */
-export function annotateWithGlossary(text: string): React.ReactNode[] {
+export function annotateWithGlossary(
+  text: string,
+  extra?: Record<string, string>,
+): React.ReactNode[] {
   if (!text) return [text];
-  
+
+  const hasExtra = extra && Object.keys(extra).length > 0;
+  const merged: Record<string, string> = hasExtra ? { ...glossary, ...extra } : glossary;
+  const regex = hasExtra ? buildRegex(Object.keys(merged)) : defaultRegex;
+  if (!regex) return [text];
+
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   const matched = new Set<string>(); // Only tooltip first occurrence per render
 
   let match: RegExpExecArray | null;
-  glossaryRegex.lastIndex = 0;
-  
-  while ((match = glossaryRegex.exec(text)) !== null) {
+  regex.lastIndex = 0;
+
+  while ((match = regex.exec(text)) !== null) {
     const term = match[0];
     const idx = match.index;
     
@@ -132,7 +146,7 @@ export function annotateWithGlossary(text: string): React.ReactNode[] {
     } else {
       matched.add(term);
       parts.push(
-        <GlossaryTerm key={`${term}-${idx}`} term={term} definition={glossary[term]} />
+        <GlossaryTerm key={`${term}-${idx}`} term={term} definition={merged[term]} />
       );
     }
     
@@ -147,11 +161,17 @@ export function annotateWithGlossary(text: string): React.ReactNode[] {
 }
 
 function GlossaryTerm({ term, definition }: { term: string; definition: string }) {
+  const isAi = !(term in glossary);
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="underline decoration-dotted decoration-primary/40 underline-offset-2 cursor-help text-foreground hover:text-primary transition-colors">
+          <span
+            className={
+              "underline decoration-dotted underline-offset-2 cursor-help text-foreground hover:text-primary transition-colors " +
+              (isAi ? "decoration-emerald-500/50" : "decoration-primary/40")
+            }
+          >
             {term}
           </span>
         </TooltipTrigger>
@@ -163,6 +183,9 @@ function GlossaryTerm({ term, definition }: { term: string; definition: string }
         >
           <p><strong className="text-primary">{term}</strong></p>
           <p className="mt-0.5 text-popover-foreground/80">{definition}</p>
+          {isAi && (
+            <p className="mt-1 text-[10px] text-muted-foreground">AI 자동 인식 용어</p>
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
