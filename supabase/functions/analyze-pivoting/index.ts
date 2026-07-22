@@ -152,7 +152,7 @@ pivots 배열은 정확히 4개.`;
     try {
       response = await callAIChatCompletions(
         {
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-3.6-flash",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: ctx },

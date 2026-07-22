@@ -154,7 +154,7 @@ JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
     try {
       aiResponse = await callAIChatCompletions(
         {
-          model: "google/gemini-2.5-flash-lite",
+          model: "google/gemini-3.1-flash-lite",
           messages: [
             { role: "system", content: "You are a Korean patent search expert. Output only valid JSON." },
             { role: "user", content: prompt },

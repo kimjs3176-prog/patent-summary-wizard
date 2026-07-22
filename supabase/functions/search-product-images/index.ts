@@ -70,7 +70,7 @@ JSON만 반환: {"scene":"현장/설비 영어 키워드", "product":"제품/소
 제목: ${title}
 초록: ${abstract.slice(0, 400)}`;
   const res = await callAI({
-    model: "google/gemini-2.5-flash-lite",
+    model: "google/gemini-3.1-flash-lite",
     messages: [
       { role: "system", content: "특허 키워드 → 실제 응용 현장 영어 이미지 검색어 변환기. JSON으로만 응답." },
       { role: "user", content: prompt },
