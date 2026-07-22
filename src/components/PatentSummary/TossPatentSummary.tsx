@@ -17,6 +17,7 @@ import { PrintableContent } from "./PrintableContent";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
+import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
@@ -461,7 +462,14 @@ export function TossPatentSummary({
   const favoritesEnabled = settings.feature_favorites !== "false";
   const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
   const glossaryEnabled = settings.feature_glossary !== "false";
-  const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text) : text);
+  const autoGlossary = useAutoGlossary(
+    patentNumber,
+    content,
+    !!isStreaming,
+    glossaryEnabled,
+    patentData?.titleKo || patentData?.title,
+  );
+  const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text, autoGlossary) : text);
 
   const pdfLayoutConfig = useMemo(() => {
     try { return settings.pdf_layout_config ? JSON.parse(settings.pdf_layout_config) : undefined; } catch { return undefined; }
