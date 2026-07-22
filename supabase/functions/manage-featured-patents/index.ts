@@ -391,7 +391,7 @@ serve(async (req) => {
             recentSummaries,
             recentSearches,
             topSearched: topSearched || [],
-            currentModel: "google/gemini-2.5-flash",
+            currentModel: "google/gemini-3.6-flash",
           },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }

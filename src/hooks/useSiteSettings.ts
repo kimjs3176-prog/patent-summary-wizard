@@ -42,7 +42,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   chatbot_width: "440",
   chatbot_height: "92",
   chatbot_visible: "true",
-  ai_model: "google/gemini-2.5-flash",
+  ai_model: "google/gemini-3.6-flash",
   video_categories: "[]",
 };
 

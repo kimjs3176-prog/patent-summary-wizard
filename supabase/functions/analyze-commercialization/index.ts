@@ -572,8 +572,8 @@ JSON형식:
 
 
     // 분석 모델은 가격/성능 균형이 가장 우수한 Gemini 3 Flash Preview로 고정한다.
-    const configuredModel = "google/gemini-2.5-flash";
-    const scoreModel = isDetailedScore ? configuredModel : "google/gemini-2.5-flash-lite";
+    const configuredModel = "google/gemini-3.6-flash";
+    const scoreModel = isDetailedScore ? configuredModel : "google/gemini-3.1-flash-lite";
     // max_tokens — 절대 잘리지 않도록 충분한 한도 확보.
     // 한국어 1글자 ≈ 2~3 토큰(JSON 이스케이프 포함). 5개 필드 합계 최대 ~600자 → 약 2,000토큰.
     // 안전 마진 2배 적용하여 detailed 4,800 / lite 3,600 기본.

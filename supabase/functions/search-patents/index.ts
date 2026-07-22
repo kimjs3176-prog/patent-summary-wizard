@@ -125,7 +125,7 @@ async function extractKeywordsWithAI(query: string): Promise<{ keywords: string[
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-3.1-flash-lite",
         messages: [
           {
             role: "system",
@@ -211,7 +211,7 @@ async function recommendQueriesWithAI(
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-3.1-flash-lite",
         messages: [
           {
             role: "system",

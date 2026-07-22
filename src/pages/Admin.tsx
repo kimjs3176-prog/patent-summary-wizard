@@ -1554,7 +1554,7 @@ const Admin = () => {
                             <Zap className="w-4 h-4 text-primary" />
                             <span className="text-xs font-medium">현재 AI 모델</span>
                           </div>
-                          <p className="text-sm font-mono font-semibold">{usageStats.currentModel || "google/gemini-2.5-flash"}</p>
+                          <p className="text-sm font-mono font-semibold">{usageStats.currentModel || "google/gemini-3.6-flash"}</p>
                           <p className="text-[10px] text-muted-foreground mt-1">분석 성능 대비 비용이 가장 우수한 모델로 고정 적용됩니다.</p>
                         </Card>
 
