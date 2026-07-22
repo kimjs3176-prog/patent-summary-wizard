@@ -86,7 +86,6 @@ function formatAiModelLabel(model?: string): string {
   if (!model) return "Gemini 3.6 Flash";
   const map: Record<string, string> = {
     "google/gemini-3.1-pro-preview": "Gemini 3.1 Pro",
-    "google/gemini-3.6-flash": "Gemini 3 Flash",
     "google/gemini-2.5-pro": "Gemini 2.5 Pro",
     "google/gemini-3.6-flash": "Gemini 3.6 Flash",
     "google/gemini-3.1-flash-lite": "Gemini 3.1 Flash Lite",
