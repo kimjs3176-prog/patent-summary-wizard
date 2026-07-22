@@ -58,7 +58,7 @@ const TOPIC_RULES: { pattern: RegExp; label: string }[] = [
   { pattern: /(락토바실러스|유산균|프로바이오틱스|프리바이오틱스|균주)/, label: "바이오 소재" },
 ];
 
-const VISIBLE = 8;
+const VISIBLE = 12;
 const ROTATE_MS = 30_000;
 
 function detectTopics(titles: string[]): Map<string, number> {
@@ -161,39 +161,38 @@ export function KeywordExplorer() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-2.5">
         {chips.map((cat, idx) => {
           const Icon = cat.icon;
           return (
             <button
               key={cat.label}
               onClick={() => handleClick(cat.keywords)}
-              className="group relative flex flex-col items-start justify-between p-3 sm:p-4 rounded-2xl border border-border/50 bg-card hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 text-left animate-fade-up aspect-[16/10] sm:aspect-[3/2] overflow-hidden"
+              className="group relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border/50 bg-card hover:border-primary/40 transition-all duration-200 hover:-translate-y-0.5 text-left animate-fade-up overflow-hidden"
               style={{ boxShadow: "var(--shadow-card)", animationDelay: `${idx * 40}ms` }}
             >
               {/* Subtle gradient wash on hover */}
               <span
                 aria-hidden
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                style={{ background: `radial-gradient(ellipse 100% 80% at 50% 0%, ${cat.bg}, transparent 70%)` }}
+                style={{ background: `linear-gradient(90deg, ${cat.bg}, transparent 80%)` }}
               />
               {cat.trending && (
                 <span
-                  className="absolute top-2.5 right-2.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider"
+                  className="absolute top-1 right-1 inline-flex items-center px-1 py-0.5 rounded-full text-[8px] font-black tracking-wider"
                   style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
                   title="인기 검색 기반"
                 >
                   <TrendingUp className="w-2.5 h-2.5" />
-                  HOT
                 </span>
               )}
               <span
-                className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+                className="relative shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
                 style={{ background: cat.bg, color: cat.color }}
               >
-                <Icon className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />
+                <Icon className="w-4 h-4" strokeWidth={2.2} />
               </span>
-              <span className="relative mt-1.5 text-[13.5px] sm:text-[14.5px] font-bold text-foreground tracking-tight leading-snug">
+              <span className="relative text-[12.5px] sm:text-[13px] font-bold text-foreground tracking-tight leading-tight truncate">
                 {cat.label}
               </span>
             </button>
