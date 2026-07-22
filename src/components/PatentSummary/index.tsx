@@ -477,7 +477,7 @@ export function PatentSummary({
   }, [patentData, content, visibleSections]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto animate-fade-up">
+    <div className="w-full max-w-[1075px] mx-auto animate-fade-up">
       {/* Printable Content (Hidden) */}
       <PrintableContent
         ref={printRef}
