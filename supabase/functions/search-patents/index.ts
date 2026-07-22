@@ -526,8 +526,8 @@ serve(async (req) => {
     // 2) If insufficient, broaden to remaining queries (title-only)
     // 3) If still insufficient, fall back to abstract on the top query
     // This caps worst-case requests well below the previous N×6×2 pattern.
-    const EARLY_EXIT_HITS = 25;
-    const MAX_QUERIES = 3;
+    const EARLY_EXIT_HITS = 80;
+    const MAX_QUERIES = 5;
     const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
     const allPatents: KeywordSearchResult[] = [];
     const seenIds = new Set<string>();
@@ -582,12 +582,21 @@ serve(async (req) => {
       }
     }
 
-    // Stage 3: abstract fallback on top query only (title alone often misses paraphrased filings)
-    if (allPatents.length < 5 && queriesToTry.length > 0) {
-      const stage3 = await Promise.all(
-        AGRI_ORGANIZATIONS.map(org => kiprisSearch(queriesToTry[0], org, "abstract")),
-      );
-      stage3.forEach(collect);
+    // Stage 3: abstract search — title alone misses many filings where the keyword
+    // only appears in the abstract/claims. Run for the top 2 queries whenever we
+    // haven't already saturated results.
+    if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 0) {
+      const absQueries = queriesToTry.slice(0, 2);
+      const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
+      for (const q of absQueries) {
+        for (const org of AGRI_ORGANIZATIONS) {
+          tasks.push(() => kiprisSearch(q, org, "abstract"));
+        }
+      }
+      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 4) {
+        const batch = await Promise.all(tasks.slice(i, i + 4).map(fn => fn()));
+        batch.forEach(collect);
+      }
     }
 
     // Exclude patents that have exceeded the 20-year term from application date
@@ -622,7 +631,7 @@ serve(async (req) => {
     if (expiredCount > 0) {
       console.log(`Filtered ${expiredCount} expired (>20y) patents`);
     }
-    const topPatents = activePatents.slice(0, 50);
+    const topPatents = activePatents.slice(0, 100);
     console.log(`Total unique patents: ${activePatents.length} (of ${allPatents.length}), returning: ${topPatents.length}`);
 
     const payload = {
