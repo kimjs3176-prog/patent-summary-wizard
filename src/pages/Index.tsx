@@ -153,11 +153,11 @@ const Index = () => {
 
   return (
     <PageLayout headerRight={headerRight}>
-      <main className="container mx-auto px-3 sm:px-4 md:px-6 py-5 md:py-8 relative z-10">
+      <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         {!summary && !isLoading ? (
           <>
             {/* Deep Navy Hero */}
-            <section className="relative -mx-3 sm:-mx-4 md:-mx-6 mb-10 md:mb-14 animate-fade-down rounded-none md:rounded-3xl">
+            <section className="relative -mx-3 sm:-mx-4 md:-mx-6 mb-6 md:mb-9 animate-fade-down rounded-none md:rounded-3xl">
               {/* Background layer: clipped to rounded corners */}
               <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-3xl">
                 <div
@@ -214,15 +214,15 @@ const Index = () => {
                 <HeroParticles count={38} />
               </div>
 
-              <div className="relative px-5 sm:px-10 md:px-16 py-14 md:py-24">
+              <div className="relative px-5 sm:px-10 md:px-16 py-10 md:py-16">
                 <div className="relative max-w-3xl mx-auto text-center">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] font-bold tracking-[0.18em] uppercase px-3 py-1 rounded-full mb-5 md:mb-7"
+                  <span className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] font-bold tracking-[0.18em] uppercase px-3 py-1 rounded-full mb-3 md:mb-4"
                     style={{ background: "hsl(158 64% 45% / 0.18)", color: "hsl(158 70% 75%)", border: "1px solid hsl(158 64% 45% / 0.35)" }}>
                     <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "hsl(158 70% 65%)" }} />
                     Agri-Food AI · Live Indexing
                   </span>
 
-                  <h1 className="text-[32px] sm:text-5xl md:text-[60px] font-black leading-[1.05] tracking-[-0.035em] mb-5 md:mb-7" style={{ color: "#f5f9ff" }}>
+                  <h1 className="text-[32px] sm:text-5xl md:text-[56px] font-black leading-[1.05] tracking-[-0.035em] mb-3 md:mb-4" style={{ color: "#f5f9ff" }}>
                     농식품분야 특허&nbsp;
                     <br className="sm:hidden" />
                     <span
@@ -234,7 +234,7 @@ const Index = () => {
                     &nbsp;서비스
                   </h1>
 
-                  <p className="text-sm md:text-base mb-8 md:mb-10 leading-relaxed max-w-xl mx-auto" style={{ color: "hsl(210 30% 78%)" }}>
+                  <p className="text-sm md:text-base mb-5 md:mb-6 leading-relaxed max-w-xl mx-auto" style={{ color: "hsl(210 30% 78%)" }}>
                     {settings.hero_description}
                   </p>
 
@@ -255,7 +255,7 @@ const Index = () => {
                   </div>
 
                   {/* Trust strip */}
-                  <div className="mt-8 md:mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] md:text-xs" style={{ color: "hsl(210 25% 70%)" }}>
+                  <div className="mt-5 md:mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] md:text-xs" style={{ color: "hsl(210 25% 70%)" }}>
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
                       농업분야 국가연구기관 보유 특허&nbsp;
@@ -274,8 +274,8 @@ const Index = () => {
             </section>
 
             {/* 주제별 빠른 탐색 */}
-            <section className="max-w-5xl mx-auto mb-10 md:mb-14 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-              <div className="flex items-end justify-between mb-4 md:mb-5">
+            <section className="max-w-5xl mx-auto mb-6 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <div className="flex items-end justify-between mb-3 md:mb-4">
                 <h2 className="text-xl md:text-2xl font-black tracking-tight">
                   <span className="text-primary">§</span> 주제별 탐색
                 </h2>
@@ -286,7 +286,7 @@ const Index = () => {
             </section>
 
             {/* 세로 스크롤 단일 컬럼 — 공지·기록 → 추천특허 → 기술영상 → 기술이전 안내 */}
-            <div className="max-w-5xl mx-auto space-y-8 md:space-y-12 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+            <div className="max-w-5xl mx-auto space-y-5 md:space-y-8 animate-fade-up" style={{ animationDelay: "0.2s" }}>
               {(homepageVisible.notices !== false || (settings.feature_search_history !== "false" && history.length > 0)) && (
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   {homepageVisible.notices !== false && (
