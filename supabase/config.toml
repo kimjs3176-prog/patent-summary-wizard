@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.analyze-pivoting]
 verify_jwt = false
+
+[functions.extract-glossary]
+verify_jwt = false
