@@ -409,19 +409,27 @@ serve(async (req) => {
       const daily = rows || [];
       const monthMap: Record<string, number> = {};
       const yearMap: Record<string, number> = {};
+      const quarterMap: Record<string, number> = {};
       let total = 0;
       for (const r of daily) {
         const d = String(r.visit_date);
         const ym = d.slice(0, 7);
         const y = d.slice(0, 4);
+        const mo = parseInt(d.slice(5, 7), 10);
+        const q = Math.floor((mo - 1) / 3) + 1;
+        const qKey = `${y}-Q${q}`;
         monthMap[ym] = (monthMap[ym] || 0) + r.visit_count;
         yearMap[y] = (yearMap[y] || 0) + r.visit_count;
+        quarterMap[qKey] = (quarterMap[qKey] || 0) + r.visit_count;
         total += r.visit_count;
       }
 
       const todayKey = new Date().toISOString().slice(0, 10);
       const monthKey = todayKey.slice(0, 7);
       const yearKey = todayKey.slice(0, 4);
+      const nowMonth = parseInt(todayKey.slice(5, 7), 10);
+      const nowQuarter = Math.floor((nowMonth - 1) / 3) + 1;
+      const quarterKey = `${yearKey}-Q${nowQuarter}`;
       const today = daily.find((r: { visit_date: string }) => String(r.visit_date) === todayKey)?.visit_count || 0;
 
       // Last 30 days padded
@@ -441,6 +449,14 @@ serve(async (req) => {
       const yearly = Object.entries(yearMap)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([year, count]) => ({ year, count }));
+      const quarterly = Object.entries(quarterMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([quarter, count]) => ({ quarter, count }));
+
+      const dailyAll = daily.map((r: { visit_date: string; visit_count: number }) => ({
+        date: String(r.visit_date),
+        count: r.visit_count,
+      }));
 
       return new Response(
         JSON.stringify({
@@ -449,9 +465,12 @@ serve(async (req) => {
             total,
             today,
             thisMonth: monthMap[monthKey] || 0,
+            thisQuarter: quarterMap[quarterKey] || 0,
             thisYear: yearMap[yearKey] || 0,
             last30,
+            daily: dailyAll,
             monthly,
+            quarterly,
             yearly,
           },
         }),
