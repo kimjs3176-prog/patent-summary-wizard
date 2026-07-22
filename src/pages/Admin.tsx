@@ -1459,10 +1459,11 @@ const Admin = () => {
 
                     {visitorStats && (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                           {[
                             { label: "누적 접속자", value: visitorStats.total },
                             { label: "올해 접속자", value: visitorStats.thisYear },
+                            { label: "이번 분기", value: visitorStats.thisQuarter ?? 0 },
                             { label: "이번 달 접속자", value: visitorStats.thisMonth },
                             { label: "오늘 접속자", value: visitorStats.today },
                           ].map((s, i) => (
@@ -1476,55 +1477,49 @@ const Admin = () => {
                           ))}
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                          <Card className="p-4">
-                            <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5" /> 연도별 접속자 수
-                            </h3>
-                            {visitorStats.yearly.length > 0 ? (
-                              <div className="space-y-1.5">
-                                {visitorStats.yearly.map((y, i) => {
-                                  const max = Math.max(...visitorStats.yearly.map(x => x.count), 1);
-                                  return (
-                                    <div key={i} className="flex items-center gap-2">
-                                      <span className="text-[11px] text-muted-foreground w-14 flex-shrink-0 font-mono">{y.year}년</span>
-                                      <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
-                                        <div className="h-full bg-primary/70 rounded" style={{ width: `${(y.count / max) * 100}%` }} />
-                                      </div>
-                                      <span className="text-[11px] font-medium w-14 text-right">{y.count.toLocaleString()}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
-                            )}
-                          </Card>
+                        <Card className="p-4">
+                          <Tabs defaultValue="daily" className="w-full">
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-xs font-semibold flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5" /> 접속자 추이
+                              </h3>
+                              <TabsList className="h-8">
+                                <TabsTrigger value="daily" className="text-xs h-6 px-2">일별</TabsTrigger>
+                                <TabsTrigger value="monthly" className="text-xs h-6 px-2">월별</TabsTrigger>
+                                <TabsTrigger value="quarterly" className="text-xs h-6 px-2">분기별</TabsTrigger>
+                                <TabsTrigger value="yearly" className="text-xs h-6 px-2">연도별</TabsTrigger>
+                              </TabsList>
+                            </div>
 
-                          <Card className="p-4">
-                            <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5" /> 월별 접속자 수 (최근 12개월)
-                            </h3>
-                            {visitorStats.monthly.length > 0 ? (
-                              <div className="space-y-1.5">
-                                {visitorStats.monthly.slice(-12).map((m, i, arr) => {
-                                  const max = Math.max(...arr.map(x => x.count), 1);
-                                  return (
-                                    <div key={i} className="flex items-center gap-2">
-                                      <span className="text-[11px] text-muted-foreground w-16 flex-shrink-0 font-mono">{m.month}</span>
-                                      <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
-                                        <div className="h-full bg-accent/70 rounded" style={{ width: `${(m.count / max) * 100}%` }} />
-                                      </div>
-                                      <span className="text-[11px] font-medium w-14 text-right">{m.count.toLocaleString()}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
-                            )}
-                          </Card>
-                        </div>
+                            {([
+                              { key: "daily", label: "최근 30일", data: (visitorStats.last30 ?? []).map(d => ({ label: d.date, count: d.count })), color: "bg-primary/70", w: "w-20" },
+                              { key: "monthly", label: "최근 12개월", data: (visitorStats.monthly ?? []).slice(-12).map(m => ({ label: m.month, count: m.count })), color: "bg-accent/70", w: "w-16" },
+                              { key: "quarterly", label: "분기별", data: (visitorStats.quarterly ?? []).map(q => ({ label: q.quarter, count: q.count })), color: "bg-primary/60", w: "w-16" },
+                              { key: "yearly", label: "연도별", data: (visitorStats.yearly ?? []).map(y => ({ label: `${y.year}년`, count: y.count })), color: "bg-primary/80", w: "w-14" },
+                            ] as const).map(tab => (
+                              <TabsContent key={tab.key} value={tab.key} className="mt-0">
+                                {tab.data.length > 0 ? (
+                                  <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
+                                    {tab.data.map((row, i, arr) => {
+                                      const max = Math.max(...arr.map(x => x.count), 1);
+                                      return (
+                                        <div key={i} className="flex items-center gap-2">
+                                          <span className={`text-[11px] text-muted-foreground ${tab.w} flex-shrink-0 font-mono`}>{row.label}</span>
+                                          <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden">
+                                            <div className={`h-full ${tab.color} rounded`} style={{ width: `${(row.count / max) * 100}%` }} />
+                                          </div>
+                                          <span className="text-[11px] font-medium w-14 text-right">{row.count.toLocaleString()}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground text-center py-4">데이터 없음</p>
+                                )}
+                              </TabsContent>
+                            ))}
+                          </Tabs>
+                        </Card>
                       </div>
                     )}
 
