@@ -875,29 +875,19 @@ export function TossPatentSummary({
             sections.map((sec, idx) => {
               const { kicker, heading } = sectionMeta(sec.title);
               return (
-                 <section key={idx} className="mb-12">
+                <section key={idx} className="mb-10">
                   <SectionTitle kicker={kicker}>{heading}</SectionTitle>
-                   <div className="space-y-3">
-                    {sec.paragraphs.flatMap((p, i) => {
-                      // 문장 단위로 분리하여 시각적 리듬을 개선 (한국어 종결 + 서구식 종결 지원)
-                      const sentences = p
-                        .split(/(?<=(?:다|요|음|임|함|죠|까|네|오|됨|줌|짐|킴)\.)\s+(?=[가-힣A-Za-z0-9\*\[])/)
-                        .flatMap((s) => s.split(/(?<=[.!?])\s+(?=[A-Z\[])/))
-                        .map((s) => s.trim())
-                        .filter(Boolean);
-                      const items = sentences.length > 0 ? sentences : [p];
-                      return items.map((sentence, si) => {
-                        const key = `${i}-${si}`;
-                        const isLeadParagraph = i === 0 && si === 0;
+                  <div className="space-y-4">
+                    {sec.paragraphs.map((p, i) => {
                       // 1) [^N] 인라인 마커를 먼저 분리하여 superscript 노드로 변환
-                       const refParts = sentence.split(/(\[\^\d+\])/g);
+                      const refParts = p.split(/(\[\^\d+\])/g);
                       const processed: React.ReactNode[] = [];
                       refParts.forEach((part, j) => {
                         const m = part.match(/^\[\^(\d+)\]$/);
                         if (m) {
                           processed.push(
                             <sup
-                              key={`fn-${key}-${j}`}
+                              key={`fn-${i}-${j}`}
                               className="ml-[1px] mr-[1px] text-[10px] font-bold align-super"
                               style={{ color: "#10B981" }}
                             >
@@ -917,7 +907,7 @@ export function TossPatentSummary({
                               const italicInside = inner.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
                               processed.push(
                                 <strong
-                                   key={`b-${key}-${j}-${bi}`}
+                                  key={`b-${i}-${j}-${bi}`}
                                   className="font-bold text-[#191F28]"
                                 >
                                   {italicInside.map((ip, ii) => {
@@ -937,7 +927,7 @@ export function TossPatentSummary({
                               if (im) {
                                 processed.push(
                                   <em
-                                     key={`it-${key}-${j}-${bi}-${k}`}
+                                    key={`it-${i}-${j}-${bi}-${k}`}
                                     className="italic"
                                     style={{ fontStyle: "italic" }}
                                   >
@@ -955,17 +945,16 @@ export function TossPatentSummary({
                       });
                       return (
                         <p
-                           key={key}
+                          key={i}
                           className={
-                             isLeadParagraph
-                               ? "text-[16px] leading-[1.85] text-[#191F28] font-medium tracking-[-0.005em]"
-                               : "text-[15.5px] leading-[1.85] text-[#333D4B] tracking-[-0.003em]"
+                            i === 0
+                              ? "text-[16px] leading-[1.8] text-[#191F28] font-medium"
+                              : "text-[15.5px] leading-[1.8] text-[#333D4B]"
                           }
                         >
                           {processed}
                         </p>
                       );
-                      });
                     })}
                   </div>
                   {/* 출처 (각주) — 시장동향 등 출처가 있는 섹션 */}
