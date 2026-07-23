@@ -1,4 +1,4 @@
-import { Heart, RotateCcw, BarChart3, Home, Search, TrendingUp, Send, Sparkles } from "lucide-react";
+import { Heart, RotateCcw, BarChart3 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
@@ -13,7 +13,7 @@ import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { KeywordExplorer } from "@/components/KeywordExplorer";
-
+import { HeroParticles } from "@/components/HeroParticles";
 
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -153,155 +153,186 @@ const Index = () => {
 
   return (
     <PageLayout headerRight={headerRight}>
-      {/* Pastel mesh ambient background scoped to landing */}
-      {!summary && !isLoading && (
-        <div
-          aria-hidden
-          className="fixed inset-0 -z-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(at 0% 0%, hsl(232 100% 96%) 0px, transparent 55%), radial-gradient(at 100% 0%, hsl(300 100% 97%) 0px, transparent 55%), radial-gradient(at 100% 100%, hsl(198 100% 95%) 0px, transparent 55%), radial-gradient(at 0% 100%, hsl(232 100% 97%) 0px, transparent 55%)",
-          }}
-        />
-      )}
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         {!summary && !isLoading ? (
-          <div className="flex gap-8 animate-fade-down">
-            {/* In-page sidebar rail (desktop) */}
-            <aside className="hidden lg:flex w-56 shrink-0 flex-col sticky top-24 self-start">
-              <div className="rounded-3xl p-5 border border-white/60 bg-white/40 backdrop-blur-xl" style={{ boxShadow: "0 8px 30px -12px hsl(232 60% 40% / 0.12)" }}>
-                <div className="flex items-center gap-2 mb-6 px-1">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md" style={{ background: "linear-gradient(135deg, hsl(232 80% 60%), hsl(260 75% 62%))" }}>A</div>
-                  <span className="text-sm font-bold tracking-tight text-slate-800">Atipsum</span>
+          <>
+            {/* Deep Navy Hero */}
+            <section className="relative -mx-3 sm:-mx-4 md:-mx-6 mb-6 md:mb-9 animate-fade-down rounded-none md:rounded-3xl">
+              {/* Background layer: clipped to rounded corners */}
+              <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-3xl">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "radial-gradient(ellipse 80% 60% at 80% 20%, hsl(158 64% 40% / 0.28), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 80%, hsl(184 70% 45% / 0.18), transparent 60%), linear-gradient(135deg, #0a1628 0%, #0f2540 50%, #0a1a30 100%)",
+                  }}
+                />
+                {/* Irregular accent lines */}
+                <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden">
+                  <div className="hero-line hero-line-h" style={{ top: "18%", animationDelay: "-2s", animationDuration: "9s" }} />
+                  <div className="hero-line hero-line-h" style={{ top: "34%", animationDelay: "-5s", animationDuration: "11s" }} />
+                  <div className="hero-line hero-line-h" style={{ top: "52%", animationDelay: "-1s", animationDuration: "8s" }} />
+                  <div className="hero-line hero-line-h" style={{ top: "71%", animationDelay: "-7s", animationDuration: "13s" }} />
+                  <div className="hero-line hero-line-h" style={{ top: "89%", animationDelay: "-3s", animationDuration: "10s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "12%", animationDelay: "-4s", animationDuration: "10s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "31%", animationDelay: "-1s", animationDuration: "9s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "56%", animationDelay: "-6s", animationDuration: "12s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "78%", animationDelay: "-2s", animationDuration: "11s" }} />
+                  <div className="hero-line hero-line-v" style={{ left: "93%", animationDelay: "-8s", animationDuration: "14s" }} />
                 </div>
-                <nav className="space-y-1.5">
-                  <a href="#" className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-sm font-semibold text-indigo-700 bg-white/80 shadow-sm ring-1 ring-indigo-100">
-                    <Home className="w-4 h-4" /> 홈
-                  </a>
-                  <a href="#explorer" className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-sm font-medium text-slate-500 hover:bg-white/60 transition-colors">
-                    <Search className="w-4 h-4" /> 주제 탐색
-                  </a>
-                  <Link to="/insights" className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-sm font-medium text-slate-500 hover:bg-white/60 transition-colors">
-                    <TrendingUp className="w-4 h-4" /> 인사이트
-                  </Link>
-                  <a href="#tech-transfer" className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-sm font-medium text-slate-500 hover:bg-white/60 transition-colors">
-                    <Send className="w-4 h-4" /> 기술이전
-                  </a>
-                </nav>
-                <div className="mt-6 p-4 rounded-2xl border border-indigo-100/60" style={{ background: "linear-gradient(135deg, hsl(232 100% 97%), hsl(260 100% 98%))" }}>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                    <p className="text-[10px] font-bold tracking-widest uppercase text-indigo-500">AI Powered</p>
+                {/* Aurora sweeping blobs */}
+                <div
+                  aria-hidden
+                  className="hero-aurora"
+                  style={{
+                    background:
+                      "radial-gradient(40% 40% at 30% 40%, hsl(158 80% 55% / 0.45), transparent 60%), radial-gradient(35% 35% at 70% 60%, hsl(184 85% 55% / 0.35), transparent 60%), radial-gradient(30% 30% at 50% 20%, hsl(142 80% 60% / 0.30), transparent 60%)",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="hero-aurora"
+                  style={{
+                    animationDuration: "32s",
+                    animationDirection: "reverse",
+                    animationDelay: "-8s",
+                    background:
+                      "radial-gradient(35% 35% at 20% 70%, hsl(200 90% 60% / 0.28), transparent 60%), radial-gradient(30% 30% at 80% 30%, hsl(158 90% 65% / 0.35), transparent 60%)",
+                  }}
+                />
+                {/* Glow blobs */}
+                <div aria-hidden className="hero-glow-pulse absolute -top-20 -right-10 w-72 h-72 rounded-full blur-3xl" style={{ background: "hsl(158 64% 45% / 0.35)" }} />
+                <div aria-hidden className="hero-glow-pulse absolute bottom-0 left-1/4 w-96 h-40 rounded-full blur-3xl" style={{ background: "hsl(184 70% 50% / 0.18)", animationDelay: "-6s" }} />
+                {/* Vertical scanline */}
+                <div aria-hidden className="hero-scanline" style={{ top: 0 }} />
+                {/* Crosshatch grid — fine mesh with irregular spotlights */}
+                <div aria-hidden className="hero-crosshatch" />
+                <div aria-hidden className="hero-grid-spotlight" style={{ top: "15%", left: "20%", animationDelay: "-3s", animationDuration: "14s" }} />
+                <div aria-hidden className="hero-grid-spotlight" style={{ top: "60%", left: "70%", animationDelay: "-7s", animationDuration: "18s" }} />
+                <div aria-hidden className="hero-grid-spotlight" style={{ top: "40%", left: "45%", animationDelay: "-1s", animationDuration: "12s" }} />
+                {/* Drift particles */}
+                <HeroParticles count={38} />
+              </div>
+
+              <div className="relative px-5 sm:px-10 md:px-16 py-10 md:py-16">
+                <div className="relative max-w-3xl mx-auto text-center">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] font-bold tracking-[0.18em] uppercase px-3 py-1 rounded-full mb-3 md:mb-4"
+                    style={{ background: "hsl(158 64% 45% / 0.18)", color: "hsl(158 70% 75%)", border: "1px solid hsl(158 64% 45% / 0.35)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "hsl(158 70% 65%)" }} />
+                    Agri-Food AI · Live Indexing
+                  </span>
+
+                  <h1 className="text-[32px] sm:text-5xl md:text-[56px] font-black leading-[1.05] tracking-[-0.035em] mb-3 md:mb-4" style={{ color: "#f5f9ff" }}>
+                    농식품분야 특허&nbsp;
+                    <br className="sm:hidden" />
+                    <span
+                      className="inline-block bg-clip-text text-transparent"
+                      style={{ backgroundImage: "linear-gradient(135deg, hsl(158 70% 65%) 0%, hsl(184 80% 70%) 100%)" }}
+                    >
+                      AI 기술분석
+                    </span>
+                    &nbsp;서비스
+                  </h1>
+
+                  <p className="text-sm md:text-base mb-5 md:mb-6 leading-relaxed max-w-xl mx-auto" style={{ color: "hsl(210 30% 78%)" }}>
+                    {settings.hero_description}
+                  </p>
+
+                  <div className="max-w-2xl mx-auto relative">
+                    {/* Emerald glow ring around search */}
+                    <div aria-hidden className="absolute -inset-1.5 rounded-full blur-xl opacity-70"
+                      style={{ background: "linear-gradient(90deg, hsl(158 70% 50% / 0.6), hsl(184 80% 55% / 0.5))" }} />
+                    <div className="relative bg-white rounded-2xl p-1.5" style={{ boxShadow: "0 20px 60px -10px hsl(158 64% 25% / 0.5), 0 0 0 1px hsl(158 64% 60% / 0.3)" }}>
+                      <PatentInput
+                        onSubmit={handleSubmit}
+                        isLoading={isLoading}
+                        onKeywordSearch={handleKeywordSearch}
+                        placeholder={settings.search_placeholder}
+                        helperText={settings.search_helper_text}
+                        helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()}
+                      />
+                    </div>
                   </div>
-                  <p className="text-[12px] text-slate-700 leading-relaxed">Gemini 3.6 기반 요약 · 규제 분석 · 3축 사업화 평가</p>
+
+                  {/* Trust strip */}
+                  <div className="mt-5 md:mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] md:text-xs" style={{ color: "hsl(210 25% 70%)" }}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
+                      농업분야 국가연구기관 보유 특허&nbsp;
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
+                      KIPRIS 실시간 연동
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
+                      Gemini AI 분석
+                    </span>
+                  </div>
                 </div>
               </div>
-            </aside>
+            </section>
 
-            {/* Main content column */}
-            <div className="flex-1 min-w-0">
-              {/* Hero */}
-              <section className="mb-10">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-[0.18em] uppercase px-3 py-1 rounded-full mb-4 bg-white/70 backdrop-blur border border-white/80 text-indigo-600 shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-indigo-500" />
-                  Agri-Food AI · Live Indexing
-                </span>
-                <h1 className="text-4xl md:text-[52px] font-bold leading-[1.08] tracking-[-0.02em] mb-4 text-slate-900">
-                  농식품분야 특허의 미래를{" "}
-                  <span className="text-transparent bg-clip-text" style={{ backgroundImage: "linear-gradient(120deg, hsl(232 80% 55%) 0%, hsl(280 75% 60%) 55%, hsl(320 70% 60%) 100%)" }}>
-                    AI로 발견하세요
-                  </span>
-                </h1>
-                <p className="text-slate-500 text-base md:text-lg leading-relaxed mb-6 max-w-2xl">
-                  {settings.hero_description}
-                </p>
+            {/* 주제별 빠른 탐색 */}
+            <section className="max-w-5xl mx-auto mb-6 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <div className="flex items-end justify-between mb-3 md:mb-4">
+                <h2 className="text-xl md:text-2xl font-black tracking-tight">
+                  <span className="text-primary">§</span> 주제별 탐색
+                </h2>
+                <div className="flex-1 mx-4 h-px bg-foreground/20" />
+                <span className="text-[10px] font-mono text-muted-foreground">/ INDEX</span>
+              </div>
+              <KeywordExplorer />
+            </section>
 
-                {/* Floating pill search */}
-                <div className="relative max-w-3xl group">
-                  <div aria-hidden className="absolute -inset-2 rounded-[2rem] blur-2xl opacity-60 group-focus-within:opacity-90 transition-opacity" style={{ background: "linear-gradient(90deg, hsl(232 100% 85% / 0.6), hsl(280 100% 88% / 0.5), hsl(198 100% 85% / 0.5))" }} />
-                  <div className="relative rounded-3xl bg-white/90 backdrop-blur-md p-2 ring-1 ring-white/80" style={{ boxShadow: "0 24px 60px -20px hsl(232 60% 40% / 0.25)" }}>
-                    <PatentInput
-                      onSubmit={handleSubmit}
-                      isLoading={isLoading}
-                      onKeywordSearch={handleKeywordSearch}
-                      placeholder={settings.search_placeholder}
-                      helperText={settings.search_helper_text}
-                      helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-slate-500">
-                  {["6개 농업분야 국가연구기관 특허", "KIPRIS 실시간 연동", "Gemini AI 분석"].map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </section>
-
-              {/* Keyword Explorer card */}
-              <section id="explorer" className="mb-8 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-                <div className="rounded-[2rem] bg-white/85 backdrop-blur-md p-6 md:p-8 border border-white/70" style={{ boxShadow: "0 12px 40px -20px hsl(232 60% 40% / 0.12)" }}>
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">주제별 탐색</h2>
-                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">Live Explorer</span>
-                  </div>
-                  <KeywordExplorer />
-                </div>
-              </section>
-
-              {/* Notices + Popular + History row */}
+            {/* 세로 스크롤 단일 컬럼 — 공지·기록 → 추천특허 → 기술영상 → 기술이전 안내 */}
+            <div className="max-w-5xl mx-auto space-y-5 md:space-y-8 animate-fade-up" style={{ animationDelay: "0.2s" }}>
               {(homepageVisible.notices !== false || (settings.feature_search_history !== "false" && history.length > 0)) && (
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   {homepageVisible.notices !== false && (
-                    <div className="rounded-[2rem] bg-white/85 backdrop-blur-md p-5 border border-white/70 transition-all hover:-translate-y-0.5" style={{ boxShadow: "0 8px 30px -18px hsl(232 60% 40% / 0.15)" }}>
+                    <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
                       <NoticeSection compact />
                     </div>
                   )}
-                  <div className="rounded-[2rem] bg-white/85 backdrop-blur-md p-5 border border-white/70 transition-all hover:-translate-y-0.5" style={{ boxShadow: "0 8px 30px -18px hsl(232 60% 40% / 0.15)" }}>
+                  <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
                     <PopularSearches onPatentSelect={handleSubmit} />
                   </div>
                   {settings.feature_search_history !== "false" && history.length > 0 && (
-                    <div className="rounded-[2rem] bg-white/70 backdrop-blur-md p-5 border border-white/60 md:col-span-2">
+                    <div className="rounded-2xl border border-border/40 bg-card p-4 md:col-span-2" style={{ boxShadow: "var(--shadow-card)" }}>
                       <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
                     </div>
                   )}
                 </section>
               )}
 
-              {/* Featured / Video / Transfer */}
-              <div className="space-y-8 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-                {homepageVisible.featuredPatents !== false && (
-                  <section className="rounded-[2rem] bg-white/85 backdrop-blur-md p-6 md:p-8 border border-white/70" style={{ boxShadow: "0 12px 40px -20px hsl(232 60% 40% / 0.12)" }}>
-                    <FeaturedPatents
-                      onPatentSelect={handleSubmit}
-                      sectionTitle={settings.featured_section_title}
-                      sectionSubtitle={settings.featured_section_subtitle}
-                    />
-                  </section>
-                )}
+              {homepageVisible.featuredPatents !== false && (
+                <section>
+                  <FeaturedPatents
+                    onPatentSelect={handleSubmit}
+                    sectionTitle={settings.featured_section_title}
+                    sectionSubtitle={settings.featured_section_subtitle}
+                  />
+                </section>
+              )}
 
-                {homepageVisible.techVideos !== false && (
-                  <section className="rounded-[2rem] bg-white/85 backdrop-blur-md p-6 md:p-8 border border-white/70" style={{ boxShadow: "0 12px 40px -20px hsl(232 60% 40% / 0.12)" }}>
-                    <TechVideoSection videos={(() => {
-                      try {
-                        const parsed = JSON.parse(settings.tech_videos || "[]");
-                        return Array.isArray(parsed) ? parsed : [];
-                      } catch { return []; }
-                    })()} />
-                  </section>
-                )}
+              {homepageVisible.techVideos !== false && (
+                <section>
+                  <TechVideoSection videos={(() => {
+                    try {
+                      const parsed = JSON.parse(settings.tech_videos || "[]");
+                      return Array.isArray(parsed) ? parsed : [];
+                    } catch { return []; }
+                  })()} />
+                </section>
+              )}
 
-                {homepageVisible.techTransferGuide !== false && (
-                  <section id="tech-transfer" className="rounded-[2rem] p-6 md:p-8 text-white" style={{ background: "linear-gradient(135deg, hsl(232 80% 58%) 0%, hsl(260 70% 55%) 100%)", boxShadow: "0 24px 60px -20px hsl(232 60% 40% / 0.4)" }}>
-                    <TechTransferGuide />
-                  </section>
-                )}
-              </div>
+              {homepageVisible.techTransferGuide !== false && (
+                <section id="tech-transfer">
+                  <TechTransferGuide />
+                </section>
+              )}
             </div>
-          </div>
+          </>
         ) : (
           <div ref={resultRef} data-results-visible="true">
             {isLoading && (<AnalysisProgressStepper currentStep={analysisStep} />)}
