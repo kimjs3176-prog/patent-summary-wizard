@@ -526,7 +526,7 @@ serve(async (req) => {
     // 2) If insufficient, broaden to remaining queries (title-only)
     // 3) If still insufficient, fall back to abstract on the top query
     // This caps worst-case requests well below the previous N×6×2 pattern.
-    const EARLY_EXIT_HITS = 80;
+    const EARLY_EXIT_HITS = 20;
     const MAX_QUERIES = 5;
     const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
     const allPatents: KeywordSearchResult[] = [];
