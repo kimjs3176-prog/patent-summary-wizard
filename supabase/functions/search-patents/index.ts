@@ -553,11 +553,20 @@ serve(async (req) => {
     const isPersonName = (s: string): boolean => {
       const t = s.trim();
       if (!t) return false;
-      // Single Korean name: 2-4 hangul chars
-      if (/^[가-힣]{2,4}$/.test(t)) return true;
-      // Multiple names separated by space/comma: each 2-4 hangul
+      // Restrict to common Korean surnames to avoid misclassifying substance/noun
+      // keywords like "전통주", "발효주", "청국장" as inventor names.
+      const SURNAMES = new Set([
+        "김","이","박","최","정","강","조","윤","장","임","한","오","서","신","권",
+        "황","안","송","전","홍","유","고","문","양","손","배","백","허","남","심",
+        "노","하","곽","성","차","주","우","구","민","진","지","엄","채","원","천",
+        "방","공","현","함","변","염","여","추","도","소","석","선","설","마","길",
+        "연","위","표","명","기","반","라","왕","금","옥","육","인","맹","제","모"
+      ]);
+      const isKoreanName = (p: string) =>
+        /^[가-힣]{2,4}$/.test(p) && SURNAMES.has(p[0]);
+      if (isKoreanName(t)) return true;
       const parts = t.split(/[\s,]+/).filter(Boolean);
-      if (parts.length >= 2 && parts.length <= 5 && parts.every(p => /^[가-힣]{2,4}$/.test(p))) return true;
+      if (parts.length >= 2 && parts.length <= 5 && parts.every(isKoreanName)) return true;
       return false;
     };
     if (isPersonName(rawInput)) {
