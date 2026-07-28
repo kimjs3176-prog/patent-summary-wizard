@@ -18,6 +18,8 @@ interface AiRecommendedPatent {
   snippet?: string;
   thumbnail?: string;
   relevanceGroup: number;
+  matchedKeywords?: string[];
+  relevanceScore?: number;
 }
 
 export function RelatedPatentsSection({ relatedPatents, onPatentClick, patentData }: RelatedPatentsSectionProps) {
@@ -224,6 +226,19 @@ export function RelatedPatentsSection({ relatedPatents, onPatentClick, patentDat
                       <h4 className="font-semibold text-sm text-foreground line-clamp-2 mb-2">{patent.title}</h4>
                       {patent.snippet && (
                         <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{patent.snippet}</p>
+                      )}
+                      {patent.matchedKeywords && patent.matchedKeywords.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {patent.matchedKeywords.map((k, ki) => (
+                            <span
+                              key={ki}
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                              style={{ background: 'hsl(158 64% 40% / 0.08)', color: 'hsl(158 50% 30%)' }}
+                            >
+                              #{k}
+                            </span>
+                          ))}
+                        </div>
                       )}
                       <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
                         {patent.assignee && <span className="truncate max-w-[120px]">{patent.assignee}</span>}
