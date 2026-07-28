@@ -130,23 +130,31 @@ serve(async (req) => {
 
     // Step 1: Use AI to generate search queries for similar patents
     const classInfo = classifications?.length > 0 ? `IPC 분류: ${classifications.join(", ")}` : "";
-    const prompt = `다음 한국 특허와 기술적으로 유사한 특허를 KIPRIS에서 찾기 위한 검색 키워드 3세트를 생성하세요.
+    const prompt = `다음 한국 특허와 기술적으로 유사한 특허를 KIPRIS에서 찾기 위한 정보를 생성하세요.
 
 특허 제목: ${title || "없음"}
-초록: ${(abstract || "").substring(0, 600)}
+초록: ${(abstract || "").substring(0, 800)}
 ${classInfo}
 
 【매우 중요한 규칙】
-1. 반드시 위 제목·초록에 실제로 등장하는 명사·기술용어만 사용하세요. 본문에 없는 단어를 임의로 만들어내지 마세요.
-2. 특허에서 실제로 다루는 "물리적 장치/구성/공정"에 집중하세요. 단어를 다른 의미로 해석하지 마세요.
-   - 예: "탈모기"는 "도계(닭 도축) 공정에서 깃털을 제거하는 기계"를 의미합니다. "두피 탈모/모발"과 무관합니다.
-3. 본 특허와 산업 분야가 전혀 다른 키워드(예: 깃털 제거 장치 특허인데 "추출물", "프리바이오틱스", "조성물" 등)는 절대 사용하지 마세요.
-4. 각 키워드는 2~6자의 한국어 명사·복합명사로 구성하세요. 조사·동사·서술어 금지.
+1. 반드시 위 제목·초록에 실제로 등장하는 명사·기술용어만 사용하세요. 본문에 없는 단어를 만들지 마세요.
+2. 특허가 실제로 다루는 "물리적 장치/구성/공정/성분/작용원리"에 집중하세요.
+   - 예: "탈모기"는 도계(닭) 공정의 깃털 제거 기계입니다. 두피/모발과 무관합니다.
+3. 산업 분야가 전혀 다른 일반어(조성물·추출물·프리바이오틱스 등)는 산업이 실제로 그것이 아닌 이상 사용 금지.
+4. 각 키워드는 2~8자의 한국어 명사·복합명사. 조사·동사·서술어 금지.
 
-JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
-- 첫 번째 세트: 핵심 장치/구성 키워드
-- 두 번째 세트: 핵심 공정/기능 키워드
-- 세 번째 세트: 동일 산업분야의 유사 장치 키워드`;
+JSON만 출력:
+{
+  "queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]],
+  "corePhrases": ["복합명사1","복합명사2","복합명사3"],
+  "negativeTerms": ["오탐유발어1","오탐유발어2"],
+  "techDomain": "산업/기술 분야 한 단어"
+}
+- queries 1세트: 핵심 장치/구성/성분 키워드
+- queries 2세트: 핵심 공정/기능/작용 키워드
+- queries 3세트: 동일 산업분야의 유사 대상 키워드
+- corePhrases: 3~4개, 이 특허를 특정하는 복합명사(예: "깃털제거장치", "발효미강추출물")
+- negativeTerms: 2~4개, 같은 단어이지만 다른 의미로 해석될 수 있어 걸러야 할 반대 도메인어(예: 탈모기→"두피","모발")`;
 
     const recCtrl = new AbortController();
     const recTimer = setTimeout(() => recCtrl.abort(), 30000);
@@ -181,10 +189,14 @@ JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
     const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
 
     let searchQueries: string[][] = [];
+    let corePhrases: string[] = [];
+    let negativeTerms: string[] = [];
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[0]);
         searchQueries = parsed.queries || [];
+        corePhrases = Array.isArray(parsed.corePhrases) ? parsed.corePhrases.filter((s: unknown) => typeof s === "string") : [];
+        negativeTerms = Array.isArray(parsed.negativeTerms) ? parsed.negativeTerms.filter((s: unknown) => typeof s === "string") : [];
       } catch {
         console.error("Failed to parse AI response:", aiContent);
       }
@@ -201,6 +213,7 @@ JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
     searchQueries = searchQueries
       .map((set) => (Array.isArray(set) ? set.filter(validateKw) : []))
       .filter((set) => set.length > 0);
+    corePhrases = corePhrases.filter(validateKw);
 
     // Extract meaningful nouns from the title as a guaranteed-grounded fallback / supplement
     const stopWords = new Set([
@@ -234,8 +247,10 @@ JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
     for (const set of searchQueries)
       for (const k of set)
         if (k && k.length >= 2 && !genericTerms.has(k)) groundingVocab.add(k);
+    for (const p of corePhrases) if (p && p.length >= 3) groundingVocab.add(p);
 
     console.log("AI generated search queries:", JSON.stringify(searchQueries));
+    console.log("Core phrases:", JSON.stringify(corePhrases), "Negative:", JSON.stringify(negativeTerms));
     console.log("Grounding vocab:", JSON.stringify([...groundingVocab]));
 
     // Step 2: Search KIPRIS with generated queries
@@ -418,36 +433,72 @@ JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
     // That fallback returns topically-unrelated patents (e.g. extracts/compositions
     // for a feather-removal apparatus patent) which confuses users.
 
-    // Filter results by topical relevance: result title must share at least one
-    // grounded keyword with the source patent's vocabulary.
-    const filterByRelevance = (list: SimilarPatent[]) => {
-      if (groundingVocab.size === 0) return list;
-      return list.filter((p) => {
-        const t = (p.title || "").toLowerCase();
-        for (const kw of groundingVocab) {
-          if (kw && t.includes(kw.toLowerCase())) return true;
+    // Score results by weighted keyword overlap + phrase match + IPC boost,
+    // and reject titles containing negative-domain terms.
+    const sourceIpcRoots = new Set<string>(
+      (classifications || [])
+        .map((c: string) => String(c).trim().slice(0, 4).toUpperCase())
+        .filter(Boolean),
+    );
+    const scored = allPatents
+      .map((p) => {
+        const titleLower = (p.title || "").toLowerCase();
+        const snippetLower = (p.snippet || "").toLowerCase();
+        const hay = `${titleLower} ${snippetLower}`;
+
+        // Negative term veto
+        for (const n of negativeTerms) {
+          const nl = n.toLowerCase();
+          if (nl.length >= 2 && titleLower.includes(nl)) {
+            return { p, score: -1, matched: [] as string[] };
+          }
         }
-        return false;
-      });
-    };
-    const relevantPatents = filterByRelevance(allPatents);
-    console.log(`Relevance filter: ${allPatents.length} -> ${relevantPatents.length}`);
 
-    // Deduplicate and prioritize by relevance group
-    const seen = new Set<string>();
-    const uniquePatents: SimilarPatent[] = [];
+        let score = 0;
+        const matched: string[] = [];
+        // Weighted vocab overlap: longer term = more distinctive
+        for (const kw of groundingVocab) {
+          const kl = kw.toLowerCase();
+          if (!kl || kl.length < 2) continue;
+          if (titleLower.includes(kl)) {
+            score += kl.length * 2;
+            matched.push(kw);
+          } else if (snippetLower.includes(kl)) {
+            score += kl.length;
+            matched.push(kw);
+          }
+        }
+        // Phrase bonus (compound noun match is highly distinctive)
+        for (const ph of corePhrases) {
+          const pl = ph.toLowerCase();
+          if (pl.length >= 3 && hay.includes(pl)) score += pl.length * 3;
+        }
+        // IPC subclass boost
+        if (sourceIpcRoots.size > 0) {
+          // KIPRIS advanced search doesn't return IPC per item here, so this is a no-op
+          // placeholder unless we later request IPC field. Kept for future extension.
+        }
+        // Relevance group tiebreaker: earlier group slightly better
+        score -= p.relevanceGroup * 0.1;
+        return { p, score, matched: Array.from(new Set(matched)) };
+      })
+      .filter((x) => x.score > 0);
 
-    // Sort by relevance group (lower = more relevant)
-    relevantPatents.sort((a, b) => a.relevanceGroup - b.relevanceGroup);
+    console.log(`Relevance scoring: ${allPatents.length} candidates -> ${scored.length} scored`);
 
-    for (const patent of relevantPatents) {
-      if (!seen.has(patent.patentId)) {
-        seen.add(patent.patentId);
-        uniquePatents.push(patent);
-      }
+    // Dedupe by patentId, keeping highest score
+    const byId = new Map<string, { p: SimilarPatent; score: number; matched: string[] }>();
+    for (const s of scored) {
+      const existing = byId.get(s.p.patentId);
+      if (!existing || s.score > existing.score) byId.set(s.p.patentId, s);
     }
-
-    const topPatents = uniquePatents.slice(0, 12);
+    const ranked = [...byId.values()].sort((a, b) => b.score - a.score);
+    const topPatents = ranked.slice(0, 12).map((r) => ({
+      ...r.p,
+      matchedKeywords: r.matched.slice(0, 4),
+      relevanceScore: Math.round(r.score * 10) / 10,
+    }));
+    const uniquePatents = ranked;
 
     console.log(`Found ${uniquePatents.length} unique similar patents, returning ${topPatents.length}`);
 
@@ -456,6 +507,8 @@ JSON만 출력: {"queries": [["k1","k2"], ["k3","k4"], ["k5","k6"]]}
         success: true,
         patents: topPatents,
         searchQueries: searchQueries.map(q => q.join(" + ")),
+        corePhrases,
+        negativeTerms,
         totalCount: uniquePatents.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
