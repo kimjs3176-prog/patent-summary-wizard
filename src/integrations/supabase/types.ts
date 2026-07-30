@@ -332,6 +332,30 @@ export type Database = {
         }
         Relationships: []
       }
+      satisfaction_surveys: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          patent_number: string | null
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          patent_number?: string | null
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          patent_number?: string | null
+          rating?: number
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           id: string
@@ -366,7 +390,34 @@ export type Database = {
           search_count: number
         }[]
       }
+      get_satisfaction_comments: {
+        Args: { p_limit?: number }
+        Returns: {
+          comment: string
+          created_at: string
+          patent_number: string
+          rating: number
+        }[]
+      }
+      get_satisfaction_stats: {
+        Args: never
+        Returns: {
+          avg_rating: number
+          bucket: string
+          period: string
+          r1: number
+          r2: number
+          r3: number
+          r4: number
+          r5: number
+          responses: number
+        }[]
+      }
       increment_daily_visit: { Args: never; Returns: undefined }
+      submit_satisfaction: {
+        Args: { p_comment?: string; p_patent_number?: string; p_rating: number }
+        Returns: undefined
+      }
       upsert_search_stat: {
         Args: { p_patent_number: string; p_patent_title?: string }
         Returns: undefined
