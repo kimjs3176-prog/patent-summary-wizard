@@ -352,7 +352,6 @@ const Index = () => {
               <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <SummaryQuickNav
                   deps={`${currentPatent}-${summary.length}`}
-                  className="w-[168px] xl:w-[196px]"
                 />
               </div>
               <div className="min-w-0 flex-1">
@@ -380,12 +379,12 @@ const Index = () => {
                 }}
                 featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }}
               />
-              <div className="xl:hidden mt-5 flex justify-center">
+              <div className="lg:hidden mt-5 flex justify-center">
                 <SatisfactionPanel patentNumber={currentPatent} className="w-full max-w-[864px]" />
               </div>
               </div>
               <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <SatisfactionPanel patentNumber={currentPatent} className="w-[208px] xl:w-[240px]" />
+                <SatisfactionPanel patentNumber={currentPatent}  />
               </div>
             </section>
           </div>
