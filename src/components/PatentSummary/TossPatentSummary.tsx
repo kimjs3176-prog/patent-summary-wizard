@@ -681,7 +681,6 @@ export function TossPatentSummary({
           {patentData && (
             <section className="mb-6">
               <SectionTitle kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
-              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3 items-start">
               <SoftCard className="!p-2">
                 <div className="bg-white rounded-[16px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
                   {patentData.applicationNumber && <Row label="출원번호" value={formatPatentNumber(patentData.applicationNumber, 'application')} />}
@@ -697,6 +696,27 @@ export function TossPatentSummary({
                   {patentData.classifications?.length ? (
                     <Row label="IPC 분류" value={patentData.classifications.slice(0, 3).join(", ")} />
                   ) : null}
+                  {/* 관련 키워드 — IPC 우측 여백 활용 */}
+                  {keywords.length > 0 && (
+                    <div className="py-3 border-b border-[#F2F4F6] last:border-0">
+                      <p className="text-[12px] text-[#8B95A1] font-semibold mb-2">관련 키워드</p>
+                      {(() => {
+                        const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
+                          (acc[k.cat] ||= []).push(k.word);
+                          return acc;
+                        }, { function: [], industry: [], material: [], product: [], tech: [], general: [] });
+                        const order: KeywordCategory[] = ["function", "industry", "product", "tech"];
+                        const flat = order.flatMap((c) => (grouped[c] || []).map((w) => ({ c, w })));
+                        return (
+                          <div className="flex flex-wrap gap-1.5">
+                            {flat.map(({ c, w }) => (
+                              <KeywordChip key={`${c}-${w}`} category={c} onClick={() => onKeywordClick?.(w)}>{w}</KeywordChip>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
                 {(patentData.filingDate || patentData.publicationDate || patentData.registrationDate || patentData.registrationNumber) && (
                   <div className="bg-white rounded-[16px] mt-2">
@@ -709,42 +729,6 @@ export function TossPatentSummary({
                   </div>
                 )}
               </SoftCard>
-
-              {/* 관련 키워드 — IPC 우측 여백 활용 */}
-              {keywords.length > 0 && (
-                <SoftCard className="!p-4">
-                  <p className="text-[12px] font-bold text-[#191F28] mb-3">관련 키워드</p>
-                  {(() => {
-                    const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
-                      (acc[k.cat] ||= []).push(k.word);
-                      return acc;
-                    }, { function: [], industry: [], material: [], product: [], tech: [], general: [] });
-                    const order: KeywordCategory[] = ["function", "industry", "product", "tech"];
-                    const usedCats = order.filter((c) => grouped[c]?.length);
-                    return (
-                      <div className="space-y-3">
-                        {usedCats.map((c) => {
-                          const s = CATEGORY_STYLE[c];
-                          return (
-                            <div key={c}>
-                              <div className="flex items-center gap-1.5 mb-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.text }} />
-                                <span className="text-[11px] font-semibold" style={{ color: s.text }}>{s.label}</span>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {grouped[c].map((k) => (
-                                  <KeywordChip key={k} category={c} onClick={() => onKeywordClick?.(k)}>{k}</KeywordChip>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </SoftCard>
-              )}
-              </div>
             </section>
           )}
 
