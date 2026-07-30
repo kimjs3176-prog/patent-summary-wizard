@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
 import { TossPatentSummary } from "@/components/PatentSummary/TossPatentSummary";
+import { SatisfactionPanel } from "@/components/SatisfactionPanel";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
 import { SearchHistory } from "@/components/SearchHistory";
