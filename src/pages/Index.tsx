@@ -348,9 +348,12 @@ const Index = () => {
                 />
               </div>
             </div>
-            <section className="mb-8 flex justify-center items-start gap-5">
-              <div className="hidden xl:block sticky top-20">
-                <SummaryQuickNav deps={`${currentPatent}-${summary.length}`} />
+            <section className="mb-8 flex justify-center items-start gap-4 xl:gap-5">
+              <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <SummaryQuickNav
+                  deps={`${currentPatent}-${summary.length}`}
+                  className="w-[168px] xl:w-[196px]"
+                />
               </div>
               <div className="min-w-0 flex-1">
               <TossPatentSummary
@@ -381,8 +384,8 @@ const Index = () => {
                 <SatisfactionPanel patentNumber={currentPatent} className="w-full max-w-[864px]" />
               </div>
               </div>
-              <div className="hidden xl:block sticky top-20">
-                <SatisfactionPanel patentNumber={currentPatent} />
+              <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <SatisfactionPanel patentNumber={currentPatent} className="w-[208px] xl:w-[240px]" />
               </div>
             </section>
           </div>
