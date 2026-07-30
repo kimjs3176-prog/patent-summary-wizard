@@ -46,7 +46,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-x-clip">
       {/* Ambient background */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full blur-[200px] animate-float" style={{ background: 'radial-gradient(circle, hsl(158 64% 40% / 0.06) 0%, transparent 70%)' }} />
