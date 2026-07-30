@@ -878,7 +878,7 @@ export function TossPatentSummary({
             sections.map((sec, idx) => {
               const { kicker, heading } = sectionMeta(sec.title);
               return (
-                <section key={idx} className="mb-10">
+                <section key={idx} className="mb-8">
                   <SectionTitle kicker={kicker}>{heading}</SectionTitle>
                   <div className="space-y-4">
                     {sec.paragraphs.map((p, i) => {
