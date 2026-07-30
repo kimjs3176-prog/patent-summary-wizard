@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
 import { TossPatentSummary } from "@/components/PatentSummary/TossPatentSummary";
 import { SatisfactionPanel } from "@/components/SatisfactionPanel";
+import { SummaryQuickNav } from "@/components/SummaryQuickNav";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
 import { SearchHistory } from "@/components/SearchHistory";
@@ -348,6 +349,9 @@ const Index = () => {
               </div>
             </div>
             <section className="mb-8 flex justify-center items-start gap-5">
+              <div className="hidden xl:block sticky top-20">
+                <SummaryQuickNav deps={`${currentPatent}-${summary.length}`} />
+              </div>
               <div className="min-w-0 flex-1">
               <TossPatentSummary
                 content={summary}
