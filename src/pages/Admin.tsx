@@ -123,6 +123,17 @@ const Admin = () => {
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
+  const [satisfaction, setSatisfaction] = useState<{ bucket: string; period: string; responses: number; avg_rating: number | null; r1: number; r2: number; r3: number; r4: number; r5: number }[]>([]);
+  const [satComments, setSatComments] = useState<{ rating: number; comment: string; patent_number: string | null; created_at: string }[]>([]);
+
+  const loadSatisfaction = async () => {
+    const [{ data: stats }, { data: comments }] = await Promise.all([
+      supabase.rpc("get_satisfaction_stats"),
+      supabase.rpc("get_satisfaction_comments", { p_limit: 30 }),
+    ]);
+    setSatisfaction((stats as any) || []);
+    setSatComments((comments as any) || []);
+  };
 
   const loadUsageStats = async () => {
     setStatsLoading(true);
@@ -133,6 +144,7 @@ const Admin = () => {
       }
       const vr = await apiCall("visitor-stats");
       if (vr.success) setVisitorStats(vr.visitors);
+      await loadSatisfaction();
     } catch {
       toast.error("통계 로딩 실패");
     }
@@ -1522,6 +1534,104 @@ const Admin = () => {
                         </Card>
                       </div>
                     )}
+
+                    {/* 만족도 조사 통계 */}
+                    {(() => {
+                      const total = satisfaction.find((s) => s.bucket === "total");
+                      const monthly = satisfaction.filter((s) => s.bucket === "monthly").slice(0, 12);
+                      const yearly = satisfaction.filter((s) => s.bucket === "yearly");
+                      return (
+                        <Card className="p-4 space-y-4">
+                          <h3 className="text-xs font-semibold flex items-center gap-1.5">
+                            <Star className="w-3.5 h-3.5 text-amber-500" /> 만족도 조사
+                          </h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="rounded-lg border p-3">
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">총 응답</p>
+                              <p className="text-2xl font-bold">{(total?.responses ?? 0).toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-lg border p-3">
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">평균 점수</p>
+                              <p className="text-2xl font-bold">{total?.avg_rating ? Number(total.avg_rating).toFixed(2) : "-"}</p>
+                            </div>
+                            <div className="rounded-lg border p-3">
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">긍정(4~5점)</p>
+                              <p className="text-2xl font-bold">
+                                {total && total.responses > 0 ? `${Math.round(((total.r4 + total.r5) / total.responses) * 100)}%` : "-"}
+                              </p>
+                            </div>
+                            <div className="rounded-lg border p-3">
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">부정(1~2점)</p>
+                              <p className="text-2xl font-bold">
+                                {total && total.responses > 0 ? `${Math.round(((total.r1 + total.r2) / total.responses) * 100)}%` : "-"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {total && total.responses > 0 && (
+                            <div className="space-y-1.5">
+                              {[5, 4, 3, 2, 1].map((n) => {
+                                const c = (total as any)[`r${n}`] as number;
+                                return (
+                                  <div key={n} className="flex items-center gap-2">
+                                    <span className="text-[11px] w-8 font-mono text-muted-foreground">{n}점</span>
+                                    <div className="flex-1 h-4 bg-secondary/30 rounded overflow-hidden">
+                                      <div className="h-full bg-amber-400 rounded" style={{ width: `${(c / total.responses) * 100}%` }} />
+                                    </div>
+                                    <span className="text-[11px] w-10 text-right font-medium">{c}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            {([{ label: "월별", rows: monthly }, { label: "연도별", rows: yearly }] as const).map((g) => (
+                              <div key={g.label}>
+                                <p className="text-[11px] font-semibold mb-2">{g.label} 만족도</p>
+                                {g.rows.length ? (
+                                  <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                                    {g.rows.map((r) => (
+                                      <div key={r.period} className="flex items-center gap-2">
+                                        <span className="text-[11px] w-16 font-mono text-muted-foreground">{r.period}</span>
+                                        <div className="flex-1 h-4 bg-secondary/30 rounded overflow-hidden">
+                                          <div className="h-full bg-primary/70 rounded" style={{ width: `${((Number(r.avg_rating) || 0) / 5) * 100}%` }} />
+                                        </div>
+                                        <span className="text-[11px] w-20 text-right font-medium">
+                                          {Number(r.avg_rating).toFixed(2)} ({r.responses})
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground py-2">데이터 없음</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          <div>
+                            <p className="text-[11px] font-semibold mb-2">최근 의견</p>
+                            {satComments.length ? (
+                              <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                                {satComments.map((c, i) => (
+                                  <div key={i} className="rounded-lg border p-2.5">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Badge variant="secondary" className="text-[10px]">{c.rating}점</Badge>
+                                      {c.patent_number && <span className="text-[10px] font-mono text-muted-foreground">{c.patent_number}</span>}
+                                      <span className="text-[10px] text-muted-foreground ml-auto">{new Date(c.created_at).toLocaleDateString("ko-KR")}</span>
+                                    </div>
+                                    <p className="text-xs whitespace-pre-wrap">{c.comment}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground py-2">등록된 의견이 없습니다.</p>
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    })()}
 
                     {statsLoading && !usageStats ? (
                       <div className="text-center py-16 text-muted-foreground text-sm">
