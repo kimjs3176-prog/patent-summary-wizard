@@ -838,60 +838,18 @@ export function TossPatentSummary({
             </SoftCard>
           </section>
 
-          {/* 키워드 */}
-          {keywords.length > 0 && (
-            <section className="mb-8">
-              <SectionTitle kicker="핵심 키워드">핵심 기능 · 활용 가능 산업</SectionTitle>
-              <SoftCard className="!p-4">
-                {(() => {
-                  const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
-                    (acc[k.cat] ||= []).push(k.word);
-                    return acc;
-                  }, { function: [], industry: [], material: [], product: [], tech: [], general: [] });
-                  const order: KeywordCategory[] = ["function", "industry", "product", "tech"];
-                  const usedCats = order.filter((c) => grouped[c]?.length);
-                  return (
-                    <div>
-                      {/* 범례 */}
-                      {usedCats.length > 1 && (
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-3 pb-3 border-b border-[#E5E8EB]">
-                          {usedCats.map((c) => {
-                            const s = CATEGORY_STYLE[c];
-                            return (
-                              <div key={c} className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full" style={{ background: s.text }} />
-                                <span className="text-[11.5px] font-semibold" style={{ color: s.text }}>{s.label}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div className="flex flex-wrap gap-2">
-                        {usedCats.flatMap((c) =>
-                          grouped[c].map((k) => (
-                            <KeywordChip key={k} category={c} onClick={() => onKeywordClick?.(k)}>{k}</KeywordChip>
-                          )),
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </SoftCard>
-            </section>
-          )}
-
           {/* 도면 */}
           {drawings.length > 0 && (
-            <section className="mb-10">
+            <section className="mb-8">
               <SectionTitle kicker="특허 도면">한눈에 보는 기술 구성</SectionTitle>
               <SoftCard className="!p-3">
-                <div className={drawings.length === 1 ? "flex justify-center" : "grid grid-cols-2 gap-2"}>
+                <div className={drawings.length === 1 ? "flex justify-center" : "grid grid-cols-2 sm:grid-cols-3 gap-2"}>
                   {drawings.map((url, i) => (
                     <div key={i} className="bg-white rounded-[14px] p-3 flex flex-col items-center">
                       <img
                         src={proxify(url)}
                         alt={`도면 ${i + 1}`}
-                        className="w-full h-auto max-h-[280px] object-contain"
+                        className="w-full h-auto max-h-[200px] object-contain"
                         loading="lazy"
                         decoding="async"
                         onError={(e) => {
