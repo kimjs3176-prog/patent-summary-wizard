@@ -123,6 +123,17 @@ const Admin = () => {
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
+  const [satisfaction, setSatisfaction] = useState<{ bucket: string; period: string; responses: number; avg_rating: number | null; r1: number; r2: number; r3: number; r4: number; r5: number }[]>([]);
+  const [satComments, setSatComments] = useState<{ rating: number; comment: string; patent_number: string | null; created_at: string }[]>([]);
+
+  const loadSatisfaction = async () => {
+    const [{ data: stats }, { data: comments }] = await Promise.all([
+      supabase.rpc("get_satisfaction_stats"),
+      supabase.rpc("get_satisfaction_comments", { p_limit: 30 }),
+    ]);
+    setSatisfaction((stats as any) || []);
+    setSatComments((comments as any) || []);
+  };
 
   const loadUsageStats = async () => {
     setStatsLoading(true);
@@ -133,6 +144,7 @@ const Admin = () => {
       }
       const vr = await apiCall("visitor-stats");
       if (vr.success) setVisitorStats(vr.visitors);
+      await loadSatisfaction();
     } catch {
       toast.error("통계 로딩 실패");
     }
