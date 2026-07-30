@@ -346,7 +346,8 @@ const Index = () => {
                 />
               </div>
             </div>
-            <section className="mb-8">
+            <section className="mb-8 flex justify-center items-start gap-5">
+              <div className="min-w-0 flex-1">
               <TossPatentSummary
                 content={summary}
                 patentNumber={currentPatent}
@@ -371,6 +372,13 @@ const Index = () => {
                 }}
                 featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }}
               />
+              <div className="xl:hidden mt-5 flex justify-center">
+                <SatisfactionPanel patentNumber={currentPatent} className="w-full max-w-[864px]" />
+              </div>
+              </div>
+              <div className="hidden xl:block sticky top-20">
+                <SatisfactionPanel patentNumber={currentPatent} />
+              </div>
             </section>
           </div>
         )}
