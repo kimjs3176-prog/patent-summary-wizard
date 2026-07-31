@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Sparkles, Share2, Loader2, Lightbulb, TrendingUp, Leaf, Rocket, FileText, Mail,
-  QrCode, X, Copy, Check, Heart, ExternalLink, Printer, Link2, RefreshCw,
+  QrCode, X, Copy, Check, Heart, ExternalLink, Printer, Link2, RefreshCw, Download,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -458,6 +458,7 @@ export function TossPatentSummary({
 
   const printRef = useRef<HTMLDivElement>(null);
   const aiBodyRef = useRef<HTMLDivElement>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
 
   const favoritesEnabled = settings.feature_favorites !== "false";
   const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
@@ -566,6 +567,35 @@ export function TossPatentSummary({
   };
 
   const handlePrint = () => window.print();
+
+  // QR 이미지를 PNG 파일로 저장
+  const downloadQr = () => {
+    const svg = qrRef.current?.querySelector("svg");
+    if (!svg) return;
+    const SCALE = 4;
+    const size = 168;
+    const source = new XMLSerializer().serializeToString(svg);
+    const svgUrl = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(source)));
+    const img = new Image();
+    img.onload = () => {
+      const pad = 16 * SCALE;
+      const canvas = document.createElement("canvas");
+      canvas.width = size * SCALE + pad * 2;
+      canvas.height = size * SCALE + pad * 2;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, pad, pad, size * SCALE, size * SCALE);
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = `특허요약_QR_${patentNumber || "share"}.png`;
+      a.click();
+      toast.success("QR 이미지가 저장되었습니다");
+    };
+    img.onerror = () => toast.error("QR 이미지 저장에 실패했습니다");
+    img.src = svgUrl;
+  };
 
   return (
     <div className="text-[#191F28]" style={{ fontFamily: "'Pretendard','Inter',sans-serif" }}>
@@ -1059,12 +1089,19 @@ export function TossPatentSummary({
               <p className="text-[13px] font-semibold text-[#4E5968] mb-3 flex items-center gap-1.5">
                 <QrCode className="w-4 h-4" /> 휴대폰으로 스캔하기
               </p>
-              <div className="bg-white p-3 rounded-[12px]">
+              <div ref={qrRef} className="bg-white p-3 rounded-[12px]">
                 <QRCodeSVG value={shareUrl} size={168} level="M" />
               </div>
               <p className="text-[12px] text-[#8B95A1] mt-3 text-center leading-relaxed">
                 카메라 앱으로 QR을 스캔하면<br />이 요약서가 바로 열려요
               </p>
+              <button
+                onClick={downloadQr}
+                className="mt-3 h-9 px-4 rounded-full bg-white hover:bg-[#E5E8EB] transition-colors flex items-center gap-1.5 text-[13px] font-bold text-[#191F28]"
+              >
+                <Download className="w-4 h-4" />
+                QR 이미지 저장
+              </button>
             </div>
 
             <a
