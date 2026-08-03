@@ -10,6 +10,7 @@ import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
 import type { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { RelatedPatentsCompact } from "./RelatedPatentsCompact";
 import { RegulationAnalysis } from "./RegulationAnalysis";
+import { TechValuation } from "./TechValuation";
 
 import { PdfGenerator } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
@@ -1029,6 +1030,13 @@ export function TossPatentSummary({
           {patentData && !isStreaming && (
             <section id="sec-regulation" data-summary-section data-summary-label="예상 규제" className="mb-10 scroll-mt-24">
               <RegulationAnalysis patentNumber={patentNumber} patentData={patentData} isStreaming={isStreaming} />
+            </section>
+          )}
+
+          {/* 기술가치 간이평가 */}
+          {patentData && !isStreaming && (
+            <section id="sec-valuation" data-summary-section data-summary-label="가치평가" className="mb-10 scroll-mt-24">
+              <TechValuation patentData={patentData} score={score} details={details} />
             </section>
           )}
 
