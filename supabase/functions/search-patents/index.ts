@@ -668,6 +668,12 @@ serve(async (req) => {
 
     const rawNorm = normalize(correctedInput || rawInput);
 
+    // 검색 의도를 좁히지 못하는 일반 특허 상용어 (가중치 축소용)
+    const GENERIC_TERMS = [
+      "제조방법", "제조", "방법", "조성물", "용도", "이용", "장치", "시스템",
+      "물질", "성분", "기술", "개발", "제품", "사용", "포함", "관한",
+    ].map(t => normalize(t));
+
     const countOcc = (hay: string, needle: string): number => {
       if (!needle) return 0;
       let n = 0, i = 0;
@@ -675,18 +681,40 @@ serve(async (req) => {
       return n;
     };
 
+    // ── IDF 가중치: 후보 전체에 흔한 단어는 변별력이 없으므로 감점 ─────────
+    const docsFor = (t: string) =>
+      activePatents.reduce((n, p) => {
+        const hay = normalize(`${p.titleKo || p.title || ""} ${p.snippet || ""}`);
+        return hay.includes(t) ? n + 1 : n;
+      }, 0);
+    const N = Math.max(activePatents.length, 1);
+    const weightOf = new Map<string, number>();
+    for (const t of [...coreTerms, ...synTerms]) {
+      const df = Math.max(docsFor(t), 1);
+      // 흔할수록 0에 수렴, 희소할수록 1에 수렴
+      let w = Math.log(N / df) / Math.log(N + 1);
+      w = Math.max(0.15, Math.min(1, w));
+      if (GENERIC_TERMS.includes(t)) w *= 0.35;
+      if (t.length <= 2) w *= 0.8; // 2글자 단어는 다른 낱말에 우연히 포함되기 쉬움
+      weightOf.set(t, w);
+    }
+
     const scoreOf = (p: KeywordSearchResult): number => {
       const title = normalize(p.titleKo || p.title || "");
       const abs = normalize(p.snippet || "");
       let best = 0;
       let titleHits = 0;
       let absHits = 0;
+      let weighted = 0;
       for (const t of coreTerms) {
+        const w = weightOf.get(t) ?? 0.5;
         if (title.includes(t)) {
           titleHits++;
+          weighted += w;
           best = Math.max(best, 3);
         } else if (abs.includes(t)) {
           absHits++;
+          weighted += w * 0.4;
           best = Math.max(best, 2);
         }
       }
@@ -711,6 +739,14 @@ serve(async (req) => {
       if (coreTerms.length > 0) {
         bonus += ((titleHits + absHits * 0.4) / coreTerms.length) * 0.6;
       }
+      // 변별력 있는(희소한) 핵심어에 걸린 경우 가산
+      if (coreTerms.length > 0) {
+        bonus += Math.min(weighted / coreTerms.length, 1) * 0.5;
+      }
+      // 보조어(동의어)까지 함께 걸리면 주제 정합성이 높음
+      let synHits = 0;
+      for (const t of synTerms) if (title.includes(t) || abs.includes(t)) synHits++;
+      if (synTerms.length > 0) bonus += Math.min(synHits / synTerms.length, 1) * 0.3;
       // 초록 내 반복 언급 = 주제로 다루고 있음 (스치듯 1회 언급과 구분)
       let absFreq = 0;
       for (const t of coreTerms) absFreq += countOcc(abs, t);
@@ -719,7 +755,9 @@ serve(async (req) => {
       if (titleHits > 0 && title.length > 0 && rawNorm) {
         bonus += Math.min(rawNorm.length / title.length, 0.5) * 0.4;
       }
-      return best + Math.min(bonus, 1.9);
+      // 제목/초록이 비어 신뢰할 수 없는 레코드는 소폭 감점
+      if (!title || !abs) bonus -= 0.3;
+      return best + Math.max(-0.3, Math.min(bonus, 1.9));
     };
 
     let relevant = activePatents;
@@ -732,7 +770,18 @@ serve(async (req) => {
       if (scored.length > 0) {
         // If any result matches a core term, discard synonym-only matches.
         const hasCore = scored.some(x => x.s >= 2);
-        relevant = scored.filter(x => (hasCore ? x.s >= 2 : true)).map(x => x.p);
+        let kept = scored.filter(x => (hasCore ? x.s >= 2 : true));
+        // 상위 결과 대비 지나치게 낮은 점수(=약한 매칭)는 신뢰도가 낮아 제외
+        if (kept.length > 0) {
+          const topScore = kept[0].s;
+          if (topScore >= 3) {
+            const floor = Math.max(2, topScore - 1.6);
+            const strong = kept.filter(x => x.s >= floor);
+            // 과도한 축소 방지: 최소 5건은 유지
+            if (strong.length >= Math.min(5, kept.length)) kept = strong;
+          }
+        }
+        relevant = kept.map(x => x.p);
       } else {
         relevant = [];
       }
