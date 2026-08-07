@@ -62,6 +62,9 @@ interface KeywordSearchResult {
   organizationName?: string;
 }
 
+// 거절/소멸/취하/포기 등 권리가 유효하지 않은 상태는 검색결과에서 제외
+const EXCLUDED_STATUS = /(거절|소멸|취하|포기|무효)/;
+
 // 농업 관련 공공기관 출원인 코드 (id가 있는 기관만 포함 - KIPRIS는 출원인 코드 검색이 가장 정확)
 const AGRI_ORGANIZATIONS = [
   { id: "219980050314", name: "농촌진흥청" },
@@ -416,6 +419,10 @@ serve(async (req) => {
         const astrtCont = getField("astrtCont") || "";
         const drawing = getField("bigDrawing") || getField("drawing") || "";
         const inventors = getField("inventorName") || getField("inventor") || "";
+        const registerStatus = getField("registerStatus") || getField("registrationStatus") || "";
+
+        // 거절/소멸 등 무효 상태 특허 제외
+        if (registerStatus && EXCLUDED_STATUS.test(registerStatus)) continue;
 
         let patentId = "";
         let displayNumber = "";
