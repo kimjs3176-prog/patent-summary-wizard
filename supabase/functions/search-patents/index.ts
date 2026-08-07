@@ -640,14 +640,76 @@ serve(async (req) => {
     if (expiredCount > 0) {
       console.log(`Filtered ${expiredCount} expired (>20y) patents`);
     }
-    const topPatents = activePatents.slice(0, 100);
-    console.log(`Total unique patents: ${activePatents.length} (of ${allPatents.length}), returning: ${topPatents.length}`);
+
+    // ── Relevance filter ──────────────────────────────────────────────
+    // Broadened queries (synonyms, abstract fallback, single-term safety nets)
+    // can surface patents that have nothing to do with the user's input
+    // (e.g. "무알콜" matching an abstract that merely mentions "알코올").
+    // Score every hit against the original input and drop the non-matches.
+    const normalize = (s: string) =>
+      (s || "")
+        .toLowerCase()
+        .replace(/[\s·・.,()\[\]{}<>"'`~!?:;/\\|-]/g, "")
+        // spelling variants
+        .replace(/알코올/g, "알콜")
+        // "무알콜" 계열만 동일어 처리 (의학용어 "비알콜성"은 별개 개념이므로 제외)
+        .replace(/논알콜|무알콜성/g, "무알콜");
+
+    const coreTerms = Array.from(
+      new Set(
+        [rawInput, correctedInput || "", ...refined.must]
+          .map(t => normalize(t))
+          .filter(t => t.length >= 2),
+      ),
+    );
+    const synTerms = Array.from(
+      new Set(refined.should.map(t => normalize(t)).filter(t => t.length >= 2 && !coreTerms.includes(t))),
+    );
+
+    const scoreOf = (p: KeywordSearchResult): number => {
+      const title = normalize(p.titleKo || p.title || "");
+      const abs = normalize(p.snippet || "");
+      const hay = `${title} ${abs}`;
+      let best = 0;
+      for (const t of coreTerms) {
+        if (title.includes(t)) best = Math.max(best, 3);
+        else if (hay.includes(t)) best = Math.max(best, 2);
+      }
+      if (best === 0) {
+        for (const t of synTerms) {
+          if (title.includes(t)) best = Math.max(best, 1.5);
+          else if (hay.includes(t)) best = Math.max(best, 1);
+        }
+      }
+      return best;
+    };
+
+    let relevant = activePatents;
+    if (coreTerms.length > 0 || synTerms.length > 0) {
+      const scored = activePatents
+        .map(p => ({ p, s: scoreOf(p) }))
+        // 동의어가 초록에만 스치듯 등장하는 경우(1점)는 오탐이 많아 제외
+        .filter(x => x.s >= 1.5)
+        .sort((a, b) => b.s - a.s);
+      if (scored.length > 0) {
+        // If any result matches a core term, discard synonym-only matches.
+        const hasCore = scored.some(x => x.s >= 2);
+        relevant = scored.filter(x => (hasCore ? x.s >= 2 : true)).map(x => x.p);
+      } else {
+        relevant = [];
+      }
+      const dropped = activePatents.length - relevant.length;
+      if (dropped > 0) console.log(`Relevance filter dropped ${dropped} unrelated patents`);
+    }
+
+    const topPatents = relevant.slice(0, 100);
+    console.log(`Total unique patents: ${relevant.length} (of ${allPatents.length}), returning: ${topPatents.length}`);
 
     const payload = {
       success: true,
       patents: topPatents,
       keyword: keyword.trim(),
-      totalCount: activePatents.length,
+      totalCount: relevant.length,
       expiredExcluded: expiredCount,
       recommendedQueries: uniqueQueries,
       ...(correctedInput && correctedInput !== rawInput ? { correctedInput } : {}),
