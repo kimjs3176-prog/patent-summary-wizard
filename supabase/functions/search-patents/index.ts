@@ -419,6 +419,10 @@ serve(async (req) => {
         const astrtCont = getField("astrtCont") || "";
         const drawing = getField("bigDrawing") || getField("drawing") || "";
         const inventors = getField("inventorName") || getField("inventor") || "";
+        const registerStatus = getField("registerStatus") || getField("registrationStatus") || "";
+
+        // 거절/소멸 등 무효 상태 특허 제외
+        if (registerStatus && EXCLUDED_STATUS.test(registerStatus)) continue;
 
         let patentId = "";
         let displayNumber = "";
