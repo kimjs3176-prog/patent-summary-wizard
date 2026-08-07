@@ -666,22 +666,60 @@ serve(async (req) => {
       new Set(refined.should.map(t => normalize(t)).filter(t => t.length >= 2 && !coreTerms.includes(t))),
     );
 
+    const rawNorm = normalize(correctedInput || rawInput);
+
+    const countOcc = (hay: string, needle: string): number => {
+      if (!needle) return 0;
+      let n = 0, i = 0;
+      while ((i = hay.indexOf(needle, i)) !== -1) { n++; i += needle.length; }
+      return n;
+    };
+
     const scoreOf = (p: KeywordSearchResult): number => {
       const title = normalize(p.titleKo || p.title || "");
       const abs = normalize(p.snippet || "");
-      const hay = `${title} ${abs}`;
       let best = 0;
+      let titleHits = 0;
+      let absHits = 0;
       for (const t of coreTerms) {
-        if (title.includes(t)) best = Math.max(best, 3);
-        else if (hay.includes(t)) best = Math.max(best, 2);
+        if (title.includes(t)) {
+          titleHits++;
+          best = Math.max(best, 3);
+        } else if (abs.includes(t)) {
+          absHits++;
+          best = Math.max(best, 2);
+        }
       }
       if (best === 0) {
         for (const t of synTerms) {
           if (title.includes(t)) best = Math.max(best, 1.5);
-          else if (hay.includes(t)) best = Math.max(best, 1);
+          else if (abs.includes(t)) best = Math.max(best, 1);
         }
+        return best;
       }
-      return best;
+
+      // ── Fine-grained ranking within the same tier ────────────────────
+      let bonus = 0;
+      // 입력어 원문이 제목에 그대로 등장하면 가장 강한 신호
+      if (rawNorm && title.includes(rawNorm)) {
+        bonus += 0.8;
+        // 제목 앞쪽에 등장할수록 주제어일 가능성이 높음
+        const pos = title.indexOf(rawNorm) / Math.max(title.length, 1);
+        bonus += (1 - pos) * 0.3;
+      }
+      // 핵심어 커버리지(여러 핵심어가 동시에 걸릴수록 정합)
+      if (coreTerms.length > 0) {
+        bonus += ((titleHits + absHits * 0.4) / coreTerms.length) * 0.6;
+      }
+      // 초록 내 반복 언급 = 주제로 다루고 있음 (스치듯 1회 언급과 구분)
+      let absFreq = 0;
+      for (const t of coreTerms) absFreq += countOcc(abs, t);
+      bonus += Math.min(absFreq, 5) * 0.06;
+      // 제목이 짧고 핵심어가 차지하는 비중이 클수록 초점이 명확
+      if (titleHits > 0 && title.length > 0 && rawNorm) {
+        bonus += Math.min(rawNorm.length / title.length, 0.5) * 0.4;
+      }
+      return best + Math.min(bonus, 1.9);
     };
 
     let relevant = activePatents;
