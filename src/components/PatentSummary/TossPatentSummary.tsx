@@ -1033,8 +1033,8 @@ export function TossPatentSummary({
             </section>
           )}
 
-          {/* 기술가치 간이평가 */}
-          {patentData && !isStreaming && (
+          {/* 기술가치 간이평가 (임시 숨김) */}
+          {false && patentData && !isStreaming && (
             <section id="sec-valuation" data-summary-section data-summary-label="가치평가" className="mb-10 scroll-mt-24">
               <TechValuation patentData={patentData} score={score} details={details} />
             </section>
