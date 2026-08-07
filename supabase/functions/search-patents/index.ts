@@ -652,7 +652,8 @@ serve(async (req) => {
         .replace(/[\s·・.,()\[\]{}<>"'`~!?:;/\\|-]/g, "")
         // spelling variants
         .replace(/알코올/g, "알콜")
-        .replace(/논알콜|무알콜성|비알콜/g, "무알콜");
+        // "무알콜" 계열만 동일어 처리 (의학용어 "비알콜성"은 별개 개념이므로 제외)
+        .replace(/논알콜|무알콜성/g, "무알콜");
 
     const coreTerms = Array.from(
       new Set(
@@ -687,7 +688,8 @@ serve(async (req) => {
     if (coreTerms.length > 0 || synTerms.length > 0) {
       const scored = activePatents
         .map(p => ({ p, s: scoreOf(p) }))
-        .filter(x => x.s > 0)
+        // 동의어가 초록에만 스치듯 등장하는 경우(1점)는 오탐이 많아 제외
+        .filter(x => x.s >= 1.5)
         .sort((a, b) => b.s - a.s);
       if (scored.length > 0) {
         // If any result matches a core term, discard synonym-only matches.
