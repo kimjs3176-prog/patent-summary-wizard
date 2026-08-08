@@ -617,49 +617,14 @@ serve(async (req) => {
 
     console.log("Patent data fetched successfully:", patentData.title);
 
-    // 관련 특허 검색 (제목 키워드 기반 + 농촌진흥청 출원인 필터)
-    // 농촌진흥청 출원인 코드
-    const RDA_APPLICANT_ID = "219980050314";
-    
+    // 관련 특허 검색 결과 수집 (요청은 상세 조회와 병렬로 이미 진행됨)
     let relatedPatents: RelatedPatent[] = [];
-    
-    if (patentData.title) {
+
+    {
       try {
-        // 제목에서 핵심 키워드 추출 - 더 단순하게 핵심 단어 1-2개만 사용
-        const words = patentData.title
-          .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
-          .split(/\s+/)
-          .filter(w => w.length >= 2 && w.length <= 8)
-          // 조사, 일반적인 단어 제외
-          .filter(w => !['우수한', '이를', '하는', '위한', '관한', '대한', '있는', '방법', '장치', '시스템'].includes(w));
-        
-        // 핵심 단어 1개로만 검색 (더 넓은 결과)
-        const keyword = words.length > 0 ? words[0] : "";
-
-        console.log("Related patents search keyword:", keyword);
-
-        if (keyword) {
-          // 농촌진흥청 특허만 검색 (applicant 파라미터로 필터링)
-          const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-          relatedUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-          relatedUrl.searchParams.set("inventionTitle", keyword);
-          relatedUrl.searchParams.set("applicant", RDA_APPLICANT_ID); // 농촌진흥청 출원인 코드로 필터링
-          relatedUrl.searchParams.set("astrtCont", "");
-          relatedUrl.searchParams.set("pageNo", "1");
-          relatedUrl.searchParams.set("numOfRows", "20");
-          relatedUrl.searchParams.set("sortSpec", "PD");
-          relatedUrl.searchParams.set("descSort", "true");
-          relatedUrl.searchParams.set("patent", "true");
-          relatedUrl.searchParams.set("utility", "true");
-
-          console.log("Related patents search URL (RDA only):", relatedUrl.toString().replace(KIPRIS_API_KEY, "***"));
-
-          const relatedResponse = await fetchWithRetry(relatedUrl.toString());
-          const relatedText = await relatedResponse.text();
-
-          console.log("Related patents API response preview:", relatedText.substring(0, 500));
-
-          if (relatedResponse.ok && !relatedText.includes("<successYN>N</successYN>")) {
+        const relatedText = await relatedTextPromise;
+        {
+          if (relatedText) {
             const itemMatches = [...relatedText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
             
             console.log("Found", itemMatches.length, "related patent candidates from RDA");
