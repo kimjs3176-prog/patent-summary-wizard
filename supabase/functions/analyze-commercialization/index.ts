@@ -709,6 +709,27 @@ JSON형식:
     }
 
     // 점수-근거 정합성 보정: 근거 텍스트가 강한 긍정인데 점수가 낮으면 끌어올림
+    // ▼ V-RAY 간이 기술가치평가 모델 기반 사업성 보정 (결정론적)
+    {
+      const trlForVray = Math.max(1, Math.min(9, Number(scores.trl) || 5));
+      const vray = vrayBusinessIndex({
+        trl: trlForVray,
+        filingDate: data.filingDate,
+        registrationNumber: (data as any).registrationNumber,
+        registrationDate: (data as any).registrationDate,
+        ipcCount: (data.classifications || []).length,
+        abstractLen: abstractLen,
+      });
+      const aiBusiness = Number(scores.businessScore);
+      if (Number.isFinite(aiBusiness)) {
+        const blended = Math.round(aiBusiness * 0.6 + vray.index * 0.4);
+        scores.businessScore = Math.max(55, Math.min(95, blended));
+        console.log(
+          `[V-RAY] business ${aiBusiness} -> ${scores.businessScore} (index=${vray.index}, stage=${vray.stage}, ${JSON.stringify(vray.parts)})`,
+        );
+      }
+    }
+
     const STRONG_TOP = /(매우\s*우수|매우\s*뛰어|독보적|독보|최고|최상|광범위한|매우\s*광범|시장\s*검증\s*완료|즉시\s*상용)/;
     const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요[가\s]*명확|높은\s*확장|상용화\s*용이|즉시\s*적용|구현\s*가능성[이가]?\s*(?:매우\s*)?높|완성도[가이]?\s*(?:매우\s*)?높|차별성[이가]?\s*(?:매우\s*)?높|확장성[이가]?\s*(?:매우\s*)?높|상용화\s*가능성[이가]?\s*(?:매우\s*)?높|기술[적성]?\s*완성도[가이]?\s*(?:매우\s*)?높)/;
     const enforceConsistency = (score: number, reason: string): number => {
