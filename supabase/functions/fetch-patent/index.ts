@@ -454,6 +454,9 @@ serve(async (req) => {
         })(),
       };
 
+      // 관련 특허 조회를 먼저 착수(병렬) — 상세 조회와 동시에 진행
+      if (patentData.title) startRelatedSearch(patentData.title);
+
       // 2차 상세 조회: 청구항(claims) 확보
       // getAdvancedSearch에는 청구항이 포함되지 않는 경우가 많아 별도 상세 API를 호출합니다.
       try {
