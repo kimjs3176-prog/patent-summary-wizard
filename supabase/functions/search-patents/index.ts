@@ -367,7 +367,7 @@ serve(async (req) => {
     // background while stage-1 KIPRIS search fires immediately on the raw input.
     // Previously these two AI calls ran sequentially *before* any network search,
     // adding up to ~15s of dead time to every query.
-    const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[] }> = (async () => {
+    const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[]; should: string[] }> = (async () => {
       if (isNaturalLanguageQuery(rawInput)) {
         isNLQuery = true;
         const extraction = await extractKeywordsWithAI(rawInput);
@@ -386,8 +386,8 @@ serve(async (req) => {
         for (const k of searchKeywords) fb.push(k);
         recommendedQueries = Array.from(new Set(fb));
       }
-      return { queries: recommendedQueries, corrected: refined.corrected, must: refined.must || [] };
-    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined, must: [] as string[] }));
+      return { queries: recommendedQueries, corrected: refined.corrected, must: refined.must || [], should: refined.should || [] };
+    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined, must: [] as string[], should: [] as string[] }));
 
     // 특허 파싱 헬퍼
     const parsePatentsFromXml = (searchText: string, orgName: string): KeywordSearchResult[] => {
@@ -663,13 +663,13 @@ serve(async (req) => {
 
     const coreTerms = Array.from(
       new Set(
-        [rawInput, correctedInput || "", ...refined.must]
+        [rawInput, correctedInput || "", ...plan.must]
           .map(t => normalize(t))
           .filter(t => t.length >= 2),
       ),
     );
     const synTerms = Array.from(
-      new Set(refined.should.map(t => normalize(t)).filter(t => t.length >= 2 && !coreTerms.includes(t))),
+      new Set(plan.should.map(t => normalize(t)).filter(t => t.length >= 2 && !coreTerms.includes(t))),
     );
 
     const rawNorm = normalize(correctedInput || rawInput);
