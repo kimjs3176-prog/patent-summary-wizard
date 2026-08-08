@@ -522,7 +522,6 @@ serve(async (req) => {
     // This caps worst-case requests well below the previous N×6×2 pattern.
     const EARLY_EXIT_HITS = 20;
     const MAX_QUERIES = 5;
-    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
     const allPatents: KeywordSearchResult[] = [];
     const seenIds = new Set<string>();
     const collect = (arr: KeywordSearchResult[]) => {
@@ -534,13 +533,11 @@ serve(async (req) => {
       }
     };
 
-    // Stage 1: top query × all orgs (title)
-    if (queriesToTry.length > 0) {
-      const stage1 = await Promise.all(
-        AGRI_ORGANIZATIONS.map(org => kiprisSearch(queriesToTry[0], org, "title")),
-      );
-      stage1.forEach(collect);
-    }
+    // Stage 1: raw input × all orgs (title) — fired immediately, before the AI plan
+    // resolves, so the KIPRIS round-trip overlaps the model latency.
+    const stage1Promise = rawTrim
+      ? Promise.all(AGRI_ORGANIZATIONS.map(org => kiprisSearch(rawTrim, org, "title")))
+      : Promise.resolve([] as KeywordSearchResult[][]);
 
     // Stage 1b: inventor-name search — if the raw input looks like a Korean personal name
     // (2-4 hangul chars, or space-separated hangul names), also query the `inventors` field.
@@ -571,7 +568,22 @@ serve(async (req) => {
       stageInv.forEach(collect);
     }
 
-    // Stage 2: remaining queries × all orgs (title), batched 4-at-a-time
+    (await stage1Promise).forEach(collect);
+
+    // Resolve the AI query plan (already in flight during stage 1).
+    const plan = await planPromise;
+    const recommendedQueries = plan.queries;
+    const correctedInput = plan.corrected;
+    if (correctedInput && correctedInput !== rawInput) {
+      console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
+    }
+    const uniqueQueries = Array.from(
+      new Set([rawTrim, ...(correctedInput ? [correctedInput] : []), ...recommendedQueries].filter(Boolean)),
+    ).slice(0, 6);
+    console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
+    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
+
+    // Stage 2: remaining queries × all orgs (title), batched 6-at-a-time
     if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 1) {
       const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
       for (const q of queriesToTry.slice(1)) {
@@ -579,8 +591,8 @@ serve(async (req) => {
           tasks.push(() => kiprisSearch(q, org, "title"));
         }
       }
-      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 4) {
-        const batch = await Promise.all(tasks.slice(i, i + 4).map(fn => fn()));
+      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 6) {
+        const batch = await Promise.all(tasks.slice(i, i + 6).map(fn => fn()));
         batch.forEach(collect);
       }
     }
@@ -596,8 +608,8 @@ serve(async (req) => {
           tasks.push(() => kiprisSearch(q, org, "abstract"));
         }
       }
-      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 4) {
-        const batch = await Promise.all(tasks.slice(i, i + 4).map(fn => fn()));
+      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 6) {
+        const batch = await Promise.all(tasks.slice(i, i + 6).map(fn => fn()));
         batch.forEach(collect);
       }
     }
