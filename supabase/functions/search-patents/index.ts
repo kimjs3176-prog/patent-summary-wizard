@@ -806,8 +806,8 @@ serve(async (req) => {
       expiredExcluded: expiredCount,
       recommendedQueries: uniqueQueries,
       ...(correctedInput && correctedInput !== rawInput ? { correctedInput } : {}),
-      mustKeywords: refined.must,
-      shouldKeywords: refined.should,
+      mustKeywords: plan.must,
+      shouldKeywords: plan.should,
       ...(isNLQuery ? {
         isNaturalLanguage: true,
         extractedKeywords: searchKeywords,
