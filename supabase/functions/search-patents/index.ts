@@ -363,33 +363,31 @@ serve(async (req) => {
     let isNLQuery = false;
     let aiIntent = "";
 
-    if (isNaturalLanguageQuery(rawInput)) {
-      isNLQuery = true;
-      console.log("Detected natural language query, extracting keywords with AI...");
-      const extraction = await extractKeywordsWithAI(rawInput);
-      searchKeywords = extraction.keywords;
-      aiIntent = extraction.originalIntent;
-      console.log(`AI keywords: [${searchKeywords.join(", ")}], intent: ${aiIntent}`);
-    } else {
-      // Original keyword processing
-      const words = rawInput.split(/\s+/).filter((w: string) => w.length > 0);
-      searchKeywords = words.length > 0 ? words : [rawInput];
-    }
+    // ▼ Perf: the AI planning (keyword extraction + query refinement) runs in the
+    // background while stage-1 KIPRIS search fires immediately on the raw input.
+    // Previously these two AI calls ran sequentially *before* any network search,
+    // adding up to ~15s of dead time to every query.
+    const planPromise: Promise<{ queries: string[]; corrected?: string }> = (async () => {
+      if (isNaturalLanguageQuery(rawInput)) {
+        isNLQuery = true;
+        const extraction = await extractKeywordsWithAI(rawInput);
+        searchKeywords = extraction.keywords;
+        aiIntent = extraction.originalIntent;
+      } else {
+        const words = rawInput.split(/\s+/).filter((w: string) => w.length > 0);
+        searchKeywords = words.length > 0 ? words : [rawInput];
+      }
 
-    // === AI-driven query recommendation: typo correction + AND/OR + synonyms ===
-    const refined = await recommendQueriesWithAI(rawInput, searchKeywords);
-    let recommendedQueries = refined.queries;
-    const correctedInput = refined.corrected;
-    if (correctedInput && correctedInput !== rawInput) {
-      console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
-    }
-    // If recommender returned nothing useful, fall back to original logic
-    if (!recommendedQueries || recommendedQueries.length === 0) {
-      const fallback: string[] = [];
-      if (searchKeywords.length > 1) fallback.push(searchKeywords.join("*"));
-      for (const k of searchKeywords) fallback.push(k);
-      recommendedQueries = Array.from(new Set(fallback));
-    }
+      const refined = await recommendQueriesWithAI(rawInput, searchKeywords);
+      let recommendedQueries = refined.queries;
+      if (!recommendedQueries || recommendedQueries.length === 0) {
+        const fb: string[] = [];
+        if (searchKeywords.length > 1) fb.push(searchKeywords.join("*"));
+        for (const k of searchKeywords) fb.push(k);
+        recommendedQueries = Array.from(new Set(fb));
+      }
+      return { queries: recommendedQueries, corrected: refined.corrected };
+    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined }));
 
     // 특허 파싱 헬퍼
     const parsePatentsFromXml = (searchText: string, orgName: string): KeywordSearchResult[] => {
