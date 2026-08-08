@@ -367,7 +367,7 @@ serve(async (req) => {
     // background while stage-1 KIPRIS search fires immediately on the raw input.
     // Previously these two AI calls ran sequentially *before* any network search,
     // adding up to ~15s of dead time to every query.
-    const planPromise: Promise<{ queries: string[]; corrected?: string }> = (async () => {
+    const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[] }> = (async () => {
       if (isNaturalLanguageQuery(rawInput)) {
         isNLQuery = true;
         const extraction = await extractKeywordsWithAI(rawInput);
@@ -386,8 +386,8 @@ serve(async (req) => {
         for (const k of searchKeywords) fb.push(k);
         recommendedQueries = Array.from(new Set(fb));
       }
-      return { queries: recommendedQueries, corrected: refined.corrected };
-    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined }));
+      return { queries: recommendedQueries, corrected: refined.corrected, must: refined.must || [] };
+    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined, must: [] as string[] }));
 
     // 특허 파싱 헬퍼
     const parsePatentsFromXml = (searchText: string, orgName: string): KeywordSearchResult[] => {
@@ -475,18 +475,7 @@ serve(async (req) => {
       return patents;
     };
 
-    // Final query set comes from the AI recommender (already deduped, ordered by precision)
-    // Always include the raw input as a safety-net query so single-token searches
-    // (e.g. "새싹보리") aren't accidentally split into an over-restrictive AND query
-    // (e.g. "새싹*보리") that misses titles containing the compound term verbatim.
-    const safetyNet: string[] = [];
     const rawTrim = rawInput.trim();
-    if (rawTrim && !recommendedQueries.includes(rawTrim)) safetyNet.push(rawTrim);
-    if (correctedInput && correctedInput !== rawTrim && !recommendedQueries.includes(correctedInput)) {
-      safetyNet.push(correctedInput);
-    }
-    const uniqueQueries = Array.from(new Set([...safetyNet, ...recommendedQueries])).slice(0, 6);
-    console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
 
     // KIPRIS 단일 요청 (title 또는 abstract 검색)
     const kiprisSearch = async (
