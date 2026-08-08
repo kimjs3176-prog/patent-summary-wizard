@@ -352,6 +352,42 @@ serve(async (req) => {
       return values.filter(v => v.length > 0);
     };
 
+    // ▼ Perf: the related-patents KIPRIS query only needs the title, so it is
+    // launched in parallel with the detail/claims call instead of after it.
+    const RDA_APPLICANT_ID = "219980050314";
+    let relatedTextPromise: Promise<string | null> = Promise.resolve(null);
+    const startRelatedSearch = (title: string) => {
+      const words = title
+        .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length >= 2 && w.length <= 8)
+        .filter(w => !['우수한', '이를', '하는', '위한', '관한', '대한', '있는', '방법', '장치', '시스템'].includes(w));
+      const keyword = words.length > 0 ? words[0] : "";
+      if (!keyword) return;
+      console.log("Related patents search keyword:", keyword);
+      const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+      relatedUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
+      relatedUrl.searchParams.set("inventionTitle", keyword);
+      relatedUrl.searchParams.set("applicant", RDA_APPLICANT_ID);
+      relatedUrl.searchParams.set("astrtCont", "");
+      relatedUrl.searchParams.set("pageNo", "1");
+      relatedUrl.searchParams.set("numOfRows", "20");
+      relatedUrl.searchParams.set("sortSpec", "PD");
+      relatedUrl.searchParams.set("descSort", "true");
+      relatedUrl.searchParams.set("patent", "true");
+      relatedUrl.searchParams.set("utility", "true");
+      relatedTextPromise = (async () => {
+        try {
+          const res = await fetchWithRetry(relatedUrl.toString());
+          const text = await res.text();
+          return res.ok && !text.includes("<successYN>N</successYN>") ? text : null;
+        } catch (e) {
+          console.error("Error fetching related patents:", e);
+          return null;
+        }
+      })();
+    };
+
     if (itemMatch) {
       const itemXml = itemMatch[1];
 
@@ -417,6 +453,9 @@ serve(async (req) => {
           return collected;
         })(),
       };
+
+      // 관련 특허 조회를 먼저 착수(병렬) — 상세 조회와 동시에 진행
+      if (patentData.title) startRelatedSearch(patentData.title);
 
       // 2차 상세 조회: 청구항(claims) 확보
       // getAdvancedSearch에는 청구항이 포함되지 않는 경우가 많아 별도 상세 API를 호출합니다.
@@ -578,49 +617,14 @@ serve(async (req) => {
 
     console.log("Patent data fetched successfully:", patentData.title);
 
-    // 관련 특허 검색 (제목 키워드 기반 + 농촌진흥청 출원인 필터)
-    // 농촌진흥청 출원인 코드
-    const RDA_APPLICANT_ID = "219980050314";
-    
+    // 관련 특허 검색 결과 수집 (요청은 상세 조회와 병렬로 이미 진행됨)
     let relatedPatents: RelatedPatent[] = [];
-    
-    if (patentData.title) {
+
+    {
       try {
-        // 제목에서 핵심 키워드 추출 - 더 단순하게 핵심 단어 1-2개만 사용
-        const words = patentData.title
-          .replace(/[^\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
-          .split(/\s+/)
-          .filter(w => w.length >= 2 && w.length <= 8)
-          // 조사, 일반적인 단어 제외
-          .filter(w => !['우수한', '이를', '하는', '위한', '관한', '대한', '있는', '방법', '장치', '시스템'].includes(w));
-        
-        // 핵심 단어 1개로만 검색 (더 넓은 결과)
-        const keyword = words.length > 0 ? words[0] : "";
-
-        console.log("Related patents search keyword:", keyword);
-
-        if (keyword) {
-          // 농촌진흥청 특허만 검색 (applicant 파라미터로 필터링)
-          const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
-          relatedUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-          relatedUrl.searchParams.set("inventionTitle", keyword);
-          relatedUrl.searchParams.set("applicant", RDA_APPLICANT_ID); // 농촌진흥청 출원인 코드로 필터링
-          relatedUrl.searchParams.set("astrtCont", "");
-          relatedUrl.searchParams.set("pageNo", "1");
-          relatedUrl.searchParams.set("numOfRows", "20");
-          relatedUrl.searchParams.set("sortSpec", "PD");
-          relatedUrl.searchParams.set("descSort", "true");
-          relatedUrl.searchParams.set("patent", "true");
-          relatedUrl.searchParams.set("utility", "true");
-
-          console.log("Related patents search URL (RDA only):", relatedUrl.toString().replace(KIPRIS_API_KEY, "***"));
-
-          const relatedResponse = await fetchWithRetry(relatedUrl.toString());
-          const relatedText = await relatedResponse.text();
-
-          console.log("Related patents API response preview:", relatedText.substring(0, 500));
-
-          if (relatedResponse.ok && !relatedText.includes("<successYN>N</successYN>")) {
+        const relatedText = await relatedTextPromise;
+        {
+          if (relatedText) {
             const itemMatches = [...relatedText.matchAll(/<item>([\s\S]*?)<\/item>/g)];
             
             console.log("Found", itemMatches.length, "related patent candidates from RDA");

@@ -363,33 +363,31 @@ serve(async (req) => {
     let isNLQuery = false;
     let aiIntent = "";
 
-    if (isNaturalLanguageQuery(rawInput)) {
-      isNLQuery = true;
-      console.log("Detected natural language query, extracting keywords with AI...");
-      const extraction = await extractKeywordsWithAI(rawInput);
-      searchKeywords = extraction.keywords;
-      aiIntent = extraction.originalIntent;
-      console.log(`AI keywords: [${searchKeywords.join(", ")}], intent: ${aiIntent}`);
-    } else {
-      // Original keyword processing
-      const words = rawInput.split(/\s+/).filter((w: string) => w.length > 0);
-      searchKeywords = words.length > 0 ? words : [rawInput];
-    }
+    // ▼ Perf: the AI planning (keyword extraction + query refinement) runs in the
+    // background while stage-1 KIPRIS search fires immediately on the raw input.
+    // Previously these two AI calls ran sequentially *before* any network search,
+    // adding up to ~15s of dead time to every query.
+    const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[]; should: string[] }> = (async () => {
+      if (isNaturalLanguageQuery(rawInput)) {
+        isNLQuery = true;
+        const extraction = await extractKeywordsWithAI(rawInput);
+        searchKeywords = extraction.keywords;
+        aiIntent = extraction.originalIntent;
+      } else {
+        const words = rawInput.split(/\s+/).filter((w: string) => w.length > 0);
+        searchKeywords = words.length > 0 ? words : [rawInput];
+      }
 
-    // === AI-driven query recommendation: typo correction + AND/OR + synonyms ===
-    const refined = await recommendQueriesWithAI(rawInput, searchKeywords);
-    let recommendedQueries = refined.queries;
-    const correctedInput = refined.corrected;
-    if (correctedInput && correctedInput !== rawInput) {
-      console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
-    }
-    // If recommender returned nothing useful, fall back to original logic
-    if (!recommendedQueries || recommendedQueries.length === 0) {
-      const fallback: string[] = [];
-      if (searchKeywords.length > 1) fallback.push(searchKeywords.join("*"));
-      for (const k of searchKeywords) fallback.push(k);
-      recommendedQueries = Array.from(new Set(fallback));
-    }
+      const refined = await recommendQueriesWithAI(rawInput, searchKeywords);
+      let recommendedQueries = refined.queries;
+      if (!recommendedQueries || recommendedQueries.length === 0) {
+        const fb: string[] = [];
+        if (searchKeywords.length > 1) fb.push(searchKeywords.join("*"));
+        for (const k of searchKeywords) fb.push(k);
+        recommendedQueries = Array.from(new Set(fb));
+      }
+      return { queries: recommendedQueries, corrected: refined.corrected, must: refined.must || [], should: refined.should || [] };
+    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined, must: [] as string[], should: [] as string[] }));
 
     // 특허 파싱 헬퍼
     const parsePatentsFromXml = (searchText: string, orgName: string): KeywordSearchResult[] => {
@@ -477,18 +475,7 @@ serve(async (req) => {
       return patents;
     };
 
-    // Final query set comes from the AI recommender (already deduped, ordered by precision)
-    // Always include the raw input as a safety-net query so single-token searches
-    // (e.g. "새싹보리") aren't accidentally split into an over-restrictive AND query
-    // (e.g. "새싹*보리") that misses titles containing the compound term verbatim.
-    const safetyNet: string[] = [];
     const rawTrim = rawInput.trim();
-    if (rawTrim && !recommendedQueries.includes(rawTrim)) safetyNet.push(rawTrim);
-    if (correctedInput && correctedInput !== rawTrim && !recommendedQueries.includes(correctedInput)) {
-      safetyNet.push(correctedInput);
-    }
-    const uniqueQueries = Array.from(new Set([...safetyNet, ...recommendedQueries])).slice(0, 6);
-    console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
 
     // KIPRIS 단일 요청 (title 또는 abstract 검색)
     const kiprisSearch = async (
@@ -535,7 +522,6 @@ serve(async (req) => {
     // This caps worst-case requests well below the previous N×6×2 pattern.
     const EARLY_EXIT_HITS = 20;
     const MAX_QUERIES = 5;
-    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
     const allPatents: KeywordSearchResult[] = [];
     const seenIds = new Set<string>();
     const collect = (arr: KeywordSearchResult[]) => {
@@ -547,13 +533,11 @@ serve(async (req) => {
       }
     };
 
-    // Stage 1: top query × all orgs (title)
-    if (queriesToTry.length > 0) {
-      const stage1 = await Promise.all(
-        AGRI_ORGANIZATIONS.map(org => kiprisSearch(queriesToTry[0], org, "title")),
-      );
-      stage1.forEach(collect);
-    }
+    // Stage 1: raw input × all orgs (title) — fired immediately, before the AI plan
+    // resolves, so the KIPRIS round-trip overlaps the model latency.
+    const stage1Promise = rawTrim
+      ? Promise.all(AGRI_ORGANIZATIONS.map(org => kiprisSearch(rawTrim, org, "title")))
+      : Promise.resolve([] as KeywordSearchResult[][]);
 
     // Stage 1b: inventor-name search — if the raw input looks like a Korean personal name
     // (2-4 hangul chars, or space-separated hangul names), also query the `inventors` field.
@@ -584,7 +568,22 @@ serve(async (req) => {
       stageInv.forEach(collect);
     }
 
-    // Stage 2: remaining queries × all orgs (title), batched 4-at-a-time
+    (await stage1Promise).forEach(collect);
+
+    // Resolve the AI query plan (already in flight during stage 1).
+    const plan = await planPromise;
+    const recommendedQueries = plan.queries;
+    const correctedInput = plan.corrected;
+    if (correctedInput && correctedInput !== rawInput) {
+      console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
+    }
+    const uniqueQueries = Array.from(
+      new Set([rawTrim, ...(correctedInput ? [correctedInput] : []), ...recommendedQueries].filter(Boolean)),
+    ).slice(0, 6);
+    console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
+    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
+
+    // Stage 2: remaining queries × all orgs (title), batched 6-at-a-time
     if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 1) {
       const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
       for (const q of queriesToTry.slice(1)) {
@@ -592,8 +591,8 @@ serve(async (req) => {
           tasks.push(() => kiprisSearch(q, org, "title"));
         }
       }
-      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 4) {
-        const batch = await Promise.all(tasks.slice(i, i + 4).map(fn => fn()));
+      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 6) {
+        const batch = await Promise.all(tasks.slice(i, i + 6).map(fn => fn()));
         batch.forEach(collect);
       }
     }
@@ -609,8 +608,8 @@ serve(async (req) => {
           tasks.push(() => kiprisSearch(q, org, "abstract"));
         }
       }
-      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 4) {
-        const batch = await Promise.all(tasks.slice(i, i + 4).map(fn => fn()));
+      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 6) {
+        const batch = await Promise.all(tasks.slice(i, i + 6).map(fn => fn()));
         batch.forEach(collect);
       }
     }
@@ -664,13 +663,13 @@ serve(async (req) => {
 
     const coreTerms = Array.from(
       new Set(
-        [rawInput, correctedInput || "", ...refined.must]
+        [rawInput, correctedInput || "", ...plan.must]
           .map(t => normalize(t))
           .filter(t => t.length >= 2),
       ),
     );
     const synTerms = Array.from(
-      new Set(refined.should.map(t => normalize(t)).filter(t => t.length >= 2 && !coreTerms.includes(t))),
+      new Set(plan.should.map(t => normalize(t)).filter(t => t.length >= 2 && !coreTerms.includes(t))),
     );
 
     const rawNorm = normalize(correctedInput || rawInput);
@@ -807,8 +806,8 @@ serve(async (req) => {
       expiredExcluded: expiredCount,
       recommendedQueries: uniqueQueries,
       ...(correctedInput && correctedInput !== rawInput ? { correctedInput } : {}),
-      mustKeywords: refined.must,
-      shouldKeywords: refined.should,
+      mustKeywords: plan.must,
+      shouldKeywords: plan.should,
       ...(isNLQuery ? {
         isNaturalLanguage: true,
         extractedKeywords: searchKeywords,
