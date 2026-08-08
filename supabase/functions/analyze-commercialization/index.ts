@@ -230,6 +230,66 @@ function getSupabaseClient() {
   return createClient(url, key);
 }
 
+// ===== V-RAY(로열티공제법) 기반 사업성 보정 =====
+// src/lib/valuation.ts 의 간이 기술가치평가 모델과 동일한 인자(성숙도/사업화 소요기간,
+// 권리 유효성, 법적 잔존권리기간, 권리 적용 폭)를 사용해 결정론적 '사업화 실행성 지수'를
+// 산출하고, AI 체크리스트 점수와 가중 결합한다.
+function stageFromTrl(trl: number): { name: string; lead: number; immaturePremium: number } {
+  if (trl <= 2) return { name: "기초연구", lead: 4, immaturePremium: 0.328 };
+  if (trl <= 4) return { name: "실험", lead: 3, immaturePremium: 0.241 };
+  if (trl <= 6) return { name: "시제품", lead: 2, immaturePremium: 0.153 };
+  if (trl <= 8) return { name: "실용화", lead: 1, immaturePremium: 0.066 };
+  return { name: "양산", lead: 0, immaturePremium: 0 };
+}
+
+function vrayBusinessIndex(args: {
+  trl: number;
+  filingDate?: string;
+  registrationNumber?: string;
+  registrationDate?: string;
+  ipcCount: number;
+  abstractLen: number;
+}): { index: number; parts: Record<string, number>; stage: string } {
+  const stage = stageFromTrl(args.trl);
+
+  // 1) 성숙도(사업화 소요기간) — lead 0~4년 → 1.0~0.0
+  const maturity = Math.max(0, Math.min(1, 1 - stage.lead / 4));
+
+  // 2) 권리 유효성 — 등록 확정 여부 + 명세서 충실도 보정
+  const registered = !!(args.registrationNumber && String(args.registrationNumber).length > 4) ||
+    !!args.registrationDate;
+  let validity = registered ? 0.95 : 0.65;
+  if (args.abstractLen >= 300) validity += 0.03;
+  else if (args.abstractLen > 0 && args.abstractLen < 80) validity -= 0.05;
+  validity = Math.max(0.3, Math.min(1, validity));
+
+  // 3) 법적 잔존권리기간 (출원 20년) — 15년 이상 잔존 시 만점
+  let remaining = 20;
+  const ay = args.filingDate ? Number(String(args.filingDate).replace(/\D/g, "").slice(0, 4)) : NaN;
+  if (Number.isFinite(ay) && ay > 1900) {
+    remaining = Math.max(0, 20 - (new Date().getFullYear() - ay));
+  }
+  const lifeRatio = Math.max(0, Math.min(1, remaining / 15));
+
+  // 4) 권리 적용 폭 — IPC 서브클래스 수(다분야 사업화 가능성)
+  const breadth = Math.max(0, Math.min(1, args.ipcCount / 3));
+
+  const composite = maturity * 0.35 + validity * 0.25 + lifeRatio * 0.2 + breadth * 0.2;
+  const index = Math.round(55 + 40 * composite);
+  return {
+    index: Math.max(55, Math.min(95, index)),
+    parts: {
+      maturity: Math.round(maturity * 100) / 100,
+      validity: Math.round(validity * 100) / 100,
+      lifeRatio: Math.round(lifeRatio * 100) / 100,
+      breadth: Math.round(breadth * 100) / 100,
+      remainingYears: remaining,
+      lead: stage.lead,
+    },
+    stage: stage.name,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -447,6 +507,9 @@ IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
  +5 양산 시 단가 경쟁력 또는 초기 투자 규모가 작음
  -5 고가 특수설비·임상시험 등 진입장벽 큰 분야
  -5 후속 R&D가 추가로 크게 필요
+ ※ 아래 4개 축(로열티공제법 기반 기술가치평가 관점)은 시스템이 별도로 정량 보정하므로,
+   근거 문장에서는 이와 모순되지 않게 서술할 것: ①사업화 소요기간(성숙도) ②권리 확정 여부
+   ③법적 잔존권리기간 ④적용 산업의 폭.
 상한 95, 하한 55.
 
 총점 = round(T×0.35 + M×0.35 + B×0.30). 세 항목은 위 체크리스트로 산출된 값을 그대로 사용하며, 임의 보정 금지.
@@ -649,6 +712,27 @@ JSON형식:
     }
 
     // 점수-근거 정합성 보정: 근거 텍스트가 강한 긍정인데 점수가 낮으면 끌어올림
+    // ▼ V-RAY 간이 기술가치평가 모델 기반 사업성 보정 (결정론적)
+    {
+      const trlForVray = Math.max(1, Math.min(9, Number(scores.trl) || 5));
+      const vray = vrayBusinessIndex({
+        trl: trlForVray,
+        filingDate: data.filingDate,
+        registrationNumber: (data as any).registrationNumber,
+        registrationDate: (data as any).registrationDate,
+        ipcCount: (data.classifications || []).length,
+        abstractLen: abstractLen,
+      });
+      const aiBusiness = Number(scores.businessScore);
+      if (Number.isFinite(aiBusiness)) {
+        const blended = Math.round(aiBusiness * 0.6 + vray.index * 0.4);
+        scores.businessScore = Math.max(55, Math.min(95, blended));
+        console.log(
+          `[V-RAY] business ${aiBusiness} -> ${scores.businessScore} (index=${vray.index}, stage=${vray.stage}, ${JSON.stringify(vray.parts)})`,
+        );
+      }
+    }
+
     const STRONG_TOP = /(매우\s*우수|매우\s*뛰어|독보적|독보|최고|최상|광범위한|매우\s*광범|시장\s*검증\s*완료|즉시\s*상용)/;
     const STRONG_POS = /(우수|뛰어|탁월|광범위|높은\s*경쟁력|차별적\s*우위|검증된\s*시장|수요[가\s]*명확|높은\s*확장|상용화\s*용이|즉시\s*적용|구현\s*가능성[이가]?\s*(?:매우\s*)?높|완성도[가이]?\s*(?:매우\s*)?높|차별성[이가]?\s*(?:매우\s*)?높|확장성[이가]?\s*(?:매우\s*)?높|상용화\s*가능성[이가]?\s*(?:매우\s*)?높|기술[적성]?\s*완성도[가이]?\s*(?:매우\s*)?높)/;
     const enforceConsistency = (score: number, reason: string): number => {
