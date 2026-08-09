@@ -1186,8 +1186,13 @@ export function TossPatentSummary({
         </div>
       )}
 
-      {lightbox && (
-        <ImageLightbox src={lightbox.src} caption={lightbox.caption} onClose={() => setLightbox(null)} />
+      {lightboxIndex !== null && figureItems.length > 0 && (
+        <ImageLightbox
+          images={figureItems}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
       )}
     </div>
   );
