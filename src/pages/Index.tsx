@@ -158,93 +158,48 @@ const Index = () => {
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         {!summary && !isLoading ? (
           <>
-            {/* Deep Navy Hero */}
-            <section className="relative -mx-3 sm:-mx-4 md:-mx-6 mb-6 md:mb-9 animate-fade-down rounded-none md:rounded-3xl">
-              {/* Background layer: clipped to rounded corners */}
-              <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-3xl">
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(ellipse 80% 60% at 80% 20%, hsl(158 64% 40% / 0.28), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 80%, hsl(184 70% 45% / 0.18), transparent 60%), linear-gradient(135deg, #0a1628 0%, #0f2540 50%, #0a1a30 100%)",
-                  }}
-                />
-                {/* Irregular accent lines */}
-                <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden">
-                  <div className="hero-line hero-line-h" style={{ top: "18%", animationDelay: "-2s", animationDuration: "9s" }} />
-                  <div className="hero-line hero-line-h" style={{ top: "34%", animationDelay: "-5s", animationDuration: "11s" }} />
-                  <div className="hero-line hero-line-h" style={{ top: "52%", animationDelay: "-1s", animationDuration: "8s" }} />
-                  <div className="hero-line hero-line-h" style={{ top: "71%", animationDelay: "-7s", animationDuration: "13s" }} />
-                  <div className="hero-line hero-line-h" style={{ top: "89%", animationDelay: "-3s", animationDuration: "10s" }} />
-                  <div className="hero-line hero-line-v" style={{ left: "12%", animationDelay: "-4s", animationDuration: "10s" }} />
-                  <div className="hero-line hero-line-v" style={{ left: "31%", animationDelay: "-1s", animationDuration: "9s" }} />
-                  <div className="hero-line hero-line-v" style={{ left: "56%", animationDelay: "-6s", animationDuration: "12s" }} />
-                  <div className="hero-line hero-line-v" style={{ left: "78%", animationDelay: "-2s", animationDuration: "11s" }} />
-                  <div className="hero-line hero-line-v" style={{ left: "93%", animationDelay: "-8s", animationDuration: "14s" }} />
-                </div>
-                {/* Aurora sweeping blobs */}
-                <div
-                  aria-hidden
-                  className="hero-aurora"
-                  style={{
-                    background:
-                      "radial-gradient(40% 40% at 30% 40%, hsl(158 80% 55% / 0.45), transparent 60%), radial-gradient(35% 35% at 70% 60%, hsl(184 85% 55% / 0.35), transparent 60%), radial-gradient(30% 30% at 50% 20%, hsl(142 80% 60% / 0.30), transparent 60%)",
-                  }}
-                />
-                <div
-                  aria-hidden
-                  className="hero-aurora"
-                  style={{
-                    animationDuration: "32s",
-                    animationDirection: "reverse",
-                    animationDelay: "-8s",
-                    background:
-                      "radial-gradient(35% 35% at 20% 70%, hsl(200 90% 60% / 0.28), transparent 60%), radial-gradient(30% 30% at 80% 30%, hsl(158 90% 65% / 0.35), transparent 60%)",
-                  }}
-                />
-                {/* Glow blobs */}
-                <div aria-hidden className="hero-glow-pulse absolute -top-20 -right-10 w-72 h-72 rounded-full blur-3xl" style={{ background: "hsl(158 64% 45% / 0.35)" }} />
-                <div aria-hidden className="hero-glow-pulse absolute bottom-0 left-1/4 w-96 h-40 rounded-full blur-3xl" style={{ background: "hsl(184 70% 50% / 0.18)", animationDelay: "-6s" }} />
-                {/* Vertical scanline */}
-                <div aria-hidden className="hero-scanline" style={{ top: 0 }} />
-                {/* Crosshatch grid — fine mesh with irregular spotlights */}
-                <div aria-hidden className="hero-crosshatch" />
-                <div aria-hidden className="hero-grid-spotlight" style={{ top: "15%", left: "20%", animationDelay: "-3s", animationDuration: "14s" }} />
-                <div aria-hidden className="hero-grid-spotlight" style={{ top: "60%", left: "70%", animationDelay: "-7s", animationDuration: "18s" }} />
-                <div aria-hidden className="hero-grid-spotlight" style={{ top: "40%", left: "45%", animationDelay: "-1s", animationDuration: "12s" }} />
-                {/* Drift particles */}
-                <HeroParticles count={38} />
+            {/* Blueprint Hero — technical drafting surface, monospace metadata */}
+            <section className="blueprint-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-6 md:mb-9 animate-fade-down rounded-none md:rounded-2xl">
+              <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-2xl">
+                <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #0a1727 0%, #0c1d31 100%)" }} />
+                <div aria-hidden className="blueprint-grid absolute inset-0" />
+                <div aria-hidden className="blueprint-sweep" />
+                {/* corner registration marks */}
+                <div aria-hidden className="bp-mark bp-mark-tl" />
+                <div aria-hidden className="bp-mark bp-mark-tr" />
+                <div aria-hidden className="bp-mark bp-mark-bl" />
+                <div aria-hidden className="bp-mark bp-mark-br" />
               </div>
 
-              <div className="relative px-5 sm:px-10 md:px-16 py-10 md:py-16">
-                <div className="relative max-w-3xl mx-auto text-center">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] md:text-[11px] font-bold tracking-[0.18em] uppercase px-3 py-1 rounded-full mb-3 md:mb-4"
-                    style={{ background: "hsl(158 64% 45% / 0.18)", color: "hsl(158 70% 75%)", border: "1px solid hsl(158 64% 45% / 0.35)" }}>
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "hsl(158 70% 65%)" }} />
-                    Agri-Food AI · Live Indexing
-                  </span>
-
-                  <h1 className="text-[32px] sm:text-5xl md:text-[56px] font-black leading-[1.05] tracking-[-0.035em] mb-3 md:mb-4" style={{ color: "#f5f9ff" }}>
-                    농식품분야 특허&nbsp;
-                    <br className="sm:hidden" />
-                    <span
-                      className="inline-block bg-clip-text text-transparent"
-                      style={{ backgroundImage: "linear-gradient(135deg, hsl(158 70% 65%) 0%, hsl(184 80% 70%) 100%)" }}
-                    >
-                      AI 기술분석
+              <div className="relative px-5 sm:px-10 md:px-14 py-9 md:py-14">
+                <div className="relative max-w-3xl mx-auto">
+                  {/* Draft slug line */}
+                  <div className="flex items-center gap-3 mb-5 md:mb-7">
+                    <span className="font-mono text-[10px] md:text-[11px] tracking-[0.22em] uppercase" style={{ color: "hsl(158 55% 62%)" }}>
+                      DOC / AGRI-FOOD PATENT ANALYSIS
                     </span>
-                    &nbsp;서비스
+                    <div className="flex-1 h-px" style={{ background: "hsl(200 40% 70% / 0.18)" }} />
+                    <span className="font-mono text-[10px] md:text-[11px] tracking-[0.16em]" style={{ color: "hsl(205 25% 58%)" }}>
+                      REV. 2026
+                    </span>
+                  </div>
+
+                  <h1 className="text-[30px] sm:text-[44px] md:text-[54px] font-black leading-[1.08] tracking-[-0.04em] mb-3 md:mb-4" style={{ color: "#eef4fb" }}>
+                    농식품분야 특허
+                    <br />
+                    <span className="relative inline-block">
+                      <span style={{ color: "hsl(158 62% 60%)" }}>AI 기술분석</span>
+                      <span aria-hidden className="absolute left-0 -bottom-1 w-full h-px" style={{ background: "hsl(158 62% 60% / 0.5)" }} />
+                    </span>
+                    <span style={{ color: "#eef4fb" }}> 서비스</span>
                   </h1>
 
-                  <p className="text-sm md:text-base mb-5 md:mb-6 leading-relaxed max-w-xl mx-auto" style={{ color: "hsl(210 30% 78%)" }}>
+                  <p className="text-sm md:text-[15px] mb-6 md:mb-8 leading-relaxed max-w-xl" style={{ color: "hsl(205 22% 72%)" }}>
                     {settings.hero_description}
                   </p>
 
-                  <div className="max-w-2xl mx-auto relative">
-                    {/* Emerald glow ring around search */}
-                    <div aria-hidden className="absolute -inset-1.5 rounded-full blur-xl opacity-70"
-                      style={{ background: "linear-gradient(90deg, hsl(158 70% 50% / 0.6), hsl(184 80% 55% / 0.5))" }} />
-                    <div className="relative bg-white rounded-2xl p-1.5" style={{ boxShadow: "0 20px 60px -10px hsl(158 64% 25% / 0.5), 0 0 0 1px hsl(158 64% 60% / 0.3)" }}>
+                  <div className="max-w-2xl">
+                    <div className="relative bg-white rounded-xl p-1.5" style={{ boxShadow: "0 18px 40px -18px hsl(218 60% 4% / 0.8), 0 0 0 1px hsl(200 30% 70% / 0.25)" }}>
                       <PatentInput
                         onSubmit={handleSubmit}
                         isLoading={isLoading}
@@ -256,21 +211,19 @@ const Index = () => {
                     </div>
                   </div>
 
-                  {/* Trust strip */}
-                  <div className="mt-5 md:mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] md:text-xs" style={{ color: "hsl(210 25% 70%)" }}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
-                      농업분야 국가연구기관 보유 특허&nbsp;
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
-                      KIPRIS 실시간 연동
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full" style={{ background: "hsl(158 70% 60%)" }} />
-                      Gemini AI 분석
-                    </span>
-                  </div>
+                  {/* Spec strip — tabulated, monospace */}
+                  <dl className="mt-6 md:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-px rounded-lg overflow-hidden" style={{ background: "hsl(200 40% 70% / 0.14)" }}>
+                    {[
+                      { k: "SOURCE", v: "농업분야 국가연구기관 보유 특허" },
+                      { k: "SYNC", v: "KIPRIS 실시간 연동" },
+                      { k: "ENGINE", v: "Gemini AI 분석" },
+                    ].map((it) => (
+                      <div key={it.k} className="px-3.5 py-3" style={{ background: "hsl(213 45% 11%)" }}>
+                        <dt className="font-mono text-[9.5px] tracking-[0.2em]" style={{ color: "hsl(158 45% 58%)" }}>{it.k}</dt>
+                        <dd className="text-[12px] md:text-[12.5px] mt-1 leading-snug" style={{ color: "hsl(205 25% 78%)" }}>{it.v}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               </div>
             </section>
