@@ -975,3 +975,47 @@ time, .tabular-nums, [data-numeric] {
   background-color: var(--toss-bg-card) !important;
   color: var(--toss-fg-1);
 }
+
+/* ============ Blueprint Hero (A안: Technical Blueprint + Monospace) ============ */
+.blueprint-hero { isolation: isolate; }
+
+.blueprint-grid {
+  background-image:
+    linear-gradient(to right, hsl(195 60% 70% / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(195 60% 70% / 0.07) 1px, transparent 1px),
+    linear-gradient(to right, hsl(195 60% 70% / 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(195 60% 70% / 0.14) 1px, transparent 1px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  mask-image: radial-gradient(ellipse 90% 80% at 30% 30%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 30% 30%, #000 30%, transparent 100%);
+}
+
+.blueprint-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 40%, hsl(158 70% 60% / 0.07) 50%, transparent 60%);
+  background-size: 250% 100%;
+  animation: bp-sweep 14s linear infinite;
+}
+@keyframes bp-sweep {
+  0% { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+
+.bp-mark {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: hsl(158 55% 60% / 0.45);
+  border-style: solid;
+  border-width: 0;
+}
+.bp-mark-tl { top: 12px; left: 12px; border-top-width: 1px; border-left-width: 1px; }
+.bp-mark-tr { top: 12px; right: 12px; border-top-width: 1px; border-right-width: 1px; }
+.bp-mark-bl { bottom: 12px; left: 12px; border-bottom-width: 1px; border-left-width: 1px; }
+.bp-mark-br { bottom: 12px; right: 12px; border-bottom-width: 1px; border-right-width: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .blueprint-sweep { animation: none; }
+}
