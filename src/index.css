@@ -1019,3 +1019,35 @@ time, .tabular-nums, [data-numeric] {
 @media (prefers-reduced-motion: reduce) {
   .blueprint-sweep { animation: none; }
 }
+
+/* ---- Blueprint document surfaces (summary sections) ---- */
+.bp-card {
+  position: relative;
+  border-radius: 6px;
+  background-image:
+    linear-gradient(to right, hsl(var(--foreground) / 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--foreground) / 0.025) 1px, transparent 1px);
+  background-size: 22px 22px, 22px 22px;
+}
+.bp-card::before,
+.bp-card::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid hsl(var(--primary) / 0.35);
+  pointer-events: none;
+}
+.bp-card::before { top: 6px; left: 6px; border-right: 0; border-bottom: 0; }
+.bp-card::after { bottom: 6px; right: 6px; border-left: 0; border-top: 0; }
+
+.bp-label {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+}
+.bp-rule {
+  border-bottom: 1px dashed hsl(var(--border));
+}
