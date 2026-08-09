@@ -19,9 +19,21 @@ interface Props {
 
 export function ImageLightbox({ images, index, onIndexChange, onClose }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   const stateRef = useRef({ zoom, offset });
   stateRef.current = { zoom, offset };
@@ -69,13 +81,34 @@ export function ImageLightbox({ images, index, onIndexChange, onClose }: Props) 
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowLeft") go(-1);
       else if (e.key === "ArrowRight") go(1);
+      else if (e.key === "Tab") {
+        const root = panelRef.current;
+        if (!root) return;
+        const nodes = Array.from(
+          root.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+        ).filter((n) => !n.hasAttribute("disabled") && n.offsetParent !== null);
+        if (nodes.length === 0) return;
+        const first = nodes[0];
+        const last = nodes[nodes.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        if (e.shiftKey && (active === first || !root.contains(active))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (active === last || !root.contains(active))) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
+      restoreFocusRef.current?.focus?.();
     };
   }, [onClose, go]);
 
@@ -89,9 +122,20 @@ export function ImageLightbox({ images, index, onIndexChange, onClose }: Props) 
   if (!current) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col print:hidden">
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lightbox-title"
+      aria-describedby="lightbox-desc"
+      className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col print:hidden"
+    >
+      <p id="lightbox-desc" className="sr-only">
+        도면 확대 뷰어입니다. 마우스 휠 또는 확대·축소 버튼으로 배율을 조절하고, 확대된 상태에서는 드래그로 이동할 수 있습니다.
+        좌우 화살표 키로 도면을 전환하고, ESC 키로 닫습니다.
+      </p>
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <p className="bp-label truncate">
+        <p id="lightbox-title" className="bp-label truncate">
           {current.caption}
           {total > 1 && <span className="ml-2 opacity-70">{index + 1} / {total}</span>}
         </p>
@@ -99,14 +143,16 @@ export function ImageLightbox({ images, index, onIndexChange, onClose }: Props) 
           <button onClick={() => centerZoom(1 / 1.4)} aria-label="축소" className="p-2 rounded-md hover:bg-muted text-muted-foreground">
             <ZoomOut className="w-4 h-4" />
           </button>
-          <span className="text-[11px] font-mono text-muted-foreground w-12 text-center">{Math.round(zoom * 100)}%</span>
+          <span role="status" aria-live="polite" aria-label={`확대 배율 ${Math.round(zoom * 100)}퍼센트`} className="text-[11px] font-mono text-muted-foreground w-12 text-center">
+            {Math.round(zoom * 100)}%
+          </span>
           <button onClick={() => centerZoom(1.4)} aria-label="확대" className="p-2 rounded-md hover:bg-muted text-muted-foreground">
             <ZoomIn className="w-4 h-4" />
           </button>
           <button onClick={reset} aria-label="초기화" className="p-2 rounded-md hover:bg-muted text-muted-foreground">
             <RotateCcw className="w-4 h-4" />
           </button>
-          <button onClick={onClose} aria-label="닫기" className="p-2 rounded-md hover:bg-muted text-foreground">
+          <button ref={closeRef} onClick={onClose} aria-label="닫기" className="p-2 rounded-md hover:bg-muted text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -134,7 +180,11 @@ export function ImageLightbox({ images, index, onIndexChange, onClose }: Props) 
         >
           <div
             className="absolute inset-0 flex items-center justify-center"
-            style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: "0 0" }}
+            style={{
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+              transformOrigin: "0 0",
+              transition: reducedMotion || drag.current ? "none" : "transform 160ms ease-out",
+            }}
           >
             <img src={current.src} alt={current.caption} className="max-w-full max-h-full object-contain" draggable={false} />
           </div>
