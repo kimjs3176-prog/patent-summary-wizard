@@ -1159,6 +1159,10 @@ export function TossPatentSummary({
           </div>
         </div>
       )}
+
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} caption={lightbox.caption} onClose={() => setLightbox(null)} />
+      )}
     </div>
   );
 }
