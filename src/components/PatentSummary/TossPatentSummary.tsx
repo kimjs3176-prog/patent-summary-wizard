@@ -864,7 +864,17 @@ export function TossPatentSummary({
                       <img
                         src={proxify(url)}
                         alt={`도면 ${i + 1}`}
-                        className="w-full h-auto max-h-[200px] object-contain"
+                        role="button"
+                        tabIndex={0}
+                        title="클릭하면 확대됩니다"
+                        onClick={() => setLightbox({ src: proxify(url), caption: i === 0 && patentData?.representativeImage ? "【대표 도면】" : `【도면 ${i + 1}】` })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setLightbox({ src: proxify(url), caption: i === 0 && patentData?.representativeImage ? "【대표 도면】" : `【도면 ${i + 1}】` });
+                          }
+                        }}
+                        className="w-full h-auto max-h-[200px] object-contain cursor-zoom-in transition-transform hover:scale-[1.02]"
                         loading="lazy"
                         decoding="async"
                         onError={(e) => {
