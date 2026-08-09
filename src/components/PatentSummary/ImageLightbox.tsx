@@ -1,17 +1,23 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 
 const MIN = 1;
 const MAX = 6;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
-interface Props {
+export interface LightboxItem {
   src: string;
-  caption?: string;
+  caption: string;
+}
+
+interface Props {
+  images: LightboxItem[];
+  index: number;
+  onIndexChange: (i: number) => void;
   onClose: () => void;
 }
 
-export function ImageLightbox({ src, caption, onClose }: Props) {
+export function ImageLightbox({ images, index, onIndexChange, onClose }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -19,6 +25,23 @@ export function ImageLightbox({ src, caption, onClose }: Props) {
 
   const stateRef = useRef({ zoom, offset });
   stateRef.current = { zoom, offset };
+
+  const current = images[index];
+  const total = images.length;
+
+  const reset = useCallback(() => {
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
+  }, []);
+
+  const go = useCallback(
+    (dir: number) => {
+      if (total < 2) return;
+      onIndexChange((index + dir + total) % total);
+      reset();
+    },
+    [index, total, onIndexChange, reset],
+  );
 
   const zoomAt = useCallback((px: number, py: number, next: number) => {
     const { zoom: z, offset: o } = stateRef.current;
@@ -44,6 +67,8 @@ export function ImageLightbox({ src, caption, onClose }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") go(-1);
+      else if (e.key === "ArrowRight") go(1);
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -52,7 +77,7 @@ export function ImageLightbox({ src, caption, onClose }: Props) {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, [onClose, go]);
 
   const centerZoom = (factor: number) => {
     const el = containerRef.current;
@@ -61,10 +86,15 @@ export function ImageLightbox({ src, caption, onClose }: Props) {
     zoomAt(r.width / 2, r.height / 2, stateRef.current.zoom * factor);
   };
 
+  if (!current) return null;
+
   return (
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col print:hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <p className="bp-label truncate">{caption || "도면"}</p>
+        <p className="bp-label truncate">
+          {current.caption}
+          {total > 1 && <span className="ml-2 opacity-70">{index + 1} / {total}</span>}
+        </p>
         <div className="flex items-center gap-1">
           <button onClick={() => centerZoom(1 / 1.4)} aria-label="축소" className="p-2 rounded-md hover:bg-muted text-muted-foreground">
             <ZoomOut className="w-4 h-4" />
@@ -73,11 +103,7 @@ export function ImageLightbox({ src, caption, onClose }: Props) {
           <button onClick={() => centerZoom(1.4)} aria-label="확대" className="p-2 rounded-md hover:bg-muted text-muted-foreground">
             <ZoomIn className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
-            aria-label="초기화"
-            className="p-2 rounded-md hover:bg-muted text-muted-foreground"
-          >
+          <button onClick={reset} aria-label="초기화" className="p-2 rounded-md hover:bg-muted text-muted-foreground">
             <RotateCcw className="w-4 h-4" />
           </button>
           <button onClick={onClose} aria-label="닫기" className="p-2 rounded-md hover:bg-muted text-foreground">
@@ -86,33 +112,74 @@ export function ImageLightbox({ src, caption, onClose }: Props) {
         </div>
       </div>
 
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-hidden relative select-none"
-        style={{ cursor: zoom > 1 ? (drag.current ? "grabbing" : "grab") : "zoom-in", touchAction: "none" }}
-        onPointerDown={(e) => {
-          if (zoom <= 1) return;
-          (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-          drag.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
-        }}
-        onPointerMove={(e) => {
-          if (!drag.current) return;
-          setOffset({ x: drag.current.ox + (e.clientX - drag.current.x), y: drag.current.oy + (e.clientY - drag.current.y) });
-        }}
-        onPointerUp={() => { drag.current = null; }}
-        onDoubleClick={(e) => {
-          const r = containerRef.current!.getBoundingClientRect();
-          zoomAt(e.clientX - r.left, e.clientY - r.top, zoom > 1 ? 1 : 2.5);
-        }}
-      >
+      <div className="flex-1 relative">
         <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: "0 0" }}
+          ref={containerRef}
+          className="absolute inset-0 overflow-hidden select-none"
+          style={{ cursor: zoom > 1 ? "grab" : "zoom-in", touchAction: "none" }}
+          onPointerDown={(e) => {
+            if (zoom <= 1) return;
+            (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+            drag.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
+          }}
+          onPointerMove={(e) => {
+            if (!drag.current) return;
+            setOffset({ x: drag.current.ox + (e.clientX - drag.current.x), y: drag.current.oy + (e.clientY - drag.current.y) });
+          }}
+          onPointerUp={() => { drag.current = null; }}
+          onDoubleClick={(e) => {
+            const r = containerRef.current!.getBoundingClientRect();
+            zoomAt(e.clientX - r.left, e.clientY - r.top, zoom > 1 ? 1 : 2.5);
+          }}
         >
-          <img src={src} alt={caption || "도면 확대"} className="max-w-full max-h-full object-contain" draggable={false} />
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: "0 0" }}
+          >
+            <img src={current.src} alt={current.caption} className="max-w-full max-h-full object-contain" draggable={false} />
+          </div>
         </div>
+
+        {total > 1 && (
+          <>
+            <button
+              onClick={() => go(-1)}
+              aria-label="이전 도면"
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-card/90 border border-border/60 text-foreground hover:bg-muted"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => go(1)}
+              aria-label="다음 도면"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-card/90 border border-border/60 text-foreground hover:bg-muted"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
       </div>
-      <p className="text-center text-[11px] text-muted-foreground py-2">휠·더블클릭으로 확대 · 드래그로 이동 · ESC 닫기</p>
+
+      {total > 1 && (
+        <div className="flex items-center justify-center gap-2 px-4 py-3 border-t border-border/50 overflow-x-auto">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => { onIndexChange(i); reset(); }}
+              aria-label={img.caption}
+              className={`shrink-0 w-16 h-16 rounded-[4px] border bg-white flex items-center justify-center overflow-hidden transition-colors ${
+                i === index ? "border-primary" : "border-border/60 hover:border-border"
+              }`}
+            >
+              <img src={img.src} alt={img.caption} className="max-w-full max-h-full object-contain" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <p className="text-center text-[11px] text-muted-foreground py-2">
+        휠·더블클릭으로 확대 · 드래그로 이동 · ←/→ 도면 전환 · ESC 닫기
+      </p>
     </div>
   );
 }
