@@ -20,6 +20,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
+import { ImageLightbox } from "./ImageLightbox";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
@@ -528,11 +529,15 @@ export function TossPatentSummary({
   );
 
   const drawings: string[] = useMemo(() => {
+    return (() => {
     const list: string[] = [];
     if (patentData?.representativeImage) list.push(patentData.representativeImage);
     if (patentData?.images) for (const u of patentData.images) if (!list.includes(u)) list.push(u);
     return list.slice(0, 4);
+    })();
   }, [patentData]);
+
+  const [lightbox, setLightbox] = useState<{ src: string; caption: string } | null>(null);
   const proxify = (u: string) =>
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(u)}`;
 
