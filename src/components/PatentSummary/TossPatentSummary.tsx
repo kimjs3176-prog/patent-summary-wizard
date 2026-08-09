@@ -533,11 +533,19 @@ export function TossPatentSummary({
     const list: string[] = [];
     if (patentData?.representativeImage) list.push(patentData.representativeImage);
     if (patentData?.images) for (const u of patentData.images) if (!list.includes(u)) list.push(u);
-    return list.slice(0, 4);
+    return list.slice(0, 8);
     })();
   }, [patentData]);
 
-  const [lightbox, setLightbox] = useState<{ src: string; caption: string } | null>(null);
+  const figureItems = useMemo(
+    () =>
+      drawings.map((url, i) => ({
+        src: proxify(url),
+        caption: i === 0 && patentData?.representativeImage ? "【대표 도면】" : `【도면 ${i + 1}】`,
+      })),
+    [drawings, patentData?.representativeImage],
+  );
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const proxify = (u: string) =>
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(u)}`;
 
