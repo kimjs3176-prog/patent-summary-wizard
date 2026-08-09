@@ -20,6 +20,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
+import { ImageLightbox } from "./ImageLightbox";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
@@ -528,11 +529,15 @@ export function TossPatentSummary({
   );
 
   const drawings: string[] = useMemo(() => {
+    return (() => {
     const list: string[] = [];
     if (patentData?.representativeImage) list.push(patentData.representativeImage);
     if (patentData?.images) for (const u of patentData.images) if (!list.includes(u)) list.push(u);
     return list.slice(0, 4);
+    })();
   }, [patentData]);
+
+  const [lightbox, setLightbox] = useState<{ src: string; caption: string } | null>(null);
   const proxify = (u: string) =>
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(u)}`;
 
@@ -864,7 +869,17 @@ export function TossPatentSummary({
                       <img
                         src={proxify(url)}
                         alt={`도면 ${i + 1}`}
-                        className="w-full h-auto max-h-[200px] object-contain"
+                        role="button"
+                        tabIndex={0}
+                        title="클릭하면 확대됩니다"
+                        onClick={() => setLightbox({ src: proxify(url), caption: i === 0 && patentData?.representativeImage ? "【대표 도면】" : `【도면 ${i + 1}】` })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setLightbox({ src: proxify(url), caption: i === 0 && patentData?.representativeImage ? "【대표 도면】" : `【도면 ${i + 1}】` });
+                          }
+                        }}
+                        className="w-full h-auto max-h-[200px] object-contain cursor-zoom-in transition-transform hover:scale-[1.02]"
                         loading="lazy"
                         decoding="async"
                         onError={(e) => {
@@ -1143,6 +1158,10 @@ export function TossPatentSummary({
             </p>
           </div>
         </div>
+      )}
+
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} caption={lightbox.caption} onClose={() => setLightbox(null)} />
       )}
     </div>
   );
