@@ -52,15 +52,62 @@ npm run dev
 1. [Lovable 프로젝트](https://lovable.dev/projects/5d67c532-7ab7-4cb4-9934-6cf82c86f25d)로 이동합니다.
 2. 우측 상단의 **Share → Publish**를 클릭해 배포를 진행합니다.
 
-## MCP 서버 연결
+## MCP 서버 연결 방법
 
-퍼블리시 후 외부 AI 클라이언트에서 다음 MCP 서버 정보를 사용할 수 있습니다.
+이 서비스는 MCP(Model Context Protocol) 서버를 제공하여 ChatGPT, Claude, Cursor 등 외부 AI 클라이언트에서 특허 검색·요약·분석 도구를 사용할 수 있습니다. 아래 단계를 따라 연결할 수 있습니다.
 
-- **서버명**: AI 기술분석 서비스
-- **슬러그**: `ai-gisulbunseog`
-- **OAuth 발급자**: `https://rrvraugvigylkdpstwsl.supabase.co/auth/v1`
-- **동의 페이지**: `https://atipsum.lovable.app/.lovable/oauth/consent`
-- **MCP 엔드포인트**: `https://rrvraugvigylkdpstwsl.supabase.co/functions/v1/mcp`
+### 1단계. MCP 서버 정보 확인
+
+다음 정보를 확인합니다. 외부 AI 클라이언트에서 서버 등록 시 필요합니다.
+
+| 항목 | 값 |
+|---|---|
+| 서버 이름 | AI 기술분석 서비스 |
+| 슬러그 | `ai-gisulbunseog` |
+| MCP 엔드포인트 | `https://rrvraugvigylkdpstwsl.supabase.co/functions/v1/mcp` |
+| OAuth 발급자 | `https://rrvraugvigylkdpstwsl.supabase.co/auth/v1` |
+| 동의 페이지 | `https://atipsum.lovable.app/.lovable/oauth/consent` |
+
+### 2단계. 외부 AI 클라이언트에서 MCP 서버 추가
+
+AI 클라이언트의 설정 또는 MCP 서버 추가 메뉴를 열고, **OAuth 기반 서버 추가**를 선택합니다.
+
+- **엔드포인트**: `https://rrvraugvigylkdpstwsl.supabase.co/functions/v1/mcp` 를 입력합니다.
+- **OAuth 발급자**: `https://rrvraugvigylkdpstwsl.supabase.co/auth/v1` 를 입력합니다.
+- AI 클라이언트가 자동으로 서버를 조회하고 도구 목록을 불러옵니다.
+
+### 3단계. 서비스 계정으로 로그인 및 동의
+
+1. AI 클라이언트가 브라우저를 열어 인증을 요청하면, 서비스 계정(이메일/비밀번호 또는 Google)으로 로그인합니다.
+2. 로그인 후 `https://atipsum.lovable.app/.lovable/oauth/consent` 화면에서 AI 클라이언트의 연결 요청을 확인합니다.
+3. **연결 승인**을 클릭하면 AI 클라이언트에 안전한 OAuth 토큰이 발급됩니다.
+
+> ⚠️ 동의 화면에서 로그인이 필요한 경우, 로그인 후 반드시 동의 페이지로 다시 돌아와 승인 버튼을 눌러야 합니다. 그래야 AI 클라이언트가 토큰을 정상적으로 수신합니다.
+
+### 4단계. 연결 확인
+
+AI 클라이언트에서 다음과 같은 도구가 추가되었는지 확인합니다.
+
+- `search_patents` — 키워드·발명자·특허번호로 농식품 특허 검색
+- `get_patent` — 특허 상세 정보 조회
+- `summarize_patent` — AI 요약 및 본문 기반 키워드 추출
+- `analyze_commercialization` — 사업화 분석(기술성·시장성·사업성) 점수 조회
+- `analyze_regulations` — 국가법령정보 기반 규제 분석
+- `recommend_patents` — 유사 특허 추천
+
+### 5단계. 사용 예시
+
+AI 클라이언트에게 다음과 같이 요청할 수 있습니다.
+
+```
+농식품 분야에서 '발효' 키워드로 특허를 검색해줘.
+10-2019-0123456 특허의 사업화 분석 점수를 알려줘.
+무알콜 맥주 관련 특허 3개를 추천해줘.
+```
+
+### 연결 해제
+
+외부 AI 클라이언트의 MCP 서버 목록에서 `AI 기술분석 서비스`를 삭제하면 연결이 해제됩니다. 서버 측 토큰은 자동으로 더 이상 사용되지 않습니다.
 
 ## 연락 및 지원
 
