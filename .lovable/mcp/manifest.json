@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://rrvraugvigylkdpstwsl.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "ai-gisulbunseog",
+      "version": "1.0.0",
+      "title": "AI 기술분석 서비스"
+    },
+    "tools": [
+      {
+        "name": "search_patents",
+        "title": "Search agricultural patents",
+        "description": "Search Korean agricultural patents from KIPRIS by keyword, inventor, or patent number. Returns a ranked list with titles, applicants, and relevance scores.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Search keyword, inventor name, or patent number."
+            },
+            "count": {
+              "description": "Maximum number of results (default 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "source": {
+              "description": "Source filter: all (default), rda, or kipris.",
+              "type": "string",
+              "enum": [
+                "all",
+                "rda",
+                "kipris"
+              ]
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "fetch_patent",
+        "title": "Fetch patent details",
+        "description": "Retrieve detailed bibliographic data, claims, abstract, and representative drawing for a Korean patent by its patent number.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "patent_number": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 30,
+              "description": "Korean patent number, e.g. 10-2017-0149000."
+            }
+          },
+          "required": [
+            "patent_number"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "summarize_patent",
+        "title": "Summarize patent in plain language",
+        "description": "Generate an easy-to-read Korean summary of a patent, including core technology, problem solved, key means, quantitative effects, and commercialization fields.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "patent_number": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 30,
+              "description": "Korean patent number, e.g. 10-2017-0149000."
+            }
+          },
+          "required": [
+            "patent_number"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "analyze_commercialization",
+        "title": "Analyze commercialization potential",
+        "description": "Evaluate a patent's technology readiness, marketability, and business viability, returning scores, grade, and strategic recommendations.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "patent_number": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 30,
+              "description": "Korean patent number, e.g. 10-2017-0149000."
+            }
+          },
+          "required": [
+            "patent_number"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "recommend_similar_patents",
+        "title": "Recommend similar patents",
+        "description": "Find semantically similar Korean agricultural patents to a given patent number, with matching reason and keyword overlap.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "patent_number": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 30,
+              "description": "Korean patent number, e.g. 10-2017-0149000."
+            },
+            "count": {
+              "description": "Maximum number of recommendations (default 10).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          "required": [
+            "patent_number"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "analyze_regulations",
+        "title": "Analyze regulations for commercialization",
+        "description": "Identify Korean laws and regulations that may apply when commercializing a technology, based on the patent's technical field.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "patent_number": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 30,
+              "description": "Korean patent number, e.g. 10-2017-0149000."
+            },
+            "tech_field": {
+              "description": "Optional technical field override (e.g. 'functional food', 'agricultural machinery').",
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          "required": [
+            "patent_number"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
