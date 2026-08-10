@@ -537,6 +537,9 @@ export function TossPatentSummary({
     })();
   }, [patentData]);
 
+  const proxify = (u: string) =>
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(u)}`;
+
   const figureItems = useMemo(
     () =>
       drawings.map((url, i) => ({
@@ -546,8 +549,6 @@ export function TossPatentSummary({
     [drawings, patentData?.representativeImage],
   );
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const proxify = (u: string) =>
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(u)}`;
 
   const scoreSummary = score == null ? "분석 중" : score >= 80 ? "높은 편" : score >= 65 ? "보통 수준" : "낮은 편";
 
