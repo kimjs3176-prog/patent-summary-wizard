@@ -244,6 +244,12 @@ const Admin = () => {
     setIsLoading(true);
     const result = await apiCall("list");
     if (result.success) {
+      const params = new URLSearchParams(window.location.search);
+      const next = params.get("next");
+      if (next && next.startsWith("/")) {
+        window.location.href = next;
+        return;
+      }
       setIsAuthenticated(true);
       setPatents(result.patents || []);
       const settingsResult = await apiCall("list-settings");
