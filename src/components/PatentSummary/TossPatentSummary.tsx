@@ -721,7 +721,7 @@ export function TossPatentSummary({
           {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
           {patentData && (
             <section id="sec-basic" data-summary-section data-summary-label="기본 정보" className="mb-6 scroll-mt-24">
-              <SectionTitle kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
+              <SectionTitle index="01" kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
               <SoftCard className="!p-2">
                 <div className="bg-white rounded-[16px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
                   {patentData.applicationNumber && <Row label="출원번호" value={formatPatentNumber(patentData.applicationNumber, 'application')} />}
@@ -775,7 +775,7 @@ export function TossPatentSummary({
 
           {/* 종합점수 + 세부점수 + TRL 통합 카드 */}
           <section id="sec-score" data-summary-section data-summary-label="사업화 점수" className="mb-8 scroll-mt-24">
-            <SectionTitle kicker="AI 평가">사업화 점수 & 기술 성숙도</SectionTitle>
+            <SectionTitle index="02" kicker="AI 평가">사업화 점수 & 기술 성숙도</SectionTitle>
             <SoftCard>
               {/* 종합점수 헤더 */}
               <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E5E8EB]">
@@ -866,7 +866,7 @@ export function TossPatentSummary({
           {/* 도면 */}
           {drawings.length > 0 && (
             <section id="sec-figures" data-summary-section data-summary-label="특허 도면" className="mb-8 scroll-mt-24">
-              <SectionTitle kicker="특허 도면">한눈에 보는 기술 구성</SectionTitle>
+              <SectionTitle index="03" kicker="특허 도면">한눈에 보는 기술 구성</SectionTitle>
               <SoftCard className="!p-3">
                 {/* 대표 도면 */}
                 <button
@@ -932,7 +932,7 @@ export function TossPatentSummary({
               const { kicker, heading } = sectionMeta(sec.title);
               return (
                 <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="mb-8 scroll-mt-24">
-                  <SectionTitle kicker={kicker}>{heading}</SectionTitle>
+                  <SectionTitle index={String(si + 4).padStart(2, "0")} kicker={kicker}>{heading}</SectionTitle>
                   <div className="space-y-4">
                     {sec.paragraphs.map((p, i) => {
                       // 1) [^N] 인라인 마커를 먼저 분리하여 superscript 노드로 변환
@@ -1057,7 +1057,7 @@ export function TossPatentSummary({
           {/* 관련 특허 — 기능·특징이 유사한 특허 */}
           {patentData && (
             <section id="sec-related" data-summary-section data-summary-label="관련 특허" className="mb-10 scroll-mt-24">
-              <SectionTitle kicker="관련 특허"><span className="inline-flex items-center gap-2"><Link2 className="w-5 h-5" style={{ color: ACCENT_HEX }} />기능·특징이 유사한 특허</span></SectionTitle>
+              <SectionTitle index="99" kicker="관련 특허"><span className="inline-flex items-center gap-2"><Link2 className="w-5 h-5" style={{ color: ACCENT_HEX }} />기능·특징이 유사한 특허</span></SectionTitle>
               <SoftCard className="!p-3">
                 <RelatedPatentsCompact patentData={patentData} onPatentClick={onRelatedPatentClick} />
               </SoftCard>
