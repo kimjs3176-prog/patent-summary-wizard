@@ -867,6 +867,10 @@ JSON형식:
     // Save to cache
     try {
       const supabase = getSupabaseClient();
+      // 하이픈 포함 구형 키가 남아 있으면 제거하여 중복 캐시 방지
+      if (trimmedPatent !== digitsKey) {
+        await supabase.from("patent_score_cache").delete().eq("patent_number", trimmedPatent);
+      }
       await supabase.from("patent_score_cache").upsert({
         patent_number: digitsKey,
         total_score: scores.totalScore,
