@@ -732,7 +732,7 @@ export function TossPatentSummary({
             <section id="sec-basic" data-summary-section data-summary-label="기본 정보" className="mb-6 scroll-mt-24">
               <SectionTitle index="01" kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
               <SoftCard className="!p-2">
-                <div className="bg-white rounded-[16px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+                <div className="rounded-[4px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
                   {patentData.applicationNumber && <Row label="출원번호" value={formatPatentNumber(patentData.applicationNumber, 'application')} />}
                   {patentData.filingDate && <Row label="출원일자" value={patentData.filingDate} />}
                   {patentData.registrationNumber && <Row label="등록번호" value={formatPatentNumber(patentData.registrationNumber, 'registration')} />}
@@ -769,7 +769,7 @@ export function TossPatentSummary({
                   )}
                 </div>
                 {(patentData.filingDate || patentData.publicationDate || patentData.registrationDate || patentData.registrationNumber) && (
-                  <div className="bg-white rounded-[16px] mt-2">
+                  <div className="mt-2 border-t border-dashed border-[#E5E8EB]">
                     <PatentTimeline
                       filingDate={patentData.filingDate}
                       publicationDate={patentData.publicationDate}
