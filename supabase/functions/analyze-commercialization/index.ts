@@ -320,13 +320,25 @@ serve(async (req) => {
       );
     }
 
+    // 하이픈 유무와 무관하게 동일 특허는 동일 캐시 키를 쓰도록 정규화
+    const digitsKey = trimmedPatent.replace(/[^0-9]/g, "");
+    // 이전 분석에서 확정된 점수(있으면 재생성 시에도 그대로 고정)
+    let lockedScores: {
+      totalScore: number;
+      technologyScore: number;
+      marketScore: number;
+      businessScore: number;
+      trl: number;
+    } | null = null;
+
     // Check cache first
     try {
       const supabase = getSupabaseClient();
       const { data: cached } = await supabase
         .from("patent_score_cache")
         .select("*")
-        .eq("patent_number", trimmedPatent)
+        .or(`patent_number.eq.${trimmedPatent},patent_number.eq.${digitsKey}`)
+        .limit(1)
         .maybeSingle();
 
       if (cached) {
@@ -337,7 +349,14 @@ serve(async (req) => {
         const cachedAnalysis = stripScoreMentions(cached.analysis || "");
         if (isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
           console.log(`[CACHE STALE] score too short for ${trimmedPatent} — regenerating`);
-          await supabase.from("patent_score_cache").delete().eq("patent_number", trimmedPatent);
+          // 설명문만 재생성하고 점수/TRL은 기존 값으로 고정 (동일 특허 점수 변동 방지)
+          lockedScores = {
+            totalScore: cached.total_score,
+            technologyScore: cached.technology_score,
+            marketScore: cached.market_score,
+            businessScore: cached.business_score,
+            trl: cached.trl ?? 5,
+          };
         } else {
         return new Response(
           JSON.stringify({
