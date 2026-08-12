@@ -706,7 +706,7 @@ export function TossPatentSummary({
         </div>
       )}
 
-      <div ref={aiBodyRef} data-toss-summary data-toss-surface className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden max-w-[864px] mx-auto">
+      <div ref={aiBodyRef} data-toss-summary data-toss-surface className="bp-doc border border-[#DDE2E6] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden max-w-[864px] mx-auto">
         <div className="px-5 sm:px-7 pb-12">
           {/* HERO */}
           <section className="pt-9 pb-5">
@@ -932,7 +932,7 @@ export function TossPatentSummary({
               const { kicker, heading } = sectionMeta(sec.title);
               return (
                 <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="mb-8 scroll-mt-24">
-                  <SectionTitle index={String(si + 4).padStart(2, "0")} kicker={kicker}>{heading}</SectionTitle>
+                  <SectionTitle index={String(idx + 4).padStart(2, "0")} kicker={kicker}>{heading}</SectionTitle>
                   <div className="space-y-4">
                     {sec.paragraphs.map((p, i) => {
                       // 1) [^N] 인라인 마커를 먼저 분리하여 superscript 노드로 변환
