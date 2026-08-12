@@ -66,16 +66,11 @@ export function RegulationAnalysis({ patentNumber, patentData, isStreaming }: Pr
       style={{ animationDelay: "0.08s", boxShadow: "0 1px 3px hsl(var(--foreground) / 0.03)" }}
     >
       <div className="h-0.5" style={{ background: "linear-gradient(90deg, hsl(var(--primary) / 0.5), hsl(var(--primary) / 0.15), transparent)" }} />
-      <div className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 flex items-center gap-2.5 border-b border-border/20">
-        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center" style={{ background: "hsl(var(--primary) / 0.06)", color: "hsl(var(--primary))" }}>
-          <Scale className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-[14px] sm:text-[15px] text-foreground tracking-[-0.01em] leading-tight">사업화 예상 규제</h3>
-          <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium tracking-tight">
-            국가법령정보 기반 관련 법령 도출
-          </p>
-        </div>
+      <div className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 flex items-center gap-2 border-b border-border/20">
+        <Scale className="w-4 h-4 shrink-0" style={{ color: "hsl(var(--primary))" }} />
+        <p className="text-[10.5px] sm:text-[11px] text-muted-foreground font-medium tracking-tight">
+          국가법령정보 기반 관련 법령 도출
+        </p>
       </div>
 
       <div className="px-4 py-4 sm:px-5 sm:py-5 md:px-6 md:py-6">
