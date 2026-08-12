@@ -855,11 +855,20 @@ JSON형식:
     scores.businessReason = stripScoreMentions(scores.businessReason);
     scores.analysis = stripScoreMentions(scores.analysis);
 
+    // 기존 캐시가 있던 특허는 점수/TRL을 그대로 유지 (설명문만 갱신)
+    if (lockedScores) {
+      scores.totalScore = lockedScores.totalScore;
+      scores.technologyScore = lockedScores.technologyScore;
+      scores.marketScore = lockedScores.marketScore;
+      scores.businessScore = lockedScores.businessScore;
+      scores.trl = lockedScores.trl;
+    }
+
     // Save to cache
     try {
       const supabase = getSupabaseClient();
       await supabase.from("patent_score_cache").upsert({
-        patent_number: trimmedPatent,
+        patent_number: digitsKey,
         total_score: scores.totalScore,
         technology_score: scores.technologyScore,
         market_score: scores.marketScore,
