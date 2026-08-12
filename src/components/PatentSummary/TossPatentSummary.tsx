@@ -799,7 +799,7 @@ export function TossPatentSummary({
 
               {/* 세부 점수 — 실제 요약서 화면에 반영되는 가로 하위 카드 */}
               {details && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 py-5 border-b border-[#E5E8EB]">
+                <div className="flex flex-wrap gap-4 sm:gap-5 py-5 border-b border-[#E5E8EB] [&>*]:flex-1 [&>*]:basis-[280px]">
                   <ScoreRow label="기술성" value={details.technologyScore} color={ACCENT_HEX} reason={details.technologyReason} />
                   <ScoreRow label="시장성" value={details.marketScore} color="#3B82F6" reason={details.marketReason} />
                   <ScoreRow label="사업성" value={details.businessScore} color="#F59E0B" reason={details.businessReason} />
