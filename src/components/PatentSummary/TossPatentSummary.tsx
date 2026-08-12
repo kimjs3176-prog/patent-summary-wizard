@@ -707,13 +707,22 @@ export function TossPatentSummary({
       )}
 
       <div ref={aiBodyRef} data-toss-summary data-toss-surface className="bp-doc border border-[#DDE2E6] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden max-w-[864px] mx-auto">
+        <div className="bp-doc-head">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#8B95A1]">
+            AI TECH ANALYSIS REPORT
+          </span>
+          <span className="font-mono text-[10px] tabular-nums tracking-[0.12em] text-[#8B95A1]">
+            DOC · {patentNumber}
+          </span>
+        </div>
         <div className="px-5 sm:px-7 pb-12">
           {/* HERO */}
-          <section className="pt-9 pb-5">
+          <section className="pt-8 pb-5 relative">
+            <div className="mb-3 h-px bg-[repeating-linear-gradient(90deg,#D1D6DB_0_5px,transparent_5px_10px)]" />
             <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.3] tracking-[-0.02em] mb-2 text-[#191F28]">
               {title}
             </h1>
-            <p className="text-[14px] text-[#8B95A1] font-medium mb-6 tabular-nums">
+            <p className="font-mono text-[12.5px] text-[#8B95A1] font-medium mb-6 tabular-nums tracking-[0.04em]">
               {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {formatPatentNumber(patentNumber, patentData?.searchType === 'application' ? 'application' : 'registration')}
             </p>
           </section>
