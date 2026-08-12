@@ -1046,7 +1046,7 @@ export function TossPatentSummary({
                   <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
                     <Sparkles className="w-4 h-4" style={{ color: ACCENT_HEX }} />
                   </div>
-                  <p className="text-[13px] font-bold" style={{ color: ACCENT_HEX }}>AI 종합 분석</p>
+                  <p className="text-[13px] font-bold" style={{ color: ACCENT_HEX }}>종합 의견</p>
                 </div>
                 <p className="text-[15px] leading-[1.75] text-[#191F28] font-medium">
                   {renderBold(details.analysis)}
