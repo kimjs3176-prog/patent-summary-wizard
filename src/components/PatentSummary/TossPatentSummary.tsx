@@ -1040,6 +1040,7 @@ export function TossPatentSummary({
           {/* AI 종합 의견 */}
           {details?.analysis && (
             <section id="sec-analysis" data-summary-section data-summary-label="AI 종합 분석" className="mb-10 scroll-mt-24">
+              <SectionTitle index="A1" kicker="AI 종합">AI 종합 분석 의견</SectionTitle>
               <div className="rounded-[20px] p-6" style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, hsl(var(--primary) / 0.03) 100%)" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
@@ -1057,7 +1058,7 @@ export function TossPatentSummary({
           {/* 관련 특허 — 기능·특징이 유사한 특허 */}
           {patentData && (
             <section id="sec-related" data-summary-section data-summary-label="관련 특허" className="mb-10 scroll-mt-24">
-              <SectionTitle index="A1" kicker="관련 특허"><span className="inline-flex items-center gap-2"><Link2 className="w-5 h-5" style={{ color: ACCENT_HEX }} />기능·특징이 유사한 특허</span></SectionTitle>
+              <SectionTitle index="A2" kicker="관련 특허"><span className="inline-flex items-center gap-2"><Link2 className="w-5 h-5" style={{ color: ACCENT_HEX }} />기능·특징이 유사한 특허</span></SectionTitle>
               <SoftCard className="!p-3">
                 <RelatedPatentsCompact patentData={patentData} onPatentClick={onRelatedPatentClick} />
               </SoftCard>
@@ -1067,6 +1068,7 @@ export function TossPatentSummary({
           {/* 사업화 예상 규제 — 요약서 하단으로 이동 */}
           {patentData && !isStreaming && (
             <section id="sec-regulation" data-summary-section data-summary-label="예상 규제" className="mb-10 scroll-mt-24">
+              <SectionTitle index="A3" kicker="규제 분석">사업화 예상 규제</SectionTitle>
               <RegulationAnalysis patentNumber={patentNumber} patentData={patentData} isStreaming={isStreaming} />
             </section>
           )}
