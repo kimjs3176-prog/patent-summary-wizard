@@ -229,64 +229,55 @@ function PatentTimeline({
 
 
 function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
-  // 색상별 은은한 배경(tint) — 세 하위 점수를 시각적으로 분리해 가독성을 높인다
-  const tint = `${color}0D`; // ~5% opacity
+  // 가로 배치: 좌측 라운드 스퀘어 점수 타일 + 우측 라벨/근거
   const border = `${color}26`; // ~15% opacity
   return (
     <div
-      className="min-w-0 rounded-[14px] p-4 sm:p-[18px] border"
-      style={{ background: tint, borderColor: border }}
+      className="min-w-0 flex items-start gap-3.5 rounded-[14px] p-4 sm:p-[18px] border bg-white"
+      style={{ borderColor: border }}
     >
-      <div className="flex items-baseline justify-between gap-2 mb-2.5">
-        <p className="text-[14px] sm:text-[15px] font-bold text-[#191F28] leading-none">{label}</p>
-        <div className="flex items-baseline gap-0.5 shrink-0">
-          <span className="text-[26px] sm:text-[30px] font-black tabular-nums leading-none" style={{ color }}>
-            {value}
-          </span>
-          <span className="text-[11px] text-[#8B95A1] font-semibold">/100</span>
+      <div
+        className="shrink-0 w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-[14px] flex items-center justify-center"
+        style={{ background: color }}
+      >
+        <span className="text-[24px] sm:text-[27px] font-bold tabular-nums leading-none text-white">
+          {value}
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-1.5 mb-1.5">
+          <p className="text-[14px] sm:text-[15px] font-bold text-[#191F28] leading-none">{label}</p>
+          <span className="text-[11px] text-[#8B95A1] font-semibold">/ 100</span>
         </div>
+        <div className="h-[6px] rounded-full bg-[#F1F3F5] overflow-hidden mb-2.5">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${value}%`, background: color }}
+          />
+        </div>
+        {reason && (
+          <p className="text-[12.5px] sm:text-[13px] leading-[1.75] text-[#4E5968]">
+            {renderBold(reason)}
+          </p>
+        )}
       </div>
-      <div className="h-[6px] rounded-full bg-white/70 overflow-hidden mb-3">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${value}%`, background: color }}
-        />
-      </div>
-      {reason && (
-        <p className="text-[12.5px] sm:text-[13px] leading-[1.75] text-[#4E5968]">
-          {renderBold(reason)}
-        </p>
-      )}
     </div>
   );
 }
 
-// 컴팩트 원형 게이지 — 종합 사업화 점수용
+// 종합 사업화 점수 — 라운드 스퀘어 타일
 function MiniGauge({ score }: { score: number }) {
-  const r = 32;
-  const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(100, score));
-  const offset = c - (pct / 100) * c;
   const color = pct >= 80 ? "#10B981" : pct >= 65 ? "#3B82F6" : pct >= 50 ? "#F59E0B" : "#EF4444";
   return (
-    <div className="relative w-[78px] h-[78px] sm:w-[88px] sm:h-[88px] shrink-0">
-      <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
-        <circle cx="40" cy="40" r={r} fill="none" stroke="#E5E8EB" strokeWidth="7" />
-        <circle
-          cx="40" cy="40" r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 900ms ease-out" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-        <span className="text-[22px] sm:text-[24px] font-bold tabular-nums" style={{ color }}>{score}</span>
-        <span className="text-[9px] text-[#8B95A1] font-semibold mt-0.5">/ 100</span>
+    <div className="flex items-center gap-3 shrink-0">
+      <div
+        className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-[16px] flex items-center justify-center"
+        style={{ background: color }}
+      >
+        <span className="text-[30px] sm:text-[34px] font-bold tabular-nums leading-none text-white">{score}</span>
       </div>
+      <span className="text-[11px] text-[#8B95A1] font-semibold">/ 100</span>
     </div>
   );
 }
