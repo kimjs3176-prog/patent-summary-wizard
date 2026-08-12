@@ -320,13 +320,25 @@ serve(async (req) => {
       );
     }
 
+    // 하이픈 유무와 무관하게 동일 특허는 동일 캐시 키를 쓰도록 정규화
+    const digitsKey = trimmedPatent.replace(/[^0-9]/g, "");
+    // 이전 분석에서 확정된 점수(있으면 재생성 시에도 그대로 고정)
+    let lockedScores: {
+      totalScore: number;
+      technologyScore: number;
+      marketScore: number;
+      businessScore: number;
+      trl: number;
+    } | null = null;
+
     // Check cache first
     try {
       const supabase = getSupabaseClient();
       const { data: cached } = await supabase
         .from("patent_score_cache")
         .select("*")
-        .eq("patent_number", trimmedPatent)
+        .or(`patent_number.eq.${trimmedPatent},patent_number.eq.${digitsKey}`)
+        .limit(1)
         .maybeSingle();
 
       if (cached) {
@@ -337,7 +349,14 @@ serve(async (req) => {
         const cachedAnalysis = stripScoreMentions(cached.analysis || "");
         if (isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
           console.log(`[CACHE STALE] score too short for ${trimmedPatent} — regenerating`);
-          await supabase.from("patent_score_cache").delete().eq("patent_number", trimmedPatent);
+          // 설명문만 재생성하고 점수/TRL은 기존 값으로 고정 (동일 특허 점수 변동 방지)
+          lockedScores = {
+            totalScore: cached.total_score,
+            technologyScore: cached.technology_score,
+            marketScore: cached.market_score,
+            businessScore: cached.business_score,
+            trl: cached.trl ?? 5,
+          };
         } else {
         return new Response(
           JSON.stringify({
@@ -813,34 +832,29 @@ JSON형식:
     scores.marketReason = stripTrlMentions(scores.marketReason);
     scores.businessReason = stripTrlMentions(scores.businessReason);
 
-    // 점수 숫자/점수대 언급 제거: 코멘트 안에서 "70점대로 평가된다", "~점이다" 등의 표현은
-    // UX 요청에 따라 노출하지 않는다. 점수는 별도 숫자 필드로만 표시한다.
-    const stripScoreMentions = (s: string | undefined | null): string => {
-      if (!s) return s ?? "";
-      let out = s;
-      // 가장 흔한 패턴: "그래서 기술성은 80점대로 평가된다." 류 (앞 연결어 포함 통째로 제거)
-      out = out.replace(/(?:,?\s*(?:그래서|따라서|이에|결과적으로|종합하면|이로써))?\s*[가-힣]{0,8}(?:성|점수)?(?:은|는|이|가)?\s*\(?\d{2,3}\)?\s*점대?로?\s*(?:평가|산출|판단|분류|책정)(?:된다|되며|되어|됨)\.?/g, "");
-      // "~점이다", "~점으로 평가된다", "총점은 ~점" 류
-      out = out.replace(/\s*\d{2,3}\s*점(?:대|이다|으로|에)\s*[가-힣]{0,8}(?:평가된다|산출된다|판단된다|책정된다|된다)?\.?/g, "");
-      out = out.replace(/총점[은이]?\s*\d{2,3}\s*점\.?/g, "");
-      // 남은 "70점대", "80점대" 단독 표현 제거
-      out = out.replace(/\b\d{2,3}\s*점대\b/g, "");
-      // 이중 공백/공백 앞 마침표/연속 마침표 정리
-      out = out.replace(/\s{2,}/g, " ").replace(/\s+([.,])/g, "$1").replace(/\.{2,}/g, ".").trim();
-      // 마지막이 ","로 끝나는 경우 마침표로 교체
-      out = out.replace(/,\s*$/, ".");
-      return out;
-    };
     scores.technologyReason = stripScoreMentions(scores.technologyReason);
     scores.marketReason = stripScoreMentions(scores.marketReason);
     scores.businessReason = stripScoreMentions(scores.businessReason);
     scores.analysis = stripScoreMentions(scores.analysis);
 
+    // 기존 캐시가 있던 특허는 점수/TRL을 그대로 유지 (설명문만 갱신)
+    if (lockedScores) {
+      scores.totalScore = lockedScores.totalScore;
+      scores.technologyScore = lockedScores.technologyScore;
+      scores.marketScore = lockedScores.marketScore;
+      scores.businessScore = lockedScores.businessScore;
+      scores.trl = lockedScores.trl;
+    }
+
     // Save to cache
     try {
       const supabase = getSupabaseClient();
+      // 하이픈 포함 구형 키가 남아 있으면 제거하여 중복 캐시 방지
+      if (trimmedPatent !== digitsKey) {
+        await supabase.from("patent_score_cache").delete().eq("patent_number", trimmedPatent);
+      }
       await supabase.from("patent_score_cache").upsert({
-        patent_number: trimmedPatent,
+        patent_number: digitsKey,
         total_score: scores.totalScore,
         technology_score: scores.technologyScore,
         market_score: scores.marketScore,

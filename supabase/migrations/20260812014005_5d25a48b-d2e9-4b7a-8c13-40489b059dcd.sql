@@ -1,0 +1,1 @@
+DELETE FROM public.patent_score_cache WHERE patent_number IN ('10-2021-0162560','1020210162560');
