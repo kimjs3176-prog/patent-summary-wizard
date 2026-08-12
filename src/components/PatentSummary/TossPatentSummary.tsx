@@ -100,32 +100,28 @@ function formatAiModelLabel(model?: string): string {
   return map[model] || model.replace(/^.*\//, "");
 }
 
-function SectionTitle({ children, kicker }: { children: React.ReactNode; kicker?: string }) {
+function SectionTitle({ children, kicker, index }: { children: React.ReactNode; kicker?: string; index?: string }) {
   return (
-    <div className="mb-5">
-      {kicker && (
-        <span
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold mb-2.5"
-          style={{
-            color: ACCENT_HEX,
-            background: `${ACCENT_HEX}14`,
-            letterSpacing: "0.02em",
-          }}
-        >
-          <span className="w-1 h-1 rounded-full" style={{ background: ACCENT_HEX }} />
-          {kicker}
-        </span>
-      )}
-      <h2 className="text-[22px] sm:text-[25px] font-bold text-[#191F28] tracking-[-0.022em] leading-[1.3]">
+    <div className="mb-4">
+      <div className="flex items-center gap-2.5 mb-1.5">
+        {index && (
+          <span className="font-mono text-[10.5px] font-bold tabular-nums text-[#B0B8C1] tracking-[0.1em]">
+            §{index}
+          </span>
+        )}
+        {kicker && <span className="bp-kicker">{kicker}</span>}
+      </div>
+      <h2 className="text-[21px] sm:text-[24px] font-bold text-[#191F28] tracking-[-0.022em] leading-[1.3]">
         {children}
       </h2>
+      <div className="mt-3 h-px bg-[repeating-linear-gradient(90deg,#D1D6DB_0_5px,transparent_5px_10px)]" />
     </div>
   );
 }
 
 function SoftCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-[20px] p-5 sm:p-6 ${className}`} style={{ background: SOFT }}>
+    <div className={`bp-panel p-5 sm:p-6 ${className}`}>
       {children}
     </div>
   );
@@ -710,14 +706,23 @@ export function TossPatentSummary({
         </div>
       )}
 
-      <div ref={aiBodyRef} data-toss-summary data-toss-surface className="bg-white rounded-[24px] border border-[#F2F4F6] shadow-[0_1px_3px_rgba(0,0,0,0.03)] overflow-hidden max-w-[864px] mx-auto">
+      <div ref={aiBodyRef} data-toss-summary data-toss-surface className="bp-doc border border-[#DDE2E6] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden max-w-[864px] mx-auto">
+        <div className="bp-doc-head">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#8B95A1]">
+            AI TECH ANALYSIS REPORT
+          </span>
+          <span className="font-mono text-[10px] tabular-nums tracking-[0.12em] text-[#8B95A1]">
+            DOC · {patentNumber}
+          </span>
+        </div>
         <div className="px-5 sm:px-7 pb-12">
           {/* HERO */}
-          <section className="pt-9 pb-5">
+          <section className="pt-8 pb-5 relative">
+            <div className="mb-3 h-px bg-[repeating-linear-gradient(90deg,#D1D6DB_0_5px,transparent_5px_10px)]" />
             <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.3] tracking-[-0.02em] mb-2 text-[#191F28]">
               {title}
             </h1>
-            <p className="text-[14px] text-[#8B95A1] font-medium mb-6 tabular-nums">
+            <p className="font-mono text-[12.5px] text-[#8B95A1] font-medium mb-6 tabular-nums tracking-[0.04em]">
               {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {formatPatentNumber(patentNumber, patentData?.searchType === 'application' ? 'application' : 'registration')}
             </p>
           </section>
@@ -725,9 +730,9 @@ export function TossPatentSummary({
           {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
           {patentData && (
             <section id="sec-basic" data-summary-section data-summary-label="기본 정보" className="mb-6 scroll-mt-24">
-              <SectionTitle kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
+              <SectionTitle index="01" kicker="특허 정보">한눈에 보는 기본 정보</SectionTitle>
               <SoftCard className="!p-2">
-                <div className="bg-white rounded-[16px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+                <div className="rounded-[4px] px-4 sm:px-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
                   {patentData.applicationNumber && <Row label="출원번호" value={formatPatentNumber(patentData.applicationNumber, 'application')} />}
                   {patentData.filingDate && <Row label="출원일자" value={patentData.filingDate} />}
                   {patentData.registrationNumber && <Row label="등록번호" value={formatPatentNumber(patentData.registrationNumber, 'registration')} />}
@@ -764,7 +769,7 @@ export function TossPatentSummary({
                   )}
                 </div>
                 {(patentData.filingDate || patentData.publicationDate || patentData.registrationDate || patentData.registrationNumber) && (
-                  <div className="bg-white rounded-[16px] mt-2">
+                  <div className="mt-2 border-t border-dashed border-[#E5E8EB]">
                     <PatentTimeline
                       filingDate={patentData.filingDate}
                       publicationDate={patentData.publicationDate}
@@ -779,7 +784,7 @@ export function TossPatentSummary({
 
           {/* 종합점수 + 세부점수 + TRL 통합 카드 */}
           <section id="sec-score" data-summary-section data-summary-label="사업화 점수" className="mb-8 scroll-mt-24">
-            <SectionTitle kicker="AI 평가">사업화 점수 & 기술 성숙도</SectionTitle>
+            <SectionTitle index="02" kicker="AI 평가">사업화 점수 & 기술 성숙도</SectionTitle>
             <SoftCard>
               {/* 종합점수 헤더 */}
               <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E5E8EB]">
@@ -870,7 +875,7 @@ export function TossPatentSummary({
           {/* 도면 */}
           {drawings.length > 0 && (
             <section id="sec-figures" data-summary-section data-summary-label="특허 도면" className="mb-8 scroll-mt-24">
-              <SectionTitle kicker="특허 도면">한눈에 보는 기술 구성</SectionTitle>
+              <SectionTitle index="03" kicker="특허 도면">한눈에 보는 기술 구성</SectionTitle>
               <SoftCard className="!p-3">
                 {/* 대표 도면 */}
                 <button
@@ -936,7 +941,7 @@ export function TossPatentSummary({
               const { kicker, heading } = sectionMeta(sec.title);
               return (
                 <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="mb-8 scroll-mt-24">
-                  <SectionTitle kicker={kicker}>{heading}</SectionTitle>
+                  <SectionTitle index={String(idx + 4).padStart(2, "0")} kicker={kicker}>{heading}</SectionTitle>
                   <div className="space-y-4">
                     {sec.paragraphs.map((p, i) => {
                       // 1) [^N] 인라인 마커를 먼저 분리하여 superscript 노드로 변환
@@ -1061,7 +1066,7 @@ export function TossPatentSummary({
           {/* 관련 특허 — 기능·특징이 유사한 특허 */}
           {patentData && (
             <section id="sec-related" data-summary-section data-summary-label="관련 특허" className="mb-10 scroll-mt-24">
-              <SectionTitle kicker="관련 특허"><span className="inline-flex items-center gap-2"><Link2 className="w-5 h-5" style={{ color: ACCENT_HEX }} />기능·특징이 유사한 특허</span></SectionTitle>
+              <SectionTitle index="A1" kicker="관련 특허"><span className="inline-flex items-center gap-2"><Link2 className="w-5 h-5" style={{ color: ACCENT_HEX }} />기능·특징이 유사한 특허</span></SectionTitle>
               <SoftCard className="!p-3">
                 <RelatedPatentsCompact patentData={patentData} onPatentClick={onRelatedPatentClick} />
               </SoftCard>

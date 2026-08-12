@@ -1051,3 +1051,66 @@ time, .tabular-nums, [data-numeric] {
 .bp-rule {
   border-bottom: 1px dashed hsl(var(--border));
 }
+
+/* ---- Blueprint document surfaces (summary report / 요약서) ---- */
+.bp-doc {
+  position: relative;
+  border-radius: 8px;
+  background-color: #fff;
+  background-image:
+    linear-gradient(to right, hsl(215 25% 27% / 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(215 25% 27% / 0.028) 1px, transparent 1px);
+  background-size: 26px 26px, 26px 26px;
+}
+.bp-doc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 20px;
+  border-bottom: 1px dashed hsl(var(--border));
+  background: hsl(var(--muted) / 0.35);
+}
+.bp-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+.bp-kicker::after {
+  content: "";
+  height: 1px;
+  width: 36px;
+  background: hsl(var(--primary) / 0.35);
+}
+.bp-panel {
+  position: relative;
+  border-radius: 6px;
+  border: 1px solid hsl(215 20% 65% / 0.28);
+  background-color: #fff;
+  background-image:
+    linear-gradient(to right, hsl(215 25% 27% / 0.022) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(215 25% 27% / 0.022) 1px, transparent 1px);
+  background-size: 22px 22px, 22px 22px;
+}
+.bp-panel::before,
+.bp-panel::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid hsl(var(--primary) / 0.4);
+  pointer-events: none;
+}
+.bp-panel::before { top: 5px; left: 5px; border-right: 0; border-bottom: 0; }
+.bp-panel::after { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
+
+@media print {
+  .bp-doc, .bp-panel { background-image: none; }
+  .bp-panel::before, .bp-panel::after { display: none; }
+}
