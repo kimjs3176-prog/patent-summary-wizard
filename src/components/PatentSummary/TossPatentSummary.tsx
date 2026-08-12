@@ -100,32 +100,28 @@ function formatAiModelLabel(model?: string): string {
   return map[model] || model.replace(/^.*\//, "");
 }
 
-function SectionTitle({ children, kicker }: { children: React.ReactNode; kicker?: string }) {
+function SectionTitle({ children, kicker, index }: { children: React.ReactNode; kicker?: string; index?: string }) {
   return (
-    <div className="mb-5">
-      {kicker && (
-        <span
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold mb-2.5"
-          style={{
-            color: ACCENT_HEX,
-            background: `${ACCENT_HEX}14`,
-            letterSpacing: "0.02em",
-          }}
-        >
-          <span className="w-1 h-1 rounded-full" style={{ background: ACCENT_HEX }} />
-          {kicker}
-        </span>
-      )}
-      <h2 className="text-[22px] sm:text-[25px] font-bold text-[#191F28] tracking-[-0.022em] leading-[1.3]">
+    <div className="mb-4">
+      <div className="flex items-center gap-2.5 mb-1.5">
+        {index && (
+          <span className="font-mono text-[10.5px] font-bold tabular-nums text-[#B0B8C1] tracking-[0.1em]">
+            §{index}
+          </span>
+        )}
+        {kicker && <span className="bp-kicker">{kicker}</span>}
+      </div>
+      <h2 className="text-[21px] sm:text-[24px] font-bold text-[#191F28] tracking-[-0.022em] leading-[1.3]">
         {children}
       </h2>
+      <div className="mt-3 h-px bg-[repeating-linear-gradient(90deg,#D1D6DB_0_5px,transparent_5px_10px)]" />
     </div>
   );
 }
 
 function SoftCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-[20px] p-5 sm:p-6 ${className}`} style={{ background: SOFT }}>
+    <div className={`bp-panel p-5 sm:p-6 ${className}`}>
       {children}
     </div>
   );
