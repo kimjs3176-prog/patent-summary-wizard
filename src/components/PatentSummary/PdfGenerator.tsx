@@ -740,7 +740,7 @@ export function PdfGenerator({
 
         pdf.setFontSize(7);
         pdf.setTextColor(...T.textFaint);
-        pdf.text(cfg.footer_text || "농식품분야 특허 AI 기술요약", margin, fy);
+        pdf.text(cfg.footer_text || "Agri IP Summary (AIS)", margin, fy);
 
         const dateText = cfg.footer_show_date
           ? new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.\s/g, ".").replace(/\.$/, "")

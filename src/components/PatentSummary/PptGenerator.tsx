@@ -62,7 +62,7 @@ export function PptGenerator({
       const PptxGenJS = (await import("pptxgenjs")).default;
       const pptx = new PptxGenJS();
       pptx.layout = "LAYOUT_16x9";
-      pptx.author = "농식품 특허 요약 서비스";
+      pptx.author = "Agri IP Summary (AIS)";
       pptx.title = `특허요약_${patentNumber}`;
 
       const isApp = patentData?.searchType === "application";
@@ -92,7 +92,7 @@ export function PptGenerator({
         fill: { color: C.midGreen, transparency: 50 },
       });
 
-      s1.addText("농식품 특허 요약서", {
+      s1.addText("Agri IP Summary (AIS) 특허 요약서", {
         x: 0.8, y: 1.0, w: 7, h: 0.8,
         fontSize: 34, fontFace: "맑은 고딕", color: C.white, bold: true,
       });
@@ -577,7 +577,7 @@ export function PptGenerator({
         slide.addShape("rect" as any, {
           x: 0.3, y: 5.05, w: 9.4, h: 0.01, fill: { color: C.border },
         });
-        slide.addText("© 농식품 특허 요약 서비스 · AI 기반 특허 분석", {
+        slide.addText("© Agri IP Summary (AIS) · AI 기반 특허 분석", {
           x: 0.3, y: 5.1, w: 7, h: 0.22,
           fontSize: 6.5, fontFace: "맑은 고딕", color: C.textLight,
         });

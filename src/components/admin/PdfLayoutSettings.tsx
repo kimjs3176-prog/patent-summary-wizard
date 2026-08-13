@@ -45,7 +45,7 @@ export interface PdfLayoutConfig {
 
 export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
   template_version: TOSS_TEMPLATE_VERSION,
-  header_title: "농식품 특허 요약서",
+  header_title: "Agri IP Summary (AIS) 특허 요약서",
   header_subtitle: "Agri-Food Patent Summary Report",
   header_bg_color: "#10AD7F",
   body_font_size: 10.5,
@@ -59,7 +59,7 @@ export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
   show_claims: true,
   show_trl: false,
   show_commercialization_score: true,
-  footer_text: "© 농식품 특허 요약 서비스 | AI 기반 특허 분석",
+  footer_text: "© Agri IP Summary (AIS) | AI 기반 특허 분석",
   footer_show_date: true,
   footer_show_page: true,
   disclaimer_text: "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음",
@@ -133,7 +133,7 @@ export function PdfLayoutSettings({ apiCall, initialConfig }: PdfLayoutSettingsP
         <div className="grid gap-3">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">헤더 제목</label>
-            <Input value={config.header_title} onChange={e => update("header_title", e.target.value)} placeholder="농식품 특허 요약서" />
+            <Input value={config.header_title} onChange={e => update("header_title", e.target.value)} placeholder="Agri IP Summary (AIS) 특허 요약서" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">헤더 부제목</label>
@@ -230,7 +230,7 @@ export function PdfLayoutSettings({ apiCall, initialConfig }: PdfLayoutSettingsP
         <div className="grid gap-3">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">푸터 텍스트</label>
-            <Input value={config.footer_text} onChange={e => update("footer_text", e.target.value)} placeholder="© 농식품 특허 요약 서비스" />
+            <Input value={config.footer_text} onChange={e => update("footer_text", e.target.value)} placeholder="© Agri IP Summary (AIS)" />
           </div>
           <div className="flex items-center justify-between py-1">
             <span className="text-sm">생성일 표시</span>
