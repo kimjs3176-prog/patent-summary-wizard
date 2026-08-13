@@ -183,13 +183,13 @@ const Index = () => {
                   </div>
 
                   <h1 className="text-[30px] sm:text-[44px] md:text-[54px] font-black leading-[1.08] tracking-[-0.04em] mb-3 md:mb-4" style={{ color: "#eef4fb" }}>
-                    농식품분야 특허
+                    Agri IP
                     <br />
                     <span className="relative inline-block">
-                      <span style={{ color: "hsl(158 62% 60%)" }}>AI 기술분석</span>
+                      <span style={{ color: "hsl(158 62% 60%)" }}>Summary</span>
                       <span aria-hidden className="absolute left-0 -bottom-1 w-full h-px" style={{ background: "hsl(158 62% 60% / 0.5)" }} />
                     </span>
-                    <span style={{ color: "#eef4fb" }}> 서비스</span>
+                    <span style={{ color: "#eef4fb" }}> (AIS)</span>
                   </h1>
 
                   <p className="text-sm md:text-[15px] mb-6 md:mb-8 leading-relaxed max-w-xl" style={{ color: "hsl(205 22% 72%)" }}>

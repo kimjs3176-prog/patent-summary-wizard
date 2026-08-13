@@ -170,7 +170,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             letterSpacing: textVisible ? "-0.01em" : "0.1em",
           }}
         >
-          농식품분야 특허 AI 기술분석
+          Agri IP Summary (AIS)
         </h1>
 
         {/* Subtitle line */}
@@ -184,7 +184,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         >
           <div className="w-6 h-px bg-white/40" />
           <span className="text-white/60 text-[11px] md:text-xs font-medium tracking-widest uppercase">
-            AI-Powered Analysis
+            Agri-Food Patent AI Analysis
           </span>
           <div className="w-6 h-px bg-white/40" />
         </div>
