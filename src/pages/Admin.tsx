@@ -84,9 +84,9 @@ interface VisitorStats {
 }
 
 const SETTINGS_FIELDS = [
-  { key: "header_title", label: "헤더 타이틀", placeholder: "농식품분야 특허 AI 기술요약" },
-  { key: "header_subtitle", label: "헤더 서브타이틀", placeholder: "Agri-Food Patent AI Summary" },
-  { key: "hero_title", label: "히어로 타이틀 1줄", placeholder: "농식품분야 특허" },
+  { key: "header_title", label: "헤더 타이틀", placeholder: "Agri IP Summary (AIS)" },
+  { key: "header_subtitle", label: "헤더 서브타이틀", placeholder: "농식품분야 특허 AI 기술분석 서비스" },
+  { key: "hero_title", label: "히어로 타이틀 1줄", placeholder: "Agri IP" },
   { key: "hero_title_accent", label: "히어로 강조 텍스트", placeholder: "AI 기술요약" },
   { key: "hero_title_suffix", label: "히어로 타이틀 끝", placeholder: "서비스" },
   { key: "hero_description", label: "히어로 설명", placeholder: "농식품 분야 특허를 AI가 자동으로 분석하고 요약합니다" },
