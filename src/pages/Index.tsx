@@ -182,7 +182,7 @@ const Index = () => {
                     </span>
                   </div>
 
-                  <h1 className="text-[30px] sm:text-[44px] md:text-[54px] font-black leading-[1.08] tracking-[-0.04em] mb-3 md:mb-4" style={{ color: "#eef4fb" }}>
+                  <h1 className="text-[30px] sm:text-[44px] md:text-[54px] font-black leading-[1.08] tracking-[-0.04em] mb-2 md:mb-3" style={{ color: "#eef4fb" }}>
                     Agri IP
                     <br />
                     <span className="relative inline-block">
@@ -191,6 +191,10 @@ const Index = () => {
                     </span>
                     <span style={{ color: "#eef4fb" }}> (AIS)</span>
                   </h1>
+
+                  <p className="text-base md:text-lg font-medium tracking-tight mb-4 md:mb-6" style={{ color: "hsl(158 62% 72%)" }}>
+                    농업기술 특허를 한눈에, AI로 쉽게
+                  </p>
 
                   <p className="text-sm md:text-[15px] mb-6 md:mb-8 leading-relaxed max-w-xl" style={{ color: "hsl(205 22% 72%)" }}>
                     {settings.hero_description}
