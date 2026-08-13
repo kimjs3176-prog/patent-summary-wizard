@@ -9,13 +9,13 @@ import React from "react";
  *  • No underline. Composition is centered, single typographic block.
  */
 export function KineticHeroTitle() {
-  const words = ["농식품분야", "특허"];
-  const tail = "서비스";
+  const words = ["Agri", "IP"];
+  const tail = "(AIS)";
 
   return (
     <h2
       className="font-extrabold text-foreground leading-[1.05] tracking-[-0.035em] text-center text-[24px] sm:text-[32px] md:text-[46px] lg:text-[54px]"
-      aria-label="농식품분야 특허 AI 기술분석 서비스"
+      aria-label="Agri IP Summary (AIS)"
     >
       {/* Line 1 */}
       <span className="block">
@@ -39,14 +39,8 @@ export function KineticHeroTitle() {
           className="kinetic-word relative"
           style={{ animationDelay: "0.32s", marginRight: "0.28em" }}
         >
-          <span className="kinetic-ai">AI</span>
+          <span className="kinetic-ai">Summary</span>
           <span className="kinetic-dot" aria-hidden />
-        </span>
-        <span
-          className="kinetic-word"
-          style={{ animationDelay: "0.46s", marginRight: "0.22em" }}
-        >
-          <span className="kinetic-accent">기술분석</span>
         </span>
         <span className="inline-block">
           {tail.split("").map((c, i) => (
