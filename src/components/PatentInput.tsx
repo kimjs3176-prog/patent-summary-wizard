@@ -183,14 +183,23 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
     setInputValue(e.target.value);
   };
 
-  const isPatentNumber = (value: string): boolean => {
-    const trimmed = value.trim();
-    // 특허(10-), 실용신안(20-), 디자인(30-), 상표(40-) 출원/등록번호 즉시 조회
-    return (
-      trimmed.match(/^(10|20|30|40)-\d+/) !== null ||
-      trimmed.match(/^KR\s?(10|20)?-?\d+/i) !== null ||
-      trimmed.match(/^\d{7,}$/) !== null
-    );
+  /** 번호 형태로 인식되면(지원 여부와 무관) true */
+  const isPatentNumber = (value: string): boolean => parseIpNumber(value) !== null;
+
+  /** 번호면 직접 조회, 미지원 권리는 안내, 그 외에는 AI 키워드 검색 */
+  const routeQuery = (raw: string) => {
+    const value = raw.trim();
+    if (!value) return;
+    const ip = parseIpNumber(value);
+    if (!ip) {
+      handleKeywordSearch(value);
+      return;
+    }
+    if (!ip.supported) {
+      toast.error(`${IP_KIND_LABEL[ip.kind]} 번호는 지원하지 않습니다. 특허·실용신안 번호를 입력해 주세요.`);
+      return;
+    }
+    onSubmit(ip.normalized);
   };
 
   const handleKeywordSearch = async (keyword: string) => {
@@ -241,20 +250,13 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const value = inputValue.trim();
-    if (!value) return;
-    if (isPatentNumber(value)) {
-      onSubmit(value);
-    } else {
-      handleKeywordSearch(value);
-    }
+    routeQuery(inputValue);
   };
 
   const submitKeyword = (kw: string) => {
     setInputValue(kw);
     setIsFocused(false);
-    if (isPatentNumber(kw)) onSubmit(kw);
-    else handleKeywordSearch(kw);
+    routeQuery(kw);
   };
 
   const isProcessing = isLoading || isSearchingKeyword;
