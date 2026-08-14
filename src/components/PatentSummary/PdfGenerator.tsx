@@ -362,18 +362,19 @@ export function PdfGenerator({
       // ██  HEADER — Pill badge + Big title         ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // Pill badge: "특허 요약 리포트"
-      const badgeText = "특허 요약 리포트";
-      pdf.setFontSize(7.5);
-      const badgeTextW = pdf.getTextWidth(badgeText);
-      const badgeW = badgeTextW + 8;
-      const badgeH = 6.2;
+      // Blueprint document head: mono kicker rail + doc id
       const badgeY = yPosition;
-      pdf.setFillColor(...brandSoft);
-      pdf.roundedRect(margin, badgeY, badgeW, badgeH, badgeH / 2, badgeH / 2, "F");
-      pdf.setTextColor(...brand);
-      pdf.text(badgeText, margin + 4, badgeY + 4.4);
-      pdf.text(badgeText, margin + 4.1, badgeY + 4.4);
+      const badgeH = 6.2;
+      pdf.setFillColor(...brand);
+      pdf.rect(margin, badgeY + 1.2, 6, 0.6, "F");
+      drawMono("AI TECH ANALYSIS REPORT", margin + 8, badgeY + 3, { size: 7, color: brand });
+      drawMono(
+        `DOC / ${String(displayNumber).replace(/[^0-9A-Za-z-]/g, "")}`,
+        pageWidth - margin,
+        badgeY + 3,
+        { size: 6.6, color: T.textFaint, align: "right" }
+      );
+      dottedRule(badgeY + 5.4);
 
       // Title — large, bold, multi-line.
       // Auto-shrink the font so long titles wrap naturally without truncation,
@@ -399,8 +400,8 @@ export function PdfGenerator({
         }
       }
 
-      // Scale badge → title gap with title block height (more title = more breathing room)
-      const badgeToTitleGap = titleLines.length <= 1 ? 8 : titleLines.length === 2 ? 10 : 12;
+      // Scale head → title gap with title block height
+      const badgeToTitleGap = titleLines.length <= 1 ? 9 : titleLines.length === 2 ? 11 : 13;
       yPosition = badgeY + badgeH + badgeToTitleGap;
 
       pdf.setFontSize(titleSize);
@@ -433,10 +434,8 @@ export function PdfGenerator({
 
       yPosition += 4;
 
-      // Thin divider
-      pdf.setDrawColor(...T.divider);
-      pdf.setLineWidth(0.25);
-      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+      // Blueprint rule
+      dottedRule(yPosition);
       yPosition += 8;
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
