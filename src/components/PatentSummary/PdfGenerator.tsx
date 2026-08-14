@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { PatentData } from "./types";
 import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
+import { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { DEFAULT_PDF_CONFIG, TOSS_TEMPLATE_VERSION, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 
 interface PdfGeneratorProps {
@@ -11,6 +12,7 @@ interface PdfGeneratorProps {
   patentNumber: string;
   patentData?: PatentData | null;
   printRef: React.RefObject<HTMLDivElement | null>;
+  commercializationDetails?: CommercializationDetails | null;
   layoutConfig?: PdfLayoutConfig;
 }
 
@@ -45,6 +47,7 @@ export function PdfGenerator({
   content,
   patentNumber,
   patentData,
+  commercializationDetails,
   layoutConfig,
 }: PdfGeneratorProps) {
   // Force the latest Toss-style visual template. If the saved layoutConfig
@@ -435,16 +438,13 @@ export function PdfGenerator({
       yPosition += 8;
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  STAT BAND — TRL · Score · Filing date  ██
+      // ██  STAT BAND — TRL · Filing date          ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       const trlVal = commercializationDetails?.trl;
-      const scoreVal = commercializationScore != null ? Math.round(commercializationScore) : null;
-      const grade = scoreVal == null ? "" : scoreVal >= 85 ? "S" : scoreVal >= 75 ? "A" : scoreVal >= 65 ? "B" : "C";
 
       type Stat = { label: string; main: string; sub?: string };
       const stats: Stat[] = [];
       if (trlVal != null) stats.push({ label: "TRL", main: `${trlVal}`, sub: "단계" });
-      if (scoreVal != null && cfg.show_commercialization_score) stats.push({ label: "상용화 점수", main: `${scoreVal}`, sub: `점 · ${grade}` });
       if (patentData?.filingDate) stats.push({ label: "출원일", main: patentData.filingDate.replace(/-/g, ".") });
       else if (patentData?.assignee) stats.push({ label: "출원인", main: patentData.assignee.length > 12 ? patentData.assignee.slice(0, 12) + "…" : patentData.assignee });
 
