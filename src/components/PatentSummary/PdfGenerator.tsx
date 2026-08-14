@@ -151,6 +151,59 @@ export function PdfGenerator({
         if (bold) pdf.text(text, xPos + 0.13, y);
       };
 
+      // ── Blueprint helpers (mirrors the web report styling) ──
+      // Mono kicker/index labels use a built-in monospace face; Korean text
+      // keeps the embedded Noto font.
+      const KOREAN_FONT = pdf.getFont().fontName;
+      const drawMono = (
+        text: string,
+        x: number,
+        y: number,
+        opts: { size?: number; color?: [number, number, number]; align?: "left" | "right" } = {}
+      ) => {
+        const { size = 6.8, color = T.textFaint, align = "left" } = opts;
+        pdf.setFont("courier", "normal");
+        pdf.setFontSize(size);
+        pdf.setTextColor(...color);
+        const w = pdf.getTextWidth(text);
+        pdf.text(text, align === "right" ? x - w : x, y);
+        pdf.setFont(KOREAN_FONT, "normal");
+        return w;
+      };
+
+      const dottedRule = (y: number, x1 = margin, x2 = pageWidth - margin) => {
+        pdf.setDrawColor(...T.divider);
+        pdf.setLineWidth(0.2);
+        const step = 1.1;
+        for (let x = x1; x < x2; x += step) {
+          pdf.line(x, y, Math.min(x + 0.5, x2), y);
+        }
+      };
+
+      const cornerMarks = (x: number, y: number, w: number, h: number, len = 3) => {
+        pdf.setDrawColor(...brand);
+        pdf.setLineWidth(0.4);
+        pdf.line(x, y, x + len, y); pdf.line(x, y, x, y + len);
+        pdf.line(x + w - len, y, x + w, y); pdf.line(x + w, y, x + w, y + len);
+        pdf.line(x, y + h - len, x, y + h); pdf.line(x, y + h, x + len, y + h);
+        pdf.line(x + w - len, y + h, x + w, y + h); pdf.line(x + w, y + h - len, x + w, y + h);
+      };
+
+      let sectionIndex = 0;
+      const sectionHeader = (title: string) => {
+        yPosition += 6;
+        sectionIndex += 1;
+        const headerY = yPosition;
+        const idx = `§${String(sectionIndex).padStart(2, "0")}`;
+        const idxW = drawMono(idx, margin, headerY, { size: 7.6, color: brand });
+        pdf.setFontSize(cfg.section_title_size + 0.5);
+        pdf.setTextColor(...T.textDark);
+        pdf.text(title, margin + idxW + 3, headerY);
+        pdf.text(title, margin + idxW + 3.08, headerY);
+        dottedRule(headerY + 2.4);
+        return headerY;
+      };
+
       // ── Inline bold text renderer ──
       const SUP_TOKEN_RE = /(\*\*[^*]+\*\*|\[\^\d+\])/g;
 
