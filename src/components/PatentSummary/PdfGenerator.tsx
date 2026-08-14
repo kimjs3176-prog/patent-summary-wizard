@@ -45,8 +45,6 @@ export function PdfGenerator({
   content,
   patentNumber,
   patentData,
-  commercializationScore,
-  commercializationDetails,
   layoutConfig,
 }: PdfGeneratorProps) {
   // Force the latest Toss-style visual template. If the saved layoutConfig
