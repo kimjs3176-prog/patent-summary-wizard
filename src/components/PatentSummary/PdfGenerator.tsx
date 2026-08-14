@@ -190,6 +190,9 @@ export function PdfGenerator({
       };
 
       let sectionIndex = 0;
+      const scoreColor = (v: number): [number, number, number] =>
+        v >= 75 ? [13, 138, 102] : v >= 65 ? [180, 120, 20] : [107, 114, 128];
+
       const sectionHeader = (title: string) => {
         yPosition += 6;
         sectionIndex += 1;
