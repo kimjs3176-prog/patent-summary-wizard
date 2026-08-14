@@ -187,8 +187,6 @@ export function PdfGenerator({
       };
 
       let sectionIndex = 0;
-      const scoreColor = (v: number): [number, number, number] =>
-        v >= 75 ? [13, 138, 102] : v >= 65 ? [180, 120, 20] : [107, 114, 128];
 
       const sectionHeader = (title: string) => {
         yPosition += 6;
@@ -499,93 +497,6 @@ export function PdfGenerator({
         }
         yPosition = bY + bandH + 10;
       }
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  AI COMMERCIALIZATION SCORE DETAIL       ██
-      // ██  (moved directly below the stat band)    ██
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      const renderCommercializationBlock = () => {
-        if (
-          !cfg.show_commercialization_score ||
-          commercializationScore == null ||
-          !commercializationDetails ||
-          (commercializationDetails.technologyScore == null &&
-            commercializationDetails.marketScore == null &&
-            commercializationDetails.businessScore == null)
-        ) return;
-
-        const subs = [
-          { label: "기술성", v: commercializationDetails.technologyScore },
-          { label: "시장성", v: commercializationDetails.marketScore },
-          { label: "사업성", v: commercializationDetails.businessScore },
-        ].filter((s) => typeof s.v === "number");
-
-        let analysisLines: string[] = [];
-        if (commercializationDetails.analysis) {
-          pdf.setFontSize(9);
-          analysisLines = pdf.splitTextToSize(
-            stripCitationBrackets(commercializationDetails.analysis.replace(/\*\*/g, "")),
-            contentWidth - 8
-          ).slice(0, 6);
-        }
-
-        const rowH = 14;
-        const blockH = 10 + subs.length * (rowH + 2) + (analysisLines.length ? analysisLines.length * 4.4 + 4 : 0);
-        checkNewPage(blockH + 14);
-
-        const headerY = sectionHeader("AI 사업화 분석");
-        yPosition = headerY + 10;
-
-        // Sub scores — horizontal rows: big score tile (left) + label/bar (right)
-        if (subs.length) {
-          for (let i = 0; i < subs.length; i++) {
-            const s = subs[i];
-            const v = Math.round(s.v as number);
-            checkNewPage(rowH + 3);
-            const rY = yPosition;
-            const tile = rowH;
-            // Tile
-            pdf.setFillColor(...brandSoft);
-            pdf.roundedRect(margin, rY, tile, tile, 2.2, 2.2, "F");
-            pdf.setFontSize(13);
-            pdf.setTextColor(...scoreColor(v));
-            const vW = pdf.getTextWidth(`${v}`);
-            pdf.text(`${v}`, margin + tile / 2 - vW / 2, rY + tile / 2 + 2.2);
-            pdf.text(`${v}`, margin + tile / 2 - vW / 2 + 0.15, rY + tile / 2 + 2.2);
-            // Label + mono unit
-            const tx = margin + tile + 5;
-            pdf.setFontSize(9.5);
-            pdf.setTextColor(...T.textDark);
-            pdf.text(s.label, tx, rY + 5.4);
-            const lw = pdf.getTextWidth(s.label);
-            drawMono("/100", tx + lw + 2.5, rY + 5.4, { size: 6.4, color: T.textFaint });
-            // Bar
-            const barX = tx;
-            const barW = pageWidth - margin - barX;
-            const barY = rY + 8.8;
-            pdf.setFillColor(...T.dividerLight);
-            pdf.rect(barX, barY, barW, 1.8, "F");
-            pdf.setFillColor(...brand);
-            pdf.rect(barX, barY, Math.max(2, barW * (v / 100)), 1.8, "F");
-            yPosition = rY + rowH + 2.5;
-          }
-          yPosition += 2;
-        }
-
-        // Analysis text — darker for legibility
-        if (analysisLines.length) {
-          pdf.setFontSize(9);
-          pdf.setTextColor(...T.textBody);
-          for (const ln of analysisLines) {
-            checkNewPage(5);
-            pdf.text(ln, margin, yPosition);
-            yPosition += 4.4;
-          }
-        }
-        yPosition += 4;
-      };
-
-      renderCommercializationBlock();
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // ██  CONTENT SECTIONS                        ██
