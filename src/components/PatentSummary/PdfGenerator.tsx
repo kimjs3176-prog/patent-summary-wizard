@@ -453,18 +453,19 @@ export function PdfGenerator({
       else if (patentData?.assignee) stats.push({ label: "출원인", main: patentData.assignee.length > 12 ? patentData.assignee.slice(0, 12) + "…" : patentData.assignee });
 
       if (stats.length > 0) {
-        const bandH = 22;
+        const bandH = 23;
         checkNewPage(bandH + 8);
         const bY = yPosition;
         pdf.setFillColor(...T.bandBg);
-        pdf.roundedRect(margin, bY, contentWidth, bandH, 3, 3, "F");
+        pdf.rect(margin, bY, contentWidth, bandH, "F");
+        cornerMarks(margin, bY, contentWidth, bandH);
 
         const colW = contentWidth / stats.length;
         for (let i = 0; i < stats.length; i++) {
           const s = stats[i];
           const cx = margin + colW * i + colW / 2;
-          // label
-          drawText(s.label, cx, bY + 7.2, { size: 7.2, color: T.textMuted, align: "center" });
+          // label (kept in Korean, centered)
+          drawText(s.label, cx, bY + 7.6, { size: 7.2, color: T.textMuted, align: "center" });
           // main + sub on same baseline
           pdf.setFontSize(15);
           pdf.setTextColor(...T.textDark);
@@ -490,7 +491,10 @@ export function PdfGenerator({
           if (i < stats.length - 1) {
             pdf.setDrawColor(...T.divider);
             pdf.setLineWidth(0.2);
-            pdf.line(margin + colW * (i + 1), bY + 4, margin + colW * (i + 1), bY + bandH - 4);
+            const xD = margin + colW * (i + 1);
+            for (let yD = bY + 4; yD < bY + bandH - 4; yD += 1.2) {
+              pdf.line(xD, yD, xD, Math.min(yD + 0.6, bY + bandH - 4));
+            }
           }
         }
         yPosition = bY + bandH + 10;
