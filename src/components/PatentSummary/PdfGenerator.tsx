@@ -529,42 +529,47 @@ export function PdfGenerator({
           ).slice(0, 6);
         }
 
-        const blockH = 10 + (subs.length ? 18 : 0) + (analysisLines.length ? analysisLines.length * 4.4 + 4 : 0);
+        const rowH = 14;
+        const blockH = 10 + subs.length * (rowH + 2) + (analysisLines.length ? analysisLines.length * 4.4 + 4 : 0);
         checkNewPage(blockH + 14);
 
-        // Section header with extra breathing room before body
-        yPosition += 6;
-        const headerY = yPosition;
-        pdf.setFillColor(...brand);
-        pdf.rect(margin, headerY - 4.6, 1.6, 5.6, "F");
-        pdf.setFontSize(12);
-        pdf.setTextColor(...T.textDark);
-        pdf.text("AI 사업화 분석", margin + 4, headerY);
-        pdf.text("AI 사업화 분석", margin + 4.08, headerY);
-        yPosition = headerY + 9;
+        const headerY = sectionHeader("AI 사업화 분석");
+        yPosition = headerY + 10;
 
-        // Sub scores
+        // Sub scores — horizontal rows: big score tile (left) + label/bar (right)
         if (subs.length) {
-          const colGap = 6;
-          const colW = (contentWidth - colGap * (subs.length - 1)) / subs.length;
           for (let i = 0; i < subs.length; i++) {
             const s = subs[i];
-            const x = margin + i * (colW + colGap);
-            drawText(s.label, x, yPosition, { size: 8, color: T.textMuted });
-            const vStr = `${Math.round(s.v as number)}`;
-            pdf.setFontSize(11);
+            const v = Math.round(s.v as number);
+            checkNewPage(rowH + 3);
+            const rY = yPosition;
+            const tile = rowH;
+            // Tile
+            pdf.setFillColor(...brandSoft);
+            pdf.roundedRect(margin, rY, tile, tile, 2.2, 2.2, "F");
+            pdf.setFontSize(13);
+            pdf.setTextColor(...brandDeepOf(v));
+            const vW = pdf.getTextWidth(`${v}`);
+            pdf.text(`${v}`, margin + tile / 2 - vW / 2, rY + tile / 2 + 2.2);
+            pdf.text(`${v}`, margin + tile / 2 - vW / 2 + 0.15, rY + tile / 2 + 2.2);
+            // Label + mono unit
+            const tx = margin + tile + 5;
+            pdf.setFontSize(9.5);
             pdf.setTextColor(...T.textDark);
-            const vW = pdf.getTextWidth(vStr);
-            pdf.text(vStr, x + colW - vW - 8, yPosition);
-            pdf.text(vStr, x + colW - vW - 7.92, yPosition);
-            drawText("/100", x + colW - 6, yPosition, { size: 7, color: T.textFaint });
-            const barY = yPosition + 2;
+            pdf.text(s.label, tx, rY + 5.4);
+            const lw = pdf.getTextWidth(s.label);
+            drawMono("/100", tx + lw + 2.5, rY + 5.4, { size: 6.4, color: T.textFaint });
+            // Bar
+            const barX = tx;
+            const barW = pageWidth - margin - barX;
+            const barY = rY + 8.8;
             pdf.setFillColor(...T.dividerLight);
-            pdf.roundedRect(x, barY, colW, 1.8, 0.9, 0.9, "F");
+            pdf.rect(barX, barY, barW, 1.8, "F");
             pdf.setFillColor(...brand);
-            pdf.roundedRect(x, barY, Math.max(2, colW * ((s.v as number) / 100)), 1.8, 0.9, 0.9, "F");
+            pdf.rect(barX, barY, Math.max(2, barW * (v / 100)), 1.8, "F");
+            yPosition = rY + rowH + 2.5;
           }
-          yPosition += 13;
+          yPosition += 2;
         }
 
         // Analysis text — darker for legibility
