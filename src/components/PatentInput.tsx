@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Search, FileText, ArrowRight, Sparkles, History, TrendingUp, X } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { safeFetch } from "@/lib/safeFetch";
-import { parseIpNumber, IP_KIND_LABEL } from "@/lib/ipNumber";
+import { parseIpNumber, parseIpNumberList, isBatchNumberInput, IP_KIND_LABEL } from "@/lib/ipNumber";
 
 interface PatentInputProps {
   onSubmit: (patentNumber: string) => void;
@@ -85,6 +86,7 @@ function generatePlaceholderExamples(count = 8): string[] {
 
 export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, skipKeywordFetch, suggestions }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
+  const navigate = useNavigate();
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
@@ -190,6 +192,13 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
   const routeQuery = (raw: string) => {
     const value = raw.trim();
     if (!value) return;
+    // 번호를 2건 이상 입력하면 일괄조회로 라우팅
+    if (isBatchNumberInput(value)) {
+      const list = parseIpNumberList(value);
+      const numbers = [...list.supported, ...list.unsupported].map((ip) => ip.normalized).join(",");
+      navigate(`/batch?numbers=${encodeURIComponent(numbers)}`);
+      return;
+    }
     const ip = parseIpNumber(value);
     if (!ip) {
       handleKeywordSearch(value);
