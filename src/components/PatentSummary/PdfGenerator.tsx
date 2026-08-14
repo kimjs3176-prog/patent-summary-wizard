@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { PatentData } from "./types";
 import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
-import { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { DEFAULT_PDF_CONFIG, TOSS_TEMPLATE_VERSION, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 
 interface PdfGeneratorProps {
@@ -12,8 +11,6 @@ interface PdfGeneratorProps {
   patentNumber: string;
   patentData?: PatentData | null;
   printRef: React.RefObject<HTMLDivElement | null>;
-  commercializationDetails?: CommercializationDetails | null;
-  commercializationScore?: number | null;
   layoutConfig?: PdfLayoutConfig;
 }
 
