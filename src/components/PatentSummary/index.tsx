@@ -558,6 +558,7 @@ export function PatentSummary({
                 patentNumber={patentNumber}
                 patentData={patentData}
                 printRef={printRef}
+                commercializationDetails={commercializationDetails}
                 layoutConfig={pdfLayoutConfig}
               />
             )}
