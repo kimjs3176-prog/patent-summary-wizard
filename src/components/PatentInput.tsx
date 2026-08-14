@@ -184,7 +184,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
 
   const isPatentNumber = (value: string): boolean => {
     const trimmed = value.trim();
-    return trimmed.match(/^10-\d+/) !== null || trimmed.match(/^KR\d+/i) !== null || trimmed.match(/^\d{7,}$/) !== null;
+    // 특허(10-), 실용신안(20-), 디자인(30-), 상표(40-) 출원/등록번호 즉시 조회
+    return (
+      trimmed.match(/^(10|20|30|40)-\d+/) !== null ||
+      trimmed.match(/^KR\s?(10|20)?-?\d+/i) !== null ||
+      trimmed.match(/^\d{7,}$/) !== null
+    );
   };
 
   const handleKeywordSearch = async (keyword: string) => {
