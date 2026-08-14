@@ -3,6 +3,7 @@ import { Search, FileText, ArrowRight, Sparkles, History, TrendingUp, X } from "
 import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { safeFetch } from "@/lib/safeFetch";
+import { parseIpNumber, IP_KIND_LABEL } from "@/lib/ipNumber";
 
 interface PatentInputProps {
   onSubmit: (patentNumber: string) => void;
