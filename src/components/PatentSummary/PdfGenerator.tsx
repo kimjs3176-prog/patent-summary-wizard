@@ -151,6 +151,62 @@ export function PdfGenerator({
         if (bold) pdf.text(text, xPos + 0.13, y);
       };
 
+      // ── Blueprint helpers (mirrors the web report styling) ──
+      // Mono kicker/index labels use a built-in monospace face; Korean text
+      // keeps the embedded Noto font.
+      const KOREAN_FONT = pdf.getFont().fontName;
+      const drawMono = (
+        text: string,
+        x: number,
+        y: number,
+        opts: { size?: number; color?: [number, number, number]; align?: "left" | "right" } = {}
+      ) => {
+        const { size = 6.8, color = T.textFaint, align = "left" } = opts;
+        pdf.setFont("courier", "normal");
+        pdf.setFontSize(size);
+        pdf.setTextColor(...color);
+        const w = pdf.getTextWidth(text);
+        pdf.text(text, align === "right" ? x - w : x, y);
+        pdf.setFont(KOREAN_FONT, "normal");
+        return w;
+      };
+
+      const dottedRule = (y: number, x1 = margin, x2 = pageWidth - margin) => {
+        pdf.setDrawColor(...T.divider);
+        pdf.setLineWidth(0.2);
+        const step = 1.1;
+        for (let x = x1; x < x2; x += step) {
+          pdf.line(x, y, Math.min(x + 0.5, x2), y);
+        }
+      };
+
+      const cornerMarks = (x: number, y: number, w: number, h: number, len = 3) => {
+        pdf.setDrawColor(...brand);
+        pdf.setLineWidth(0.4);
+        pdf.line(x, y, x + len, y); pdf.line(x, y, x, y + len);
+        pdf.line(x + w - len, y, x + w, y); pdf.line(x + w, y, x + w, y + len);
+        pdf.line(x, y + h - len, x, y + h); pdf.line(x, y + h, x + len, y + h);
+        pdf.line(x + w - len, y + h, x + w, y + h); pdf.line(x + w, y + h - len, x + w, y + h);
+      };
+
+      let sectionIndex = 0;
+      const scoreColor = (v: number): [number, number, number] =>
+        v >= 75 ? [13, 138, 102] : v >= 65 ? [180, 120, 20] : [107, 114, 128];
+
+      const sectionHeader = (title: string) => {
+        yPosition += 6;
+        sectionIndex += 1;
+        const headerY = yPosition;
+        const idx = `§${String(sectionIndex).padStart(2, "0")}`;
+        const idxW = drawMono(idx, margin, headerY, { size: 7.6, color: brand });
+        pdf.setFontSize(cfg.section_title_size + 0.5);
+        pdf.setTextColor(...T.textDark);
+        pdf.text(title, margin + idxW + 3, headerY);
+        pdf.text(title, margin + idxW + 3.08, headerY);
+        dottedRule(headerY + 2.4);
+        return headerY;
+      };
+
       // ── Inline bold text renderer ──
       const SUP_TOKEN_RE = /(\*\*[^*]+\*\*|\[\^\d+\])/g;
 
@@ -309,18 +365,19 @@ export function PdfGenerator({
       // ██  HEADER — Pill badge + Big title         ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // Pill badge: "특허 요약 리포트"
-      const badgeText = "특허 요약 리포트";
-      pdf.setFontSize(7.5);
-      const badgeTextW = pdf.getTextWidth(badgeText);
-      const badgeW = badgeTextW + 8;
-      const badgeH = 6.2;
+      // Blueprint document head: mono kicker rail + doc id
       const badgeY = yPosition;
-      pdf.setFillColor(...brandSoft);
-      pdf.roundedRect(margin, badgeY, badgeW, badgeH, badgeH / 2, badgeH / 2, "F");
-      pdf.setTextColor(...brand);
-      pdf.text(badgeText, margin + 4, badgeY + 4.4);
-      pdf.text(badgeText, margin + 4.1, badgeY + 4.4);
+      const badgeH = 6.2;
+      pdf.setFillColor(...brand);
+      pdf.rect(margin, badgeY + 1.2, 6, 0.6, "F");
+      drawMono("AI TECH ANALYSIS REPORT", margin + 8, badgeY + 3, { size: 7, color: brand });
+      drawMono(
+        `DOC / ${String(displayNumber).replace(/[^0-9A-Za-z-]/g, "")}`,
+        pageWidth - margin,
+        badgeY + 3,
+        { size: 6.6, color: T.textFaint, align: "right" }
+      );
+      dottedRule(badgeY + 5.4);
 
       // Title — large, bold, multi-line.
       // Auto-shrink the font so long titles wrap naturally without truncation,
@@ -346,8 +403,8 @@ export function PdfGenerator({
         }
       }
 
-      // Scale badge → title gap with title block height (more title = more breathing room)
-      const badgeToTitleGap = titleLines.length <= 1 ? 8 : titleLines.length === 2 ? 10 : 12;
+      // Scale head → title gap with title block height
+      const badgeToTitleGap = titleLines.length <= 1 ? 9 : titleLines.length === 2 ? 11 : 13;
       yPosition = badgeY + badgeH + badgeToTitleGap;
 
       pdf.setFontSize(titleSize);
@@ -380,10 +437,8 @@ export function PdfGenerator({
 
       yPosition += 4;
 
-      // Thin divider
-      pdf.setDrawColor(...T.divider);
-      pdf.setLineWidth(0.25);
-      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+      // Blueprint rule
+      dottedRule(yPosition);
       yPosition += 8;
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -401,18 +456,19 @@ export function PdfGenerator({
       else if (patentData?.assignee) stats.push({ label: "출원인", main: patentData.assignee.length > 12 ? patentData.assignee.slice(0, 12) + "…" : patentData.assignee });
 
       if (stats.length > 0) {
-        const bandH = 22;
+        const bandH = 23;
         checkNewPage(bandH + 8);
         const bY = yPosition;
         pdf.setFillColor(...T.bandBg);
-        pdf.roundedRect(margin, bY, contentWidth, bandH, 3, 3, "F");
+        pdf.rect(margin, bY, contentWidth, bandH, "F");
+        cornerMarks(margin, bY, contentWidth, bandH);
 
         const colW = contentWidth / stats.length;
         for (let i = 0; i < stats.length; i++) {
           const s = stats[i];
           const cx = margin + colW * i + colW / 2;
-          // label
-          drawText(s.label, cx, bY + 7.2, { size: 7.2, color: T.textMuted, align: "center" });
+          // label (kept in Korean, centered)
+          drawText(s.label, cx, bY + 7.6, { size: 7.2, color: T.textMuted, align: "center" });
           // main + sub on same baseline
           pdf.setFontSize(15);
           pdf.setTextColor(...T.textDark);
@@ -438,7 +494,10 @@ export function PdfGenerator({
           if (i < stats.length - 1) {
             pdf.setDrawColor(...T.divider);
             pdf.setLineWidth(0.2);
-            pdf.line(margin + colW * (i + 1), bY + 4, margin + colW * (i + 1), bY + bandH - 4);
+            const xD = margin + colW * (i + 1);
+            for (let yD = bY + 4; yD < bY + bandH - 4; yD += 1.2) {
+              pdf.line(xD, yD, xD, Math.min(yD + 0.6, bY + bandH - 4));
+            }
           }
         }
         yPosition = bY + bandH + 10;
@@ -473,42 +532,47 @@ export function PdfGenerator({
           ).slice(0, 6);
         }
 
-        const blockH = 10 + (subs.length ? 18 : 0) + (analysisLines.length ? analysisLines.length * 4.4 + 4 : 0);
+        const rowH = 14;
+        const blockH = 10 + subs.length * (rowH + 2) + (analysisLines.length ? analysisLines.length * 4.4 + 4 : 0);
         checkNewPage(blockH + 14);
 
-        // Section header with extra breathing room before body
-        yPosition += 6;
-        const headerY = yPosition;
-        pdf.setFillColor(...brand);
-        pdf.rect(margin, headerY - 4.6, 1.6, 5.6, "F");
-        pdf.setFontSize(12);
-        pdf.setTextColor(...T.textDark);
-        pdf.text("AI 사업화 분석", margin + 4, headerY);
-        pdf.text("AI 사업화 분석", margin + 4.08, headerY);
-        yPosition = headerY + 9;
+        const headerY = sectionHeader("AI 사업화 분석");
+        yPosition = headerY + 10;
 
-        // Sub scores
+        // Sub scores — horizontal rows: big score tile (left) + label/bar (right)
         if (subs.length) {
-          const colGap = 6;
-          const colW = (contentWidth - colGap * (subs.length - 1)) / subs.length;
           for (let i = 0; i < subs.length; i++) {
             const s = subs[i];
-            const x = margin + i * (colW + colGap);
-            drawText(s.label, x, yPosition, { size: 8, color: T.textMuted });
-            const vStr = `${Math.round(s.v as number)}`;
-            pdf.setFontSize(11);
+            const v = Math.round(s.v as number);
+            checkNewPage(rowH + 3);
+            const rY = yPosition;
+            const tile = rowH;
+            // Tile
+            pdf.setFillColor(...brandSoft);
+            pdf.roundedRect(margin, rY, tile, tile, 2.2, 2.2, "F");
+            pdf.setFontSize(13);
+            pdf.setTextColor(...scoreColor(v));
+            const vW = pdf.getTextWidth(`${v}`);
+            pdf.text(`${v}`, margin + tile / 2 - vW / 2, rY + tile / 2 + 2.2);
+            pdf.text(`${v}`, margin + tile / 2 - vW / 2 + 0.15, rY + tile / 2 + 2.2);
+            // Label + mono unit
+            const tx = margin + tile + 5;
+            pdf.setFontSize(9.5);
             pdf.setTextColor(...T.textDark);
-            const vW = pdf.getTextWidth(vStr);
-            pdf.text(vStr, x + colW - vW - 8, yPosition);
-            pdf.text(vStr, x + colW - vW - 7.92, yPosition);
-            drawText("/100", x + colW - 6, yPosition, { size: 7, color: T.textFaint });
-            const barY = yPosition + 2;
+            pdf.text(s.label, tx, rY + 5.4);
+            const lw = pdf.getTextWidth(s.label);
+            drawMono("/100", tx + lw + 2.5, rY + 5.4, { size: 6.4, color: T.textFaint });
+            // Bar
+            const barX = tx;
+            const barW = pageWidth - margin - barX;
+            const barY = rY + 8.8;
             pdf.setFillColor(...T.dividerLight);
-            pdf.roundedRect(x, barY, colW, 1.8, 0.9, 0.9, "F");
+            pdf.rect(barX, barY, barW, 1.8, "F");
             pdf.setFillColor(...brand);
-            pdf.roundedRect(x, barY, Math.max(2, colW * ((s.v as number) / 100)), 1.8, 0.9, 0.9, "F");
+            pdf.rect(barX, barY, Math.max(2, barW * (v / 100)), 1.8, "F");
+            yPosition = rY + rowH + 2.5;
           }
-          yPosition += 13;
+          yPosition += 2;
         }
 
         // Analysis text — darker for legibility
@@ -659,19 +723,9 @@ export function PdfGenerator({
             2;
           checkNewPage(reserved);
 
-          // Section header: green vertical bar + title
-          yPosition += 6;
-          const headerY = yPosition;
-          // Left vertical bar
-          pdf.setFillColor(...brand);
-          pdf.rect(margin, headerY - 4.6, 1.6, 5.6, "F");
-          // Title
-          pdf.setFontSize(12);
-          pdf.setTextColor(...T.textDark);
-          pdf.text(sectionTitle, margin + 4, headerY);
-          pdf.text(sectionTitle, margin + 4.08, headerY);
-
-          yPosition = headerY + gapAfterTitle;
+          // Blueprint section header: §NN index + title + dotted rule
+          const headerY = sectionHeader(sectionTitle);
+          yPosition = headerY + gapAfterTitle + 1.5;
 
           if (
             (sectionTitle === "발명요약 및 특징" ||
