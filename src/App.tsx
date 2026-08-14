@@ -72,6 +72,7 @@ const App = () => {
                 <Route path="/compare" element={<Compare />} />
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/search" element={<SearchResults />} />
+                <Route path="/batch" element={<Batch />} />
                 <Route path="/summary-sample" element={<SummarySample />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
                 <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
