@@ -112,3 +112,47 @@ function isPlausibleYear(year: string): boolean {
   const n = Number(year);
   return n >= 1948 && n <= new Date().getFullYear() + 1;
 }
+
+export interface IpNumberListResult {
+  /** 특허·실용신안 등 조회 가능한 번호 (중복 제거) */
+  supported: IpNumberInfo[];
+  /** 번호 형식이지만 지원하지 않는 권리 (디자인·상표) */
+  unsupported: IpNumberInfo[];
+  /** 번호로 해석되지 않은 토큰 */
+  invalid: string[];
+}
+
+/**
+ * 여러 출원/등록번호가 섞인 문자열을 토큰으로 분리해 일괄 판별한다.
+ * 구분자: 줄바꿈, 쉼표, 세미콜론, 슬래시, 공백, 탭
+ */
+export function parseIpNumberList(input: string): IpNumberListResult {
+  const tokens = (input || "")
+    .split(/[\n\r,;/|\t]+|\s{1,}/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  const supported: IpNumberInfo[] = [];
+  const unsupported: IpNumberInfo[] = [];
+  const invalid: string[] = [];
+  const seen = new Set<string>();
+
+  for (const token of tokens) {
+    const ip = parseIpNumber(token);
+    if (!ip) {
+      invalid.push(token);
+      continue;
+    }
+    if (seen.has(ip.digits)) continue;
+    seen.add(ip.digits);
+    (ip.supported ? supported : unsupported).push(ip);
+  }
+
+  return { supported, unsupported, invalid };
+}
+
+/** 입력이 2건 이상의 번호로만 구성되어 있으면 true (일괄조회 대상) */
+export function isBatchNumberInput(input: string): boolean {
+  const { supported, unsupported, invalid } = parseIpNumberList(input);
+  return invalid.length === 0 && supported.length + unsupported.length >= 2;
+}

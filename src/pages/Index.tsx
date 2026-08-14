@@ -1,4 +1,4 @@
-import { Heart, RotateCcw, BarChart3 } from "lucide-react";
+import { Heart, RotateCcw, BarChart3, Layers } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
@@ -119,6 +119,12 @@ const Index = () => {
         <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <BarChart3 className="w-3 h-3 md:w-3.5 md:h-3.5" />
           <span className="hidden sm:inline">인사이트</span>
+        </Button>
+      </Link>
+      <Link to="/batch">
+        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+          <Layers className="w-3 h-3 md:w-3.5 md:h-3.5" />
+          <span className="hidden sm:inline">일괄조회</span>
         </Button>
       </Link>
       <Link to="/compare">
