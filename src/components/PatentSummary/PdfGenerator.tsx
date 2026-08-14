@@ -723,19 +723,9 @@ export function PdfGenerator({
             2;
           checkNewPage(reserved);
 
-          // Section header: green vertical bar + title
-          yPosition += 6;
-          const headerY = yPosition;
-          // Left vertical bar
-          pdf.setFillColor(...brand);
-          pdf.rect(margin, headerY - 4.6, 1.6, 5.6, "F");
-          // Title
-          pdf.setFontSize(12);
-          pdf.setTextColor(...T.textDark);
-          pdf.text(sectionTitle, margin + 4, headerY);
-          pdf.text(sectionTitle, margin + 4.08, headerY);
-
-          yPosition = headerY + gapAfterTitle;
+          // Blueprint section header: §NN index + title + dotted rule
+          const headerY = sectionHeader(sectionTitle);
+          yPosition = headerY + gapAfterTitle + 1.5;
 
           if (
             (sectionTitle === "발명요약 및 특징" ||
