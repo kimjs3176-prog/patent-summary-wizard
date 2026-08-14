@@ -9,7 +9,35 @@ import { safeFetch } from "@/lib/safeFetch";
 import { PatentData } from "@/components/PatentSummary/types";
 
 const MAX_ITEMS = 20;
-const CONCURRENCY = 3;
+const CONCURRENCY = 1; // API 부하 방지: 순차 처리
+const REQUEST_GAP_MS = 700; // 요청 간 최소 간격
+const CACHE_TTL_MS = 1000 * 60 * 30; // 30분 세션 캐시
+const CACHE_PREFIX = "batch-patent:";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function readCache(num: string): PatentData | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_PREFIX + num);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { t: number; d: PatentData };
+    if (Date.now() - parsed.t > CACHE_TTL_MS) {
+      sessionStorage.removeItem(CACHE_PREFIX + num);
+      return null;
+    }
+    return parsed.d;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(num: string, data: PatentData) {
+  try {
+    sessionStorage.setItem(CACHE_PREFIX + num, JSON.stringify({ t: Date.now(), d: data }));
+  } catch {
+    /* 저장 실패는 무시 */
+  }
+}
 
 type RowStatus = "pending" | "loading" | "done" | "error";
 
@@ -23,6 +51,8 @@ interface BatchRow {
 }
 
 async function fetchPatent(patentNumber: string): Promise<PatentData> {
+  const cached = readCache(patentNumber);
+  if (cached) return cached;
   const res = await safeFetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-patent`,
     {
@@ -33,12 +63,14 @@ async function fetchPatent(patentNumber: string): Promise<PatentData> {
       },
       body: JSON.stringify({ patentNumber }),
       timeoutMs: 45000,
-      retries: 1,
+      retries: 0,
     }
   );
   const json = await res.json().catch(() => ({ success: false, error: "응답 형식 오류" }));
   if (!json.success || !json.data) throw new Error(json.error || "특허 정보를 찾을 수 없습니다.");
-  return json.data as PatentData;
+  const data = json.data as PatentData;
+  writeCache(patentNumber, data);
+  return data;
 }
 
 function firstSentences(text: string | undefined, count = 2): string {
@@ -56,6 +88,10 @@ const Batch = () => {
   const [isRunning, setIsRunning] = useState(false);
 
   const run = async (raw: string) => {
+    if (isRunning) {
+      toast.info("이미 조회가 진행 중입니다.");
+      return;
+    }
     const { supported, unsupported, invalid } = parseIpNumberList(raw);
     if (unsupported.length > 0) {
       toast.warning(`${unsupported.map((u) => IP_KIND_LABEL[u.kind]).join("·")} 번호는 지원하지 않아 제외했습니다.`);
@@ -67,7 +103,16 @@ const Batch = () => {
       toast.error("조회 가능한 특허·실용신안 번호가 없습니다.");
       return;
     }
-    let list: IpNumberInfo[] = supported;
+    // 중복 번호 제거 (동일 번호 반복 호출 방지)
+    const seen = new Set<string>();
+    let list: IpNumberInfo[] = supported.filter((ip) => {
+      if (seen.has(ip.digits)) return false;
+      seen.add(ip.digits);
+      return true;
+    });
+    if (list.length < supported.length) {
+      toast.info(`중복된 번호 ${supported.length - list.length}건을 제외했습니다.`);
+    }
     if (list.length > MAX_ITEMS) {
       toast.info(`한 번에 최대 ${MAX_ITEMS}건까지 조회합니다.`);
       list = list.slice(0, MAX_ITEMS);
@@ -87,6 +132,7 @@ const Batch = () => {
       while (cursor < list.length) {
         const idx = cursor++;
         const ip = list[idx];
+        if (idx > 0) await sleep(REQUEST_GAP_MS);
         setRows((prev) => prev.map((r) => (r.key === ip.digits ? { ...r, status: "loading" } : r)));
         try {
           const data = await fetchPatent(ip.normalized);
