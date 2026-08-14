@@ -9,6 +9,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Compare = lazy(() => import("./pages/Compare"));
 const Insights = lazy(() => import("./pages/Insights"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
+const Batch = lazy(() => import("./pages/Batch"));
 const SummarySample = lazy(() => import("./pages/SummarySample"));
 const TechVideos = lazy(() => import("./pages/TechVideos"));
 const NotFound = lazy(() => import("./pages/NotFound"));
