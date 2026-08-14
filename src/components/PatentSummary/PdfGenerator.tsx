@@ -551,7 +551,7 @@ export function PdfGenerator({
             pdf.setFillColor(...brandSoft);
             pdf.roundedRect(margin, rY, tile, tile, 2.2, 2.2, "F");
             pdf.setFontSize(13);
-            pdf.setTextColor(...brandDeepOf(v));
+            pdf.setTextColor(...scoreColor(v));
             const vW = pdf.getTextWidth(`${v}`);
             pdf.text(`${v}`, margin + tile / 2 - vW / 2, rY + tile / 2 + 2.2);
             pdf.text(`${v}`, margin + tile / 2 - vW / 2 + 0.15, rY + tile / 2 + 2.2);
