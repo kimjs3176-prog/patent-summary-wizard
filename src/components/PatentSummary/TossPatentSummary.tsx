@@ -680,7 +680,6 @@ export function TossPatentSummary({
                 patentData={patentData}
                 printRef={printRef}
                 commercializationDetails={details}
-                commercializationScore={score}
                 layoutConfig={pdfLayoutConfig}
               />
             )}
