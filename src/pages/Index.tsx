@@ -189,7 +189,24 @@ const Index = () => {
                       <span style={{ color: "hsl(158 62% 60%)" }}>Summary</span>
                       <span aria-hidden className="absolute left-0 -bottom-1 w-full h-px" style={{ background: "hsl(158 62% 60% / 0.5)" }} />
                     </span>
-                    <span style={{ color: "#eef4fb" }}> (AIS)</span>
+                    <span className="inline-block ml-1.5" aria-label="AIS">
+                      <span style={{ color: "#eef4fb" }}>(</span>
+                      {"AIS".split("").map((c, i) => (
+                        <span
+                          key={`ais-${i}`}
+                          className="inline-block animate-fade-in"
+                          style={{
+                            color: "hsl(158 62% 60%)",
+                            textShadow: "0 0 18px hsl(158 62% 60% / 0.45), 0 0 36px hsl(158 62% 60% / 0.25)",
+                            animationDelay: `${0.5 + i * 0.1}s`,
+                            animationFillMode: "both",
+                          }}
+                        >
+                          {c}
+                        </span>
+                      ))}
+                      <span style={{ color: "#eef4fb" }}>)</span>
+                    </span>
                   </h1>
 
                   <p className="text-base md:text-lg font-medium tracking-tight mb-4 md:mb-6" style={{ color: "hsl(158 62% 72%)" }}>
