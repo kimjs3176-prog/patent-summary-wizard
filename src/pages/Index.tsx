@@ -286,13 +286,13 @@ const Index = () => {
             )}
 
             {/* 주제별 빠른 탐색 */}
-            <section className="max-w-5xl mx-auto mb-6 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-              <div className="flex items-end justify-between mb-3 md:mb-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight">
+            <section className="max-w-5xl mx-auto mb-5 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <div className="flex items-end justify-between mb-2.5 md:mb-4">
+                <h2 className="text-[15px] md:text-2xl font-black tracking-tight">
                   <span className="text-primary">§</span> 주제별 탐색
                 </h2>
-                <div className="flex-1 mx-4 h-px bg-foreground/20" />
-                <span className="text-[10px] font-mono text-muted-foreground">/ INDEX</span>
+                <div className="flex-1 mx-3 md:mx-4 h-px bg-foreground/15 md:bg-foreground/20" />
+                <span className="hidden md:inline text-[10px] font-mono text-muted-foreground">/ INDEX</span>
               </div>
               <KeywordExplorer />
             </section>
@@ -327,7 +327,18 @@ const Index = () => {
                 </section>
               )}
 
-              {homepageVisible.techVideos !== false && (
+              {isMobile && !mobileMoreOpen && (homepageVisible.techVideos !== false || homepageVisible.techTransferGuide !== false) && (
+                <button
+                  type="button"
+                  onClick={() => setMobileMoreOpen(true)}
+                  className="w-full rounded-2xl border border-border/50 bg-card py-3 text-[13px] font-semibold text-muted-foreground inline-flex items-center justify-center gap-1.5 btn-press"
+                >
+                  기술영상 · 기술이전 안내 더보기
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {(!isMobile || mobileMoreOpen) && homepageVisible.techVideos !== false && (
                 <section>
                   <TechVideoSection videos={(() => {
                     try {
@@ -338,7 +349,7 @@ const Index = () => {
                 </section>
               )}
 
-              {homepageVisible.techTransferGuide !== false && (
+              {(!isMobile || mobileMoreOpen) && homepageVisible.techTransferGuide !== false && (
                 <section id="tech-transfer">
                   <TechTransferGuide />
                 </section>
