@@ -23,6 +23,8 @@ import { NoticeSection } from "@/components/NoticeSection";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ChevronDown } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -35,6 +37,8 @@ const Index = () => {
   const { settings } = useSiteSettings();
   const { favorites } = useFavoritePatents();
   const resultRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
   const homepageVisible = useMemo(() => {
     try { return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {}; } catch { return {}; }
@@ -162,7 +166,34 @@ const Index = () => {
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         {!summary && !isLoading ? (
           <>
-            {/* Blueprint Hero — technical drafting surface, monospace metadata */}
+            {/* ── Mobile: 검색 중심의 간결한 레이아웃 ───────────────── */}
+            {isMobile ? (
+              <section className="-mx-3 sm:-mx-4 mb-5 animate-fade-down">
+                <div className="relative overflow-hidden px-5 pt-7 pb-6" style={{ background: "linear-gradient(180deg, #0a1727 0%, #0c1d31 100%)" }}>
+                  <div aria-hidden className="blueprint-grid absolute inset-0 opacity-60" />
+                  <div className="relative">
+                    <span className="font-mono text-[9.5px] tracking-[0.22em] uppercase" style={{ color: "hsl(158 55% 62%)" }}>
+                      AGRI-FOOD PATENT AI
+                    </span>
+                    <h1 className="mt-2 text-[26px] font-black leading-[1.12] tracking-[-0.035em]" style={{ color: "#eef4fb" }}>
+                      Agri IP <span style={{ color: "hsl(158 62% 60%)" }}>Summary</span>
+                    </h1>
+                    <p className="mt-1.5 text-[13px] font-medium" style={{ color: "hsl(158 62% 72%)" }}>
+                      농업기술 특허를 한눈에, AI로 쉽게
+                    </p>
+
+                    <div className="mt-4 rounded-xl bg-white p-1.5" style={{ boxShadow: "0 14px 30px -16px hsl(218 60% 4% / 0.85)" }}>
+                      <PatentInput
+                        onSubmit={handleSubmit}
+                        isLoading={isLoading}
+                        onKeywordSearch={handleKeywordSearch}
+                        placeholder={settings.search_placeholder}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            ) : (
             <section className="blueprint-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-6 md:mb-9 animate-fade-down rounded-none md:rounded-2xl">
               <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-2xl">
                 <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #0a1727 0%, #0c1d31 100%)" }} />
@@ -252,15 +283,16 @@ const Index = () => {
                 </div>
               </div>
             </section>
+            )}
 
             {/* 주제별 빠른 탐색 */}
-            <section className="max-w-5xl mx-auto mb-6 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-              <div className="flex items-end justify-between mb-3 md:mb-4">
-                <h2 className="text-xl md:text-2xl font-black tracking-tight">
+            <section className="max-w-5xl mx-auto mb-5 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <div className="hidden md:flex items-end justify-between mb-2.5 md:mb-4">
+                <h2 className="text-[15px] md:text-2xl font-black tracking-tight">
                   <span className="text-primary">§</span> 주제별 탐색
                 </h2>
-                <div className="flex-1 mx-4 h-px bg-foreground/20" />
-                <span className="text-[10px] font-mono text-muted-foreground">/ INDEX</span>
+                <div className="flex-1 mx-3 md:mx-4 h-px bg-foreground/15 md:bg-foreground/20" />
+                <span className="hidden md:inline text-[10px] font-mono text-muted-foreground">/ INDEX</span>
               </div>
               <KeywordExplorer />
             </section>
@@ -295,7 +327,18 @@ const Index = () => {
                 </section>
               )}
 
-              {homepageVisible.techVideos !== false && (
+              {isMobile && !mobileMoreOpen && (homepageVisible.techVideos !== false || homepageVisible.techTransferGuide !== false) && (
+                <button
+                  type="button"
+                  onClick={() => setMobileMoreOpen(true)}
+                  className="w-full rounded-2xl border border-border/50 bg-card py-3 text-[13px] font-semibold text-muted-foreground inline-flex items-center justify-center gap-1.5 btn-press"
+                >
+                  기술영상 · 기술이전 안내 더보기
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {(!isMobile || mobileMoreOpen) && homepageVisible.techVideos !== false && (
                 <section>
                   <TechVideoSection videos={(() => {
                     try {
@@ -306,7 +349,7 @@ const Index = () => {
                 </section>
               )}
 
-              {homepageVisible.techTransferGuide !== false && (
+              {(!isMobile || mobileMoreOpen) && homepageVisible.techTransferGuide !== false && (
                 <section id="tech-transfer">
                   <TechTransferGuide />
                 </section>
