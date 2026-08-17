@@ -284,6 +284,7 @@ const Index = () => {
                 </div>
               </div>
             </section>
+            )}
 
             {/* 주제별 빠른 탐색 */}
             <section className="max-w-5xl mx-auto mb-6 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
