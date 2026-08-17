@@ -194,7 +194,6 @@ const Index = () => {
                 </div>
               </section>
             ) : (
-            {/* Blueprint Hero — technical drafting surface, monospace metadata */}
             <section className="blueprint-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-6 md:mb-9 animate-fade-down rounded-none md:rounded-2xl">
               <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-2xl">
                 <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #0a1727 0%, #0c1d31 100%)" }} />
