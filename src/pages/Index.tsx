@@ -287,7 +287,7 @@ const Index = () => {
 
             {/* 주제별 빠른 탐색 */}
             <section className="max-w-5xl mx-auto mb-5 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-              <div className="flex items-end justify-between mb-2.5 md:mb-4">
+              <div className="hidden md:flex items-end justify-between mb-2.5 md:mb-4">
                 <h2 className="text-[15px] md:text-2xl font-black tracking-tight">
                   <span className="text-primary">§</span> 주제별 탐색
                 </h2>
