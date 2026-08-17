@@ -23,6 +23,8 @@ import { NoticeSection } from "@/components/NoticeSection";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ChevronDown } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -35,6 +37,8 @@ const Index = () => {
   const { settings } = useSiteSettings();
   const { favorites } = useFavoritePatents();
   const resultRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
   const homepageVisible = useMemo(() => {
     try { return settings.homepage_visible_sections ? JSON.parse(settings.homepage_visible_sections) : {}; } catch { return {}; }
