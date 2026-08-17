@@ -5,6 +5,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKioskMode } from "@/hooks/useKioskMode";
 import { KioskKeyboard } from "@/components/KioskKeyboard";
+import { VisitorCounter } from "@/components/VisitorCounter";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -118,6 +119,9 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               캐시 초기화 후 새로고침
             </button>
           </p>
+          <div className="mt-5 flex justify-center">
+            <VisitorCounter />
+          </div>
         </div>
       </footer>
       <KioskKeyboard />
