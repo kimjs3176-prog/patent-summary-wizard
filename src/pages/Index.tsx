@@ -166,6 +166,34 @@ const Index = () => {
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         {!summary && !isLoading ? (
           <>
+            {/* ── Mobile: 검색 중심의 간결한 레이아웃 ───────────────── */}
+            {isMobile ? (
+              <section className="-mx-3 sm:-mx-4 mb-5 animate-fade-down">
+                <div className="relative overflow-hidden px-5 pt-7 pb-6" style={{ background: "linear-gradient(180deg, #0a1727 0%, #0c1d31 100%)" }}>
+                  <div aria-hidden className="blueprint-grid absolute inset-0 opacity-60" />
+                  <div className="relative">
+                    <span className="font-mono text-[9.5px] tracking-[0.22em] uppercase" style={{ color: "hsl(158 55% 62%)" }}>
+                      AGRI-FOOD PATENT AI
+                    </span>
+                    <h1 className="mt-2 text-[26px] font-black leading-[1.12] tracking-[-0.035em]" style={{ color: "#eef4fb" }}>
+                      Agri IP <span style={{ color: "hsl(158 62% 60%)" }}>Summary</span>
+                    </h1>
+                    <p className="mt-1.5 text-[13px] font-medium" style={{ color: "hsl(158 62% 72%)" }}>
+                      농업기술 특허를 한눈에, AI로 쉽게
+                    </p>
+
+                    <div className="mt-4 rounded-xl bg-white p-1.5" style={{ boxShadow: "0 14px 30px -16px hsl(218 60% 4% / 0.85)" }}>
+                      <PatentInput
+                        onSubmit={handleSubmit}
+                        isLoading={isLoading}
+                        onKeywordSearch={handleKeywordSearch}
+                        placeholder={settings.search_placeholder}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            ) : (
             {/* Blueprint Hero — technical drafting surface, monospace metadata */}
             <section className="blueprint-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-6 md:mb-9 animate-fade-down rounded-none md:rounded-2xl">
               <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-2xl">
