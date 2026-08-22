@@ -243,7 +243,20 @@ export function PdfGenerator({
         pdf.setFontSize(fontSize);
         const wrappedLines = pdf.splitTextToSize(plainText, maxW);
 
+        // ── Widow / orphan control (book typesetting) ──
+        // Never leave a single line of a paragraph alone at the bottom of a
+        // page, nor carry a single line over to the next page.
+        if (wrappedLines.length >= 2) {
+          const fits = Math.max(0, Math.floor(spaceLeft() / lhMm));
+          if (fits > 0 && fits < wrappedLines.length && (fits === 1 || wrappedLines.length - fits === 1)) {
+            pdf.addPage();
+            yPosition = margin + headReserve;
+            pageHeads[pdf.getNumberOfPages()] = runningHeadTitle;
+          }
+        }
+
         let charIdx = 0;
+
         for (const wLine of wrappedLines) {
           checkNewPage(lhMm + 1);
           let xPos = indentX;
