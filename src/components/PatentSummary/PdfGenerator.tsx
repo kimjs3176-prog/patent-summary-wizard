@@ -194,6 +194,9 @@ export function PdfGenerator({
       };
 
       let sectionIndex = 0;
+      // Section register → PDF bookmarks (outline) + running head context
+      const outlineEntries: { title: string; page: number }[] = [];
+      let runningHeadTitle = "";
 
       const sectionHeader = (title: string) => {
         yPosition += 6;
@@ -206,8 +209,11 @@ export function PdfGenerator({
         pdf.text(title, margin + idxW + 3, headerY);
         pdf.text(title, margin + idxW + 3.08, headerY);
         dottedRule(headerY + 2.4);
+        outlineEntries.push({ title: `${idx} ${title}`, page: pdf.getNumberOfPages() });
+        runningHeadTitle = title;
         return headerY;
       };
+
 
       // ── Inline bold text renderer ──
       const SUP_TOKEN_RE = /(\*\*[^*]+\*\*|\[\^\d+\])/g;
