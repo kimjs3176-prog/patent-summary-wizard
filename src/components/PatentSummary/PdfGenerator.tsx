@@ -91,8 +91,13 @@ export function PdfGenerator({
       let pageWidth = 0;
       let pageHeight = 0;
       let margin = 0;
+      let pageHeadsOut: Record<number, string> = {};
+      let outlineOut: { title: string; page: number }[] = [];
+      let brandOut: [number, number, number] = [16, 173, 127];
+      let docTitleOut = "특허 요약";
       const TARGET_PAGES = 2;
       const MAX_ATTEMPTS = 5;
+
 
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       pdf = new jsPDF({
@@ -123,15 +128,25 @@ export function PdfGenerator({
       ];
 
       const footerReserve = 14;
+      // Running head reserve on continuation pages (book anatomy: 러닝 헤드)
+      const headReserve = 10;
+
+      const pageHeads: Record<number, string> = {};
 
       const checkNewPage = (neededHeight: number) => {
         if (yPosition + neededHeight > pageHeight - margin - footerReserve) {
           pdf.addPage();
-          yPosition = margin + 4;
+          yPosition = margin + headReserve;
+          pageHeads[pdf.getNumberOfPages()] = runningHeadTitle;
           return true;
         }
         return false;
       };
+
+
+      // Space left on the current page for body content
+      const spaceLeft = () => pageHeight - margin - footerReserve - yPosition;
+
 
       const drawText = (
         text: string,
@@ -188,6 +203,9 @@ export function PdfGenerator({
       };
 
       let sectionIndex = 0;
+      // Section register → PDF bookmarks (outline) + running head context
+      const outlineEntries: { title: string; page: number }[] = [];
+      let runningHeadTitle = "";
 
       const sectionHeader = (title: string) => {
         yPosition += 6;
@@ -200,8 +218,11 @@ export function PdfGenerator({
         pdf.text(title, margin + idxW + 3, headerY);
         pdf.text(title, margin + idxW + 3.08, headerY);
         dottedRule(headerY + 2.4);
+        outlineEntries.push({ title: `${idx} ${title}`, page: pdf.getNumberOfPages() });
+        runningHeadTitle = title;
         return headerY;
       };
+
 
       // ── Inline bold text renderer ──
       const SUP_TOKEN_RE = /(\*\*[^*]+\*\*|\[\^\d+\])/g;
@@ -227,7 +248,20 @@ export function PdfGenerator({
         pdf.setFontSize(fontSize);
         const wrappedLines = pdf.splitTextToSize(plainText, maxW);
 
+        // ── Widow / orphan control (book typesetting) ──
+        // Never leave a single line of a paragraph alone at the bottom of a
+        // page, nor carry a single line over to the next page.
+        if (wrappedLines.length >= 2) {
+          const fits = Math.max(0, Math.floor(spaceLeft() / lhMm));
+          if (fits > 0 && fits < wrappedLines.length && (fits === 1 || wrappedLines.length - fits === 1)) {
+            pdf.addPage();
+            yPosition = margin + headReserve;
+            pageHeads[pdf.getNumberOfPages()] = runningHeadTitle;
+          }
+        }
+
         let charIdx = 0;
+
         for (const wLine of wrappedLines) {
           checkNewPage(lhMm + 1);
           let xPos = indentX;
@@ -674,6 +708,10 @@ export function PdfGenerator({
       }
 
       // ── End of build attempt: check fit and retry if overflow ──
+      pageHeadsOut = pageHeads;
+      outlineOut = outlineEntries;
+      brandOut = brand;
+      docTitleOut = patentData?.titleKo || patentData?.title || "특허 요약";
       const pageCount = pdf.getNumberOfPages();
       if (pageCount <= TARGET_PAGES || attempt === MAX_ATTEMPTS - 1) break;
       // Shrink for next attempt — favor margin/line-height before font.
@@ -687,11 +725,34 @@ export function PdfGenerator({
       } // end for-loop
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  FOOTER                                  ██
+      // ██  RUNNING SYSTEM — running head + folio   ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      const bodyFont = pdf.getFont().fontName;
       const totalPages = pdf.getNumberOfPages();
+      const truncate = (s: string, n: number) => (s.length > n ? s.slice(0, n) + "…" : s);
+
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
+
+        // Running head (continuation pages only — the opener carries the title block)
+        if (i > 1) {
+          const hy = margin + 3.2;
+          pdf.setFontSize(6.8);
+          pdf.setTextColor(...T.textFaint);
+          pdf.text(truncate(docTitleOut, 34), margin, hy);
+          const head = pageHeadsOut[i];
+          if (head) {
+            pdf.setFontSize(6.8);
+            const t = truncate(head, 22);
+            pdf.text(t, pageWidth - margin - pdf.getTextWidth(t), hy);
+          }
+          pdf.setDrawColor(...T.dividerLight);
+          pdf.setLineWidth(0.2);
+          pdf.line(margin, hy + 2.2, pageWidth - margin, hy + 2.2);
+          pdf.setFillColor(...brandOut);
+          pdf.rect(margin, hy + 2.1, 8, 0.4, "F");
+        }
+
         const fy = pageHeight - 9;
         // very light divider
         pdf.setDrawColor(...T.dividerLight);
@@ -705,13 +766,40 @@ export function PdfGenerator({
         const dateText = cfg.footer_show_date
           ? new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.\s/g, ".").replace(/\.$/, "")
           : "";
-        const pageText = cfg.footer_show_page ? `${i}` : "";
-        const right = [dateText, pageText].filter(Boolean).join(" · ");
-        if (right) {
-          const rW = pdf.getTextWidth(right);
-          pdf.text(right, pageWidth - margin - rW, fy);
+        if (dateText) {
+          pdf.setFontSize(7);
+          const dW = pdf.getTextWidth(dateText);
+          const folioW = cfg.footer_show_page ? 18 : 0;
+          pdf.text(dateText, pageWidth - margin - folioW - dW, fy);
+        }
+        // Folio in monospace: "03 / 05"
+        if (cfg.footer_show_page) {
+          const folio = `${String(i).padStart(2, "0")} / ${String(totalPages).padStart(2, "0")}`;
+          pdf.setFont("courier", "normal");
+          pdf.setFontSize(7);
+          pdf.setTextColor(...T.textMuted);
+          pdf.text(folio, pageWidth - margin - pdf.getTextWidth(folio), fy);
+          pdf.setFont(bodyFont, "normal");
         }
       }
+
+      // Document metadata + section bookmarks (navigable outline)
+      pdf.setProperties({
+        title: `${docTitleOut} · 특허 AI 분석 요약서`,
+        subject: `특허 ${patentNumber} AI 기술분석 요약`,
+        author: "Agri IP Summary (AIS)",
+        keywords: "특허, AI 분석, 기술이전, 농식품",
+        creator: "Agri IP Summary (AIS)",
+      });
+      try {
+        for (const e of outlineOut) {
+          pdf.outline.add(null, e.title, { pageNumber: e.page });
+
+        }
+      } catch {
+        /* outline is best-effort */
+      }
+
 
       pdf.save(`특허요약_${patentNumber}.pdf`);
       toast.success("PDF가 다운로드되었습니다!");
