@@ -793,8 +793,8 @@ export function PdfGenerator({
       });
       try {
         for (const e of outlineOut) {
-          // @ts-expect-error jsPDF outline API is untyped
           pdf.outline.add(null, e.title, { pageNumber: e.page });
+
         }
       } catch {
         /* outline is best-effort */
