@@ -91,8 +91,13 @@ export function PdfGenerator({
       let pageWidth = 0;
       let pageHeight = 0;
       let margin = 0;
+      let pageHeadsOut: Record<number, string> = {};
+      let outlineOut: { title: string; page: number }[] = [];
+      let brandOut: [number, number, number] = [16, 173, 127];
+      let docTitleOut = "특허 요약";
       const TARGET_PAGES = 2;
       const MAX_ATTEMPTS = 5;
+
 
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       pdf = new jsPDF({
