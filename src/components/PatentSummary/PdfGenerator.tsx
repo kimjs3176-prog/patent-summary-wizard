@@ -123,15 +123,21 @@ export function PdfGenerator({
       ];
 
       const footerReserve = 14;
+      // Running head reserve on continuation pages (book anatomy: 러닝 헤드)
+      const headReserve = 10;
 
       const checkNewPage = (neededHeight: number) => {
         if (yPosition + neededHeight > pageHeight - margin - footerReserve) {
           pdf.addPage();
-          yPosition = margin + 4;
+          yPosition = margin + headReserve;
           return true;
         }
         return false;
       };
+
+      // Space left on the current page for body content
+      const spaceLeft = () => pageHeight - margin - footerReserve - yPosition;
+
 
       const drawText = (
         text: string,
