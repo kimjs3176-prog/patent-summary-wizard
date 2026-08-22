@@ -126,14 +126,18 @@ export function PdfGenerator({
       // Running head reserve on continuation pages (book anatomy: 러닝 헤드)
       const headReserve = 10;
 
+      const pageHeads: Record<number, string> = {};
+
       const checkNewPage = (neededHeight: number) => {
         if (yPosition + neededHeight > pageHeight - margin - footerReserve) {
           pdf.addPage();
           yPosition = margin + headReserve;
+          pageHeads[pdf.getNumberOfPages()] = runningHeadTitle;
           return true;
         }
         return false;
       };
+
 
       // Space left on the current page for body content
       const spaceLeft = () => pageHeight - margin - footerReserve - yPosition;
