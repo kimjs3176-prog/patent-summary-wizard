@@ -703,6 +703,10 @@ export function PdfGenerator({
       }
 
       // ── End of build attempt: check fit and retry if overflow ──
+      pageHeadsOut = pageHeads;
+      outlineOut = outlineEntries;
+      brandOut = brand;
+      docTitleOut = patentData?.titleKo || patentData?.title || "특허 요약";
       const pageCount = pdf.getNumberOfPages();
       if (pageCount <= TARGET_PAGES || attempt === MAX_ATTEMPTS - 1) break;
       // Shrink for next attempt — favor margin/line-height before font.
@@ -716,11 +720,34 @@ export function PdfGenerator({
       } // end for-loop
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  FOOTER                                  ██
+      // ██  RUNNING SYSTEM — running head + folio   ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      const bodyFont = pdf.getFont().fontName;
       const totalPages = pdf.getNumberOfPages();
+      const truncate = (s: string, n: number) => (s.length > n ? s.slice(0, n) + "…" : s);
+
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
+
+        // Running head (continuation pages only — the opener carries the title block)
+        if (i > 1) {
+          const hy = margin + 3.2;
+          pdf.setFontSize(6.8);
+          pdf.setTextColor(...T.textFaint);
+          pdf.text(truncate(docTitleOut, 34), margin, hy);
+          const head = pageHeadsOut[i];
+          if (head) {
+            pdf.setFontSize(6.8);
+            const t = truncate(head, 22);
+            pdf.text(t, pageWidth - margin - pdf.getTextWidth(t), hy);
+          }
+          pdf.setDrawColor(...T.dividerLight);
+          pdf.setLineWidth(0.2);
+          pdf.line(margin, hy + 2.2, pageWidth - margin, hy + 2.2);
+          pdf.setFillColor(...brandOut);
+          pdf.rect(margin, hy + 2.1, 8, 0.4, "F");
+        }
+
         const fy = pageHeight - 9;
         // very light divider
         pdf.setDrawColor(...T.dividerLight);
@@ -734,13 +761,40 @@ export function PdfGenerator({
         const dateText = cfg.footer_show_date
           ? new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.\s/g, ".").replace(/\.$/, "")
           : "";
-        const pageText = cfg.footer_show_page ? `${i}` : "";
-        const right = [dateText, pageText].filter(Boolean).join(" · ");
-        if (right) {
-          const rW = pdf.getTextWidth(right);
-          pdf.text(right, pageWidth - margin - rW, fy);
+        if (dateText) {
+          pdf.setFontSize(7);
+          const dW = pdf.getTextWidth(dateText);
+          const folioW = cfg.footer_show_page ? 18 : 0;
+          pdf.text(dateText, pageWidth - margin - folioW - dW, fy);
+        }
+        // Folio in monospace: "03 / 05"
+        if (cfg.footer_show_page) {
+          const folio = `${String(i).padStart(2, "0")} / ${String(totalPages).padStart(2, "0")}`;
+          pdf.setFont("courier", "normal");
+          pdf.setFontSize(7);
+          pdf.setTextColor(...T.textMuted);
+          pdf.text(folio, pageWidth - margin - pdf.getTextWidth(folio), fy);
+          pdf.setFont(bodyFont, "normal");
         }
       }
+
+      // Document metadata + section bookmarks (navigable outline)
+      pdf.setProperties({
+        title: `${docTitleOut} · 특허 AI 분석 요약서`,
+        subject: `특허 ${patentNumber} AI 기술분석 요약`,
+        author: "Agri IP Summary (AIS)",
+        keywords: "특허, AI 분석, 기술이전, 농식품",
+        creator: "Agri IP Summary (AIS)",
+      });
+      try {
+        for (const e of outlineOut) {
+          // @ts-expect-error jsPDF outline API is untyped
+          pdf.outline.add(null, e.title, { pageNumber: e.page });
+        }
+      } catch {
+        /* outline is best-effort */
+      }
+
 
       pdf.save(`특허요약_${patentNumber}.pdf`);
       toast.success("PDF가 다운로드되었습니다!");
