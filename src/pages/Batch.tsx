@@ -1,12 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Layers, Download, ExternalLink, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Layers, Download, ExternalLink, Loader2, AlertTriangle, CheckCircle2, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { parseIpNumberList, IP_KIND_LABEL, IpNumberInfo } from "@/lib/ipNumber";
 import { safeFetch } from "@/lib/safeFetch";
 import { PatentData } from "@/components/PatentSummary/types";
+import { usePatentSummary } from "@/hooks/usePatentSummary";
+import { TossPatentSummary } from "@/components/PatentSummary/TossPatentSummary";
 
 const MAX_ITEMS = 20;
 const CONCURRENCY = 1; // API 부하 방지: 순차 처리
