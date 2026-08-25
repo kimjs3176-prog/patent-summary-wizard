@@ -88,6 +88,18 @@ const Batch = () => {
   const [input, setInput] = useState("");
   const [rows, setRows] = useState<BatchRow[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const {
+    isLoading, summary, currentPatent, patentData, relatedPatents, generateSummary,
+  } = usePatentSummary();
+
+  const openSummary = (num: string) => {
+    setSelected(num);
+    if (num !== currentPatent) void generateSummary(num);
+    setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
+
 
   const run = async (raw: string) => {
     if (isRunning) {
