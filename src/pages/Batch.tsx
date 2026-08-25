@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Layers, Download, ExternalLink, Loader2, AlertTriangle, CheckCircle2, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -83,7 +83,6 @@ function firstSentences(text: string | undefined, count = 2): string {
 }
 
 const Batch = () => {
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const [input, setInput] = useState("");
   const [rows, setRows] = useState<BatchRow[]>([]);
