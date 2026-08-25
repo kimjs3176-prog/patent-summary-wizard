@@ -248,63 +248,115 @@ const Batch = () => {
           </div>
         </div>
 
-        <div className="space-y-3">
-          {rows.map((row, i) => (
-            <article key={row.key} className="rounded-2xl border border-border/50 bg-card p-4">
-              <div className="flex items-start gap-3">
-                <div className="font-mono text-[11px] text-muted-foreground pt-1 w-8 shrink-0">
-                  {String(i + 1).padStart(2, "0")}
-                </div>
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs text-primary">{row.number}</span>
-                    <span className="text-[10px] rounded-full border border-border/60 px-2 py-0.5 text-muted-foreground">
-                      {row.kindLabel}
-                    </span>
-                    {row.status === "loading" && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
-                    {row.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
-                    {row.status === "error" && <AlertTriangle className="w-3.5 h-3.5 text-destructive" />}
-                  </div>
+        <div className={selected ? "flex flex-col lg:flex-row gap-5 items-start" : ""}>
+          <div className={selected ? "space-y-3 w-full lg:w-[340px] shrink-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-1" : "space-y-3"}>
+            {rows.map((row, i) => {
+              const isActive = selected === row.number;
+              return (
+                <article
+                  key={row.key}
+                  className={`rounded-2xl border bg-card p-4 transition-colors ${isActive ? "border-primary/60 ring-1 ring-primary/20" : "border-border/50"}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="font-mono text-[11px] text-muted-foreground pt-1 w-8 shrink-0">
+                      {String(i + 1).padStart(2, "0")}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs text-primary">{row.number}</span>
+                        <span className="text-[10px] rounded-full border border-border/60 px-2 py-0.5 text-muted-foreground">
+                          {row.kindLabel}
+                        </span>
+                        {row.status === "loading" && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                        {row.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
+                        {row.status === "error" && <AlertTriangle className="w-3.5 h-3.5 text-destructive" />}
+                      </div>
 
-                  {row.status === "error" && (
-                    <p className="text-sm text-destructive">{row.error}</p>
-                  )}
-                  {row.status !== "error" && (
-                    <>
-                      <h2 className="text-[15px] font-semibold leading-snug">
-                        {row.data?.titleKo || row.data?.title || (row.status === "done" ? "명칭 없음" : "조회 중…")}
-                      </h2>
-                      {row.data && (
+                      {row.status === "error" && (
+                        <p className="text-sm text-destructive">{row.error}</p>
+                      )}
+                      {row.status !== "error" && (
                         <>
-                          <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
-                            {row.data.assignee && <span>출원인 {row.data.assignee}</span>}
-                            {row.data.filingDate && <span>출원일 {row.data.filingDate}</span>}
-                            {row.data.registrationDate && <span>등록일 {row.data.registrationDate}</span>}
-                            {row.data.classifications?.[0] && <span>IPC {row.data.classifications[0]}</span>}
-                          </div>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {firstSentences(row.data.abstract)}
-                          </p>
+                          <h2 className="text-[15px] font-semibold leading-snug">
+                            {row.data?.titleKo || row.data?.title || (row.status === "done" ? "명칭 없음" : "조회 중…")}
+                          </h2>
+                          {row.data && (
+                            <>
+                              <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+                                {row.data.assignee && <span>출원인 {row.data.assignee}</span>}
+                                {row.data.filingDate && <span>출원일 {row.data.filingDate}</span>}
+                                {!selected && row.data.registrationDate && <span>등록일 {row.data.registrationDate}</span>}
+                                {!selected && row.data.classifications?.[0] && <span>IPC {row.data.classifications[0]}</span>}
+                              </div>
+                              {!selected && (
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  {firstSentences(row.data.abstract)}
+                                </p>
+                              )}
+                            </>
+                          )}
                         </>
                       )}
-                    </>
-                  )}
-                </div>
 
-                {row.status === "done" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-xl gap-1.5 shrink-0"
-                    onClick={() => navigate(`/?patent=${encodeURIComponent(row.number)}`)}
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> AI 요약서
+                      {row.status === "done" && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          <Button
+                            size="sm"
+                            variant={isActive ? "default" : "outline"}
+                            className="rounded-xl gap-1.5 h-8 text-xs"
+                            onClick={() => openSummary(row.number)}
+                          >
+                            <FileText className="w-3.5 h-3.5" /> AI 요약서
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="rounded-xl gap-1.5 h-8 text-xs text-muted-foreground"
+                            onClick={() => window.open(`/?patent=${encodeURIComponent(row.number)}`, "_blank")}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" /> 새 창
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {selected && (
+            <div ref={summaryRef} className="min-w-0 flex-1 w-full">
+              <div className="rounded-2xl border border-border/50 bg-card p-4 md:p-5">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[10px] tracking-[0.2em] text-primary uppercase">§ AI Summary</div>
+                    <div className="font-mono text-xs text-muted-foreground truncate">{selected}</div>
+                  </div>
+                  <Button size="sm" variant="ghost" className="rounded-full h-8 px-2" onClick={() => setSelected(null)}>
+                    <X className="w-4 h-4" />
                   </Button>
+                </div>
+                {isLoading && !summary ? (
+                  <div className="py-16 flex flex-col items-center gap-3 text-sm text-muted-foreground">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    AI 요약서를 생성하는 중입니다…
+                  </div>
+                ) : (
+                  <TossPatentSummary
+                    content={summary}
+                    patentNumber={currentPatent}
+                    isStreaming={isLoading}
+                    patentData={patentData}
+                    relatedPatents={relatedPatents}
+                    onRelatedPatentClick={(num: string) => openSummary(num)}
+                  />
                 )}
               </div>
-            </article>
-          ))}
+            </div>
+          )}
         </div>
+
       </div>
     </PageLayout>
   );
