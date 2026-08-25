@@ -447,87 +447,67 @@ export function PdfGenerator({
         yPosition += titleLh;
       }
 
-      // Scale title → meta gap with the wrapped title length
-      yPosition += titleLines.length <= 1 ? 1.5 : titleLines.length === 2 ? 2.5 : 3.5;
-
-      // Meta line
-      const metaParts: string[] = [];
-      metaParts.push(`${numberLabel} ${displayNumber}`);
-      if (patentData?.assignee) metaParts.push(patentData.assignee);
-      if (dateValue) metaParts.push(`${dateValue} ${dateLabel}`);
-      const metaText = metaParts.join(" · ");
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(...T.textFaint);
-      const metaLines = pdf.splitTextToSize(metaText, contentWidth);
-      for (const ml of metaLines) {
-        checkNewPage(5);
-        pdf.text(ml, margin, yPosition);
-        yPosition += 4.4;
-      }
-
-      yPosition += 4;
-
-      // Blueprint rule
-      dottedRule(yPosition);
-      yPosition += 8;
+      // Scale title → info box gap with the wrapped title length
+      yPosition += titleLines.length <= 1 ? 3.5 : titleLines.length === 2 ? 4.5 : 5.5;
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ██  STAT BAND — TRL · Filing date          ██
+      // ██  INFO BOX — grouped patent metadata      ██
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       const trlVal = commercializationDetails?.trl;
 
-      type Stat = { label: string; main: string; sub?: string };
-      const stats: Stat[] = [];
-      if (trlVal != null) stats.push({ label: "TRL", main: `${trlVal}`, sub: "단계" });
-      if (patentData?.filingDate) stats.push({ label: "출원일", main: patentData.filingDate.replace(/-/g, ".") });
-      else if (patentData?.assignee) stats.push({ label: "출원인", main: patentData.assignee.length > 12 ? patentData.assignee.slice(0, 12) + "…" : patentData.assignee });
+      type Field = { label: string; value: string };
+      const fields: Field[] = [];
+      const push = (label: string, value?: string | null) => {
+        if (value && String(value).trim()) fields.push({ label, value: String(value).trim() });
+      };
+      push(numberLabel, String(displayNumber));
+      if (!isApp && patentData?.applicationNumber) push("출원번호", patentData.applicationNumber);
+      push("출원인", patentData?.assignee);
+      push("출원일", patentData?.filingDate?.replace(/-/g, "."));
+      if (dateValue && !isApp) push(`${dateLabel}일`, dateValue.replace(/-/g, "."));
+      push("발명자", patentData?.inventors?.slice(0, 3).join(", "));
+      push("IPC", patentData?.classifications?.slice(0, 2).join(", "));
+      if (trlVal != null) push("TRL", `${trlVal}단계`);
 
-      if (stats.length > 0) {
-        const bandH = 23;
-        checkNewPage(bandH + 8);
+      if (fields.length > 0) {
+        const cols = 2;
+        const rows = Math.ceil(fields.length / cols);
+        const padY = 5.2;
+        const rowH = 7.2;
+        const boxH = padY * 2 + rows * rowH - 1.6;
+        checkNewPage(boxH + 8);
         const bY = yPosition;
         pdf.setFillColor(...T.bandBg);
-        pdf.rect(margin, bY, contentWidth, bandH, "F");
-        cornerMarks(margin, bY, contentWidth, bandH);
+        pdf.rect(margin, bY, contentWidth, boxH, "F");
+        cornerMarks(margin, bY, contentWidth, boxH);
 
-        const colW = contentWidth / stats.length;
-        for (let i = 0; i < stats.length; i++) {
-          const s = stats[i];
-          const cx = margin + colW * i + colW / 2;
-          // label (kept in Korean, centered)
-          drawText(s.label, cx, bY + 7.6, { size: 7.2, color: T.textMuted, align: "center" });
-          // main + sub on same baseline
-          pdf.setFontSize(15);
+        const colW = contentWidth / cols;
+        const labelW = 20;
+        for (let i = 0; i < fields.length; i++) {
+          const c = i % cols;
+          const r = Math.floor(i / cols);
+          const x = margin + colW * c + 6;
+          const y = bY + padY + r * rowH + 3.2;
+          drawMono(fields[i].label, x, y, { size: 6.6, color: T.textFaint });
+          pdf.setFontSize(8.6);
           pdf.setTextColor(...T.textDark);
-          const mainW = pdf.getTextWidth(s.main);
-          let subW = 0;
-          if (s.sub) {
-            pdf.setFontSize(8.5);
-            subW = pdf.getTextWidth(" " + s.sub);
-          }
-          const totalW = mainW + subW;
-          const startX = cx - totalW / 2;
-          pdf.setFontSize(15);
-          pdf.setTextColor(...T.textDark);
-          pdf.text(s.main, startX, bY + 16);
-          pdf.text(s.main, startX + 0.18, bY + 16);
-          if (s.sub) {
-            pdf.setFontSize(8.5);
-            pdf.setTextColor(...T.textMuted);
-            pdf.text(" " + s.sub, startX + mainW, bY + 16);
-          }
+          const vLines = pdf.splitTextToSize(fields[i].value, colW - labelW - 12);
+          pdf.text(vLines[0] + (vLines.length > 1 ? "…" : ""), x + labelW, y);
+        }
 
-          // divider
-          if (i < stats.length - 1) {
-            pdf.setDrawColor(...T.divider);
-            pdf.setLineWidth(0.2);
-            const xD = margin + colW * (i + 1);
-            for (let yD = bY + 4; yD < bY + bandH - 4; yD += 1.2) {
-              pdf.line(xD, yD, xD, Math.min(yD + 0.6, bY + bandH - 4));
-            }
+        // column divider
+        if (fields.length > 1) {
+          pdf.setDrawColor(...T.divider);
+          pdf.setLineWidth(0.2);
+          const xD = margin + colW;
+          for (let yD = bY + 4; yD < bY + boxH - 4; yD += 1.2) {
+            pdf.line(xD, yD, xD, Math.min(yD + 0.6, bY + boxH - 4));
           }
         }
-        yPosition = bY + bandH + 10;
+        yPosition = bY + boxH + 9;
+      } else {
+        dottedRule(yPosition);
+        yPosition += 8;
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
