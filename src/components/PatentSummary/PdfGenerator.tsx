@@ -175,9 +175,12 @@ export function PdfGenerator({
         opts: { size?: number; color?: [number, number, number]; align?: "left" | "right" } = {}
       ) => {
         const { size = 6.8, color = T.textFaint, align = "left" } = opts;
-        pdf.setFont("courier", "normal");
+        // Courier has no Hangul glyphs → fall back to the embedded Korean font
+        const isAscii = !/[^\x00-\x7F]/.test(text);
+        pdf.setFont(isAscii ? "courier" : KOREAN_FONT, "normal");
         pdf.setFontSize(size);
         pdf.setTextColor(...color);
+
         const w = pdf.getTextWidth(text);
         pdf.text(text, align === "right" ? x - w : x, y);
         pdf.setFont(KOREAN_FONT, "normal");
