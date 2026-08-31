@@ -1,77 +1,84 @@
 ---
 name: patent-ai-summary-platform
-description: Build or adapt an AI patent analysis & summary service (KIPRIS search, AI 요약서, 사업화 점수, 규제 분석, PDF/MCP 출력) for any institution or technology field — use when porting the AIS/Agri IP Summary architecture to a new organization, changing the applicant scope, or adding a new domain vertical.
+description: Build or port a patent AI search/summary/commercialization-scoring/regulation-matching service for any institution, technology field, patent office API, LLM provider, and web stack. Use when a request involves institution-scoped patent portfolios, AI patent summaries, TRL or commercialization scoring, patent PDF reports, or exposing patent tooling as MCP.
 ---
 
-# Patent AI Summary Platform (범용 이식 스킬)
+# Patent AI Summary Platform (stack-agnostic)
 
-This skill generalizes the Agri IP Summary (AIS) architecture so a different institution
-(보건·에너지·해양·국방·지자체 등) can run the same pipeline over its own patent portfolio
-and technology field.
+A portable blueprint for a service that searches an institution's patent portfolio,
+generates AI summaries, scores commercialization potential, matches regulations, and
+publishes the result as web pages, PDF reports, and MCP tools.
 
-## What the platform is
+Nothing here is tied to a specific framework, runtime, database, patent office, or model
+vendor. Stack-specific wiring lives in `references/stack-adapters.md`.
+
+## Architecture (contracts, not code)
 
 ```text
-사용자 입력(특허번호 / 키워드 / 발명자 / 일괄목록)
+user input (patent number / keyword / inventor / batch list)
         │
-        ├─ search-patents      KIPRIS 검색 + 기관 필터 + IDF 랭킹
-        ├─ fetch-patent        서지·청구항·초록·대표도면 (7일 캐시)
-        ├─ summarize-patent    LLM 스트리밍 요약서 (SSE)
-        ├─ analyze-commercialization  기술성/시장성/사업성 점수 + TRL
-        ├─ analyze-regulations 국가법령정보 API 규제 매칭
+        ├─ search-patents               office API + applicant scope + IDF ranking
+        ├─ fetch-patent                 bibliographic, claims, abstract, drawings (cached)
+        ├─ summarize-patent             LLM streaming summary
+        ├─ analyze-commercialization    tech / market / business scores + TRL
+        ├─ analyze-regulations          statute lookup for the tech field
         └─ recommend-similar-patents
         │
-   TossPatentSummary (웹) → PdfGenerator (PDF) → MCP tools (에이전트)
+   web summary view → PDF report → MCP tools (agents)
 ```
 
-Every piece is domain-agnostic **except four things**: the applicant whitelist, the
-domain keyword dictionary, the scoring rubric, and the branding. Porting = changing
-those four, nothing else.
+Each bullet is one server endpoint with a stable JSON contract
+(`references/pipeline.md`). Swap the runtime freely; keep the contracts.
 
-## Porting checklist (in order)
+## The five variables when porting
 
-1. **기관 스코프** — replace the applicant filter list. See
-   `references/domain-config.md`. Never leave the original 6개 농업기관 list in place;
-   an unfiltered service returns the whole KIPRIS corpus and every downstream score
-   becomes meaningless.
-2. **도메인 사전** — swap keyword categories (소재/공정/용도/효과 in agri) for the new
-   field's categories, and rewrite the false-positive guards.
-3. **평가 루브릭** — retune `analyze-commercialization` prompt axes and score bands to
-   the new field's commercialization reality (see `references/scoring.md`).
-4. **규제 매핑** — change the law-domain hints passed to 국가법령정보 검색.
-5. **브랜딩** — service name, subtitle, color token, index.html metadata, MCP server
-   name/title in `src/lib/mcp/index.ts`.
-6. **재배포** — deploy edge functions, regenerate MCP manifest, publish.
+Everything else is reusable. Change exactly these:
 
-## Hard rules learned the hard way
+| # | Variable | Where defined | Reference |
+| --- | --- | --- | --- |
+| 1 | Institution scope (applicant whitelist) | domain config, enforced server-side | `references/domain-config.md` |
+| 2 | Domain keyword dictionary + false-positive guards | domain config | `references/domain-config.md` |
+| 3 | Commercialization rubric, weights, score bands, TRL evidence rules | scoring prompt | `references/scoring.md` |
+| 4 | Regulation/statute domain hints and law-search API | regulation endpoint | `references/pipeline.md` |
+| 5 | Branding: name, subtitle, metadata, palette, MCP server identity | UI + MCP config | `references/mcp.md` |
 
-- **Applicant filter is applied server-side**, inside the edge function, not in the UI.
-  Client-side filtering leaks out-of-scope patents into caches and MCP responses.
-- **No fabricated summaries.** If KIPRIS returns no usable title/abstract/claims, abort
-  before calling the LLM and show an error. See `usePatentSummary.ts` `hasUsable`.
-- **Score lock.** Cache the commercialization score keyed by patent number. Regenerating
-  per search makes the same patent score differently on two screens and destroys trust.
-- **Cache everything upstream** (7-day TTL on KIPRIS payloads). Public patent APIs are
-  rate-limited and slow; batch mode must run with concurrency 1 plus inter-request delay.
-- **Korean text in PDF** must use the embedded Noto font; ASCII-only strings may use the
-  mono face. Mixing breaks glyphs silently.
-- **Do not regex-correct Korean 조사.** It corrupts words. Enforce grammar in the prompt.
-- Keyword extraction reads the **summary body**, then validates each keyword against the
-  patent title/abstract; discard keywords that appear only once and are unrelated.
+Then choose the stack bindings: patent office API, LLM provider, cache/store,
+server runtime, PDF renderer — see `references/stack-adapters.md`.
+
+## Hard rules (learned the hard way)
+
+- **Applicant filter runs server-side, on every path** — keyword, inventor, direct
+  number lookup, featured lists. Client-side filtering leaks out-of-scope patents into
+  caches and MCP responses. Scoping search but not number lookup is the classic bug.
+- **No fabricated summaries.** If the office API returns no usable title/abstract/claims,
+  abort before calling the LLM and surface an error.
+- **Score lock.** Persist the commercialization result keyed by patent number and only
+  recompute on explicit regeneration. Re-scoring per view destroys trust.
+- **Cache upstream payloads** (7-day TTL is a good default). Patent office APIs are slow
+  and rate-limited; batch mode must run at concurrency 1 with inter-request delay.
+- **Non-Latin PDF text needs an embedded font**, applied per text run — mixing a mono
+  Latin face with CJK/Cyrillic strings breaks glyphs silently.
+- **Never post-process grammar with regex** (particles, inflection, agreement).
+  It corrupts words. Enforce writing rules in the prompt instead.
+- **Keyword extraction reads the generated summary body**, then validates each keyword
+  against the title/abstract; discard keywords that appear once and are unrelated.
+- **Bold/emphasis, if used, marks complete noun phrases only** — never trailing
+  particles, verbs, or clause fragments.
 
 ## References
 
 | Need | Read |
 | --- | --- |
 | Config surface to change per institution | `references/domain-config.md` |
-| Edge function contracts and prompts | `references/pipeline.md` |
-| Scoring/TRL rubric design | `references/scoring.md` |
+| Endpoint contracts and prompt structure | `references/pipeline.md` |
+| Scoring / TRL rubric design | `references/scoring.md` |
 | Exposing the service as MCP tools | `references/mcp.md` |
+| Binding to a concrete stack (runtime, office API, LLM, PDF) | `references/stack-adapters.md` |
 
-## Verification before declaring a port done
+## Done criteria
 
-- 3 in-scope patent numbers → 요약서 renders, score present, no empty sections.
-- 1 out-of-scope patent (other institution) → rejected or clearly marked.
-- 1 keyword search + 1 inventor-name search → ranked, no 거절/소멸 patents.
-- PDF download → Korean renders, page headers/folios correct.
-- MCP `search_patents` + `summarize_patent` over the deployed URL → 200 with content.
+- 3 in-scope patent numbers → summary renders fully, score present, no empty sections.
+- 1 out-of-scope patent → rejected or clearly marked.
+- 1 keyword search + 1 inventor search → ranked, dead/rejected rights excluded.
+- PDF export → correct glyphs, headers, page folios.
+- MCP `search_patents` + `summarize_patent` against the deployed URL → 200 with content.

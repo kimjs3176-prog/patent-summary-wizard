@@ -1,49 +1,57 @@
-# Edge function pipeline contracts
+# Endpoint contracts
 
-All functions are Deno edge functions with CORS headers, `fetchWithRetry`
-(timeout + exponential backoff), and JSON `{ success, data|error }` envelopes.
+Six endpoints, any runtime. All return `{ success, data | error }` envelopes, set CORS
+headers, and wrap upstream calls in timeout + exponential-backoff retry.
 
 ## search-patents
 `POST { keyword, count?, source? }` → `{ success, total, results[] }`
 
-- Runs parallel KIPRIS queries: 발명의명칭 / 초록 / 발명자.
-- Ranking: term frequency × IDF, plus IPC-prefix boost from `DOMAIN.ipcBoost`.
-- Inventor detection uses a surname whitelist so 2–3자 인명 is not treated as a noun.
-- Excludes 거절 / 소멸 status and applications older than 20 years from filing.
+- Runs parallel source queries: title / abstract / inventor.
+- Ranking: term frequency × IDF, plus classification-prefix boost from `DOMAIN.ipcBoost`.
+- Inventor detection uses a surname/name-pattern whitelist so short personal names are
+  not treated as technical nouns.
+- Excludes rejected/lapsed rights and filings older than the term limit (20 years).
 - Applicant filter applied before ranking.
 
 ## fetch-patent
 `POST { patentNumber, forceRegenerate? }` → `{ success, data, relatedPatents }`
 
-- 7-day cache keyed by normalized patent number.
-- Returns title, abstract, claims[], assignee, inventors[], filingDate,
-  classifications[], drawings[] (deduplicated, proxied via `proxy-image` for SSRF safety).
+- Cache keyed by normalized patent number, 7-day TTL.
+- Returns title, abstract, claims[], applicant, inventors[], filingDate,
+  classifications[], drawings[] (deduplicated, proxied for SSRF safety).
 
 ## summarize-patent
-`POST { patentNumber, patentData, forceRegenerate? }` → SSE stream (OpenAI-style deltas)
+`POST { patentNumber, patentData, forceRegenerate? }` → streaming text deltas
 
-Prompt structure (keep the section order — the frontend parser depends on it):
-핵심 기술 / 해결하려는 문제 / 핵심 해결 수단 / 정량적 효과 / 사업화 활용 분야 / 시장 동향.
+Keep the section order stable — the client parser depends on it:
+core technology / problem / solution / quantitative effects / applications / market.
 
-Rules to keep in the prompt:
-- 일반 사용자가 이해할 수 있는 서술형, 명세서 문장 복붙 금지.
-- 수치는 원문에 있는 값만. 없으면 "명세서에 수치 미기재".
-- 시장 동향의 수치 뒤에는 `(기관명, 연도)` 형태로 출처를 본문에 직접 표기.
-- 볼드는 의미 단위 명사구로만, 조사·서술어 포함 금지.
+Prompt rules worth keeping verbatim:
+- Narrative prose a non-expert can follow; never paste specification sentences.
+- Only numbers present in the source; otherwise state that the spec gives none.
+- Market figures carry an inline `(source, year)` attribution in the sentence itself.
+- Emphasis, if used, wraps complete noun phrases only — no particles or verbs.
 
-Client (`usePatentSummary.ts`) handles: usable-data gate, 3-attempt retry with
-1.5s/4s backoff on retryable messages, empty-stream detection, `__APP_BUSY__` flag.
+Client responsibilities: usable-data gate before calling, 3-attempt retry with
+1.5s/4s backoff on retryable errors, empty-stream detection, busy flag to block
+concurrent generation.
 
 ## analyze-commercialization
 `POST { patentNumber }` → `{ success, analysis }` — see `scoring.md`.
 
 ## analyze-regulations
 `POST { patentNumber, tech_field? }` → LLM extracts regulation keywords from the
-technical field, then queries 국가법령정보 API, returns matched 법령 + 적용 사유.
-Seed the keyword extraction with `DOMAIN.lawDomains`.
+technical field, queries the jurisdiction's statute-search API, returns matched statutes
+with the reason each applies. Seed extraction with `DOMAIN.lawDomains`. If the
+jurisdiction has no open statute API, degrade to a curated statute table rather than
+letting the model invent law names.
 
-## Adapting to a non-KIPRIS source
+## recommend-similar-patents
+`POST { patentNumber }` → similar patents plus a one-line match rationale, filtered by
+the same applicant scope.
 
-Only `search-patents` and `fetch-patent` touch the source API. Keep their response
-shapes identical and any patent office (USPTO, EPO OPS, WIPO) drops in without
-touching summary, scoring, PDF, or MCP layers.
+## Swapping the patent office
+
+Only `search-patents` and `fetch-patent` touch the source. Keep their response shapes
+identical and any office API drops in without touching summary, scoring, regulation,
+PDF, or MCP layers. See `stack-adapters.md`.
