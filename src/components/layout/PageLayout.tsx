@@ -76,6 +76,20 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
           <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
             <button
               type="button"
+              onClick={cycleFontScale}
+              title={`글자 크기: ${fontScaleLabel} (클릭하여 변경)`}
+              aria-label={`글자 크기 ${fontScaleLabel}, 클릭하여 변경`}
+              className={`inline-flex items-center gap-1.5 rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-3 font-medium border transition-all ${
+                scale > 1
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-card text-foreground border-border/60 hover:bg-accent/30"
+              }`}
+            >
+              <Type className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <span className="hidden sm:inline">{fontScaleLabel}</span>
+            </button>
+            <button
+              type="button"
               onClick={toggleKiosk}
               aria-pressed={kioskEnabled}
               title={kioskEnabled ? "태블릿 모드 끄기" : "태블릿 모드 켜기 (터치 키보드)"}
