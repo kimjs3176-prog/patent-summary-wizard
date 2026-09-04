@@ -17,6 +17,7 @@ interface PageLayoutProps {
 export function PageLayout({ children, headerRight, showFooterLogo = true }: PageLayoutProps) {
   const { settings, isLoading } = useSiteSettings();
   const { enabled: kioskEnabled, toggle: toggleKiosk } = useKioskMode();
+  const { scale, cycle: cycleFontScale, label: fontScaleLabel } = useFontScale();
 
   const forceRefresh = async () => {
     try {
