@@ -1,6 +1,13 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { applyFontScale } from "./hooks/useFontScale";
+
+// 고령자용 폰트 배율 — 첫 페인트 전에 저장된 값 적용
+try {
+  const saved = Number(localStorage.getItem("font-scale"));
+  if ([1, 1.15, 1.3].includes(saved)) applyFontScale(saved);
+} catch { /* ignore */ }
 
 createRoot(document.getElementById("root")!).render(<App />);
 
