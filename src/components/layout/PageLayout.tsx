@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Tablet } from "lucide-react";
+import { FileText, Tablet, Type } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKioskMode } from "@/hooks/useKioskMode";
+import { useFontScale } from "@/hooks/useFontScale";
 import { KioskKeyboard } from "@/components/KioskKeyboard";
 import { VisitorCounter } from "@/components/VisitorCounter";
 
