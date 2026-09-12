@@ -691,9 +691,11 @@ serve(async (req) => {
         // "무알콜" 계열만 동일어 처리 (의학용어 "비알콜성"은 별개 개념이므로 제외)
         .replace(/논알콜|무알콜성/g, "무알콜");
 
+    // 다어절 입력("기능성 식품 건강")은 붙여쓴 원문이 제목에 그대로 나올 일이
+    // 거의 없으므로, 개별 어절도 핵심어로 함께 평가해 후보가 과도하게 잘리지 않게 한다.
     const coreTerms = Array.from(
       new Set(
-        [rawInput, correctedInput || "", ...plan.must]
+        [rawInput, correctedInput || "", ...inputTokens, ...plan.must]
           .map(t => normalize(t))
           .filter(t => t.length >= 2),
       ),
