@@ -608,7 +608,7 @@ serve(async (req) => {
       new Set(
         [rawTrim, correctedInput || ""]
           .filter(t => t && !/\s/.test(t) && /^[가-힣]{4,10}$/.test(t))
-          .map(t => t.slice(0, 3)),
+          .flatMap(t => [t.slice(0, 3), t.slice(0, 2)]),
       ),
     );
 
