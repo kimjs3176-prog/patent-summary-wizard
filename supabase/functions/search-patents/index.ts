@@ -742,7 +742,11 @@ serve(async (req) => {
       ),
     );
     const synTerms = Array.from(
-      new Set(plan.should.map(t => normalize(t)).filter(t => t.length >= 2 && !coreTerms.includes(t))),
+      new Set(
+        [...plan.should, ...recallTerms]
+          .map(t => normalize(t))
+          .filter(t => t.length >= 2 && !coreTerms.includes(t)),
+      ),
     );
 
     const rawNorm = normalize(correctedInput || rawInput);
