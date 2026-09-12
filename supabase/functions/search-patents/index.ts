@@ -602,16 +602,27 @@ serve(async (req) => {
       new Set([...spacingVariants(rawTrim), ...(correctedInput ? spacingVariants(correctedInput) : [])]),
     );
 
+    // 복합어 앞부분(예: "스마트팜" -> "스마트")은 같은 기술군 특허를 폭넓게 회수하는
+    // 재현율 보조 검색어로 사용한다. 정합도 점수에서는 보조어로만 반영된다.
+    const recallTerms = Array.from(
+      new Set(
+        [rawTrim, correctedInput || ""]
+          .filter(t => t && !/\s/.test(t) && /^[가-힣]{4,10}$/.test(t))
+          .map(t => t.slice(0, 3)),
+      ),
+    );
+
     const uniqueQueries = Array.from(
       new Set([
         rawTrim,
         ...(correctedInput ? [correctedInput] : []),
         ...variantQueries,
         ...recommendedQueries,
+        ...recallTerms,
       ].filter(Boolean)),
-    ).slice(0, 9);
+    ).slice(0, 10);
     console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
-    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES + variantQueries.length);
+    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES + variantQueries.length + recallTerms.length);
 
     // Stage 2: remaining queries × all orgs (title), batched 6-at-a-time
     if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 1) {
