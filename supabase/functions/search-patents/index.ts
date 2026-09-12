@@ -577,11 +577,40 @@ serve(async (req) => {
     if (correctedInput && correctedInput !== rawInput) {
       console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
     }
+    // 띄어쓰기 변형 보정: KIPRIS 제목 검색은 문자열을 그대로 매칭하므로
+    // "스마트팜"으로는 "스마트 팜" 표기의 특허가 잡히지 않는다.
+    // 붙여쓴 한글 복합어는 AND(`*`) 분할형을, 띄어쓴 입력은 붙여쓴 형태를 함께 시도한다.
+    const spacingVariants = (input: string): string[] => {
+      const t = input.trim();
+      if (!t) return [];
+      const out: string[] = [];
+      if (/\s/.test(t)) {
+        const parts = t.split(/\s+/).filter(Boolean);
+        if (parts.every(p => /^[가-힣]+$/.test(p))) {
+          out.push(parts.join(""));
+          if (parts.length > 1) out.push(parts.join("*"));
+        }
+      } else if (/^[가-힣]{4,10}$/.test(t)) {
+        for (let i = 2; i <= t.length - 2; i++) {
+          out.push(`${t.slice(0, i)}*${t.slice(i)}`);
+        }
+      }
+      return out.slice(0, 3);
+    };
+    const variantQueries = Array.from(
+      new Set([...spacingVariants(rawTrim), ...(correctedInput ? spacingVariants(correctedInput) : [])]),
+    );
+
     const uniqueQueries = Array.from(
-      new Set([rawTrim, ...(correctedInput ? [correctedInput] : []), ...recommendedQueries].filter(Boolean)),
-    ).slice(0, 6);
+      new Set([
+        rawTrim,
+        ...(correctedInput ? [correctedInput] : []),
+        ...variantQueries,
+        ...recommendedQueries,
+      ].filter(Boolean)),
+    ).slice(0, 9);
     console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
-    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
+    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES + variantQueries.length);
 
     // Stage 2: remaining queries × all orgs (title), batched 6-at-a-time
     if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 1) {
