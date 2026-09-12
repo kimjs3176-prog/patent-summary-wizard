@@ -577,11 +577,52 @@ serve(async (req) => {
     if (correctedInput && correctedInput !== rawInput) {
       console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
     }
+    // 띄어쓰기 변형 보정: KIPRIS 제목 검색은 문자열을 그대로 매칭하므로
+    // "스마트팜"으로는 "스마트 팜" 표기의 특허가 잡히지 않는다.
+    // 붙여쓴 한글 복합어는 AND(`*`) 분할형을, 띄어쓴 입력은 붙여쓴 형태를 함께 시도한다.
+    const spacingVariants = (input: string): string[] => {
+      const t = input.trim();
+      if (!t) return [];
+      const out: string[] = [];
+      if (/\s/.test(t)) {
+        const parts = t.split(/\s+/).filter(Boolean);
+        if (parts.every(p => /^[가-힣]+$/.test(p))) {
+          out.push(parts.join(""));
+          if (parts.length > 1) out.push(parts.join("*"));
+        }
+      } else if (/^[가-힣]{3,10}$/.test(t)) {
+        // 뒤쪽 분할(예: "스마트*팜")이 복합어 경계일 확률이 높아 우선 시도
+        for (let i = t.length - 1; i >= 2; i--) {
+          out.push(`${t.slice(0, i)}*${t.slice(i)}`);
+        }
+      }
+      return out.slice(0, 3);
+    };
+    const variantQueries = Array.from(
+      new Set([...spacingVariants(rawTrim), ...(correctedInput ? spacingVariants(correctedInput) : [])]),
+    );
+
+    // 복합어 앞부분(예: "스마트팜" -> "스마트")은 같은 기술군 특허를 폭넓게 회수하는
+    // 재현율 보조 검색어로 사용한다. 정합도 점수에서는 보조어로만 반영된다.
+    const recallTerms = Array.from(
+      new Set(
+        [rawTrim, correctedInput || ""]
+          .filter(t => t && !/\s/.test(t) && /^[가-힣]{4,10}$/.test(t))
+          .flatMap(t => [t.slice(0, 3), t.slice(0, 2)]),
+      ),
+    );
+
     const uniqueQueries = Array.from(
-      new Set([rawTrim, ...(correctedInput ? [correctedInput] : []), ...recommendedQueries].filter(Boolean)),
-    ).slice(0, 6);
+      new Set([
+        rawTrim,
+        ...(correctedInput ? [correctedInput] : []),
+        ...variantQueries,
+        ...recommendedQueries,
+        ...recallTerms,
+      ].filter(Boolean)),
+    ).slice(0, 10);
     console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
-    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES);
+    const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES + variantQueries.length + recallTerms.length);
 
     // Stage 2: remaining queries × all orgs (title), batched 6-at-a-time
     if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 1) {
@@ -701,7 +742,11 @@ serve(async (req) => {
       ),
     );
     const synTerms = Array.from(
-      new Set(plan.should.map(t => normalize(t)).filter(t => t.length >= 2 && !coreTerms.includes(t))),
+      new Set(
+        [...plan.should, ...recallTerms]
+          .map(t => normalize(t))
+          .filter(t => t.length >= 2 && !coreTerms.includes(t)),
+      ),
     );
 
     const rawNorm = normalize(correctedInput || rawInput);
@@ -818,6 +863,13 @@ serve(async (req) => {
             // 과도한 축소 방지: 최소 5건은 유지
             if (strong.length >= Math.min(5, kept.length)) kept = strong;
           }
+        }
+        // 핵심어 정확 일치 결과가 너무 적으면(복합어·신조어 검색) 같은 기술군의
+        // 보조어 일치 결과를 뒤에 덧붙여 최소한의 탐색 폭을 확보한다.
+        if (kept.length < 10) {
+          const keptSet = new Set(kept.map(x => x.p.patentId));
+          const extra = scored.filter(x => !keptSet.has(x.p.patentId)).slice(0, 30 - kept.length);
+          kept = [...kept, ...extra];
         }
         relevant = kept.map(x => x.p);
       } else {
