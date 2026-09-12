@@ -590,8 +590,9 @@ serve(async (req) => {
           out.push(parts.join(""));
           if (parts.length > 1) out.push(parts.join("*"));
         }
-      } else if (/^[가-힣]{4,10}$/.test(t)) {
-        for (let i = 2; i <= t.length - 2; i++) {
+      } else if (/^[가-힣]{3,10}$/.test(t)) {
+        // 뒤쪽 분할(예: "스마트*팜")이 복합어 경계일 확률이 높아 우선 시도
+        for (let i = t.length - 1; i >= 2; i--) {
           out.push(`${t.slice(0, i)}*${t.slice(i)}`);
         }
       }
