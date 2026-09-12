@@ -864,6 +864,13 @@ serve(async (req) => {
             if (strong.length >= Math.min(5, kept.length)) kept = strong;
           }
         }
+        // 핵심어 정확 일치 결과가 너무 적으면(복합어·신조어 검색) 같은 기술군의
+        // 보조어 일치 결과를 뒤에 덧붙여 최소한의 탐색 폭을 확보한다.
+        if (kept.length < 10) {
+          const keptSet = new Set(kept.map(x => x.p.patentId));
+          const extra = scored.filter(x => !keptSet.has(x.p.patentId)).slice(0, 30 - kept.length);
+          kept = [...kept, ...extra];
+        }
         relevant = kept.map(x => x.p);
       } else {
         relevant = [];
