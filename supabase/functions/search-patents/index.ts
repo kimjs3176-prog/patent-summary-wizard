@@ -614,6 +614,36 @@ serve(async (req) => {
       }
     }
 
+    // Stage 4: per-token recall net — multi-word inputs (e.g. "기능성 식품 건강")
+    // are AND-matched by KIPRIS and return very few hits. Search each token
+    // separately (title + abstract) so the relevance ranker has enough candidates.
+    const inputTokens = Array.from(
+      new Set(
+        [rawTrim, correctedInput || ""]
+          .join(" ")
+          .split(/\s+/)
+          .map(t => t.trim())
+          .filter(t => t.length >= 2),
+      ),
+    ).slice(0, 4);
+    if (allPatents.length < EARLY_EXIT_HITS && inputTokens.length > 1) {
+      const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
+      for (const t of inputTokens) {
+        for (const org of AGRI_ORGANIZATIONS) {
+          tasks.push(() => kiprisSearch(t, org, "title"));
+        }
+      }
+      for (const t of inputTokens.slice(0, 2)) {
+        for (const org of AGRI_ORGANIZATIONS) {
+          tasks.push(() => kiprisSearch(t, org, "abstract"));
+        }
+      }
+      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS * 2; i += 6) {
+        const batch = await Promise.all(tasks.slice(i, i + 6).map(fn => fn()));
+        batch.forEach(collect);
+      }
+    }
+
     // Exclude patents that have exceeded the 20-year term from application date
     // (patents expire 20 years after filing; those are no longer enforceable).
     const now = Date.now();
