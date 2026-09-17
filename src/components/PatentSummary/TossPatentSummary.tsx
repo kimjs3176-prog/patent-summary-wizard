@@ -431,7 +431,7 @@ function sectionMeta(title: string): { kicker: string; heading: string; Icon: ty
 // 디자인 개편 전 키워드 로직 복원: IPC + 제목/초록 기반의 다층 라벨 추출.
 // 카테고리 별 라벨을 직접 만들어 색상 구분에 그대로 사용한다.
 
-export function TossPatentSummary({
+function TossPatentSummaryInner({
   content,
   patentNumber,
   isStreaming,
