@@ -399,10 +399,10 @@ serve(async (req) => {
 
       if (cached) {
         console.log(`[CACHE HIT] score for ${trimmedPatent}`);
-        const cachedTechnologyReason = stripScoreMentions(stripTrlMentions(cached.technology_reason || ""));
-        const cachedMarketReason = stripScoreMentions(stripTrlMentions(cached.market_reason || ""));
-        const cachedBusinessReason = stripScoreMentions(stripTrlMentions(cached.business_reason || ""));
-        const cachedAnalysis = stripScoreMentions(cached.analysis || "");
+        const cachedTechnologyReason = stripDurationMentions(stripScoreMentions(stripTrlMentions(cached.technology_reason || "")));
+        const cachedMarketReason = stripDurationMentions(stripScoreMentions(stripTrlMentions(cached.market_reason || "")));
+        const cachedBusinessReason = stripDurationMentions(stripScoreMentions(stripTrlMentions(cached.business_reason || "")));
+        const cachedAnalysis = stripDurationMentions(stripScoreMentions(cached.analysis || ""));
         if (isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
           console.log(`[CACHE STALE] score commentary for ${trimmedPatent} — regenerating`);
           // 설명문만 재생성하고 점수/TRL은 기존 값으로 고정 (동일 특허 점수 변동 방지)
@@ -888,10 +888,10 @@ JSON형식:
     scores.marketReason = stripTrlMentions(scores.marketReason);
     scores.businessReason = stripTrlMentions(scores.businessReason);
 
-    scores.technologyReason = stripScoreMentions(scores.technologyReason);
-    scores.marketReason = stripScoreMentions(scores.marketReason);
-    scores.businessReason = stripScoreMentions(scores.businessReason);
-    scores.analysis = stripScoreMentions(scores.analysis);
+    scores.technologyReason = stripDurationMentions(stripScoreMentions(scores.technologyReason));
+    scores.marketReason = stripDurationMentions(stripScoreMentions(scores.marketReason));
+    scores.businessReason = stripDurationMentions(stripScoreMentions(scores.businessReason));
+    scores.analysis = stripDurationMentions(stripScoreMentions(scores.analysis));
 
     // 기존 캐시가 있던 특허는 점수/TRL을 그대로 유지 (설명문만 갱신)
     if (lockedScores) {
