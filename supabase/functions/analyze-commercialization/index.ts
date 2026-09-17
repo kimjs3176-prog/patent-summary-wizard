@@ -14,6 +14,7 @@ function markCooldown(_provider: "gemini", ms = PROVIDER_COOLDOWN_MS) {
   geminiCooldownUntil = Date.now() + ms;
 }
 const GEMINI_TIMEOUT_MS = 8_000;
+const SCORE_CACHE_VERSION = "v2-term-ratio";
 
 function withTimeout(parent: AbortSignal | undefined, ms: number): { signal: AbortSignal; cancel: () => void } {
   const ctrl = new AbortController();
@@ -306,12 +307,9 @@ function vrayBusinessIndex(args: {
   else if (args.abstractLen > 0 && args.abstractLen < 80) validity -= 0.05;
   validity = Math.max(0.3, Math.min(1, validity));
 
-  // 3) 법적 잔존권리기간 (출원 20년) — 15년 이상 잔존 시 만점
-  let remaining = 20;
-  const ay = args.filingDate ? Number(String(args.filingDate).replace(/\D/g, "").slice(0, 4)) : NaN;
-  if (Number.isFinite(ay) && ay > 1900) {
-    remaining = Math.max(0, 20 - (new Date().getFullYear() - ay));
-  }
+  // 3) 법적 잔존권리기간 (출원일부터 원칙적으로 20년) — 15년 이상 잔존 시 만점
+  const term = assessPatentTerm(args.filingDate);
+  const remaining = term.remainingYears ?? 20;
   const lifeRatio = Math.max(0, Math.min(1, remaining / 15));
 
   // 4) 권리 적용 폭 — IPC 서브클래스 수(다분야 사업화 가능성)
@@ -390,8 +388,9 @@ serve(async (req) => {
         const cachedMarketReason = stripScoreMentions(stripTrlMentions(cached.market_reason || ""));
         const cachedBusinessReason = stripScoreMentions(stripTrlMentions(cached.business_reason || ""));
         const cachedAnalysis = stripScoreMentions(cached.analysis || "");
-        if (isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
-          console.log(`[CACHE STALE] score too short for ${trimmedPatent} — regenerating`);
+        const cacheNeedsRefresh = cached.cache_version !== SCORE_CACHE_VERSION;
+        if (cacheNeedsRefresh || isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
+          console.log(`[CACHE STALE] score commentary for ${trimmedPatent} — regenerating`);
           // 설명문만 재생성하고 점수/TRL은 기존 값으로 고정 (동일 특허 점수 변동 방지)
           lockedScores = {
             totalScore: cached.total_score,
@@ -912,6 +911,7 @@ JSON형식:
         technology_reason: scores.technologyReason || "",
         market_reason: scores.marketReason || "",
         business_reason: scores.businessReason || "",
+        cache_version: SCORE_CACHE_VERSION,
       }, { onConflict: "patent_number" });
       console.log(`[CACHE SAVED] score for ${trimmedPatent}`);
     } catch (saveErr) {
