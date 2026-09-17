@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 const Admin = lazy(() => import("./pages/Admin"));
 const Compare = lazy(() => import("./pages/Compare"));
@@ -41,6 +41,15 @@ const queryClient = new QueryClient({
   },
 });
 
+// Scroll to top when the page (path) changes — keeps header navigation predictable.
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [pathname]);
+  return null;
+};
+
 const App = () => {
   const alreadyShown = sessionStorage.getItem("splash-shown") === "1";
   const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
@@ -66,6 +75,7 @@ const App = () => {
           <Sonner />
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
           <BrowserRouter>
+            <ScrollToTop />
             <ErrorBoundary>
               <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
               <Routes>
