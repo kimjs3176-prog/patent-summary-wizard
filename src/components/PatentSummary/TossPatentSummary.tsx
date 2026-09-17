@@ -142,16 +142,21 @@ function PatentTimeline({
   publicationDate,
   registrationDate,
   hasRegistration,
+  expiryDate,
 }: {
   filingDate?: string;
   publicationDate?: string;
   registrationDate?: string;
   hasRegistration: boolean;
+  expiryDate?: string;
 }) {
   const steps = [
     { key: "file", label: "출원", date: filingDate, done: !!filingDate, color: "#3B82F6" },
     { key: "pub", label: "공개", date: publicationDate, done: !!publicationDate, color: "#F59E0B" },
     { key: "reg", label: "등록", date: registrationDate, done: hasRegistration, color: ACCENT_HEX },
+    ...(expiryDate
+      ? [{ key: "exp", label: "존속기간 만료", date: expiryDate, done: false, color: "#8B95A1" }]
+      : []),
   ];
   // Elapsed days from filing to registration (or today if pending)
   const parse = (s?: string) => {
