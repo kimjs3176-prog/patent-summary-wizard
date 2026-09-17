@@ -99,6 +99,54 @@ function collectBlockBounds(root: HTMLElement): BlockBound[] {
   return bounds;
 }
 
+/**
+ * html2canvas lays text out as blocks, so flex/grid boxes that center a single label
+ * (badges, score tiles, TRL steps, tags) end up with the text drifting off-center.
+ * Mark those boxes so the capture stylesheet can re-center them deterministically,
+ * and pin each line box height so the baseline is computed from a real number.
+ */
+function normalizeCenteredBoxes(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>("*").forEach((el) => {
+    const cs = window.getComputedStyle(el);
+    const display = cs.display;
+    const isFlexLike = display.includes("flex") || display.includes("grid");
+    const centered =
+      cs.alignItems === "center" ||
+      cs.textAlign === "center" ||
+      cs.placeItems.includes("center");
+    if (!isFlexLike || !centered) return;
+
+    const children = Array.from(el.childNodes).filter(
+      (n) => n.nodeType === 1 || (n.nodeType === 3 && (n.nodeValue ?? "").trim()),
+    );
+    if (children.length !== 1) return;
+    // Only single-line labels — multi-line content must keep its normal flow.
+    if ((el.textContent ?? "").trim().length > 24) return;
+    el.classList.add("pdf-box-center");
+  });
+
+  // Give every text run an explicit line-height so html2canvas baselines stay put.
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode() as Text | null;
+  while (node) {
+    const parent = node.parentElement;
+    if (parent && (node.nodeValue ?? "").trim() && !parent.dataset.pdfLh) {
+      const cs = window.getComputedStyle(parent);
+      if (cs.lineHeight === "normal") {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = range.getClientRects()[0];
+        range.detach?.();
+        if (rect && rect.height > 0) {
+          parent.style.lineHeight = `${rect.height}px`;
+          parent.dataset.pdfLh = "1";
+        }
+      }
+    }
+    node = walker.nextNode() as Text | null;
+  }
+}
+
 const waitForImages = async (element: HTMLElement) => {
   await Promise.all(
     Array.from(element.querySelectorAll("img")).map((image) => {
@@ -132,6 +180,9 @@ export async function downloadWebSummaryPdf(
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
+
+    normalizeCenteredBoxes(clone);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     const textItems = collectTextItems(clone);
     const blocks = collectBlockBounds(clone);
