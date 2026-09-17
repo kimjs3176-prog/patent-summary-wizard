@@ -20,6 +20,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
 import { NoticeSection } from "@/components/NoticeSection";
+import { PotentialTechBanner } from "@/components/PotentialTechBanner";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -284,6 +285,11 @@ const Index = () => {
               </div>
             </section>
             )}
+
+            {/* 잠재기술 무상기술이전 배너 */}
+            <section className="max-w-5xl mx-auto mb-5 md:mb-8 animate-fade-up" style={{ animationDelay: "0.12s" }}>
+              <PotentialTechBanner />
+            </section>
 
             {/* 주제별 빠른 탐색 */}
             <section className="max-w-5xl mx-auto mb-5 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
