@@ -218,6 +218,22 @@ function stripScoreMentions(s: string | undefined | null): string {
   return out.replace(/,\s*$/, ".");
 }
 
+// 사업화 코멘트에서 존속기간·잔여기간 관련 문장을 문장 단위로 제거한다.
+// (권리 기간은 시스템이 점수에만 반영하고, 특허마다 기준이 다른 모호한 코멘트를 방지함)
+function stripDurationMentions(text: string): string {
+  if (!text) return text;
+  const durationPattern = /(존속기간|잔여\s*(?:보호)?기간|잔존(?:권리)?기간|경과\s*(?:연수|기간|년)|만료|보호기간)/;
+  const sentences = String(text).split(/(?<=[.。!?])\s*/);
+  const kept = sentences.filter((s) => {
+    const t = s.trim();
+    return t.length > 0 && !durationPattern.test(t);
+  });
+  if (kept.length === 0) return String(text).trim();
+  let out = kept.join(" ");
+  out = out.replace(/\s{2,}/g, " ").replace(/\s+([,.。!?])/g, "$1").trim();
+  return out.replace(/,\s*$/, ".");
+}
+
 function isReasonTooShort(...values: Array<string | null | undefined>): boolean {
   return values.some((value) => cleanKoreanText(value).length < 70);
 }
