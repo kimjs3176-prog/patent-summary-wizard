@@ -10,6 +10,7 @@ import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
 import type { CommercializationDetails } from "./TechnologyCommercializationScore";
 import { RelatedPatentsCompact } from "./RelatedPatentsCompact";
 import { RegulationAnalysis } from "./RegulationAnalysis";
+import { RegisterStatus } from "./RegisterStatus";
 import { TechValuation } from "./TechValuation";
 
 import { PdfGenerator, printWebSummary } from "./PdfGenerator";
@@ -750,6 +751,11 @@ export function TossPatentSummary({
                   </div>
                 )}
               </SoftCard>
+              {patentData.registrationNumber && (
+                <div className="mt-3">
+                  <RegisterStatus registrationNumber={patentData.registrationNumber} />
+                </div>
+              )}
             </section>
           )}
 
