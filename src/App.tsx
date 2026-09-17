@@ -12,6 +12,7 @@ const SearchResults = lazy(() => import("./pages/SearchResults"));
 const Batch = lazy(() => import("./pages/Batch"));
 const SummarySample = lazy(() => import("./pages/SummarySample"));
 const TechVideos = lazy(() => import("./pages/TechVideos"));
+const PotentialTech = lazy(() => import("./pages/PotentialTech"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 import { FloatingChatbot } from "./components/FloatingChatbot";
@@ -76,6 +77,7 @@ const App = () => {
                 <Route path="/batch" element={<Batch />} />
                 <Route path="/summary-sample" element={<SummarySample />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
+                <Route path="/potential" element={<PotentialTech />} />
                 <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
