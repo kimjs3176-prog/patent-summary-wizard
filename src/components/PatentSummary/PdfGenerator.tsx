@@ -126,6 +126,16 @@ export async function downloadWebSummaryPdf(
     });
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+
+    let hasKoreanFont = false;
+    try {
+      const fontBase64 = await loadKoreanFont();
+      addKoreanFontToDoc(pdf, fontBase64);
+      hasKoreanFont = true;
+    } catch (fontError) {
+      console.warn("Korean font unavailable for PDF text layer:", fontError);
+    }
+
     const pageWidth = 210;
     const pageHeight = 297;
     const marginX = 10;
