@@ -199,7 +199,7 @@ function PatentTimeline({
             width: hasRegistration ? "80%" : publicationDate ? "40%" : filingDate ? "0%" : "0%",
           }}
         />
-        <div className="relative grid grid-cols-3 gap-2">
+        <div className={`relative grid gap-2 ${steps.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
           {steps.map((s) => (
             <div key={s.key} className="flex flex-col items-center text-center">
               <div
