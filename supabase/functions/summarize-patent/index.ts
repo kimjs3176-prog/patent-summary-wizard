@@ -202,6 +202,24 @@ function inlineMarketCitations(content: string): string {
   });
 }
 
+// 상용화 전망에서는 권리 존속기간을 평가 근거로 서술하지 않는다.
+// 생성 직후뿐 아니라 이전 캐시에도 적용해 기간 관련 문장이 다시 노출되지 않게 한다.
+function stripDurationFromCommercialization(content: string): string {
+  const durationPattern = /(?:특허\s*)?(?:존속|잔존|보호|권리|유효)\s*(?:기간|연한|수명)|잔여\s*(?:보호|권리)?\s*(?:기간|연수|수명)|출원(?:일)?\s*(?:후|로부터)\s*\d+\s*년|\d+\s*년\s*(?:이상\s*)?(?:남아|남았|남은|경과)|권리\s*만료|특허\s*만료|만료\s*(?:시점|예정|임박)/i;
+
+  return content.replace(
+    /(##\s*상용화\s*전망[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/i,
+    (_match, header: string, body: string) => {
+      const sentences = body
+        .replace(/\r/g, "")
+        .split(/(?<=[.!?。])\s+|\n+/)
+        .map((sentence) => sentence.trim())
+        .filter((sentence) => sentence && !durationPattern.test(sentence));
+      return `${header}${sentences.join(" ").replace(/\s{2,}/g, " ").trim()}\n`;
+    },
+  );
+}
+
 function getSupabaseClient() {
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -293,7 +311,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v14-no-exclusive";
+    const promptVersion = "v15-no-duration-comment";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -326,7 +344,7 @@ serve(async (req) => {
 
       if (cached?.summary_content && (cached.cache_version || "v1") === SUMMARY_CACHE_VERSION) {
         console.log(`[CACHE HIT] ${trimmedPatent}`);
-        const content = cached.summary_content;
+        const content = stripDurationFromCommercialization(cached.summary_content);
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
@@ -450,7 +468,8 @@ serve(async (req) => {
   · 출처는 본문 내 괄호 표기만 사용한다. 형식: "(기관명, 발행연도)" 또는 "(기관명 「보고서명」, 발행연도)". 예: "국내 건강기능식품 시장 규모는 약 6조 2,022억 원이다(한국건강기능식품협회, 2023)". 동일 문장에 여러 출처가 필요하면 ";"로 구분해 한 괄호에 합친다. [^N] 형식의 각주, "### 출처" 블록, 별도 출처 목록은 절대 사용하지 않는다. 가공된/허위 출처 금지(실존 기관·보고서만 인용).
   · 과거 보고 사실만 과거형, 환산된 2026년 수치 및 전망은 현재형·미래형.
 ## 농산업활용 가능성 — 청구항·기술원리에서 직접 도출되는 적용 분야 → 현장 시나리오(누가/어디서/어떤 문제를 어떻게) → 기대 효과(수율·품질·인건비·에너지·로스율 등 정량 지표)를 연결어구로 자연스럽게 잇는다. 기술 원리와 무관한 비약(토양센서를 의료·우주에 적용 등) 금지. 확장 시 "기술원리가 동일하게 적용 가능한 인접 분야"임을 명시.
-## 상용화전망 — 다음 4요소를 모두 포함: (1) 기술완성도(실험실/파일럿/실증/양산준비)와 남은 핵심 과제 1개 이상, (2) 단기(1~2년)·중기(3~5년) 상용화 경로·사업화 단계(라이선싱·기술이전·자체양산·합작), (3) 1차 수요처와 수익모델(B2B·로열티·OEM·구독), (4) 마지막 1~2문장은 "본 기술은 ~한 강점과 ~한 한계를 동시에 가지며, ~ 조건이 충족될 경우 ~ 영역에서 우선 상용화가 유망하다" 형태로 강점·한계·성공조건·유망 적용영역을 모두 포함. TRL 숫자 직접 언급 금지, "발전 가능성이 크다"식 막연한 마무리 금지.
+ ## 상용화전망 — 다음 4요소를 모두 포함: (1) 기술완성도(실험실/파일럿/실증/양산준비)와 남은 핵심 과제 1개 이상, (2) 단기(1~2년)·중기(3~5년) 상용화 경로·사업화 단계(라이선싱·기술이전·자체양산·합작), (3) 1차 수요처와 수익모델(B2B·로열티·OEM·구독), (4) 마지막 1~2문장은 "본 기술은 ~한 강점과 ~한 한계를 동시에 가지며, ~ 조건이 충족될 경우 ~ 영역에서 우선 상용화가 유망하다" 형태로 강점·한계·성공조건·유망 적용영역을 모두 포함. TRL 숫자 직접 언급 금지, "발전 가능성이 크다"식 막연한 마무리 금지.
+  · 특허 존속기간·잔여기간·보호기간·권리 수명·출원 후 경과연수·만료 시점은 상용화 근거 또는 한계로 절대 언급하지 않는다. 출원일이 입력에 있더라도 기간을 계산하거나 평가하지 않는다.
 
 [완성도]
 - 정보 부족 시 IPC·청구항·초록을 근거로 합리적 추론하되 "추정/예상" 단어로 명시. "정보 없음" 한 줄 마무리 금지.
@@ -580,6 +599,7 @@ serve(async (req) => {
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
           fullContent = mergeMarketParagraphs(fullContent);
           fullContent = inlineMarketCitations(fullContent);
+           fullContent = stripDurationFromCommercialization(fullContent);
           if (fullContent !== raw.trim()) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent })}\n\n`));
           }
