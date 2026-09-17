@@ -166,9 +166,32 @@ export async function downloadWebSummaryPdf(
     const pageSliceHeight = Math.floor(canvas.width * (printableHeight / printableWidth));
     let sourceY = 0;
     let pageIndex = 0;
+    const scaleRatio = canvas.width / cloneWidth;
+    const minSlice = pageSliceHeight * 0.45;
+
+    /** Pull the page break up to the nearest boundary that does not cut a card or line. */
+    const findSafeSlice = (startY: number, maxSlice: number) => {
+      if (startY + maxSlice >= canvas.height) return maxSlice;
+      let cut = (startY + maxSlice) / scaleRatio;
+      const startCss = startY / scaleRatio;
+      for (let pass = 0; pass < 12; pass += 1) {
+        let highest = Infinity;
+        blocks.forEach((b) => {
+          if (b.top < cut - 0.5 && b.bottom > cut + 0.5 && b.bottom - b.top < maxSlice / scaleRatio) {
+            if (b.top < highest) highest = b.top;
+          }
+        });
+        if (highest === Infinity) break;
+        cut = highest - 2;
+      }
+      const slice = Math.floor((cut - startCss) * scaleRatio);
+      if (slice < minSlice || slice > maxSlice) return maxSlice;
+      return slice;
+    };
 
     while (sourceY < canvas.height) {
-      const sliceHeight = Math.min(pageSliceHeight, canvas.height - sourceY);
+      const maxSlice = Math.min(pageSliceHeight, canvas.height - sourceY);
+      const sliceHeight = findSafeSlice(sourceY, maxSlice);
       const pageCanvas = document.createElement("canvas");
       pageCanvas.width = canvas.width;
       pageCanvas.height = sliceHeight;
