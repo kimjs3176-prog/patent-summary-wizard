@@ -95,6 +95,49 @@ interface PatentData {
   description?: string;
 }
 
+type PatentTermAssessment = {
+  elapsedYears: number | null;
+  remainingYears: number | null;
+  remainingRatio: number | null;
+  level: "충분" | "보통" | "짧음" | "만료 추정" | "판단 불가";
+};
+
+function parsePatentDate(value?: string): Date | null {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.length < 8) return null;
+  const year = Number(digits.slice(0, 4));
+  const month = Number(digits.slice(4, 6));
+  const day = Number(digits.slice(6, 8));
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    !Number.isFinite(parsed.getTime()) ||
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) return null;
+  return parsed;
+}
+
+function assessPatentTerm(filingDate?: string): PatentTermAssessment {
+  const filedAt = parsePatentDate(filingDate);
+  if (!filedAt) {
+    return { elapsedYears: null, remainingYears: null, remainingRatio: null, level: "판단 불가" };
+  }
+
+  const elapsedYears = Math.max(0, (Date.now() - filedAt.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  const remainingYears = Math.max(0, 20 - elapsedYears);
+  const remainingRatio = Math.max(0, Math.min(1, remainingYears / 20));
+  const level = remainingYears >= 12
+    ? "충분"
+    : remainingYears >= 7
+      ? "보통"
+      : remainingYears > 0
+        ? "짧음"
+        : "만료 추정";
+
+  return { elapsedYears, remainingYears, remainingRatio, level };
+}
+
 function cleanKoreanText(value: unknown): string {
   return String(value || "")
     .replace(/\s+/g, " ")
@@ -396,13 +439,11 @@ serve(async (req) => {
       ? summaryContent.replace(/\s+/g, " ").trim().slice(0, 3500)
       : "";
 
-    let yearsSinceFiling = 0;
-    if (data.filingDate) {
-      const fd = new Date(data.filingDate);
-      if (!isNaN(fd.getTime())) {
-        yearsSinceFiling = Math.floor((Date.now() - fd.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-      }
-    }
+    const patentTerm = assessPatentTerm(data.filingDate);
+    const yearsSinceFiling = patentTerm.elapsedYears == null ? "확인 불가" : patentTerm.elapsedYears.toFixed(1);
+    const remainingTermContext = patentTerm.remainingYears == null
+      ? "출원일 정보 부족으로 판단 불가"
+      : `약 ${patentTerm.remainingYears.toFixed(1)}년(전체 20년의 ${Math.round((patentTerm.remainingRatio || 0) * 100)}%, ${patentTerm.level})`;
 
     // Detect if detailed mode (check body for analysisMode)
     const isDetailedScore = body.analysisMode === "detailed";
@@ -471,7 +512,8 @@ serve(async (req) => {
 출원인: ${data.assignee || "없음"}
 IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
 청구항수: ${data.claims?.length || 0}
-경과연수: ${yearsSinceFiling}년
+출원 후 경과기간: ${yearsSinceFiling}${patentTerm.elapsedYears == null ? "" : "년"}
+추정 잔여 보호기간: ${remainingTermContext}
 초록: ${(data.abstract || "없음").substring(0, abstractLimit)}`;
     if (isDetailedScore && data.claims?.length) {
       patentContext += `\n대표청구항: ${data.claims[0].substring(0, 200)}`;
@@ -529,6 +571,10 @@ IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
  ※ 아래 4개 축(로열티공제법 기반 기술가치평가 관점)은 시스템이 별도로 정량 보정하므로,
    근거 문장에서는 이와 모순되지 않게 서술할 것: ①사업화 소요기간(성숙도) ②권리 확정 여부
    ③법적 잔존권리기간 ④적용 산업의 폭.
+ ※ 존속기간은 출원일부터 원칙적으로 20년이라는 전제 아래 반드시 '추정 잔여 보호기간'과 그 비율로 평가한다.
+   잔여 12년 이상(60% 이상)은 '충분', 7년 이상 12년 미만은 '보통', 7년 미만만 '짧음'으로 판단한다.
+   출원 후 5년 경과처럼 전체 기간의 초반인 경우 잔여기간이 짧다고 평가하거나 사업화 한계로 제시하지 않는다.
+   실제 권리의 유효성·소멸 여부가 확인되지 않은 상태에서는 법적 존속을 확정적으로 단정하지 않는다.
 상한 95, 하한 55.
 
 총점 = round(T×0.35 + M×0.35 + B×0.30). 세 항목은 위 체크리스트로 산출된 값을 그대로 사용하며, 임의 보정 금지.
@@ -617,6 +663,7 @@ JSON형식:
 [사업성 B] 시작 60
  +5 기존 설비 구현, +5 제조방법 구체, +5 원료 시중 조달 가능, +5 인허가 장벽 낮음, +5 라이선싱·이전 수요 명확, +5 단가 경쟁력·낮은 초기투자
  -5 고가 특수설비·임상 필요, -5 후속 R&D 다량 필요
+ 존속기간 평가는 출원일부터 원칙적으로 20년 중 남은 기간과 비율을 기준으로 한다. 잔여 12년 이상은 충분, 7~12년은 보통, 7년 미만만 짧음으로 판단하며, 단순 경과연수만으로 불리하게 평가하지 않는다.
  상한 95, 하한 55
 총점 = round(T×0.35 + M×0.35 + B×0.30). 임의 보정 금지.
 
