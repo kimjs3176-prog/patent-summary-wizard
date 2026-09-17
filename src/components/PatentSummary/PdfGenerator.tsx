@@ -4,6 +4,68 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
+
+interface TextItem {
+  text: string;
+  /** px, relative to the captured element */
+  x: number;
+  y: number;
+  width: number;
+  fontSize: number;
+}
+
+/** Collect every visible text run with its position so the PDF keeps selectable text. */
+function collectTextItems(root: HTMLElement): TextItem[] {
+  const rootRect = root.getBoundingClientRect();
+  const items: TextItem[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+
+  let node = walker.nextNode() as Text | null;
+  while (node) {
+    const raw = node.nodeValue ?? "";
+    if (raw.trim()) {
+      const parent = node.parentElement;
+      if (parent) {
+        const style = window.getComputedStyle(parent);
+        if (style.visibility !== "hidden" && style.display !== "none" && style.opacity !== "0") {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const rects = Array.from(range.getClientRects());
+          const fontSize = parseFloat(style.fontSize) || 12;
+          // Single-rect nodes keep their full text; wrapped nodes are split per line by ratio.
+          const total = raw.length;
+          let consumed = 0;
+          const widthSum = rects.reduce((sum, r) => sum + r.width, 0) || 1;
+          rects.forEach((rect, index) => {
+            if (rect.width < 1 || rect.height < 1) return;
+            const share = Math.round((rect.width / widthSum) * total);
+            const slice =
+              rects.length === 1
+                ? raw
+                : index === rects.length - 1
+                  ? raw.slice(consumed)
+                  : raw.slice(consumed, consumed + share);
+            consumed += share;
+            const text = slice.replace(/\s+/g, " ").trim();
+            if (!text) return;
+            items.push({
+              text,
+              x: rect.left - rootRect.left,
+              y: rect.bottom - rootRect.top - Math.max(1, rect.height * 0.2),
+              width: rect.width,
+              fontSize,
+            });
+          });
+          range.detach?.();
+        }
+      }
+    }
+    node = walker.nextNode() as Text | null;
+  }
+
+  return items;
+}
 
 interface PdfGeneratorProps {
   content: string;
