@@ -14,7 +14,6 @@ function markCooldown(_provider: "gemini", ms = PROVIDER_COOLDOWN_MS) {
   geminiCooldownUntil = Date.now() + ms;
 }
 const GEMINI_TIMEOUT_MS = 8_000;
-const SCORE_CACHE_VERSION = "v2-term-ratio";
 
 function withTimeout(parent: AbortSignal | undefined, ms: number): { signal: AbortSignal; cancel: () => void } {
   const ctrl = new AbortController();
@@ -388,8 +387,7 @@ serve(async (req) => {
         const cachedMarketReason = stripScoreMentions(stripTrlMentions(cached.market_reason || ""));
         const cachedBusinessReason = stripScoreMentions(stripTrlMentions(cached.business_reason || ""));
         const cachedAnalysis = stripScoreMentions(cached.analysis || "");
-        const cacheNeedsRefresh = cached.cache_version !== SCORE_CACHE_VERSION;
-        if (cacheNeedsRefresh || isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
+        if (isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
           console.log(`[CACHE STALE] score commentary for ${trimmedPatent} — regenerating`);
           // 설명문만 재생성하고 점수/TRL은 기존 값으로 고정 (동일 특허 점수 변동 방지)
           lockedScores = {
@@ -911,7 +909,6 @@ JSON형식:
         technology_reason: scores.technologyReason || "",
         market_reason: scores.marketReason || "",
         business_reason: scores.businessReason || "",
-        cache_version: SCORE_CACHE_VERSION,
       }, { onConflict: "patent_number" });
       console.log(`[CACHE SAVED] score for ${trimmedPatent}`);
     } catch (saveErr) {
