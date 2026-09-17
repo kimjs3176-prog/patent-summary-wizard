@@ -673,6 +673,7 @@ export function TossPatentSummary({
                 content={content}
                 patentNumber={patentNumber}
                 printRef={printRef}
+                ready={allReady}
               />
             )}
             {featureFlags.pptEnabled && (
