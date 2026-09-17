@@ -21,6 +21,7 @@ import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
 import { ImageLightbox } from "./ImageLightbox";
+import { GovtPatentInfo } from "./GovtPatentInfo";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
@@ -750,6 +751,7 @@ export function TossPatentSummary({
                     />
                   </div>
                 )}
+                <GovtPatentInfo registrationNumber={patentData.registrationNumber || (patentData.searchType !== 'application' ? patentNumber : undefined)} />
               </SoftCard>
             </section>
           )}
