@@ -35,6 +35,7 @@ export function RegulationAnalysis({ patentNumber, patentData, isStreaming }: Pr
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RegulationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useSummaryTask("regulation", loading || (!result && !error && !isStreaming));
 
   useEffect(() => {
     if (!patentNumber || !patentData || isStreaming) return;
