@@ -709,6 +709,20 @@ time, .tabular-nums, [data-numeric] {
   line-height: 1 !important;
 }
 
+/* Auto-detected single-label boxes (badges, score tiles, TRL steps, tags). */
+.ais-pdf-capture .pdf-box-center {
+  display: grid !important;
+  place-items: center !important;
+  place-content: center !important;
+  text-align: center !important;
+  line-height: 1 !important;
+}
+
+.ais-pdf-capture .pdf-box-center > * {
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
 /* Hide scrollbar utility for horizontal section nav */
 @layer utilities {
   .scrollbar-hide {
