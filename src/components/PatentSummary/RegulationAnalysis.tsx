@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Scale, ExternalLink, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { PatentData } from "./types";
+import { useSummaryTask } from "./summaryReady";
 
 interface RegulationLaw {
   name: string;
