@@ -314,6 +314,38 @@ export function extractKeywordsFromPatent(
     }
   }
 
+  // -------------------------------------------------------------------------
+  // 근거 기반 랭킹: 패턴 리스트 순서가 아니라 "본문 등장 빈도 + 명칭 일치"로 정렬한다.
+  // -------------------------------------------------------------------------
+  const titleNorm = title.replace(/\s+/g, "");
+  const bodyText = `${cleanedSummary} ${patentData.abstract || ""}`;
+  const findPattern = (label: string, list: [RegExp, string][]): RegExp | undefined =>
+    list.find(([, l]) => l === label)?.[0];
+  const countHits = (re: RegExp, s: string): number => {
+    const g = new RegExp(re.source, re.flags.includes("g") ? re.flags : re.flags + "g");
+    return (s.match(g) || []).length;
+  };
+  const evidenceScore = (label: string, list: [RegExp, string][]): number => {
+    let score = 0;
+    if (titleNorm.includes(label.replace(/\s+/g, ""))) score += 8;
+    const pat = findPattern(label, list);
+    if (pat) {
+      if (title && pat.test(title)) score += 6;
+      score += Math.min(countHits(pat, bodyText), 6);
+    } else {
+      // IPC 등 패턴 없이 유도된 항목(분류 기반) — 중립 가중치
+      score += 2;
+    }
+    return score;
+  };
+  const rank = (list: string[], patterns: [RegExp, string][]): string[] =>
+    [...list].sort((a, b) => evidenceScore(b, patterns) - evidenceScore(a, patterns));
+
+  const rankedFunc = rank(funcKws, funcPatterns);
+  const rankedIndustry = rank(industryKws, industryPatterns);
+  const rankedProduct = rank(productKws, productPatterns);
+  const rankedFeat = rank(featKws, featPatterns);
+
   const seen = new Set<string>();
   const unique: KwItem[] = [];
   const push = (word: string, cat: KeywordCategory) => {
@@ -324,37 +356,32 @@ export function extractKeywordsFromPatent(
 
   // 카테고리는 주요기능·활용산업·최종제품·기술분야 4종으로 한정
   // 카테고리별 최상위 1개씩만 선정 — 총 4개로 한정한다.
-  push(funcKws[0], "function");
-  push(industryKws[0], "industry");
-  push(productKws[0], "product");
-  push(featKws[0], "tech");
+  push(rankedFunc[0], "function");
+  push(rankedIndustry[0], "industry");
+  push(rankedProduct[0], "product");
+  push(rankedFeat[0], "tech");
 
   // -------------------------------------------------------------------------
   // 본문 기반 키워드와 특허 명칭 적합성 검증
-  //   material/product 카테고리는 명칭과 직결되는 의미 단위 → 명칭과 어긋나면 폐기.
-  //   검증 통과 조건(택1):
-  //     1) 키워드 표기가 명칭에 그대로 포함
-  //     2) 같은 카테고리의 소스 패턴이 명칭에 매치
-  //     3) 본문(요약서+초록)에서 동일 패턴이 2회 이상 매치 (강한 본문 근거)
-  //   조건을 모두 충족하지 못하면 부적합으로 간주하고 폐기.
-  //   단, 각 카테고리의 최소 1개는 유지(빈 슬롯 방지)하기 위해 명칭 nouns 폴백 적용.
+  //   통과 조건(택1): 명칭 포함 / 명칭 패턴 매치 / 본문 2회 이상 매치.
+  //   product·tech·function 카테고리에 적용하며, 불충족 시 폐기한다.
   // -------------------------------------------------------------------------
-  const titleNorm = title.replace(/\s+/g, "");
-  const bodyText = `${cleanedSummary} ${patentData.abstract || ""}`;
-  const findPattern = (label: string, list: [RegExp, string][]): RegExp | undefined =>
-    list.find(([, l]) => l === label)?.[0];
-  const countHits = (re: RegExp, s: string): number => {
-    const g = new RegExp(re.source, re.flags.includes("g") ? re.flags : re.flags + "g");
-    return (s.match(g) || []).length;
+  const patternsByCat: Partial<Record<KeywordCategory, [RegExp, string][]>> = {
+    product: productPatterns,
+    tech: featPatterns,
+    function: funcPatterns,
   };
   const isFitForTitle = (item: KwItem): boolean => {
-    if (item.cat !== "product") return true;
+    const list = patternsByCat[item.cat];
+    if (!list) return true;
     if (!title) return true;
     if (titleNorm.includes(item.word.replace(/\s+/g, ""))) return true;
-    const pat = findPattern(item.word, productPatterns);
-    if (pat && pat.test(title)) return true;
-    if (pat && countHits(pat, bodyText) >= 2) return true;
-    return false;
+    const pat = findPattern(item.word, list);
+    if (!pat) return true;
+    if (pat.test(title)) return true;
+    // 요약서 본문 근거가 충분할 때만 유지 (요약서가 없으면 초록 1회 매치도 허용)
+    const need = cleanedSummary.length > 80 ? 2 : 1;
+    return countHits(pat, bodyText) >= need;
   };
 
   const validated: KwItem[] = [];
