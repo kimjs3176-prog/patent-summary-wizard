@@ -77,6 +77,26 @@ const PRINTING_CLASS = "ais-printing";
 const PRINT_TARGET_CLASS = "ais-print-target";
 const PDF_CAPTURE_CLASS = "ais-pdf-capture";
 
+interface BlockBound {
+  top: number;
+  bottom: number;
+}
+
+/** Collect boxes (cards, rows, headings, images) that should never be split across pages. */
+function collectBlockBounds(root: HTMLElement): BlockBound[] {
+  const rootRect = root.getBoundingClientRect();
+  const nodes = root.querySelectorAll<HTMLElement>(
+    "div,section,article,li,tr,h1,h2,h3,h4,p,img,table,figure",
+  );
+  const bounds: BlockBound[] = [];
+  nodes.forEach((node) => {
+    const rect = node.getBoundingClientRect();
+    if (rect.height < 8 || rect.width < 8) return;
+    bounds.push({ top: rect.top - rootRect.top, bottom: rect.bottom - rootRect.top });
+  });
+  return bounds;
+}
+
 const waitForImages = async (element: HTMLElement) => {
   await Promise.all(
     Array.from(element.querySelectorAll("img")).map((image) => {
@@ -112,6 +132,7 @@ export async function downloadWebSummaryPdf(
     });
 
     const textItems = collectTextItems(clone);
+    const blocks = collectBlockBounds(clone);
     const cloneWidth = clone.offsetWidth || clone.scrollWidth || 1;
 
     const canvas = await html2canvas(clone, {
@@ -145,9 +166,32 @@ export async function downloadWebSummaryPdf(
     const pageSliceHeight = Math.floor(canvas.width * (printableHeight / printableWidth));
     let sourceY = 0;
     let pageIndex = 0;
+    const scaleRatio = canvas.width / cloneWidth;
+    const minSlice = pageSliceHeight * 0.45;
+
+    /** Pull the page break up to the nearest boundary that does not cut a card or line. */
+    const findSafeSlice = (startY: number, maxSlice: number) => {
+      if (startY + maxSlice >= canvas.height) return maxSlice;
+      let cut = (startY + maxSlice) / scaleRatio;
+      const startCss = startY / scaleRatio;
+      for (let pass = 0; pass < 12; pass += 1) {
+        let highest = Infinity;
+        blocks.forEach((b) => {
+          if (b.top < cut - 0.5 && b.bottom > cut + 0.5 && b.bottom - b.top < maxSlice / scaleRatio) {
+            if (b.top < highest) highest = b.top;
+          }
+        });
+        if (highest === Infinity) break;
+        cut = highest - 2;
+      }
+      const slice = Math.floor((cut - startCss) * scaleRatio);
+      if (slice < minSlice || slice > maxSlice) return maxSlice;
+      return slice;
+    };
 
     while (sourceY < canvas.height) {
-      const sliceHeight = Math.min(pageSliceHeight, canvas.height - sourceY);
+      const maxSlice = Math.min(pageSliceHeight, canvas.height - sourceY);
+      const sliceHeight = findSafeSlice(sourceY, maxSlice);
       const pageCanvas = document.createElement("canvas");
       pageCanvas.width = canvas.width;
       pageCanvas.height = sliceHeight;
