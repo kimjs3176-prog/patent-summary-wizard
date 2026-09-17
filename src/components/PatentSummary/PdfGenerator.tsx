@@ -71,6 +71,8 @@ interface PdfGeneratorProps {
   content: string;
   patentNumber: string;
   printRef: RefObject<HTMLDivElement | null>;
+  /** 모든 섹션 로딩이 끝났는지 여부 (false면 버튼 비활성화) */
+  ready?: boolean;
 }
 
 const PRINTING_CLASS = "ais-printing";
