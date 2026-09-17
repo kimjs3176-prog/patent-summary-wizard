@@ -561,191 +561,103 @@ time, .tabular-nums, [data-numeric] {
 }
 
 /* ============================================================
- * Print styles — optimized for the new Toss-style summary UI.
- * The on-screen TossPatentSummary IS the print artifact.
+ * Print styles — the visible web summary is the PDF artifact.
  * ============================================================ */
 @media print {
   @page {
     size: A4;
-    margin: 12mm 14mm;
+    margin: 10mm 12mm;
   }
 
-  /* Universal: preserve brand colors (emerald accent, soft surfaces) */
-  *, *::before, *::after {
+  body.ais-printing,
+  body.ais-printing * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-    filter: none !important;
-    backdrop-filter: none !important;
   }
 
-  html, body {
+  html,
+  body.ais-printing {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     background: #fff !important;
-    color: #191F28 !important;
-    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    font-size: 10pt !important;
-    line-height: 1.55 !important;
   }
 
-  /* Kill chrome that should never print */
-  header, footer,
-  nav, aside,
-  .no-print,
-  .print\:hidden,
-  [aria-label="Notifications alt+T"],
-  [aria-label="Notifications (F8)"],
-  [data-sonner-toaster],
-  iframe,
-  /* Floating chatbot launcher */
-  button[aria-label="챗봇 열기"],
-  button[aria-label="챗봇 닫기"],
-  /* Splash + ambient backgrounds */
-  .fixed.inset-0,
-  /* Sticky search bar above results */
-  .sticky,
-  /* Hidden legacy off-screen printable container */
-  [style*="-9999px"] {
+  body.ais-printing * {
+    visibility: hidden !important;
+  }
+
+  body.ais-printing .ais-print-target,
+  body.ais-printing .ais-print-target * {
+    visibility: visible !important;
+  }
+
+  body.ais-printing .ais-print-target {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  body.ais-printing .ais-print-target .print\:hidden,
+  body.ais-printing .ais-print-target [data-print-exclude="true"],
+  body.ais-printing [data-sonner-toaster] {
     display: none !important;
   }
 
-  .print\:break-before-page {
-    break-before: page !important;
-    page-break-before: always !important;
-  }
-
-  .container, main {
-    padding: 0 !important;
-    margin: 0 !important;
-    max-width: 100% !important;
-  }
-
-  /* Stop animations in print */
-  [class*="animate-"], .animate-spin, .animate-pulse, .animate-ping {
+  body.ais-printing .ais-print-target [class*="animate-"],
+  body.ais-printing .ais-print-target .animate-spin,
+  body.ais-printing .ais-print-target .animate-pulse,
+  body.ais-printing .ais-print-target .animate-ping {
     animation: none !important;
   }
 
-  /* Strip the outer card chrome — content fills the page */
-  .bg-white.rounded-\[24px\],
-  div[class*="rounded-[24px]"][class*="bg-white"] {
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: #fff !important;
-    overflow: visible !important;
-  }
-  .max-w-\[680px\] {
-    max-width: 100% !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding-bottom: 0 !important;
-  }
-
-  /* SoftCard surfaces — keep a subtle tint for grouping, slimmer padding */
-  div[class*="rounded-[20px]"] {
-    border-radius: 8px !important;
-    padding: 10px 12px !important;
-    background: #F7F9FA !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-  div[class*="rounded-[16px]"],
-  div[class*="rounded-[14px]"] {
-    border-radius: 6px !important;
-  }
-
-  /* Section rhythm */
-  section {
-    margin-bottom: 10px !important;
+  body.ais-printing .ais-print-target section,
+  body.ais-printing .ais-print-target .bp-panel,
+  body.ais-printing .ais-print-target figure,
+  body.ais-printing .ais-print-target table,
+  body.ais-printing .ais-print-target img {
     break-inside: avoid;
     page-break-inside: avoid;
   }
-  /* Long sections (AI 요약 본문) may paginate */
-  section:has(p + p + p) {
+
+  body.ais-printing .ais-print-target section:has(.space-y-4) {
     break-inside: auto;
     page-break-inside: auto;
   }
 
-  /* Headings */
-  h1, h2, h3 {
-    color: #191F28 !important;
+  body.ais-printing .ais-print-target h1,
+  body.ais-printing .ais-print-target h2,
+  body.ais-printing .ais-print-target h3 {
     break-after: avoid !important;
     page-break-after: avoid !important;
   }
-  h1 { font-size: 16pt !important; line-height: 1.25 !important; margin: 0 0 4pt !important; }
-  h2 { font-size: 12pt !important; line-height: 1.3 !important; margin: 0 0 4pt !important; }
-  h3 { font-size: 10.5pt !important; }
 
-  /* Section kicker (small emerald label above each h2) */
-  p[style*="color: rgb(16, 185, 129)"],
-  p[style*="#10B981"] {
-    color: #059669 !important;
-    font-size: 8.5pt !important;
-  }
-
-  /* Body paragraphs */
-  p {
-    color: #2C3038 !important;
-    font-size: 10pt !important;
-    line-height: 1.55 !important;
-    margin: 0 0 4pt !important;
+  body.ais-printing .ais-print-target p,
+  body.ais-printing .ais-print-target li {
     orphans: 3;
     widows: 3;
   }
 
-  /* Score block — keep emerald number visible */
-  span[style*="#10B981"], span[style*="rgb(16, 185, 129)"] {
-    color: #10B981 !important;
-  }
-
-  /* TRL bars — preserve the colored stripes */
-  .flex.gap-1 > .h-1\\.5 {
-    height: 6px !important;
-    border-radius: 3px !important;
-  }
-
-  /* Keyword chips */
-  .flex.flex-wrap.gap-2 > * {
-    border: 1px solid #E5E8EB !important;
-    border-radius: 999px !important;
-    padding: 2px 8px !important;
-    font-size: 9pt !important;
-    line-height: 1.3 !important;
-  }
-
-  /* Drawings: keep contained, never split */
-  img {
+  body.ais-printing .ais-print-target img {
     max-width: 100% !important;
-    max-height: 70mm !important;
+    max-height: 82mm !important;
     height: auto !important;
     object-fit: contain !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
   }
 
-  /* Figure captions */
-  .text-\[12px\].text-\[\#8B95A1\] { color: #6B7280 !important; font-size: 8.5pt !important; }
-
-  /* Links: clean, no URL footnote */
-  a, a:visited { color: #191F28 !important; text-decoration: none !important; }
-  a[href]::after { content: "" !important; }
-
-  /* Tables (rare, but defensive) */
-  table { width: 100% !important; border-collapse: collapse !important; font-size: 9.5pt !important; }
-  th, td { border: 1px solid #E5E8EB !important; padding: 4px 6px !important; }
-  thead { display: table-header-group; }
-  tr, figure { break-inside: avoid !important; page-break-inside: avoid !important; }
-
-  /* AI 종합 분석 highlight box → print as soft tinted block */
-  div[style*="linear-gradient(135deg, hsl(var(--primary)"] {
-    background: #ECFDF5 !important;
-    border: 1px solid #A7F3D0 !important;
-    border-radius: 8px !important;
-    padding: 10px 12px !important;
+  body.ais-printing .ais-print-target button {
+    cursor: default !important;
   }
 
-  /* CTA / share / favorite / pdf buttons inside summary footer */
-  .h-14, .h-12, .h-9 { display: none !important; }
+  body.ais-printing .ais-print-target a[href]::after {
+    content: "" !important;
+  }
 }
 
 /* Hide scrollbar utility for horizontal section nav */
@@ -1111,6 +1023,8 @@ time, .tabular-nums, [data-numeric] {
 .bp-panel::after { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
 
 @media print {
-  .bp-doc, .bp-panel { background-image: none; }
-  .bp-panel::before, .bp-panel::after { display: none; }
+  body.ais-printing .bp-doc,
+  body.ais-printing .bp-panel {
+    background-image: none;
+  }
 }

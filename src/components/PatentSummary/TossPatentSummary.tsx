@@ -12,9 +12,8 @@ import { RelatedPatentsCompact } from "./RelatedPatentsCompact";
 import { RegulationAnalysis } from "./RegulationAnalysis";
 import { TechValuation } from "./TechValuation";
 
-import { PdfGenerator } from "./PdfGenerator";
+import { PdfGenerator, printWebSummary } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
-import { PrintableContent } from "./PrintableContent";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
@@ -461,15 +460,6 @@ export function TossPatentSummary({
   );
   const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text, autoGlossary) : text);
 
-  const pdfLayoutConfig = useMemo(() => {
-    try { return settings.pdf_layout_config ? JSON.parse(settings.pdf_layout_config) : undefined; } catch { return undefined; }
-  }, [settings.pdf_layout_config]);
-
-  const printSections = useMemo(() => {
-    const defaults = { patentInfo: true, commercialization: true, aiSummary: true, trl: true, claims: false, relatedPatents: false, disclaimer: true };
-    try { return settings.print_sections ? { ...defaults, ...JSON.parse(settings.print_sections) } : defaults; } catch { return defaults; }
-  }, [settings.print_sections]);
-
   // 사업화 점수 호출
   useEffect(() => {
     const run = async () => {
@@ -568,7 +558,10 @@ export function TossPatentSummary({
     } catch {}
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = async () => {
+    const opened = await printWebSummary(printRef.current, patentNumber);
+    if (!opened) toast.error("인쇄 화면을 열지 못했습니다. 다시 시도해주세요.");
+  };
 
   // QR 이미지를 PNG 파일로 저장
   const downloadQr = () => {
@@ -601,15 +594,6 @@ export function TossPatentSummary({
 
   return (
     <div className="text-[#191F28]" style={{ fontFamily: "'Pretendard','Inter',sans-serif" }}>
-      {/* Printable (Hidden) */}
-      <PrintableContent
-        ref={printRef}
-        content={content}
-        patentNumber={patentNumber}
-        patentData={patentData}
-        printSections={printSections}
-      />
-
       {/* 액션바: 토스 스타일 미니멀, 기능은 모두 유지 */}
       {!isStreaming && content && (
         <div className="flex items-center justify-between flex-wrap gap-2 mb-6 print:hidden">
@@ -677,10 +661,7 @@ export function TossPatentSummary({
               <PdfGenerator
                 content={content}
                 patentNumber={patentNumber}
-                patentData={patentData}
                 printRef={printRef}
-                commercializationDetails={details}
-                layoutConfig={pdfLayoutConfig}
               />
             )}
             {featureFlags.pptEnabled && (
@@ -696,7 +677,7 @@ export function TossPatentSummary({
         </div>
       )}
 
-      <div ref={aiBodyRef} data-toss-summary data-toss-surface className="bp-doc border border-[#DDE2E6] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden max-w-[864px] mx-auto">
+      <div ref={(node) => { aiBodyRef.current = node; printRef.current = node; }} data-toss-summary data-toss-surface className="bp-doc border border-[#DDE2E6] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden max-w-[864px] mx-auto">
         <div className="bp-doc-head">
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#8B95A1]">
             AI TECH ANALYSIS REPORT
@@ -1081,7 +1062,7 @@ export function TossPatentSummary({
 
           {/* 액션 버튼 */}
           {!isStreaming && content && (
-            <section className="mb-2">
+            <section className="mb-2 print:hidden">
               <button
                 onClick={() => setShareOpen(true)}
                 className="w-full h-14 rounded-[16px] text-[16px] font-bold text-white transition-all hover:opacity-90 active:scale-[0.99] flex items-center justify-center gap-2"
