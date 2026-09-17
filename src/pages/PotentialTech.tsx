@@ -53,7 +53,11 @@ const PotentialTech = () => {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return rows.filter((r) => {
+    const rank = (g: string | null) => {
+      const i = GRADES.indexOf(g ?? "");
+      return i < 0 ? 99 : i;
+    };
+    return [...rows].sort((a, b) => rank(a.grade) - rank(b.grade) || (b.acquired_year ?? 0) - (a.acquired_year ?? 0)).filter((r) => {
       if (grade !== "전체" && r.grade !== grade) return false;
       if (!q) return true;
       return (
