@@ -501,6 +501,7 @@ serve(async (req) => {
         const aiCtrl = new AbortController();
         const aiTimer = setTimeout(() => aiCtrl.abort(), 150000);
         try {
+          // 체감 속도 개선: 토큰을 스트리밍으로 즉시 전달하고, 종료 후 후처리 결과로 교체한다.
           const response = await callAISummaryCompletions(
             {
               model: aiModel,
@@ -508,7 +509,7 @@ serve(async (req) => {
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userMessage },
               ],
-              stream: false,
+              stream: true,
               max_tokens: maxTokens,
               // Gemini 3.x thinking 토큰이 max_tokens를 소모해 본문이 200자 근방에서 잘리는
               // 현상(finish=length)이 관측되어 reasoning 예산을 최소화한다.
@@ -517,7 +518,7 @@ serve(async (req) => {
             { signal: aiCtrl.signal },
           );
 
-          if (!response.ok) {
+          if (!response.ok || !response.body) {
             const text = await response.text().catch(() => "");
             console.error("AI gateway error:", response.status, text);
             const message = response.status === 429
@@ -531,10 +532,40 @@ serve(async (req) => {
             return;
           }
 
-          const result = await response.json();
-          const finishReason = result?.choices?.[0]?.finish_reason ?? null;
-          let fullContent = String(result?.choices?.[0]?.message?.content || "").trim();
-          console.log(`[AI COMPLETE] ${trimmedPatent} finish=${finishReason ?? "null"} chars=${fullContent.length}`);
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = "";
+          let raw = "";
+          let finishReason: string | null = null;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            let nl: number;
+            while ((nl = buf.indexOf("\n")) !== -1) {
+              let line = buf.slice(0, nl);
+              buf = buf.slice(nl + 1);
+              if (line.endsWith("\r")) line = line.slice(0, -1);
+              if (!line.startsWith("data: ")) continue;
+              const payload = line.slice(6).trim();
+              if (payload === "[DONE]") continue;
+              try {
+                const parsed = JSON.parse(payload);
+                finishReason = parsed?.choices?.[0]?.finish_reason ?? finishReason;
+                const delta = parsed?.choices?.[0]?.delta?.content;
+                if (typeof delta === "string" && delta) {
+                  raw += delta;
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: delta } }] })}\n\n`),
+                  );
+                }
+              } catch { /* partial chunk — ignore */ }
+            }
+          }
+
+          let fullContent = raw.trim();
+          console.log(`[AI STREAM DONE] ${trimmedPatent} finish=${finishReason ?? "null"} chars=${fullContent.length}`);
 
           if (!fullContent || fullContent.length < 200) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "empty_response", message: "AI 응답이 비어 있습니다. 자동 재시도합니다." })}\n\n`));
@@ -546,7 +577,9 @@ serve(async (req) => {
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
           fullContent = mergeMarketParagraphs(fullContent);
           fullContent = inlineMarketCitations(fullContent);
-          emitText(controller, fullContent);
+          if (fullContent !== raw.trim()) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent })}\n\n`));
+          }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
           await saveCache(fullContent);
