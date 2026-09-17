@@ -178,6 +178,12 @@ export function usePatentSummary() {
 
           try {
             const parsed = JSON.parse(jsonStr);
+            // 서버가 후처리(시장 수치 보정·출처 인라인)를 마친 최종본을 보내면 교체한다.
+            if (typeof parsed.final_content === "string" && parsed.final_content.length > 0) {
+              fullContent = parsed.final_content;
+              setSummary(fullContent);
+              continue;
+            }
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
               fullContent += content;
