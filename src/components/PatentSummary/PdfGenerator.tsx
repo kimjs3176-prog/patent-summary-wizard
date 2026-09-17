@@ -77,6 +77,26 @@ const PRINTING_CLASS = "ais-printing";
 const PRINT_TARGET_CLASS = "ais-print-target";
 const PDF_CAPTURE_CLASS = "ais-pdf-capture";
 
+interface BlockBound {
+  top: number;
+  bottom: number;
+}
+
+/** Collect boxes (cards, rows, headings, images) that should never be split across pages. */
+function collectBlockBounds(root: HTMLElement): BlockBound[] {
+  const rootRect = root.getBoundingClientRect();
+  const nodes = root.querySelectorAll<HTMLElement>(
+    "div,section,article,li,tr,h1,h2,h3,h4,p,img,table,figure",
+  );
+  const bounds: BlockBound[] = [];
+  nodes.forEach((node) => {
+    const rect = node.getBoundingClientRect();
+    if (rect.height < 8 || rect.width < 8) return;
+    bounds.push({ top: rect.top - rootRect.top, bottom: rect.bottom - rootRect.top });
+  });
+  return bounds;
+}
+
 const waitForImages = async (element: HTMLElement) => {
   await Promise.all(
     Array.from(element.querySelectorAll("img")).map((image) => {
