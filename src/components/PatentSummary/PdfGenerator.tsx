@@ -179,6 +179,29 @@ export async function downloadWebSummaryPdf(
         undefined,
         "FAST",
       );
+      // Invisible text layer over the image so the PDF text stays selectable/copyable.
+      if (hasKoreanFont) {
+        const canvasScale = canvas.width / cloneWidth;
+        const cssToMm = printableWidth / cloneWidth;
+        const topCss = sourceY / canvasScale;
+        const bottomCss = (sourceY + sliceHeight) / canvasScale;
+        pdf.setFont("NotoSansKR", "normal");
+        pdf.setTextColor(0, 0, 0);
+        textItems.forEach((item) => {
+          if (item.y < topCss || item.y > bottomCss) return;
+          const sizePt = Math.max(4, item.fontSize * cssToMm * (72 / 25.4));
+          pdf.setFontSize(sizePt);
+          try {
+            pdf.text(item.text, marginX + item.x * cssToMm, marginY + (item.y - topCss) * cssToMm, {
+              renderingMode: "invisible",
+              maxWidth: Math.max(1, item.width * cssToMm) * 1.6,
+            });
+          } catch {
+            /* skip unrenderable runs */
+          }
+        });
+      }
+
       sourceY += sliceHeight;
       pageIndex += 1;
     }
