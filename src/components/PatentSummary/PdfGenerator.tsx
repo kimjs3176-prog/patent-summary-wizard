@@ -112,6 +112,7 @@ export async function downloadWebSummaryPdf(
     });
 
     const textItems = collectTextItems(clone);
+    const blocks = collectBlockBounds(clone);
     const cloneWidth = clone.offsetWidth || clone.scrollWidth || 1;
 
     const canvas = await html2canvas(clone, {
