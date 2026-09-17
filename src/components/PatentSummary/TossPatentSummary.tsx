@@ -722,7 +722,9 @@ export function TossPatentSummary({
                   {patentData.registrationDate
                     ? <Row label="등록일자" value={patentData.registrationDate} />
                     : (patentData.publicationDate && <Row label="공개일자" value={patentData.publicationDate} />)}
-                  {patentData.assignee && <Row label="출원인" value={patentData.assignee} />}
+                {ownerChanged && finalOwner
+                  ? <Row label="최종권리자" value={finalOwner} />
+                  : (patentData.assignee && <Row label="출원인" value={patentData.assignee} />)}
                   {patentData.inventors?.length ? (
                     <Row label="발명자" value={patentData.inventors.length >= 5 ? `${patentData.inventors.slice(0, 4).join(", ")} 등 ${patentData.inventors.length}명` : patentData.inventors.join(", ")} />
                   ) : null}
