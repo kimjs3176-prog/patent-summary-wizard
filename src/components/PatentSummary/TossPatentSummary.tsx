@@ -21,7 +21,7 @@ import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
 import { ImageLightbox } from "./ImageLightbox";
-import { GovtPatentInfo } from "./GovtPatentInfo";
+import { useGovtPatent, GovtPatentBadges } from "./GovtPatentInfo";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
