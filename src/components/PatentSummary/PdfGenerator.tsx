@@ -181,6 +181,9 @@ export async function downloadWebSummaryPdf(
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
+    normalizeCenteredBoxes(clone);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
     const textItems = collectTextItems(clone);
     const blocks = collectBlockBounds(clone);
     const cloneWidth = clone.offsetWidth || clone.scrollWidth || 1;
