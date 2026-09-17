@@ -236,7 +236,7 @@ function ScoreRow({ label, value, color, reason }: { label: string; value: numbe
       style={{ borderColor: border }}
     >
       <div
-        className="shrink-0 w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-[14px] flex items-center justify-center"
+        className="pdf-shape-center shrink-0 w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-[14px] flex items-center justify-center"
         style={{ background: color }}
       >
         <span className="text-[24px] sm:text-[27px] font-bold tabular-nums leading-none text-white">
@@ -271,7 +271,7 @@ function MiniGauge({ score }: { score: number }) {
   return (
     <div className="flex items-center gap-3 shrink-0">
       <div
-        className="w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-[16px] flex items-center justify-center"
+        className="pdf-shape-center w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-[16px] flex items-center justify-center"
         style={{ background: color }}
       >
         <span className="text-[30px] sm:text-[34px] font-bold tabular-nums leading-none text-white">{score}</span>
@@ -800,7 +800,7 @@ export function TossPatentSummary({
                       </span>
                       <span className="text-[#8B95A1] text-[11px] font-semibold">/ 9</span>
                       <span
-                        className="ml-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
+                        className="pdf-shape-center ml-1 min-h-6 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
                         style={{ background: trlColor }}
                       >
                         {trlStage}
@@ -816,7 +816,7 @@ export function TossPatentSummary({
                       return (
                         <div
                           key={i}
-                          className="flex-1 h-7 rounded-[6px] flex items-center justify-center text-[11px] font-bold tabular-nums transition-all"
+                          className="pdf-shape-center flex-1 h-7 rounded-[6px] flex items-center justify-center text-[11px] font-bold tabular-nums transition-all"
                           style={{
                             background: active ? c : "#F1F3F5",
                             color: active ? "#FFFFFF" : "#B0B8C1",

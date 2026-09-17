@@ -696,6 +696,19 @@ time, .tabular-nums, [data-numeric] {
   animation: none !important;
 }
 
+/* html2canvas can offset flex-aligned glyphs; grid keeps labels optically centered. */
+.ais-pdf-capture .pdf-shape-center {
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+  line-height: 1 !important;
+}
+
+.ais-pdf-capture .pdf-shape-center > * {
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
 /* Hide scrollbar utility for horizontal section nav */
 @layer utilities {
   .scrollbar-hide {
