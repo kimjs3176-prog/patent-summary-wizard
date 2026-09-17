@@ -502,9 +502,16 @@ function TossPatentSummaryInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patentData, patentNumber, isStreaming, content]);
 
-  const govtPatent = useGovtPatent(
-    patentData?.registrationNumber || (patentData && patentData.searchType !== 'application' ? patentNumber : undefined)
-  );
+  const registrationNumberForLookup =
+    patentData?.registrationNumber || (patentData && patentData.searchType !== 'application' ? patentNumber : undefined);
+  const govtPatent = useGovtPatent(registrationNumberForLookup);
+  const { finalOwner, loading: ownerLoading } = useRegisterOwner(registrationNumberForLookup);
+  const ownerChanged = isDifferentOwner(patentData?.assignee, finalOwner);
+
+  // 모든 섹션 로딩이 끝나야 PDF 다운로드를 허용한다.
+  const pendingSections = useSummaryPending();
+  const allReady =
+    !isStreaming && !!content && !scoreLoading && !ownerLoading && pendingSections === 0;
 
   const trl = details?.trl ?? null;
   const trlColor = trl == null ? "#9CA3AF" : trl <= 3 ? "#EF4444" : trl <= 6 ? "#F59E0B" : ACCENT_HEX;
