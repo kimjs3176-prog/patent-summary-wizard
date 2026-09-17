@@ -9,9 +9,8 @@ interface PatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
   onScoreReady?: (score: number) => void;
 }
-import { PdfGenerator } from "./PdfGenerator";
+import { PdfGenerator, printWebSummary } from "./PdfGenerator";
 import { PptGenerator } from "./PptGenerator";
-import { PrintableContent } from "./PrintableContent";
 
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { RegulationAnalysis } from "./RegulationAnalysis";
@@ -57,10 +56,6 @@ export function PatentSummary({
   const visibleSections = useMemo(() => {
     try { return settings.summary_visible_sections ? JSON.parse(settings.summary_visible_sections) : {}; } catch { return {}; }
   }, [settings.summary_visible_sections]);
-
-  const pdfLayoutConfig = useMemo(() => {
-    try { return settings.pdf_layout_config ? JSON.parse(settings.pdf_layout_config) : undefined; } catch { return undefined; }
-  }, [settings.pdf_layout_config]);
 
   const cardIcons = useMemo(() => {
     try { return settings.summary_card_icons ? JSON.parse(settings.summary_card_icons) : {}; } catch { return {}; }
@@ -176,8 +171,9 @@ export function PatentSummary({
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    const opened = await printWebSummary(printRef.current, patentNumber);
+    if (!opened) toast.error("인쇄 화면을 열지 못했습니다. 다시 시도해주세요.");
   };
 
   
@@ -485,16 +481,7 @@ export function PatentSummary({
   }, [patentData, content, visibleSections]);
 
   return (
-    <div className="w-full max-w-[1075px] mx-auto animate-fade-up">
-      {/* Printable Content (Hidden) */}
-      <PrintableContent
-        ref={printRef}
-        content={content}
-        patentNumber={patentNumber}
-        patentData={patentData}
-        printSections={printSections}
-      />
-
+    <div ref={printRef} className="w-full max-w-[1075px] mx-auto animate-fade-up">
       {/* Section Navigation — sticky pill bar */}
       {!isStreaming && content && navItems.length > 1 && <SectionNav items={navItems} />}
 
@@ -556,10 +543,7 @@ export function PatentSummary({
               <PdfGenerator
                 content={content}
                 patentNumber={patentNumber}
-                patentData={patentData}
                 printRef={printRef}
-                commercializationDetails={commercializationDetails}
-                layoutConfig={pdfLayoutConfig}
               />
             )}
             {featureFlags.pptEnabled && (
