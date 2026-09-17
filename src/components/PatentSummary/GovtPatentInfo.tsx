@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { BadgeCheck, Gift, Coins } from "lucide-react";
+import { BadgeCheck, Gift, Coins, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface GovtPatentData {
   institution?: string;
