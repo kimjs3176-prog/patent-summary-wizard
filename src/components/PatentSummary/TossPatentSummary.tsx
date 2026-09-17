@@ -1202,3 +1202,10 @@ function TossPatentSummaryInner({
     </div>
   );
 }
+export function TossPatentSummary(props: TossPatentSummaryProps & { onKeywordClick?: (keyword: string) => void; onRegenerate?: () => void }) {
+  return (
+    <SummaryReadyProvider>
+      <TossPatentSummaryInner {...props} />
+    </SummaryReadyProvider>
+  );
+}
