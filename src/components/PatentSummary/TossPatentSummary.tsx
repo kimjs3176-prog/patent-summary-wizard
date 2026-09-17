@@ -750,6 +750,7 @@ export function TossPatentSummary({
                     />
                   </div>
                 )}
+                <GovtPatentInfo registrationNumber={patentData.registrationNumber || (patentData.searchType !== 'application' ? patentNumber : undefined)} />
               </SoftCard>
             </section>
           )}
