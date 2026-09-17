@@ -14,12 +14,31 @@ export const SummaryQuickNav = ({ deps, className = "" }: Props) => {
   const [active, setActive] = useState<string>("");
 
   useEffect(() => {
+    // 다른 특허로 전환될 때 이전 목차가 남지 않도록 초기화
+    setItems([]);
+    setActive("");
+
     const scan = () => {
       const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-summary-section]"));
-      setItems(
-        nodes
-          .map((n) => ({ id: n.id, label: n.dataset.summaryLabel || "" }))
-          .filter((i) => i.id && i.label),
+      const seenId = new Set<string>();
+      const seenLabel = new Set<string>();
+      const next: Item[] = [];
+      for (const n of nodes) {
+        // 인쇄/PDF용 숨김 복제본은 제외
+        if (!n.isConnected || n.offsetParent === null) continue;
+        if (n.closest("[data-print-clone], [aria-hidden='true']")) continue;
+        const id = n.id;
+        const label = n.dataset.summaryLabel || "";
+        if (!id || !label) continue;
+        if (seenId.has(id) || seenLabel.has(label)) continue;
+        seenId.add(id);
+        seenLabel.add(label);
+        next.push({ id, label });
+      }
+      setItems((prev) =>
+        prev.length === next.length && prev.every((p, i) => p.id === next[i].id && p.label === next[i].label)
+          ? prev
+          : next,
       );
     };
     scan();
