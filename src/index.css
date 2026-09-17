@@ -631,6 +631,20 @@ time, .tabular-nums, [data-numeric] {
     page-break-inside: auto;
   }
 
+  /* The score panel is taller than one printable page. Let it paginate
+     between score rows instead of leaving an empty heading-only page. */
+  body.ais-printing .ais-print-target #sec-score,
+  body.ais-printing .ais-print-target #sec-score > .bp-panel {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  body.ais-printing .ais-print-target #sec-score > .bp-panel > div,
+  body.ais-printing .ais-print-target #sec-score [class*="rounded-[14px]"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   body.ais-printing .ais-print-target h1,
   body.ais-printing .ais-print-target h2,
   body.ais-printing .ais-print-target h3 {
