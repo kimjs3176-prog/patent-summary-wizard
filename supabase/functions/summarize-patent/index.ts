@@ -574,6 +574,9 @@ serve(async (req) => {
             return;
           }
 
+          // 기관명 정규화: 구 명칭(농업기술실용화재단 등)을 현행 명칭으로 교정
+          fullContent = fullContent
+            .replace(/농업기술\s*실용화\s*재단|농식품\s*실용화\s*재단/g, "한국농업기술진흥원");
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
           fullContent = mergeMarketParagraphs(fullContent);
           fullContent = inlineMarketCitations(fullContent);
