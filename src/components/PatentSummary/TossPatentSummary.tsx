@@ -707,6 +707,7 @@ export function TossPatentSummary({
             <p className="font-mono text-[12.5px] text-[#8B95A1] font-medium mb-6 tabular-nums tracking-[0.04em]">
               {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {formatPatentNumber(patentNumber, patentData?.searchType === 'application' ? 'application' : 'registration')}
             </p>
+            <GovtPatentBadges data={govtPatent} />
           </section>
 
           {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
