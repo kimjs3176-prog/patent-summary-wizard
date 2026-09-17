@@ -4,6 +4,68 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
+
+interface TextItem {
+  text: string;
+  /** px, relative to the captured element */
+  x: number;
+  y: number;
+  width: number;
+  fontSize: number;
+}
+
+/** Collect every visible text run with its position so the PDF keeps selectable text. */
+function collectTextItems(root: HTMLElement): TextItem[] {
+  const rootRect = root.getBoundingClientRect();
+  const items: TextItem[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+
+  let node = walker.nextNode() as Text | null;
+  while (node) {
+    const raw = node.nodeValue ?? "";
+    if (raw.trim()) {
+      const parent = node.parentElement;
+      if (parent) {
+        const style = window.getComputedStyle(parent);
+        if (style.visibility !== "hidden" && style.display !== "none" && style.opacity !== "0") {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const rects = Array.from(range.getClientRects());
+          const fontSize = parseFloat(style.fontSize) || 12;
+          // Single-rect nodes keep their full text; wrapped nodes are split per line by ratio.
+          const total = raw.length;
+          let consumed = 0;
+          const widthSum = rects.reduce((sum, r) => sum + r.width, 0) || 1;
+          rects.forEach((rect, index) => {
+            if (rect.width < 1 || rect.height < 1) return;
+            const share = Math.round((rect.width / widthSum) * total);
+            const slice =
+              rects.length === 1
+                ? raw
+                : index === rects.length - 1
+                  ? raw.slice(consumed)
+                  : raw.slice(consumed, consumed + share);
+            consumed += share;
+            const text = slice.replace(/\s+/g, " ").trim();
+            if (!text) return;
+            items.push({
+              text,
+              x: rect.left - rootRect.left,
+              y: rect.bottom - rootRect.top - Math.max(1, rect.height * 0.2),
+              width: rect.width,
+              fontSize,
+            });
+          });
+          range.detach?.();
+        }
+      }
+    }
+    node = walker.nextNode() as Text | null;
+  }
+
+  return items;
+}
 
 interface PdfGeneratorProps {
   content: string;
@@ -49,6 +111,9 @@ export async function downloadWebSummaryPdf(
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
+    const textItems = collectTextItems(clone);
+    const cloneWidth = clone.offsetWidth || clone.scrollWidth || 1;
+
     const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
@@ -61,6 +126,16 @@ export async function downloadWebSummaryPdf(
     });
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+
+    let hasKoreanFont = false;
+    try {
+      const fontBase64 = await loadKoreanFont();
+      addKoreanFontToDoc(pdf, fontBase64);
+      hasKoreanFont = true;
+    } catch (fontError) {
+      console.warn("Korean font unavailable for PDF text layer:", fontError);
+    }
+
     const pageWidth = 210;
     const pageHeight = 297;
     const marginX = 10;
@@ -104,6 +179,29 @@ export async function downloadWebSummaryPdf(
         undefined,
         "FAST",
       );
+      // Invisible text layer over the image so the PDF text stays selectable/copyable.
+      if (hasKoreanFont) {
+        const canvasScale = canvas.width / cloneWidth;
+        const cssToMm = printableWidth / cloneWidth;
+        const topCss = sourceY / canvasScale;
+        const bottomCss = (sourceY + sliceHeight) / canvasScale;
+        pdf.setFont("NotoSansKR", "normal");
+        pdf.setTextColor(0, 0, 0);
+        textItems.forEach((item) => {
+          if (item.y < topCss || item.y > bottomCss) return;
+          const sizePt = Math.max(4, item.fontSize * cssToMm * (72 / 25.4));
+          pdf.setFontSize(sizePt);
+          try {
+            pdf.text(item.text, marginX + item.x * cssToMm, marginY + (item.y - topCss) * cssToMm, {
+              renderingMode: "invisible",
+              maxWidth: Math.max(1, item.width * cssToMm) * 1.6,
+            });
+          } catch {
+            /* skip unrenderable runs */
+          }
+        });
+      }
+
       sourceY += sliceHeight;
       pageIndex += 1;
     }
