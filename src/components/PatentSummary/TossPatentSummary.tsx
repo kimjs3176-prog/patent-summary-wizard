@@ -22,6 +22,8 @@ import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
 import { ImageLightbox } from "./ImageLightbox";
 import { useGovtPatent, GovtPatentBadges } from "./GovtPatentInfo";
+import { useRegisterOwner, isDifferentOwner } from "./useRegisterOwner";
+import { SummaryReadyProvider, useSummaryPending } from "./summaryReady";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
