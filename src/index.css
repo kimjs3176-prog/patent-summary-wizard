@@ -674,6 +674,28 @@ time, .tabular-nums, [data-numeric] {
   }
 }
 
+/* Off-screen, fixed-width copy used for direct A4 PDF export. */
+.ais-pdf-capture {
+  position: fixed !important;
+  top: 0 !important;
+  left: -10000px !important;
+  z-index: -1 !important;
+  display: block !important;
+  width: 864px !important;
+  max-width: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  background: hsl(var(--background)) !important;
+  pointer-events: none !important;
+}
+
+.ais-pdf-capture [class*="animate-"],
+.ais-pdf-capture .animate-spin,
+.ais-pdf-capture .animate-pulse,
+.ais-pdf-capture .animate-ping {
+  animation: none !important;
+}
+
 /* Hide scrollbar utility for horizontal section nav */
 @layer utilities {
   .scrollbar-hide {
