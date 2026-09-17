@@ -111,6 +111,9 @@ export async function downloadWebSummaryPdf(
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
+    const textItems = collectTextItems(clone);
+    const cloneWidth = clone.offsetWidth || clone.scrollWidth || 1;
+
     const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
