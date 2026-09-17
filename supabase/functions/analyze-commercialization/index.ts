@@ -436,11 +436,8 @@ serve(async (req) => {
       ? summaryContent.replace(/\s+/g, " ").trim().slice(0, 3500)
       : "";
 
-    const patentTerm = assessPatentTerm(data.filingDate);
-    const yearsSinceFiling = patentTerm.elapsedYears == null ? "확인 불가" : patentTerm.elapsedYears.toFixed(1);
-    const remainingTermContext = patentTerm.remainingYears == null
-      ? "출원일 정보 부족으로 판단 불가"
-      : `약 ${patentTerm.remainingYears.toFixed(1)}년(전체 20년의 ${Math.round((patentTerm.remainingRatio || 0) * 100)}%, ${patentTerm.level})`;
+
+
 
     // Detect if detailed mode (check body for analysisMode)
     const isDetailedScore = body.analysisMode === "detailed";
