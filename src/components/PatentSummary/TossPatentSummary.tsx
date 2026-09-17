@@ -500,6 +500,10 @@ export function TossPatentSummary({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patentData, patentNumber, isStreaming, content]);
 
+  const govtPatent = useGovtPatent(
+    patentData?.registrationNumber || (patentData && patentData.searchType !== 'application' ? patentNumber : undefined)
+  );
+
   const trl = details?.trl ?? null;
   const trlColor = trl == null ? "#9CA3AF" : trl <= 3 ? "#EF4444" : trl <= 6 ? "#F59E0B" : ACCENT_HEX;
   const trlStage = trl == null ? "-" : trl <= 3 ? "기초연구" : trl <= 6 ? "개발/실증" : "상용화";
