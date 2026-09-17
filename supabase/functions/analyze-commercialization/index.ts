@@ -218,6 +218,22 @@ function stripScoreMentions(s: string | undefined | null): string {
   return out.replace(/,\s*$/, ".");
 }
 
+// 사업화 코멘트에서 존속기간·잔여기간 관련 문장을 문장 단위로 제거한다.
+// (권리 기간은 시스템이 점수에만 반영하고, 특허마다 기준이 다른 모호한 코멘트를 방지함)
+function stripDurationMentions(text: string): string {
+  if (!text) return text;
+  const durationPattern = /(존속기간|잔여\s*(?:보호)?기간|잔존(?:권리)?기간|경과\s*(?:연수|기간|년)|만료|보호기간)/;
+  const sentences = String(text).split(/(?<=[.。!?])\s*/);
+  const kept = sentences.filter((s) => {
+    const t = s.trim();
+    return t.length > 0 && !durationPattern.test(t);
+  });
+  if (kept.length === 0) return String(text).trim();
+  let out = kept.join(" ");
+  out = out.replace(/\s{2,}/g, " ").replace(/\s+([,.。!?])/g, "$1").trim();
+  return out.replace(/,\s*$/, ".");
+}
+
 function isReasonTooShort(...values: Array<string | null | undefined>): boolean {
   return values.some((value) => cleanKoreanText(value).length < 70);
 }
@@ -383,10 +399,10 @@ serve(async (req) => {
 
       if (cached) {
         console.log(`[CACHE HIT] score for ${trimmedPatent}`);
-        const cachedTechnologyReason = stripScoreMentions(stripTrlMentions(cached.technology_reason || ""));
-        const cachedMarketReason = stripScoreMentions(stripTrlMentions(cached.market_reason || ""));
-        const cachedBusinessReason = stripScoreMentions(stripTrlMentions(cached.business_reason || ""));
-        const cachedAnalysis = stripScoreMentions(cached.analysis || "");
+        const cachedTechnologyReason = stripDurationMentions(stripScoreMentions(stripTrlMentions(cached.technology_reason || "")));
+        const cachedMarketReason = stripDurationMentions(stripScoreMentions(stripTrlMentions(cached.market_reason || "")));
+        const cachedBusinessReason = stripDurationMentions(stripScoreMentions(stripTrlMentions(cached.business_reason || "")));
+        const cachedAnalysis = stripDurationMentions(stripScoreMentions(cached.analysis || ""));
         if (isReasonTooShort(cachedTechnologyReason, cachedMarketReason, cachedBusinessReason, cachedAnalysis)) {
           console.log(`[CACHE STALE] score commentary for ${trimmedPatent} — regenerating`);
           // 설명문만 재생성하고 점수/TRL은 기존 값으로 고정 (동일 특허 점수 변동 방지)
@@ -436,11 +452,8 @@ serve(async (req) => {
       ? summaryContent.replace(/\s+/g, " ").trim().slice(0, 3500)
       : "";
 
-    const patentTerm = assessPatentTerm(data.filingDate);
-    const yearsSinceFiling = patentTerm.elapsedYears == null ? "확인 불가" : patentTerm.elapsedYears.toFixed(1);
-    const remainingTermContext = patentTerm.remainingYears == null
-      ? "출원일 정보 부족으로 판단 불가"
-      : `약 ${patentTerm.remainingYears.toFixed(1)}년(전체 20년의 ${Math.round((patentTerm.remainingRatio || 0) * 100)}%, ${patentTerm.level})`;
+
+
 
     // Detect if detailed mode (check body for analysisMode)
     const isDetailedScore = body.analysisMode === "detailed";
@@ -504,13 +517,13 @@ serve(async (req) => {
 
     // Patent context - richer for detailed
     const abstractLimit = isDetailedScore ? 450 : 300;
+    // NOTE: 존속기간(경과연수·잔여기간)은 LLM 텍스트 코멘트에 전달하지 않는다.
+    // 이는 시스템(V-RAY)이 결정론적으로만 반영하며, 특허마다 기준이 다른 모호한 코멘트를 방지한다.
     let patentContext = `번호: ${data.patentNumber || patentNumber}
 명칭: ${data.titleKo || data.title || "없음"}
 출원인: ${data.assignee || "없음"}
 IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
 청구항수: ${data.claims?.length || 0}
-출원 후 경과기간: ${yearsSinceFiling}${patentTerm.elapsedYears == null ? "" : "년"}
-추정 잔여 보호기간: ${remainingTermContext}
 초록: ${(data.abstract || "없음").substring(0, abstractLimit)}`;
     if (isDetailedScore && data.claims?.length) {
       patentContext += `\n대표청구항: ${data.claims[0].substring(0, 200)}`;
@@ -565,13 +578,12 @@ IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
  +5 양산 시 단가 경쟁력 또는 초기 투자 규모가 작음
  -5 고가 특수설비·임상시험 등 진입장벽 큰 분야
  -5 후속 R&D가 추가로 크게 필요
- ※ 아래 4개 축(로열티공제법 기반 기술가치평가 관점)은 시스템이 별도로 정량 보정하므로,
-   근거 문장에서는 이와 모순되지 않게 서술할 것: ①사업화 소요기간(성숙도) ②권리 확정 여부
-   ③법적 잔존권리기간 ④적용 산업의 폭.
- ※ 존속기간은 출원일부터 원칙적으로 20년이라는 전제 아래 반드시 '추정 잔여 보호기간'과 그 비율로 평가한다.
-   잔여 12년 이상(60% 이상)은 '충분', 7년 이상 12년 미만은 '보통', 7년 미만만 '짧음'으로 판단한다.
-   출원 후 5년 경과처럼 전체 기간의 초반인 경우 잔여기간이 짧다고 평가하거나 사업화 한계로 제시하지 않는다.
-   실제 권리의 유효성·소멸 여부가 확인되지 않은 상태에서는 법적 존속을 확정적으로 단정하지 않는다.
+ ※ 아래 3개 축(로열티공제법 기반 기술가치평가 관점)은 시스템이 별도로 정량 보정하므로,
+   근거 문장에서는 이와 모순되지 않게 서술할 것: ①사업화 소요기간(기술 성숙도) ②권리 확정 여부
+   ③적용 산업의 폭.
+ ※ [존속기간 언급 절대 금지] 모든 텍스트 필드에서 특허 존속기간·잔여 보호기간·출원 후 경과연수·
+   만료 시점에 대한 언급·평가·언짢음 표현("잔여기간이 짧다", "보호기간이 충분하다" 등)을 일절 쓰지 말 것.
+   권리 기간 요소는 시스템이 점수에만 반영하며, 텍스트 코멘트 기준이 특허마다 달라지는 것을 방지한다.
 상한 95, 하한 55.
 
 총점 = round(T×0.35 + M×0.35 + B×0.30). 세 항목은 위 체크리스트로 산출된 값을 그대로 사용하며, 임의 보정 금지.
@@ -660,7 +672,7 @@ JSON형식:
 [사업성 B] 시작 60
  +5 기존 설비 구현, +5 제조방법 구체, +5 원료 시중 조달 가능, +5 인허가 장벽 낮음, +5 라이선싱·이전 수요 명확, +5 단가 경쟁력·낮은 초기투자
  -5 고가 특수설비·임상 필요, -5 후속 R&D 다량 필요
- 존속기간 평가는 출원일부터 원칙적으로 20년 중 남은 기간과 비율을 기준으로 한다. 잔여 12년 이상은 충분, 7~12년은 보통, 7년 미만만 짧음으로 판단하며, 단순 경과연수만으로 불리하게 평가하지 않는다.
+ [존속기간 언급 절대 금지] 모든 텍스트 필드에서 특허 존속기간·잔여 보호기간·출원 후 경과연수·만료 시점 관련 언급·평가 금지. 권리 기간은 시스템이 점수에만 반영한다.
  상한 95, 하한 55
 총점 = round(T×0.35 + M×0.35 + B×0.30). 임의 보정 금지.
 
@@ -876,10 +888,10 @@ JSON형식:
     scores.marketReason = stripTrlMentions(scores.marketReason);
     scores.businessReason = stripTrlMentions(scores.businessReason);
 
-    scores.technologyReason = stripScoreMentions(scores.technologyReason);
-    scores.marketReason = stripScoreMentions(scores.marketReason);
-    scores.businessReason = stripScoreMentions(scores.businessReason);
-    scores.analysis = stripScoreMentions(scores.analysis);
+    scores.technologyReason = stripDurationMentions(stripScoreMentions(scores.technologyReason));
+    scores.marketReason = stripDurationMentions(stripScoreMentions(scores.marketReason));
+    scores.businessReason = stripDurationMentions(stripScoreMentions(scores.businessReason));
+    scores.analysis = stripDurationMentions(stripScoreMentions(scores.analysis));
 
     // 기존 캐시가 있던 특허는 점수/TRL을 그대로 유지 (설명문만 갱신)
     if (lockedScores) {
