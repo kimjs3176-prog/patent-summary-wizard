@@ -22,6 +22,8 @@ import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
 import { ImageLightbox } from "./ImageLightbox";
 import { useGovtPatent, GovtPatentBadges } from "./GovtPatentInfo";
+import { useRegisterOwner, isDifferentOwner } from "./useRegisterOwner";
+import { SummaryReadyProvider, useSummaryPending } from "./summaryReady";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
@@ -429,7 +431,7 @@ function sectionMeta(title: string): { kicker: string; heading: string; Icon: ty
 // 디자인 개편 전 키워드 로직 복원: IPC + 제목/초록 기반의 다층 라벨 추출.
 // 카테고리 별 라벨을 직접 만들어 색상 구분에 그대로 사용한다.
 
-export function TossPatentSummary({
+function TossPatentSummaryInner({
   content,
   patentNumber,
   isStreaming,
@@ -500,9 +502,16 @@ export function TossPatentSummary({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patentData, patentNumber, isStreaming, content]);
 
-  const govtPatent = useGovtPatent(
-    patentData?.registrationNumber || (patentData && patentData.searchType !== 'application' ? patentNumber : undefined)
-  );
+  const registrationNumberForLookup =
+    patentData?.registrationNumber || (patentData && patentData.searchType !== 'application' ? patentNumber : undefined);
+  const govtPatent = useGovtPatent(registrationNumberForLookup);
+  const { finalOwner, loading: ownerLoading } = useRegisterOwner(registrationNumberForLookup);
+  const ownerChanged = isDifferentOwner(patentData?.assignee, finalOwner);
+
+  // 모든 섹션 로딩이 끝나야 PDF 다운로드를 허용한다.
+  const pendingSections = useSummaryPending();
+  const allReady =
+    !isStreaming && !!content && !scoreLoading && !ownerLoading && pendingSections === 0;
 
   const trl = details?.trl ?? null;
   const trlColor = trl == null ? "#9CA3AF" : trl <= 3 ? "#EF4444" : trl <= 6 ? "#F59E0B" : ACCENT_HEX;
@@ -673,6 +682,7 @@ export function TossPatentSummary({
                 content={content}
                 patentNumber={patentNumber}
                 printRef={printRef}
+                ready={allReady}
               />
             )}
             {featureFlags.pptEnabled && (
@@ -722,7 +732,9 @@ export function TossPatentSummary({
                   {patentData.registrationDate
                     ? <Row label="등록일자" value={patentData.registrationDate} />
                     : (patentData.publicationDate && <Row label="공개일자" value={patentData.publicationDate} />)}
-                  {patentData.assignee && <Row label="출원인" value={patentData.assignee} />}
+                {ownerChanged && finalOwner
+                  ? <Row label="최종권리자" value={finalOwner} />
+                  : (patentData.assignee && <Row label="출원인" value={patentData.assignee} />)}
                   {patentData.inventors?.length ? (
                     <Row label="발명자" value={patentData.inventors.length >= 5 ? `${patentData.inventors.slice(0, 4).join(", ")} 등 ${patentData.inventors.length}명` : patentData.inventors.join(", ")} />
                   ) : null}
@@ -1188,5 +1200,12 @@ export function TossPatentSummary({
         />
       )}
     </div>
+  );
+}
+export function TossPatentSummary(props: TossPatentSummaryProps & { onKeywordClick?: (keyword: string) => void; onRegenerate?: () => void }) {
+  return (
+    <SummaryReadyProvider>
+      <TossPatentSummaryInner {...props} />
+    </SummaryReadyProvider>
   );
 }

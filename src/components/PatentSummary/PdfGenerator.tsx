@@ -1,5 +1,5 @@
 import { useState, type RefObject } from "react";
-import { FileDown } from "lucide-react";
+import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -71,6 +71,8 @@ interface PdfGeneratorProps {
   content: string;
   patentNumber: string;
   printRef: RefObject<HTMLDivElement | null>;
+  /** 모든 섹션 로딩이 끝났는지 여부 (false면 버튼 비활성화) */
+  ready?: boolean;
 }
 
 const PRINTING_CLASS = "ais-printing";
@@ -306,11 +308,11 @@ export async function printWebSummary(
   }
 }
 
-export function PdfGenerator({ content, patentNumber, printRef }: PdfGeneratorProps) {
+export function PdfGenerator({ content, patentNumber, printRef, ready = true }: PdfGeneratorProps) {
   const [isPreparing, setIsPreparing] = useState(false);
 
   const handlePdfDownload = async () => {
-    if (!content || isPreparing) return;
+    if (!content || isPreparing || !ready) return;
     setIsPreparing(true);
     const opened = await downloadWebSummaryPdf(printRef.current, patentNumber);
     setIsPreparing(false);
@@ -323,10 +325,11 @@ export function PdfGenerator({ content, patentNumber, printRef }: PdfGeneratorPr
       size="sm"
       onClick={handlePdfDownload}
       className="gap-2"
-      disabled={!content || isPreparing}
+      disabled={!content || isPreparing || !ready}
+      title={!ready ? "모든 항목 분석이 끝나면 다운로드할 수 있어요" : undefined}
     >
-      <FileDown className="w-4 h-4" />
-      {isPreparing ? "PDF 준비 중" : "PDF 다운로드"}
+      {ready ? <FileDown className="w-4 h-4" /> : <Loader2 className="w-4 h-4 animate-spin" />}
+      {isPreparing ? "PDF 준비 중" : ready ? "PDF 다운로드" : "분석 완료 대기 중"}
     </Button>
   );
 }
