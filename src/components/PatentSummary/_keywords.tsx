@@ -393,7 +393,23 @@ export function extractKeywordsFromPatent(
     validated.push(item);
   }
 
+  // 검증에서 탈락한 슬롯은 같은 카테고리의 다음 순위 후보로 보충한다.
+  const backfill = (cat: KeywordCategory, ranked: string[]) => {
+    if (validated.some((v) => v.cat === cat)) return;
+    for (const word of ranked) {
+      if (validatedSeen.has(word)) continue;
+      if (!isFitForTitle({ word, cat })) continue;
+      validatedSeen.add(word);
+      validated.push({ word, cat });
+      return;
+    }
+  };
+  backfill("function", rankedFunc);
+  backfill("tech", rankedFeat);
+  backfill("product", rankedProduct);
+
   // 폴백: material/product 슬롯이 비면 명칭 nouns에서 보강
+
   const ensureSlot = (cat: KeywordCategory, fallback: string) => {
     if (validated.some((v) => v.cat === cat)) return;
     const noun = extractTitleNouns()[0] || fallback;
