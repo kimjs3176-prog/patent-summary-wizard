@@ -758,6 +758,7 @@ export function TossPatentSummary({
                       publicationDate={patentData.publicationDate}
                       registrationDate={patentData.registrationDate}
                       hasRegistration={!!(patentData.registrationDate || patentData.registrationNumber)}
+                      expiryDate={govtPatent?.durationUntil}
                     />
                   </div>
                 )}
