@@ -306,11 +306,11 @@ export async function printWebSummary(
   }
 }
 
-export function PdfGenerator({ content, patentNumber, printRef }: PdfGeneratorProps) {
+export function PdfGenerator({ content, patentNumber, printRef, ready = true }: PdfGeneratorProps) {
   const [isPreparing, setIsPreparing] = useState(false);
 
   const handlePdfDownload = async () => {
-    if (!content || isPreparing) return;
+    if (!content || isPreparing || !ready) return;
     setIsPreparing(true);
     const opened = await downloadWebSummaryPdf(printRef.current, patentNumber);
     setIsPreparing(false);
