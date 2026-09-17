@@ -62,7 +62,13 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2 md:py-3.5 flex items-center justify-between gap-2">
           <Link
             to="/"
-            onClick={() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior })}
+            onClick={() => {
+              // Navigate home and force scroll to the very top after re-render settles.
+              const toTop = () => window.scrollTo(0, 0);
+              toTop();
+              requestAnimationFrame(() => requestAnimationFrame(toTop));
+              setTimeout(toTop, 120);
+            }}
             className="flex items-center gap-2 md:gap-3 min-w-0 group flex-shrink-0"
           >
             <div className="w-7 h-7 md:w-9 md:h-9 rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm transition-all duration-400 group-hover:shadow-md group-hover:scale-105" style={{ background: 'var(--gradient-accent)' }}>
