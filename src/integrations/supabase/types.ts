@@ -284,6 +284,48 @@ export type Database = {
         }
         Relationships: []
       }
+      potential_patents: {
+        Row: {
+          acquired_year: number | null
+          application_number: string
+          created_at: string
+          grade: string | null
+          id: string
+          is_active: boolean
+          registration_date: string | null
+          registration_number: string | null
+          right_type: string | null
+          title: string
+          years_since: number | null
+        }
+        Insert: {
+          acquired_year?: number | null
+          application_number: string
+          created_at?: string
+          grade?: string | null
+          id?: string
+          is_active?: boolean
+          registration_date?: string | null
+          registration_number?: string | null
+          right_type?: string | null
+          title: string
+          years_since?: number | null
+        }
+        Update: {
+          acquired_year?: number | null
+          application_number?: string
+          created_at?: string
+          grade?: string | null
+          id?: string
+          is_active?: boolean
+          registration_date?: string | null
+          registration_number?: string | null
+          right_type?: string | null
+          title?: string
+          years_since?: number | null
+        }
+        Relationships: []
+      }
       product_image_cache: {
         Row: {
           created_at: string
