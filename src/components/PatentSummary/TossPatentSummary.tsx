@@ -21,7 +21,7 @@ import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { KeywordChip, CATEGORY_STYLE, extractKeywordsFromPatent, type KeywordCategory } from "./_keywords";
 import { ImageLightbox } from "./ImageLightbox";
-import { GovtPatentInfo } from "./GovtPatentInfo";
+import { useGovtPatent, GovtPatentBadges } from "./GovtPatentInfo";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
@@ -142,16 +142,21 @@ function PatentTimeline({
   publicationDate,
   registrationDate,
   hasRegistration,
+  expiryDate,
 }: {
   filingDate?: string;
   publicationDate?: string;
   registrationDate?: string;
   hasRegistration: boolean;
+  expiryDate?: string;
 }) {
   const steps = [
     { key: "file", label: "출원", date: filingDate, done: !!filingDate, color: "#3B82F6" },
     { key: "pub", label: "공개", date: publicationDate, done: !!publicationDate, color: "#F59E0B" },
     { key: "reg", label: "등록", date: registrationDate, done: hasRegistration, color: ACCENT_HEX },
+    ...(expiryDate
+      ? [{ key: "exp", label: "존속기간 만료", date: expiryDate, done: false, color: "#8B95A1" }]
+      : []),
   ];
   // Elapsed days from filing to registration (or today if pending)
   const parse = (s?: string) => {
@@ -194,7 +199,7 @@ function PatentTimeline({
             width: hasRegistration ? "80%" : publicationDate ? "40%" : filingDate ? "0%" : "0%",
           }}
         />
-        <div className="relative grid grid-cols-3 gap-2">
+        <div className={`relative grid gap-2 ${steps.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
           {steps.map((s) => (
             <div key={s.key} className="flex flex-col items-center text-center">
               <div
@@ -495,6 +500,10 @@ export function TossPatentSummary({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patentData, patentNumber, isStreaming, content]);
 
+  const govtPatent = useGovtPatent(
+    patentData?.registrationNumber || (patentData && patentData.searchType !== 'application' ? patentNumber : undefined)
+  );
+
   const trl = details?.trl ?? null;
   const trlColor = trl == null ? "#9CA3AF" : trl <= 3 ? "#EF4444" : trl <= 6 ? "#F59E0B" : ACCENT_HEX;
   const trlStage = trl == null ? "-" : trl <= 3 ? "기초연구" : trl <= 6 ? "개발/실증" : "상용화";
@@ -698,6 +707,7 @@ export function TossPatentSummary({
             <p className="font-mono text-[12.5px] text-[#8B95A1] font-medium mb-6 tabular-nums tracking-[0.04em]">
               {patentData?.searchType === 'application' ? '출원번호' : '등록번호'} · {formatPatentNumber(patentNumber, patentData?.searchType === 'application' ? 'application' : 'registration')}
             </p>
+            <GovtPatentBadges data={govtPatent} />
           </section>
 
           {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
@@ -748,10 +758,11 @@ export function TossPatentSummary({
                       publicationDate={patentData.publicationDate}
                       registrationDate={patentData.registrationDate}
                       hasRegistration={!!(patentData.registrationDate || patentData.registrationNumber)}
+                      expiryDate={govtPatent?.durationUntil}
                     />
                   </div>
                 )}
-                <GovtPatentInfo registrationNumber={patentData.registrationNumber || (patentData.searchType !== 'application' ? patentNumber : undefined)} />
+                
               </SoftCard>
             </section>
           )}

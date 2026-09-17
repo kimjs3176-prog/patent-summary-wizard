@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, Gift, Coins } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-interface GovtPatentData {
+export interface GovtPatentData {
   institution?: string;
   chargeType?: string;
   evaluationGrade?: string;
@@ -10,8 +10,8 @@ interface GovtPatentData {
   ipType?: string;
 }
 
-/** KIPRIS 국유특허 기본조회 기반 유·무상 실시 구분 표시 */
-export function GovtPatentInfo({ registrationNumber }: { registrationNumber?: string }) {
+/** KIPRIS 국유특허 기본조회 데이터 훅 */
+export function useGovtPatent(registrationNumber?: string) {
   const [data, setData] = useState<GovtPatentData | null>(null);
 
   useEffect(() => {
@@ -37,39 +37,45 @@ export function GovtPatentInfo({ registrationNumber }: { registrationNumber?: st
     };
   }, [registrationNumber]);
 
+  return data;
+}
+
+/** 국유특허 · 유무상 실시 구분 강조 뱃지 (상단 노출용) */
+export function GovtPatentBadges({ data }: { data: GovtPatentData | null }) {
   if (!data) return null;
 
-  const free = (data.chargeType || "").includes("무상");
+  const charge = data.chargeType || "";
+  const free = charge.includes("무상");
+  const paid = charge.includes("유상");
 
   return (
-    <div className="mt-2 border-t border-dashed border-[#E5E8EB] px-4 sm:px-5 py-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1 rounded-[4px] bg-[#F2F4F6] px-2 py-1 text-[11px] font-semibold text-[#4E5968]">
-          <BadgeCheck className="h-3.5 w-3.5" />
-          국유특허
-        </span>
+    <div className="flex flex-wrap items-center gap-2 mb-5">
+      <span className="pdf-shape-center inline-flex items-center gap-1.5 rounded-full border border-[#0B7A55]/25 bg-[#E7F7F0] px-3 py-1.5 text-[12.5px] font-bold text-[#0B7A55]">
+        <BadgeCheck className="h-4 w-4" />
+        국유특허
+      </span>
+      {(free || paid) && (
         <span
-          className={`pdf-shape-center inline-flex items-center rounded-[4px] px-2 py-1 text-[11px] font-bold ${
-            free ? "bg-[#E7F7F0] text-[#0B7A55]" : "bg-[#FFF3E5] text-[#B25E00]"
+          className={`pdf-shape-center inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-bold text-white shadow-sm ${
+            free ? "bg-[#0B7A55]" : "bg-[#B25E00]"
           }`}
         >
-          실시 구분 · {data.chargeType || "미표기"}
+          {free ? <Gift className="h-4 w-4" /> : <Coins className="h-4 w-4" />}
+          {free ? "무상 실시 가능" : "유상 실시"}
         </span>
-        {data.institution && (
-          <span className="text-[12px] text-[#8B95A1]">
-            관리기관 {data.institution}
-          </span>
-        )}
-        {data.durationUntil && (
-          <span className="text-[12px] text-[#8B95A1] tabular-nums">
-            존속기간 만료 {data.durationUntil}
-          </span>
-        )}
-        {data.evaluationGrade && (
-          <span className="text-[12px] text-[#8B95A1]">등급 {data.evaluationGrade}</span>
-        )}
-      </div>
-      <p className="mt-1.5 text-[11px] text-[#B0B8C1]">출처: KIPRIS 국유특허 기본조회</p>
+      )}
+      {!free && !paid && charge && (
+        <span className="pdf-shape-center inline-flex items-center rounded-full bg-[#F2F4F6] px-3 py-1.5 text-[12.5px] font-bold text-[#4E5968]">
+          실시 구분 · {charge}
+        </span>
+      )}
+      {data.institution && (
+        <span className="text-[12px] text-[#8B95A1]">관리기관 {data.institution}</span>
+      )}
+      {data.evaluationGrade && (
+        <span className="text-[12px] text-[#8B95A1]">평가등급 {data.evaluationGrade}</span>
+      )}
+      <span className="text-[11px] text-[#B0B8C1]">출처: KIPRIS 국유특허 기본조회</span>
     </div>
   );
 }
