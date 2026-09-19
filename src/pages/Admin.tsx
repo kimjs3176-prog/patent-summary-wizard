@@ -61,29 +61,6 @@ interface CacheCounts {
   score: number;
 }
 
-interface UsageStats {
-  totalSummaries: number;
-  totalScores: number;
-  totalSearches: number;
-  totalDataCache: number;
-  recentSummaries: { date: string; count: number }[];
-  recentSearches: { date: string; count: number }[];
-  topSearched: { patent_number: string; patent_title: string | null; search_count: number }[];
-  currentModel: string;
-}
-
-interface VisitorStats {
-  total: number;
-  today: number;
-  thisMonth: number;
-  thisQuarter: number;
-  thisYear: number;
-  last30: { date: string; count: number }[];
-  daily: { date: string; count: number }[];
-  monthly: { month: string; count: number }[];
-  quarterly: { quarter: string; count: number }[];
-  yearly: { year: string; count: number }[];
-}
 
 const SETTINGS_FIELDS = [
   { key: "header_title", label: "헤더 타이틀", placeholder: "Agri IP Summary (AIS)" },
