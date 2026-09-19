@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Loader2 } from "lucide-react";
 import { ScoreBarChart } from "./ScoreBarChart";
 import { CircularGauge } from "./CircularGauge";
@@ -116,7 +117,7 @@ function SubScoreCard({ label, score, reason, colorIndex }: { label: string; sco
   );
 }
 
-export function TechnologyCommercializationScore({ 
+function TechnologyCommercializationScoreComponent({ 
   score, 
   isLoading, 
   details,
@@ -296,3 +297,6 @@ export function TechnologyCommercializationScore({
     </div>
   );
 }
+
+export const TechnologyCommercializationScore = memo(TechnologyCommercializationScoreComponent);
+TechnologyCommercializationScore.displayName = "TechnologyCommercializationScore";

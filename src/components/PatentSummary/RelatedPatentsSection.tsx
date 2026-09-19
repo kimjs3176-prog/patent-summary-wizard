@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useState, useEffect } from "react";
 import { Link2, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ interface AiRecommendedPatent {
   relevanceScore?: number;
 }
 
-export function RelatedPatentsSection({ relatedPatents, onPatentClick, patentData }: RelatedPatentsSectionProps) {
+function RelatedPatentsSectionComponent({ relatedPatents, onPatentClick, patentData }: RelatedPatentsSectionProps) {
   const [aiPatents, setAiPatents] = useState<AiRecommendedPatent[]>([]);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [aiSearchQueries, setAiSearchQueries] = useState<string[]>([]);
@@ -256,3 +257,6 @@ export function RelatedPatentsSection({ relatedPatents, onPatentClick, patentDat
     </div>
   );
 }
+
+export const RelatedPatentsSection = memo(RelatedPatentsSectionComponent);
+RelatedPatentsSection.displayName = "RelatedPatentsSection";

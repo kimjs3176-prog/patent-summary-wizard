@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { GitCompare, Loader2, CheckCircle2, MinusCircle, AlertCircle, Sparkles, ChevronDown, ChevronUp, Trophy, Brain } from "lucide-react";
 import { PatentData, RelatedPatent } from "./types";
@@ -66,7 +67,7 @@ function truncate(s: string, n: number) {
   return s.length > n ? s.substring(0, n - 1) + "…" : s;
 }
 
-export function CompetitorComparisonTable({ patentData, relatedPatents = [], onPatentClick, variant = "default" }: CompetitorComparisonTableProps) {
+function CompetitorComparisonTableComponent({ patentData, relatedPatents = [], onPatentClick, variant = "default" }: CompetitorComparisonTableProps) {
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState<"idle" | "search" | "compare">("idle");
@@ -667,3 +668,6 @@ export function CompetitorComparisonTable({ patentData, relatedPatents = [], onP
     </div>
   );
 }
+
+export const CompetitorComparisonTable = memo(CompetitorComparisonTableComponent);
+CompetitorComparisonTable.displayName = "CompetitorComparisonTable";

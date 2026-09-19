@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useState, useRef } from "react";
 import { DEFAULT_TRL_CONFIG, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { Beaker, Cog, Rocket } from "lucide-react";
@@ -21,7 +22,7 @@ function getTrlStage(level: number, stages: TrlConfig["stages"]): string {
 
 const stageIcons = [Beaker, Cog, Rocket];
 
-export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
+function TrlChartComponent({ estimatedTrl, trlConfig }: TrlChartProps) {
   const config = trlConfig || DEFAULT_TRL_CONFIG;
   const levels = config.levels;
   const stages = config.stages;
@@ -182,3 +183,6 @@ export function TrlChart({ estimatedTrl, trlConfig }: TrlChartProps) {
     </div>
   );
 }
+
+export const TrlChart = memo(TrlChartComponent);
+TrlChart.displayName = "TrlChart";
