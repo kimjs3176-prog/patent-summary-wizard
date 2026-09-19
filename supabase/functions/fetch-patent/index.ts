@@ -64,6 +64,7 @@ interface PatentData {
   patentNumber?: string;
   applicationNumber?: string;
   registrationNumber?: string;
+  legalStatus?: string;
   displayNumber?: string;
   searchType?: 'registration' | 'application';
   classifications?: string[];
@@ -193,7 +194,7 @@ function parsePatentNumber(input: string): { searchNumber: string; displayNumber
 }
 
 // 캐시 버전 — 데이터 캐시 포맷이 바뀔 때마다 증가시켜 자동 무효화
-const DATA_CACHE_VERSION = "v2";
+const DATA_CACHE_VERSION = "v3-legal-status";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -426,6 +427,7 @@ serve(async (req) => {
         registrationDate: formatDate(getFieldFromXml(itemXml, "registerDate") || ""),
         applicationNumber,
         registrationNumber,
+        legalStatus: getFieldFromXml(itemXml, "registerStatus") || getFieldFromXml(itemXml, "registrationStatus"),
         classifications: getFieldFromXml(itemXml, "ipcNumber") ? [getFieldFromXml(itemXml, "ipcNumber")!] : [],
         // bigDrawing(고해상도) 우선, drawing(저해상도)은 fallback만
         representativeImage: getFieldFromXml(itemXml, "bigDrawing") || getFieldFromXml(itemXml, "drawing"),

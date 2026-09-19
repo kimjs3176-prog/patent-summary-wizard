@@ -68,6 +68,26 @@ interface TossPatentSummaryProps extends BasePatentSummaryProps {
 const SOFT = "#F2F4F6";
 const ACCENT_HEX = "#10B981";
 
+type PatentStatusTone = "registered" | "published" | "pending" | "inactive" | "unknown";
+
+function getPatentStatus(data?: BasePatentSummaryProps["patentData"]): { label: string; tone: PatentStatusTone } {
+  const raw = data?.legalStatus?.trim() || "";
+  const compact = raw.replace(/\s+/g, "");
+
+  if (/(거절)/.test(compact)) return { label: "거절", tone: "inactive" };
+  if (/(소멸)/.test(compact)) return { label: "소멸", tone: "inactive" };
+  if (/(취하)/.test(compact)) return { label: "취하", tone: "inactive" };
+  if (/(포기)/.test(compact)) return { label: "포기", tone: "inactive" };
+  if (/(무효)/.test(compact)) return { label: "무효", tone: "inactive" };
+  if (/(등록)/.test(compact) || data?.registrationNumber || data?.registrationDate) {
+    return { label: "등록", tone: "registered" };
+  }
+  if (/(공개)/.test(compact) || data?.publicationDate) return { label: "공개", tone: "published" };
+  if (/(출원|심사|계속)/.test(compact) || data?.applicationNumber) return { label: "출원", tone: "pending" };
+  if (raw) return { label: raw, tone: "unknown" };
+  return { label: "상태 확인 중", tone: "unknown" };
+}
+
 /**
  * 출원번호: ##-####-####### (13자리)
  * 등록번호: ##-####### (앞 9자리, 뒤 0000 패딩 제거)
@@ -101,6 +121,16 @@ function formatAiModelLabel(model?: string): string {
     "openai/gpt-5.2": "GPT-5.2",
   };
   return map[model] || model.replace(/^.*\//, "");
+}
+
+function PatentStatusBadge({ data }: { data?: BasePatentSummaryProps["patentData"] }) {
+  const status = getPatentStatus(data);
+  return (
+    <span className={`report-status report-status-${status.tone}`} aria-label={`특허 상태 ${status.label}`}>
+      <span aria-hidden="true" />
+      {status.label}
+    </span>
+  );
 }
 
 function SectionTitle({ children, kicker, index }: { children: React.ReactNode; kicker?: string; index?: string }) {
@@ -712,10 +742,7 @@ function TossPatentSummaryInner({
           <section className="report-hero relative -mx-5 sm:-mx-7 px-5 sm:px-7 pt-7 pb-6 mb-8">
             <div className="flex items-center justify-between gap-4 mb-4">
               <span className="report-hero-label">AI SUMMARY</span>
-              <span className={`report-status ${patentData?.registrationNumber ? "is-registered" : ""}`}>
-                <span aria-hidden="true" />
-                {patentData?.registrationNumber ? "REGISTERED" : "APPLICATION"}
-              </span>
+              <PatentStatusBadge data={patentData} />
             </div>
             <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.35] mb-3">
               {title}
