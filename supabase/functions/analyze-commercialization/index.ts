@@ -1,10 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { corsHeaders } from "../_shared/cors.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
 // skip that provider for a short period so subsequent requests don't pay the failure latency.
@@ -283,11 +282,7 @@ function normalizeAnalysis(value: unknown, fallback: string): string {
   return ensureCompleteSentence(text, fallback);
 }
 
-function getSupabaseClient() {
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  return createClient(url, key);
-}
+const getSupabaseClient = supabaseAdmin;
 
 // ===== V-RAY(로열티공제법) 기반 사업성 보정 =====
 // src/lib/valuation.ts 의 간이 기술가치평가 모델과 동일한 인자(성숙도/사업화 소요기간,
@@ -350,6 +345,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const limited = await enforceRateLimit(req, { bucket: "analyze-commercialization", limit: 20, windowSeconds: 300 });
+  if (limited) return limited;
 
   try {
     const body = await req.json().catch(() => null);

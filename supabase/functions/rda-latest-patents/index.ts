@@ -1,10 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "../_shared/cors.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { resolveKiprisKey } from "../_shared/kipris.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 interface RdaPatent {
   patentId: string;
@@ -61,10 +61,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const limited = await enforceRateLimit(req, { bucket: "rda-latest-patents", limit: 60, windowSeconds: 300 });
+  if (limited) return limited;
+
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = supabaseAdmin();
 
     // 1) Check cache first
     const { data: cachedRows } = await supabase
@@ -93,11 +94,7 @@ serve(async (req) => {
 
     // 2) Fetch fresh data from KIPRIS
     // Try site_settings first, then env
-    let KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
-    try {
-      const { data: row } = await supabase.from("site_settings").select("value").eq("key", "kipris_api_key").maybeSingle();
-      if (row?.value) KIPRIS_API_KEY = row.value;
-    } catch {}
+    const KIPRIS_API_KEY = await resolveKiprisKey();
     if (!KIPRIS_API_KEY) {
       return new Response(
         JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),

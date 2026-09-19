@@ -50,6 +50,27 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_rate_limits: {
+        Row: {
+          bucket: string
+          identifier: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          identifier: string
+          request_count?: number
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          identifier?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       featured_patents: {
         Row: {
           category: string | null
@@ -424,6 +445,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          _bucket: string
+          _identifier: string
+          _limit: number
+          _window_seconds: number
+        }
+        Returns: boolean
+      }
       get_monthly_popular_searches: {
         Args: { p_limit?: number }
         Returns: {
