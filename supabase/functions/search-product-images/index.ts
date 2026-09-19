@@ -1,16 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { corsHeaders } from "../_shared/cors.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
-function getSupabaseClient() {
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  return createClient(url, key);
-}
+const getSupabaseClient = supabaseAdmin;
 
 async function callAI(payload: Record<string, unknown> & { model: string }): Promise<Response> {
   const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -136,6 +131,9 @@ async function searchPexels(keyword: string, perPage = 3): Promise<any[]> {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const limited = await enforceRateLimit(req, { bucket: "search-product-images", limit: 40, windowSeconds: 300 });
+  if (limited) return limited;
 
   try {
     const body = await req.json().catch(() => null);

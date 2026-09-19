@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { Network, Loader2, AlertCircle, Layers } from "lucide-react";
@@ -25,7 +26,7 @@ interface TooltipState {
   patent: FamilyPatent;
 }
 
-export function PatentFamilyTree({ patentData, onPatentClick, variant = "default" }: PatentFamilyTreeProps) {
+function PatentFamilyTreeComponent({ patentData, onPatentClick, variant = "default" }: PatentFamilyTreeProps) {
   const [patents, setPatents] = useState<FamilyPatent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -628,3 +629,6 @@ export function PatentFamilyTree({ patentData, onPatentClick, variant = "default
     </div>
   );
 }
+
+export const PatentFamilyTree = memo(PatentFamilyTreeComponent);
+PatentFamilyTree.displayName = "PatentFamilyTree";

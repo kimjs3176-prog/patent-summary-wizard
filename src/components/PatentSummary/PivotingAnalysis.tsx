@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useEffect, useState } from "react";
 import { Loader2, Lightbulb, Sparkles, Compass, RefreshCw } from "lucide-react";
 import { PatentData } from "./types";
@@ -36,7 +37,7 @@ const ACCENTS = [
   "hsl(25 90% 55%)",
 ];
 
-export function PivotingAnalysis({ patentNumber, patentData, isStreaming, contentReady }: Props) {
+function PivotingAnalysisComponent({ patentNumber, patentData, isStreaming, contentReady }: Props) {
   const [data, setData] = useState<PivotResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -235,3 +236,5 @@ export function PivotingAnalysis({ patentNumber, patentData, isStreaming, conten
     </section>
   );
 }
+export const PivotingAnalysis = memo(PivotingAnalysisComponent);
+PivotingAnalysis.displayName = "PivotingAnalysis";

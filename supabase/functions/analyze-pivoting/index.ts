@@ -1,9 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
 // skip that provider for a short period so subsequent requests don't pay the failure latency.
@@ -92,6 +90,9 @@ interface PatentData {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const limited = await enforceRateLimit(req, { bucket: "analyze-pivoting", limit: 20, windowSeconds: 300 });
+  if (limited) return limited;
 
   try {
     const body = await req.json().catch(() => null);

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useMemo, useState } from "react";
 import { Calculator, ChevronDown, TrendingUp } from "lucide-react";
 import {
@@ -30,7 +31,7 @@ function toMeta(p: PatentData): PatentMeta {
   };
 }
 
-export function TechValuation({ patentData, score, details }: Props) {
+function TechValuationComponent({ patentData, score, details }: Props) {
   const initTech = scoreToGrade(details?.technologyScore ?? score);
   const initMarket = scoreToGrade(details?.marketScore ?? score);
   const initRights = scoreToGrade(details?.businessScore ?? score);
@@ -279,3 +280,6 @@ function SelectField({
     </div>
   );
 }
+
+export const TechValuation = memo(TechValuationComponent);
+TechValuation.displayName = "TechValuation";

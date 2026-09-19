@@ -1,10 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { corsHeaders } from "../_shared/cors.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { resolveKiprisKey } from "../_shared/kipris.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 interface FamilyPatent {
   patentId: string;
@@ -21,6 +21,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const limited = await enforceRateLimit(req, { bucket: "patent-family-tree", limit: 30, windowSeconds: 300 });
+  if (limited) return limited;
 
   try {
     const { assignee, currentPatentNumber, currentPatentTitle } = await req.json();
@@ -50,10 +53,7 @@ serve(async (req) => {
 
     // Cache check (7d TTL). Key includes patent number so each search produces its own relevance-filtered list.
     const cacheKey = `fam2_${assignee.substring(0, 60)}_${(currentPatentNumber || "x").replace(/[^0-9]/g, "").slice(0, 16)}`;
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = supabaseAdmin();
 
     try {
       const { data: cached } = await supabase
@@ -78,11 +78,7 @@ serve(async (req) => {
       }
     } catch (_) { /* ignore */ }
 
-    let KIPRIS_API_KEY = Deno.env.get("KIPRIS_API_KEY");
-    try {
-      const { data: row } = await supabase.from("site_settings").select("value").eq("key", "kipris_api_key").maybeSingle();
-      if (row?.value) KIPRIS_API_KEY = row.value;
-    } catch { /* ignore */ }
+    const KIPRIS_API_KEY = await resolveKiprisKey();
 
     if (!KIPRIS_API_KEY) {
       return new Response(JSON.stringify({ success: false, error: "KIPRIS API 키가 설정되지 않았습니다." }),

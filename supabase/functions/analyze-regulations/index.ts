@@ -1,9 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 interface RegulationLaw {
   name: string;
@@ -98,6 +96,9 @@ async function searchLaw(oc: string, query: string): Promise<RegulationLaw[]> {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const limited = await enforceRateLimit(req, { bucket: "analyze-regulations", limit: 20, windowSeconds: 300 });
+  if (limited) return limited;
 
   try {
     const OC = Deno.env.get("LAW_GO_KR_OC");

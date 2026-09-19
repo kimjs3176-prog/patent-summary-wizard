@@ -1,4 +1,5 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
 
 // KIPRIS Plus 국유특허 기본조회
 const ENDPOINT = 'http://plus.kipris.or.kr/openapi/rest/GovernmentownershipPatentService/governmentownershipPatentInfo';
@@ -26,6 +27,9 @@ const fmtDate = (v?: string): string | undefined => {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const limited = await enforceRateLimit(req, { bucket: "govt-patent", limit: 60, windowSeconds: 300 });
+  if (limited) return limited;
 
   try {
     const body = await req.json().catch(() => ({}));

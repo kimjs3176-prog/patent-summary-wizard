@@ -1,10 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { corsHeaders } from "../_shared/cors.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 30000): Promise<Response> {
   const ctrl = new AbortController();
@@ -98,6 +97,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const limited = await enforceRateLimit(req, { bucket: "compare-patents", limit: 10, windowSeconds: 300 });
+  if (limited) return limited;
+
   try {
     const { currentPatent, competitorPatents } = await req.json();
     if (!currentPatent || !Array.isArray(competitorPatents) || competitorPatents.length === 0) {
@@ -125,10 +127,7 @@ serve(async (req) => {
     const cacheKey = `cmp_v2_${currentPatent.patentNumber || currentPatent.displayNumber || ""}_${top3.map((p: any) => p.patentId).join("_")}`;
 
     // Cache check
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = supabaseAdmin();
     try {
       const { data: cached } = await supabase
         .from("patent_ai_cache")
