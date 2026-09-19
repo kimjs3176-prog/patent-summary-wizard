@@ -11,6 +11,7 @@ export interface PatentData {
   patentNumber?: string;
   applicationNumber?: string;
   registrationNumber?: string;
+  legalStatus?: string;
   displayNumber?: string;
   searchType?: 'registration' | 'application';
   classifications?: string[];

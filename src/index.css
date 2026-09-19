@@ -1102,11 +1102,16 @@ time, .tabular-nums, [data-numeric] {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
   color: hsl(var(--background) / 0.62);
+  background: hsl(var(--background) / 0.06);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
 }
 .report-status > span {
   width: 6px;
@@ -1114,8 +1119,21 @@ time, .tabular-nums, [data-numeric] {
   border-radius: 999px;
   background: currentColor;
 }
-.report-status.is-registered {
+.report-status-registered {
   color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+}
+.report-status-published {
+  color: hsl(var(--warning));
+  background: hsl(var(--warning) / 0.1);
+}
+.report-status-pending {
+  color: hsl(var(--info));
+  background: hsl(var(--info) / 0.1);
+}
+.report-status-inactive {
+  color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.1);
 }
 .report-section {
   padding-top: 2px;
