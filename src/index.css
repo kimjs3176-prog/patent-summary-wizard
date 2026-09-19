@@ -61,6 +61,8 @@ time, .tabular-nums, [data-numeric] {
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --info: 217 91% 60%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
@@ -140,6 +142,8 @@ time, .tabular-nums, [data-numeric] {
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
+    --warning: 38 92% 56%;
+    --info: 217 91% 65%;
 
     --border: 217 33% 20%;
     --input: 217 33% 20%;
