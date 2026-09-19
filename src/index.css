@@ -1031,11 +1031,7 @@ time, .tabular-nums, [data-numeric] {
 .bp-doc {
   position: relative;
   border-radius: 8px;
-  background-color: #fff;
-  background-image:
-    linear-gradient(to right, hsl(215 25% 27% / 0.028) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(215 25% 27% / 0.028) 1px, transparent 1px);
-  background-size: 26px 26px, 26px 26px;
+  background-color: hsl(var(--card));
 }
 .bp-doc-head {
   display: flex;
@@ -1043,8 +1039,8 @@ time, .tabular-nums, [data-numeric] {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 20px;
-  border-bottom: 1px dashed hsl(var(--border));
-  background: hsl(var(--muted) / 0.35);
+  border-bottom: 1px solid hsl(var(--foreground) / 0.12);
+  background: hsl(var(--foreground));
 }
 .bp-kicker {
   display: inline-flex;
@@ -1052,38 +1048,127 @@ time, .tabular-nums, [data-numeric] {
   gap: 8px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   font-size: 10.5px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: hsl(var(--primary));
   font-weight: 600;
 }
 .bp-kicker::after {
-  content: "";
-  height: 1px;
-  width: 36px;
-  background: hsl(var(--primary) / 0.35);
+  display: none;
 }
 .bp-panel {
   position: relative;
   border-radius: 6px;
-  border: 1px solid hsl(215 20% 65% / 0.28);
-  background-color: #fff;
-  background-image:
-    linear-gradient(to right, hsl(215 25% 27% / 0.022) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(215 25% 27% / 0.022) 1px, transparent 1px);
-  background-size: 22px 22px, 22px 22px;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--muted) / 0.28);
 }
 .bp-panel::before,
 .bp-panel::after {
-  content: "";
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border: 1px solid hsl(var(--primary) / 0.4);
-  pointer-events: none;
+  display: none;
 }
-.bp-panel::before { top: 5px; left: 5px; border-right: 0; border-bottom: 0; }
-.bp-panel::after { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
+
+/* Precision technical report — one hierarchy across a long summary. */
+.precision-report {
+  box-shadow: 0 18px 50px hsl(var(--foreground) / 0.1);
+}
+.precision-report .bp-doc-head span {
+  color: hsl(var(--background) / 0.58);
+}
+.report-hero {
+  color: hsl(var(--background));
+  background: hsl(var(--foreground));
+  border-top: 1px solid hsl(var(--background) / 0.08);
+}
+.report-hero h1 {
+  color: hsl(var(--background));
+}
+.report-hero > p {
+  color: hsl(var(--background) / 0.58);
+}
+.report-hero-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.report-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: hsl(var(--background) / 0.62);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.report-status > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.report-status.is-registered {
+  color: hsl(var(--primary));
+}
+.report-section {
+  padding-top: 2px;
+}
+.report-section + .report-section {
+  padding-top: 28px;
+  border-top: 1px solid hsl(var(--border));
+}
+.report-section-title {
+  position: relative;
+}
+.report-section-rule {
+  width: 16px;
+  height: 1px;
+  flex: 0 0 auto;
+  background: hsl(var(--border));
+}
+.report-section-index {
+  color: hsl(var(--muted-foreground) / 0.7);
+  letter-spacing: 0.08em;
+}
+.report-prose-section > .space-y-4 {
+  max-width: 760px;
+  padding-left: 18px;
+  border-left: 2px solid hsl(var(--border));
+}
+.report-prose-section strong {
+  color: hsl(var(--foreground));
+}
+.report-analysis-panel {
+  border: 1px solid hsl(var(--primary) / 0.2);
+  border-left: 3px solid hsl(var(--primary));
+  border-radius: 0 6px 6px 0;
+  background: hsl(var(--primary) / 0.055);
+}
+.precision-report #sec-regulation > section {
+  border-radius: 6px;
+  border-color: hsl(var(--border));
+  box-shadow: none !important;
+}
+
+@media (max-width: 639px) {
+  .precision-report {
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .report-section + .report-section {
+    padding-top: 22px;
+  }
+  .report-prose-section > .space-y-4 {
+    padding-left: 14px;
+  }
+}
 
 @media print {
   body.ais-printing .bp-doc,
