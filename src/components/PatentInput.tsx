@@ -342,11 +342,11 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
           </div>
           {showDropdown && (
             <div
-              className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl border border-border/40 bg-card overflow-hidden animate-fade-in"
+              className="relative mt-2 w-full rounded-2xl border border-border/40 bg-card overflow-hidden animate-fade-in"
               style={{ boxShadow: 'var(--shadow-glow)' }}
               onMouseDown={(e) => e.preventDefault()}
             >
-              <div className="max-h-[360px] overflow-y-auto py-1.5">
+              <div className="max-h-[min(360px,42vh)] overflow-y-auto overscroll-contain py-1.5">
                 {filteredRecents.length > 0 && (
                   <div className="px-1.5 pb-1">
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
