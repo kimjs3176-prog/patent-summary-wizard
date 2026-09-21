@@ -281,7 +281,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
               opacity: isFocused ? 1 : 0,
             }}
           />
-          <div className="absolute inset-y-0 left-0 pl-3.5 md:pl-5 flex items-center pointer-events-none z-10">
+          <div className="absolute top-0 left-0 h-14 pl-3.5 md:pl-5 flex items-center pointer-events-none z-10">
             <FileText className={`h-[18px] w-[18px] md:h-5 md:w-5 transition-colors duration-300 ${isFocused ? 'text-primary' : 'text-muted-foreground/40'}`} />
           </div>
           {/* Scrolling placeholder for long text */}
@@ -306,7 +306,7 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             onFocus={() => { setIsFocused(true); }}
             onBlur={() => { setIsFocused(false); }}
           />
-          <div className="absolute inset-y-0 right-1.5 md:right-2.5 flex items-center">
+          <div className="absolute top-0 right-1.5 md:right-2.5 h-14 flex items-center">
             <button
               type="submit"
               disabled={!inputValue.trim() || isProcessing}
@@ -466,7 +466,7 @@ function ScrollingPlaceholder({ texts }: { texts: string[] }) {
   return (
     <div
       ref={containerRef}
-      className="absolute inset-y-0 left-11 md:left-13 right-16 sm:right-36 flex items-center overflow-hidden pointer-events-none z-[5]"
+      className="absolute top-0 left-11 md:left-13 right-16 sm:right-36 h-14 flex items-center overflow-hidden pointer-events-none z-[5]"
     >
       <span
         ref={textRef}
