@@ -385,9 +385,8 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
                         key={`p-${p.patentNumber}`}
                         type="button"
                         onClick={() => submitKeyword(p.patentNumber)}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm hover:bg-muted/60 transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-sm hover:bg-muted/60 transition-colors text-left"
                       >
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
                         <span className="truncate flex-1 text-foreground">{p.title || p.patentNumber}</span>
                         <span className="text-[11px] text-muted-foreground font-mono flex-shrink-0">{p.patentNumber}</span>
                       </button>
