@@ -512,9 +512,11 @@ serve(async (req) => {
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
+        // 첫 바이트를 즉시 내보내 프록시 버퍼링을 풀고 클라이언트가 바로 진행 상태를 받게 한다.
+        try { controller.enqueue(encoder.encode(": open\n\n")); } catch { /* ignore */ }
         const keepAlive = setInterval(() => {
           try { controller.enqueue(encoder.encode(": keepalive\n\n")); } catch { /* stream may be closed */ }
-        }, 10000);
+        }, 3000);
         const aiCtrl = new AbortController();
         const aiTimer = setTimeout(() => aiCtrl.abort(), 150000);
         try {
