@@ -42,6 +42,9 @@ export function useGovtPatent(registrationNumber?: string) {
 }
 
 /** 국유특허 · 유무상 실시 구분 강조 뱃지 (상단 노출용) */
+// 유무상 실시 여부 표시 — 우선 숨김 (다시 노출하려면 true로 변경)
+const SHOW_CHARGE_BADGE = false;
+
 export function GovtPatentBadges({ data }: { data: GovtPatentData | null }) {
   if (!data) return null;
 
@@ -55,7 +58,7 @@ export function GovtPatentBadges({ data }: { data: GovtPatentData | null }) {
         <BadgeCheck className="h-4 w-4" />
         국유특허
       </span>
-      {(free || paid) && (
+      {SHOW_CHARGE_BADGE && (free || paid) && (
         <Tooltip>
           <TooltipTrigger asChild>
             <span
@@ -75,10 +78,10 @@ export function GovtPatentBadges({ data }: { data: GovtPatentData | null }) {
           </TooltipContent>
         </Tooltip>
       )}
-      {paid && (
+      {SHOW_CHARGE_BADGE && paid && (
         <span className="text-[12px] font-medium text-[#B25E00]">실시료 매출액의 최대 3% 이내</span>
       )}
-      {!free && !paid && charge && (
+      {SHOW_CHARGE_BADGE && !free && !paid && charge && (
         <span className="pdf-shape-center inline-flex items-center rounded-full bg-[#F2F4F6] px-3 py-1.5 text-[12.5px] font-bold text-[#4E5968]">
           실시 구분 · {charge}
         </span>
