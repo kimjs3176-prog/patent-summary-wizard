@@ -367,14 +367,51 @@ export default function SearchResults() {
           </>
         )}
 
+        {/* Error state */}
+        {!isLoading && searchError && keyword && (
+          <div className="text-center py-20">
+            <p className="text-foreground font-semibold mb-1">검색을 완료하지 못했습니다</p>
+            <p className="text-sm text-muted-foreground mb-5">{searchError}</p>
+            <Button onClick={() => setRetryNonce((n) => n + 1)} className="rounded-full px-6">
+              다시 시도
+            </Button>
+          </div>
+        )}
+
         {/* Empty state */}
-        {!isLoading && results.length === 0 && keyword && (
+        {!isLoading && !searchError && results.length === 0 && keyword && (
           <div className="text-center py-20">
             <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-secondary border border-border/50">
               <Search className="w-7 h-7 text-muted-foreground" />
             </div>
-            <p className="text-foreground font-semibold mb-1">검색 결과가 없습니다</p>
-            <p className="text-sm text-muted-foreground mb-5">다른 키워드로 다시 검색해 보세요</p>
+            <p className="text-foreground font-semibold mb-1">‘{keyword}’ 검색 결과가 없습니다</p>
+            {corrected && (
+              <p className="text-sm text-muted-foreground mb-2">
+                혹시{" "}
+                <button onClick={() => searchFor(corrected)} className="font-semibold text-primary underline underline-offset-2">
+                  {corrected}
+                </button>
+                을(를) 찾으셨나요?
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground mb-4">아래 비슷한 표현으로 다시 검색해 보세요</p>
+            <div className="flex flex-wrap justify-center gap-2 mb-6 min-h-9 max-w-xl mx-auto">
+              {suggestLoading && (
+                <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" /> 추천 검색어를 찾는 중...
+                </span>
+              )}
+              {!suggestLoading &&
+                suggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => searchFor(s)}
+                    className="rounded-full border border-border bg-card px-4 py-1.5 text-sm text-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                  >
+                    {s}
+                  </button>
+                ))}
+            </div>
             <Link to="/">
               <Button variant="outline" className="rounded-full px-6 gap-2 border-border/60 hover:border-primary/40">
                 <ArrowLeft className="w-3.5 h-3.5" />
