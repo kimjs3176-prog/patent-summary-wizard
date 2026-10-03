@@ -1,0 +1,10 @@
+DROP POLICY IF EXISTS "Deny public select on bucket 111" ON storage.objects;
+DROP POLICY IF EXISTS "Deny public insert on bucket 111" ON storage.objects;
+DROP POLICY IF EXISTS "Deny public update on bucket 111" ON storage.objects;
+DROP POLICY IF EXISTS "Deny public delete on bucket 111" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public read on patent_data_cache" ON public.patent_data_cache;
+DROP POLICY IF EXISTS "Allow public read on patent_score_cache" ON public.patent_score_cache;
+DROP POLICY IF EXISTS "Allow public read on patent_ai_cache" ON public.patent_ai_cache;
+DROP POLICY IF EXISTS "Public read product image cache" ON public.product_image_cache;
+DROP POLICY IF EXISTS "Anyone can read cache" ON public.rda_patents_cache;
+DROP POLICY IF EXISTS "Public read search events" ON public.patent_search_events;
