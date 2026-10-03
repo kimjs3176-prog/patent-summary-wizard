@@ -21,9 +21,47 @@ export default function SearchResults() {
   const [extractedKeywords, setExtractedKeywords] = useState<string[]>([]);
   const [aiIntent, setAiIntent] = useState("");
 
+  const [searchError, setSearchError] = useState("");
+  const [retryNonce, setRetryNonce] = useState(0);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [corrected, setCorrected] = useState("");
+  const [suggestLoading, setSuggestLoading] = useState(false);
+
+  const fetchSuggestions = async (kw: string, isCancelled: () => boolean) => {
+    setSuggestLoading(true);
+    try {
+      const res = await safeFetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-keywords`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ keyword: kw }),
+        timeoutMs: 20000,
+        retries: 0,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (isCancelled()) return;
+      if (data?.success) {
+        setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+        setCorrected(typeof data.corrected === "string" ? data.corrected : "");
+      }
+    } catch {
+      /* suggestions are optional */
+    } finally {
+      if (!isCancelled()) setSuggestLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!keyword) return;
+    let cancelled = false;
+    const isCancelled = () => cancelled;
     setCurrentPage(1);
+    setSearchError("");
+    setSuggestions([]);
+    setCorrected("");
+    setResults([]);
     const doSearch = async () => {
       setIsLoading(true);
       try {
@@ -40,24 +78,34 @@ export default function SearchResults() {
             retries: 2,
           }
         );
-        const result = await response.json();
-        if (result.success && result.patents) {
+        const result = await response.json().catch(() => ({ success: false, error: "응답 형식이 올바르지 않습니다." }));
+        if (cancelled) return;
+        if (result.success && Array.isArray(result.patents)) {
           setResults(result.patents);
           setTotalCount(result.totalCount || result.patents.length);
           setExtractedKeywords(result.extractedKeywords || []);
           setAiIntent(result.intent || "");
-          if (result.patents.length === 0) toast.info("검색 결과가 없습니다.");
+          if (result.patents.length === 0) fetchSuggestions(keyword, isCancelled);
         } else {
-          toast.error(result.error || "검색에 실패했습니다.");
+          setSearchError(
+            response.status === 429
+              ? "요청이 많아 잠시 쉬어가고 있습니다. 잠시 후 다시 시도해 주세요."
+              : result.error || "검색에 실패했습니다.",
+          );
         }
       } catch {
-        toast.error("검색 중 오류가 발생했습니다.");
+        if (!cancelled) setSearchError("네트워크 연결이 불안정합니다. 다시 시도해 주세요.");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
     doSearch();
-  }, [keyword]);
+    return () => {
+      cancelled = true;
+    };
+  }, [keyword, retryNonce]);
+
+  const searchFor = (kw: string) => navigate(`/search?keyword=${encodeURIComponent(kw)}`);
 
   const totalPages = Math.ceil(results.length / ITEMS_PER_PAGE);
   const paginatedResults = results.slice(
