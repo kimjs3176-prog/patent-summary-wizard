@@ -35,3 +35,5 @@ verify_jwt = false
 
 [functions.extract-glossary]
 verify_jwt = false
+[functions.suggest-keywords]
+verify_jwt = false
