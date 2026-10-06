@@ -34,8 +34,17 @@ const dash = (n: string) => {
   return n;
 };
 
+const IP_TYPES = [
+  { v: "all", l: "전체(특허+실용신안)" },
+  { v: "patent", l: "특허" },
+  { v: "utility", l: "실용신안" },
+  { v: "design", l: "디자인" },
+  { v: "trademark", l: "상표" },
+];
+
 export default function PatentExport() {
   const [orgs, setOrgs] = useState<string[]>(["농촌진흥청"]);
+  const [ipType, setIpType] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [inventor, setInventor] = useState("");
@@ -57,7 +66,7 @@ export default function PatentExport() {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword, withInventors: true }),
+      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword, withInventors: true, ipType }),
       timeoutMs: 45000, retries: 2,
     });
     const data = await res.json();
@@ -68,6 +77,9 @@ export default function PatentExport() {
   const run = async () => {
     if (orgs.length === 0) return toast.error("기관을 하나 이상 선택해 주세요.");
     if (from && to && from > to) return toast.error("기간을 확인해 주세요.");
+    if ((ipType === "design" || ipType === "trademark") && !tmKeyword.trim()) {
+      return toast.error(ipType === "design" ? "디자인 물품명을 입력해 주세요." : "상표명을 입력해 주세요.");
+    }
     cancel.current = false;
     setRunning(true);
     setItems([]);
@@ -113,7 +125,7 @@ export default function PatentExport() {
       const num = i.registrationNumber ? dash(i.registrationNumber) : dash(i.applicationNumber);
       return {
         번호: idx + 1,
-        구분: "특허/실용신안",
+        구분: IP_TYPES.find((t) => t.v === ipType)?.l ?? "특허/실용신안",
         출원번호: dash(i.applicationNumber),
         등록번호: i.registrationNumber ? dash(i.registrationNumber) : "",
         발명의명칭: i.title,
@@ -186,7 +198,7 @@ export default function PatentExport() {
             <FileSpreadsheet className="w-6 h-6 text-primary" /> 특허 목록 다운로드
           </h1>
           <p className="text-sm text-muted-foreground">
-            조건을 정해 특허·실용신안 목록을 한 번에 불러오고 엑셀 또는 CSV로 내려받습니다. (출처: KIPRIS)
+            조건을 정해 특허·실용신안·디자인·상표 목록을 한 번에 불러오고 엑셀 또는 CSV로 내려받습니다. (출처: KIPRIS)
           </p>
         </header>
 
@@ -208,13 +220,30 @@ export default function PatentExport() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">권리 종류</div>
+            <div className="flex flex-wrap gap-2">
+              {IP_TYPES.map((t) => (
+                <button
+                  key={t.v}
+                  onClick={() => setIpType(t.v)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    ipType === t.v ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary/40"
+                  }`}
+                >
+                  {t.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2 min-w-0">
               <div className="text-sm font-semibold">출원 기간</div>
               <div className="flex items-center gap-2">
-                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-                <span className="text-muted-foreground">~</span>
-                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+                <Input type="date" className="min-w-0 flex-1" value={from} onChange={(e) => setFrom(e.target.value)} />
+                <span className="text-muted-foreground shrink-0">~</span>
+                <Input type="date" className="min-w-0 flex-1" value={to} onChange={(e) => setTo(e.target.value)} />
               </div>
             </div>
             <div className="space-y-2">
@@ -222,8 +251,15 @@ export default function PatentExport() {
               <Input value={inventor} onChange={(e) => setInventor(e.target.value)} placeholder="예: 홍길동 (비우면 전체)" maxLength={50} />
             </div>
             <div className="space-y-2">
-              <div className="text-sm font-semibold">상표명 (선택)</div>
-              <Input value={tmKeyword} onChange={(e) => setTmKeyword(e.target.value)} placeholder="입력하면 해당 기관 보유 상표도 함께 담습니다" maxLength={50} />
+              <div className="text-sm font-semibold">
+                {ipType === "design" ? "디자인 물품명 (필수)" : ipType === "trademark" ? "상표명 (필수)" : "상표명 (선택)"}
+              </div>
+              <Input
+                value={tmKeyword}
+                onChange={(e) => setTmKeyword(e.target.value)}
+                placeholder={ipType === "design" ? "예: 포장용기" : ipType === "trademark" ? "예: 설향" : "입력하면 해당 기관 보유 상표도 함께 담습니다"}
+                maxLength={50}
+              />
             </div>
             <div className="space-y-2">
               <div className="text-sm font-semibold">등록상태</div>

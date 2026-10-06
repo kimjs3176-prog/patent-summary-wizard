@@ -37,6 +37,48 @@ serve(async (req) => {
     const withInventors = body.withInventors === true;
     // 상표명이 주어지면 해당 기관 보유 상표도 함께 조회 (1페이지 요청 시에만)
     const trademarkKeyword = typeof body.trademarkKeyword === "string" ? body.trademarkKeyword.trim().slice(0, 50) : "";
+    // 권리 종류: all | patent | utility | design | trademark
+    const ipType = ["all", "patent", "utility", "design", "trademark"].includes(String(body.ipType)) ? String(body.ipType) : "all";
+
+    const key0 = await resolveKiprisKey();
+    if (!key0) return json({ success: false, error: "KIPRIS 키가 설정되지 않았습니다." }, 500);
+
+    // 디자인/상표는 전용 단어검색 API로 조회한다 (출원인명 검색은 미지원 — 검색어 필수)
+    if (ipType === "design" || ipType === "trademark") {
+      if (!trademarkKeyword) {
+        return json({ success: false, error: ipType === "design" ? "디자인은 물품명을 입력해 주세요." : "상표는 상표명을 입력해 주세요." }, 400);
+      }
+      const service = ipType === "design" ? "designInfoSearchService" : "trademarkInfoSearchService";
+      const kwParam = ipType === "design" ? "articleName" : "searchString";
+      const url0 = new URL(`https://plus.kipris.or.kr/kipo-api/kipi/${service}/getWordSearch`);
+      url0.searchParams.set("ServiceKey", key0);
+      url0.searchParams.set(kwParam, trademarkKeyword);
+      url0.searchParams.set("pageNo", String(pageNo));
+      url0.searchParams.set("numOfRows", String(rows));
+      url0.searchParams.set("docsCount", String(rows));
+      const xml0 = await kiprisFetchText(url0.toString(), { retries: 2, timeoutMs: 25000 });
+      if (xml0.includes("<successYN>N</successYN>")) {
+        return json({ success: false, error: xmlTag(xml0, "resultMsg") || "KIPRIS 조회 실패" }, 502);
+      }
+      const inRange = (d: string) => (!from || d >= fmt(from)) && (!to || d <= fmt(to));
+      const items0 = [...xml0.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => {
+        const x = m[1];
+        return {
+          applicationNumber: xmlTag(x, "applicationNumber"),
+          registrationNumber: xmlTag(x, "registrationNumber"),
+          title: xmlTag(x, "title") || xmlTag(x, "articleName"),
+          applicationDate: fmt(xmlTag(x, "applicationDate")),
+          openDate: fmt(xmlTag(x, "openDate") || xmlTag(x, "publicationDate")),
+          registerDate: fmt(xmlTag(x, "registrationDate")),
+          status: xmlTag(x, "applicationStatus") || xmlTag(x, "registrationStatus"),
+          applicant: xmlTag(x, "applicantName"),
+          ipc: xmlTag(x, "designMainClassification"),
+          abstract: "",
+          inventors: xmlTag(x, "inventorName"),
+        };
+      }).filter((i) => i.title && i.applicationNumber && i.applicant.includes(org) && inRange(i.applicationDate));
+      return json({ success: true, totalCount: items0.length, items: items0, trademarks: [] });
+    }
 
     const key = await resolveKiprisKey();
     if (!key) return json({ success: false, error: "KIPRIS 키가 설정되지 않았습니다." }, 500);
@@ -57,8 +99,8 @@ serve(async (req) => {
     if (inventor) p.set("inventors", inventor);
     if (from || to) p.set("applicationDate", `${from || "19000101"}~${to || "29991231"}`);
     if (status) p.set("lastvalue", status);
-    p.set("patent", "true");
-    p.set("utility", "true");
+    p.set("patent", ipType === "utility" ? "false" : "true");
+    p.set("utility", ipType === "patent" ? "false" : "true");
     p.set("pageNo", String(pageNo));
     p.set("numOfRows", String(rows));
     p.set("sortSpec", "AD");
