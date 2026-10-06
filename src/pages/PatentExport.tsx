@@ -34,8 +34,17 @@ const dash = (n: string) => {
   return n;
 };
 
+const IP_TYPES = [
+  { v: "all", l: "전체(특허+실용신안)" },
+  { v: "patent", l: "특허" },
+  { v: "utility", l: "실용신안" },
+  { v: "design", l: "디자인" },
+  { v: "trademark", l: "상표" },
+];
+
 export default function PatentExport() {
   const [orgs, setOrgs] = useState<string[]>(["농촌진흥청"]);
+  const [ipType, setIpType] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [inventor, setInventor] = useState("");
@@ -57,7 +66,7 @@ export default function PatentExport() {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword, withInventors: true }),
+      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword, withInventors: true, ipType }),
       timeoutMs: 45000, retries: 2,
     });
     const data = await res.json();
