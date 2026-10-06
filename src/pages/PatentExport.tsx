@@ -77,6 +77,9 @@ export default function PatentExport() {
   const run = async () => {
     if (orgs.length === 0) return toast.error("기관을 하나 이상 선택해 주세요.");
     if (from && to && from > to) return toast.error("기간을 확인해 주세요.");
+    if ((ipType === "design" || ipType === "trademark") && !tmKeyword.trim()) {
+      return toast.error(ipType === "design" ? "디자인 물품명을 입력해 주세요." : "상표명을 입력해 주세요.");
+    }
     cancel.current = false;
     setRunning(true);
     setItems([]);
@@ -248,8 +251,15 @@ export default function PatentExport() {
               <Input value={inventor} onChange={(e) => setInventor(e.target.value)} placeholder="예: 홍길동 (비우면 전체)" maxLength={50} />
             </div>
             <div className="space-y-2">
-              <div className="text-sm font-semibold">상표명 (선택)</div>
-              <Input value={tmKeyword} onChange={(e) => setTmKeyword(e.target.value)} placeholder="입력하면 해당 기관 보유 상표도 함께 담습니다" maxLength={50} />
+              <div className="text-sm font-semibold">
+                {ipType === "design" ? "디자인 물품명 (필수)" : ipType === "trademark" ? "상표명 (필수)" : "상표명 (선택)"}
+              </div>
+              <Input
+                value={tmKeyword}
+                onChange={(e) => setTmKeyword(e.target.value)}
+                placeholder={ipType === "design" ? "예: 포장용기" : ipType === "trademark" ? "예: 설향" : "입력하면 해당 기관 보유 상표도 함께 담습니다"}
+                maxLength={50}
+              />
             </div>
             <div className="space-y-2">
               <div className="text-sm font-semibold">등록상태</div>
