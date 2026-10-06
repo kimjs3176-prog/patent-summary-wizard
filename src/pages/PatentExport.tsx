@@ -153,7 +153,7 @@ export default function PatentExport() {
 
   const downloadXlsx = () => {
     const ws = XLSX.utils.json_to_sheet(toRows());
-    ws["!cols"] = [6, 18, 14, 50, 11, 11, 11, 8, 16, 30, ...(inventor ? [12] : []), 24, 60, 40].map((w) => ({ wch: w }));
+    ws["!cols"] = [6, 12, 18, 14, 50, 11, 11, 11, 8, 16, 30, ...(inventor ? [12] : []), 24, 60, 40].map((w) => ({ wch: w }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "특허목록");
     XLSX.writeFile(wb, fileName("xlsx"));
@@ -220,6 +220,10 @@ export default function PatentExport() {
             <div className="space-y-2">
               <div className="text-sm font-semibold">발명자</div>
               <Input value={inventor} onChange={(e) => setInventor(e.target.value)} placeholder="예: 홍길동 (비우면 전체)" maxLength={50} />
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm font-semibold">상표명 (선택)</div>
+              <Input value={tmKeyword} onChange={(e) => setTmKeyword(e.target.value)} placeholder="입력하면 해당 기관 보유 상표도 함께 담습니다" maxLength={50} />
             </div>
             <div className="space-y-2">
               <div className="text-sm font-semibold">등록상태</div>
