@@ -60,8 +60,6 @@ interface KeywordSearchResult {
   thumbnail?: string;
   inventors?: string;
   organizationName?: string;
-  /** 권리 종류: 생략 시 특허/실용신안, "trademark"면 상표 */
-  ipType?: "trademark";
 }
 
 // 거절/소멸/취하/포기 등 권리가 유효하지 않은 상태는 검색결과에서 제외
@@ -512,79 +510,6 @@ serve(async (req) => {
         console.error(`✗ ${field}/${org.name}/"${kw}":`, e instanceof Error ? e.message : e);
       }
       return [];
-    };
-
-    // KIPRIS 상표 검색 (상표명 기준). 출원인이 농업 공공기관인 건만 남긴다.
-    const kiprisTrademarkSearch = async (kw: string): Promise<KeywordSearchResult[]> => {
-      try {
-        const url = new URL("https://plus.kipris.or.kr/kipo-api/kipi/trademarkInfoSearchService/getWordSearch");
-        url.searchParams.set("ServiceKey", KIPRIS_API_KEY);
-        url.searchParams.set("searchString", kw);
-        url.searchParams.set("pageNo", "1");
-        url.searchParams.set("numOfRows", "50");
-        url.searchParams.set("docsCount", "50");
-        const res = await fetchWithRetry(url.toString(), {}, { retries: 1, timeoutMs: 12000, baseDelay: 500 });
-        const text = await res.text();
-        if (!res.ok || text.includes("<successYN>N</successYN>")) {
-          console.log(`trademark failed: ${text.slice(0, 200).replace(/\s+/g, " ")}`);
-          return [];
-        }
-
-        const out: KeywordSearchResult[] = [];
-        const itemMatches = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-        for (const match of itemMatches) {
-          const itemXml = match[1];
-          const decodeEntities = (s: string) =>
-            s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&").trim();
-          const getField = (field: string): string | undefined => {
-            const cdata = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${field}>`, 'i'));
-            if (cdata) return cdata[1].trim();
-            const simple = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i'));
-            return simple ? decodeEntities(simple[1]) : undefined;
-          };
-          const title = getField("title") || "";
-          const applicationNumber = getField("applicationNumber") || "";
-          const registrationNumber = getField("registrationNumber") || "";
-          const applicant = getField("applicantName") || "";
-          const rightHolder = getField("regPrivilegeName") || "";
-          const status = getField("applicationStatus") || getField("registrationStatus") || "";
-          if (!title || !applicationNumber) continue;
-          if (status && EXCLUDED_STATUS.test(status)) continue;
-          // 서비스 범위: 농업 공공기관 출원·보유 상표만
-          const ownerText = `${applicant} ${rightHolder}`;
-          if (!AGRI_ORG_NAMES.some((n) => ownerText.includes(n))) continue;
-
-          const appDigits = applicationNumber.replace(/[^0-9]/g, "");
-          const regDigits = registrationNumber.replace(/[^0-9]/g, "");
-          let displayNumber = "";
-          if (regDigits.length >= 9) {
-            displayNumber = `40-${regDigits.slice(2, 9)}`;
-          } else if (appDigits.length >= 13) {
-            displayNumber = `40-${appDigits.slice(2, 6)}-${appDigits.slice(6, 13)}`;
-          } else {
-            displayNumber = applicationNumber;
-          }
-
-          out.push({
-            patentId: displayNumber,
-            title,
-            titleKo: title,
-            applicant,
-            assignee: applicant,
-            applicationDate: getField("applicationDate") ? formatDate(getField("applicationDate")!) : undefined,
-            publicationDate: getField("registrationDate") ? formatDate(getField("registrationDate")!) : undefined,
-            applicationNumber,
-            registrationNumber: registrationNumber || undefined,
-            thumbnail: getField("bigDrawing") || getField("drawing") || undefined,
-            ipType: "trademark",
-          });
-        }
-        if (out.length > 0) console.log(`✓ trademark/"${kw}": ${out.length} hits`);
-        return out;
-      } catch (e) {
-        console.error(`✗ trademark/"${kw}":`, e instanceof Error ? e.message : e);
-        return [];
-      }
     };
 
     // ▼ Stability/Perf: tiered fan-out with early termination
