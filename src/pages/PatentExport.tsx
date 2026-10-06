@@ -125,7 +125,7 @@ export default function PatentExport() {
       const num = i.registrationNumber ? dash(i.registrationNumber) : dash(i.applicationNumber);
       return {
         번호: idx + 1,
-        구분: "특허/실용신안",
+        구분: IP_TYPES.find((t) => t.v === ipType)?.l ?? "특허/실용신안",
         출원번호: dash(i.applicationNumber),
         등록번호: i.registrationNumber ? dash(i.registrationNumber) : "",
         발명의명칭: i.title,
@@ -198,7 +198,7 @@ export default function PatentExport() {
             <FileSpreadsheet className="w-6 h-6 text-primary" /> 특허 목록 다운로드
           </h1>
           <p className="text-sm text-muted-foreground">
-            조건을 정해 특허·실용신안 목록을 한 번에 불러오고 엑셀 또는 CSV로 내려받습니다. (출처: KIPRIS)
+            조건을 정해 특허·실용신안·디자인·상표 목록을 한 번에 불러오고 엑셀 또는 CSV로 내려받습니다. (출처: KIPRIS)
           </p>
         </header>
 
