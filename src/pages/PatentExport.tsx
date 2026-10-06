@@ -208,13 +208,30 @@ export default function PatentExport() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">권리 종류</div>
+            <div className="flex flex-wrap gap-2">
+              {IP_TYPES.map((t) => (
+                <button
+                  key={t.v}
+                  onClick={() => setIpType(t.v)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    ipType === t.v ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:border-primary/40"
+                  }`}
+                >
+                  {t.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2 min-w-0">
               <div className="text-sm font-semibold">출원 기간</div>
               <div className="flex items-center gap-2">
-                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-                <span className="text-muted-foreground">~</span>
-                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+                <Input type="date" className="min-w-0 flex-1" value={from} onChange={(e) => setFrom(e.target.value)} />
+                <span className="text-muted-foreground shrink-0">~</span>
+                <Input type="date" className="min-w-0 flex-1" value={to} onChange={(e) => setTo(e.target.value)} />
               </div>
             </div>
             <div className="space-y-2">
