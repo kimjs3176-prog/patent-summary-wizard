@@ -129,6 +129,25 @@ export default function PatentExport() {
         요약서링크: `${window.location.origin}/?patent=${encodeURIComponent(num)}`,
       };
     });
+    const tmRows = trademarks.map((t) => ({
+      번호: "",
+      구분: "상표",
+      출원번호: dash(t.applicationNumber),
+      등록번호: t.registrationNumber ? dash(t.registrationNumber) : "",
+      발명의명칭: t.title,
+      출원일: t.applicationDate,
+      공개일: "",
+      등록일: t.registerDate,
+      등록상태: t.status,
+      검색기관: t.org ?? "",
+      출원인: t.applicant,
+      ...(inventor ? { "발명자(검색조건)": "" } : {}),
+      IPC: "",
+      초록: "",
+      요약서링크: "",
+    }));
+    return [...patentRows, ...tmRows];
+  };
 
   const fileName = (ext: string) => `특허목록_${new Date().toISOString().slice(0, 10)}.${ext}`;
 
