@@ -536,9 +536,6 @@ serve(async (req) => {
       ? Promise.all(AGRI_ORGANIZATIONS.map(org => kiprisSearch(rawTrim, org, "title")))
       : Promise.resolve([] as KeywordSearchResult[][]);
 
-    // 상표 검색은 특허 검색과 병렬로 수행 (상표명은 AI 확장 없이 원문/교정어만 사용)
-    const trademarkPromise = rawTrim ? kiprisTrademarkSearch(rawTrim) : Promise.resolve([] as KeywordSearchResult[]);
-
     // Stage 1b: inventor-name search — if the raw input looks like a Korean personal name
     // (2-4 hangul chars, or space-separated hangul names), also query the `inventors` field.
     const isPersonName = (s: string): boolean => {
@@ -575,14 +572,6 @@ serve(async (req) => {
     const recommendedQueries = plan.queries;
     const correctedInput = plan.corrected;
 
-    // 교정어가 원문과 다르면 상표도 교정어로 한 번 더 조회
-    let trademarks = await trademarkPromise;
-    if (correctedInput && correctedInput !== rawTrim) {
-      const extra = await kiprisTrademarkSearch(correctedInput);
-      const seen = new Set(trademarks.map(t => t.patentId));
-      for (const t of extra) if (!seen.has(t.patentId)) trademarks.push(t);
-    }
-    trademarks = trademarks.slice(0, 30);
     if (correctedInput && correctedInput !== rawInput) {
       console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
     }
