@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PatentInput } from "@/components/PatentInput";
