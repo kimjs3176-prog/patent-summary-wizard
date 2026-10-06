@@ -75,4 +75,6 @@ export interface KeywordSearchResult {
   inventors?: string;
   applicationNumber?: string;
   registrationNumber?: string;
+  /** 권리 종류: 생략 시 특허/실용신안, "trademark"면 상표 */
+  ipType?: "trademark";
 }
