@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { resolveKiprisKey, kiprisFetchText, xmlTag } from "../_shared/kipris.ts";
+import { searchTrademarks } from "../_shared/trademark.ts";
 
 /** One page of the filtered KIPRIS patent list for bulk export. Client pages through totalCount. */
 
@@ -32,9 +33,20 @@ serve(async (req) => {
     const from = ymd(body.from), to = ymd(body.to);
     const pageNo = Math.max(1, Math.min(200, Number(body.pageNo) || 1));
     const rows = Math.max(1, Math.min(500, Number(body.numOfRows) || 500));
+    // 상표명이 주어지면 해당 기관 보유 상표도 함께 조회 (1페이지 요청 시에만)
+    const trademarkKeyword = typeof body.trademarkKeyword === "string" ? body.trademarkKeyword.trim().slice(0, 50) : "";
 
     const key = await resolveKiprisKey();
     if (!key) return json({ success: false, error: "KIPRIS 키가 설정되지 않았습니다." }, 500);
+
+    let trademarks: unknown[] = [];
+    if (trademarkKeyword && pageNo === 1) {
+      try {
+        trademarks = await searchTrademarks(trademarkKeyword, key, [org]);
+      } catch (e) {
+        console.error("trademark search failed:", e instanceof Error ? e.message : e);
+      }
+    }
 
     const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
     const p = url.searchParams;
@@ -70,7 +82,7 @@ serve(async (req) => {
         abstract: xmlTag(x, "astrtCont"),
       };
     });
-    return json({ success: true, totalCount, items });
+    return json({ success: true, totalCount, items, trademarks });
   } catch (e) {
     console.error("export-patents error:", e);
     return json({ success: false, error: "조회 중 오류가 발생했습니다." }, 500);

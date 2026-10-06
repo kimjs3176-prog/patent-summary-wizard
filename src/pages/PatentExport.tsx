@@ -22,6 +22,11 @@ interface Item {
   org?: string;
 }
 
+interface TmItem {
+  applicationNumber: string; registrationNumber: string; title: string; applicationDate: string;
+  registerDate: string; status: string; applicant: string; drawing: string; org?: string;
+}
+
 const dash = (n: string) => {
   const c = (n || "").replace(/\D/g, "");
   if (c.length === 13) return `${c.slice(0, 2)}-${c.slice(2, 6)}-${c.slice(6)}`;
@@ -36,6 +41,8 @@ export default function PatentExport() {
   const [inventor, setInventor] = useState("");
   const [status, setStatus] = useState("all");
   const [items, setItems] = useState<Item[]>([]);
+  const [tmKeyword, setTmKeyword] = useState("");
+  const [trademarks, setTrademarks] = useState<TmItem[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [running, setRunning] = useState(false);
   const cancel = useRef(false);
@@ -50,12 +57,12 @@ export default function PatentExport() {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE }),
+      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword }),
       timeoutMs: 45000, retries: 2,
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || "조회 실패");
-    return data as { totalCount: number; items: Item[] };
+    return data as { totalCount: number; items: Item[]; trademarks?: TmItem[] };
   };
 
   const run = async () => {
@@ -64,10 +71,17 @@ export default function PatentExport() {
     cancel.current = false;
     setRunning(true);
     setItems([]);
+    setTrademarks([]);
     const all: Item[] = [];
+    const tms: TmItem[] = [];
     try {
       const firsts = [];
-      for (const org of orgs) firsts.push({ org, ...(await fetchPage(org, 1)) });
+      for (const org of orgs) {
+        const f = { org, ...(await fetchPage(org, 1)) };
+        firsts.push(f);
+        if (Array.isArray(f.trademarks)) tms.push(...f.trademarks.map((t) => ({ ...t, org: f.org })));
+      }
+      setTrademarks(tms);
       const total = firsts.reduce((s, f) => s + f.totalCount, 0);
       for (const f of firsts) {
         all.push(...f.items.map((i) => ({ ...i, org: f.org })));
@@ -85,7 +99,7 @@ export default function PatentExport() {
       const seen = new Set<string>();
       const uniq = all.filter((i) => (seen.has(i.applicationNumber) ? false : (seen.add(i.applicationNumber), true)));
       setItems(uniq);
-      toast.success(`${uniq.length.toLocaleString()}건을 불러왔습니다.`);
+      toast.success(`특허 ${uniq.length.toLocaleString()}건${tms.length > 0 ? `, 상표 ${tms.length.toLocaleString()}건` : ""}을 불러왔습니다.`);
     } catch (e) {
       setItems(all);
       toast.error(e instanceof Error ? e.message : "조회 중 오류가 발생했습니다.");
@@ -94,11 +108,12 @@ export default function PatentExport() {
     }
   };
 
-  const toRows = () =>
-    items.map((i, idx) => {
+  const toRows = () => {
+    const patentRows = items.map((i, idx) => {
       const num = i.registrationNumber ? dash(i.registrationNumber) : dash(i.applicationNumber);
       return {
         번호: idx + 1,
+        구분: "특허/실용신안",
         출원번호: dash(i.applicationNumber),
         등록번호: i.registrationNumber ? dash(i.registrationNumber) : "",
         발명의명칭: i.title,
@@ -114,12 +129,31 @@ export default function PatentExport() {
         요약서링크: `${window.location.origin}/?patent=${encodeURIComponent(num)}`,
       };
     });
+    const tmRows = trademarks.map((t) => ({
+      번호: "",
+      구분: "상표",
+      출원번호: dash(t.applicationNumber),
+      등록번호: t.registrationNumber ? dash(t.registrationNumber) : "",
+      발명의명칭: t.title,
+      출원일: t.applicationDate,
+      공개일: "",
+      등록일: t.registerDate,
+      등록상태: t.status,
+      검색기관: t.org ?? "",
+      출원인: t.applicant,
+      ...(inventor ? { "발명자(검색조건)": "" } : {}),
+      IPC: "",
+      초록: "",
+      요약서링크: "",
+    }));
+    return [...patentRows, ...tmRows];
+  };
 
   const fileName = (ext: string) => `특허목록_${new Date().toISOString().slice(0, 10)}.${ext}`;
 
   const downloadXlsx = () => {
     const ws = XLSX.utils.json_to_sheet(toRows());
-    ws["!cols"] = [6, 18, 14, 50, 11, 11, 11, 8, 16, 30, ...(inventor ? [12] : []), 24, 60, 40].map((w) => ({ wch: w }));
+    ws["!cols"] = [6, 12, 18, 14, 50, 11, 11, 11, 8, 16, 30, ...(inventor ? [12] : []), 24, 60, 40].map((w) => ({ wch: w }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "특허목록");
     XLSX.writeFile(wb, fileName("xlsx"));
@@ -174,7 +208,7 @@ export default function PatentExport() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <div className="text-sm font-semibold">출원 기간</div>
               <div className="flex items-center gap-2">
@@ -186,6 +220,10 @@ export default function PatentExport() {
             <div className="space-y-2">
               <div className="text-sm font-semibold">발명자</div>
               <Input value={inventor} onChange={(e) => setInventor(e.target.value)} placeholder="예: 홍길동 (비우면 전체)" maxLength={50} />
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm font-semibold">상표명 (선택)</div>
+              <Input value={tmKeyword} onChange={(e) => setTmKeyword(e.target.value)} placeholder="입력하면 해당 기관 보유 상표도 함께 담습니다" maxLength={50} />
             </div>
             <div className="space-y-2">
               <div className="text-sm font-semibold">등록상태</div>
@@ -215,10 +253,10 @@ export default function PatentExport() {
                 <Search className="w-4 h-4" /> 목록 불러오기
               </Button>
             )}
-            <Button variant="outline" className="rounded-xl gap-2" onClick={downloadXlsx} disabled={running || items.length === 0}>
+            <Button variant="outline" className="rounded-xl gap-2" onClick={downloadXlsx} disabled={running || (items.length === 0 && trademarks.length === 0)}>
               <Download className="w-4 h-4" /> 엑셀 받기
             </Button>
-            <Button variant="outline" className="rounded-xl gap-2" onClick={downloadCsv} disabled={running || items.length === 0}>
+            <Button variant="outline" className="rounded-xl gap-2" onClick={downloadCsv} disabled={running || (items.length === 0 && trademarks.length === 0)}>
               <Download className="w-4 h-4" /> CSV 받기
             </Button>
             {progress && (

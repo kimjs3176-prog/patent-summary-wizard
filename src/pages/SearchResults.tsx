@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PatentInput } from "@/components/PatentInput";
@@ -15,7 +14,6 @@ export default function SearchResults() {
   const navigate = useNavigate();
   const keyword = searchParams.get("keyword") || "";
   const [results, setResults] = useState<KeywordSearchResult[]>([]);
-  const [trademarks, setTrademarks] = useState<KeywordSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,7 +61,6 @@ export default function SearchResults() {
     setSuggestions([]);
     setCorrected("");
     setResults([]);
-    setTrademarks([]);
     const doSearch = async () => {
       setIsLoading(true);
       try {
@@ -84,11 +81,10 @@ export default function SearchResults() {
         if (cancelled) return;
         if (result.success && Array.isArray(result.patents)) {
           setResults(result.patents);
-          setTrademarks(Array.isArray(result.trademarks) ? result.trademarks : []);
           setTotalCount(result.totalCount || result.patents.length);
           setExtractedKeywords(result.extractedKeywords || []);
           setAiIntent(result.intent || "");
-          if (result.patents.length === 0 && (!Array.isArray(result.trademarks) || result.trademarks.length === 0)) fetchSuggestions(keyword, isCancelled);
+          if (result.patents.length === 0) fetchSuggestions(keyword, isCancelled);
         } else {
           setSearchError(
             response.status === 429
@@ -370,57 +366,6 @@ export default function SearchResults() {
           </>
         )}
 
-        {/* Trademark results */}
-        {!isLoading && trademarks.length > 0 && (
-          <div className="max-w-5xl mx-auto mt-12">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                상표
-              </span>
-              <h3 className="text-lg font-bold text-foreground">관련 상표 {trademarks.length}건</h3>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {trademarks.map((tm) => (
-                <button
-                  key={tm.patentId}
-                  onClick={() => toast.info("상표는 AI 요약서를 지원하지 않습니다. 특허·실용신안만 요약할 수 있습니다.")}
-                  className="w-full p-4 rounded-2xl bg-card border border-border/50 hover:border-amber-500/40 hover:shadow-md transition-all duration-200 text-left group flex gap-4"
-                  style={{ boxShadow: 'var(--shadow-xs)' }}
-                >
-                  {tm.thumbnail && (
-                    <img
-                      src={proxyUrl(tm.thumbnail)}
-                      alt=""
-                      className="w-14 h-14 object-contain rounded-xl bg-secondary/50 border border-border/30 flex-shrink-0"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLElement).style.display = "none";
-                      }}
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-foreground line-clamp-1 mb-1.5">{tm.titleKo || tm.title}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="px-2 py-0.5 text-[11px] rounded-md font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                        {tm.registrationNumber ? "등록" : "출원"} · {tm.patentId}
-                      </span>
-                      {tm.assignee && (
-                        <span className="px-2 py-0.5 text-[11px] rounded-md font-medium bg-secondary text-muted-foreground border border-border/50">
-                          {tm.assignee}
-                        </span>
-                      )}
-                      {tm.publicationDate && (
-                        <span className="px-2 py-0.5 text-[11px] rounded-md font-medium bg-secondary text-muted-foreground border border-border/50">
-                          {tm.publicationDate}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Error state */}
         {!isLoading && searchError && keyword && (
           <div className="text-center py-20">
@@ -433,7 +378,7 @@ export default function SearchResults() {
         )}
 
         {/* Empty state */}
-        {!isLoading && !searchError && results.length === 0 && trademarks.length === 0 && keyword && (
+        {!isLoading && !searchError && results.length === 0 && keyword && (
           <div className="text-center py-20">
             <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-secondary border border-border/50">
               <Search className="w-7 h-7 text-muted-foreground" />
