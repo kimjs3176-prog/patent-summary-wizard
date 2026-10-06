@@ -306,9 +306,9 @@ export default function PatentExport() {
             <div className="space-y-2 min-w-0">
               <div className="text-sm font-semibold">출원 기간</div>
               <div className="flex items-center gap-2">
-                <Input type="date" className="min-w-0 flex-1" value={from} onChange={(e) => setFrom(e.target.value)} />
+                <SegmentedDate value={from} onChange={setFrom} />
                 <span className="text-muted-foreground shrink-0">~</span>
-                <Input type="date" className="min-w-0 flex-1" value={to} onChange={(e) => setTo(e.target.value)} />
+                <SegmentedDate value={to} onChange={setTo} />
               </div>
             </div>
             <div className="space-y-2">
