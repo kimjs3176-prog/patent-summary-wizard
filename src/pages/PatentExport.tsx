@@ -123,7 +123,7 @@ export default function PatentExport() {
         등록상태: i.status,
         검색기관: i.org ?? "",
         출원인: i.applicant.replace(/\|/g, ", "),
-        ...(inventor ? { "발명자(검색조건)": inventor } : {}),
+        발명자: i.inventors ?? "",
         IPC: i.ipc.replace(/\|/g, ", "),
         초록: i.abstract,
         요약서링크: `${window.location.origin}/?patent=${encodeURIComponent(num)}`,
@@ -141,7 +141,7 @@ export default function PatentExport() {
       등록상태: t.status,
       검색기관: t.org ?? "",
       출원인: t.applicant,
-      ...(inventor ? { "발명자(검색조건)": "" } : {}),
+      발명자: "",
       IPC: "",
       초록: "",
       요약서링크: "",
@@ -153,7 +153,7 @@ export default function PatentExport() {
 
   const downloadXlsx = () => {
     const ws = XLSX.utils.json_to_sheet(toRows());
-    ws["!cols"] = [6, 12, 18, 14, 50, 11, 11, 11, 8, 16, 30, ...(inventor ? [12] : []), 24, 60, 40].map((w) => ({ wch: w }));
+    ws["!cols"] = [6, 12, 18, 14, 50, 11, 11, 11, 8, 16, 30, 24, 24, 60, 40].map((w) => ({ wch: w }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "특허목록");
     XLSX.writeFile(wb, fileName("xlsx"));
