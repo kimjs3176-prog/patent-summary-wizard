@@ -62,7 +62,6 @@ export default function SearchResults() {
     setSuggestions([]);
     setCorrected("");
     setResults([]);
-    setTrademarks([]);
     const doSearch = async () => {
       setIsLoading(true);
       try {
@@ -83,11 +82,10 @@ export default function SearchResults() {
         if (cancelled) return;
         if (result.success && Array.isArray(result.patents)) {
           setResults(result.patents);
-          setTrademarks(Array.isArray(result.trademarks) ? result.trademarks : []);
           setTotalCount(result.totalCount || result.patents.length);
           setExtractedKeywords(result.extractedKeywords || []);
           setAiIntent(result.intent || "");
-          if (result.patents.length === 0 && (!Array.isArray(result.trademarks) || result.trademarks.length === 0)) fetchSuggestions(keyword, isCancelled);
+          if (result.patents.length === 0) fetchSuggestions(keyword, isCancelled);
         } else {
           setSearchError(
             response.status === 429
