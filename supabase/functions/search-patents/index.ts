@@ -534,11 +534,13 @@ serve(async (req) => {
         const itemMatches = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)];
         for (const match of itemMatches) {
           const itemXml = match[1];
+          const decodeEntities = (s: string) =>
+            s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&").trim();
           const getField = (field: string): string | undefined => {
             const cdata = itemXml.match(new RegExp(`<${field}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${field}>`, 'i'));
             if (cdata) return cdata[1].trim();
             const simple = itemXml.match(new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i'));
-            return simple ? simple[1].trim() : undefined;
+            return simple ? decodeEntities(simple[1]) : undefined;
           };
           const title = getField("title") || "";
           const applicationNumber = getField("applicationNumber") || "";
