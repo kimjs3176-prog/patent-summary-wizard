@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Download, FileSpreadsheet, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
