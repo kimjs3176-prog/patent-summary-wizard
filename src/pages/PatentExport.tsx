@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Download, FileSpreadsheet, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
@@ -41,6 +41,76 @@ const IP_TYPES = [
   { v: "design", l: "디자인" },
   { v: "trademark", l: "상표" },
 ];
+
+const SEG_MAX = [4, 2, 2];
+
+/** YYYY-MM-DD segmented date input — 자릿수가 채워지면 다음 칸으로 커서가 자동 이동 */
+function SegmentedDate({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const [seg, setSeg] = useState<[string, string, string]>(m ? [m[1], m[2], m[3]] : ["", "", ""]);
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const setSegAt = (i: number, raw: string) => {
+    let d = raw.replace(/\D/g, "").slice(0, SEG_MAX[i]);
+    let advance = d.length === SEG_MAX[i];
+    // 월 2~9 → "0x", 일 4~9 → "0x" 로 채우고 즉시 다음 칸으로
+    if ((i === 1 || i === 2) && d.length === 1 && Number(d) >= (i === 1 ? 2 : 4)) {
+      d = `0${d}`;
+      advance = true;
+    }
+    // 13월, 32일 등 불가능한 값은 마지막 입력을 무시하고 다음 칸으로 넘어가지 않음
+    if (d.length === SEG_MAX[i] && ((i === 1 && Number(d) > 12) || (i === 2 && Number(d) > 31))) {
+      d = d.slice(0, -1);
+      advance = false;
+    }
+    const next = [...seg];
+    next[i] = d;
+    setSeg(next as [string, string, string]);
+    if (next.every((s, j) => s.length === SEG_MAX[j])) {
+      onChange(`${next[0]}-${next[1]}-${next[2]}`);
+    } else if (value !== "") {
+      onChange("");
+    }
+    if (advance && i < 2) refs.current[i + 1]?.focus();
+  };
+
+  const onKey = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && seg[i] === "" && i > 0) {
+      e.preventDefault();
+      const prev = [...seg];
+      prev[i - 1] = prev[i - 1].slice(0, -1);
+      setSeg(prev as [string, string, string]);
+      if (value !== "") onChange("");
+      refs.current[i - 1]?.focus();
+    }
+  };
+
+  const cls = (w: string) => `${w} px-1 text-center tabular-nums`;
+  return (
+    <div className="flex items-center gap-1 min-w-0">
+      <Input
+        ref={(el) => (refs.current[0] = el)}
+        inputMode="numeric" placeholder="YYYY" maxLength={4}
+        className={cls("w-16 shrink-0")} value={seg[0]}
+        onChange={(e) => setSegAt(0, e.target.value)} onKeyDown={(e) => onKey(0, e)}
+      />
+      <span className="text-muted-foreground">-</span>
+      <Input
+        ref={(el) => (refs.current[1] = el)}
+        inputMode="numeric" placeholder="MM" maxLength={2}
+        className={cls("w-11 shrink-0")} value={seg[1]}
+        onChange={(e) => setSegAt(1, e.target.value)} onKeyDown={(e) => onKey(1, e)}
+      />
+      <span className="text-muted-foreground">-</span>
+      <Input
+        ref={(el) => (refs.current[2] = el)}
+        inputMode="numeric" placeholder="DD" maxLength={2}
+        className={cls("w-11 shrink-0")} value={seg[2]}
+        onChange={(e) => setSegAt(2, e.target.value)} onKeyDown={(e) => onKey(2, e)}
+      />
+    </div>
+  );
+}
 
 export default function PatentExport() {
   const [orgs, setOrgs] = useState<string[]>(["농촌진흥청"]);
@@ -241,9 +311,9 @@ export default function PatentExport() {
             <div className="space-y-2 min-w-0">
               <div className="text-sm font-semibold">출원 기간</div>
               <div className="flex items-center gap-2">
-                <Input type="date" className="min-w-0 flex-1" value={from} onChange={(e) => setFrom(e.target.value)} />
+                <SegmentedDate value={from} onChange={setFrom} />
                 <span className="text-muted-foreground shrink-0">~</span>
-                <Input type="date" className="min-w-0 flex-1" value={to} onChange={(e) => setTo(e.target.value)} />
+                <SegmentedDate value={to} onChange={setTo} />
               </div>
             </div>
             <div className="space-y-2">
