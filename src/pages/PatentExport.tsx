@@ -18,7 +18,7 @@ const ENDPOINT = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.c
 
 interface Item {
   applicationNumber: string; registrationNumber: string; title: string; applicationDate: string;
-  openDate: string; registerDate: string; status: string; applicant: string; ipc: string; abstract: string;
+  openDate: string; registerDate: string; status: string; applicant: string; ipc: string; abstract: string; inventors?: string;
   org?: string;
 }
 
@@ -57,7 +57,7 @@ export default function PatentExport() {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword }),
+      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword, withInventors: true }),
       timeoutMs: 45000, retries: 2,
     });
     const data = await res.json();
