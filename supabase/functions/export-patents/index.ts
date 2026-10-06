@@ -82,7 +82,7 @@ serve(async (req) => {
         abstract: xmlTag(x, "astrtCont"),
       };
     });
-    return json({ success: true, totalCount, items });
+    return json({ success: true, totalCount, items, trademarks });
   } catch (e) {
     console.error("export-patents error:", e);
     return json({ success: false, error: "조회 중 오류가 발생했습니다." }, 500);
