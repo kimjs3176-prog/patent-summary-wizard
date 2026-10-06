@@ -883,7 +883,6 @@ serve(async (req) => {
     const payload = {
       success: true,
       patents: topPatents,
-      trademarks,
       keyword: keyword.trim(),
       totalCount: relevant.length,
       expiredExcluded: expiredCount,
@@ -899,7 +898,7 @@ serve(async (req) => {
     };
 
     // Cache only successful, non-empty responses
-    if (topPatents.length > 0 || trademarks.length > 0) {
+    if (topPatents.length > 0) {
       SEARCH_CACHE.set(cacheKey, { at: Date.now(), payload });
       // Bound cache size to avoid memory growth
       if (SEARCH_CACHE.size > 200) {
