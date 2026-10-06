@@ -13,6 +13,7 @@ const Batch = lazy(() => import("./pages/Batch"));
 const SummarySample = lazy(() => import("./pages/SummarySample"));
 const TechVideos = lazy(() => import("./pages/TechVideos"));
 const PotentialTech = lazy(() => import("./pages/PotentialTech"));
+const PatentExport = lazy(() => import("./pages/PatentExport"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 import { FloatingChatbot } from "./components/FloatingChatbot";
@@ -85,6 +86,7 @@ const App = () => {
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/batch" element={<Batch />} />
+                <Route path="/export" element={<PatentExport />} />
                 <Route path="/summary-sample" element={<SummarySample />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
                 <Route path="/potential" element={<PotentialTech />} />
