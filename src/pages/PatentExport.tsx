@@ -52,6 +52,7 @@ function SegmentedDate({ value, onChange }: { value: string; onChange: (v: strin
 
   const setSegAt = (i: number, raw: string) => {
     let d = raw.replace(/\D/g, "").slice(0, SEG_MAX[i]);
+    let advance = d.length === SEG_MAX[i];
     // 월 2~9 → "0x", 일 4~9 → "0x" 로 채우고 즉시 다음 칸으로
     if ((i === 1 || i === 2) && d.length === 1 && Number(d) >= (i === 1 ? 2 : 4)) {
       d = `0${d}`;
