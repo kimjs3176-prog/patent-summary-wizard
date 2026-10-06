@@ -57,12 +57,12 @@ export default function PatentExport() {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE }),
+      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword }),
       timeoutMs: 45000, retries: 2,
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || "조회 실패");
-    return data as { totalCount: number; items: Item[] };
+    return data as { totalCount: number; items: Item[]; trademarks?: TmItem[] };
   };
 
   const run = async () => {
