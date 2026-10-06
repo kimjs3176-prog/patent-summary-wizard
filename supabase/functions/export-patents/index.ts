@@ -33,6 +33,8 @@ serve(async (req) => {
     const from = ymd(body.from), to = ymd(body.to);
     const pageNo = Math.max(1, Math.min(200, Number(body.pageNo) || 1));
     const rows = Math.max(1, Math.min(500, Number(body.numOfRows) || 500));
+    // 발명자 이름은 목록 API에 없고 상세 API에만 있으므로, 요청 시 상세 조회를 병행한다
+    const withInventors = body.withInventors === true;
     // 상표명이 주어지면 해당 기관 보유 상표도 함께 조회 (1페이지 요청 시에만)
     const trademarkKeyword = typeof body.trademarkKeyword === "string" ? body.trademarkKeyword.trim().slice(0, 50) : "";
 
@@ -80,8 +82,27 @@ serve(async (req) => {
         applicant: xmlTag(x, "applicantName"),
         ipc: xmlTag(x, "ipcNumber"),
         abstract: xmlTag(x, "astrtCont"),
+        inventors: "",
       };
     });
+
+    if (withInventors && items.length > 0) {
+      // 상세 API는 건당 1회 호출 — 동시 5건으로 제한해 KIPRIS 부하를 막는다
+      const CONCURRENCY = 5;
+      for (let i = 0; i < items.length; i += CONCURRENCY) {
+        await Promise.all(items.slice(i, i + CONCURRENCY).map(async (it) => {
+          try {
+            const dUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getBibliographyDetailInfoSearch");
+            dUrl.searchParams.set("ServiceKey", key);
+            dUrl.searchParams.set("applicationNumber", it.applicationNumber.replace(/[^0-9]/g, ""));
+            const dXml = await kiprisFetchText(dUrl.toString(), { retries: 1, timeoutMs: 15000 });
+            const names = [...dXml.matchAll(/<inventorInfo>[\s\S]*?<name>([^<]+)<\/name>[\s\S]*?<\/inventorInfo>/g)]
+              .map((m) => m[1].trim()).filter(Boolean);
+            it.inventors = names.join(", ");
+          } catch { /* 발명자 조회 실패 시 빈 값 유지 */ }
+        }));
+      }
+    }
     return json({ success: true, totalCount, items, trademarks });
   } catch (e) {
     console.error("export-patents error:", e);
