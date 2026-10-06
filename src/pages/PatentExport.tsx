@@ -71,10 +71,17 @@ export default function PatentExport() {
     cancel.current = false;
     setRunning(true);
     setItems([]);
+    setTrademarks([]);
     const all: Item[] = [];
+    const tms: TmItem[] = [];
     try {
       const firsts = [];
-      for (const org of orgs) firsts.push({ org, ...(await fetchPage(org, 1)) });
+      for (const org of orgs) {
+        const f = { org, ...(await fetchPage(org, 1)) };
+        firsts.push(f);
+        if (Array.isArray(f.trademarks)) tms.push(...f.trademarks.map((t) => ({ ...t, org: f.org })));
+      }
+      setTrademarks(tms);
       const total = firsts.reduce((s, f) => s + f.totalCount, 0);
       for (const f of firsts) {
         all.push(...f.items.map((i) => ({ ...i, org: f.org })));
