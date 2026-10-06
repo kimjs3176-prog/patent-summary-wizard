@@ -18,7 +18,7 @@ const ENDPOINT = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.c
 
 interface Item {
   applicationNumber: string; registrationNumber: string; title: string; applicationDate: string;
-  openDate: string; registerDate: string; status: string; applicant: string; ipc: string; abstract: string;
+  openDate: string; registerDate: string; status: string; applicant: string; ipc: string; abstract: string; inventors?: string;
   org?: string;
 }
 
@@ -57,7 +57,7 @@ export default function PatentExport() {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword }),
+      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword, withInventors: true }),
       timeoutMs: 45000, retries: 2,
     });
     const data = await res.json();
@@ -123,7 +123,7 @@ export default function PatentExport() {
         등록상태: i.status,
         검색기관: i.org ?? "",
         출원인: i.applicant.replace(/\|/g, ", "),
-        ...(inventor ? { "발명자(검색조건)": inventor } : {}),
+        발명자: i.inventors ?? "",
         IPC: i.ipc.replace(/\|/g, ", "),
         초록: i.abstract,
         요약서링크: `${window.location.origin}/?patent=${encodeURIComponent(num)}`,
@@ -141,7 +141,7 @@ export default function PatentExport() {
       등록상태: t.status,
       검색기관: t.org ?? "",
       출원인: t.applicant,
-      ...(inventor ? { "발명자(검색조건)": "" } : {}),
+      발명자: "",
       IPC: "",
       초록: "",
       요약서링크: "",
@@ -153,7 +153,7 @@ export default function PatentExport() {
 
   const downloadXlsx = () => {
     const ws = XLSX.utils.json_to_sheet(toRows());
-    ws["!cols"] = [6, 12, 18, 14, 50, 11, 11, 11, 8, 16, 30, ...(inventor ? [12] : []), 24, 60, 40].map((w) => ({ wch: w }));
+    ws["!cols"] = [6, 12, 18, 14, 50, 11, 11, 11, 8, 16, 30, 24, 24, 60, 40].map((w) => ({ wch: w }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "특허목록");
     XLSX.writeFile(wb, fileName("xlsx"));
