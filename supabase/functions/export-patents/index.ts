@@ -43,12 +43,16 @@ serve(async (req) => {
     const key0 = await resolveKiprisKey();
     if (!key0) return json({ success: false, error: "KIPRIS 키가 설정되지 않았습니다." }, 500);
 
-    // 디자인/상표는 전용 API(출원인명 검색)로 조회한다
+    // 디자인/상표는 전용 단어검색 API로 조회한다 (출원인명 검색은 미지원 — 검색어 필수)
     if (ipType === "design" || ipType === "trademark") {
+      if (!trademarkKeyword) {
+        return json({ success: false, error: ipType === "design" ? "디자인은 물품명을 입력해 주세요." : "상표는 상표명을 입력해 주세요." }, 400);
+      }
       const service = ipType === "design" ? "designInfoSearchService" : "trademarkInfoSearchService";
-      const url0 = new URL(`https://plus.kipris.or.kr/kipo-api/kipi/${service}/getApplicantNameSearch`);
+      const kwParam = ipType === "design" ? "articleName" : "searchString";
+      const url0 = new URL(`https://plus.kipris.or.kr/kipo-api/kipi/${service}/getWordSearch`);
       url0.searchParams.set("ServiceKey", key0);
-      url0.searchParams.set("applicantName", org);
+      url0.searchParams.set(kwParam, trademarkKeyword);
       url0.searchParams.set("pageNo", String(pageNo));
       url0.searchParams.set("numOfRows", String(rows));
       url0.searchParams.set("docsCount", String(rows));
@@ -61,19 +65,19 @@ serve(async (req) => {
         const x = m[1];
         return {
           applicationNumber: xmlTag(x, "applicationNumber"),
-          registrationNumber: xmlTag(x, "registrationNumber") || xmlTag(x, "registerNumber"),
+          registrationNumber: xmlTag(x, "registrationNumber"),
           title: xmlTag(x, "title") || xmlTag(x, "articleName"),
           applicationDate: fmt(xmlTag(x, "applicationDate")),
-          openDate: "",
-          registerDate: fmt(xmlTag(x, "registrationDate") || xmlTag(x, "registerDate")),
-          status: xmlTag(x, "applicationStatus") || xmlTag(x, "registrationStatus") || xmlTag(x, "registerStatus"),
+          openDate: fmt(xmlTag(x, "openDate") || xmlTag(x, "publicationDate")),
+          registerDate: fmt(xmlTag(x, "registrationDate")),
+          status: xmlTag(x, "applicationStatus") || xmlTag(x, "registrationStatus"),
           applicant: xmlTag(x, "applicantName"),
-          ipc: "",
+          ipc: xmlTag(x, "designMainClassification"),
           abstract: "",
-          inventors: "",
+          inventors: xmlTag(x, "inventorName"),
         };
-      }).filter((i) => i.title && i.applicationNumber && inRange(i.applicationDate));
-      return json({ success: true, totalCount: Number(xmlTag(xml0, "totalCount")) || items0.length, items: items0, trademarks: [] });
+      }).filter((i) => i.title && i.applicationNumber && i.applicant.includes(org) && inRange(i.applicationDate));
+      return json({ success: true, totalCount: items0.length, items: items0, trademarks: [] });
     }
 
     const key = await resolveKiprisKey();
