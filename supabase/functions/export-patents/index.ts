@@ -95,8 +95,8 @@ serve(async (req) => {
     if (inventor) p.set("inventors", inventor);
     if (from || to) p.set("applicationDate", `${from || "19000101"}~${to || "29991231"}`);
     if (status) p.set("lastvalue", status);
-    p.set("patent", "true");
-    p.set("utility", "true");
+    p.set("patent", ipType === "utility" ? "false" : "true");
+    p.set("utility", ipType === "patent" ? "false" : "true");
     p.set("pageNo", String(pageNo));
     p.set("numOfRows", String(rows));
     p.set("sortSpec", "AD");
