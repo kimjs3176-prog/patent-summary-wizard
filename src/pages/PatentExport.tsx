@@ -58,9 +58,10 @@ function SegmentedDate({ value, onChange }: { value: string; onChange: (v: strin
       d = `0${d}`;
       advance = true;
     }
-    // 13월, 32일 등 불가능한 값은 마지막 입력을 무시
+    // 13월, 32일 등 불가능한 값은 마지막 입력을 무시하고 다음 칸으로 넘어가지 않음
     if (d.length === SEG_MAX[i] && ((i === 1 && Number(d) > 12) || (i === 2 && Number(d) > 31))) {
       d = d.slice(0, -1);
+      advance = false;
     }
     const next = [...seg];
     next[i] = d;
