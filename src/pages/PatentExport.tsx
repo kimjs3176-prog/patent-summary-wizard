@@ -99,7 +99,7 @@ export default function PatentExport() {
       const seen = new Set<string>();
       const uniq = all.filter((i) => (seen.has(i.applicationNumber) ? false : (seen.add(i.applicationNumber), true)));
       setItems(uniq);
-      toast.success(`${uniq.length.toLocaleString()}건을 불러왔습니다.`);
+      toast.success(`특허 ${uniq.length.toLocaleString()}건${tms.length > 0 ? `, 상표 ${tms.length.toLocaleString()}건` : ""}을 불러왔습니다.`);
     } catch (e) {
       setItems(all);
       toast.error(e instanceof Error ? e.message : "조회 중 오류가 발생했습니다.");
@@ -108,11 +108,12 @@ export default function PatentExport() {
     }
   };
 
-  const toRows = () =>
-    items.map((i, idx) => {
+  const toRows = () => {
+    const patentRows = items.map((i, idx) => {
       const num = i.registrationNumber ? dash(i.registrationNumber) : dash(i.applicationNumber);
       return {
         번호: idx + 1,
+        구분: "특허/실용신안",
         출원번호: dash(i.applicationNumber),
         등록번호: i.registrationNumber ? dash(i.registrationNumber) : "",
         발명의명칭: i.title,
