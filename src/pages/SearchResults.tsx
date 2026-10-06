@@ -15,7 +15,6 @@ export default function SearchResults() {
   const navigate = useNavigate();
   const keyword = searchParams.get("keyword") || "";
   const [results, setResults] = useState<KeywordSearchResult[]>([]);
-  const [trademarks, setTrademarks] = useState<KeywordSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
