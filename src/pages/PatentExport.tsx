@@ -22,6 +22,11 @@ interface Item {
   org?: string;
 }
 
+interface TmItem {
+  applicationNumber: string; registrationNumber: string; title: string; applicationDate: string;
+  registerDate: string; status: string; applicant: string; drawing: string; org?: string;
+}
+
 const dash = (n: string) => {
   const c = (n || "").replace(/\D/g, "");
   if (c.length === 13) return `${c.slice(0, 2)}-${c.slice(2, 6)}-${c.slice(6)}`;
@@ -36,6 +41,8 @@ export default function PatentExport() {
   const [inventor, setInventor] = useState("");
   const [status, setStatus] = useState("all");
   const [items, setItems] = useState<Item[]>([]);
+  const [tmKeyword, setTmKeyword] = useState("");
+  const [trademarks, setTrademarks] = useState<TmItem[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [running, setRunning] = useState(false);
   const cancel = useRef(false);
