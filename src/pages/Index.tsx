@@ -1,4 +1,4 @@
-import { Heart, RotateCcw, BarChart3, Layers } from "lucide-react";
+import { Heart, RotateCcw, BarChart3, Layers, FileSpreadsheet } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
