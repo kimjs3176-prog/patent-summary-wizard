@@ -66,7 +66,7 @@ export default function PatentExport() {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: tmKeyword, withInventors: true, ipType }),
+      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: ipType === "design" || ipType === "trademark" ? tmKeyword : undefined, withInventors: true, ipType }),
       timeoutMs: 45000, retries: 2,
     });
     const data = await res.json();
@@ -250,17 +250,17 @@ export default function PatentExport() {
               <div className="text-sm font-semibold">발명자</div>
               <Input value={inventor} onChange={(e) => setInventor(e.target.value)} placeholder="예: 홍길동 (비우면 전체)" maxLength={50} />
             </div>
-            <div className="space-y-2">
-              <div className="text-sm font-semibold">
-                {ipType === "design" ? "디자인 물품명 (필수)" : ipType === "trademark" ? "상표명 (필수)" : "상표명 (선택)"}
+            {(ipType === "design" || ipType === "trademark") && (
+              <div className="space-y-2">
+                <div className="text-sm font-semibold">{ipType === "design" ? "디자인 물품명 (필수)" : "상표명 (필수)"}</div>
+                <Input
+                  value={tmKeyword}
+                  onChange={(e) => setTmKeyword(e.target.value)}
+                  placeholder={ipType === "design" ? "예: 포장용기" : "예: 설향"}
+                  maxLength={50}
+                />
               </div>
-              <Input
-                value={tmKeyword}
-                onChange={(e) => setTmKeyword(e.target.value)}
-                placeholder={ipType === "design" ? "예: 포장용기" : ipType === "trademark" ? "예: 설향" : "입력하면 해당 기관 보유 상표도 함께 담습니다"}
-                maxLength={50}
-              />
-            </div>
+            )}
             <div className="space-y-2">
               <div className="text-sm font-semibold">등록상태</div>
               <div className="flex flex-wrap gap-1.5">
