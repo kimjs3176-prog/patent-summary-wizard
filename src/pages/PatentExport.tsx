@@ -208,7 +208,7 @@ export default function PatentExport() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <div className="text-sm font-semibold">출원 기간</div>
               <div className="flex items-center gap-2">
@@ -253,10 +253,10 @@ export default function PatentExport() {
                 <Search className="w-4 h-4" /> 목록 불러오기
               </Button>
             )}
-            <Button variant="outline" className="rounded-xl gap-2" onClick={downloadXlsx} disabled={running || items.length === 0}>
+            <Button variant="outline" className="rounded-xl gap-2" onClick={downloadXlsx} disabled={running || (items.length === 0 && trademarks.length === 0)}>
               <Download className="w-4 h-4" /> 엑셀 받기
             </Button>
-            <Button variant="outline" className="rounded-xl gap-2" onClick={downloadCsv} disabled={running || items.length === 0}>
+            <Button variant="outline" className="rounded-xl gap-2" onClick={downloadCsv} disabled={running || (items.length === 0 && trademarks.length === 0)}>
               <Download className="w-4 h-4" /> CSV 받기
             </Button>
             {progress && (
