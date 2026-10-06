@@ -205,6 +205,11 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
       return;
     }
     if (!ip.supported) {
+      if (ip.kind === "trademark") {
+        // 상표 번호는 키워드 검색으로 라우팅해 관련 상표 목록을 보여준다
+        handleKeywordSearch(ip.normalized);
+        return;
+      }
       toast.error(`${IP_KIND_LABEL[ip.kind]} 번호는 지원하지 않습니다. 특허·실용신안 번호를 입력해 주세요.`);
       return;
     }
