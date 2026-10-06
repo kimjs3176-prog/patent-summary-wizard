@@ -42,6 +42,71 @@ const IP_TYPES = [
   { v: "trademark", l: "상표" },
 ];
 
+const SEG_MAX = [4, 2, 2];
+
+/** YYYY-MM-DD segmented date input — 자릿수가 채워지면 다음 칸으로 커서가 자동 이동 */
+function SegmentedDate({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const [seg, setSeg] = useState<[string, string, string]>(m ? [m[1], m[2], m[3]] : ["", "", ""]);
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const setSegAt = (i: number, raw: string) => {
+    let d = raw.replace(/\D/g, "").slice(0, SEG_MAX[i]);
+    let advance = d.length === SEG_MAX[i];
+    // 월 2~9 → "0x", 일 4~9 → "0x" 로 채우고 즉시 다음 칸으로
+    if ((i === 1 || i === 2) && d.length === 1 && Number(d) >= (i === 1 ? 2 : 4)) {
+      d = `0${d}`;
+      advance = true;
+    }
+    const next = [...seg];
+    next[i] = d;
+    setSeg(next as [string, string, string]);
+    if (next.every((s, j) => s.length === SEG_MAX[j])) {
+      onChange(`${next[0]}-${next[1]}-${next[2]}`);
+    } else if (value !== "") {
+      onChange("");
+    }
+    if (advance && i < 2) refs.current[i + 1]?.focus();
+  };
+
+  const onKey = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && seg[i] === "" && i > 0) {
+      e.preventDefault();
+      const prev = [...seg];
+      prev[i - 1] = prev[i - 1].slice(0, -1);
+      setSeg(prev as [string, string, string]);
+      if (value !== "") onChange("");
+      refs.current[i - 1]?.focus();
+    }
+  };
+
+  const cls = (w: string) => `${w} px-1 text-center tabular-nums`;
+  return (
+    <div className="flex items-center gap-1 min-w-0">
+      <Input
+        ref={(el) => (refs.current[0] = el)}
+        inputMode="numeric" placeholder="YYYY" maxLength={4}
+        className={cls("w-16 shrink-0")} value={seg[0]}
+        onChange={(e) => setSegAt(0, e.target.value)} onKeyDown={(e) => onKey(0, e)}
+      />
+      <span className="text-muted-foreground">-</span>
+      <Input
+        ref={(el) => (refs.current[1] = el)}
+        inputMode="numeric" placeholder="MM" maxLength={2}
+        className={cls("w-11 shrink-0")} value={seg[1]}
+        onChange={(e) => setSegAt(1, e.target.value)} onKeyDown={(e) => onKey(1, e)}
+      />
+      <span className="text-muted-foreground">-</span>
+      <Input
+        ref={(el) => (refs.current[2] = el)}
+        inputMode="numeric" placeholder="DD" maxLength={2}
+        className={cls("w-11 shrink-0")} value={seg[2]}
+        onChange={(e) => setSegAt(2, e.target.value)} onKeyDown={(e) => onKey(2, e)}
+      />
+    </div>
+  );
+}
+
 export default function PatentExport() {
   const [orgs, setOrgs] = useState<string[]>(["농촌진흥청"]);
   const [ipType, setIpType] = useState("all");
