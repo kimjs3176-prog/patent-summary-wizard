@@ -119,6 +119,36 @@ export type Database = {
         }
         Relationships: []
       }
+      market_reference: {
+        Row: {
+          base_value_eok: number
+          base_year: number
+          cagr: number
+          created_at: string
+          label: string
+          market_key: string
+          source: string | null
+        }
+        Insert: {
+          base_value_eok: number
+          base_year: number
+          cagr: number
+          created_at?: string
+          label: string
+          market_key: string
+          source?: string | null
+        }
+        Update: {
+          base_value_eok?: number
+          base_year?: number
+          cagr?: number
+          created_at?: string
+          label?: string
+          market_key?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
       notices: {
         Row: {
           content: string | null

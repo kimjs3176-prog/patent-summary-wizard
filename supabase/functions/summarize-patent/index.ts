@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { applyMarketRef, claimToRef, extractMarketClaim, type MarketRef } from "./marketConsistency.ts";
 
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
@@ -128,6 +129,36 @@ interface PatentData {
   applicationNumber?: string;
   classifications?: string[];
   description?: string;
+}
+
+// 같은 국내 시장은 항상 같은 기준값·CAGR·2026년 값으로 표기되도록 표준값 테이블로 통일한다.
+async function unifyMarketFigures(content: string): Promise<string> {
+  const secRe = /(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/;
+  const m = content.match(secRe);
+  if (!m) return content;
+  const claim = extractMarketClaim(m[2]);
+  if (!claim) return content;
+  try {
+    const supabase = supabaseAdmin();
+    const { data: existing } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
+    let ref = existing as MarketRef | null;
+    if (!ref) {
+      const fresh = claimToRef(claim);
+      if (!fresh) return content;
+      const { error } = await supabase.from("market_reference").insert(fresh);
+      if (error) {
+        // 동시에 다른 요청이 먼저 저장했으면 그 값을 사용
+        const { data: again } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
+        ref = (again as MarketRef | null) ?? fresh;
+      } else ref = fresh;
+      console.log(`[MARKET-REF] registered ${claim.key} ${claim.baseYear} ${claim.baseEok}억 CAGR ${claim.cagr}%`);
+    }
+    const fixed = applyMarketRef(m[2], { ...ref, base_value_eok: Number(ref.base_value_eok), cagr: Number(ref.cagr) });
+    return content.replace(secRe, (_x, h) => h + fixed);
+  } catch (e) {
+    console.error("[MARKET-REF] error", e);
+    return content;
+  }
 }
 
 function hasRequiredMarketFigures(content: string): boolean {
@@ -342,7 +373,7 @@ serve(async (req) => {
 
       if (cached?.summary_content && (cached.cache_version || "v1") === SUMMARY_CACHE_VERSION) {
         console.log(`[CACHE HIT] ${trimmedPatent}`);
-        const content = stripDurationFromCommercialization(cached.summary_content);
+        const content = await unifyMarketFigures(stripDurationFromCommercialization(cached.summary_content));
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
@@ -600,6 +631,7 @@ serve(async (req) => {
           fullContent = mergeMarketParagraphs(fullContent);
           fullContent = inlineMarketCitations(fullContent);
            fullContent = stripDurationFromCommercialization(fullContent);
+          fullContent = await unifyMarketFigures(fullContent);
           if (fullContent !== raw.trim()) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent })}\n\n`));
           }
