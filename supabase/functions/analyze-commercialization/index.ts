@@ -784,6 +784,17 @@ JSON형식:
       }
     }
 
+    // ▼ TRL ↔ 요약서 기술완성도 서술 정합성 보정 (V-RAY 계산 전에 적용)
+    let trlReasonNeedsRewrite = false;
+    {
+      const r = reconcileTrl(Number(scores.trl) || 5, summaryText);
+      if (r.changed) {
+        console.log(`[TRL-CONSISTENCY] ${trimmedPatent} trl ${scores.trl} -> ${r.trl} (summary stage=${r.band?.label})`);
+        scores.trl = r.trl;
+        trlReasonNeedsRewrite = true;
+      }
+    }
+
     // 점수-근거 정합성 보정: 근거 텍스트가 강한 긍정인데 점수가 낮으면 끌어올림
     // ▼ V-RAY 간이 기술가치평가 모델 기반 사업성 보정 (결정론적)
     {
