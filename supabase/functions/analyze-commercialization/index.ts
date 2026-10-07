@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { reconcileTrl } from "./trlConsistency.ts";
 
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
@@ -412,6 +413,17 @@ serve(async (req) => {
             trl: cached.trl ?? 5,
           };
         } else {
+        // 캐시된 TRL도 이번 요약서 서술과 어긋나면 보정 후 캐시 갱신
+        const cachedSummary = typeof summaryContent === "string" ? summaryContent : "";
+        const rc = reconcileTrl(cached.trl ?? 5, cachedSummary);
+        if (rc.changed) {
+          console.log(`[TRL-CONSISTENCY][cache] ${trimmedPatent} trl ${cached.trl} -> ${rc.trl} (stage=${rc.band?.label})`);
+          cached.trl = rc.trl;
+          cached.trl_reason = makeTrlFallback(rc.trl);
+          try {
+            await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason }).eq("patent_number", cached.patent_number);
+          } catch (_) { /* ignore */ }
+        }
         return new Response(
           JSON.stringify({
             success: true,
@@ -625,6 +637,7 @@ technologyReason 작성 규칙(매우 중요):
 - **[엄격 금지]** 코멘트 안에 점수 숫자(예: 72점, 80점), 점수대 표현("70점대", "80점대로 평가된다", "~점이다", "~점으로 산출된다")을 절대 사용하지 말 것. 점수는 별도 숫자 필드로만 노출하고 텍스트에는 정성 표현만 사용.
 - 정확히 2문장. 마지막은 반드시 "다."로 종료.
 
+TRL-요약서 정합성(필수): [AI 요약서 본문]의 상용화전망에 서술된 기술완성도와 TRL이 반드시 일치해야 한다. 실험실 수준=TRL 3~4, 파일럿·시작품·실증=TRL 5~6, 양산준비·즉시 구현=TRL 7~9. 서술과 다른 단계의 TRL을 내지 말 것.
 trlReason 작성 규칙(매우 중요):
 - 정확히 1문장(${trlMin}~${trlMax}자). 아래 흐름을 한 문장에 자연스럽게 녹일 것:
   "[본문에서 확인된 검증 단계 근거] → 따라서 TRL n으로 판단되며 → [상위 단계 진입에 필요한 추가 근거 한 가지]."
@@ -889,7 +902,14 @@ JSON형식:
     scores.technologyReason = normalizeReason(scores.technologyReason, techFallback);
     scores.marketReason = normalizeReason(scores.marketReason, marketFallback);
     scores.businessReason = normalizeReason(scores.businessReason, businessFallback);
-    scores.trlReason = ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
+    scores.trlReason = trlReasonNeedsRewrite
+      ? makeTrlFallback(normalizedTrl)
+      : ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
+    // trlReason 안의 TRL 숫자가 최종 TRL과 다르면 근거문을 재작성
+    {
+      const nums = [...String(scores.trlReason || "").matchAll(/TRL\s*(\d)/g)].map((m) => Number(m[1]));
+      if (nums.some((n) => n !== normalizedTrl)) scores.trlReason = makeTrlFallback(normalizedTrl);
+    }
     scores.analysis = normalizeAnalysis(scores.analysis, makeAnalysisFallback(scores));
 
     // TRL 언급은 trlReason에서만 노출
@@ -908,7 +928,11 @@ JSON형식:
       scores.technologyScore = lockedScores.technologyScore;
       scores.marketScore = lockedScores.marketScore;
       scores.businessScore = lockedScores.businessScore;
-      scores.trl = lockedScores.trl;
+      const r = reconcileTrl(lockedScores.trl, summaryText);
+      scores.trl = r.trl;
+      if (r.changed || !new RegExp(`TRL\\s*${r.trl}(?!\\d)`).test(scores.trlReason || "")) {
+        scores.trlReason = makeTrlFallback(r.trl);
+      }
     }
 
     // Save to cache
