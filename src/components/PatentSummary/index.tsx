@@ -21,6 +21,7 @@ import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
+import { normalizeCommercializationProse } from "@/lib/summaryProse";
 
 // Plain sanitizer — highlight feature removed. Strips ** markdown bold.
 function sanitizeBoldMarkers(text: string): string {
