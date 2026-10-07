@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { PatentData } from "./types";
+import { normalizeCommercializationProse } from "@/lib/summaryProse";
 
 interface PrintableContentProps {
   content: string;
@@ -11,7 +12,7 @@ interface PrintableContentProps {
 export const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps>(
   ({ content, patentNumber, patentData, printSections }, ref) => {
     const renderMarkdown = (text: string) => {
-      const lines = text.split("\n");
+      const lines = normalizeCommercializationProse(text).split("\n");
       const elements: JSX.Element[] = [];
 
       lines.forEach((line, index) => {

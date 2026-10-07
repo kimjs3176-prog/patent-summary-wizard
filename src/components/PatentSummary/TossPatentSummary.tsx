@@ -24,6 +24,7 @@ import { ImageLightbox } from "./ImageLightbox";
 import { useGovtPatent, GovtPatentBadges } from "./GovtPatentInfo";
 import { useRegisterOwner, isDifferentOwner } from "./useRegisterOwner";
 import { SummaryReadyProvider, useSummaryPending } from "./summaryReady";
+import { normalizeCommercializationProse } from "@/lib/summaryProse";
 
 // 중요도 볼드(**...**) + 학명 이탤릭(*..*) 렌더러
 function renderBold(text: string): React.ReactNode {
@@ -328,7 +329,7 @@ interface MdSection {
 }
 function parseSections(md: string): MdSection[] {
   if (!md) return [];
-  const lines = md.split("\n");
+  const lines = normalizeCommercializationProse(md).split("\n");
   const sections: MdSection[] = [];
   let cur: MdSection | null = null;
   let buf = "";

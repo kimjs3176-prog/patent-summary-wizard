@@ -21,6 +21,7 @@ import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
+import { normalizeCommercializationProse } from "@/lib/summaryProse";
 
 // Plain sanitizer — highlight feature removed. Strips ** markdown bold.
 function sanitizeBoldMarkers(text: string): string {
@@ -206,6 +207,7 @@ export function PatentSummary({
   };
 
   const renderMarkdown = (text: string): { body: JSX.Element[]; footnotes: { num: string; text: string }[] } => {
+    text = normalizeCommercializationProse(text);
     // Sanitize AI-generated bolds so awkward josa/connectives don't end up bolded.
     text = sanitizeBoldMarkers(text);
     // Pre-process: strip trailing source/reference sections that have no real body content
