@@ -80,6 +80,16 @@ export function applyMarketRef(section: string, ref: MarketRef): string {
   return out;
 }
 
+/** anchor(기준 금액) 뒤 첫 문장 끝 앞에 출처 괄호를 넣는다. */
+export function addSourceNote(section: string, anchor: string, note: string): string {
+  const i = section.indexOf(anchor);
+  if (i < 0) return section;
+  const end = section.slice(i).search(/[.。](\s|$)/);
+  if (end < 0) return section;
+  const pos = i + end;
+  return section.slice(0, pos) + ` ${note}` + section.slice(pos);
+}
+
 export function claimToRef(c: MarketClaim): MarketRef | null {
   if (c.cagr == null || c.cagr <= 0 || c.cagr > 60) return null;
   return { market_key: c.key, label: c.label, base_year: c.baseYear, base_value_eok: c.baseEok, cagr: c.cagr };
