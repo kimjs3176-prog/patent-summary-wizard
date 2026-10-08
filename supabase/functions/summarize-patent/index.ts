@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { applyMarketRef, claimToRef, extractMarketClaim, type MarketRef } from "./marketConsistency.ts";
+import { addSourceNote, applyMarketRef, claimToRef, extractMarketClaim, formatKrwEok, type MarketRef } from "./marketConsistency.ts";
+import { fetchKosisRef, findSeries } from "./kosis.ts";
 
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
@@ -141,7 +142,20 @@ async function unifyMarketFigures(content: string): Promise<string> {
   try {
     const supabase = supabaseAdmin();
     const { data: existing } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
-    let ref = existing as MarketRef | null;
+    let ref = existing as (MarketRef & { created_at?: string }) | null;
+    // 국가통계(KOSIS)에 등록된 시장이면 공식 통계값을 우선 사용(30일마다 갱신)
+    const series = findSeries(claim.key);
+    const kosisKey = Deno.env.get("KOSIS_SERVICE_KEY");
+    const stale = !ref || !String(ref.source || "").startsWith("KOSIS") ||
+      (ref.created_at && Date.now() - new Date(ref.created_at).getTime() > 30 * 86400_000);
+    if (series && kosisKey && stale) {
+      const official = await fetchKosisRef(claim.key, series, kosisKey);
+      if (official) {
+        await supabase.from("market_reference").upsert({ ...official, created_at: new Date().toISOString() }, { onConflict: "market_key" });
+        ref = official;
+        console.log(`[MARKET-REF] KOSIS ${claim.key} ${official.base_year} ${official.base_value_eok}억 CAGR ${official.cagr}%`);
+      }
+    }
     if (!ref) {
       const fresh = claimToRef(claim);
       if (!fresh) return content;
@@ -153,7 +167,11 @@ async function unifyMarketFigures(content: string): Promise<string> {
       } else ref = fresh;
       console.log(`[MARKET-REF] registered ${claim.key} ${claim.baseYear} ${claim.baseEok}억 CAGR ${claim.cagr}%`);
     }
-    const fixed = applyMarketRef(m[2], { ...ref, base_value_eok: Number(ref.base_value_eok), cagr: Number(ref.cagr) });
+    const norm = { ...ref, base_value_eok: Number(ref.base_value_eok), cagr: Number(ref.cagr) };
+    let fixed = applyMarketRef(m[2], norm);
+    if (String(ref.source || "").startsWith("KOSIS") && !fixed.includes("KOSIS")) {
+      fixed = addSourceNote(fixed, `${formatKrwEok(norm.base_value_eok)}`, `(출처: ${ref.source}, ${norm.base_year}년 기준)`);
+    }
     return content.replace(secRe, (_x, h) => h + fixed);
   } catch (e) {
     console.error("[MARKET-REF] error", e);
