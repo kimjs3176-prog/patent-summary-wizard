@@ -46,7 +46,7 @@ export function refFromSeries(points: { year: number; eok: number }[]): { baseYe
 
 export async function fetchKosisRef(key: string, s: KosisSeries, serviceKey: string): Promise<MarketRef | null> {
   const url = `https://apis.data.go.kr/1240000/statisticsData/getStatisticsData?serviceKey=${serviceKey}` +
-    `&orgId=${s.orgId}&tblId=${s.tblId}&itmId=${s.itmId}&objL1=ALL&prdSe=Y&newEstPrdCnt=6&format=json&jsonVD=Y&numOfRows=500`;
+    `&orgId=${s.orgId}&tblId=${s.tblId}&itmId=${s.itmId}&objL1=ALL${s.c2Name ? "&objL2=ALL" : ""}&prdSe=Y&newEstPrdCnt=6&format=json&jsonVD=Y&numOfRows=500`;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8000);
   try {
