@@ -72,8 +72,11 @@ export function applyMarketRef(section: string, ref: MarketRef): string {
   let out = section.slice(0, start) + claim + section.slice(start + m[0].length);
   // CAGR: 기준값 이후 첫 연평균 표기
   const afterIdx = start + claim.length;
-  const tail = out.slice(afterIdx).replace(CAGR_RE, (_s, a, b) => `${a}${b}${ref.cagr}%`);
-  out = out.slice(0, afterIdx) + tail;
+  // 글로벌 시장 문장의 CAGR은 건드리지 않도록 '글로벌/세계' 언급 전까지만 교체
+  const rest = out.slice(afterIdx);
+  const gi = rest.search(/글로벌|세계/);
+  const head = gi < 0 ? rest : rest.slice(0, gi);
+  out = out.slice(0, afterIdx) + head.replace(CAGR_RE, (_s, a, b) => `${a}${b}${ref.cagr}%`) + rest.slice(head.length);
   // 국내 원화 기준 2026년 값은 복리 공식으로 재계산 (USD 문장은 원화 패턴이 아니므로 영향 없음)
   const projected = formatKrwEok(projectEok(ref.base_value_eok, ref.cagr, ref.base_year));
   out = out.replace(TARGET_RE, (_s, pre, _amt, won) => `${pre}${projected}${won}`);
