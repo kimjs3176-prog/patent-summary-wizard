@@ -8,6 +8,11 @@ describe("국가통계 시장 표준값", () => {
     expect(findSeries("국내홍삼시장")?.c1Name).toBe("홍삼");
     expect(findSeries("국내스마트팜시장")).toBeNull();
   });
+  it("쌀가공식품·떡 시장은 실태조사 표에 연결된다", () => {
+    expect(findSeries("국내쌀가공식품시장")).toMatchObject({ tblId: "DT_446001_A024", c2Name: "총계" });
+    expect(findSeries("국내떡시장")).toMatchObject({ tblId: "DT_446001_A024", c2Name: "전통떡" });
+    expect(findSeries("국내쌀시장")).toBeNull();
+  });
   it("최근 연도 값과 5년 CAGR을 계산한다", () => {
     const r = refFromSeries([
       { year: 2019, eok: 29508 }, { year: 2020, eok: 33254 }, { year: 2021, eok: 40321 },

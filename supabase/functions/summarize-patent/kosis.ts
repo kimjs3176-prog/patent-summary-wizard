@@ -9,17 +9,23 @@ export interface KosisSeries {
   tblId: string;
   itmId: string;
   c1Name: string;         // 분류값 이름 (예: "계")
+  c2Name?: string;        // 두 번째 분류값 이름 (있는 표만)
   unitToEok: number;      // 원 단위 값 → 억 원 배수
   source: string;
 }
 
 const HFF = { orgId: "145", tblId: "DT_145010_009", itmId: "T001", unitToEok: 1 / 100000 }; // 천원 → 억원
 const HFF_SRC = "KOSIS 국가통계포털, 식품의약품안전처 「건강기능식품 매출액」";
+// 쌀가공식품제조업 실태조사: 품목별 매출액 총계 (백만원 → 억원)
+const RICE = { orgId: "466", tblId: "DT_446001_A024", itmId: "T002", unitToEok: 1 / 100 };
+const RICE_SRC = "KOSIS 국가통계포털, 농림축산식품부 「쌀가공식품제조업 실태조사」";
 
 export const KOSIS_SERIES: KosisSeries[] = [
   { match: /^국내홍삼(건강기능식품)?시장$/, label: "국내 홍삼 건강기능식품 시장", c1Name: "홍삼", source: HFF_SRC, ...HFF },
   { match: /^국내프로바이오틱스(건강기능식품)?시장$/, label: "국내 프로바이오틱스 시장", c1Name: "프로바이오틱스", source: HFF_SRC, ...HFF },
   { match: /^국내(기능성)?건강기능식품시장$/, label: "국내 건강기능식품 시장", c1Name: "계", source: HFF_SRC, ...HFF },
+  { match: /^국내쌀가공(식품)?시장$/, label: "국내 쌀가공식품 시장", c1Name: "전체", c2Name: "총계", source: RICE_SRC, ...RICE },
+  { match: /^국내(전통)?떡(시장|산업)$/, label: "국내 떡 시장", c1Name: "전체", c2Name: "전통떡", source: RICE_SRC, ...RICE },
 ];
 
 export function findSeries(key: string): KosisSeries | null {
@@ -40,7 +46,7 @@ export function refFromSeries(points: { year: number; eok: number }[]): { baseYe
 
 export async function fetchKosisRef(key: string, s: KosisSeries, serviceKey: string): Promise<MarketRef | null> {
   const url = `https://apis.data.go.kr/1240000/statisticsData/getStatisticsData?serviceKey=${serviceKey}` +
-    `&orgId=${s.orgId}&tblId=${s.tblId}&itmId=${s.itmId}&objL1=ALL&prdSe=Y&newEstPrdCnt=6&format=json&jsonVD=Y&numOfRows=500`;
+    `&orgId=${s.orgId}&tblId=${s.tblId}&itmId=${s.itmId}&objL1=ALL${s.c2Name ? "&objL2=ALL" : ""}&prdSe=Y&newEstPrdCnt=6&format=json&jsonVD=Y&numOfRows=500`;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8000);
   try {
@@ -50,7 +56,7 @@ export async function fetchKosisRef(key: string, s: KosisSeries, serviceKey: str
     const raw = json?.response?.body?.items?.item;
     const items: any[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
     const points = items
-      .filter((i) => i.C1_NM === s.c1Name && i.ITM_ID === s.itmId)
+      .filter((i) => i.C1_NM === s.c1Name && i.ITM_ID === s.itmId && (!s.c2Name || (i.C2_NM ?? "").trim() === s.c2Name))
       .map((i) => ({ year: Number(i.PRD_DE), eok: Number(i.DT) * s.unitToEok }));
     const r = refFromSeries(points);
     if (!r) return null;
