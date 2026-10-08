@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { addSourceNote, applyMarketRef, claimToRef, extractMarketClaim, formatKrwEok, type MarketRef } from "./marketConsistency.ts";
+import { addSourceNote, applyGlobalRef, applyMarketRef, claimToRef, extractGlobalClaim, extractMarketClaim, formatKrwEok, formatUsdEok, type MarketRef } from "./marketConsistency.ts";
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 
 
@@ -134,6 +134,10 @@ interface PatentData {
 
 // 같은 국내 시장은 항상 같은 기준값·CAGR·2026년 값으로 표기되도록 표준값 테이블로 통일한다.
 async function unifyMarketFigures(content: string): Promise<string> {
+  return unifyGlobalFigures(await unifyDomesticFigures(content));
+}
+
+async function unifyDomesticFigures(content: string): Promise<string> {
   const secRe = /(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/;
   const m = content.match(secRe);
   if (!m) return content;
@@ -176,6 +180,52 @@ async function unifyMarketFigures(content: string): Promise<string> {
   } catch (e) {
     console.error("[MARKET-REF] error", e);
     return content;
+  }
+}
+
+// 글로벌(USD) 시장도 처음 저장된 기준값·CAGR로 고정한다.
+async function unifyGlobalFigures(content: string): Promise<string> {
+  const secRe = /(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/;
+  const m = content.match(secRe);
+  if (!m) return content;
+  const claim = extractGlobalClaim(m[2]);
+  if (!claim) return content;
+  try {
+    const supabase = supabaseAdmin();
+    const { data: existing } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
+    let ref = existing as MarketRef | null;
+    if (!ref) {
+      const fresh = claimToRef(claim);
+      if (!fresh) return content;
+      const { error } = await supabase.from("market_reference").insert({ ...fresh, source: "USD" });
+      if (error) {
+        const { data: again } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
+        ref = (again as MarketRef | null) ?? fresh;
+      } else ref = fresh;
+      console.log(`[MARKET-REF] registered ${claim.key} ${claim.baseYear} USD ${claim.baseEok}억 CAGR ${claim.cagr}%`);
+    }
+    const fixed = applyGlobalRef(m[2], { ...ref, base_value_eok: Number(ref.base_value_eok), cagr: Number(ref.cagr) });
+    return content.replace(secRe, (_x, h) => h + fixed);
+  } catch (e) {
+    console.error("[MARKET-REF] global error", e);
+    return content;
+  }
+}
+
+// 이미 저장된 표준 시장값을 AI에게 미리 알려 처음부터 같은 시장명·수치를 쓰게 한다.
+async function loadMarketRefInstruction(): Promise<string> {
+  try {
+    const { data } = await supabaseAdmin().from("market_reference").select("label, market_key, base_year, base_value_eok, cagr, source").order("market_key").limit(150);
+    if (!data?.length) return "";
+    const lines = data.map((r: any) => {
+      const usd = String(r.market_key).startsWith("글로벌");
+      const amt = usd ? formatUsdEok(Number(r.base_value_eok)) : `${formatKrwEok(Number(r.base_value_eok))} 원`;
+      const src = r.source && r.source !== "USD" ? ` (출처: ${r.source})` : "";
+      return `- ${r.label}: ${r.base_year}년 ${amt}, 연평균 ${Number(r.cagr)}%${src}`;
+    });
+    return `\n\n[표준 시장값 — 최우선 준수]\n아래는 이미 확정된 시장 표준값이다. 이 특허의 상위 시장이 아래 목록 중 하나에 해당하면 시장명을 목록과 똑같이 쓰고, 기준연도·규모·연평균 성장률·출처를 그대로 사용한다. 비슷한 이름의 새 시장을 만들지 말고 가장 가까운 목록 시장을 우선 선택한다. 목록에 없는 시장만 새로 산출한다.\n${lines.join("\n")}`;
+  } catch {
+    return "";
   }
 }
 
@@ -477,7 +527,7 @@ serve(async (req) => {
     }
 
     const lengthInstruction = `\n\n[섹션 분량 규칙 — 최우선 준수]\n- 모든 ## 섹션은 ${uniformMin}~${uniformMax}문장(섹션당 약 400~700자)으로 충실하게 작성한다. 절대 ${uniformMin}문장 미만으로 줄이지 않는다.\n- "관련시장 동향" 섹션은 시장규모(KRW/USD)·CAGR·경쟁기술·정책 동향을 모두 다뤄야 하므로 분량이 부족하지 않도록 충분히 확보한다.\n- "상용화전망" 섹션은 최소 ${Math.max(8, uniformMin)}문장(약 600~800자)으로, 다른 섹션보다 짧지 않게 작성한다.\n- 섹션 간 글자 수 편차는 ±30% 이내로 맞추되, "균일화"를 이유로 정보를 누락하거나 핵심 수치를 생략하지 않는다.\n- "압축", "간결" 지시는 군더더기 제거를 의미할 뿐이며 핵심 정보(시장규모·CAGR·구체적 수치·고유명사)는 반드시 포함한다.`;
-    const sectionLengthInstruction = "";
+    const sectionLengthInstruction = await loadMarketRefInstruction();
 
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터만으로 5개 섹션 보고서를 작성한다.
 사용 섹션은 정확히 다음 5개이며 순서를 지킨다: ## 기술분야 / ## 발명요약 및 특징 / ## 관련시장 동향 / ## 농산업활용 가능성 / ## 상용화전망. 다른 ## 섹션 추가 금지, "특허 기본 정보"·헤더·작성일 금지.
