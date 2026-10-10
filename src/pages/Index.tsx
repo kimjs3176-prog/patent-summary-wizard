@@ -21,6 +21,7 @@ import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
 import { NoticeSection } from "@/components/NoticeSection";
 import { PotentialTechBanner } from "@/components/PotentialTechBanner";
+import { HomeSearchHero } from "@/components/HomeSearchHero";
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -121,25 +122,25 @@ const Index = () => {
   const headerRight = (
     <>
       <Link to="/insights">
-        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+        <Button aria-label="인사이트" title="인사이트" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <BarChart3 className="w-3 h-3 md:w-3.5 md:h-3.5" />
           <span className="hidden sm:inline">인사이트</span>
         </Button>
       </Link>
       <Link to="/batch">
-        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+        <Button aria-label="일괄조회" title="일괄조회" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <Layers className="w-3 h-3 md:w-3.5 md:h-3.5" />
           <span className="hidden sm:inline">일괄조회</span>
         </Button>
       </Link>
       <Link to="/export">
-        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+        <Button aria-label="목록 다운로드" title="목록 다운로드" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <FileSpreadsheet className="w-3 h-3 md:w-3.5 md:h-3.5" />
           <span className="hidden sm:inline">목록 다운로드</span>
         </Button>
       </Link>
       <Link to="/compare">
-        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+        <Button aria-label="관심특허" title="관심특허" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <Heart className="w-3 h-3 md:w-3.5 md:h-3.5" />
           <span className="hidden sm:inline">관심특허</span>{favorites.length > 0 ? ` (${favorites.length})` : ""}
         </Button>
@@ -173,149 +174,38 @@ const Index = () => {
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         {!summary && !isLoading ? (
           <>
-            {/* ── Mobile: 검색 중심의 간결한 레이아웃 ───────────────── */}
-            {isMobile ? (
-              <section className="-mx-3 sm:-mx-4 mb-5 animate-fade-down">
-                <div className="relative overflow-hidden px-5 pt-7 pb-6" style={{ background: "linear-gradient(180deg, #0a1727 0%, #0c1d31 100%)" }}>
-                  <div aria-hidden className="blueprint-grid absolute inset-0 opacity-60" />
-                  <div className="relative">
-                    <span className="font-mono text-[9.5px] tracking-[0.22em] uppercase" style={{ color: "hsl(158 55% 62%)" }}>
-                      AGRI-FOOD PATENT AI
-                    </span>
-                    <h1 className="mt-2 text-[26px] font-black leading-[1.12] tracking-[-0.035em]" style={{ color: "#eef4fb" }}>
-                      Agri IP <span style={{ color: "hsl(158 62% 60%)" }}>Summary</span>
-                    </h1>
-                    <p className="mt-1.5 text-[13px] font-medium" style={{ color: "hsl(158 62% 72%)" }}>
-                      농업기술 특허를 한눈에, AI로 쉽게
-                    </p>
-
-                    <div className="mt-4 rounded-xl bg-white p-1.5" style={{ boxShadow: "0 14px 30px -16px hsl(218 60% 4% / 0.85)" }}>
-                      <PatentInput
-                        onSubmit={handleSubmit}
-                        isLoading={isLoading}
-                        onKeywordSearch={handleKeywordSearch}
-                        placeholder={settings.search_placeholder}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
-            ) : (
-            <section className="blueprint-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-6 md:mb-9 animate-fade-down rounded-none md:rounded-2xl">
-              <div className="absolute inset-0 overflow-hidden rounded-none md:rounded-2xl">
-                <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #0a1727 0%, #0c1d31 100%)" }} />
-                <div aria-hidden className="blueprint-grid absolute inset-0" />
-                <div aria-hidden className="blueprint-sweep" />
-                {/* corner registration marks */}
-                <div aria-hidden className="bp-mark bp-mark-tl" />
-                <div aria-hidden className="bp-mark bp-mark-tr" />
-                <div aria-hidden className="bp-mark bp-mark-bl" />
-                <div aria-hidden className="bp-mark bp-mark-br" />
-              </div>
-
-              <div className="relative px-5 sm:px-10 md:px-14 py-9 md:py-14">
-                <div className="relative max-w-3xl mx-auto">
-                  {/* Draft slug line */}
-                  <div className="flex items-center gap-3 mb-5 md:mb-7">
-                    <span className="font-mono text-[10px] md:text-[11px] tracking-[0.22em] uppercase" style={{ color: "hsl(158 55% 62%)" }}>
-                      DOC / AGRI-FOOD PATENT ANALYSIS
-                    </span>
-                    <div className="flex-1 h-px" style={{ background: "hsl(200 40% 70% / 0.18)" }} />
-                    <span className="font-mono text-[10px] md:text-[11px] tracking-[0.16em]" style={{ color: "hsl(205 25% 58%)" }}>
-                      REV. 2026
-                    </span>
-                  </div>
-
-                  <h1 className="text-[30px] sm:text-[44px] md:text-[54px] font-black leading-[1.08] tracking-[-0.04em] mb-2 md:mb-3" style={{ color: "#eef4fb" }}>
-                    Agri IP
-                    <br />
-                    <span className="relative inline-block">
-                      <span style={{ color: "hsl(158 62% 60%)" }}>Summary</span>
-                      <span aria-hidden className="absolute left-0 -bottom-1 w-full h-px" style={{ background: "hsl(158 62% 60% / 0.5)" }} />
-                    </span>
-                    <span className="inline-block ml-1.5" aria-label="AIS">
-                      <span style={{ color: "#eef4fb" }}>(</span>
-                      {"AIS".split("").map((c, i) => (
-                        <span
-                          key={`ais-${i}`}
-                          className="inline-block animate-fade-in"
-                          style={{
-                            color: "hsl(158 62% 60%)",
-                            textShadow: "0 0 18px hsl(158 62% 60% / 0.45), 0 0 36px hsl(158 62% 60% / 0.25)",
-                            animationDelay: `${0.5 + i * 0.1}s`,
-                            animationFillMode: "both",
-                          }}
-                        >
-                          {c}
-                        </span>
-                      ))}
-                      <span style={{ color: "#eef4fb" }}>)</span>
-                    </span>
-                  </h1>
-
-                  <p className="text-base md:text-lg font-medium tracking-tight mb-4 md:mb-6" style={{ color: "hsl(158 62% 72%)" }}>
-                    농업기술 특허를 한눈에, AI로 쉽게
-                  </p>
-
-                  <p className="text-sm md:text-[15px] mb-6 md:mb-8 leading-relaxed max-w-xl" style={{ color: "hsl(205 22% 72%)" }}>
-                    {settings.hero_description}
-                  </p>
-
-                  <div className="max-w-2xl">
-                    <div className="relative bg-white rounded-xl p-1.5" style={{ boxShadow: "0 18px 40px -18px hsl(218 60% 4% / 0.8), 0 0 0 1px hsl(200 30% 70% / 0.25)" }}>
-                      <PatentInput
-                        onSubmit={handleSubmit}
-                        isLoading={isLoading}
-                        onKeywordSearch={handleKeywordSearch}
-                        placeholder={settings.search_placeholder}
-                        helperText={settings.search_helper_text}
-                        helperTexts={(() => { try { const t = JSON.parse(settings.search_helper_texts || "[]"); return Array.isArray(t) ? t.filter((s: string) => s.trim()) : []; } catch { return []; } })()}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Spec strip — tabulated, monospace */}
-                  <dl className="mt-6 md:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-px rounded-lg overflow-hidden" style={{ background: "hsl(200 40% 70% / 0.14)" }}>
-                    {[
-                      { k: "SOURCE", v: "농업분야 국가연구기관 보유 특허" },
-                      { k: "SYNC", v: "KIPRIS 실시간 연동" },
-                      { k: "ENGINE", v: "Gemini AI 분석" },
-                    ].map((it) => (
-                      <div key={it.k} className="px-3.5 py-3" style={{ background: "hsl(213 45% 11%)" }}>
-                        <dt className="font-mono text-[9.5px] tracking-[0.2em]" style={{ color: "hsl(158 45% 58%)" }}>{it.k}</dt>
-                        <dd className="text-[12px] md:text-[12.5px] mt-1 leading-snug" style={{ color: "hsl(205 25% 78%)" }}>{it.v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              </div>
-            </section>
-            )}
+            <HomeSearchHero
+              onSubmit={handleSubmit}
+              onKeywordSearch={handleKeywordSearch}
+              isLoading={isLoading}
+              description={settings.hero_description}
+              placeholder={settings.search_placeholder}
+            />
 
             {/* 잠재기술 무상기술이전 배너 */}
-            <section className="max-w-5xl mx-auto mb-5 md:mb-8 animate-fade-up" style={{ animationDelay: "0.12s" }}>
+            <section className="max-w-5xl mx-auto mb-5 md:mb-6 animate-fade-up" style={{ animationDelay: "0.12s" }}>
               <PotentialTechBanner />
             </section>
 
             {/* 주제별 빠른 탐색 */}
-            <section className="max-w-5xl mx-auto mb-5 md:mb-9 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+            <section className="max-w-5xl mx-auto mb-5 md:mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <KeywordExplorer />
             </section>
 
             {/* 세로 스크롤 단일 컬럼 — 공지·기록 → 추천특허 → 기술영상 → 기술이전 안내 */}
-            <div className="max-w-5xl mx-auto space-y-5 md:space-y-8 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+            <div className="max-w-5xl mx-auto space-y-6 md:space-y-7 animate-fade-up" style={{ animationDelay: "0.2s" }}>
               {(homepageVisible.notices !== false || (settings.feature_search_history !== "false" && history.length > 0)) && (
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 home-support-section">
                   {homepageVisible.notices !== false && (
-                    <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+                    <div className="min-w-0">
                       <NoticeSection compact />
                     </div>
                   )}
-                  <div className="rounded-2xl border border-border/40 bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+                  <div className="min-w-0">
                     <PopularSearches onPatentSelect={handleSubmit} />
                   </div>
                   {settings.feature_search_history !== "false" && history.length > 0 && (
-                    <div className="rounded-2xl border border-border/40 bg-card p-4 md:col-span-2" style={{ boxShadow: "var(--shadow-card)" }}>
+                    <div className="min-w-0 border-t border-border pt-5 md:col-span-2">
                       <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
                     </div>
                   )}
@@ -333,18 +223,18 @@ const Index = () => {
               )}
 
               {isMobile && !mobileMoreOpen && (homepageVisible.techVideos !== false || homepageVisible.techTransferGuide !== false) && (
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
                   onClick={() => setMobileMoreOpen(true)}
                   className="w-full rounded-2xl border border-border/50 bg-card py-3 text-[13px] font-semibold text-muted-foreground inline-flex items-center justify-center gap-1.5 btn-press"
                 >
                   기술영상 · 기술이전 안내 더보기
                   <ChevronDown className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               )}
 
               {(!isMobile || mobileMoreOpen) && homepageVisible.techVideos !== false && (
-                <section>
+                <section className="home-support-section">
                   <TechVideoSection videos={(() => {
                     try {
                       const parsed = JSON.parse(settings.tech_videos || "[]");
@@ -355,7 +245,7 @@ const Index = () => {
               )}
 
               {(!isMobile || mobileMoreOpen) && homepageVisible.techTransferGuide !== false && (
-                <section id="tech-transfer">
+                <section id="tech-transfer" className="home-support-section">
                   <TechTransferGuide />
                 </section>
               )}
