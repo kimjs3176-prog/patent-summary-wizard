@@ -1,36 +1,57 @@
 export const TECHNOLOGY_FIELDS = [
-  { id: "food", label: "식품·가공", keyword: "식품", tone: "food" },
-  { id: "bio", label: "바이오·생화학", keyword: "미생물", tone: "bio" },
-  { id: "breeding", label: "육종·품종", keyword: "육종", tone: "breeding" },
-  { id: "health", label: "의약·건강", keyword: "약학", tone: "health" },
+  { id: "food", label: "식품", keyword: "식품", tone: "food" },
+  { id: "processing", label: "가공장치", keyword: "가공장치", tone: "machine" },
+  { id: "storage", label: "식품보존", keyword: "선도유지", tone: "food" },
+  { id: "fermentation", label: "발효식품", keyword: "발효", tone: "food" },
+  { id: "bio", label: "바이오", keyword: "미생물", tone: "bio" },
+  { id: "chemistry", label: "생화학", keyword: "펩타이드", tone: "bio" },
+  { id: "breeding", label: "육종", keyword: "육종", tone: "breeding" },
+  { id: "variety", label: "품종", keyword: "품종", tone: "breeding" },
+  { id: "health", label: "의약", keyword: "약학", tone: "health" },
   { id: "cosmetics", label: "화장품", keyword: "화장료", tone: "cosmetics" },
-  { id: "crop", label: "작물·재배", keyword: "재배", tone: "crop" },
+  { id: "crop", label: "재배", keyword: "재배", tone: "crop" },
   { id: "machine", label: "농기계", keyword: "농기계", tone: "machine" },
-  { id: "livestock", label: "축산·수산", keyword: "사료", tone: "livestock" },
-  { id: "protection", label: "병해충·방제", keyword: "방제", tone: "protection" },
-  { id: "environment", label: "환경·자원", keyword: "폐기물", tone: "environment" },
-  { id: "fertilizer", label: "비료·토양", keyword: "비료", tone: "fertilizer" },
-  { id: "digital", label: "센서·정보기술", keyword: "센서", tone: "digital" },
+  { id: "livestock", label: "축산", keyword: "사료", tone: "livestock" },
+  { id: "aquaculture", label: "수산", keyword: "양식", tone: "livestock" },
+  { id: "protection", label: "작물보호", keyword: "방제", tone: "protection" },
+  { id: "environment", label: "수처리", keyword: "수처리", tone: "environment" },
+  { id: "recycling", label: "자원재활용", keyword: "폐기물", tone: "environment" },
+  { id: "fertilizer", label: "비료", keyword: "비료", tone: "fertilizer" },
+  { id: "soil", label: "토양개량", keyword: "토양", tone: "fertilizer" },
+  { id: "digital", label: "센서", keyword: "센서", tone: "digital" },
+  { id: "computing", label: "정보처리", keyword: "데이터", tone: "digital" },
+  { id: "control", label: "자동제어", keyword: "제어", tone: "digital" },
+  { id: "electronics", label: "전자기술", keyword: "전자", tone: "digital" },
   { id: "other", label: "기타 기술", keyword: "농업", tone: "other" },
 ] as const;
 
 export type TechnologyFieldId = typeof TECHNOLOGY_FIELDS[number]["id"];
 export function classifyTechnology(ipc: string): TechnologyFieldId {
   const code = ipc.toUpperCase().replace(/\s/g, "").split(/[|,;]/)[0];
-  if (/^(A23|C12[CFGHJ])/.test(code)) return "food";
+  if (/^A23N/.test(code)) return "processing";
+  if (/^A23B/.test(code)) return "storage";
+  if (/^C12[CFGHJ]/.test(code)) return "fermentation";
+  if (/^A23/.test(code)) return "food";
+  if (/^A01H[56]\//.test(code)) return "variety";
   if (/^A01H/.test(code)) return "breeding";
-  // Cosmetic preparations are A61K 8/xx; A61K 80/xx must not match.
   if (/^(A61Q|A61K8\/)/.test(code)) return "cosmetics";
   if (/^A61D/.test(code)) return "livestock";
   if (/^A61/.test(code)) return "health";
-  if (/^(C12|C07)/.test(code)) return "bio";
+  if (/^C12/.test(code)) return "bio";
+  if (/^C07/.test(code)) return "chemistry";
   if (/^A01G/.test(code)) return "crop";
   if (/^A01[BCDF]/.test(code)) return "machine";
+  if (/^A01K(6[1-3]|[7-9]\d)\//.test(code)) return "aquaculture";
   if (/^(A01K|A22)/.test(code)) return "livestock";
   if (/^A01[MNP]/.test(code)) return "protection";
   if (/^C05/.test(code)) return "fertilizer";
-  if (/^(C02|B09)/.test(code)) return "environment";
-  if (/^[GH]/.test(code)) return "digital";
+  if (/^C09K17\//.test(code)) return "soil";
+  if (/^C02/.test(code)) return "environment";
+  if (/^B09/.test(code)) return "recycling";
+  if (/^G01/.test(code)) return "digital";
+  if (/^G06/.test(code)) return "computing";
+  if (/^G05/.test(code)) return "control";
+  if (/^H/.test(code)) return "electronics";
   return "other";
 }
 
