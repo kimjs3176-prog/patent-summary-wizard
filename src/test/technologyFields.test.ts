@@ -19,12 +19,43 @@ describe("three-year technology filings", () => {
     expect(result.find(field => field.id === "food")?.count).toBe(1);
     expect(result.find(field => field.id === "digital")?.count).toBe(1);
     expect(result.reduce((sum, field) => sum + field.count, 0)).toBe(2);
-    expect(classifyTechnology("A01H 4/00")).toBe("bio");
+    expect(classifyTechnology("A01H 4/00")).toBe("breeding");
   });
   it("sizes area by application counts rather than search popularity", () => {
     const nodes = layoutTechnologyFields([{ id: "food", count: 300 }, { id: "bio", count: 100 }], 1000, 400);
     const food = nodes.find(node => node.id === "food");
     const bio = nodes.find(node => node.id === "bio");
     expect(food && bio ? (food.width * food.height) / (bio.width * bio.height) : 0).toBeCloseTo(3, 1);
+  });
+  it("separates breeding from biotechnology by primary IPC", () => {
+    expect(classifyTechnology("A01H 5/00|C12N 15/00")).toBe("breeding");
+    expect(classifyTechnology("C12N 15/00|A01H 5/00")).toBe("bio");
+    expect(classifyTechnology("C07K 14/00")).toBe("bio");
+  });
+  it("separates cosmetic preparations from medicinal technologies", () => {
+    expect(classifyTechnology("A61K 8/97")).toBe("cosmetics");
+    expect(classifyTechnology("A61Q 19/00")).toBe("cosmetics");
+    expect(classifyTechnology("A61K 36/00")).toBe("health");
+    expect(classifyTechnology("A61K 80/00")).toBe("health");
+  });
+  it("separates pest protection, fertilizers and environmental treatment", () => {
+    expect(classifyTechnology("A01P 7/04")).toBe("protection");
+    expect(classifyTechnology("A01N 65/00")).toBe("protection");
+    expect(classifyTechnology("A01M 1/00")).toBe("protection");
+    expect(classifyTechnology("C05F 11/00")).toBe("fertilizer");
+    expect(classifyTechnology("C02F 1/00")).toBe("environment");
+    expect(classifyTechnology("A01G 9/00")).toBe("crop");
+  });
+  it("places beverage fermentation in food and veterinary equipment in livestock", () => {
+    expect(classifyTechnology("C12G 3/00")).toBe("food");
+    expect(classifyTechnology("A61D 7/00")).toBe("livestock");
+  });
+  it("retains a complete total when splitting the old merged fields", () => {
+    const rows = ["A01H", "C12N", "A61K 36/00", "A61K 8/97", "A01N", "C05F", "C02F"].map((ipc, i) => ({ number: String(i), applicant: "농촌진흥청", ipc, date: "20261010" }));
+    const fields = aggregateFilings(rows, "20231010", "20261010");
+    for (const id of ["breeding", "bio", "health", "cosmetics", "protection", "fertilizer", "environment"]) {
+      expect(fields.find(field => field.id === id)?.count).toBe(1);
+    }
+    expect(fields.reduce((sum, field) => sum + field.count, 0)).toBe(7);
   });
 });
