@@ -22,7 +22,7 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
         </h1>
         <p className="home-hero-accent mt-2 text-sm md:text-base font-medium">농업기술 특허를 한눈에, AI로 쉽게</p>
         <p className="home-hero-muted mt-2 text-sm leading-relaxed max-w-2xl">{description}</p>
-        <div className="home-search-surface relative mt-5 md:mt-6 rounded-xl bg-card p-1.5 text-card-foreground">
+        <div className="home-search-surface relative mt-5 md:mt-6 max-w-2xl rounded-xl bg-card p-1.5 text-card-foreground">
           <PatentInput onSubmit={onSubmit} isLoading={isLoading} onKeywordSearch={onKeywordSearch} placeholder={placeholder} />
         </div>
         <div className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
