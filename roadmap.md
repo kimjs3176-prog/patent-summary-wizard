@@ -1,4 +1,5 @@
 # Tasks
+- [ ] Optimize homepage visual hierarchy, spacing and search presentation while preserving existing features.
 - [x] Fit all fields with at least 10 filings inside a shorter rectangular keyword treemap and verify navigation.
 - [x] Further split combined technology categories without double-counting.
 - [x] Show all low-count fields in a readable rotating card grid.
