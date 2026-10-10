@@ -5,7 +5,7 @@ import { resolveKiprisKey, kiprisFetchText, xmlTag } from "../_shared/kipris.ts"
 import { aggregateFilings, filingPeriod, type TechnologyStats } from "../_shared/technologyFields.ts";
 
 // New classification requires a fresh complete snapshot, never old merged counts.
-const CACHE_KEY = "technology_field_stats_v2";
+const CACHE_KEY = "technology_field_stats_v3";
 const ORGANIZATIONS = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
 let refreshing: Promise<TechnologyStats> | null = null;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aggregateFilings, classifyTechnology, filingPeriod } from "../../supabase/functions/_shared/technologyFields";
-import { layoutTechnologyFields } from "../lib/technologyTreemap";
+import { layoutTechnologyFields, groupTechnologyFields } from "../lib/technologyTreemap";
 
 describe("three-year technology filings", () => {
   it("uses exactly the most recent three years", () => {
@@ -28,9 +28,9 @@ describe("three-year technology filings", () => {
     expect(food && bio ? (food.width * food.height) / (bio.width * bio.height) : 0).toBeCloseTo(3, 1);
   });
   it("separates breeding from biotechnology by primary IPC", () => {
-    expect(classifyTechnology("A01H 5/00|C12N 15/00")).toBe("breeding");
+    expect(classifyTechnology("A01H 1/00|C12N 15/00")).toBe("breeding");
     expect(classifyTechnology("C12N 15/00|A01H 5/00")).toBe("bio");
-    expect(classifyTechnology("C07K 14/00")).toBe("bio");
+    expect(classifyTechnology("C07K 14/00")).toBe("chemistry");
   });
   it("separates cosmetic preparations from medicinal technologies", () => {
     expect(classifyTechnology("A61K 8/97")).toBe("cosmetics");
@@ -47,7 +47,7 @@ describe("three-year technology filings", () => {
     expect(classifyTechnology("A01G 9/00")).toBe("crop");
   });
   it("places beverage fermentation in food and veterinary equipment in livestock", () => {
-    expect(classifyTechnology("C12G 3/00")).toBe("food");
+    expect(classifyTechnology("C12G 3/00")).toBe("fermentation");
     expect(classifyTechnology("A61D 7/00")).toBe("livestock");
   });
   it("retains a complete total when splitting the old merged fields", () => {
@@ -57,5 +57,23 @@ describe("three-year technology filings", () => {
       expect(fields.find(field => field.id === id)?.count).toBe(1);
     }
     expect(fields.reduce((sum, field) => sum + field.count, 0)).toBe(7);
+  });
+  it("splits combined fields using distinct primary IPC groups", () => {
+    const cases = [
+      ["A23L 2/00", "food"], ["A23N 1/00", "processing"], ["A23B 7/00", "storage"],
+      ["A01H 1/00", "breeding"], ["A01H 5/00", "variety"],
+      ["A01K 61/00", "aquaculture"], ["A01K 1/00", "livestock"],
+      ["B09B 3/00", "recycling"], ["C09K 17/00", "soil"],
+      ["G06F 16/00", "computing"], ["G01N 21/00", "digital"], ["G05B 19/00", "control"], ["H04W 4/00", "electronics"],
+    ];
+    for (const [ipc, id] of cases) expect(classifyTechnology(ipc)).toBe(id);
+  });
+  it("includes low-count and zero-count fields exactly once in rotating groups without changing counts", () => {
+    const fields = [{ id: "food", count: 300 }, { id: "bio", count: 100 }, { id: "fertilizer", count: 2 }, { id: "soil", count: 0 }] as const;
+    const groups = groupTechnologyFields([...fields], 4);
+    expect(groups.flat()).toEqual([...fields]);
+    expect(groups.flat().reduce((sum, field) => sum + field.count, 0)).toBe(402);
+    expect(groups.some(group => group.some(field => field.id === "fertilizer"))).toBe(true);
+    expect(groups.some(group => group.some(field => field.id === "soil"))).toBe(true);
   });
 });

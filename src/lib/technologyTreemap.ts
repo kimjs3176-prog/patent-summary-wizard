@@ -1,13 +1,22 @@
 import { hierarchy, treemap, treemapBinary } from "d3";
 import { TECHNOLOGY_FIELDS, type TechnologyStats } from "../../supabase/functions/_shared/technologyFields";
 
-export const TECHNOLOGY_TILE_CLASSES = {
-  food: "technology-tile-food", bio: "technology-tile-bio", breeding: "technology-tile-breeding",
-  health: "technology-tile-health", cosmetics: "technology-tile-cosmetics", crop: "technology-tile-crop",
-  machine: "technology-tile-machine", livestock: "technology-tile-livestock",
-  protection: "technology-tile-protection", environment: "technology-tile-environment",
-  fertilizer: "technology-tile-fertilizer", digital: "technology-tile-digital", other: "technology-tile-other",
-};
+export const TECHNOLOGY_TILE_CLASSES = Object.fromEntries(
+  TECHNOLOGY_FIELDS.map(field => [field.id, `technology-tile-${field.tone}`]),
+) as Record<typeof TECHNOLOGY_FIELDS[number]["id"], string>;
+
+// Counts remain untouched: compare proportional areas within each rotating group.
+export function groupTechnologyFields(fields: TechnologyStats["fields"], limit = 6) {
+  const sorted = [...fields].sort((a, b) => b.count - a.count);
+  const groups: TechnologyStats["fields"][] = [];
+  for (const field of sorted) {
+    const group = groups.at(-1);
+    if (!group || group.length >= limit || (field.count === 0 && group[0].count > 0) ||
+      (field.count > 0 && group[0].count / field.count > 4)) groups.push([field]);
+    else group.push(field);
+  }
+  return groups;
+}
 
 export function layoutTechnologyFields(fields: TechnologyStats["fields"], width: number, height: number) {
   const children = fields.filter(field => field.count > 0).map(field => ({ ...field, ...TECHNOLOGY_FIELDS.find(def => def.id === field.id) }));
