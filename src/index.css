@@ -63,6 +63,15 @@ time, .tabular-nums, [data-numeric] {
     --destructive-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
+    --technology-food: 158 64% 34%;
+    --technology-bio: 211 80% 46%;
+    --technology-crop: 165 61% 39%;
+    --technology-machine: 214 75% 56%;
+    --technology-livestock: 350 64% 49%;
+    --technology-environment: 181 68% 32%;
+    --technology-digital: 203 78% 41%;
+    --technology-other: 217 16% 42%;
+    --technology-foreground: 0 0% 100%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
@@ -205,6 +214,15 @@ time, .tabular-nums, [data-numeric] {
 }
 
 @layer utilities {
+  .technology-tile { color: hsl(var(--technology-foreground)); letter-spacing: 0; }
+  .technology-tile-food { background: hsl(var(--technology-food)); }
+  .technology-tile-bio { background: hsl(var(--technology-bio)); }
+  .technology-tile-crop { background: hsl(var(--technology-crop)); }
+  .technology-tile-machine { background: hsl(var(--technology-machine)); }
+  .technology-tile-livestock { background: hsl(var(--technology-livestock)); }
+  .technology-tile-environment { background: hsl(var(--technology-environment)); }
+  .technology-tile-digital { background: hsl(var(--technology-digital)); }
+  .technology-tile-other { background: hsl(var(--technology-other)); }
   /* 2026 Gradient text */
   .gradient-text {
     background: var(--gradient-accent);
