@@ -30,7 +30,7 @@ export function KeywordExplorer() {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const height = width < 640 ? 440 : 480;
+  const height = width < 640 ? 520 : 480;
   const fields = data?.fields ?? [];
   const positiveFields = [...fields].sort((a, b) => b.count - a.count).filter(field => field.count > 0);
   const zeroFields = fields.filter(field => field.count === 0);
