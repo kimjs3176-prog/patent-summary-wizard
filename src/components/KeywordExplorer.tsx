@@ -67,8 +67,8 @@ export function KeywordExplorer() {
                   onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.keyword ?? "농업")}`)}
                   className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} absolute flex-col gap-1 rounded-[4px] p-1.5 !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 hover:brightness-95 focus-visible:z-10`}
                   style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
-                  {!tiny && <span className={`w-full leading-snug text-center break-words ${compact ? "text-xs" : "text-base md:text-lg"} font-bold`}>{node.label}</span>}
-                  {!tiny && <span className={`tabular-nums font-medium ${compact ? "text-[11px]" : "text-sm md:text-base"}`}>{node.count.toLocaleString()}건</span>}
+                  <span className={`w-full leading-snug text-center ${tiny ? "text-[10px] break-all" : compact ? "text-xs break-words" : "text-base md:text-lg break-words"} font-bold`}>{node.label}</span>
+                  <span className={`tabular-nums font-medium ${tiny ? "text-[9px]" : compact ? "text-[11px]" : "text-sm md:text-base"}`}>{node.count.toLocaleString()}건</span>
                 </Button>
               );
             })}
