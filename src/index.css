@@ -141,6 +141,11 @@ time, .tabular-nums, [data-numeric] {
     /* Deep navy surface — used by hero & dark sections */
     --surface-dark: 218 50% 10%;
     --surface-dark-2: 215 48% 15%;
+    --home-hero-surface: 165 38% 13%;
+    --home-hero-foreground: 150 25% 97%;
+    --home-hero-accent: 158 62% 72%;
+    --home-hero-muted: 156 18% 76%;
+    --home-search-shadow: 0 8px 24px -12px hsl(165 50% 4% / 0.45);
     --gradient-dark: radial-gradient(ellipse 80% 60% at 80% 20%, hsl(158 64% 40% / 0.22), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 80%, hsl(184 70% 45% / 0.14), transparent 60%), linear-gradient(135deg, #0a1628 0%, #0f2540 50%, #0a1a30 100%);
   }
 
@@ -1028,6 +1033,15 @@ time, .tabular-nums, [data-numeric] {
 }
 
 /* ============ Blueprint Hero (A안: Technical Blueprint + Monospace) ============ */
+.home-search-hero {
+  isolation: isolate;
+  background: hsl(var(--home-hero-surface));
+  color: hsl(var(--home-hero-foreground));
+}
+.home-hero-accent { color: hsl(var(--home-hero-accent)); }
+.home-hero-muted { color: hsl(var(--home-hero-muted)); }
+.home-search-surface { box-shadow: var(--home-search-shadow); }
+.home-support-section { border-top: 1px solid hsl(var(--border)); padding-top: 20px; }
 .blueprint-hero { isolation: isolate; }
 
 .blueprint-grid {
