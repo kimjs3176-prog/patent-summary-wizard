@@ -39,7 +39,10 @@ export function KeywordExplorer() {
   const positiveTotal = positiveFields.reduce((sum, field) => sum + field.count, 0);
   const mainFields = positiveFields.filter((field, index) => index < 12 || field.count >= positiveTotal * 0.015);
   const tailFields = positiveFields.filter(field => !mainFields.includes(field));
-  const nodes = width && mainFields.length ? layoutTechnologyFields(mainFields, width, height) : [];
+  // Compress area ratios (power scale) so dominant fields don't crowd out the rest.
+  const layoutFields = mainFields.map(field => ({ ...field, count: Math.round(Math.pow(field.count, 0.6) * 100) }));
+  const realCounts = new Map(fields.map(field => [field.id, field.count]));
+  const nodes = width && mainFields.length ? layoutTechnologyFields(layoutFields, width, height) : [];
   const date = (value: string) => `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6, 8)}`;
 
   return (
@@ -71,16 +74,17 @@ export function KeywordExplorer() {
                   const compact = node.width < 160 || node.height < 110;
                   const definition = TECHNOLOGY_FIELDS.find(field => field.id === node.id);
                   const Icon = FIELD_ICONS[definition?.tone ?? "other"];
+                  const count = realCounts.get(node.id) ?? node.count;
                   return (
                     <Button key={node.id} variant="ghost"
-                      title={`${node.label} · ${node.count.toLocaleString()}건 · 대표 IPC 기준`}
-                      aria-label={`${node.label} ${node.count.toLocaleString()}건, 관련 특허 검색`}
+                      title={`${node.label} · ${count.toLocaleString()}건 · 대표 IPC 기준`}
+                      aria-label={`${node.label} ${count.toLocaleString()}건, 관련 특허 검색`}
                       onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.keyword ?? "농업")}`)}
                       className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${compact ? "rounded-lg p-1.5 gap-0.5 justify-center" : "rounded-2xl p-4 items-start justify-start gap-2"}`}
                       style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
                       {!compact && Icon && <div className="flex w-full items-center justify-between mb-1"><Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.5} /><ArrowUpRight className="h-4 w-4 opacity-40 group-hover:opacity-100" /></div>}
                       <span className={`w-full leading-tight ${compact ? "text-[11px] text-center break-words" : "text-sm md:text-base text-left break-words"} font-bold`}>{node.label}</span>
-                      <span className={`shrink-0 tabular-nums leading-normal ${compact ? "text-xs" : "mt-auto text-2xl md:text-3xl font-semibold"}`}>{node.count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>
+                      <span className={`shrink-0 tabular-nums leading-normal ${compact ? "text-xs" : "mt-auto text-2xl md:text-3xl font-semibold"}`}>{count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>
                     </Button>
                   );
                 })}
