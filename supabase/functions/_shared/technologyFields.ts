@@ -28,7 +28,7 @@ export function filingPeriod(now: Date) {
   start.setUTCFullYear(start.getUTCFullYear() - 3);
   // Feb 29 clamps to Feb 28 rather than overflowing into March.
   if (start.getUTCMonth() !== end.getUTCMonth()) start.setUTCDate(0);
-  const format = (date: Date) => date.toISOString().slice(0, 10).replaceAll("-", "");
+  const format = (date: Date) => date.toISOString().slice(0, 10).replace(/-/g, "");
   return { start: format(start), end: format(end) };
 }
 
