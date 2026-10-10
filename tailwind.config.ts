@@ -3,6 +3,9 @@ import type { Config } from "tailwindcss";
 export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  // Tone classes are composed dynamically (technology-tile-${tone}), so the
+  // scanner never sees their literals — keep them in the output always.
+  safelist: [{ pattern: /^technology-tile-(food|bio|breeding|health|cosmetics|crop|machine|livestock|protection|environment|fertilizer|digital|other)$/ }],
   prefix: "",
   theme: {
   	container: {

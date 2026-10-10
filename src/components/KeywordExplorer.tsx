@@ -83,8 +83,8 @@ export function KeywordExplorer() {
                       className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${compact ? "rounded-lg p-1.5 gap-0.5 justify-center" : "rounded-2xl p-4 items-start justify-start gap-2"}`}
                       style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
                       {!compact && Icon && <div className="flex w-full items-center justify-between mb-1"><Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.5} /><ArrowUpRight className="h-4 w-4 opacity-40 group-hover:opacity-100" /></div>}
-                      <span className={`w-full leading-tight ${compact ? "text-[11px] text-center break-words" : "text-sm md:text-base text-left break-words"} font-bold`}>{node.label}</span>
-                      <span className={`shrink-0 tabular-nums leading-normal ${compact ? "text-xs" : "mt-auto text-2xl md:text-3xl font-semibold"}`}>{count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>
+                      <span className={`w-full font-bold tracking-tight leading-tight break-words ${compact ? "text-[11px] text-center" : "text-sm md:text-base text-left"}`}>{node.label}</span>
+                      <span className={`shrink-0 font-semibold tabular-nums leading-normal ${compact ? "text-xs" : "mt-auto text-2xl md:text-3xl"}`}>{count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>
                     </Button>
                   );
                 })}
@@ -96,10 +96,10 @@ export function KeywordExplorer() {
                   const definition = TECHNOLOGY_FIELDS.find(item => item.id === field.id);
                   return (
                     <Button key={field.id} variant="ghost" role="listitem"
-                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[field.id]} h-9 px-3 rounded-full text-xs font-semibold gap-1.5`}
+                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[field.id]} h-9 px-3 rounded-full gap-1.5`}
                       aria-label={`${definition?.label} ${field.count}건, 관련 특허 검색`}
                       onClick={() => navigate(`/search?keyword=${encodeURIComponent(definition?.keyword ?? "농업")}`)}>
-                      {definition?.label}<span className="tabular-nums opacity-70">{field.count}건</span>
+                      <span className="text-xs font-bold tracking-tight">{definition?.label}</span><span className="text-xs font-semibold tabular-nums opacity-70">{field.count}건</span>
                     </Button>
                   );
                 })}
@@ -111,10 +111,10 @@ export function KeywordExplorer() {
                   const definition = TECHNOLOGY_FIELDS.find(item => item.id === field.id);
                   return (
                     <Button key={field.id} variant="ghost" role="listitem"
-                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[field.id]} h-9 px-3 rounded-full text-xs font-semibold gap-1.5`}
+                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[field.id]} h-9 px-3 rounded-full gap-1.5`}
                       aria-label={`${definition?.label} 0건, 관련 특허 검색`}
                       onClick={() => navigate(`/search?keyword=${encodeURIComponent(definition?.keyword ?? "농업")}`)}>
-                      {definition?.label}<span className="tabular-nums opacity-70">0건</span>
+                      <span className="text-xs font-bold tracking-tight">{definition?.label}</span><span className="text-xs font-semibold tabular-nums opacity-70">0건</span>
                     </Button>
                   );
                 })}
