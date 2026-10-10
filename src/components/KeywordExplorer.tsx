@@ -39,7 +39,10 @@ export function KeywordExplorer() {
   const positiveTotal = positiveFields.reduce((sum, field) => sum + field.count, 0);
   const mainFields = positiveFields.filter((field, index) => index < 12 || field.count >= positiveTotal * 0.015);
   const tailFields = positiveFields.filter(field => !mainFields.includes(field));
-  const nodes = width && mainFields.length ? layoutTechnologyFields(mainFields, width, height) : [];
+  // Compress area ratios (power scale) so dominant fields don't crowd out the rest.
+  const layoutFields = mainFields.map(field => ({ ...field, count: Math.round(Math.pow(field.count, 0.6) * 100) }));
+  const realCounts = new Map(fields.map(field => [field.id, field.count]));
+  const nodes = width && mainFields.length ? layoutTechnologyFields(layoutFields, width, height) : [];
   const date = (value: string) => `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6, 8)}`;
 
   return (
