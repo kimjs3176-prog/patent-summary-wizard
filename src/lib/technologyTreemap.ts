@@ -1,6 +1,12 @@
 import { hierarchy, treemap, treemapBinary } from "d3";
 import { TECHNOLOGY_FIELDS, type TechnologyStats } from "../../supabase/functions/_shared/technologyFields";
 
+export const TECHNOLOGY_TILE_CLASSES = {
+  food: "technology-tile-food", bio: "technology-tile-bio", crop: "technology-tile-crop",
+  machine: "technology-tile-machine", livestock: "technology-tile-livestock",
+  environment: "technology-tile-environment", digital: "technology-tile-digital", other: "technology-tile-other",
+};
+
 export function layoutTechnologyFields(fields: TechnologyStats["fields"], width: number, height: number) {
   const children = fields.filter(field => field.count > 0).map(field => ({ ...field, ...TECHNOLOGY_FIELDS.find(def => def.id === field.id) }));
   const root = hierarchy({ children } as { children?: typeof children; count?: number }).sum(node => node.count ?? 0).sort((a, b) => (b.value ?? 0) - (a.value ?? 0));

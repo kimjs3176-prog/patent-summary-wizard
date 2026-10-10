@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { layoutTechnologyFields } from "@/lib/technologyTreemap";
+import { layoutTechnologyFields, TECHNOLOGY_TILE_CLASSES } from "@/lib/technologyTreemap";
 import { TECHNOLOGY_FIELDS, type TechnologyStats } from "../../supabase/functions/_shared/technologyFields";
 
 export function KeywordExplorer() {
@@ -65,7 +65,7 @@ export function KeywordExplorer() {
                   title={`${node.label} · ${node.count.toLocaleString()}건 · 대표 IPC 기준`}
                   aria-label={`${node.label} ${node.count.toLocaleString()}건, 관련 특허 검색`}
                   onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.keyword ?? "농업")}`)}
-                  className={`technology-tile technology-tile-${node.tone} absolute flex-col gap-1 rounded-[4px] p-1.5 !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 hover:brightness-95 focus-visible:z-10`}
+                  className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} absolute flex-col gap-1 rounded-[4px] p-1.5 !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 hover:brightness-95 focus-visible:z-10`}
                   style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
                   {!tiny && <span className={`w-full leading-snug text-center break-words ${compact ? "text-xs" : "text-base md:text-lg"} font-bold`}>{node.label}</span>}
                   {!tiny && <span className={`tabular-nums font-medium ${compact ? "text-[11px]" : "text-sm md:text-base"}`}>{node.count.toLocaleString()}건</span>}
