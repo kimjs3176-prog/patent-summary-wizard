@@ -5,6 +5,10 @@ export const TECHNOLOGY_TILE_CLASSES = Object.fromEntries(
   TECHNOLOGY_FIELDS.map(field => [field.id, `technology-tile-${field.tone}`]),
 ) as Record<typeof TECHNOLOGY_FIELDS[number]["id"], string>;
 
+export function visibleTechnologyFields(fields: TechnologyStats["fields"]) {
+  return fields.filter(field => field.count >= 10).sort((a, b) => b.count - a.count);
+}
+
 // Counts remain untouched: compare proportional areas within each rotating group.
 export function groupTechnologyFields(fields: TechnologyStats["fields"], limit = 6) {
   const sorted = [...fields].sort((a, b) => b.count - a.count);

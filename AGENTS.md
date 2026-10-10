@@ -1,6 +1,6 @@
 # Architecture rules
 
-- Homepage technology tiles rotate through count-similar groups with D3 treemap areas proportional to deduplicated primary-IPC filing counts within each group; this keeps low-count fields readable without inflating statistics. Zero-count groups use equal cards and rotation pauses on interaction or reduced-motion preferences.
+- Homepage technology tiles use one D3 treemap with presentation-only count filtering and compressed area scaling; keep original filing counts and total untouched so compact layout changes never alter statistics.
 - Technology filing statistics are computed server-side for all six applicant groups over a rolling three-year window and cached daily as a complete site_settings snapshot; incomplete API responses never replace valid counts.
 - Keep technology classification in the shared primary-IPC classifier and version the statistics cache whenever mappings change; this keeps frontend labels and server counts consistent without serving obsolete merged categories.
 

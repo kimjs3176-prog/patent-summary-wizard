@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { aggregateFilings, classifyTechnology, filingPeriod } from "../../supabase/functions/_shared/technologyFields";
-import { layoutTechnologyFields, groupTechnologyFields } from "../lib/technologyTreemap";
+import { layoutTechnologyFields, groupTechnologyFields, visibleTechnologyFields } from "../lib/technologyTreemap";
 
 describe("three-year technology filings", () => {
+  it("includes 10 filings and excludes counts below 10 without changing source statistics", () => {
+    const fields = [{ id: "food", count: 154 }, { id: "cosmetics", count: 10 }, { id: "bio", count: 9 }, { id: "soil", count: 0 }] as const;
+    expect(visibleTechnologyFields([...fields])).toEqual([{ id: "food", count: 154 }, { id: "cosmetics", count: 10 }]);
+    expect(fields.reduce((sum, field) => sum + field.count, 0)).toBe(173);
+  });
   it("uses exactly the most recent three years", () => {
     expect(filingPeriod(new Date("2026-10-10T00:50:00Z"))).toEqual({ start: "20231010", end: "20261010" });
     expect(filingPeriod(new Date("2024-02-29T00:00:00Z"))).toEqual({ start: "20210228", end: "20240229" });
