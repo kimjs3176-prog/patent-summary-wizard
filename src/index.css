@@ -63,15 +63,32 @@ time, .tabular-nums, [data-numeric] {
     --destructive-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --info: 217 91% 60%;
-    --technology-food: 158 64% 34%;
-    --technology-bio: 211 80% 46%;
-    --technology-crop: 165 61% 39%;
-    --technology-machine: 214 75% 56%;
-    --technology-livestock: 350 64% 49%;
-    --technology-environment: 181 68% 32%;
-    --technology-digital: 203 78% 41%;
+    --technology-food: 158 60% 30%;
+    --technology-bio: 185 59% 28%;
+    --technology-breeding: 152 56% 30%;
+    --technology-health: 350 48% 39%;
+    --technology-cosmetics: 331 42% 42%;
+    --technology-crop: 163 52% 30%;
+    --technology-machine: 213 54% 37%;
+    --technology-livestock: 23 47% 36%;
+    --technology-protection: 177 49% 29%;
+    --technology-environment: 190 45% 31%;
+    --technology-fertilizer: 83 38% 30%;
+    --technology-digital: 207 58% 38%;
     --technology-other: 217 16% 42%;
-    --technology-foreground: 0 0% 100%;
+    --technology-food-surface: 154 42% 91%;
+    --technology-bio-surface: 184 39% 93%;
+    --technology-breeding-surface: 145 42% 93%;
+    --technology-health-surface: 351 46% 95%;
+    --technology-cosmetics-surface: 328 44% 95%;
+    --technology-crop-surface: 163 35% 94%;
+    --technology-machine-surface: 211 43% 95%;
+    --technology-livestock-surface: 24 42% 95%;
+    --technology-protection-surface: 175 33% 93%;
+    --technology-environment-surface: 191 36% 94%;
+    --technology-fertilizer-surface: 85 30% 93%;
+    --technology-digital-surface: 207 44% 94%;
+    --technology-other-surface: 217 16% 95%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
@@ -153,6 +170,32 @@ time, .tabular-nums, [data-numeric] {
     --destructive-foreground: 210 40% 98%;
     --warning: 38 92% 56%;
     --info: 217 91% 65%;
+    --technology-food: 158 60% 70%;
+    --technology-bio: 185 59% 70%;
+    --technology-breeding: 152 56% 70%;
+    --technology-health: 350 60% 78%;
+    --technology-cosmetics: 331 50% 78%;
+    --technology-crop: 163 52% 70%;
+    --technology-machine: 213 64% 78%;
+    --technology-livestock: 23 57% 75%;
+    --technology-protection: 177 49% 70%;
+    --technology-environment: 190 45% 72%;
+    --technology-fertilizer: 83 38% 72%;
+    --technology-digital: 207 58% 75%;
+    --technology-other: 217 16% 76%;
+    --technology-food-surface: 154 27% 16%;
+    --technology-bio-surface: 184 25% 16%;
+    --technology-breeding-surface: 145 25% 16%;
+    --technology-health-surface: 351 25% 17%;
+    --technology-cosmetics-surface: 328 25% 17%;
+    --technology-crop-surface: 163 25% 16%;
+    --technology-machine-surface: 211 25% 17%;
+    --technology-livestock-surface: 24 25% 17%;
+    --technology-protection-surface: 175 25% 16%;
+    --technology-environment-surface: 191 25% 16%;
+    --technology-fertilizer-surface: 85 25% 16%;
+    --technology-digital-surface: 207 25% 17%;
+    --technology-other-surface: 217 16% 17%;
 
     --border: 217 33% 20%;
     --input: 217 33% 20%;
@@ -214,15 +257,26 @@ time, .tabular-nums, [data-numeric] {
 }
 
 @layer utilities {
-  .technology-tile { color: hsl(var(--technology-foreground)); letter-spacing: 0; }
-  .technology-tile-food { background: hsl(var(--technology-food)); }
-  .technology-tile-bio { background: hsl(var(--technology-bio)); }
-  .technology-tile-crop { background: hsl(var(--technology-crop)); }
-  .technology-tile-machine { background: hsl(var(--technology-machine)); }
-  .technology-tile-livestock { background: hsl(var(--technology-livestock)); }
-  .technology-tile-environment { background: hsl(var(--technology-environment)); }
-  .technology-tile-digital { background: hsl(var(--technology-digital)); }
-  .technology-tile-other { background: hsl(var(--technology-other)); }
+  .technology-tile {
+    color: hsl(var(--tile-ink)); background: hsl(var(--tile-surface));
+    border: 1px solid hsl(var(--tile-ink) / 0.12);
+    box-shadow: var(--shadow-2xs); letter-spacing: 0;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+  .technology-tile:hover { background: hsl(var(--tile-surface)); border-color: hsl(var(--tile-ink) / 0.4); box-shadow: var(--shadow-sm); }
+  .technology-tile-food { --tile-ink: var(--technology-food); --tile-surface: var(--technology-food-surface); }
+  .technology-tile-bio { --tile-ink: var(--technology-bio); --tile-surface: var(--technology-bio-surface); }
+  .technology-tile-breeding { --tile-ink: var(--technology-breeding); --tile-surface: var(--technology-breeding-surface); }
+  .technology-tile-health { --tile-ink: var(--technology-health); --tile-surface: var(--technology-health-surface); }
+  .technology-tile-cosmetics { --tile-ink: var(--technology-cosmetics); --tile-surface: var(--technology-cosmetics-surface); }
+  .technology-tile-crop { --tile-ink: var(--technology-crop); --tile-surface: var(--technology-crop-surface); }
+  .technology-tile-machine { --tile-ink: var(--technology-machine); --tile-surface: var(--technology-machine-surface); }
+  .technology-tile-livestock { --tile-ink: var(--technology-livestock); --tile-surface: var(--technology-livestock-surface); }
+  .technology-tile-protection { --tile-ink: var(--technology-protection); --tile-surface: var(--technology-protection-surface); }
+  .technology-tile-environment { --tile-ink: var(--technology-environment); --tile-surface: var(--technology-environment-surface); }
+  .technology-tile-fertilizer { --tile-ink: var(--technology-fertilizer); --tile-surface: var(--technology-fertilizer-surface); }
+  .technology-tile-digital { --tile-ink: var(--technology-digital); --tile-surface: var(--technology-digital-surface); }
+  .technology-tile-other { --tile-ink: var(--technology-other); --tile-surface: var(--technology-other-surface); }
   /* 2026 Gradient text */
   .gradient-text {
     background: var(--gradient-accent);
