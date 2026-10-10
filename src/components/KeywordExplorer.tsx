@@ -71,8 +71,10 @@ export function KeywordExplorer() {
                   className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${tiny ? "rounded-lg p-1 gap-0.5 justify-center" : compact ? "rounded-xl p-2 gap-1 justify-center" : "rounded-2xl p-5 items-start justify-start gap-2"}`}
                   style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
                   {!compact && Icon && <div className="flex w-full items-center justify-between mb-1"><Icon className="h-6 w-6" strokeWidth={1.5} /><ArrowUpRight className="h-4 w-4 opacity-40 group-hover:opacity-100" /></div>}
-                  <span className={`w-full leading-snug ${tiny ? "text-[11px] text-center break-words" : compact ? "text-xs text-center break-words" : "text-base md:text-lg text-left break-words"} font-bold`}>{node.label}</span>
-                  {node.height >= 42 && <span className={`tabular-nums ${tiny ? "text-[10px]" : compact ? "text-xs" : "mt-auto text-3xl font-semibold"}`}>{node.count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>}
+                  {node.width >= 55 && node.height >= 42 ? <>
+                    <span className={`w-full leading-snug ${tiny ? "text-[11px] text-center break-words" : compact ? "text-xs text-center break-words" : "text-base md:text-lg text-left break-words"} font-bold`}>{node.label}</span>
+                    <span className={`inline-flex shrink-0 items-baseline tabular-nums leading-none ${tiny ? "text-[10px]" : compact ? "text-xs" : "mt-auto text-3xl font-semibold"}`}>{node.count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>
+                  </> : node.height >= 24 && node.width >= 24 && Icon ? <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} /> : null}
                 </Button>
               );
             })}
