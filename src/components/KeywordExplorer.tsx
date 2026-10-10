@@ -30,11 +30,16 @@ export function KeywordExplorer() {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const height = width < 640 ? 560 : 440;
+  const height = width < 640 ? 440 : 480;
   const fields = data?.fields ?? [];
-  const positiveFields = fields.filter(field => field.count > 0);
+  const positiveFields = [...fields].sort((a, b) => b.count - a.count).filter(field => field.count > 0);
   const zeroFields = fields.filter(field => field.count === 0);
-  const nodes = width && positiveFields.length ? layoutTechnologyFields(positiveFields, width, height) : [];
+  // Treemap keeps at least the top 12 fields; anything whose share drops below
+  // 1.5% becomes a uniform card so its label stays readable.
+  const positiveTotal = positiveFields.reduce((sum, field) => sum + field.count, 0);
+  const mainFields = positiveFields.filter((field, index) => index < 12 || field.count >= positiveTotal * 0.015);
+  const tailFields = positiveFields.filter(field => !mainFields.includes(field));
+  const nodes = width && mainFields.length ? layoutTechnologyFields(mainFields, width, height) : [];
   const date = (value: string) => `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6, 8)}`;
 
   return (
@@ -50,8 +55,8 @@ export function KeywordExplorer() {
       </div>
       <div ref={container} className="w-full">
         {isPending ? (
-          <div className="grid grid-cols-4 grid-rows-4 gap-1.5" style={{ height }} aria-busy="true" aria-label="출원 통계 불러오는 중">
-            {Array.from({ length: 16 }, (_, i) => <div key={i} className="bg-muted rounded-md animate-pulse motion-reduce:animate-none" />)}
+          <div className="grid grid-cols-3 grid-rows-4 gap-1.5" style={{ height }} aria-busy="true" aria-label="출원 통계 불러오는 중">
+            {Array.from({ length: 12 }, (_, i) => <div key={i} className="bg-muted rounded-md animate-pulse motion-reduce:animate-none" />)}
           </div>
         ) : isError ? (
           <div className="min-h-40 flex flex-col items-center justify-center gap-3 bg-muted/50 rounded-md">
@@ -60,11 +65,10 @@ export function KeywordExplorer() {
           </div>
         ) : (
           <>
-            {positiveFields.length > 0 && (
+            {mainFields.length > 0 && (
               <div className="relative" style={{ height }}>
                 {nodes.map(node => {
-                  const compact = node.width < 130 || node.height < 90;
-                  const tiny = node.width < 70 || node.height < 45;
+                  const compact = node.width < 160 || node.height < 110;
                   const definition = TECHNOLOGY_FIELDS.find(field => field.id === node.id);
                   const Icon = FIELD_ICONS[definition?.tone ?? "other"];
                   return (
@@ -72,18 +76,33 @@ export function KeywordExplorer() {
                       title={`${node.label} · ${node.count.toLocaleString()}건 · 대표 IPC 기준`}
                       aria-label={`${node.label} ${node.count.toLocaleString()}건, 관련 특허 검색`}
                       onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.keyword ?? "농업")}`)}
-                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${tiny ? "rounded-md p-1 gap-0.5 justify-center" : compact ? "rounded-lg p-2 gap-1 justify-center" : "rounded-2xl p-4 items-start justify-start gap-2"}`}
+                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${compact ? "rounded-lg p-1.5 gap-0.5 justify-center" : "rounded-2xl p-4 items-start justify-start gap-2"}`}
                       style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
                       {!compact && Icon && <div className="flex w-full items-center justify-between mb-1"><Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.5} /><ArrowUpRight className="h-4 w-4 opacity-40 group-hover:opacity-100" /></div>}
-                      <span className={`w-full leading-snug ${compact ? "text-xs text-center break-words" : "text-sm md:text-base text-left break-words"} font-bold`}>{node.label}</span>
-                      <span className={`shrink-0 tabular-nums leading-normal ${compact ? "text-sm" : "mt-auto text-2xl md:text-3xl font-semibold"}`}>{node.count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>
+                      <span className={`w-full leading-tight ${compact ? "text-[11px] text-center break-words" : "text-sm md:text-base text-left break-words"} font-bold`}>{node.label}</span>
+                      <span className={`shrink-0 tabular-nums leading-normal ${compact ? "text-xs" : "mt-auto text-2xl md:text-3xl font-semibold"}`}>{node.count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+            {tailFields.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1.5" role="list" aria-label="출원 건수가 적은 분야">
+                {tailFields.map(field => {
+                  const definition = TECHNOLOGY_FIELDS.find(item => item.id === field.id);
+                  return (
+                    <Button key={field.id} variant="ghost" role="listitem"
+                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[field.id]} h-9 px-3 rounded-full text-xs font-semibold gap-1.5`}
+                      aria-label={`${definition?.label} ${field.count}건, 관련 특허 검색`}
+                      onClick={() => navigate(`/search?keyword=${encodeURIComponent(definition?.keyword ?? "농업")}`)}>
+                      {definition?.label}<span className="tabular-nums opacity-70">{field.count}건</span>
                     </Button>
                   );
                 })}
               </div>
             )}
             {zeroFields.length > 0 && (
-              <div className={positiveFields.length ? "mt-1.5 flex flex-wrap gap-1.5" : "flex flex-wrap gap-1.5"} role="list" aria-label="출원 건수가 없는 분야">
+              <div className={(tailFields.length ? "mt-1.5" : "") + " flex flex-wrap gap-1.5"} role="list" aria-label="출원 건수가 없는 분야">
                 {zeroFields.map(field => {
                   const definition = TECHNOLOGY_FIELDS.find(item => item.id === field.id);
                   return (
