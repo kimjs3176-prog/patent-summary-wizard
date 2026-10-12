@@ -3,6 +3,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { resolveKiprisKey } from "../_shared/kipris.ts";
+import { classifyTechnology, FIELD_SEARCH_TERMS, isTechnologyFieldId } from "../_shared/technologyFields.ts";
 
 
 // Fetch with timeout + retry on transient errors
@@ -48,6 +49,7 @@ async function fetchWithRetry(
 
 interface KeywordSearchResult {
   patentId: string;
+  ipc?: string;
   title: string;
   titleKo?: string;
   assignee?: string;
@@ -308,6 +310,7 @@ serve(async (req) => {
       );
     }
     const { keyword } = body;
+    const fieldId = isTechnologyFieldId(body.fieldId) ? body.fieldId : null;
 
     if (!keyword || typeof keyword !== "string" || keyword.trim().length < 1) {
       return new Response(
@@ -345,7 +348,7 @@ serve(async (req) => {
 
     // === In-memory short-term cache (per-instance) ===
     // Reduces KIPRIS load and latency for repeated searches within a few minutes.
-    const cacheKey = keyword.trim().toLowerCase();
+    const cacheKey = `${fieldId ? `field:${fieldId}:` : ""}${keyword.trim().toLowerCase()}`;
     const cached = SEARCH_CACHE.get(cacheKey);
     if (cached && Date.now() - cached.at < SEARCH_CACHE_TTL_MS) {
       console.log(`Search cache HIT: "${cacheKey}" (age ${Math.round((Date.now()-cached.at)/1000)}s)`);
@@ -365,6 +368,7 @@ serve(async (req) => {
     // Previously these two AI calls ran sequentially *before* any network search,
     // adding up to ~15s of dead time to every query.
     const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[]; should: string[] }> = (async () => {
+      if (fieldId) return { queries: [rawInput], must: [], should: [] };
       if (isNaturalLanguageQuery(rawInput)) {
         isNLQuery = true;
         const extraction = await extractKeywordsWithAI(rawInput);
@@ -414,6 +418,7 @@ serve(async (req) => {
         const astrtCont = getField("astrtCont") || "";
         const drawing = getField("bigDrawing") || getField("drawing") || "";
         const inventors = getField("inventorName") || getField("inventor") || "";
+        const ipc = getField("ipcNumber") || "";
         const registerStatus = getField("registerStatus") || getField("registrationStatus") || "";
 
         // 거절/소멸 등 무효 상태 특허 제외
@@ -467,6 +472,7 @@ serve(async (req) => {
           thumbnail: drawing || undefined,
           inventors: inventors || undefined,
           organizationName: orgName,
+          ipc: ipc || undefined,
         });
       }
       return patents;
@@ -529,6 +535,26 @@ serve(async (req) => {
         }
       }
     };
+
+    // Field mode (treemap tile): search every broad term of the field, then keep
+    // patents whose primary IPC maps to that field so results match the tile's statistics.
+    if (fieldId) {
+      const terms = FIELD_SEARCH_TERMS[fieldId] ?? [rawTrim];
+      const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
+      for (const term of terms) for (const org of AGRI_ORGANIZATIONS) tasks.push(() => kiprisSearch(term, org, "title"));
+      for (const term of terms.slice(0, 3)) for (const org of AGRI_ORGANIZATIONS) tasks.push(() => kiprisSearch(term, org, "abstract"));
+      for (let i = 0; i < tasks.length; i += 6) {
+        (await Promise.all(tasks.slice(i, i + 6).map(fn => fn()))).forEach(collect);
+      }
+      const matched = allPatents.filter(p => p.ipc && classifyTechnology(p.ipc) === fieldId);
+      const unknown = allPatents.filter(p => !p.ipc);
+      const relevant = [...matched, ...(matched.length < 10 ? unknown : [])]
+        .sort((a, b) => (b.applicationDate || "").localeCompare(a.applicationDate || ""));
+      console.log(`Field ${fieldId}: ${matched.length} IPC-matched of ${allPatents.length}`);
+      const payload = { success: true, patents: relevant.slice(0, 100), keyword: keyword.trim(), totalCount: relevant.length, recommendedQueries: terms, fieldId };
+      if (relevant.length > 0) SEARCH_CACHE.set(cacheKey, { at: Date.now(), payload });
+      return new Response(JSON.stringify(payload), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Stage 1: raw input × all orgs (title) — fired immediately, before the AI plan
     // resolves, so the KIPRIS round-trip overlaps the model latency.

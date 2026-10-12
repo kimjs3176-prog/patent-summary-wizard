@@ -82,3 +82,14 @@ describe("three-year technology filings", () => {
     expect(groups.some(group => group.some(field => field.id === "soil"))).toBe(true);
   });
 });
+import { FIELD_SEARCH_TERMS as TERMS, TECHNOLOGY_FIELDS as ALL_FIELDS } from "../../supabase/functions/_shared/technologyFields";
+import { describe as d2, it as i2, expect as e2 } from "vitest";
+d2("field search terms", () => {
+  i2("바이오 is not limited to 미생물", () => {
+    e2(TERMS.bio).toEqual(expect.arrayContaining(["미생물", "유전자", "세포", "단백질"]));
+    e2(TERMS.bio.length).toBeGreaterThan(1);
+  });
+  i2("every field has search terms", () => {
+    for (const f of ALL_FIELDS) e2(TERMS[f.id]?.length).toBeGreaterThan(0);
+  });
+});
