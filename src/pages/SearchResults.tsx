@@ -6,6 +6,7 @@ import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PatentInput } from "@/components/PatentInput";
 import { safeFetch } from "@/lib/safeFetch";
+import { FieldTrendPanel } from "@/components/FieldTrendPanel";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -13,6 +14,7 @@ export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const keyword = searchParams.get("keyword") || "";
+  const fieldName = searchParams.get("field") || "";
   const [results, setResults] = useState<KeywordSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
@@ -191,6 +193,11 @@ export default function SearchResults() {
             </div>
           </div>
         </div>
+
+        {fieldName && !isLoading && results.length > 0 && <FieldTrendPanel fieldName={fieldName} results={results} />}
+        <div id="field-patents" className="scroll-mt-24" />
+
+
 
         {/* Loading */}
         {isLoading && (
