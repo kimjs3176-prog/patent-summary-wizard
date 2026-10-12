@@ -15,6 +15,7 @@ export default function SearchResults() {
   const navigate = useNavigate();
   const keyword = searchParams.get("keyword") || "";
   const fieldName = searchParams.get("field") || "";
+  const fieldId = searchParams.get("fieldId") || "";
   const [results, setResults] = useState<KeywordSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
@@ -74,7 +75,7 @@ export default function SearchResults() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ keyword }),
+            body: JSON.stringify(fieldId ? { keyword, fieldId } : { keyword }),
             timeoutMs: 45000,
             retries: 2,
           }
@@ -104,7 +105,7 @@ export default function SearchResults() {
     return () => {
       cancelled = true;
     };
-  }, [keyword, retryNonce]);
+  }, [keyword, fieldId, retryNonce]);
 
   const searchFor = (kw: string) => navigate(`/search?keyword=${encodeURIComponent(kw)}`);
 
