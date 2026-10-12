@@ -368,6 +368,7 @@ serve(async (req) => {
     // Previously these two AI calls ran sequentially *before* any network search,
     // adding up to ~15s of dead time to every query.
     const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[]; should: string[] }> = (async () => {
+      if (fieldId) return { queries: [rawInput], must: [], should: [] };
       if (isNaturalLanguageQuery(rawInput)) {
         isNLQuery = true;
         const extraction = await extractKeywordsWithAI(rawInput);
