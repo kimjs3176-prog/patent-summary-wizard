@@ -74,11 +74,11 @@ export function KeywordExplorer() {
                       title={`${node.label} · ${count.toLocaleString()}건 · 대표 IPC 기준`}
                       aria-label={`${node.label} ${count.toLocaleString()}건, 관련 특허 검색`}
                       onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.keyword ?? "농업")}`)}
-                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${compact ? "rounded-lg p-1.5 gap-1 items-center justify-center" : "rounded-xl p-3 items-start justify-start gap-1"}`}
+                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${compact ? "rounded-lg p-1.5 gap-1 items-center justify-center" : "rounded-lg p-4 items-start justify-start gap-2"}`}
                       style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
-                      {!compact && Icon && <div className="flex w-full items-center justify-between mb-1"><Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.5} /><ArrowUpRight className="h-4 w-4 opacity-40 group-hover:opacity-100" /></div>}
-                      <span className={`w-full font-bold tracking-normal leading-tight break-words ${compact ? "text-xs text-center" : "text-sm md:text-base text-left"}`}>{node.label}</span>
-                      <span className={`shrink-0 font-semibold tabular-nums leading-normal ${compact ? "text-sm" : "mt-auto text-xl md:text-2xl"}`}>{count.toLocaleString()}<span className={compact ? "" : "ml-1 text-xs font-medium opacity-70"}>건</span></span>
+                      {!compact && Icon && <div className="flex w-full items-center justify-between"><span className="technology-tile-icon flex h-9 w-9 items-center justify-center rounded-lg"><Icon aria-hidden="true" className="h-5 w-5" strokeWidth={1.75} /></span><ArrowUpRight aria-hidden="true" className="h-4 w-4 opacity-40 transition-opacity group-hover:opacity-100" /></div>}
+                      <span className={`w-full font-bold tracking-normal leading-tight break-words ${compact ? "text-xs text-center" : "text-base text-left"}`}>{node.label}</span>
+                      <span className={`shrink-0 font-bold tabular-nums leading-tight ${compact ? (node.height < 65 ? "text-base" : "text-lg") : "mt-auto text-3xl"}`}>{count.toLocaleString()}<span className="ml-1 text-[11px] font-medium opacity-70">건</span></span>
                     </Button>
                   );
                 })}
