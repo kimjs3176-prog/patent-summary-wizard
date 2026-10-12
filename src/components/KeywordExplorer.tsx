@@ -73,7 +73,7 @@ export function KeywordExplorer() {
                     <Button key={node.id} variant="ghost"
                       title={`${node.label} · ${count.toLocaleString()}건 · 대표 IPC 기준`}
                       aria-label={`${node.label} ${count.toLocaleString()}건, 관련 특허 검색`}
-                      onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.keyword ?? "농업")}`)}
+                      onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.keyword ?? "농업")}&field=${encodeURIComponent(node.label)}`)}
                       className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${compact ? "rounded-lg p-1.5 gap-1 items-center justify-center" : "rounded-lg p-4 items-start justify-start gap-2"}`}
                       style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
                       {!compact && Icon && <div className="flex w-full items-center justify-between"><span className="technology-tile-icon flex h-9 w-9 items-center justify-center rounded-lg"><Icon aria-hidden="true" className="h-5 w-5" strokeWidth={1.75} /></span><ArrowUpRight aria-hidden="true" className="h-4 w-4 opacity-40 transition-opacity group-hover:opacity-100" /></div>}
