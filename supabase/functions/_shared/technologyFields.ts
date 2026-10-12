@@ -25,6 +25,38 @@ export const TECHNOLOGY_FIELDS = [
   { id: "other", label: "기타 기술", keyword: "농업", tone: "other" },
 ] as const;
 
+/** Broad search terms per field: clicking a tile searches all of them, then keeps patents whose primary IPC maps to the field. */
+export const FIELD_SEARCH_TERMS: Record<string, string[]> = {
+  food: ["식품", "음료", "조성물", "제조방법"],
+  processing: ["가공장치", "가공", "건조기", "선별"],
+  storage: ["식품보존", "선도유지", "저장", "포장"],
+  fermentation: ["발효", "효소", "유산균", "주류"],
+  bio: ["바이오", "미생물", "유전자", "균주", "세포", "단백질", "효소", "형질전환"],
+  chemistry: ["생화학", "화합물", "추출물", "펩타이드", "유도체"],
+  breeding: ["육종", "분자마커", "유전자", "형질"],
+  variety: ["품종", "신품종", "계통"],
+  health: ["약학", "치료", "예방", "건강기능", "조성물"],
+  cosmetics: ["화장료", "피부", "미백", "주름"],
+  crop: ["재배", "육묘", "시설", "수경"],
+  machine: ["농기계", "파종", "수확", "작업기"],
+  livestock: ["축산", "가축", "사료", "동물"],
+  aquaculture: ["양식", "어류", "곤충", "양봉"],
+  protection: ["방제", "병해충", "살충", "항균", "병원균"],
+  environment: ["수처리", "정화", "오염"],
+  recycling: ["폐기물", "부산물", "재활용", "퇴비"],
+  fertilizer: ["비료", "영양제", "퇴비"],
+  soil: ["토양", "토양개량", "상토"],
+  digital: ["센서", "측정", "검출", "분석"],
+  computing: ["데이터", "영상", "인공지능", "시스템"],
+  control: ["제어", "자동화", "로봇"],
+  electronics: ["전자", "조명", "통신", "LED"],
+  other: ["농업"],
+};
+
+export function isTechnologyFieldId(value: unknown): value is TechnologyFieldId {
+  return typeof value === "string" && TECHNOLOGY_FIELDS.some(field => field.id === value);
+}
+
 export type TechnologyFieldId = typeof TECHNOLOGY_FIELDS[number]["id"];
 export function classifyTechnology(ipc: string): TechnologyFieldId {
   const code = ipc.toUpperCase().replace(/\s/g, "").split(/[|,;]/)[0];
