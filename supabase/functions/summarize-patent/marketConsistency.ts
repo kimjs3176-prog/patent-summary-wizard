@@ -93,8 +93,15 @@ export function addSourceNote(section: string, anchor: string, note: string): st
   return section.slice(0, pos) + ` ${note}` + section.slice(pos);
 }
 
+/** "국내 시장", "국내 상위 시장", "관련 시장"처럼 무엇인지 불분명한 시장명 */
+export function isAmbiguousMarket(key: string): boolean {
+  const core = key.replace(/^(국내|글로벌|세계|전세계|한국)/, "").replace(/시장$/, "");
+  return core.length < 2 || /상위|관련|해당|전방|목표|대상|유관|기타/.test(core);
+}
+
 export function claimToRef(c: MarketClaim): MarketRef | null {
   if (c.cagr == null || c.cagr <= 0 || c.cagr > 60) return null;
+  if (isAmbiguousMarket(c.key)) return null;
   return { market_key: c.key, label: c.label, base_year: c.baseYear, base_value_eok: c.baseEok, cagr: c.cagr };
 }
 
