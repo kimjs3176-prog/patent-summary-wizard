@@ -409,7 +409,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v17-balanced-sections";
+    const promptVersion = "v18-gemini-3.8";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
