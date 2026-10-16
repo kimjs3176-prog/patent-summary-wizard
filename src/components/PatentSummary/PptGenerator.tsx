@@ -2,7 +2,7 @@ import { Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PatentData } from "./types";
-import { CommercializationDetails } from "./TechnologyCommercializationScore";
+import { CommercializationDetails, useTrlConfig } from "./TechnologyCommercializationScore";
 
 interface PptGeneratorProps {
   content: string;
@@ -15,8 +15,6 @@ interface PptGeneratorProps {
 function getGradeLabel(v: number) { return v >= 90 ? "S" : v >= 80 ? "A" : v >= 70 ? "B" : v >= 60 ? "C" : v >= 50 ? "D" : "F"; }
 function getScoreLabel(v: number) { return v >= 90 ? "매우 우수" : v >= 80 ? "우수" : v >= 70 ? "양호" : v >= 60 ? "보통" : v >= 50 ? "미흡" : "개선 필요"; }
 function getScoreColorHex(v: number) { return v >= 80 ? "2E7D32" : v >= 60 ? "1565C0" : v >= 40 ? "F57F17" : "C62828"; }
-const TRL_LEVEL_NAMES = ["기초연구", "기술개념", "개념검증", "실험실검증", "유사환경검증", "시제품개발", "운영환경시연", "시스템완성", "상용화"];
-function getTrlStageLabel(t: number) { return TRL_LEVEL_NAMES[Math.max(1, Math.min(9, Math.round(t))) - 1]; }
 
 const C = {
   darkGreen: "0D3B26",
@@ -55,6 +53,7 @@ export function PptGenerator({
   commercializationDetails,
   commercializationScore,
 }: PptGeneratorProps) {
+  const trlConfig = useTrlConfig();
   const handlePptDownload = async () => {
     if (!content) { toast.error("PPT 생성에 실패했습니다."); return; }
     toast.info("PPT 생성 중...");
@@ -277,11 +276,12 @@ export function PptGenerator({
           align: "center", valign: "middle",
         });
 
-        s3.addText(`TRL ${trl} — ${getTrlStageLabel(trl)}`, {
+        const trlInfo = trlConfig.levels.find((level) => level.level === trl);
+        s3.addText(`TRL ${trl} — ${trlInfo?.label ?? ""}`, {
           x: 2.0, y: 1.2, w: 5, h: 0.4,
           fontSize: 18, fontFace: "맑은 고딕", color: C.text, bold: true,
         });
-        s3.addText(`상용화까지 ${9 - trl} 단계 남음`, {
+        s3.addText(trlInfo?.description ?? "", {
           x: 2.0, y: 1.65, w: 5, h: 0.3,
           fontSize: 11, fontFace: "맑은 고딕", color: C.textMuted,
         });
@@ -306,11 +306,11 @@ export function PptGenerator({
           });
         }
 
-        // Per-level detailed names (e.g. TRL 6 - 유사환경검증)
-        TRL_LEVEL_NAMES.forEach((name, idx) => {
+        // Names share the web/admin terminology and fit within each segment.
+        trlConfig.levels.forEach(({ label: name }, idx) => {
           const active = idx + 1 <= trl;
           s3.addText(name, {
-            x: barStartX + idx * segW - 0.12, y: 2.86, w: segW + 0.24, h: 0.26,
+            x: barStartX + idx * segW, y: 2.86, w: segW - 0.06, h: 0.3,
             fontSize: 8, fontFace: "맑은 고딕",
             color: active ? "44546A" : "B0B0B0",
             align: "center", valign: "middle", bold: idx + 1 === trl,

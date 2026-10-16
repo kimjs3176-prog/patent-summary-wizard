@@ -15,6 +15,7 @@ import { ScoreTrlSettings, DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreC
 import { StatsDashboard } from "@/components/admin/StatsDashboard";
 import type { UsageStats, VisitorStats } from "@/components/admin/adminTypes";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveTrlLevels } from "@/lib/trlPresentation";
 
 interface FeaturedPatent {
   id: string;
@@ -279,7 +280,10 @@ const Admin = () => {
           try { setScoreConfig({ ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settingsResult.settings.score_settings) }); } catch {}
         }
         if (settingsResult.settings?.trl_settings) {
-          try { setTrlConfig({ ...DEFAULT_TRL_CONFIG, ...JSON.parse(settingsResult.settings.trl_settings) }); } catch {}
+          try {
+            const saved = JSON.parse(settingsResult.settings.trl_settings);
+            setTrlConfig({ ...DEFAULT_TRL_CONFIG, ...saved, levels: resolveTrlLevels(saved?.levels) });
+          } catch {}
         }
         if (settingsResult.settings?.pdf_layout_config) {
           try { setPdfLayoutConfig({ ...DEFAULT_PDF_CONFIG, ...JSON.parse(settingsResult.settings.pdf_layout_config) }); } catch {}

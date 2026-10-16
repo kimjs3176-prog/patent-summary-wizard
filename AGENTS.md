@@ -8,6 +8,7 @@
 - Market figures are pinned per market in market_reference (domestic KRW and global USD alike); stored values are injected into the summary prompt and re-applied after generation, so the AI reuses existing markets instead of inventing new numbers.
 
 ## Architecture decisions
+- TRL presentation uses the shared reference levels and legacy-default resolver across admin, summaries and PPT; terminology updates must not change inferred scores or overwrite custom labels.
 - Define summary section content budgets in the server-side sectionBalance helper and version the prompt on policy changes; preserve full prose rather than truncating web or print output.
 - Keep homepage search presentation in HomeSearchHero and shared semantic CSS tokens so one layout stays consistent across screen sizes without changing search behavior.
 - Technology tile tone classes (`technology-tile-<tone>`) are safelisted in tailwind.config.ts because they are composed dynamically (`technology-tile-${tone}`) and would otherwise be tree-shaken from the CSS output. Never remove the safelist.

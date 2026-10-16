@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
+import { TRL_REFERENCE_LEVELS } from "@/lib/trlPresentation";
 
 export interface ScoreConfig {
   cardTitle: string;
@@ -15,7 +16,7 @@ export interface ScoreConfig {
 export interface TrlConfig {
   cardTitle: string;
   cardSubtitle: string;
-  levels: { level: number; label: string; description: string }[];
+  levels: { level: number; label: string; description: string; example?: string }[];
   stages: { name: string; range: string }[];
 }
 
@@ -37,17 +38,7 @@ export const DEFAULT_SCORE_CONFIG: ScoreConfig = {
 export const DEFAULT_TRL_CONFIG: TrlConfig = {
   cardTitle: "기술성숙도 (TRL)",
   cardSubtitle: "Technology Readiness Level",
-  levels: [
-    { level: 1, label: "기초연구", description: "기본 원리 관찰 및 보고" },
-    { level: 2, label: "기술개념", description: "기술 개념 및 응용 정립" },
-    { level: 3, label: "개념검증", description: "핵심 기능의 분석적/실험적 증명" },
-    { level: 4, label: "실험실검증", description: "실험실 환경에서 기술 검증" },
-    { level: 5, label: "유사환경검증", description: "유사 환경에서 기술 검증" },
-    { level: 6, label: "시제품개발", description: "시제품의 유사 환경 시연" },
-    { level: 7, label: "운영환경시연", description: "실제 운영 환경에서 시연" },
-    { level: 8, label: "시스템완성", description: "시스템 완성 및 검증" },
-    { level: 9, label: "상용화", description: "실제 운영 환경에서 성공적 검증" },
-  ],
+  levels: TRL_REFERENCE_LEVELS,
   stages: [
     { name: "기초연구", range: "TRL 1-3" },
     { name: "개발/실증", range: "TRL 4-6" },
