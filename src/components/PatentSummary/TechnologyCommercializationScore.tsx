@@ -47,7 +47,7 @@ function useScoreConfig(): ScoreConfig {
   }, [settings.score_settings]);
 }
 
-function useTrlConfig(): TrlConfig {
+export function useTrlConfig(): TrlConfig {
   const { settings } = useSiteSettings();
   return useMemo(() => {
     if (settings.trl_settings) {

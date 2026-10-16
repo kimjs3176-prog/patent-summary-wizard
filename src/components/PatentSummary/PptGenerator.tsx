@@ -15,7 +15,8 @@ interface PptGeneratorProps {
 function getGradeLabel(v: number) { return v >= 90 ? "S" : v >= 80 ? "A" : v >= 70 ? "B" : v >= 60 ? "C" : v >= 50 ? "D" : "F"; }
 function getScoreLabel(v: number) { return v >= 90 ? "매우 우수" : v >= 80 ? "우수" : v >= 70 ? "양호" : v >= 60 ? "보통" : v >= 50 ? "미흡" : "개선 필요"; }
 function getScoreColorHex(v: number) { return v >= 80 ? "2E7D32" : v >= 60 ? "1565C0" : v >= 40 ? "F57F17" : "C62828"; }
-function getTrlStageLabel(t: number) { return t <= 3 ? "기초연구" : t <= 6 ? "실험/시험" : "실용화/상용화"; }
+const TRL_LEVEL_NAMES = ["기초연구", "기술개념", "개념검증", "실험실검증", "유사환경검증", "시제품개발", "운영환경시연", "시스템완성", "상용화"];
+function getTrlStageLabel(t: number) { return TRL_LEVEL_NAMES[Math.max(1, Math.min(9, Math.round(t))) - 1]; }
 
 const C = {
   darkGreen: "0D3B26",
