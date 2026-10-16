@@ -14,6 +14,6 @@ describe("TRL presentation settings resolution", () => {
   });
   it("safely falls back for malformed saved levels", () => {
     expect(resolveTrlLevels(null)).toEqual(resolveTrlLevels({ levels: [] }));
-    expect(resolveTrlLevels([null, { level: 6, label: 12 }])).toEqual(resolveTrlLevels());
+    expect(resolveTrlLevels([null, { level: 6, label: 12 }])).toEqual(resolveTrlLevels(undefined));
   });
 });
