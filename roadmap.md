@@ -1,4 +1,7 @@
 # Tasks
+- [x] Rename TRL 5 display name to 시제품 성능 평가 and verify the summary.
+- [x] Shorten TRL 7 display name to 신뢰성 검증 and verify the summary.
+- [x] Align TRL display names and definitions with the attached reference across summaries and exports, and verify a real summary.
 - [x] Balance summary section lengths without dropping key facts, and verify a newly generated summary.
 - [x] Optimize homepage visual hierarchy, spacing and search presentation while preserving existing features.
 - [x] Fit all fields with at least 10 filings inside a shorter rectangular keyword treemap and verify navigation.

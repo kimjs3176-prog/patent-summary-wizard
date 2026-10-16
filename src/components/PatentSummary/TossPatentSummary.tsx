@@ -851,12 +851,12 @@ function TossPatentSummaryInner({
               {/* TRL — 같은 카드 내 통합 */}
               {details && (
                 <div className="pt-5">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <div className="flex items-baseline gap-2">
                       <span className="text-[13px] text-[#191F28] font-bold">기술 성숙도</span>
                       <span className="text-[11px] text-[#8B95A1] font-semibold">TRL</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[22px] font-black tabular-nums leading-none" style={{ color: trlColor }}>
                         {trl ?? "-"}
                       </span>
@@ -880,9 +880,10 @@ function TossPatentSummaryInner({
                       const active = trl != null && lvl <= trl;
                       const isCurrent = trl != null && lvl === trl;
                       const c = lvl <= 3 ? "#EF4444" : lvl <= 6 ? "#F59E0B" : ACCENT_HEX;
-                      const lvlLabel = trlConfig.levels[i]?.label;
+                      const lvlInfo = trlConfig.levels[i];
+                      const lvlLabel = lvlInfo?.label;
                       return (
-                        <div key={i} className="flex-1 min-w-0 flex flex-col items-center gap-1">
+                        <div key={i} className="flex-1 min-w-0 flex flex-col items-center gap-1" title={`TRL ${lvl} — ${lvlLabel}\n${lvlInfo?.description}\n예: ${lvlInfo?.example ?? ""}`}>
                           <div
                             className="pdf-shape-center w-full h-7 rounded-[6px] flex items-center justify-center text-[11px] font-bold tabular-nums transition-all"
                             style={{
@@ -895,8 +896,7 @@ function TossPatentSummaryInner({
                           </div>
                           {lvlLabel && (
                             <span
-                              className={`text-[9px] leading-none whitespace-nowrap ${isCurrent ? "max-sm:block font-bold" : "max-sm:hidden"} ${isCurrent ? "" : active ? "font-semibold" : "font-medium"}`}
-                              style={{ color: isCurrent ? "#191F28" : active ? "#4E5968" : "#B0B8C1" }}
+                              className={`w-full min-h-8 text-center text-[9px] leading-4 break-keep ${isCurrent ? "font-bold text-foreground" : active ? "font-semibold text-muted-foreground" : "font-medium text-muted-foreground/60"}`}
                             >
                               {lvlLabel}
                             </span>
@@ -907,7 +907,7 @@ function TossPatentSummaryInner({
                   </div>
                   <div className="flex justify-between mt-2 text-[10.5px] text-[#8B95A1] font-semibold">
                     <span>1–3 · 기초 연구</span>
-                    <span>4–6 · 실증</span>
+                    <span>4–6 · 개발/실증</span>
                     <span>7–9 · 상용화</span>
                   </div>
                   {details.trlReason && (

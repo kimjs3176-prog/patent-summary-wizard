@@ -5,6 +5,7 @@ import { CircularGauge } from "./CircularGauge";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { DEFAULT_SCORE_CONFIG, DEFAULT_TRL_CONFIG, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { useMemo } from "react";
+import { resolveTrlLevels } from "@/lib/trlPresentation";
 
 // Plain renderer — highlight feature removed.
 // Strips ** markdown bold and renders *Latin* segments as <em>.
@@ -51,7 +52,10 @@ export function useTrlConfig(): TrlConfig {
   const { settings } = useSiteSettings();
   return useMemo(() => {
     if (settings.trl_settings) {
-      try { return { ...DEFAULT_TRL_CONFIG, ...JSON.parse(settings.trl_settings) }; } catch {}
+      try {
+        const saved = JSON.parse(settings.trl_settings);
+        return { ...DEFAULT_TRL_CONFIG, ...saved, levels: resolveTrlLevels(saved?.levels) };
+      } catch {}
     }
     return DEFAULT_TRL_CONFIG;
   }, [settings.trl_settings]);
@@ -148,6 +152,7 @@ function TechnologyCommercializationScoreComponent({
 
   // TRL helpers
   const trl = details.trl;
+  const trlInfo = trlConfig.levels.find((level) => level.level === trl);
   const trlStageColor = trl != null
     ? (trl <= 3 ? 'hsl(0 84% 55%)' : trl <= 6 ? 'hsl(38 92% 50%)' : 'hsl(160 70% 40%)')
     : 'hsl(var(--muted-foreground))';
@@ -217,6 +222,7 @@ function TechnologyCommercializationScoreComponent({
                       {trl}
                     </span>
                     <span className="text-sm text-muted-foreground/50 font-medium">/9</span>
+                    <span className="text-sm font-semibold text-foreground">{trlInfo?.label}</span>
                   </div>
                   <span
                     className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-white shadow-sm"
@@ -239,7 +245,7 @@ function TechnologyCommercializationScoreComponent({
                         style={{
                           background: active ? segColor : 'hsl(var(--muted) / 0.6)',
                         }}
-                        title={`TRL ${level}`}
+                        title={`TRL ${level} — ${trlConfig.levels[i]?.label}\n${trlConfig.levels[i]?.description}`}
                       />
                     );
                   })}
