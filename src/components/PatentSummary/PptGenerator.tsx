@@ -306,6 +306,17 @@ export function PptGenerator({
           });
         }
 
+        // Per-level detailed names (e.g. TRL 6 - 유사환경검증)
+        TRL_LEVEL_NAMES.forEach((name, idx) => {
+          const active = idx + 1 <= trl;
+          s3.addText(name, {
+            x: barStartX + idx * segW - 0.12, y: 2.86, w: segW + 0.24, h: 0.26,
+            fontSize: 8, fontFace: "맑은 고딕",
+            color: active ? "44546A" : "B0B0B0",
+            align: "center", valign: "middle", bold: idx + 1 === trl,
+          });
+        });
+
         // Stage labels with colored tags
         const stages = [
           { label: "기초연구", sub: "TRL 1-3", color: "7B1FA2", range: [1, 3] },
@@ -317,11 +328,11 @@ export function PptGenerator({
           const stgW = totalBarW / 3;
           const sx = barStartX + idx * stgW;
           s3.addShape(pptx.ShapeType.roundRect, {
-            x: sx, y: 2.95, w: stgW - 0.1, h: 0.45,
+            x: sx, y: 3.2, w: stgW - 0.1, h: 0.45,
             fill: { color: active ? s.color : "F0F2F0" }, rectRadius: 0.06,
           });
           s3.addText(`${s.label}  ${s.sub}`, {
-            x: sx, y: 2.95, w: stgW - 0.1, h: 0.45,
+            x: sx, y: 3.2, w: stgW - 0.1, h: 0.45,
             fontSize: 10, fontFace: "맑은 고딕",
             color: active ? C.white : C.textMuted,
             align: "center", valign: "middle", bold: active,
@@ -331,19 +342,19 @@ export function PptGenerator({
         // TRL reason box
         if (commercializationDetails.trlReason) {
           s3.addShape(pptx.ShapeType.roundRect, {
-            x: 0.7, y: 3.65, w: 8.6, h: 1.2,
+            x: 0.7, y: 3.85, w: 8.6, h: 1.2,
             fill: { color: C.cardBg }, line: { color: C.border, width: 0.4 }, rectRadius: 0.08,
           });
           // Green accent bar on left
           s3.addShape(pptx.ShapeType.rect, {
-            x: 0.7, y: 3.65, w: 0.06, h: 1.2, fill: { color: C.midGreen },
+            x: 0.7, y: 3.85, w: 0.06, h: 1.2, fill: { color: C.midGreen },
           });
           s3.addText("TRL 추정 근거", {
-            x: 0.95, y: 3.7, w: 8, h: 0.25,
+            x: 0.95, y: 3.9, w: 8, h: 0.25,
             fontSize: 9, fontFace: "맑은 고딕", color: C.textMuted, bold: true,
           });
           s3.addText(commercializationDetails.trlReason, {
-            x: 0.95, y: 3.98, w: 8.1, h: 0.8,
+            x: 0.95, y: 4.18, w: 8.1, h: 0.8,
             fontSize: 11, fontFace: "맑은 고딕", color: C.text,
             wrap: true, valign: "top", lineSpacingMultiple: 1.3,
           });
