@@ -7,7 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
-import type { CommercializationDetails } from "./TechnologyCommercializationScore";
+import { useTrlConfig, type CommercializationDetails } from "./TechnologyCommercializationScore";
 import { RelatedPatentsCompact } from "./RelatedPatentsCompact";
 import { RegulationAnalysis } from "./RegulationAnalysis";
 
@@ -475,6 +475,7 @@ function TossPatentSummaryInner({
   featureFlags = { pdfEnabled: true, pptEnabled: true },
 }: TossPatentSummaryProps) {
   const { settings } = useSiteSettings();
+  const trlConfig = useTrlConfig();
   const { isFavorite, toggleFavorite } = useFavoritePatents();
   const patentIsFavorite = patentNumber ? isFavorite(patentNumber) : false;
 
@@ -547,6 +548,7 @@ function TossPatentSummaryInner({
   const trl = details?.trl ?? null;
   const trlColor = trl == null ? "#9CA3AF" : trl <= 3 ? "#EF4444" : trl <= 6 ? "#F59E0B" : ACCENT_HEX;
   const trlStage = trl == null ? "-" : trl <= 3 ? "기초연구" : trl <= 6 ? "개발/실증" : "상용화";
+  const trlName = trl != null ? trlConfig.levels.find((l) => l.level === trl)?.label : null;
 
   const title = patentData?.titleKo || patentData?.title || `특허 ${patentNumber}`;
   const sections = useMemo(() => parseSections(content), [content]);
@@ -859,6 +861,11 @@ function TossPatentSummaryInner({
                         {trl ?? "-"}
                       </span>
                       <span className="text-[#8B95A1] text-[11px] font-semibold">/ 9</span>
+                      {trlName && (
+                        <span className="text-[12px] font-bold leading-none" style={{ color: trlColor }}>
+                          · {trlName}
+                        </span>
+                      )}
                       <span
                         className="pdf-shape-center ml-1 min-h-6 px-2.5 py-1 rounded-full text-[11px] font-bold text-white"
                         style={{ background: trlColor }}
@@ -873,17 +880,27 @@ function TossPatentSummaryInner({
                       const active = trl != null && lvl <= trl;
                       const isCurrent = trl != null && lvl === trl;
                       const c = lvl <= 3 ? "#EF4444" : lvl <= 6 ? "#F59E0B" : ACCENT_HEX;
+                      const lvlLabel = trlConfig.levels[i]?.label;
                       return (
-                        <div
-                          key={i}
-                          className="pdf-shape-center flex-1 h-7 rounded-[6px] flex items-center justify-center text-[11px] font-bold tabular-nums transition-all"
-                          style={{
-                            background: active ? c : "#F1F3F5",
-                            color: active ? "#FFFFFF" : "#B0B8C1",
-                            boxShadow: isCurrent ? `0 0 0 2px #FFFFFF, 0 0 0 3px ${c}` : "none",
-                          }}
-                        >
-                          {lvl}
+                        <div key={i} className="flex-1 min-w-0 flex flex-col items-center gap-1">
+                          <div
+                            className="pdf-shape-center w-full h-7 rounded-[6px] flex items-center justify-center text-[11px] font-bold tabular-nums transition-all"
+                            style={{
+                              background: active ? c : "#F1F3F5",
+                              color: active ? "#FFFFFF" : "#B0B8C1",
+                              boxShadow: isCurrent ? `0 0 0 2px #FFFFFF, 0 0 0 3px ${c}` : "none",
+                            }}
+                          >
+                            {lvl}
+                          </div>
+                          {lvlLabel && (
+                            <span
+                              className={`text-[9px] leading-none whitespace-nowrap ${isCurrent ? "max-sm:block font-bold" : "max-sm:hidden"} ${isCurrent ? "" : active ? "font-semibold" : "font-medium"}`}
+                              style={{ color: isCurrent ? "#191F28" : active ? "#4E5968" : "#B0B8C1" }}
+                            >
+                              {lvlLabel}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
