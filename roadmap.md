@@ -13,4 +13,4 @@
 - [x] Refresh server statistics and verify real counts and field-search navigation.
 - [x] Replace homepage keyword chips with a technology-field treemap.
 - [x] Aggregate applicant-filtered KIPRIS filings over the rolling last three years, with cached counts.
-- [x] Verify classification, sizing, and live field-search navigation.
+- [x] Verify classification, sizing, and live field-search navigation.- [x] Upgrade analysis models to gemini-3.8-flash and bump summary cache version.
