@@ -378,7 +378,7 @@ serve(async (req) => {
     let customPromptExtra = "";
     let maxTokens = 4000;
     // 긴 요약은 스트리밍 경로에서 본문이 중간에 닫히는 사례가 있어 기본 Gateway 모델의 비스트리밍 완료 후 전송으로 안정화한다.
-    const aiModel = "google/gemini-3.6-flash";
+    const aiModel = "google/gemini-3.8-flash";
     let sectionLengthSettings: Record<string, number> = {};
     try {
       const supabase = getSupabaseClient();
@@ -409,7 +409,7 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v17-balanced-sections";
+    const promptVersion = "v18-gemini-3.8";
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
