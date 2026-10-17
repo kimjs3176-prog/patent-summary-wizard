@@ -145,32 +145,40 @@ export function globalKey(label: string): string {
   return label.replace(/\s+/g, "").replace(/(규모|전체)/g, "").replace(/^(세계|전세계)/, "글로벌");
 }
 
+const GLOBAL_RE_G = new RegExp(GLOBAL_RE.source, "gi");
+
 export function extractGlobalClaim(section: string): MarketClaim | null {
-  const m = GLOBAL_RE.exec(section);
-  if (!m) return null;
-  const baseEok = parseUsdEok(m[4]);
-  if (!baseEok) return null;
-  const sentenceEnd = section.slice(m.index).search(/[.。](\s|$)/);
-  const sentence = section.slice(m.index, sentenceEnd < 0 ? undefined : m.index + sentenceEnd);
-  const c = CAGR_RE.exec(sentence);
-  const label = m[1].replace(/\s+/g, " ").trim();
-  return { label, key: globalKey(label), baseYear: Number(m[2]), baseEok, cagr: c ? parseFloat(c[3]) : null };
+  return extractGlobalClaims(section)[0] ?? null;
 }
 
-/** 글로벌 시장 문장의 기준연도·USD 규모·같은 문장 안 CAGR을 표준값으로 바꾼다. */
-export function applyGlobalRef(section: string, ref: MarketRef): string {
-  const m = GLOBAL_RE.exec(section);
-  if (!m) return section;
-  const start = m.index;
-  let claim = m[0];
-  claim = claim.replace(new RegExp(`${m[2]}(\\s*년)`), `${ref.base_year}$1`);
-  claim = claim.slice(0, claim.length - m[4].length) + formatUsdEok(Number(ref.base_value_eok));
-  let out = section.slice(0, start) + claim + section.slice(start + m[0].length);
-  const afterIdx = start + claim.length;
-  const rest = out.slice(afterIdx);
-  const endRel = rest.search(/[.。](\s|$)/);
-  const sentence = endRel < 0 ? rest : rest.slice(0, endRel);
-  const fixedSentence = sentence.replace(CAGR_RE, (_s, a, b) => `${a}${b}${ref.cagr}%`);
-  out = out.slice(0, afterIdx) + fixedSentence + rest.slice(sentence.length);
+/** 섹션에 등장하는 모든 글로벌 시장 주장을 시장별로 추출한다. */
+export function extractGlobalClaims(section: string): MarketClaim[] {
+  const out: MarketClaim[] = [];
+  const seen = new Set<string>();
+  for (const m of section.matchAll(GLOBAL_RE_G)) {
+    const baseEok = parseUsdEok(m[4]);
+    if (!baseEok) continue;
+    const label = m[1].replace(/\s+/g, " ").trim();
+    const key = globalKey(label);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const sent = section.slice(m.index!, sentenceEnd(section, m.index!));
+    const c = CAGR_RE.exec(sent);
+    out.push({ label, key, baseYear: Number(m[2]), baseEok, cagr: c ? parseFloat(c[3]) : null });
+  }
   return out;
+}
+
+/** 해당 글로벌 시장의 문장 범위 안에서만 기준연도·USD 규모·CAGR을 표준값으로 바꾼다. */
+export function applyGlobalRef(section: string, ref: MarketRef): string {
+  const matches = [...section.matchAll(GLOBAL_RE_G)];
+  const m = matches.find((x) => globalKey(x[1]) === ref.market_key) ?? null;
+  if (!m || m.index == null) return section;
+  const start = m.index;
+  const end = sentenceEnd(section, start);
+  let sent = section.slice(start, end);
+  sent = sent.replace(new RegExp(`${m[2]}(\\s*년)`), `${ref.base_year}$1`);
+  sent = sent.replace(new RegExp(escapeRe(m[4])), formatUsdEok(Number(ref.base_value_eok)));
+  sent = sent.replace(CAGR_RE, (_s, a, b) => `${a}${b}${ref.cagr}%`);
+  return section.slice(0, start) + sent + section.slice(end);
 }
