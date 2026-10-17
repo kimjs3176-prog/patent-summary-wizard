@@ -58,37 +58,42 @@ function sentenceEnd(text: string, from: number): number {
 export interface MarketClaim { label: string; key: string; baseYear: number; baseEok: number; cagr: number | null }
 
 export function extractMarketClaim(section: string): MarketClaim | null {
-  const m = CLAIM_RE.exec(section);
-  if (!m) return null;
-  const baseYear = Number(m[2]);
-  const baseEok = parseKrwEok(m[4]);
-  if (!baseEok || baseYear >= TARGET_YEAR) return null;
-  const after = section.slice(m.index);
-  const c = CAGR_RE.exec(after);
-  const label = m[1].replace(/\s+/g, " ").trim();
-  return { label, key: normalizeMarketKey(label), baseYear, baseEok, cagr: c ? parseFloat(c[3]) : null };
+  return extractMarketClaims(section)[0] ?? null;
 }
 
-/** 섹션 텍스트에 표준값을 적용해 기준값·CAGR·2026년 값을 통일한다. */
-export function applyMarketRef(section: string, ref: MarketRef): string {
-  const m = CLAIM_RE.exec(section);
-  if (!m) return section;
-  const start = m.index;
-  let claim = m[0];
-  claim = claim.replace(new RegExp(`${m[2]}(\\s*년)`), `${ref.base_year}$1`);
-  claim = claim.replace(new RegExp(`${m[4].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\s*원)$`), `${formatKrwEok(ref.base_value_eok)}$1`);
-  let out = section.slice(0, start) + claim + section.slice(start + m[0].length);
-  // CAGR: 기준값 이후 첫 연평균 표기
-  const afterIdx = start + claim.length;
-  // 글로벌 시장 문장의 CAGR은 건드리지 않도록 '글로벌/세계' 언급 전까지만 교체
-  const rest = out.slice(afterIdx);
-  const gi = rest.search(/글로벌|세계/);
-  const head = gi < 0 ? rest : rest.slice(0, gi);
-  out = out.slice(0, afterIdx) + head.replace(CAGR_RE, (_s, a, b) => `${a}${b}${ref.cagr}%`) + rest.slice(head.length);
-  // 국내 원화 기준 2026년 값은 복리 공식으로 재계산 (USD 문장은 원화 패턴이 아니므로 영향 없음)
-  const projected = formatKrwEok(projectEok(ref.base_value_eok, ref.cagr, ref.base_year));
-  out = out.replace(TARGET_RE, (_s, pre, _amt, won) => `${pre}${projected}${won}`);
+/** 섹션에 등장하는 모든 국내 시장 주장을 시장별로 추출한다. */
+export function extractMarketClaims(section: string): MarketClaim[] {
+  const out: MarketClaim[] = [];
+  const seen = new Set<string>();
+  for (const m of section.matchAll(CLAIM_RE_G)) {
+    const baseYear = Number(m[2]);
+    const baseEok = parseKrwEok(m[4]);
+    if (!baseEok || baseYear >= TARGET_YEAR) continue;
+    const label = m[1].replace(/\s+/g, " ").trim();
+    const key = normalizeMarketKey(label);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const sent = section.slice(m.index!, sentenceEnd(section, m.index!));
+    const c = CAGR_RE.exec(sent);
+    out.push({ label, key, baseYear, baseEok, cagr: c ? parseFloat(c[3]) : null });
+  }
   return out;
+}
+
+/** 해당 시장의 문장 범위 안에서만 기준값·CAGR·2026년 값을 표준값으로 통일한다. 다른 시장의 수치는 건드리지 않는다. */
+export function applyMarketRef(section: string, ref: MarketRef): string {
+  const matches = [...section.matchAll(CLAIM_RE_G)];
+  const m = matches.find((x) => normalizeMarketKey(x[1]) === ref.market_key) ?? null;
+  if (!m || m.index == null) return section;
+  const start = m.index;
+  const end = sentenceEnd(section, start);
+  let sent = section.slice(start, end);
+  sent = sent.replace(new RegExp(`${m[2]}(\\s*년)`), `${ref.base_year}$1`);
+  sent = sent.replace(new RegExp(`${escapeRe(m[4])}(\\s*원)`), `${formatKrwEok(ref.base_value_eok)}$1`);
+  sent = sent.replace(CAGR_RE, (_s, a, b) => `${a}${b}${ref.cagr}%`);
+  const projected = formatKrwEok(projectEok(ref.base_value_eok, ref.cagr, ref.base_year));
+  sent = sent.replace(TARGET_RE, (_s, pre, _amt, won) => `${pre}${projected}${won}`);
+  return section.slice(0, start) + sent + section.slice(end);
 }
 
 /** anchor(기준 금액) 뒤 첫 문장 끝 앞에 출처 괄호를 넣는다. */
