@@ -197,29 +197,32 @@ async function unifyDomesticFigures(content: string): Promise<string> {
   }
 }
 
-// 글로벌(USD) 시장도 처음 저장된 기준값·CAGR로 고정한다.
+// 본문에 등장하는 모든 글로벌(USD) 시장을 각각 찾아 시장별 표준값으로 개별 보정한다.
 async function unifyGlobalFigures(content: string): Promise<string> {
   const secRe = /(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/;
   const m = content.match(secRe);
   if (!m) return content;
-  const claim = extractGlobalClaim(m[2]);
-  if (!claim) return content;
+  const claims = extractGlobalClaims(m[2]);
+  if (!claims.length) return content;
+  let section = m[2];
   try {
     const supabase = supabaseAdmin();
-    const { data: existing } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
-    let ref = existing as MarketRef | null;
-    if (!ref) {
-      const fresh = claimToRef(claim);
-      if (!fresh) return content;
-      const { error } = await supabase.from("market_reference").insert({ ...fresh, source: "USD" });
-      if (error) {
-        const { data: again } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
-        ref = (again as MarketRef | null) ?? fresh;
-      } else ref = fresh;
-      console.log(`[MARKET-REF] registered ${claim.key} ${claim.baseYear} USD ${claim.baseEok}억 CAGR ${claim.cagr}%`);
+    for (const claim of claims) {
+      const { data: existing } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
+      let ref = existing as MarketRef | null;
+      if (!ref) {
+        const fresh = claimToRef(claim);
+        if (!fresh) continue;
+        const { error } = await supabase.from("market_reference").insert({ ...fresh, source: "USD" });
+        if (error) {
+          const { data: again } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
+          ref = (again as MarketRef | null) ?? fresh;
+        } else ref = fresh;
+        console.log(`[MARKET-REF] registered ${claim.key} ${claim.baseYear} USD ${claim.baseEok}억 CAGR ${claim.cagr}%`);
+      }
+      section = applyGlobalRef(section, { ...ref, base_value_eok: Number(ref.base_value_eok), cagr: Number(ref.cagr) });
     }
-    const fixed = applyGlobalRef(m[2], { ...ref, base_value_eok: Number(ref.base_value_eok), cagr: Number(ref.cagr) });
-    return content.replace(secRe, (_x, h) => h + fixed);
+    return content.replace(secRe, (_x, h) => h + section);
   } catch (e) {
     console.error("[MARKET-REF] global error", e);
     return content;
