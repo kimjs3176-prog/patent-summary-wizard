@@ -1,4 +1,5 @@
 # Tasks
+- [ ] Establish expert-reviewed analysis improvement: collect corrections, approve reference cases, retrieve relevant cases, and validate against held-out patents.
 - [x] Rename TRL 5 display name to 시제품 성능 평가 and verify the summary.
 - [x] Shorten TRL 7 display name to 신뢰성 검증 and verify the summary.
 - [x] Align TRL display names and definitions with the attached reference across summaries and exports, and verify a real summary.
