@@ -1,4 +1,5 @@
 # Tasks
+- [x] Compare five identical patents with reference cases off/on using frozen inputs and no production cache writes; report TRL, market figures and commercialization differences.
 - [x] Accumulate automatically validated source-evidence cases within the six-institute scope, retrieve relevant cases without changing analysis rules, and verify a real analysis.
 - [x] Rename TRL 5 display name to 시제품 성능 평가 and verify the summary.
 - [x] Shorten TRL 7 display name to 신뢰성 검증 and verify the summary.
