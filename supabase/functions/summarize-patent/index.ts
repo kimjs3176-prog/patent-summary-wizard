@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { addSourceNote, applyGlobalRef, applyMarketRef, claimToRef, extractGlobalClaim, extractMarketClaim, formatKrwEok, formatUsdEok, type MarketRef } from "./marketConsistency.ts";
+import { addSourceNote, applyGlobalRef, applyMarketRef, claimToRef, extractGlobalClaims, extractMarketClaims, formatKrwEok, formatUsdEok, type MarketClaim, type MarketRef } from "./marketConsistency.ts";
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
@@ -141,7 +141,7 @@ async function unifyMarketFigures(content: string): Promise<string> {
 }
 
 // 한 시장의 표준값을 찾거나(기존 저장값, KOSIS 공식값 우선) 없으면 새로 등록한다.
-async function resolveDomesticRef(claim: import("./marketConsistency.ts").MarketClaim): Promise<(MarketRef & { created_at?: string }) | null> {
+async function resolveDomesticRef(claim: MarketClaim): Promise<(MarketRef & { created_at?: string }) | null> {
   const supabase = supabaseAdmin();
   const { data: existing } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
   let ref = existing as (MarketRef & { created_at?: string }) | null;
