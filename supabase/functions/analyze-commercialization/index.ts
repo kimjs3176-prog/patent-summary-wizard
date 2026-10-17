@@ -4,6 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { reconcileTrl } from "./trlConsistency.ts";
+import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
 
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
@@ -377,6 +378,7 @@ serve(async (req) => {
 
     // 하이픈 유무와 무관하게 동일 특허는 동일 캐시 키를 쓰도록 정규화
     const digitsKey = trimmedPatent.replace(/[^0-9]/g, "");
+    const caseContext = await loadAnalysisCases(trimmedPatent, patentData as PatentData);
     // 이전 분석에서 확정된 점수(있으면 재생성 시에도 그대로 고정)
     let lockedScores: {
       totalScore: number;
@@ -424,6 +426,7 @@ serve(async (req) => {
             await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason }).eq("patent_number", cached.patent_number);
           } catch (_) { /* ignore */ }
         }
+        await recordAnalysisCase(caseContext, trimmedPatent, "commercialization", cachedAnalysis, cached.trl, true);
         return new Response(
           JSON.stringify({
             success: true,
@@ -541,6 +544,7 @@ IPC: ${data.classifications?.slice(0, 3).join(", ") || "없음"}
     if (summaryText) {
       patentContext += `\n\n[AI 요약서 본문 — analysis 필드는 반드시 이 내용을 압축·정리할 것]\n${summaryText}`;
     }
+    patentContext += caseContext.prompt;
 
     // System prompt - richer for detailed mode
     const systemPrompt = isDetailedScore
@@ -935,6 +939,7 @@ JSON형식:
       }
     }
 
+    await recordAnalysisCase(caseContext, trimmedPatent, "commercialization", scores.analysis || "", Number(scores.trl));
     // Save to cache
     try {
       const supabase = getSupabaseClient();

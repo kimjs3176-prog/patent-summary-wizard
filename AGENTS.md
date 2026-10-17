@@ -8,6 +8,7 @@
 - Market figures are pinned per market in market_reference (domestic KRW and global USD alike); stored values are injected into the summary prompt and re-applied after generation, so the AI reuses existing markets instead of inventing new numbers.
 
 ## Architecture decisions
+- Accumulate only server-cache-verified, applicant-scoped original source excerpts through the shared analysis-case policy; never recycle AI claims, scores or market figures as truth, and audit policy/source/reference IDs without invalidating existing scores.
 - TRL presentation uses the shared reference levels and legacy-default resolver across admin, summaries and PPT; terminology updates must not change inferred scores or overwrite custom labels.
 - Define summary section content budgets in the server-side sectionBalance helper and version the prompt on policy changes; preserve full prose rather than truncating web or print output.
 - Keep homepage search presentation in HomeSearchHero and shared semantic CSS tokens so one layout stays consistent across screen sizes without changing search behavior.
