@@ -6,6 +6,8 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { addSourceNote, applyGlobalRef, applyMarketRef, claimToRef, extractGlobalClaim, extractMarketClaim, formatKrwEok, formatUsdEok, type MarketRef } from "./marketConsistency.ts";
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
+import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
+import { CASE_POLICY_VERSION } from "../_shared/analysisCasePolicy.ts";
 
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
@@ -409,7 +411,8 @@ serve(async (req) => {
     }
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
-    const promptVersion = "v18-gemini-3.8";
+    const caseContext = await loadAnalysisCases(trimmedPatent, pd as PatentData);
+    const promptVersion = `v19-${CASE_POLICY_VERSION}`;
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -443,6 +446,7 @@ serve(async (req) => {
       if (cached?.summary_content && (cached.cache_version || "v1") === SUMMARY_CACHE_VERSION) {
         console.log(`[CACHE HIT] ${trimmedPatent}`);
         const content = await unifyMarketFigures(stripDurationFromCommercialization(cached.summary_content));
+        await recordAnalysisCase(caseContext, trimmedPatent, "summary", content, undefined, true);
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
@@ -562,7 +566,7 @@ serve(async (req) => {
 - 각 섹션 첫 문장은 핵심 메시지 1줄 요약(총괄)로 시작해 세부→근거→함의 순으로 구체화.${lengthInstruction}${sectionLengthInstruction}${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
 
     const userMessage = patentData
-      ? `아래 실제 특허 데이터만 근거로 요약서를 작성한다. 테스트 데이터로 간주하거나 특허 기본 정보 섹션을 만들지 말고, 반드시 ## 기술분야 / ## 발명요약 및 특징 / ## 관련시장 동향 / ## 농산업활용 가능성 / ## 상용화전망 5개 섹션만 출력한다.\n\n${patentContext}`
+      ? `아래 실제 특허 데이터만 근거로 요약서를 작성한다. 테스트 데이터로 간주하거나 특허 기본 정보 섹션을 만들지 말고, 반드시 ## 기술분야 / ## 발명요약 및 특징 / ## 관련시장 동향 / ## 농산업활용 가능성 / ## 상용화전망 5개 섹션만 출력한다.\n\n${patentContext}${caseContext.prompt}`
       : `특허 ${patentNumber} 요약서 작성.`;
 
     const encoder = new TextEncoder();
@@ -693,6 +697,7 @@ serve(async (req) => {
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
           await saveCache(fullContent);
+          if (finishReason === "stop") await recordAnalysisCase(caseContext, trimmedPatent, "summary", fullContent);
         } catch (err) {
           console.error(`[SUMMARY COMPLETE ERROR] ${trimmedPatent}`, err);
           try {
