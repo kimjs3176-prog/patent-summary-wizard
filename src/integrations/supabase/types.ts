@@ -212,6 +212,84 @@ export type Database = {
         }
         Relationships: []
       }
+      patent_analysis_case_runs: {
+        Row: {
+          analysis_kind: string
+          created_at: string
+          id: string
+          patent_key: string
+          policy_version: string
+          reference_case_ids: string[]
+          result_hash: string | null
+          source_hash: string | null
+          validation: Json
+        }
+        Insert: {
+          analysis_kind: string
+          created_at?: string
+          id?: string
+          patent_key: string
+          policy_version: string
+          reference_case_ids?: string[]
+          result_hash?: string | null
+          source_hash?: string | null
+          validation?: Json
+        }
+        Update: {
+          analysis_kind?: string
+          created_at?: string
+          id?: string
+          patent_key?: string
+          policy_version?: string
+          reference_case_ids?: string[]
+          result_hash?: string | null
+          source_hash?: string | null
+          validation?: Json
+        }
+        Relationships: []
+      }
+      patent_analysis_cases: {
+        Row: {
+          evidence: Json
+          field_id: string
+          id: string
+          identity_keys: string[]
+          ipc_prefix: string
+          patent_key: string
+          policy_version: string
+          source_hash: string
+          status: string
+          updated_at: string
+          validation: Json
+        }
+        Insert: {
+          evidence?: Json
+          field_id: string
+          id?: string
+          identity_keys?: string[]
+          ipc_prefix: string
+          patent_key: string
+          policy_version: string
+          source_hash: string
+          status?: string
+          updated_at?: string
+          validation?: Json
+        }
+        Update: {
+          evidence?: Json
+          field_id?: string
+          id?: string
+          identity_keys?: string[]
+          ipc_prefix?: string
+          patent_key?: string
+          policy_version?: string
+          source_hash?: string
+          status?: string
+          updated_at?: string
+          validation?: Json
+        }
+        Relationships: []
+      }
       patent_data_cache: {
         Row: {
           cache_version: string
