@@ -44,7 +44,7 @@ describe("시장규모 일관성", () => {
     const text = "국내 종자 시장은 2022년 약 8,000억 원이며 연평균 7.2% 성장해 2026년 약 1조 471억 원이다. 국내 쌀가공식품 시장은 2023년 약 7조 4,117억 원에서 연평균 2.5% 성장해 2026년 약 7조 7,869억 원이다.";
     const seedRef = { market_key: "국내종자시장", label: "국내 종자 시장", base_year: 2022, base_value_eok: 8000, cagr: 7.2 };
     const out = applyMarketRef(text, seedRef);
-    expect(out).toContain("1조 558억"); // 8000*1.072^4 재계산
+    expect(out).toContain("1조 565억"); // 8000*1.072^4 재계산
     expect(out).toContain("7조 7,869억"); // 쌀가공식품 2026년 값 유지
   });
 });
