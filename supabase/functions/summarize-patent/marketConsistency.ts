@@ -44,8 +44,16 @@ export function normalizeMarketKey(name: string): string {
 const CLAIM_RE = new RegExp(
   String.raw`((?:국내|한국)\s*[가-힣A-Za-z·\s]{1,24}?시장)(?:\s*규모)?[^.。]{0,40}?((?:19|20)\d{2})\s*년[^.。\d]{0,20}?(약\s*)?(${AMOUNT})\s*원`,
 );
+const CLAIM_RE_G = new RegExp(CLAIM_RE.source, "g");
 const CAGR_RE = /(연평균(?:\s*성장률)?|CAGR)([^.。%\d]{0,20}?)(\d+(?:\.\d+)?)\s*%/i;
 const TARGET_RE = new RegExp(String.raw`(${TARGET_YEAR}\s*년[^.。\d]{0,30}?(?:약\s*)?)(${AMOUNT})(\s*원)`, "g");
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** match 이후 문장 끝(마침표)까지의 범위 끝 인덱스 */
+function sentenceEnd(text: string, from: number): number {
+  const rel = text.slice(from).search(/[.。](\s|$)/);
+  return rel < 0 ? text.length : from + rel;
+}
 
 export interface MarketClaim { label: string; key: string; baseYear: number; baseEok: number; cagr: number | null }
 
