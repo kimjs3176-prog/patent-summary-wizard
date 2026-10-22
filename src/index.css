@@ -269,12 +269,7 @@ time, .tabular-nums, [data-numeric] {
     box-shadow: 0 1px 0 hsl(var(--tile-ink) / 0.06), var(--shadow-2xs); letter-spacing: 0;
     transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
   }
-  .technology-tile::before {
-    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-    background: hsl(var(--tile-ink) / 0.55); transition: width 200ms ease, background 200ms ease;
-  }
   .technology-tile:hover { border-color: hsl(var(--tile-ink) / 0.45); box-shadow: 0 0 0 3px hsl(var(--tile-ink) / 0.1), var(--shadow-md); transform: translateY(-1px); }
-  .technology-tile:hover::before { width: 4px; background: hsl(var(--tile-ink)); }
   .technology-tile:focus-visible { outline: 2px solid hsl(var(--tile-ink)); outline-offset: 2px; }
   .technology-tile-icon { background: hsl(var(--background) / 0.7); border: 1px solid hsl(var(--tile-ink) / 0.14); box-shadow: var(--shadow-2xs); }
   .technology-tile-label { color: hsl(var(--foreground)); }
