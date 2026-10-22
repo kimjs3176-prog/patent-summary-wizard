@@ -66,19 +66,24 @@ export function KeywordExplorer() {
               <div className="relative" style={{ height }}>
                 {nodes.map(node => {
                   const compact = node.width < 160 || node.height < 110;
+                  const tiny = node.width < 90 || node.height < 60;
                   const definition = TECHNOLOGY_FIELDS.find(field => field.id === node.id);
                   const Icon = FIELD_ICONS[definition?.tone ?? "other"];
                   const count = realCounts.get(node.id) ?? node.count;
+                  const share = data?.total ? Math.round((count / data.total) * 100) : 0;
                   return (
                     <Button key={node.id} variant="ghost"
                       title={`${node.label} · ${count.toLocaleString()}건 · 대표 IPC 기준`}
                       aria-label={`${node.label} ${count.toLocaleString()}건, 관련 특허 검색`}
                       onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.label)}&field=${encodeURIComponent(node.label)}&fieldId=${encodeURIComponent(node.id)}`)}
-                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 ${compact ? "rounded-lg p-1.5 gap-1 items-center justify-center" : "rounded-lg p-4 items-start justify-start gap-2"}`}
+                      className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 rounded-xl items-start ${compact ? (tiny ? "p-2 pl-2.5 gap-0.5 justify-center" : "p-2.5 pl-3 gap-1 justify-between") : "p-4 pl-5 justify-start gap-2"}`}
                       style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
-                      {!compact && Icon && <div className="flex w-full items-center justify-between"><span className="technology-tile-icon flex h-9 w-9 items-center justify-center rounded-lg"><Icon aria-hidden="true" className="h-5 w-5" strokeWidth={1.75} /></span><ArrowUpRight aria-hidden="true" className="h-4 w-4 opacity-40 transition-opacity group-hover:opacity-100" /></div>}
-                      <span className={`w-full font-bold tracking-normal leading-tight break-words ${compact ? "text-xs text-center" : "text-base text-left"}`}>{node.label}</span>
-                      <span className={`shrink-0 font-bold tabular-nums leading-tight ${compact ? (node.height < 65 ? "text-base" : "text-lg") : "mt-auto text-3xl"}`}>{count.toLocaleString()}<span className="ml-1 text-[11px] font-medium opacity-70">건</span></span>
+                      {!compact && Icon && <div className="flex w-full items-center justify-between"><span className="technology-tile-icon flex h-9 w-9 items-center justify-center rounded-lg"><Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} /></span><ArrowUpRight aria-hidden="true" className="h-4 w-4 opacity-30 transition-all group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" /></div>}
+                      <span className={`technology-tile-label w-full text-left font-semibold leading-snug break-keep line-clamp-2 ${compact ? "text-[13px]" : "text-[15px]"}`}>{node.label}</span>
+                      <span className={`w-full text-left shrink-0 font-bold tabular-nums leading-none ${compact ? (tiny ? "text-sm" : "text-lg") : "mt-auto text-[32px]"}`}>
+                        {count.toLocaleString()}<span className="technology-tile-unit ml-1 text-[11px] font-medium">건</span>
+                        {!compact && share > 0 && <span className="technology-tile-unit ml-2 text-xs font-medium">{share}%</span>}
+                      </span>
                     </Button>
                   );
                 })}
