@@ -274,7 +274,7 @@ time, .tabular-nums, [data-numeric] {
   .technology-tile-icon { background: hsl(var(--background) / 0.7); border: 1px solid hsl(var(--tile-ink) / 0.14); box-shadow: var(--shadow-2xs); }
   .technology-tile-label { color: hsl(var(--foreground)); }
   .technology-tile-unit { color: hsl(var(--muted-foreground)); }
-  @media (prefers-reduced-motion: reduce) { .technology-tile, .technology-tile::before { transition: none; } .technology-tile:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .technology-tile { transition: none; } .technology-tile:hover { transform: none; } }
   .technology-tile-food { --tile-ink: var(--technology-food); --tile-surface: var(--technology-food-surface); }
   .technology-tile-bio { --tile-ink: var(--technology-bio); --tile-surface: var(--technology-bio-surface); }
   .technology-tile-breeding { --tile-ink: var(--technology-breeding); --tile-surface: var(--technology-breeding-surface); }
