@@ -37,3 +37,6 @@ verify_jwt = false
 verify_jwt = false
 [functions.suggest-keywords]
 verify_jwt = false
+
+[functions.find-my-patents]
+verify_jwt = false
