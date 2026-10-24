@@ -91,6 +91,10 @@ const PotentialTech = () => {
               농촌진흥청이 보유한 미활용 특허 {rows.length}건입니다. 기술력 등급평가 결과와 함께 제공되며,
               관심 기술을 선택하면 AI 요약 분석 결과를 바로 확인할 수 있습니다.
             </p>
+            <p className="mt-3 inline-flex items-start gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs md:text-[13px] font-medium text-foreground/80">
+              <span aria-hidden="true" className="text-primary">※</span>
+              최초 기술이전에 한하며, 기술이전이 이루어진 경우 유상으로 전환됩니다.
+            </p>
           </header>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
