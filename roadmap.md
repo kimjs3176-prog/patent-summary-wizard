@@ -1,4 +1,5 @@
 # Tasks
+- [x] Combine filing-trend highlights and the keyword treemap into a home 특허 인사이트 section with a 상세보기 link to Insights.
 - [x] Turn Insights into a recent agri-food patent filing trend report (yearly, field, institute, recent filings) and verify it with live data.
 - [x] 나만의 특허찾기: company-profile finder page, home hero tab and header menu; verify a real recommendation end-to-end.
 - [x] Compare five identical patents with reference cases off/on using frozen inputs and no production cache writes; report TRL, market figures and commercialization differences.
