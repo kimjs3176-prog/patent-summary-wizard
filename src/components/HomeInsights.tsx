@@ -52,7 +52,7 @@ function TrendLine({ rows, highlight }: { rows: { year: number; count: number }[
   const line = pts.map((p) => `${p.x},${p.y}`).join(" ");
   const area = pts.length ? `${pts[0].x},${H - bottom} ${line} ${pts[pts.length - 1].x},${H - bottom}` : "";
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="mt-4 w-full h-auto" role="img" aria-label="연도별 출원 건수 추이">
+    <svg viewBox={`0 0 ${W} ${H}`} className="mt-4 w-full max-w-[360px] mx-auto h-auto" role="img" aria-label="연도별 출원 건수 추이">
       <polygon points={area} fill="hsl(var(--primary) / 0.1)" />
       <polyline points={line} fill="none" stroke="hsl(var(--primary))" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((p) => (
@@ -132,18 +132,14 @@ function FieldRanking({ data }: { data: TrendSnapshot }) {
               <button type="button" onClick={() => openField(f.id)}
                 aria-label={`${meta?.label ?? f.id} ${h.y}년 ${f.latest}건, 관련 특허 검색`}
                 title={`${meta?.label} · ${years[0]}~${h.y} 추이`}
-                className="trend-row group w-full grid grid-cols-[18px_minmax(0,1fr)_48px_auto_56px_14px] items-center gap-2 rounded-lg px-1.5 py-2 text-left">
+                className="trend-row group w-full grid grid-cols-[18px_minmax(0,1fr)_48px_auto_56px_14px] items-center gap-2 rounded-lg px-1.5 py-1.5 text-left">
                 <span className="text-xs font-bold tabular-nums text-muted-foreground">{i + 1}</span>
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <span className={`technology-tile-${tone} trend-dot w-2 h-2 rounded-full shrink-0`} />
-                    <span className="text-sm font-semibold text-foreground truncate">{meta?.label ?? f.id}</span>
-                    {badge && <span className={`technology-tile-${tone} trend-chip rounded px-1 py-px text-[10px] font-semibold shrink-0`}>{badge}</span>}
-                  </span>
-                  <span className="mt-1 flex items-center gap-1.5">
-                    <span className="h-1 flex-1 rounded-full bg-muted overflow-hidden"><span className={`technology-tile-${tone} trend-dot block h-full rounded-full`} style={{ width: `${(f.share / maxShare) * 100}%` }} /></span>
-                    <span className="w-9 text-right text-[10px] tabular-nums text-muted-foreground">{f.share}%</span>
-                  </span>
+                <span className="min-w-0 flex items-center gap-2">
+                  <span className={`technology-tile-${tone} trend-dot w-2 h-2 rounded-full shrink-0`} />
+                  <span className="w-16 sm:w-20 shrink-0 text-sm font-semibold text-foreground truncate">{meta?.label ?? f.id}</span>
+                  {badge && <span className={`technology-tile-${tone} trend-chip hidden sm:inline rounded px-1 py-px text-[10px] font-semibold shrink-0`}>{badge}</span>}
+                  <span className="h-1 flex-1 min-w-[24px] rounded-full bg-muted overflow-hidden"><span className={`technology-tile-${tone} trend-dot block h-full rounded-full`} style={{ width: `${(f.share / maxShare) * 100}%` }} /></span>
+                  <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{f.share}%</span>
                 </span>
                 <Sparkline values={years.map((y) => f.byYear[y] ?? 0)} tone={tone} />
                 <span className="text-right text-sm font-bold tabular-nums text-foreground">{f.latest}<span className="text-[11px] font-normal text-muted-foreground">건</span></span>
