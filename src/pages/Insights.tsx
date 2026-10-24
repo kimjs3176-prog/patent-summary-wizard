@@ -1,32 +1,17 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, BarChart3, Building2, FileText, Info, Layers, RefreshCw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TECHNOLOGY_FIELDS } from "../../supabase/functions/_shared/technologyFields";
-import type { TrendReport } from "../../supabase/functions/filing-trends/trendAggregation";
+import { trendHeadline, useFilingTrends } from "@/hooks/useFilingTrends";
 
-type TrendSnapshot = TrendReport & { insights: string[]; updatedAt: string; stale?: boolean };
 
 const FIELD_META = Object.fromEntries(TECHNOLOGY_FIELDS.map((f) => [f.id, f])) as Record<string, typeof TECHNOLOGY_FIELDS[number]>;
 const fmtDate = (d: string) => `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}`;
 const pct = (n: number | null) => (n === null ? "—" : `${n > 0 ? "+" : ""}${n}%`);
-
-function useFilingTrends() {
-  return useQuery({
-    queryKey: ["filing-trends", "v1"],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("filing-trends", { body: {} });
-      if (error || !data?.success) throw new Error(data?.error || "출원 동향을 불러오지 못했습니다.");
-      return data as TrendSnapshot;
-    },
-    staleTime: 60 * 60 * 1000,
-  });
-}
 
 function Growth({ value, className = "" }: { value: number | null; className?: string }) {
   if (value === null) return <span className={`text-muted-foreground ${className}`}>—</span>;
@@ -79,19 +64,7 @@ export default function Insights() {
   const { data, isPending, isError, error, refetch, isFetching } = useFilingTrends();
   const [sort, setSort] = useState<"count" | "growth">("count");
 
-  const view = useMemo(() => {
-    if (!data) return null;
-    const y = data.completeYear;
-    const latest = data.yearly.find((r) => r.year === y);
-    const prev = data.yearly.find((r) => r.year === y - 1);
-    const complete = data.yearly.filter((r) => !r.provisional);
-    const completeTotal = complete.reduce((s, r) => s + r.count, 0);
-    const growth = latest && prev && prev.count >= 5 ? Math.round(((latest.count - prev.count) / prev.count) * 100) : null;
-    const top = [...data.fields].sort((a, b) => b.latest - a.latest)[0];
-    const rising = [...data.fields].filter((f) => f.growth !== null && f.latest >= 10).sort((a, b) => (b.growth ?? 0) - (a.growth ?? 0))[0];
-    const completeYears = complete.map((r) => String(r.year));
-    return { y, latest, prev, complete, completeTotal, growth, top, rising, completeYears };
-  }, [data]);
+  const view = useMemo(() => (data ? trendHeadline(data) : null), [data]);
 
   const fieldRows = useMemo(() => {
     if (!data) return [];
