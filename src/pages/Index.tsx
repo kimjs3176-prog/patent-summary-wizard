@@ -1,4 +1,4 @@
-import { Heart, RotateCcw, BarChart3, Layers, FileSpreadsheet } from "lucide-react";
+import { Heart, RotateCcw, BarChart3, Layers, FileSpreadsheet, Compass } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
@@ -121,6 +121,12 @@ const Index = () => {
 
   const headerRight = (
     <>
+      <Link to="/finder">
+        <Button aria-label="나만의 특허찾기" title="나만의 특허찾기" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 gap-1 md:gap-2 btn-press font-semibold">
+          <Compass className="w-3 h-3 md:w-3.5 md:h-3.5" />
+          <span className="hidden sm:inline">나만의 특허찾기</span>
+        </Button>
+      </Link>
       <Link to="/insights">
         <Button aria-label="인사이트" title="인사이트" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <BarChart3 className="w-3 h-3 md:w-3.5 md:h-3.5" />
