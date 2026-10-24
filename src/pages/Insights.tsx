@@ -199,15 +199,15 @@ export default function Insights() {
                   </div>
                 }
               >
-                <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
-                <div className="hidden md:grid grid-cols-[minmax(0,1.2fr)_90px_minmax(0,1fr)_80px_90px_24px] gap-3 px-2 pb-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
-                  <span>분야</span><span>{view.completeYears[0]}~{view.y} 추이</span><span>{view.y}년 비중</span><span className="text-right">{view.y}년</span><span className="text-right">전년 대비</span><span />
+                <div className="md:grid md:grid-cols-2 md:gap-x-8">
+                <div className="hidden md:grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_56px_64px_16px] xl:grid-cols-[minmax(0,1.1fr)_72px_minmax(0,1fr)_56px_64px_16px] gap-3 px-2 pb-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
+                  <span>분야</span><span className="hidden xl:block">추이</span><span>{view.y}년 비중</span><span className="text-right">{view.y}년</span><span className="text-right">전년 대비</span><span />
                 </div>
-                <div className="hidden lg:grid grid-cols-[minmax(0,1.2fr)_90px_minmax(0,1fr)_80px_90px_24px] gap-3 px-2 pb-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
-                  <span>분야</span><span>{view.completeYears[0]}~{view.y} 추이</span><span>{view.y}년 비중</span><span className="text-right">{view.y}년</span><span className="text-right">전년 대비</span><span />
+                <div className="hidden md:grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_56px_64px_16px] xl:grid-cols-[minmax(0,1.1fr)_72px_minmax(0,1fr)_56px_64px_16px] gap-3 px-2 pb-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
+                  <span>분야</span><span className="hidden xl:block">추이</span><span>{view.y}년 비중</span><span className="text-right">{view.y}년</span><span className="text-right">전년 대비</span><span />
                 </div>
                 </div>
-                <ul className="lg:grid lg:grid-cols-2 lg:grid-flow-col lg:gap-x-8 [&>li]:border-b [&>li]:border-border/50" style={{ gridTemplateRows: `repeat(${Math.ceil(fieldRows.length / 2)}, auto)` }}>
+                <ul className="md:grid md:grid-cols-2 md:grid-flow-col md:gap-x-8 [&>li]:border-b [&>li]:border-border/50" style={{ gridTemplateRows: `repeat(${Math.ceil(fieldRows.length / 2)}, auto)` }}>
                   {fieldRows.map((f) => {
                     const meta = FIELD_META[f.id];
                     return (
@@ -215,20 +215,20 @@ export default function Insights() {
                         <button
                           type="button"
                           onClick={() => navigate(`/search?keyword=${encodeURIComponent(meta.label)}&field=${encodeURIComponent(meta.label)}&fieldId=${encodeURIComponent(f.id)}`)}
-                          className="trend-row w-full grid grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[minmax(0,1.2fr)_90px_minmax(0,1fr)_80px_90px_24px] items-center gap-3 rounded-lg px-2 py-2.5 text-left"
+                          className="trend-row w-full grid grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_56px_64px_16px] xl:grid-cols-[minmax(0,1.1fr)_72px_minmax(0,1fr)_56px_64px_16px] items-center gap-3 rounded-lg px-2 py-2.5 text-left"
                         >
                           <span className="flex items-center gap-2 min-w-0">
                             <span className={`technology-tile-${meta.tone} trend-dot w-2.5 h-2.5 rounded-full shrink-0`} />
                             <span className="text-sm font-semibold text-foreground truncate">{meta.label}</span>
                           </span>
-                          <span className="hidden md:block"><Sparkline values={view.completeYears.map((y) => f.byYear[y] ?? 0)} tone={meta.tone} /></span>
+                          <span className="hidden xl:block"><Sparkline values={view.completeYears.map((y) => f.byYear[y] ?? 0)} tone={meta.tone} /></span>
                           <span className="hidden md:flex items-center gap-2">
                             <span className="h-2 flex-1 rounded-full bg-muted overflow-hidden"><span className={`technology-tile-${meta.tone} trend-dot block h-full rounded-full`} style={{ width: `${(f.share / maxShare) * 100}%` }} /></span>
                             <span className="w-11 text-right text-xs tabular-nums text-muted-foreground">{f.share}%</span>
                           </span>
                           <span className="text-right text-sm font-bold tabular-nums text-foreground">{f.latest}<span className="text-xs font-normal text-muted-foreground">건</span></span>
                           <span className="text-right text-sm"><Growth value={f.growth} /></span>
-                          <ArrowRight className="hidden md:block w-4 h-4 text-muted-foreground" />
+                          <ArrowRight className="hidden md:block w-3.5 h-3.5 text-muted-foreground" />
                         </button>
                       </li>
                     );
