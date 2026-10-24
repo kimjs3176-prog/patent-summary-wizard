@@ -14,3 +14,4 @@
 - Keep homepage search presentation in HomeSearchHero and shared semantic CSS tokens so one layout stays consistent across screen sizes without changing search behavior.
 - Technology tile tone classes (`technology-tile-<tone>`) are safelisted in tailwind.config.ts because they are composed dynamically (`technology-tile-${tone}`) and would otherwise be tree-shaken from the CSS output. Never remove the safelist.
 - The company-profile patent finder (find-my-patents) retrieves candidates only through search-patents and keeps scope/ranking rules in its finderPolicy module; AI rankings may only reference retrieved, applicant-scoped candidates so no patent is ever invented.
+- The Insights filing-trend report is aggregated server-side (filing-trends) from complete applicant-scoped KIPRIS pages, compares only fully disclosed years (18-month publication lag) and keeps AI summary sentences only when every number matches the computed statistics.

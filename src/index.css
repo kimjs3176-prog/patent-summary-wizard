@@ -1081,6 +1081,18 @@ time, .tabular-nums, [data-numeric] {
 .finder-fit-low { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
 .finder-step-done { border-color: hsl(var(--primary) / 0.3); color: hsl(var(--primary)); background: hsl(var(--primary) / 0.06); }
 .finder-step-active { border-color: hsl(var(--primary) / 0.55); color: hsl(var(--foreground)); font-weight: 600; }
+
+/* 인사이트 — 농식품 특허 출원 동향 */
+.trend-card { box-shadow: var(--shadow-card); }
+.trend-up { color: hsl(var(--primary)); }
+.trend-down { color: hsl(var(--destructive)); }
+.trend-dot { background: hsl(var(--tile-ink)); }
+.trend-chip { background: hsl(var(--tile-ink) / 0.1); color: hsl(var(--tile-ink)); }
+.trend-row { transition: background-color 0.15s ease, border-color 0.15s ease; }
+.trend-row:hover { background: hsl(var(--muted) / 0.55); }
+.trend-row:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 1px; }
+.trend-insight { background: hsl(var(--primary) / 0.06); border-left: 3px solid hsl(var(--primary) / 0.5); }
+.trend-bar-prev { background: hsl(var(--muted-foreground) / 0.35); }
 .blueprint-hero { isolation: isolate; }
 
 .blueprint-grid {
