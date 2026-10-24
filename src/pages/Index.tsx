@@ -14,7 +14,7 @@ import { FeaturedPatents } from "@/components/FeaturedPatents";
 import { TechTransferGuide } from "@/components/TechTransferGuide";
 import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
-import { KeywordExplorer } from "@/components/KeywordExplorer";
+import { HomeInsights } from "@/components/HomeInsights";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
@@ -193,9 +193,9 @@ const Index = () => {
               <PotentialTechBanner />
             </section>
 
-            {/* 주제별 빠른 탐색 */}
+            {/* 특허 인사이트 — 출원 동향 + 주요 키워드 */}
             <section className="max-w-5xl mx-auto mb-5 md:mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-              <KeywordExplorer />
+              <HomeInsights />
             </section>
 
             {/* 세로 스크롤 단일 컬럼 — 공지·기록 → 추천특허 → 기술영상 → 기술이전 안내 */}
