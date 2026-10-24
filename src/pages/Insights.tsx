@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, BarChart3, Building2, FileText, Info, Layers, RefreshCw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, FileText, Info, Layers, RefreshCw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,6 @@ export default function Insights() {
     return rows.sort((a, b) => sort === "count" ? b.latest - a.latest : (b.growth ?? -999) - (a.growth ?? -999));
   }, [data, sort]);
 
-  const maxInstitute = Math.max(1, ...(data?.institutes.map((i) => Math.max(i.latest, i.previous)) ?? [1]));
   const maxShare = Math.max(1, ...fieldRows.map((f) => f.share));
 
   const headerRight = (
