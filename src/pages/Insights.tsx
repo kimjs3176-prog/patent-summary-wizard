@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, BarChart3, Building2, FileText, Info, Layers, RefreshCw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, FileText, Info, Layers, RefreshCw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,6 @@ export default function Insights() {
     return rows.sort((a, b) => sort === "count" ? b.latest - a.latest : (b.growth ?? -999) - (a.growth ?? -999));
   }, [data, sort]);
 
-  const maxInstitute = Math.max(1, ...(data?.institutes.map((i) => Math.max(i.latest, i.previous)) ?? [1]));
   const maxShare = Math.max(1, ...fieldRows.map((f) => f.share));
 
   const headerRight = (
@@ -145,7 +144,7 @@ export default function Insights() {
                 </Card>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-4 md:gap-5">
+              <div>
                 {/* Yearly */}
                 <Card title="연도별 출원 추이" icon={BarChart3}>
                   <div className="h-56">
@@ -185,29 +184,6 @@ export default function Insights() {
                   </p>
                 </Card>
 
-                {/* Institutes */}
-                <Card title="기관별 출원" icon={Building2} action={<span className="text-[11px] text-muted-foreground">{view.y - 1}년 / {view.y}년</span>}>
-                  <ul className="space-y-3">
-                    {data.institutes.map((i) => {
-                      const g = i.previous >= 5 ? Math.round(((i.latest - i.previous) / i.previous) * 100) : null;
-                      return (
-                        <li key={i.id}>
-                          <div className="flex items-baseline justify-between gap-2 text-sm">
-                            <span className="font-semibold text-foreground truncate">{i.label}</span>
-                            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                              <b className="text-foreground text-sm">{i.latest}</b>건 <Growth value={g} className="ml-1 text-xs" />
-                            </span>
-                          </div>
-                          <div className="mt-1.5 space-y-1">
-                            <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full trend-bar-prev" style={{ width: `${(i.previous / maxInstitute) * 100}%` }} /></div>
-                            <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-primary" style={{ width: `${(i.latest / maxInstitute) * 100}%` }} /></div>
-                          </div>
-                          <p className="mt-1 text-[11px] text-muted-foreground">5년 누적 {i.total.toLocaleString()}건</p>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </Card>
               </div>
 
               {/* Fields */}
