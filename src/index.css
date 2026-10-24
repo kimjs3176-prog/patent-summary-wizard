@@ -1048,6 +1048,39 @@ time, .tabular-nums, [data-numeric] {
 .home-hero-muted { color: hsl(var(--home-hero-muted)); }
 .home-search-surface { box-shadow: var(--home-search-shadow); }
 .home-support-section { border-top: 1px solid hsl(var(--border)); padding-top: 20px; }
+
+/* Home hero mode switch (특허검색 / 나만의 특허찾기) */
+.home-mode-tabs { background: hsl(var(--home-hero-foreground) / 0.08); }
+.home-mode-tab { color: hsl(var(--home-hero-muted)); }
+.home-mode-tab:hover { color: hsl(var(--home-hero-foreground)); }
+.home-mode-tab-active {
+  background: hsl(var(--card));
+  color: hsl(var(--primary));
+  box-shadow: 0 2px 8px -2px hsl(165 50% 4% / 0.35);
+}
+.home-mode-tab-active:hover { color: hsl(var(--primary)); }
+
+/* 나만의 특허찾기 */
+.finder-panel, .finder-result { box-shadow: var(--shadow-card); }
+.finder-result { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.finder-result:hover { border-color: hsl(var(--primary) / 0.35); }
+.finder-chip {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+}
+.finder-chip:hover { color: hsl(var(--foreground)); border-color: hsl(var(--primary) / 0.4); }
+.finder-chip-active, .finder-chip-active:hover {
+  background: hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary) / 0.55);
+  color: hsl(var(--primary));
+}
+.finder-point { background: hsl(var(--primary) / 0.08); color: hsl(var(--primary)); }
+.finder-fit-high { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.finder-fit-mid { background: hsl(var(--primary) / 0.14); color: hsl(var(--primary)); }
+.finder-fit-low { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+.finder-step-done { border-color: hsl(var(--primary) / 0.3); color: hsl(var(--primary)); background: hsl(var(--primary) / 0.06); }
+.finder-step-active { border-color: hsl(var(--primary) / 0.55); color: hsl(var(--foreground)); font-weight: 600; }
 .blueprint-hero { isolation: isolate; }
 
 .blueprint-grid {
