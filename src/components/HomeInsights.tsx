@@ -38,7 +38,35 @@ function useFieldSearch() {
   };
 }
 
-/** Left card: headline count, yearly mini bars and one verified AI sentence. */
+/** Yearly filing trend as a line chart with labelled points. */
+function TrendLine({ rows, highlight }: { rows: { year: number; count: number }[]; highlight: number }) {
+  const W = 240, H = 96, px = 14, top = 18, bottom = 18;
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  const min = Math.min(...rows.map((r) => r.count), max);
+  const span = Math.max(1, max - min);
+  const pts = rows.map((r, i) => ({
+    ...r,
+    x: px + (i / Math.max(1, rows.length - 1)) * (W - px * 2),
+    y: top + (1 - (r.count - min) / span) * (H - top - bottom),
+  }));
+  const line = pts.map((p) => `${p.x},${p.y}`).join(" ");
+  const area = pts.length ? `${pts[0].x},${H - bottom} ${line} ${pts[pts.length - 1].x},${H - bottom}` : "";
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="mt-4 w-full h-auto" role="img" aria-label="연도별 출원 건수 추이">
+      <polygon points={area} fill="hsl(var(--primary) / 0.1)" />
+      <polyline points={line} fill="none" stroke="hsl(var(--primary))" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+      {pts.map((p) => (
+        <g key={p.year}>
+          <circle cx={p.x} cy={p.y} r={p.year === highlight ? 4 : 2.5} fill={p.year === highlight ? "hsl(var(--primary))" : "hsl(var(--card))"} stroke="hsl(var(--primary))" strokeWidth={1.5} />
+          <text x={p.x} y={p.y - 7} textAnchor="middle" fontSize="9" className="fill-muted-foreground tabular-nums">{p.count}</text>
+          <text x={p.x} y={H - 4} textAnchor="middle" fontSize="9" className="fill-muted-foreground tabular-nums">{String(p.year).slice(2)}년</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/** Left card: headline count, yearly trend line and one verified AI sentence. */
 function TrendSummary({ data }: { data: TrendSnapshot }) {
   const h = trendHeadline(data);
   const max = Math.max(1, ...h.complete.map((r) => r.count));
@@ -51,17 +79,7 @@ function TrendSummary({ data }: { data: TrendSnapshot }) {
       </div>
       <p className="mt-1 text-xs text-muted-foreground">최근 {h.complete.length}년 누적 <span className="font-semibold tabular-nums text-foreground">{h.completeTotal.toLocaleString()}건</span></p>
 
-      <div className="mt-4 flex items-end gap-1.5 h-16" aria-label="연도별 출원 건수">
-        {h.complete.map((r) => (
-          <div key={r.year} className="flex-1 flex flex-col items-center gap-1 h-full justify-end" title={`${r.year}년 ${r.count}건`}>
-            <span className="text-[10px] tabular-nums text-muted-foreground">{r.count}</span>
-            <div className={`w-full rounded-t-md ${r.year === h.y ? "bg-primary" : "home-insight-bar"}`} style={{ height: `${Math.max(8, (r.count / max) * 100)}%` }} />
-          </div>
-        ))}
-      </div>
-      <div className="mt-1 flex gap-1.5">
-        {h.complete.map((r) => <span key={r.year} className="flex-1 text-center text-[10px] tabular-nums text-muted-foreground">{String(r.year).slice(2)}년</span>)}
-      </div>
+      <TrendLine rows={h.complete} highlight={h.y} />
 
       {data.insights[0] && <p className="trend-insight mt-4 rounded-r-lg px-3 py-2 text-xs leading-relaxed text-foreground/80 line-clamp-3">{data.insights[0]}</p>}
 
@@ -104,7 +122,7 @@ function FieldRanking({ data }: { data: TrendSnapshot }) {
         </div>
       </div>
 
-      <ol className="grid grid-cols-1 md:grid-cols-2 md:grid-flow-col md:grid-rows-5 gap-x-5">
+      <ol className="flex flex-col">
         {rows.map((f, i) => {
           const meta = FIELD_META[f.id];
           const tone = meta?.tone ?? "other";
