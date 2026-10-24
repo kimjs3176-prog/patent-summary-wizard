@@ -1,6 +1,5 @@
 # Architecture rules
 
-- Homepage technology tiles use one D3 treemap with presentation-only count filtering and compressed area scaling; keep original filing counts and total untouched so compact layout changes never alter statistics.
 - Technology filing statistics are computed server-side for all six applicant groups over a rolling three-year window and cached daily as a complete site_settings snapshot; incomplete API responses never replace valid counts.
 - Keep technology classification in the shared primary-IPC classifier and version the statistics cache whenever mappings change; this keeps frontend labels and server counts consistent without serving obsolete merged categories.
 
@@ -15,4 +14,4 @@
 - Technology tile tone classes (`technology-tile-<tone>`) are safelisted in tailwind.config.ts because they are composed dynamically (`technology-tile-${tone}`) and would otherwise be tree-shaken from the CSS output. Never remove the safelist.
 - The company-profile patent finder (find-my-patents) retrieves candidates only through search-patents and keeps scope/ranking rules in its finderPolicy module; AI rankings may only reference retrieved, applicant-scoped candidates so no patent is ever invented.
 - The Insights filing-trend report is aggregated server-side (filing-trends) from complete applicant-scoped KIPRIS pages, compares only fully disclosed years (18-month publication lag) and keeps AI summary sentences only when every number matches the computed statistics.
-- The home 특허 인사이트 section combines filing-trend highlights (shared useFilingTrends hook, same snapshot as the Insights page) with the embedded keyword treemap; treemap tiles keep their field-search navigation.
+- The home 특허 인사이트 section renders the filing-trend summary and a compact field ranking from the single useFilingTrends snapshot (same as the Insights page), so home and Insights never show conflicting numbers; ranking rows keep their field-search navigation.
