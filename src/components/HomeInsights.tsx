@@ -178,7 +178,7 @@ export function HomeInsights() {
         </Link>
       </div>
       {isPending ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 lg:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 md:gap-5">
           <Skeleton className="h-[300px] rounded-2xl" />
           <Skeleton className="h-[300px] rounded-2xl" />
         </div>
@@ -188,7 +188,7 @@ export function HomeInsights() {
           <Link to="/insights" className="ml-2 font-semibold text-primary">인사이트에서 다시 보기 →</Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 lg:gap-5 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 md:gap-5 items-stretch">
           <TrendSummary data={data} />
           <FieldRanking data={data} />
         </div>
