@@ -9,7 +9,8 @@ import { TECHNOLOGY_FIELDS, type TechnologyStats } from "../../supabase/function
 
 const FIELD_ICONS = { food: Utensils, bio: Dna, breeding: Sprout, health: HeartPulse, cosmetics: Sparkles, crop: Leaf, machine: Tractor, livestock: Fish, protection: Bug, environment: Recycle, fertilizer: Shovel, digital: Cpu, other: Shapes };
 
-export function KeywordExplorer() {
+/** Technology-field treemap. `embedded` renders it as a sub-block inside the home insight section. */
+export function KeywordExplorer({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const container = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -41,10 +42,12 @@ export function KeywordExplorer() {
 
   return (
     <section aria-labelledby="technology-keywords-heading" className="w-full">
-      <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
+      <div className={`flex flex-wrap items-end justify-between gap-3 ${embedded ? "mb-2.5" : "mb-3"}`}>
         <div>
-          <h2 id="technology-keywords-heading" className="text-xl md:text-2xl font-bold text-foreground !tracking-normal">주요 키워드</h2>
-          <p className="mt-1 text-xs text-muted-foreground">최근 3년 기술분야별 출원{data ? ` · ${data.total.toLocaleString()}건` : ""}</p>
+          {embedded
+            ? <h3 id="technology-keywords-heading" className="text-[15px] font-bold text-foreground !tracking-normal">주요 키워드</h3>
+            : <h2 id="technology-keywords-heading" className="text-xl md:text-2xl font-bold text-foreground !tracking-normal">주요 키워드</h2>}
+          <p className="mt-1 text-xs text-muted-foreground">{embedded ? "분야를 누르면 관련 특허를 검색해요 · " : ""}최근 3년 기술분야별 출원{data ? ` · ${data.total.toLocaleString()}건` : ""}</p>
         </div>
         <Button variant="ghost" size="icon" aria-label="출원 통계 새로고침" title="출원 통계 새로고침" onClick={() => refetch()} disabled={isFetching} className="h-8 w-8">
           <RefreshCw className={isFetching ? "animate-spin motion-reduce:animate-none" : ""} />
