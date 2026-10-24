@@ -147,7 +147,7 @@ export function allowedNumbers(r: TrendReport): Set<string> {
   const yl = r.yearly.find((y) => y.year === r.completeYear);
   const yp = r.yearly.find((y) => y.year === r.completeYear - 1);
   if (yl && yp) add(growthRate(yl.count, yp.count));
-  add(TREND_YEARS);
+  add(TREND_YEARS); add(DISCLOSURE_LAG_MONTHS);
   return s;
 }
 
@@ -159,6 +159,6 @@ export function verifiedInsights(raw: unknown, report: TrendReport): string[] {
     .filter((t): t is string => typeof t === "string")
     .map((t) => t.replace(/\s+/g, " ").trim().slice(0, 160))
     .filter((t) => t.length >= 10)
-    .filter((t) => (t.match(/\d+(?:\.\d+)?/g) || []).every((n) => allowed.has(n.replace(/^0+(?=\d)/, ""))))
+    .filter((t) => (t.replace(/(\d),(?=\d{3})/g, "$1").match(/\d+(?:\.\d+)?/g) || []).every((n) => allowed.has(n.replace(/^0+(?=\d)/, ""))))
     .slice(0, 4);
 }
