@@ -9,6 +9,14 @@ describe("나만의 특허찾기 규칙", () => {
     expect(merged.map((c) => c.patentId)).toEqual(["10-1"]);
   });
 
+  it("출원인이 비어 있으면 검색한 기관명(organizationName)으로 범위 확인", () => {
+    const merged = mergeCandidates([{ term: "딸기", patents: [
+      { patentId: "10-3", title: "딸기", applicant: "", organizationName: "농촌진흥청" },
+      { patentId: "10-4", title: "딸기", applicant: "", organizationName: "" },
+    ] }]);
+    expect(merged.map((c) => c.patentId)).toEqual(["10-3"]);
+  });
+
   it("여러 검색어에 걸린 특허가 먼저 오고 중복은 하나로 합침", () => {
     const merged = mergeCandidates([
       { term: "딸기", patents: [p("10-1", "농촌진흥청"), p("10-2", "국립종자원")] },

@@ -79,7 +79,9 @@ export function mergeCandidates(groups: { term: string; patents: Array<Record<st
     for (const p of patents) {
       const patentId = typeof p.patentId === "string" ? p.patentId : "";
       const title = String(p.titleKo || p.title || "").trim();
-      const applicant = String(p.applicant || p.assignee || "");
+      // KIPRIS applicant-code searches often leave "applicant" empty; the search
+      // service then sets organizationName to the scoped institute it queried.
+      const applicant = String(p.applicant || p.assignee || p.organizationName || "");
       if (!patentId || !title || !isInScope(applicant)) continue;
       const existing = map.get(patentId);
       if (existing) {
