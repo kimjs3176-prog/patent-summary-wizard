@@ -1,551 +1,301 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, BarChart3, TrendingUp, Award, Building2, Layers, Activity } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, ArrowRight, BarChart3, Building2, FileText, Info, Layers, RefreshCw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { useFavoritePatents } from "@/hooks/useFavoritePatents";
-import { useSearchHistory } from "@/hooks/useSearchHistory";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, RadialBarChart, RadialBar, PolarAngleAxis,
-  LineChart, Line, ScatterChart, Scatter, ZAxis,
-} from "recharts";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TECHNOLOGY_FIELDS } from "../../supabase/functions/_shared/technologyFields";
+import type { TrendReport } from "../../supabase/functions/filing-trends/trendAggregation";
 
-const SCORE_BANDS = [
-  { label: "S (90+)", min: 90, color: "hsl(158, 64%, 40%)" },
-  { label: "A (80-89)", min: 80, color: "hsl(190, 70%, 45%)" },
-  { label: "B (70-79)", min: 70, color: "hsl(45, 93%, 47%)" },
-  { label: "C (60-69)", min: 60, color: "hsl(25, 90%, 55%)" },
-  { label: "D (<60)", min: 0, color: "hsl(350, 65%, 55%)" },
-];
+type TrendSnapshot = TrendReport & { insights: string[]; updatedAt: string; stale?: boolean };
 
-function getBand(score: number) {
-  return SCORE_BANDS.find((b) => score >= b.min) || SCORE_BANDS[SCORE_BANDS.length - 1];
+const FIELD_META = Object.fromEntries(TECHNOLOGY_FIELDS.map((f) => [f.id, f])) as Record<string, typeof TECHNOLOGY_FIELDS[number]>;
+const fmtDate = (d: string) => `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}`;
+const pct = (n: number | null) => (n === null ? "—" : `${n > 0 ? "+" : ""}${n}%`);
+
+function useFilingTrends() {
+  return useQuery({
+    queryKey: ["filing-trends", "v1"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("filing-trends", { body: {} });
+      if (error || !data?.success) throw new Error(data?.error || "출원 동향을 불러오지 못했습니다.");
+      return data as TrendSnapshot;
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+function Growth({ value, className = "" }: { value: number | null; className?: string }) {
+  if (value === null) return <span className={`text-muted-foreground ${className}`}>—</span>;
+  const up = value >= 0;
+  const Icon = up ? TrendingUp : TrendingDown;
+  return (
+    <span className={`inline-flex items-center gap-0.5 font-semibold tabular-nums ${up ? "trend-up" : "trend-down"} ${className}`}>
+      <Icon className="w-3.5 h-3.5" />{pct(value)}
+    </span>
+  );
+}
+
+function Sparkline({ values, tone }: { values: number[]; tone: string }) {
+  const max = Math.max(1, ...values);
+  const w = 72, h = 22;
+  const pts = values.map((v, i) => `${(i / Math.max(1, values.length - 1)) * w},${h - 2 - (v / max) * (h - 4)}`).join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className={`technology-tile-${tone} shrink-0`} aria-hidden="true">
+      <polyline points={pts} fill="none" stroke="hsl(var(--tile-ink))" strokeWidth={1.75} strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function Kpi({ label, value, unit, sub, icon: Icon }: { label: string; value: string | number; unit?: string; sub?: React.ReactNode; icon: typeof Layers }) {
+  return (
+    <div className="trend-card rounded-2xl border border-border/60 bg-card p-4">
+      <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><Icon className="w-3.5 h-3.5 text-primary" />{label}</p>
+      <p className="mt-1.5 text-2xl md:text-[28px] font-bold tabular-nums leading-tight text-foreground">
+        {value}{unit && <span className="ml-0.5 text-sm font-medium text-muted-foreground">{unit}</span>}
+      </p>
+      {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}
+    </div>
+  );
+}
+
+function Card({ title, icon: Icon, action, children, className = "" }: { title: string; icon: typeof Layers; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <section className={`trend-card rounded-2xl border border-border/60 bg-card p-4 md:p-5 ${className}`}>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground"><Icon className="w-4 h-4 text-primary" />{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
 }
 
 export default function Insights() {
-  const { favorites } = useFavoritePatents();
-  const { history } = useSearchHistory();
+  const navigate = useNavigate();
+  const { data, isPending, isError, error, refetch, isFetching } = useFilingTrends();
+  const [sort, setSort] = useState<"count" | "growth">("count");
 
-  // Combine analyzed patents from both sources (dedupe by patent number)
-  const allAnalyzed = useMemo(() => {
-    const map = new Map<string, { patentNumber: string; score: number | null; ipcs: string[]; assignee?: string; trl?: number }>();
-    favorites.forEach((f) => {
-      map.set(f.patentNumber, {
-        patentNumber: f.patentNumber,
-        score: f.commercializationScore ?? null,
-        ipcs: f.patentData.classifications || [],
-        assignee: f.patentData.assignee,
-        trl: f.commercializationDetails?.trl,
-      });
-    });
-    history.forEach((h) => {
-      if (!map.has(h.patentNumber)) {
-        map.set(h.patentNumber, {
-          patentNumber: h.patentNumber,
-          score: h.commercializationScore ?? null,
-          ipcs: h.patentData.classifications || [],
-          assignee: h.patentData.assignee,
-          trl: undefined,
-        });
-      }
-    });
-    return Array.from(map.values());
-  }, [favorites, history]);
+  const view = useMemo(() => {
+    if (!data) return null;
+    const y = data.completeYear;
+    const latest = data.yearly.find((r) => r.year === y);
+    const prev = data.yearly.find((r) => r.year === y - 1);
+    const complete = data.yearly.filter((r) => !r.provisional);
+    const completeTotal = complete.reduce((s, r) => s + r.count, 0);
+    const growth = latest && prev && prev.count >= 5 ? Math.round(((latest.count - prev.count) / prev.count) * 100) : null;
+    const top = [...data.fields].sort((a, b) => b.latest - a.latest)[0];
+    const rising = [...data.fields].filter((f) => f.growth !== null && f.latest >= 10).sort((a, b) => (b.growth ?? 0) - (a.growth ?? 0))[0];
+    const completeYears = complete.map((r) => String(r.year));
+    return { y, latest, prev, complete, completeTotal, growth, top, rising, completeYears };
+  }, [data]);
 
-  const scored = allAnalyzed.filter((p) => p.score != null) as Array<typeof allAnalyzed[0] & { score: number }>;
+  const fieldRows = useMemo(() => {
+    if (!data) return [];
+    const rows = data.fields.filter((f) => f.latest + f.previous >= 3 && f.id !== "other");
+    return rows.sort((a, b) => sort === "count" ? b.latest - a.latest : (b.growth ?? -999) - (a.growth ?? -999));
+  }, [data, sort]);
 
-  // Aggregate stats
-  const stats = useMemo(() => {
-    const total = allAnalyzed.length;
-    const scoredCount = scored.length;
-    const avg = scoredCount > 0 ? scored.reduce((s, p) => s + p.score, 0) / scoredCount : 0;
-    const max = scoredCount > 0 ? Math.max(...scored.map((p) => p.score)) : 0;
-    const trls = allAnalyzed.map((p) => p.trl).filter((t): t is number => t != null);
-    const avgTrl = trls.length > 0 ? trls.reduce((s, t) => s + t, 0) / trls.length : 0;
-    return { total, scoredCount, avg, max, avgTrl };
-  }, [allAnalyzed, scored]);
-
-  // Score distribution
-  const scoreDistribution = useMemo(() => {
-    const counts = SCORE_BANDS.map((b) => ({ ...b, value: 0 }));
-    scored.forEach((p) => {
-      const band = getBand(p.score);
-      const item = counts.find((c) => c.label === band.label);
-      if (item) item.value += 1;
-    });
-    return counts.filter((c) => c.value > 0);
-  }, [scored]);
-
-  // IPC distribution (top 8)
-  const ipcDistribution = useMemo(() => {
-    const map = new Map<string, number>();
-    allAnalyzed.forEach((p) => {
-      p.ipcs.forEach((c) => {
-        const section = c.trim().slice(0, 4);
-        if (section) map.set(section, (map.get(section) || 0) + 1);
-      });
-    });
-    return Array.from(map.entries())
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 8)
-      .map(([name, value]) => ({ name, value }));
-  }, [allAnalyzed]);
-
-  // Score timeline (based on search history searchedAt)
-  const scoreTimeline = useMemo(() => {
-    return [...history]
-      .filter((h) => h.commercializationScore != null)
-      .sort((a, b) => new Date(a.searchedAt).getTime() - new Date(b.searchedAt).getTime())
-      .map((h) => {
-        const d = new Date(h.searchedAt);
-        return {
-          label: `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
-          score: h.commercializationScore as number,
-          patentNumber: h.patentNumber,
-        };
-      });
-  }, [history]);
-
-  const timelineAvg = useMemo(
-    () => (scoreTimeline.length > 0 ? Math.round(scoreTimeline.reduce((s, p) => s + p.score, 0) / scoreTimeline.length) : 0),
-    [scoreTimeline]
-  );
-
-  // IPC bubble chart: x = avg score, y = avg TRL, z = count
-  const ipcBubble = useMemo(() => {
-    const map = new Map<string, { count: number; totalScore: number; scoredCount: number; totalTrl: number; trlCount: number }>();
-    allAnalyzed.forEach((p) => {
-      p.ipcs.forEach((c) => {
-        const section = c.trim().slice(0, 4);
-        if (!section) return;
-        const cur = map.get(section) || { count: 0, totalScore: 0, scoredCount: 0, totalTrl: 0, trlCount: 0 };
-        cur.count += 1;
-        if (p.score != null) { cur.totalScore += p.score; cur.scoredCount += 1; }
-        if (p.trl != null) { cur.totalTrl += p.trl; cur.trlCount += 1; }
-        map.set(section, cur);
-      });
-    });
-    return Array.from(map.entries())
-      .map(([name, v]) => ({
-        name,
-        count: v.count,
-        avgScore: v.scoredCount > 0 ? Math.round(v.totalScore / v.scoredCount) : 70,
-        avgTrl: v.trlCount > 0 ? +(v.totalTrl / v.trlCount).toFixed(1) : 5,
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 12);
-  }, [allAnalyzed]);
-
-  // Top assignees
-  const topAssignees = useMemo(() => {
-    const map = new Map<string, { count: number; totalScore: number; scoredCount: number }>();
-    allAnalyzed.forEach((p) => {
-      const a = p.assignee?.trim();
-      if (!a) return;
-      const cur = map.get(a) || { count: 0, totalScore: 0, scoredCount: 0 };
-      cur.count += 1;
-      if (p.score != null) {
-        cur.totalScore += p.score;
-        cur.scoredCount += 1;
-      }
-      map.set(a, cur);
-    });
-    return Array.from(map.entries())
-      .sort(([, a], [, b]) => b.count - a.count)
-      .slice(0, 5)
-      .map(([name, v]) => ({
-        name,
-        count: v.count,
-        avgScore: v.scoredCount > 0 ? Math.round(v.totalScore / v.scoredCount) : null,
-      }));
-  }, [allAnalyzed]);
-
-  // TRL gauge data for radial chart
-  const trlGaugeData = [{ name: "TRL", value: stats.avgTrl, fill: "hsl(var(--primary))" }];
-
-  const COLORS = [
-    "hsl(158, 64%, 40%)",
-    "hsl(220, 70%, 55%)",
-    "hsl(45, 93%, 47%)",
-    "hsl(350, 65%, 55%)",
-    "hsl(280, 60%, 55%)",
-    "hsl(190, 70%, 45%)",
-    "hsl(25, 90%, 55%)",
-    "hsl(160, 50%, 60%)",
-  ];
+  const maxInstitute = Math.max(1, ...(data?.institutes.map((i) => Math.max(i.latest, i.previous)) ?? [1]));
+  const maxShare = Math.max(1, ...fieldRows.map((f) => f.share));
 
   const headerRight = (
     <Link to="/">
-      <Button variant="ghost" size="sm" className="gap-2 rounded-full">
-        <ArrowLeft className="w-4 h-4" /> 홈으로
+      <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+        <ArrowLeft className="w-3 h-3 md:w-3.5 md:h-3.5" /><span className="hidden sm:inline">홈으로</span>
       </Button>
     </Link>
   );
 
-  if (allAnalyzed.length === 0) {
-    return (
-      <PageLayout headerRight={headerRight}>
-        <main className="container mx-auto px-4 md:px-6 py-8 relative z-10">
-          <div className="flex items-center gap-2 mb-6">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <h2 className="font-semibold text-lg text-foreground">분석 인사이트</h2>
-          </div>
-          <div className="text-center py-20">
-            <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
-            <p className="text-muted-foreground mb-4">아직 분석한 특허가 없습니다.</p>
-            <Link to="/"><Button>특허 분석 시작하기</Button></Link>
-          </div>
-        </main>
-      </PageLayout>
-    );
-  }
-
   return (
     <PageLayout headerRight={headerRight}>
-      <main className="container mx-auto px-4 md:px-6 py-8 relative z-10">
-        <div className="flex items-center gap-2 mb-2">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold text-lg text-foreground">분석 인사이트</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mb-6">최근 분석한 특허들의 통계와 트렌드를 한눈에 확인하세요</p>
-
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <KpiCard icon={<Layers className="w-4 h-4" />} label="분석 특허" value={stats.total} unit="건" />
-          <KpiCard icon={<Award className="w-4 h-4" />} label="평균 사업화 점수" value={Math.round(stats.avg)} unit="점" accent />
-          <KpiCard icon={<TrendingUp className="w-4 h-4" />} label="최고 점수" value={stats.max} unit="점" />
-          <KpiCard icon={<Activity className="w-4 h-4" />} label="평균 TRL" value={stats.avgTrl.toFixed(1)} unit="단계" />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Score Distribution Pie */}
-          <Section title="점수 등급 분포" icon={<Award className="w-4 h-4 text-primary" />}>
-            {scoreDistribution.length === 0 ? (
-              <EmptyMini text="점수 데이터가 부족합니다" />
-            ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={scoreDistribution}
-                    dataKey="value"
-                    nameKey="label"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    label={(entry) => `${entry.label} (${entry.value})`}
-                    labelLine={false}
-                    style={{ fontSize: "10px" }}
-                  >
-                    {scoreDistribution.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "1px solid hsl(var(--border) / 0.5)",
-                      background: "hsl(var(--card))",
-                      fontSize: "12px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+      <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
+        <section className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-7">
+          <div className="max-w-6xl mx-auto px-5 md:px-6 py-6 md:py-8">
+            <p className="home-hero-accent inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold"><BarChart3 className="w-4 h-4" /> 인사이트</p>
+            <h1 className="mt-1.5 text-2xl md:text-[34px] font-extrabold leading-tight">농식품 특허 출원 동향</h1>
+            <p className="home-hero-muted mt-2 text-sm md:text-base max-w-2xl leading-relaxed">
+              농업 국가연구기관 6곳의 최근 특허·실용신안 출원을 기술 분야와 기관별로 정리했어요.
+            </p>
+            {data && (
+              <p className="home-hero-muted mt-3 text-xs">
+                집계 기간 {fmtDate(data.start)} ~ {fmtDate(data.end)} · 공개 출원 {data.total.toLocaleString()}건 · {new Date(data.updatedAt).toLocaleDateString("ko-KR")} 갱신
+              </p>
             )}
-          </Section>
+          </div>
+        </section>
 
-          {/* Average TRL Gauge */}
-          <Section title="평균 기술성숙도 (TRL)" icon={<Activity className="w-4 h-4 text-primary" />}>
-            {stats.avgTrl === 0 ? (
-              <EmptyMini text="TRL 데이터가 부족합니다" />
-            ) : (
-              <div className="relative" style={{ height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart
-                    cx="50%"
-                    cy="50%"
-                    innerRadius="60%"
-                    outerRadius="90%"
-                    barSize={20}
-                    data={trlGaugeData}
-                    startAngle={180}
-                    endAngle={0}
-                  >
-                    <PolarAngleAxis type="number" domain={[0, 9]} tick={false} />
-                    <RadialBar dataKey="value" cornerRadius={10} fill="hsl(var(--primary))" background={{ fill: "hsl(var(--muted))" }} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pt-8 pointer-events-none">
-                  <span className="text-3xl font-bold text-primary">{stats.avgTrl.toFixed(1)}</span>
-                  <span className="text-[10px] text-muted-foreground">/ 9 단계</span>
-                </div>
+        <div className="max-w-6xl mx-auto space-y-4 md:space-y-5">
+          {isPending && (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div>
+              <Skeleton className="h-36 rounded-2xl" />
+              <div className="grid lg:grid-cols-2 gap-4"><Skeleton className="h-72 rounded-2xl" /><Skeleton className="h-72 rounded-2xl" /></div>
+              <p className="text-center text-sm text-muted-foreground">최신 출원 자료를 모으고 있어요. 처음에는 30초 정도 걸릴 수 있어요.</p>
+            </>
+          )}
+
+          {isError && (
+            <div className="trend-card rounded-2xl border border-border/60 bg-card p-8 text-center">
+              <p className="font-semibold text-foreground">{(error as Error)?.message}</p>
+              <Button variant="outline" className="mt-4 rounded-full gap-1.5" onClick={() => refetch()} disabled={isFetching}>
+                <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} /> 다시 시도
+              </Button>
+            </div>
+          )}
+
+          {data && view && (
+            <>
+              {/* KPI */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Kpi icon={FileText} label={`${view.y}년 출원`} value={view.latest?.count ?? 0} unit="건" sub={<>전년 대비 <Growth value={view.growth} /></>} />
+                <Kpi icon={Layers} label={`최근 ${view.complete.length}년 누적`} value={view.completeTotal.toLocaleString()} unit="건" sub={`${view.complete[0]?.year}~${view.y}년`} />
+                {view.top && (
+                  <Kpi icon={BarChart3} label="출원 비중 1위 분야" value={FIELD_META[view.top.id]?.label ?? view.top.id} sub={`${view.y}년 ${view.top.latest}건 · 비중 ${view.top.share}%`} />
+                )}
+                {view.rising && (
+                  <Kpi icon={TrendingUp} label="가장 크게 늘어난 분야" value={FIELD_META[view.rising.id]?.label ?? view.rising.id} sub={<>{view.y - 1}→{view.y}년 <Growth value={view.rising.growth} /></>} />
+                )}
               </div>
-            )}
-          </Section>
 
-          {/* IPC Distribution */}
-          <Section title="주요 기술분야 (IPC)" icon={<Layers className="w-4 h-4 text-primary" />}>
-            {ipcDistribution.length === 0 ? (
-              <EmptyMini text="IPC 데이터가 부족합니다" />
-            ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={ipcDistribution} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }} axisLine={false} tickLine={false} width={50} />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "1px solid hsl(var(--border) / 0.5)",
-                      background: "hsl(var(--card))",
-                      fontSize: "12px",
-                    }}
-                    formatter={(value: number) => [`${value}건`, "특허 수"]}
-                  />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={20}>
-                    {ipcDistribution.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              {/* AI summary */}
+              {data.insights.length > 0 && (
+                <Card title="한눈에 보는 동향" icon={Sparkles} action={<span className="text-[11px] text-muted-foreground">집계 수치만 사용해 AI가 정리</span>}>
+                  <ul className="grid gap-2 md:grid-cols-2">
+                    {data.insights.map((t) => (
+                      <li key={t} className="trend-insight rounded-xl px-3.5 py-2.5 text-sm leading-relaxed text-foreground">{t}</li>
                     ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </Section>
+                  </ul>
+                </Card>
+              )}
 
-          {/* Top Assignees */}
-          <Section title="주요 출원기관" icon={<Building2 className="w-4 h-4 text-primary" />}>
-            {topAssignees.length === 0 ? (
-              <EmptyMini text="출원인 데이터가 부족합니다" />
-            ) : (
-              <div className="space-y-2.5 py-1">
-                {topAssignees.map((a, i) => (
-                  <div key={a.name} className="flex items-center gap-3">
-                    <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
-                      style={{ background: COLORS[i % COLORS.length] }}
-                    >
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline justify-between gap-2 mb-1">
-                        <p className="text-sm font-medium text-foreground truncate">{a.name}</p>
-                        <div className="flex items-baseline gap-1.5 shrink-0">
-                          <span className="text-xs text-muted-foreground">{a.count}건</span>
-                          {a.avgScore != null && (
-                            <span className="text-xs font-bold" style={{ color: getBand(a.avgScore).color }}>
-                              평균 {a.avgScore}점
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${(a.count / topAssignees[0].count) * 100}%`,
-                            background: COLORS[i % COLORS.length],
-                          }}
+              <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-4 md:gap-5">
+                {/* Yearly */}
+                <Card title="연도별 출원 추이" icon={BarChart3}>
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={data.yearly} margin={{ top: 16, right: 4, left: -22, bottom: 0 }}>
+                        <XAxis dataKey="year" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                        <Tooltip
+                          cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                          contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, fontSize: 12 }}
+                          formatter={(v: number, _n, item) => [`${v}건${item?.payload?.provisional ? " (공개 진행 중)" : ""}`, "출원"]}
+                          labelFormatter={(l) => `${l}년`}
                         />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-        </div>
-
-        {/* Score Timeline */}
-        <section className="mt-4">
-          <Section title="점수 추이 (검색 시각 기준)" icon={<TrendingUp className="w-4 h-4 text-primary" />}>
-            {scoreTimeline.length < 2 ? (
-              <EmptyMini text="2건 이상 분석 시 추이가 표시됩니다" />
-            ) : (
-              <>
-                <div className="flex items-baseline gap-3 mb-2 px-1">
-                  <span className="text-[11px] text-muted-foreground">최근 {scoreTimeline.length}건 평균</span>
-                  <span className="text-sm font-bold" style={{ color: getBand(timelineAvg).color }}>{timelineAvg}점</span>
-                </div>
-                <ResponsiveContainer width="100%" height={240}>
-                  <LineChart data={scoreTimeline} margin={{ top: 10, right: 16, bottom: 5, left: -10 }}>
-                    <defs>
-                      <linearGradient id="scoreLineGrad" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="hsl(220, 70%, 55%)" />
-                        <stop offset="100%" stopColor="hsl(158, 64%, 40%)" />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[40, 100]} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "1px solid hsl(var(--border) / 0.5)",
-                        background: "hsl(var(--card))",
-                        fontSize: "12px",
-                      }}
-                      formatter={(value: number) => [`${value}점`, "사업화 점수"]}
-                      labelFormatter={(l, items) => {
-                        const pn = (items?.[0]?.payload as { patentNumber?: string } | undefined)?.patentNumber;
-                        return pn ? `${l} · ${pn}` : String(l);
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke="url(#scoreLineGrad)"
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 0 }}
-                      activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </>
-            )}
-          </Section>
-        </section>
-
-        {/* IPC Bubble Chart */}
-        <section className="mt-4">
-          <Section title="IPC 분야 버블맵 (점수 × TRL × 빈도)" icon={<Layers className="w-4 h-4 text-primary" />}>
-            {ipcBubble.length === 0 ? (
-              <EmptyMini text="IPC 데이터가 부족합니다" />
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <ScatterChart margin={{ top: 20, right: 24, bottom: 30, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                  <XAxis
-                    type="number"
-                    dataKey="avgScore"
-                    name="평균 점수"
-                    domain={[50, 100]}
-                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                    label={{ value: "평균 사업화 점수", position: "insideBottom", offset: -10, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <YAxis
-                    type="number"
-                    dataKey="avgTrl"
-                    name="평균 TRL"
-                    domain={[0, 9]}
-                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                    label={{ value: "평균 TRL", angle: -90, position: "insideLeft", fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <ZAxis type="number" dataKey="count" range={[120, 900]} name="특허 수" />
-                  <Tooltip
-                    cursor={{ strokeDasharray: "3 3" }}
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "1px solid hsl(var(--border) / 0.5)",
-                      background: "hsl(var(--card))",
-                      fontSize: "12px",
-                    }}
-                    formatter={(value: number, name: string) => {
-                      if (name === "특허 수") return [`${value}건`, name];
-                      if (name === "평균 점수") return [`${value}점`, name];
-                      if (name === "평균 TRL") return [`${value} 단계`, name];
-                      return [value, name];
-                    }}
-                    labelFormatter={(_, items) => (items?.[0]?.payload as { name?: string } | undefined)?.name || ""}
-                  />
-                  <Scatter data={ipcBubble}>
-                    {ipcBubble.map((entry, i) => (
-                      <Cell key={i} fill={getBand(entry.avgScore).color} fillOpacity={0.65} stroke={getBand(entry.avgScore).color} strokeWidth={1.5} />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            )}
-            <p className="text-[10px] text-muted-foreground text-center mt-2">버블 크기 = 특허 수 · 색상 = 점수 등급 · 라벨은 툴팁에서 확인</p>
-          </Section>
-        </section>
-
-        {/* Recent High-Scorers */}
-        {scored.length > 0 && (
-          <section className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">상위 분석 특허</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[...scored]
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 6)
-                .map((p) => {
-                  const band = getBand(p.score);
-                  return (
-                    <Link
-                      key={p.patentNumber}
-                      to={`/?patent=${encodeURIComponent(p.patentNumber)}`}
-                      className="rounded-2xl border border-border/40 bg-card/50 p-4 hover:border-primary/40 hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <p className="text-[10px] text-muted-foreground font-mono">{p.patentNumber}</p>
-                        <span
-                          className="text-xs font-bold px-2 py-0.5 rounded-md"
-                          style={{ background: `${band.color}20`, color: band.color }}
-                        >
-                          {p.score}점
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{p.assignee || "출원인 정보 없음"}</p>
-                      {p.ipcs.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {p.ipcs.slice(0, 3).map((c, i) => (
-                            <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-mono">
-                              {c.slice(0, 4)}
-                            </span>
+                        <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={44} label={{ position: "top", fontSize: 11, fill: "hsl(var(--foreground))" }}>
+                          {data.yearly.map((r) => (
+                            <Cell key={r.year} fill={r.provisional ? "hsl(var(--muted-foreground) / 0.3)" : r.year === view.y ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.45)"} />
                           ))}
-                        </div>
-                      )}
-                    </Link>
-                  );
-                })}
-            </div>
-          </section>
-        )}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="mt-2 flex gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    특허는 출원 후 약 1년 6개월 뒤 공개돼요. 회색 막대({view.y + 1}년 이후)는 아직 공개 중인 잠정 수치라 앞으로 늘어나요.
+                  </p>
+                </Card>
+
+                {/* Institutes */}
+                <Card title="기관별 출원" icon={Building2} action={<span className="text-[11px] text-muted-foreground">{view.y - 1}년 / {view.y}년</span>}>
+                  <ul className="space-y-3">
+                    {data.institutes.map((i) => {
+                      const g = i.previous >= 5 ? Math.round(((i.latest - i.previous) / i.previous) * 100) : null;
+                      return (
+                        <li key={i.id}>
+                          <div className="flex items-baseline justify-between gap-2 text-sm">
+                            <span className="font-semibold text-foreground truncate">{i.label}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                              <b className="text-foreground text-sm">{i.latest}</b>건 <Growth value={g} className="ml-1 text-xs" />
+                            </span>
+                          </div>
+                          <div className="mt-1.5 space-y-1">
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full trend-bar-prev" style={{ width: `${(i.previous / maxInstitute) * 100}%` }} /></div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-primary" style={{ width: `${(i.latest / maxInstitute) * 100}%` }} /></div>
+                          </div>
+                          <p className="mt-1 text-[11px] text-muted-foreground">5년 누적 {i.total.toLocaleString()}건</p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Card>
+              </div>
+
+              {/* Fields */}
+              <Card
+                title="기술 분야별 동향"
+                icon={Layers}
+                action={
+                  <div role="tablist" className="inline-flex rounded-full bg-muted p-0.5 text-xs">
+                    {([["count", "출원 많은 순"], ["growth", "증가율 순"]] as const).map(([k, l]) => (
+                      <button key={k} role="tab" aria-selected={sort === k} onClick={() => setSort(k)}
+                        className={`rounded-full px-3 py-1 font-semibold transition-colors ${sort === k ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
+                    ))}
+                  </div>
+                }
+              >
+                <div className="hidden md:grid grid-cols-[minmax(0,1.2fr)_90px_minmax(0,1fr)_80px_90px_24px] gap-3 px-2 pb-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
+                  <span>분야</span><span>{view.completeYears[0]}~{view.y} 추이</span><span>{view.y}년 비중</span><span className="text-right">{view.y}년</span><span className="text-right">전년 대비</span><span />
+                </div>
+                <ul className="divide-y divide-border/50">
+                  {fieldRows.map((f) => {
+                    const meta = FIELD_META[f.id];
+                    return (
+                      <li key={f.id}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/search?keyword=${encodeURIComponent(meta.label)}&field=${encodeURIComponent(meta.label)}&fieldId=${encodeURIComponent(f.id)}`)}
+                          className="trend-row w-full grid grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[minmax(0,1.2fr)_90px_minmax(0,1fr)_80px_90px_24px] items-center gap-3 rounded-lg px-2 py-2.5 text-left"
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className={`technology-tile-${meta.tone} trend-dot w-2.5 h-2.5 rounded-full shrink-0`} />
+                            <span className="text-sm font-semibold text-foreground truncate">{meta.label}</span>
+                          </span>
+                          <span className="hidden md:block"><Sparkline values={view.completeYears.map((y) => f.byYear[y] ?? 0)} tone={meta.tone} /></span>
+                          <span className="hidden md:flex items-center gap-2">
+                            <span className="h-2 flex-1 rounded-full bg-muted overflow-hidden"><span className={`technology-tile-${meta.tone} trend-dot block h-full rounded-full`} style={{ width: `${(f.share / maxShare) * 100}%` }} /></span>
+                            <span className="w-11 text-right text-xs tabular-nums text-muted-foreground">{f.share}%</span>
+                          </span>
+                          <span className="text-right text-sm font-bold tabular-nums text-foreground">{f.latest}<span className="text-xs font-normal text-muted-foreground">건</span></span>
+                          <span className="text-right text-sm"><Growth value={f.growth} /></span>
+                          <ArrowRight className="hidden md:block w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="mt-2 text-[11px] text-muted-foreground">전년 출원이 5건 미만인 분야는 증감률을 표시하지 않아요. 분야를 누르면 관련 특허를 볼 수 있어요.</p>
+              </Card>
+
+              {/* Recent */}
+              <Card title="최근 공개된 출원" icon={FileText}>
+                <ul className="grid gap-2 md:grid-cols-2">
+                  {data.recent.map((r) => {
+                    const meta = FIELD_META[r.field];
+                    return (
+                      <li key={r.number}>
+                        <button type="button" onClick={() => navigate(`/?patent=${encodeURIComponent(r.number)}`)}
+                          className="trend-row w-full rounded-xl border border-border/50 px-3.5 py-3 text-left">
+                          <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                            <span className={`technology-tile-${meta?.tone ?? "other"} trend-chip rounded-md px-1.5 py-0.5 font-semibold`}>{meta?.label ?? "기타"}</span>
+                            <span className="tabular-nums">{fmtDate(r.date)} 출원</span>
+                          </span>
+                          <span className="mt-1 block text-sm font-semibold leading-snug text-foreground line-clamp-2">{r.title}</span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground truncate">{r.applicant.replace(/\|/g, ", ")}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Card>
+            </>
+          )}
+        </div>
       </main>
     </PageLayout>
   );
-}
-
-function KpiCard({ icon, label, value, unit, accent }: { icon: React.ReactNode; label: string; value: number | string; unit: string; accent?: boolean }) {
-  return (
-    <div
-      className={`rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${
-        accent ? "border-primary/30 bg-primary/5" : "border-border/40 bg-card/50"
-      }`}
-      style={{ boxShadow: "0 1px 3px hsl(var(--foreground) / 0.03)" }}
-    >
-      <div className="flex items-center gap-1.5 mb-2 text-muted-foreground">
-        {icon}
-        <span className="text-[11px] font-medium">{label}</span>
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className={`text-2xl font-bold ${accent ? "text-primary" : "text-foreground"}`}>{value}</span>
-        <span className="text-xs text-muted-foreground">{unit}</span>
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border/40 bg-card/50 p-4" style={{ boxShadow: "0 1px 3px hsl(var(--foreground) / 0.03)" }}>
-      <div className="flex items-center gap-2 mb-3">
-        {icon}
-        <h3 className="text-sm font-bold text-foreground">{title}</h3>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function EmptyMini({ text }: { text: string }) {
-  return <div className="text-center py-12 text-xs text-muted-foreground">{text}</div>;
 }
