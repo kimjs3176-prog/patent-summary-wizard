@@ -223,10 +223,15 @@ export default function Insights() {
                   </div>
                 }
               >
+                <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
                 <div className="hidden md:grid grid-cols-[minmax(0,1.2fr)_90px_minmax(0,1fr)_80px_90px_24px] gap-3 px-2 pb-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
                   <span>분야</span><span>{view.completeYears[0]}~{view.y} 추이</span><span>{view.y}년 비중</span><span className="text-right">{view.y}년</span><span className="text-right">전년 대비</span><span />
                 </div>
-                <ul className="divide-y divide-border/50">
+                <div className="hidden lg:grid grid-cols-[minmax(0,1.2fr)_90px_minmax(0,1fr)_80px_90px_24px] gap-3 px-2 pb-2 text-[11px] font-medium text-muted-foreground border-b border-border/60">
+                  <span>분야</span><span>{view.completeYears[0]}~{view.y} 추이</span><span>{view.y}년 비중</span><span className="text-right">{view.y}년</span><span className="text-right">전년 대비</span><span />
+                </div>
+                </div>
+                <ul className="lg:grid lg:grid-cols-2 lg:grid-flow-col lg:gap-x-8 [&>li]:border-b [&>li]:border-border/50" style={{ gridTemplateRows: `repeat(${Math.ceil(fieldRows.length / 2)}, auto)` }}>
                   {fieldRows.map((f) => {
                     const meta = FIELD_META[f.id];
                     return (
