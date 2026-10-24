@@ -1,11 +1,13 @@
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
-import { KeywordExplorer } from "@/components/KeywordExplorer";
+import { ArrowRight, ChevronDown, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { trendHeadline, useFilingTrends } from "@/hooks/useFilingTrends";
+import { trendHeadline, useFilingTrends, type TrendSnapshot } from "@/hooks/useFilingTrends";
 import { TECHNOLOGY_FIELDS } from "../../supabase/functions/_shared/technologyFields";
 
 const FIELD_META = Object.fromEntries(TECHNOLOGY_FIELDS.map((f) => [f.id, f])) as Record<string, typeof TECHNOLOGY_FIELDS[number]>;
+const RANK_LIMIT = 10;
+const MOBILE_LIMIT = 5;
 
 function Delta({ value }: { value: number | null }) {
   if (value === null) return <span className="text-muted-foreground">—</span>;
@@ -17,31 +19,29 @@ function Delta({ value }: { value: number | null }) {
   );
 }
 
-function TrendSummary() {
+function Sparkline({ values, tone }: { values: number[]; tone: string }) {
+  const max = Math.max(1, ...values);
+  const w = 48, h = 18;
+  const pts = values.map((v, i) => `${(i / Math.max(1, values.length - 1)) * w},${h - 2 - (v / max) * (h - 4)}`).join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className={`technology-tile-${tone} shrink-0`} aria-hidden="true">
+      <polyline points={pts} fill="none" stroke="hsl(var(--tile-ink))" strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function useFieldSearch() {
   const navigate = useNavigate();
-  const { data, isPending, isError } = useFilingTrends();
-
-  if (isPending) return <Skeleton className="h-full min-h-[300px] rounded-2xl" />;
-  if (isError || !data) {
-    return (
-      <div className="trend-card rounded-2xl border border-border/60 bg-card p-5 flex flex-col justify-center text-sm text-muted-foreground">
-        출원 동향을 잠시 불러오지 못했어요.
-        <Link to="/insights" className="mt-2 font-semibold text-primary">인사이트에서 다시 보기 →</Link>
-      </div>
-    );
-  }
-
-  const h = trendHeadline(data);
-  const max = Math.max(1, ...h.complete.map((r) => r.count));
-  const openField = (id: string) => {
+  return (id: string) => {
     const label = FIELD_META[id]?.label ?? id;
     navigate(`/search?keyword=${encodeURIComponent(label)}&field=${encodeURIComponent(label)}&fieldId=${encodeURIComponent(id)}`);
   };
-  const highlights = [
-    h.top && { id: h.top.id, tag: "비중 1위", value: <span className="tabular-nums text-muted-foreground">{h.top.share}%</span> },
-    h.rising && { id: h.rising.id, tag: "급증 분야", value: <Delta value={h.rising.growth} /> },
-  ].filter(Boolean) as { id: string; tag: string; value: React.ReactNode }[];
+}
 
+/** Left card: headline count, yearly mini bars and one verified AI sentence. */
+function TrendSummary({ data }: { data: TrendSnapshot }) {
+  const h = trendHeadline(data);
+  const max = Math.max(1, ...h.complete.map((r) => r.count));
   return (
     <div className="trend-card rounded-2xl border border-border/60 bg-card p-4 md:p-5 flex flex-col">
       <p className="text-xs font-medium text-muted-foreground">{h.y}년 출원 <span className="text-muted-foreground/70">(공개 완료 기준)</span></p>
@@ -49,9 +49,9 @@ function TrendSummary() {
         <span className="text-[32px] font-bold leading-none tabular-nums text-foreground">{h.latest?.count ?? 0}<span className="ml-0.5 text-sm font-medium text-muted-foreground">건</span></span>
         <span className="text-xs text-muted-foreground">전년 대비 <Delta value={h.growth} /></span>
       </div>
+      <p className="mt-1 text-xs text-muted-foreground">최근 {h.complete.length}년 누적 <span className="font-semibold tabular-nums text-foreground">{h.completeTotal.toLocaleString()}건</span></p>
 
-      {/* Mini yearly bars */}
-      <div className="mt-4 flex items-end gap-1.5 h-20" aria-label="연도별 출원 건수">
+      <div className="mt-4 flex items-end gap-1.5 h-16" aria-label="연도별 출원 건수">
         {h.complete.map((r) => (
           <div key={r.year} className="flex-1 flex flex-col items-center gap-1 h-full justify-end" title={`${r.year}년 ${r.count}건`}>
             <span className="text-[10px] tabular-nums text-muted-foreground">{r.count}</span>
@@ -63,21 +63,7 @@ function TrendSummary() {
         {h.complete.map((r) => <span key={r.year} className="flex-1 text-center text-[10px] tabular-nums text-muted-foreground">{String(r.year).slice(2)}년</span>)}
       </div>
 
-      <ul className="mt-4 space-y-1.5">
-        {highlights.map((x) => (
-          <li key={x.tag}>
-            <button type="button" onClick={() => openField(x.id)} className="trend-row w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm">
-              <span className="flex items-center gap-2 min-w-0">
-                <span className={`technology-tile-${FIELD_META[x.id]?.tone ?? "other"} trend-chip rounded-md px-1.5 py-0.5 text-[11px] font-semibold shrink-0`}>{x.tag}</span>
-                <span className="font-semibold text-foreground truncate">{FIELD_META[x.id]?.label ?? x.id}</span>
-              </span>
-              <span className="flex items-center gap-1 text-xs shrink-0">{x.value}<ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /></span>
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {data.insights[0] && <p className="mt-3 text-xs leading-relaxed text-muted-foreground line-clamp-3">{data.insights[0]}</p>}
+      {data.insights[0] && <p className="trend-insight mt-4 rounded-r-lg px-3 py-2 text-xs leading-relaxed text-foreground/80 line-clamp-3">{data.insights[0]}</p>}
 
       <Link to="/insights" className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
         출원 동향 상세보기 <ArrowRight className="w-3.5 h-3.5" />
@@ -86,25 +72,113 @@ function TrendSummary() {
   );
 }
 
-/** Home "특허 인사이트": filing-trend highlights + technology keyword treemap. */
+/** Right card: compact field ranking (same snapshot as the Insights page); rows open the field search. */
+function FieldRanking({ data }: { data: TrendSnapshot }) {
+  const openField = useFieldSearch();
+  const [sort, setSort] = useState<"count" | "growth">("count");
+  const [expanded, setExpanded] = useState(false);
+  const h = trendHeadline(data);
+
+  const rows = useMemo(() => {
+    const list = data.fields.filter((f) => f.latest > 0);
+    const sorted = sort === "count"
+      ? [...list].sort((a, b) => b.latest - a.latest)
+      : [...list].filter((f) => f.growth !== null).sort((a, b) => (b.growth ?? 0) - (a.growth ?? 0) || b.latest - a.latest);
+    return sorted.slice(0, RANK_LIMIT);
+  }, [data, sort]);
+  const maxShare = Math.max(1, ...rows.map((f) => f.share));
+  const years = h.completeYears;
+
+  return (
+    <div className="trend-card rounded-2xl border border-border/60 bg-card p-4 md:p-5 min-w-0 flex flex-col">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="text-[15px] font-bold text-foreground !tracking-normal">기술분야별 출원</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">{h.y}년 기준 상위 {rows.length}개 분야 · 누르면 관련 특허를 검색해요</p>
+        </div>
+        <div role="tablist" aria-label="정렬" className="inline-flex rounded-full bg-muted p-0.5 text-xs">
+          {([["count", "출원 많은 순"], ["growth", "증가율 순"]] as const).map(([k, l]) => (
+            <button key={k} type="button" role="tab" aria-selected={sort === k} onClick={() => setSort(k)}
+              className={`rounded-full px-3 py-1 font-semibold transition-colors ${sort === k ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      <ol className="grid grid-cols-1 md:grid-cols-2 md:grid-flow-col md:grid-rows-5 gap-x-5">
+        {rows.map((f, i) => {
+          const meta = FIELD_META[f.id];
+          const tone = meta?.tone ?? "other";
+          const badge = f.id === h.top?.id ? "비중 1위" : f.id === h.rising?.id ? "급증" : null;
+          return (
+            <li key={f.id} className={`border-b border-border/50 ${i >= MOBILE_LIMIT && !expanded ? "hidden md:block" : ""}`}>
+              <button type="button" onClick={() => openField(f.id)}
+                aria-label={`${meta?.label ?? f.id} ${h.y}년 ${f.latest}건, 관련 특허 검색`}
+                title={`${meta?.label} · ${years[0]}~${h.y} 추이`}
+                className="trend-row group w-full grid grid-cols-[18px_minmax(0,1fr)_48px_auto_56px_14px] items-center gap-2 rounded-lg px-1.5 py-2 text-left">
+                <span className="text-xs font-bold tabular-nums text-muted-foreground">{i + 1}</span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <span className={`technology-tile-${tone} trend-dot w-2 h-2 rounded-full shrink-0`} />
+                    <span className="text-sm font-semibold text-foreground truncate">{meta?.label ?? f.id}</span>
+                    {badge && <span className={`technology-tile-${tone} trend-chip rounded px-1 py-px text-[10px] font-semibold shrink-0`}>{badge}</span>}
+                  </span>
+                  <span className="mt-1 flex items-center gap-1.5">
+                    <span className="h-1 flex-1 rounded-full bg-muted overflow-hidden"><span className={`technology-tile-${tone} trend-dot block h-full rounded-full`} style={{ width: `${(f.share / maxShare) * 100}%` }} /></span>
+                    <span className="w-9 text-right text-[10px] tabular-nums text-muted-foreground">{f.share}%</span>
+                  </span>
+                </span>
+                <Sparkline values={years.map((y) => f.byYear[y] ?? 0)} tone={tone} />
+                <span className="text-right text-sm font-bold tabular-nums text-foreground">{f.latest}<span className="text-[11px] font-normal text-muted-foreground">건</span></span>
+                <span className="text-right text-xs"><Delta value={f.growth} /></span>
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+
+      {rows.length > MOBILE_LIMIT && (
+        <button type="button" onClick={() => setExpanded((v) => !v)} className="md:hidden mt-2 inline-flex items-center justify-center gap-1 rounded-lg py-2 text-xs font-semibold text-muted-foreground hover:text-foreground">
+          {expanded ? "접기" : `${rows.length - MOBILE_LIMIT}개 분야 더 보기`}
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+      )}
+      <p className="mt-auto pt-3 text-[11px] text-muted-foreground">추이선 {years[0]}~{h.y}년 · 증감률은 전년 대비(전년 5건 미만 분야는 —) · 대표 IPC 기준</p>
+    </div>
+  );
+}
+
+/** Home "특허 인사이트": filing-trend summary + field ranking from one snapshot. */
 export function HomeInsights() {
+  const { data, isPending, isError } = useFilingTrends();
+
   return (
     <section aria-labelledby="home-insights-heading" className="w-full">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="home-insights-heading" className="text-xl md:text-2xl font-bold text-foreground !tracking-normal">특허 인사이트</h2>
-          <p className="mt-1 text-xs text-muted-foreground">농업 국가연구기관 6곳의 출원 동향과 주요 기술 키워드</p>
+          <p className="mt-1 text-xs text-muted-foreground">농업 국가연구기관 6곳의 출원 동향과 기술분야별 순위</p>
         </div>
         <Link to="/insights" className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:text-primary hover:border-primary/40 transition-colors">
           상세보기 <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[290px_minmax(0,1fr)] gap-4 lg:gap-5 items-stretch">
-        <TrendSummary />
-        <div className="trend-card rounded-2xl border border-border/60 bg-card p-2.5 sm:p-3 md:p-4 min-w-0">
-          <KeywordExplorer embedded />
+      {isPending ? (
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 lg:gap-5">
+          <Skeleton className="h-[300px] rounded-2xl" />
+          <Skeleton className="h-[300px] rounded-2xl" />
         </div>
-      </div>
+      ) : isError || !data ? (
+        <div className="trend-card rounded-2xl border border-border/60 bg-card p-5 text-sm text-muted-foreground">
+          출원 동향을 잠시 불러오지 못했어요.
+          <Link to="/insights" className="ml-2 font-semibold text-primary">인사이트에서 다시 보기 →</Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-4 lg:gap-5 items-stretch">
+          <TrendSummary data={data} />
+          <FieldRanking data={data} />
+        </div>
+      )}
     </section>
   );
 }
