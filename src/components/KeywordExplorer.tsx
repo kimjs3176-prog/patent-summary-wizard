@@ -9,7 +9,8 @@ import { TECHNOLOGY_FIELDS, type TechnologyStats } from "../../supabase/function
 
 const FIELD_ICONS = { food: Utensils, bio: Dna, breeding: Sprout, health: HeartPulse, cosmetics: Sparkles, crop: Leaf, machine: Tractor, livestock: Fish, protection: Bug, environment: Recycle, fertilizer: Shovel, digital: Cpu, other: Shapes };
 
-export function KeywordExplorer() {
+/** Technology-field treemap. `embedded` renders it as a sub-block inside the home insight section. */
+export function KeywordExplorer({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const container = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -30,7 +31,7 @@ export function KeywordExplorer() {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const height = width < 640 ? 360 : 300;
+  const height = width < 640 ? (embedded ? 400 : 360) : (embedded ? 320 : 300);
   const fields = data?.fields ?? [];
   const mainFields = visibleTechnologyFields(fields);
   // Compress area ratios (power scale) so dominant fields don't crowd out the rest.
@@ -41,10 +42,12 @@ export function KeywordExplorer() {
 
   return (
     <section aria-labelledby="technology-keywords-heading" className="w-full">
-      <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
+      <div className={`flex flex-wrap items-end justify-between gap-3 ${embedded ? "mb-2.5" : "mb-3"}`}>
         <div>
-          <h2 id="technology-keywords-heading" className="text-xl md:text-2xl font-bold text-foreground !tracking-normal">주요 키워드</h2>
-          <p className="mt-1 text-xs text-muted-foreground">최근 3년 기술분야별 출원{data ? ` · ${data.total.toLocaleString()}건` : ""}</p>
+          {embedded
+            ? <h3 id="technology-keywords-heading" className="text-[15px] font-bold text-foreground !tracking-normal">주요 키워드</h3>
+            : <h2 id="technology-keywords-heading" className="text-xl md:text-2xl font-bold text-foreground !tracking-normal">주요 키워드</h2>}
+          <p className="mt-1 text-xs text-muted-foreground">{embedded ? "분야를 누르면 관련 특허를 검색해요 · " : ""}최근 3년 기술분야별 출원{data ? ` · ${data.total.toLocaleString()}건` : ""}</p>
         </div>
         <Button variant="ghost" size="icon" aria-label="출원 통계 새로고침" title="출원 통계 새로고침" onClick={() => refetch()} disabled={isFetching} className="h-8 w-8">
           <RefreshCw className={isFetching ? "animate-spin motion-reduce:animate-none" : ""} />
@@ -78,8 +81,8 @@ export function KeywordExplorer() {
                       onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.label)}&field=${encodeURIComponent(node.label)}&fieldId=${encodeURIComponent(node.id)}`)}
                       className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 rounded-xl items-start ${compact ? (tiny ? "p-2 gap-0.5 justify-center" : "p-2.5 gap-1 justify-between") : "p-4 justify-start gap-2"}`}
                       style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
-                      {!compact && Icon && <div className="flex w-full items-center justify-between"><span className="technology-tile-icon flex h-9 w-9 items-center justify-center rounded-lg"><Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} /></span><ArrowUpRight aria-hidden="true" className="h-4 w-4 opacity-30 transition-all group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" /></div>}
-                      <span className={`technology-tile-label w-full text-left font-semibold leading-snug break-keep line-clamp-2 ${compact ? "text-[13px]" : "text-[15px]"}`}>{node.label}</span>
+                      {!compact && !embedded && Icon && <div className="flex w-full items-center justify-between"><span className="technology-tile-icon flex h-9 w-9 items-center justify-center rounded-lg"><Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} /></span><ArrowUpRight aria-hidden="true" className="h-4 w-4 opacity-30 transition-all group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" /></div>}
+                      <span className={`technology-tile-label w-full text-left font-semibold leading-snug break-keep ${tiny ? "text-[12px] whitespace-nowrap overflow-hidden text-ellipsis" : `line-clamp-2 ${compact ? "text-[13px]" : "text-[15px]"}`}`}>{node.label}</span>
                       <span className={`w-full text-left shrink-0 font-bold tabular-nums leading-none ${compact ? (tiny ? "text-sm" : "text-lg") : "mt-auto text-[32px]"}`}>
                         {count.toLocaleString()}<span className="technology-tile-unit ml-1 text-[11px] font-medium">건</span>
                         {!compact && share > 0 && <span className="technology-tile-unit ml-2 text-xs font-medium">{share}%</span>}

@@ -1093,6 +1093,7 @@ time, .tabular-nums, [data-numeric] {
 .trend-row:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 1px; }
 .trend-insight { background: hsl(var(--primary) / 0.06); border-left: 3px solid hsl(var(--primary) / 0.5); }
 .trend-bar-prev { background: hsl(var(--muted-foreground) / 0.35); }
+.home-insight-bar { background: hsl(var(--primary) / 0.3); }
 .blueprint-hero { isolation: isolate; }
 
 .blueprint-grid {
