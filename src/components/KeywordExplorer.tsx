@@ -31,7 +31,7 @@ export function KeywordExplorer({ embedded = false }: { embedded?: boolean } = {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const height = width < 640 ? 360 : 300;
+  const height = width < 640 ? (embedded ? 400 : 360) : (embedded ? 320 : 300);
   const fields = data?.fields ?? [];
   const mainFields = visibleTechnologyFields(fields);
   // Compress area ratios (power scale) so dominant fields don't crowd out the rest.
@@ -81,8 +81,8 @@ export function KeywordExplorer({ embedded = false }: { embedded?: boolean } = {
                       onClick={() => navigate(`/search?keyword=${encodeURIComponent(node.label)}&field=${encodeURIComponent(node.label)}&fieldId=${encodeURIComponent(node.id)}`)}
                       className={`technology-tile ${TECHNOLOGY_TILE_CLASSES[node.id]} group absolute flex-col !whitespace-normal !tracking-normal overflow-hidden hover:scale-100 active:scale-100 focus-visible:z-10 rounded-xl items-start ${compact ? (tiny ? "p-2 gap-0.5 justify-center" : "p-2.5 gap-1 justify-between") : "p-4 justify-start gap-2"}`}
                       style={{ left: node.x, top: node.y, width: node.width, height: node.height }}>
-                      {!compact && Icon && <div className="flex w-full items-center justify-between"><span className="technology-tile-icon flex h-9 w-9 items-center justify-center rounded-lg"><Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} /></span><ArrowUpRight aria-hidden="true" className="h-4 w-4 opacity-30 transition-all group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" /></div>}
-                      <span className={`technology-tile-label w-full text-left font-semibold leading-snug break-keep line-clamp-2 ${compact ? "text-[13px]" : "text-[15px]"}`}>{node.label}</span>
+                      {!compact && !embedded && Icon && <div className="flex w-full items-center justify-between"><span className="technology-tile-icon flex h-9 w-9 items-center justify-center rounded-lg"><Icon aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={1.9} /></span><ArrowUpRight aria-hidden="true" className="h-4 w-4 opacity-30 transition-all group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" /></div>}
+                      <span className={`technology-tile-label w-full text-left font-semibold leading-snug break-keep ${tiny ? "text-[12px] whitespace-nowrap overflow-hidden text-ellipsis" : `line-clamp-2 ${compact ? "text-[13px]" : "text-[15px]"}`}`}>{node.label}</span>
                       <span className={`w-full text-left shrink-0 font-bold tabular-nums leading-none ${compact ? (tiny ? "text-sm" : "text-lg") : "mt-auto text-[32px]"}`}>
                         {count.toLocaleString()}<span className="technology-tile-unit ml-1 text-[11px] font-medium">건</span>
                         {!compact && share > 0 && <span className="technology-tile-unit ml-2 text-xs font-medium">{share}%</span>}

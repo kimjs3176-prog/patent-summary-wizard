@@ -101,7 +101,7 @@ export function HomeInsights() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[290px_minmax(0,1fr)] gap-4 lg:gap-5 items-stretch">
         <TrendSummary />
-        <div className="trend-card rounded-2xl border border-border/60 bg-card p-3 md:p-4 min-w-0">
+        <div className="trend-card rounded-2xl border border-border/60 bg-card p-2.5 sm:p-3 md:p-4 min-w-0">
           <KeywordExplorer embedded />
         </div>
       </div>
