@@ -1,4 +1,5 @@
 # Tasks
+- [x] Turn Insights into a recent agri-food patent filing trend report (yearly, field, institute, recent filings) and verify it with live data.
 - [x] 나만의 특허찾기: company-profile finder page, home hero tab and header menu; verify a real recommendation end-to-end.
 - [x] Compare five identical patents with reference cases off/on using frozen inputs and no production cache writes; report TRL, market figures and commercialization differences.
 - [x] Accumulate automatically validated source-evidence cases within the six-institute scope, retrieve relevant cases without changing analysis rules, and verify a real analysis.

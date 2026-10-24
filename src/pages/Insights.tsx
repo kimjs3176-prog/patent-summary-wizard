@@ -194,7 +194,19 @@ export default function Insights() {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                  <p className="mt-2 flex gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                  <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+                    {[
+                      ["연평균 출원", `${Math.round(view.completeTotal / Math.max(1, view.complete.length))}건`],
+                      ["최다 출원 연도", `${[...view.complete].sort((a, b) => b.count - a.count)[0]?.year ?? "—"}년`],
+                      [`${view.y}년 실용신안`, `${view.latest?.utility ?? 0}건`],
+                    ].map(([k, v]) => (
+                      <div key={k} className="rounded-xl bg-muted/60 px-2 py-2.5">
+                        <dt className="text-[11px] text-muted-foreground">{k}</dt>
+                        <dd className="mt-0.5 text-base font-bold tabular-nums text-foreground">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-3 flex gap-1.5 text-xs leading-relaxed text-muted-foreground">
                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                     특허는 출원 후 약 1년 6개월 뒤 공개돼요. 회색 막대({view.y + 1}년 이후)는 아직 공개 중인 잠정 수치라 앞으로 늘어나요.
                   </p>
