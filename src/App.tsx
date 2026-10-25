@@ -16,7 +16,6 @@ const PotentialTech = lazy(() => import("./pages/PotentialTech"));
 const PatentExport = lazy(() => import("./pages/PatentExport"));
 const PatentFinder = lazy(() => import("./pages/PatentFinder"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 import { FloatingChatbot } from "./components/FloatingChatbot";
 import { SplashScreen } from "./components/SplashScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -92,7 +91,6 @@ const App = () => {
                 <Route path="/summary-sample" element={<SummarySample />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
                 <Route path="/potential" element={<PotentialTech />} />
-                <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>
