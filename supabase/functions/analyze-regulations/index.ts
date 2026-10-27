@@ -67,31 +67,53 @@ function extractJson(text: string): any {
   return null;
 }
 
+// Public law page anyone can open. The API's own detail link (DRF/lawService.do)
+// only works from registered servers and exposes the API account ID, so never use it.
+export function publicLawLink(law: { mst?: unknown; effectiveDate?: unknown; detailLink?: unknown }): string | undefined {
+  let mst = law.mst ? String(law.mst).trim() : "";
+  let efYd = law.effectiveDate ? String(law.effectiveDate).replace(/[^0-9]/g, "") : "";
+  if (!mst && typeof law.detailLink === "string") {
+    const q = new URLSearchParams(law.detailLink.split("?")[1] || "");
+    mst = q.get("MST") || "";
+    efYd = efYd || q.get("efYd") || "";
+  }
+  if (!/^\d+$/.test(mst)) return undefined;
+  return `https://www.law.go.kr/lsInfoP.do?lsiSeq=${mst}${/^\d{8}$/.test(efYd) ? `&efYd=${efYd}` : ""}`;
+}
+
+async function fetchLawSearch(url: string): Promise<any | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(8000) });
+      if (res.ok) {
+        const text = await res.text();
+        try { return JSON.parse(text); } catch {
+          console.error("law.go.kr non-JSON response", text.slice(0, 200));
+          return null; // e.g. account verification message; retrying won't help
+        }
+      }
+      console.error("law.go.kr HTTP", res.status);
+    } catch (e) {
+      console.error("law.go.kr fetch error", e);
+    }
+    await new Promise((r) => setTimeout(r, 600));
+  }
+  return null;
+}
+
 async function searchLaw(oc: string, query: string): Promise<RegulationLaw[]> {
   const url = `https://www.law.go.kr/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=law&type=JSON&display=5&query=${encodeURIComponent(query)}`;
-  try {
-    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-    if (!res.ok) return [];
-    const text = await res.text();
-    let data: any;
-    try { data = JSON.parse(text); } catch { return []; }
-    const rawLaws = data?.LawSearch?.law;
-    if (!rawLaws) return [];
-    const arr = Array.isArray(rawLaws) ? rawLaws : [rawLaws];
-    return arr.slice(0, 3).map((l: any) => {
-      const link = l["법령상세링크"];
-      return {
-        name: l["법령명한글"] || l["법령명"] || query,
-        ministry: l["소관부처명"],
-        effectiveDate: l["시행일자"] ? String(l["시행일자"]) : undefined,
-        lawId: l["법령ID"] ? String(l["법령ID"]) : undefined,
-        link: link ? `https://www.law.go.kr${link.startsWith("/") ? "" : "/"}${link}` : undefined,
-      } as RegulationLaw;
-    });
-  } catch (e) {
-    console.error("law.go.kr fetch error", e);
-    return [];
-  }
+  const data = await fetchLawSearch(url);
+  const rawLaws = data?.LawSearch?.law;
+  if (!rawLaws) return [];
+  const arr = Array.isArray(rawLaws) ? rawLaws : [rawLaws];
+  return arr.slice(0, 3).map((l: any) => ({
+    name: l["법령명한글"] || l["법령명"] || query,
+    ministry: l["소관부처명"],
+    effectiveDate: l["시행일자"] ? String(l["시행일자"]) : undefined,
+    lawId: l["법령ID"] ? String(l["법령ID"]) : undefined,
+    link: publicLawLink({ mst: l["법령일련번호"], effectiveDate: l["시행일자"], detailLink: l["법령상세링크"] }),
+  } as RegulationLaw));
 }
 
 serve(async (req) => {
