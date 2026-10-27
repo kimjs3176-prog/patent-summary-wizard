@@ -10,7 +10,6 @@ interface PatentSummaryProps extends BasePatentSummaryProps {
   onScoreReady?: (score: number) => void;
 }
 import { PdfGenerator, printWebSummary } from "./PdfGenerator";
-import { PptGenerator } from "./PptGenerator";
 
 import { TechnologyCommercializationScore, CommercializationDetails } from "./TechnologyCommercializationScore";
 import { RegulationAnalysis } from "./RegulationAnalysis";
@@ -546,15 +545,6 @@ export function PatentSummary({
                 content={content}
                 patentNumber={patentNumber}
                 printRef={printRef}
-              />
-            )}
-            {featureFlags.pptEnabled && (
-              <PptGenerator
-                content={content}
-                patentNumber={patentNumber}
-                patentData={patentData}
-                commercializationDetails={commercializationDetails}
-                commercializationScore={commercializationScore}
               />
             )}
           </div>

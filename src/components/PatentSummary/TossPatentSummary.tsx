@@ -14,7 +14,6 @@ import { RegulationAnalysis } from "./RegulationAnalysis";
 import { TechValuation } from "./TechValuation";
 
 import { PdfGenerator, printWebSummary } from "./PdfGenerator";
-import { PptGenerator } from "./PptGenerator";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
@@ -716,15 +715,6 @@ function TossPatentSummaryInner({
                 patentNumber={patentNumber}
                 printRef={printRef}
                 ready={allReady}
-              />
-            )}
-            {featureFlags.pptEnabled && (
-              <PptGenerator
-                content={content}
-                patentNumber={patentNumber}
-                patentData={patentData}
-                commercializationDetails={details}
-                commercializationScore={score}
               />
             )}
           </div>
