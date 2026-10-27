@@ -48,12 +48,11 @@ async function callGemini(prompt: string): Promise<string> {
     } catch (_) { /* fallback */ }
   }
 
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetchAiWithRetry("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ ...payload, model: "google/gemini-3.1-flash-lite" }),
   });
-  if (!r.ok) throw new Error(`AI failed ${r.status}`);
   const j = await r.json();
   return j.choices?.[0]?.message?.content ?? "";
 }
