@@ -84,6 +84,7 @@ JSON 형식:
     });
   } catch (e) {
     console.error("extract-glossary error", e);
+    if (e instanceof AiUnavailableError) return aiUnavailableResponse(corsHeaders);
     return new Response(JSON.stringify({ success: false, error: String(e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

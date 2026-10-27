@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { AiUnavailableError, aiUnavailableResponse, fetchAiWithRetry } from "../_shared/aiRetry.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 
 
@@ -176,6 +177,7 @@ JSON 형식:
     });
   } catch (e) {
     console.error("analyze-regulations error", e);
+    if (e instanceof AiUnavailableError) return aiUnavailableResponse(corsHeaders);
     return new Response(JSON.stringify({ success: false, error: String(e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
