@@ -87,14 +87,13 @@ export default function Insights() {
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         <section className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-7">
           <div className="max-w-6xl mx-auto px-5 md:px-6 py-6 md:py-8">
-            <p className="home-hero-accent inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold"><BarChart3 className="w-4 h-4" /> 인사이트</p>
-            <h1 className="mt-1.5 text-2xl md:text-[34px] font-extrabold leading-tight">농식품 특허 출원 동향</h1>
+            <h1 className="text-2xl md:text-[34px] font-extrabold leading-tight">농식품 특허 출원 동향</h1>
             <p className="home-hero-muted mt-2 text-sm md:text-base max-w-2xl leading-relaxed">
               농업 국가연구기관 6곳의 최근 특허·실용신안 출원을 기술 분야와 기관별로 정리했어요.
             </p>
             {data && (
               <p className="home-hero-muted mt-3 text-xs">
-                집계 기간 {fmtDate(data.start)} ~ {fmtDate(data.end)} · 공개 출원 {data.total.toLocaleString()}건 · {new Date(data.updatedAt).toLocaleDateString("ko-KR")} 갱신
+                {fmtDate(data.start)}~{fmtDate(data.end)} 공개 출원 {data.total.toLocaleString()}건을 모았어요. {new Date(data.updatedAt).toLocaleDateString("ko-KR")}에 갱신했어요.
               </p>
             )}
           </div>
@@ -126,10 +125,10 @@ export default function Insights() {
                 <Kpi icon={FileText} label={`${view.y}년 출원`} value={view.latest?.count ?? 0} unit="건" sub={<>전년 대비 <Growth value={view.growth} /></>} />
                 <Kpi icon={Layers} label={`최근 ${view.complete.length}년 누적`} value={view.completeTotal.toLocaleString()} unit="건" sub={`${view.complete[0]?.year}~${view.y}년`} />
                 {view.top && (
-                  <Kpi icon={BarChart3} label="출원 비중 1위 분야" value={FIELD_META[view.top.id]?.label ?? view.top.id} sub={`${view.y}년 ${view.top.latest}건 · 비중 ${view.top.share}%`} />
+                  <Kpi icon={BarChart3} label="출원 비중 1위 분야" value={FIELD_META[view.top.id]?.label ?? view.top.id} sub={`${view.y}년 ${view.top.latest}건, 비중 ${view.top.share}%`} />
                 )}
                 {view.rising && (
-                  <Kpi icon={TrendingUp} label="가장 크게 늘어난 분야" value={FIELD_META[view.rising.id]?.label ?? view.rising.id} sub={<>{view.y - 1}→{view.y}년 <Growth value={view.rising.growth} /></>} />
+                  <Kpi icon={TrendingUp} label="가장 크게 늘어난 분야" value={FIELD_META[view.rising.id]?.label ?? view.rising.id} sub={<>{view.y - 1}년 대비 <Growth value={view.rising.growth} /></>} />
                 )}
               </div>
 
@@ -194,7 +193,7 @@ export default function Insights() {
                   <div role="tablist" className="inline-flex rounded-full bg-muted p-0.5 text-xs">
                     {([["count", "출원 많은 순"], ["growth", "증가율 순"]] as const).map(([k, l]) => (
                       <button key={k} role="tab" aria-selected={sort === k} onClick={() => setSort(k)}
-                        className={`rounded-full px-3 py-1 font-semibold transition-colors ${sort === k ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
+                        className={`whitespace-nowrap rounded-full px-3 py-1 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${sort === k ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
                     ))}
                   </div>
                 }
@@ -218,7 +217,6 @@ export default function Insights() {
                           className="trend-row w-full grid grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_56px_64px_16px] xl:grid-cols-[minmax(0,1.1fr)_72px_minmax(0,1fr)_56px_64px_16px] items-center gap-3 rounded-lg px-2 py-2.5 text-left"
                         >
                           <span className="flex items-center gap-2 min-w-0">
-                            <span className={`technology-tile-${meta.tone} trend-dot w-2.5 h-2.5 rounded-full shrink-0`} />
                             <span className="text-sm font-semibold text-foreground truncate">{meta.label}</span>
                           </span>
                           <span className="hidden xl:block"><Sparkline values={view.completeYears.map((y) => f.byYear[y] ?? 0)} tone={meta.tone} /></span>

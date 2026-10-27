@@ -13,14 +13,9 @@ export function TechTransferGuide() {
   return (
     <section className="w-full">
       <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-2 mb-2.5">
-          <BookOpen className="w-3.5 h-3.5 text-primary" />
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.18em]">
-            기술이전 절차 안내
-          </p>
-        </div>
-        <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground tracking-tight">
-          국가직무발명특허 <span className="text-primary">기술이전</span> 6단계
+        <h3 className="flex items-center gap-2 text-lg sm:text-xl md:text-2xl font-bold text-foreground">
+          <BookOpen className="w-5 h-5 text-primary shrink-0" aria-hidden="true" />
+          국가직무발명특허 기술이전 6단계
         </h3>
         <p className="mt-2 text-[13px] sm:text-sm text-muted-foreground leading-relaxed max-w-xl">
           국가 명의로 등록된 특허를 실시권 허락(라이센싱) 형태로 이전하는 절차입니다.
@@ -33,12 +28,12 @@ export function TechTransferGuide() {
             key={step.num}
             className="flex items-start gap-3 py-3.5 border-t border-border/50"
           >
-            <span className="mt-0.5 font-mono text-[11px] font-bold tabular-nums text-primary/70 tracking-widest">
-              {String(step.num).padStart(2, "0")}
+            <span className="mt-px w-4 shrink-0 text-[14px] font-bold tabular-nums text-primary">
+              {step.num}
             </span>
             <div className="min-w-0">
               <p className="text-[14px] font-semibold text-foreground leading-snug">{step.title}</p>
-              <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{step.desc}</p>
+              <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">{step.desc}</p>
             </div>
           </li>
         ))}
@@ -46,9 +41,9 @@ export function TechTransferGuide() {
 
       <p className="mt-6 text-[12px] text-muted-foreground">
         자세한 내용은{" "}
-        <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">NATI</a>
-        {" · "}
-        <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">KIPRIS</a>
+        <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline font-medium">NATI</a>
+        {"와 "}
+        <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline font-medium">KIPRIS</a>
         를 참고하세요.
       </p>
     </section>

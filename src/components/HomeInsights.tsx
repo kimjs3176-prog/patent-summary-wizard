@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, ChevronDown, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronDown, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trendHeadline, useFilingTrends, type TrendSnapshot } from "@/hooks/useFilingTrends";
 import { TECHNOLOGY_FIELDS } from "../../supabase/functions/_shared/technologyFields";
@@ -83,8 +83,8 @@ function TrendSummary({ data }: { data: TrendSnapshot }) {
 
       {data.insights[0] && <p className="trend-insight mt-4 rounded-r-lg px-3 py-2 text-xs leading-relaxed text-foreground/80 line-clamp-3">{data.insights[0]}</p>}
 
-      <Link to="/insights" className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-        출원 동향 상세보기 <ArrowRight className="w-3.5 h-3.5" />
+      <Link to="/insights" className="mt-auto pt-4 self-start text-sm font-semibold text-primary underline-offset-4 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        출원 동향 상세보기
       </Link>
     </div>
   );
@@ -112,12 +112,12 @@ function FieldRanking({ data }: { data: TrendSnapshot }) {
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-[15px] font-bold text-foreground !tracking-normal">기술분야별 출원</h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">{h.y}년 기준 상위 {rows.length}개 분야 · 누르면 관련 특허를 검색해요</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{h.y}년 기준 상위 {rows.length}개 분야예요. 누르면 관련 특허를 검색해요.</p>
         </div>
         <div role="tablist" aria-label="정렬" className="inline-flex rounded-full bg-muted p-0.5 text-xs">
           {([["count", "출원 많은 순"], ["growth", "증가율 순"]] as const).map(([k, l]) => (
             <button key={k} type="button" role="tab" aria-selected={sort === k} onClick={() => setSort(k)}
-              className={`rounded-full px-3 py-1 font-semibold transition-colors ${sort === k ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
+              className={`whitespace-nowrap rounded-full px-3 py-1 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${sort === k ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{l}</button>
           ))}
         </div>
       </div>
@@ -131,15 +131,14 @@ function FieldRanking({ data }: { data: TrendSnapshot }) {
             <li key={f.id} className={`border-b border-border/50 ${i >= MOBILE_LIMIT && !expanded ? "hidden md:block" : ""}`}>
               <button type="button" onClick={() => openField(f.id)}
                 aria-label={`${meta?.label ?? f.id} ${h.y}년 ${f.latest}건, 관련 특허 검색`}
-                title={`${meta?.label} · ${years[0]}~${h.y} 추이`}
+                title={`${meta?.label} ${years[0]}~${h.y}년 추이`}
                 className="trend-row group w-full grid grid-cols-[18px_minmax(0,1fr)_48px_auto_56px_14px] items-center gap-2 rounded-lg px-1.5 py-1.5 text-left">
                 <span className="text-xs font-bold tabular-nums text-muted-foreground">{i + 1}</span>
                 <span className="min-w-0 flex items-center gap-2">
-                  <span className={`technology-tile-${tone} trend-dot w-2 h-2 rounded-full shrink-0`} />
                   <span className="w-16 sm:w-20 shrink-0 text-sm font-semibold text-foreground truncate">{meta?.label ?? f.id}</span>
-                  {badge && <span className={`technology-tile-${tone} trend-chip hidden sm:inline rounded px-1 py-px text-[10px] font-semibold shrink-0`}>{badge}</span>}
+                  {badge && <span className={`technology-tile-${tone} trend-chip hidden sm:inline rounded px-1 py-px text-[11px] font-semibold shrink-0`}>{badge}</span>}
                   <span className="h-1 flex-1 min-w-[24px] rounded-full bg-muted overflow-hidden"><span className={`technology-tile-${tone} trend-dot block h-full rounded-full`} style={{ width: `${(f.share / maxShare) * 100}%` }} /></span>
-                  <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">{f.share}%</span>
+                  <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">{f.share}%</span>
                 </span>
                 <Sparkline values={years.map((y) => f.byYear[y] ?? 0)} tone={tone} />
                 <span className="text-right text-sm font-bold tabular-nums text-foreground">{f.latest}<span className="text-[11px] font-normal text-muted-foreground">건</span></span>
@@ -157,7 +156,7 @@ function FieldRanking({ data }: { data: TrendSnapshot }) {
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
       )}
-      <p className="mt-auto pt-3 text-[11px] text-muted-foreground">추이선 {years[0]}~{h.y}년 · 증감률은 전년 대비(전년 5건 미만 분야는 —) · 대표 IPC 기준</p>
+      <p className="mt-auto pt-3 text-[11px] text-muted-foreground">추이선은 {years[0]}~{h.y}년, 증감률은 전년 대비이며 전년 5건 미만 분야는 표시하지 않아요. 분야는 대표 IPC 기준이에요.</p>
     </div>
   );
 }
@@ -173,8 +172,8 @@ export function HomeInsights() {
           <h2 id="home-insights-heading" className="text-xl md:text-2xl font-bold text-foreground !tracking-normal">특허 인사이트</h2>
           <p className="mt-1 text-xs text-muted-foreground">농업 국가연구기관 6곳의 출원 동향과 기술분야별 순위</p>
         </div>
-        <Link to="/insights" className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:text-primary hover:border-primary/40 transition-colors">
-          상세보기 <ArrowRight className="w-3.5 h-3.5" />
+        <Link to="/insights" className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground hover:text-primary hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          상세보기
         </Link>
       </div>
       {isPending ? (
@@ -185,7 +184,7 @@ export function HomeInsights() {
       ) : isError || !data ? (
         <div className="trend-card rounded-2xl border border-border/60 bg-card p-5 text-sm text-muted-foreground">
           출원 동향을 잠시 불러오지 못했어요.
-          <Link to="/insights" className="ml-2 font-semibold text-primary">인사이트에서 다시 보기 →</Link>
+          <Link to="/insights" className="ml-2 font-semibold text-primary">인사이트에서 다시 보기</Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 md:gap-5 items-stretch">

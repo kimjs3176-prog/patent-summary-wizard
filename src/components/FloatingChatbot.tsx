@@ -38,14 +38,13 @@ export const FloatingChatbot = () => {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="fixed bottom-6 right-5 z-[9999] shadow-lg flex items-center transition-all hover:scale-105 active:scale-95 btn-press"
-        style={{ background: 'linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%))', borderRadius: isOpen ? '50%' : '2rem', padding: isOpen ? '0' : '0', width: isOpen ? '3.5rem' : 'auto', height: '3.5rem' }}
-        aria-label="챗봇 열기"
+        className={`fixed bottom-6 right-5 z-[9999] h-14 flex items-center bg-primary text-primary-foreground shadow-lg transition-[transform,background-color] hover:bg-primary/90 hover:scale-105 active:scale-95 motion-reduce:transition-none motion-reduce:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${isOpen ? "w-14 rounded-full" : "rounded-full"}`}
+        aria-label={isOpen ? "챗봇 닫기" : "챗봇 열기"}
       >
         {isOpen ? (
-          <X className="w-6 h-6 text-white mx-auto" />
+          <X className="w-6 h-6 mx-auto" />
         ) : (
-          <span className="flex items-center gap-2 px-5 text-white font-semibold text-sm">
+          <span className="flex items-center gap-2 px-5 font-semibold text-sm">
             <Bot className="w-5 h-5" />
             챗봇
           </span>
