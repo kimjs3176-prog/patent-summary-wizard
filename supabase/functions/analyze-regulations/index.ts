@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { AiUnavailableError, aiUnavailableResponse, fetchAiWithRetry } from "../_shared/aiRetry.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { publicLawLink } from "./lawLink.ts";
 
 
 interface RegulationLaw {
@@ -65,20 +66,6 @@ function extractJson(text: string): any {
   const m = cleaned.match(/\{[\s\S]*\}/);
   if (m) { try { return JSON.parse(m[0]); } catch {} }
   return null;
-}
-
-// Public law page anyone can open. The API's own detail link (DRF/lawService.do)
-// only works from registered servers and exposes the API account ID, so never use it.
-export function publicLawLink(law: { mst?: unknown; effectiveDate?: unknown; detailLink?: unknown }): string | undefined {
-  let mst = law.mst ? String(law.mst).trim() : "";
-  let efYd = law.effectiveDate ? String(law.effectiveDate).replace(/[^0-9]/g, "") : "";
-  if (!mst && typeof law.detailLink === "string") {
-    const q = new URLSearchParams(law.detailLink.split("?")[1] || "");
-    mst = q.get("MST") || "";
-    efYd = efYd || q.get("efYd") || "";
-  }
-  if (!/^\d+$/.test(mst)) return undefined;
-  return `https://www.law.go.kr/lsInfoP.do?lsiSeq=${mst}${/^\d{8}$/.test(efYd) ? `&efYd=${efYd}` : ""}`;
 }
 
 async function fetchLawSearch(url: string): Promise<any | null> {
