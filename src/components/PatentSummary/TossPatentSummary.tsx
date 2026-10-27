@@ -14,7 +14,6 @@ import { RegulationAnalysis } from "./RegulationAnalysis";
 import { TechValuation } from "./TechValuation";
 
 import { PdfGenerator, printWebSummary } from "./PdfGenerator";
-import { PptGenerator } from "./PptGenerator";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
