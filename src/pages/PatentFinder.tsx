@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Building2, Check, ClipboardCheck, Compass, Gauge, Loader2, Package, RotateCcw, Search, Sparkles, Target, Wrench } from "lucide-react";
+import { ArrowLeft, Building2, Check, ClipboardCheck, Compass, Gauge, Loader2, Package, RotateCcw, Search, Sparkles, Target, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -180,8 +180,7 @@ export default function PatentFinder() {
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         <section className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-7">
           <div className="max-w-6xl mx-auto px-5 md:px-6 py-6 md:py-8">
-            <p className="home-hero-accent inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold"><Compass className="w-4 h-4" /> 기업 맞춤 기술 탐색</p>
-            <h1 className="mt-1.5 text-2xl md:text-[34px] font-extrabold leading-tight">나만의 특허찾기</h1>
+            <h1 className="text-2xl md:text-[34px] font-extrabold leading-tight">나만의 특허찾기</h1>
             <p className="home-hero-muted mt-2 text-sm md:text-base max-w-2xl leading-relaxed">
               업종과 아이템, 도입 목적과 보유 설비를 알려 주시면 농업 국가연구기관이 보유한 특허 중 회사에 맞는 기술을 적합도 순으로 추천해 드려요.
             </p>
