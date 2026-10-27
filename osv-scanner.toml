@@ -1,0 +1,10 @@
+# OSV-Scanner exceptions: verified false positives only.
+[[PackageOverrides]]
+name = "xlsx"
+ecosystem = "npm"
+ignore = true
+reason = "Installed from the SheetJS CDN tarball (0.20.3); OSV cannot read a version from the URL and reports every xlsx advisory. The app only writes workbooks (PatentExport)."
+
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99"
+reason = "esbuild 0.18.20 comes only from drizzle-kit (dev tool, already latest). The advisory affects the esbuild dev server, which drizzle-kit does not run."
