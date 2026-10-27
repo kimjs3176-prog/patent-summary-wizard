@@ -14,7 +14,7 @@ export function groupTechnologyFields(fields: TechnologyStats["fields"], limit =
   const sorted = [...fields].sort((a, b) => b.count - a.count);
   const groups: TechnologyStats["fields"][] = [];
   for (const field of sorted) {
-    const group = groups.at(-1);
+    const group = groups[groups.length - 1];
     if (!group || group.length >= limit || (field.count === 0 && group[0].count > 0) ||
       (field.count > 0 && group[0].count / field.count > 4)) groups.push([field]);
     else group.push(field);
