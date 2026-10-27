@@ -1060,6 +1060,18 @@ time, .tabular-nums, [data-numeric] {
 }
 .home-mode-tab-active:hover { color: hsl(var(--primary)); }
 
+/* 주요 기술소개 — solid band in the hero's green */
+.tech-video-band { background: hsl(var(--home-hero-surface)); color: hsl(var(--home-hero-foreground)); }
+.tech-video-icon { background: hsl(var(--home-hero-accent) / 0.16); color: hsl(var(--home-hero-accent)); }
+.tech-video-card {
+  background: hsl(var(--home-hero-foreground) / 0.06);
+  border: 1px solid hsl(var(--home-hero-foreground) / 0.12);
+  color: hsl(var(--home-hero-foreground));
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.tech-video-card:hover { border-color: hsl(var(--home-hero-accent) / 0.45); background: hsl(var(--home-hero-foreground) / 0.09); }
+.tech-video-play { background: hsl(var(--home-hero-accent)); color: hsl(var(--home-hero-surface)); box-shadow: 0 6px 20px -6px hsl(165 50% 4% / 0.6); }
+
 /* 나만의 특허찾기 */
 .finder-panel, .finder-result { box-shadow: var(--shadow-card); }
 .finder-result { transition: border-color 0.2s ease, box-shadow 0.2s ease; }

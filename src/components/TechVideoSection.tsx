@@ -39,47 +39,29 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
 
   return (
     <section
-      className="relative -mx-3 sm:-mx-4 md:-mx-6 px-5 sm:px-10 md:px-16 py-10 md:py-16 my-2 md:my-6 rounded-none md:rounded-3xl overflow-hidden animate-fade-up"
-      style={{ animationDelay: "0.3s", background: "var(--gradient-dark)" }}
+      className="tech-video-band relative -mx-3 sm:-mx-4 md:-mx-6 px-5 sm:px-10 md:px-16 py-10 md:py-14 my-2 md:my-6 rounded-none md:rounded-3xl overflow-hidden animate-fade-up motion-reduce:animate-none"
+      style={{ animationDelay: "0.3s" }}
     >
-      {/* Grid overlay */}
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.06] pointer-events-none"
-        style={{
-          backgroundImage:
-            "linear-gradient(hsl(158 64% 60%) 1px, transparent 1px), linear-gradient(90deg, hsl(158 64% 60%) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-          maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 80%)",
-        }}
-      />
-      <div aria-hidden className="absolute -top-16 right-10 w-72 h-72 rounded-full blur-3xl pointer-events-none" style={{ background: "hsl(158 64% 45% / 0.22)" }} />
-
       <div className="relative max-w-5xl mx-auto mb-6 md:mb-8">
         <div className="flex items-end justify-between gap-3 mb-1.5">
           <Link
             to="/tech-videos"
-            className="group inline-flex items-center gap-2.5 hover:opacity-90 transition-opacity"
+            className="group inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
             aria-label="온라인 기술 홍보관으로 이동"
           >
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'hsl(158 64% 45% / 0.22)', border: '1px solid hsl(158 64% 45% / 0.35)' }}>
-              <Video className="w-4 h-4" style={{ color: 'hsl(158 70% 70%)' }} />
-            </div>
-            <h3 className="text-lg md:text-xl font-bold tracking-tight transition-colors" style={{ color: '#f5f9ff' }}>
-              주요 기술소개
-            </h3>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-all" style={{ color: 'hsl(158 70% 70%)' }} />
+            <span className="tech-video-icon w-8 h-8 rounded-xl flex items-center justify-center">
+              <Video className="w-4 h-4" />
+            </span>
+            <h3 className="text-lg md:text-xl font-bold">주요 기술소개</h3>
           </Link>
           <Link
             to="/tech-videos"
-            className="text-[12px] md:text-[13px] font-medium transition-colors inline-flex items-center gap-1"
-            style={{ color: 'hsl(210 30% 75%)' }}
+            className="home-hero-muted text-[13px] font-medium rounded underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
           >
             전체 보기
-            <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        <p className="text-[13px] ml-[42px]" style={{ color: 'hsl(210 25% 68%)' }}>농식품 분야 주요 기술 소개 — 클릭하여 온라인 기술 홍보관 전체보기</p>
+        <p className="home-hero-muted text-[13px] ml-[42px]">농식품 분야 주요 기술을 영상으로 소개합니다. 전체 영상은 온라인 기술 홍보관에서 볼 수 있어요.</p>
       </div>
       <div className="relative max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {preview.map((video, idx) => {
@@ -92,12 +74,8 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
 
           if (storage) {
             return (
-              <div
-                key={idx}
-                className="group relative rounded-2xl overflow-hidden transition-all duration-300 card-interactive"
-                style={{ background: 'hsl(218 40% 14%)', border: '1px solid hsl(158 64% 45% / 0.18)', boxShadow: '0 10px 30px -10px hsl(218 60% 5% / 0.6)' }}
-              >
-                <div className="aspect-video bg-black flex items-center justify-center overflow-hidden relative">
+              <div key={idx} className="tech-video-card group relative rounded-2xl overflow-hidden">
+                <div className="aspect-video bg-foreground flex items-center justify-center overflow-hidden relative">
                   {playSrc ? (
                     <video
                       src={playSrc}
@@ -112,7 +90,7 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
                 </div>
                 {video.title && (
                   <div className="px-4 py-3.5">
-                    <p className="text-[13px] font-medium line-clamp-2 leading-relaxed" style={{ color: '#f5f9ff' }}>{video.title}</p>
+                    <p className="text-[13px] font-medium line-clamp-2 leading-relaxed">{video.title}</p>
                   </div>
                 )}
               </div>
@@ -125,30 +103,28 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
               href={playSrc}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative rounded-2xl overflow-hidden transition-all duration-300 card-interactive"
-              style={{ background: 'hsl(218 40% 14%)', border: '1px solid hsl(158 64% 45% / 0.18)', boxShadow: '0 10px 30px -10px hsl(218 60% 5% / 0.6)' }}
+              className="tech-video-card group relative rounded-2xl overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
             >
-              <div className="aspect-video bg-black flex items-center justify-center overflow-hidden relative">
+              <div className="aspect-video bg-foreground flex items-center justify-center overflow-hidden relative">
                 {thumbnail ? (
                   <img
                     src={thumbnail}
                     alt={video.title || "기술소개영상"}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                   />
                 ) : (
                   <Play className="w-10 h-10 text-muted-foreground/30" />
                 )}
-                <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center opacity-95 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" style={{ background: 'linear-gradient(135deg, hsl(158 70% 55%), hsl(184 80% 60%))', boxShadow: '0 8px 28px hsl(158 70% 40% / 0.5)' }}>
-                    <Play className="w-5 h-5 ml-0.5" style={{ color: '#0a1628' }} />
-                  </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="tech-video-play w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100">
+                    <Play className="w-5 h-5 ml-0.5" />
+                  </span>
                 </div>
               </div>
               {video.title && (
                 <div className="px-4 py-3.5">
-                  <p className="text-[13px] font-medium line-clamp-2 leading-relaxed transition-colors" style={{ color: '#f5f9ff' }}>
-                    {video.title}
-                  </p>
+                  <p className="text-[13px] font-medium line-clamp-2 leading-relaxed">{video.title}</p>
                 </div>
               )}
             </a>
