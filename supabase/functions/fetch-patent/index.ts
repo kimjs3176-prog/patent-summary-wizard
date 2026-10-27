@@ -233,11 +233,9 @@ serve(async (req) => {
     // Supabase client 초기화
     const sb = supabaseAdmin();
 
-    // ★ 강제 재생성: 캐시 즉시 삭제
-    if (forceRegenerate) {
-      await sb.from("patent_data_cache").delete().eq("patent_number", trimmedNumber);
-      console.log("Cache forcibly cleared:", trimmedNumber);
-    } else {
+    // Force regeneration only skips the cache read; fresh data replaces the stored row
+    // via upsert after a successful fetch, so public callers cannot wipe it.
+    if (!forceRegenerate) {
       // ★ 캐시 확인: patent_data_cache에서 먼저 조회 (7일 이내, 버전 일치)
       const { data: cached } = await sb
         .from("patent_data_cache")

@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { AiUnavailableError, aiUnavailableResponse, fetchAiWithRetry } from "../_shared/aiRetry.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { publicLawLink } from "./lawLink.ts";
 
 
 interface RegulationLaw {
@@ -48,12 +50,11 @@ async function callGemini(prompt: string): Promise<string> {
     } catch (_) { /* fallback */ }
   }
 
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetchAiWithRetry("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ ...payload, model: "google/gemini-3.1-flash-lite" }),
   });
-  if (!r.ok) throw new Error(`AI failed ${r.status}`);
   const j = await r.json();
   return j.choices?.[0]?.message?.content ?? "";
 }
@@ -67,31 +68,39 @@ function extractJson(text: string): any {
   return null;
 }
 
+async function fetchLawSearch(url: string): Promise<any | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(8000) });
+      if (res.ok) {
+        const text = await res.text();
+        try { return JSON.parse(text); } catch {
+          console.error("law.go.kr non-JSON response", text.slice(0, 200));
+          return null; // e.g. account verification message; retrying won't help
+        }
+      }
+      console.error("law.go.kr HTTP", res.status);
+    } catch (e) {
+      console.error("law.go.kr fetch error", e);
+    }
+    await new Promise((r) => setTimeout(r, 600));
+  }
+  return null;
+}
+
 async function searchLaw(oc: string, query: string): Promise<RegulationLaw[]> {
   const url = `https://www.law.go.kr/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=law&type=JSON&display=5&query=${encodeURIComponent(query)}`;
-  try {
-    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-    if (!res.ok) return [];
-    const text = await res.text();
-    let data: any;
-    try { data = JSON.parse(text); } catch { return []; }
-    const rawLaws = data?.LawSearch?.law;
-    if (!rawLaws) return [];
-    const arr = Array.isArray(rawLaws) ? rawLaws : [rawLaws];
-    return arr.slice(0, 3).map((l: any) => {
-      const link = l["법령상세링크"];
-      return {
-        name: l["법령명한글"] || l["법령명"] || query,
-        ministry: l["소관부처명"],
-        effectiveDate: l["시행일자"] ? String(l["시행일자"]) : undefined,
-        lawId: l["법령ID"] ? String(l["법령ID"]) : undefined,
-        link: link ? `https://www.law.go.kr${link.startsWith("/") ? "" : "/"}${link}` : undefined,
-      } as RegulationLaw;
-    });
-  } catch (e) {
-    console.error("law.go.kr fetch error", e);
-    return [];
-  }
+  const data = await fetchLawSearch(url);
+  const rawLaws = data?.LawSearch?.law;
+  if (!rawLaws) return [];
+  const arr = Array.isArray(rawLaws) ? rawLaws : [rawLaws];
+  return arr.slice(0, 3).map((l: any) => ({
+    name: l["법령명한글"] || l["법령명"] || query,
+    ministry: l["소관부처명"],
+    effectiveDate: l["시행일자"] ? String(l["시행일자"]) : undefined,
+    lawId: l["법령ID"] ? String(l["법령ID"]) : undefined,
+    link: publicLawLink({ mst: l["법령일련번호"], effectiveDate: l["시행일자"], detailLink: l["법령상세링크"] }),
+  } as RegulationLaw));
 }
 
 serve(async (req) => {
@@ -177,6 +186,7 @@ JSON 형식:
     });
   } catch (e) {
     console.error("analyze-regulations error", e);
+    if (e instanceof AiUnavailableError) return aiUnavailableResponse(corsHeaders);
     return new Response(JSON.stringify({ success: false, error: String(e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

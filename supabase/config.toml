@@ -12,25 +12,13 @@ verify_jwt = false
 [functions.proxy-image]
 verify_jwt = false
 
-[functions.rda-latest-patents]
-verify_jwt = false
-
 [functions.manage-featured-patents]
 verify_jwt = false
 
 [functions.analyze-commercialization]
 verify_jwt = false
 
-[functions.compare-patents]
-verify_jwt = false
-
-[functions.patent-family-tree]
-verify_jwt = false
-
 [functions.recommend-similar-patents]
-verify_jwt = false
-
-[functions.analyze-pivoting]
 verify_jwt = false
 
 [functions.extract-glossary]
