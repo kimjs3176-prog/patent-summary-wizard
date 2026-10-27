@@ -548,15 +548,6 @@ export function PatentSummary({
                 printRef={printRef}
               />
             )}
-            {featureFlags.pptEnabled && (
-              <PptGenerator
-                content={content}
-                patentNumber={patentNumber}
-                patentData={patentData}
-                commercializationDetails={commercializationDetails}
-                commercializationScore={commercializationScore}
-              />
-            )}
           </div>
         </div>
       )}

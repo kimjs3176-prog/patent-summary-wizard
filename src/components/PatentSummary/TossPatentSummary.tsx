@@ -718,15 +718,6 @@ function TossPatentSummaryInner({
                 ready={allReady}
               />
             )}
-            {featureFlags.pptEnabled && (
-              <PptGenerator
-                content={content}
-                patentNumber={patentNumber}
-                patentData={patentData}
-                commercializationDetails={details}
-                commercializationScore={score}
-              />
-            )}
           </div>
         </div>
       )}
