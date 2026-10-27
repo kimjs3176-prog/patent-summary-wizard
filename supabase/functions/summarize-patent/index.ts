@@ -433,20 +433,8 @@ serve(async (req) => {
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
     const SUMMARY_CACHE_VERSION = "v10-nonstream";
 
-    // ★ 강제 재생성: 캐시 즉시 삭제
-    if (forceRegenerate) {
-      try {
-        const supabase = getSupabaseClient();
-        await supabase
-          .from("patent_ai_cache")
-          .delete()
-          .eq("patent_number", trimmedPatent);
-        console.log(`[CACHE CLEARED] ${trimmedPatent} (forceRegenerate)`);
-      } catch (e) {
-        console.error("Cache clear error:", e);
-      }
-    }
-
+    // Force regeneration only skips the cache read; the stored summary is replaced
+    // after a complete new summary is generated, so public callers cannot wipe it.
     // Check cache first, scoped to settings that affect generated content.
     if (!forceRegenerate) try {
       const supabase = getSupabaseClient();
@@ -602,12 +590,18 @@ serve(async (req) => {
       if (!content || !isCompleteSummary(content)) return;
       try {
         const supabase = getSupabaseClient();
-        await supabase.from("patent_ai_cache").upsert({
+        const { error } = await supabase.from("patent_ai_cache").upsert({
           patent_number: trimmedPatent,
           analysis_mode: summaryAnalysisMode,
           summary_content: content,
           cache_version: SUMMARY_CACHE_VERSION,
         }, { onConflict: "patent_number,analysis_mode" });
+        if (error) throw error;
+        // Drop summaries saved under outdated settings only after the new one is stored.
+        await supabase.from("patent_ai_cache").delete()
+          .eq("patent_number", trimmedPatent)
+          .like("analysis_mode", "detailed_%")
+          .neq("analysis_mode", summaryAnalysisMode);
         console.log(`[CACHE SAVED] ${trimmedPatent} (${content.length} chars)`);
       } catch (saveErr) {
         console.error("Cache save error:", saveErr);
