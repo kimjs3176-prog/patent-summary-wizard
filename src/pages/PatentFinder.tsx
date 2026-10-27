@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Building2, Check, ClipboardCheck, Compass, Gauge, Loader2, Package, RotateCcw, Search, Sparkles, Target, Wrench } from "lucide-react";
+import { ArrowLeft, Building2, Check, ClipboardCheck, Gauge, Loader2, Package, RotateCcw, Search, Sparkles, Target, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
