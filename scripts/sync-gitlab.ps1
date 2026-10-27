@@ -30,6 +30,7 @@ param(
   [string]$MirrorDir = (Join-Path $env:LOCALAPPDATA 'gitlab-mirror\patent-summary-wizard.git'),
   [int]$IntervalMinutes = 10,
   [switch]$Prune,
+  [switch]$Scheduled,
   [switch]$Install,
   [switch]$Uninstall
 )
@@ -45,7 +46,7 @@ if ($Uninstall) {
 
 if ($Install) {
   $arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$PSCommandPath`"" +
-    " -GitHubUrl `"$GitHubUrl`" -GitLabUrl `"$GitLabUrl`" -MirrorDir `"$MirrorDir`""
+    " -GitHubUrl `"$GitHubUrl`" -GitLabUrl `"$GitLabUrl`" -MirrorDir `"$MirrorDir`" -Scheduled"
   if ($Prune) { $arguments += ' -Prune' }
   $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arguments
   $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
@@ -58,9 +59,12 @@ if ($Install) {
   return
 }
 
-# Fail instead of hanging on a hidden credential prompt when run by the scheduler.
-$env:GIT_TERMINAL_PROMPT = '0'
-$env:GCM_INTERACTIVE = 'never'
+# A manual run may prompt for GitLab credentials so Git can store them; the
+# scheduled run must fail instead of hanging on a hidden prompt.
+if ($Scheduled) {
+  $env:GIT_TERMINAL_PROMPT = '0'
+  $env:GCM_INTERACTIVE = 'never'
+}
 
 New-Item -ItemType Directory -Force -Path (Split-Path $MirrorDir -Parent) | Out-Null
 if ((Test-Path $LogFile) -and (Get-Item $LogFile).Length -gt 1MB) {
@@ -77,7 +81,10 @@ function Invoke-Git {
   # git reports progress on stderr; keep it in the log without treating it as a failure.
   $output = & git @args 2>&1 | ForEach-Object { "$_" }
   if ($output) { Add-Content -Path $LogFile -Value $output }
-  if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') failed (exit $LASTEXITCODE)" }
+  if ($LASTEXITCODE -ne 0) {
+    if ($output) { $output | ForEach-Object { Write-Host "  $_" } }
+    throw "git $($args -join ' ') failed (exit $LASTEXITCODE)"
+  }
 }
 
 try {
