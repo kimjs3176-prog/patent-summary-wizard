@@ -1,6 +1,5 @@
 # Architecture rules
 
-- Technology filing statistics are computed server-side for all six applicant groups over a rolling three-year window and cached daily as a complete site_settings snapshot; incomplete API responses never replace valid counts.
 - Keep technology classification in the shared primary-IPC classifier and version the statistics cache whenever mappings change; this keeps frontend labels and server counts consistent without serving obsolete merged categories.
 
 - Normalize commercialization prose through the shared summary presentation helper before parsing web or print output, so cached and newly generated summaries follow the same formatting rules.- Domestic market figures registered in the KOSIS series list (summarize-patent/kosis.ts) take their base value and CAGR from official statistics (refreshed every 30 days) and override AI-written numbers, so the same market always shows the same official figures.
@@ -16,3 +15,4 @@
 - The Insights filing-trend report is aggregated server-side (filing-trends) from complete applicant-scoped KIPRIS pages, compares only fully disclosed years (18-month publication lag) and keeps AI summary sentences only when every number matches the computed statistics.
 - The home 특허 인사이트 section renders the filing-trend summary and a compact field ranking from the single useFilingTrends snapshot (same as the Insights page), so home and Insights never show conflicting numbers; ranking rows keep their field-search navigation.
 - Secret-scan exceptions live in .gitleaks.toml as narrow line patterns for verified public values only (publishable client settings, cache key names) on top of default rules, so real credentials are still reported; keep bun.lock and package-lock.json resolved to the same patched versions so external dependency scanners match.
+- Delete server functions and UI modules once no screen calls them (verify by searching src), so unused public endpoints never stay deployed.
