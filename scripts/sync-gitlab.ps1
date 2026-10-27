@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Mirrors branches and tags from GitHub to the internal GitLab.
+  Mirrors selected branches from GitHub to the internal GitLab.
 
 .DESCRIPTION
   aigov GitLab rejects connections from outside its network, so GitHub
@@ -9,9 +9,10 @@
   that repeats the sync every few minutes.
 
   The sync uses its own bare repository (default: %LOCALAPPDATA%\gitlab-mirror)
-  so it never touches a working copy. Branches that exist on GitHub overwrite
-  the same-named branches on GitLab; GitLab-only branches are kept unless
-  -Prune is given.
+  so it never touches a working copy. Each branch in -Branches (default: main)
+  overwrites the same-named branch on GitLab. Branches are pushed one at a
+  time because the GitLab security scan rejects a whole push when any branch
+  in it fails, so one stale branch must not block the others.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\sync-gitlab.ps1
@@ -22,14 +23,18 @@
   Registers the scheduled task (every 10 minutes by default).
 
 .EXAMPLE
+  powershell -ExecutionPolicy Bypass -File scripts\sync-gitlab.ps1 -Branches main,dev -Install
+
+.EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\sync-gitlab.ps1 -Uninstall
 #>
 param(
   [string]$GitHubUrl = 'https://github.com/kimjs3176-prog/patent-summary-wizard.git',
   [string]$GitLabUrl = 'https://gitlab.aigov.go.kr/kimjs1408/patent-summary-wizard.git',
   [string]$MirrorDir = (Join-Path $env:LOCALAPPDATA 'gitlab-mirror\patent-summary-wizard.git'),
+  # powershell -File passes "main,dev" as one string, so split it here.
+  [string[]]$Branches = @('main'),
   [int]$IntervalMinutes = 10,
-  [switch]$Prune,
   [switch]$Scheduled,
   [switch]$Install,
   [switch]$Uninstall
@@ -37,6 +42,7 @@ param(
 
 $TaskName = 'patent-summary-wizard GitLab sync'
 $LogFile = Join-Path (Split-Path $MirrorDir -Parent) 'sync.log'
+$Branches = @($Branches | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 
 if ($Uninstall) {
   Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
@@ -46,8 +52,8 @@ if ($Uninstall) {
 
 if ($Install) {
   $arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$PSCommandPath`"" +
-    " -GitHubUrl `"$GitHubUrl`" -GitLabUrl `"$GitLabUrl`" -MirrorDir `"$MirrorDir`" -Scheduled"
-  if ($Prune) { $arguments += ' -Prune' }
+    " -GitHubUrl `"$GitHubUrl`" -GitLabUrl `"$GitLabUrl`" -MirrorDir `"$MirrorDir`"" +
+    " -Branches `"$($Branches -join ',')`" -Scheduled"
   $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arguments
   $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
     -RepetitionInterval (New-TimeSpan -Minutes $IntervalMinutes) `
@@ -55,7 +61,7 @@ if ($Install) {
   $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew `
     -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
   Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
-  Write-Host "Registered '$TaskName' (every $IntervalMinutes min). Log: $LogFile"
+  Write-Host "Registered '$TaskName' for $($Branches -join ', ') (every $IntervalMinutes min). Log: $LogFile"
   return
 }
 
@@ -96,16 +102,21 @@ try {
   }
   Invoke-Git -C $MirrorDir remote set-url origin $GitHubUrl
   Invoke-Git -C $MirrorDir remote set-url gitlab $GitLabUrl
-
-  $refspecs = @('+refs/heads/*:refs/heads/*', '+refs/tags/*:refs/tags/*')
-  Invoke-Git -C $MirrorDir fetch -q --prune origin @refspecs
-
-  $pushArgs = @('-C', $MirrorDir, 'push', '--porcelain', 'gitlab') + $refspecs
-  if ($Prune) { $pushArgs = @('-C', $MirrorDir, 'push', '--porcelain', '--prune', 'gitlab') + $refspecs }
-  Invoke-Git @pushArgs
-
-  Write-Log 'Sync OK'
 } catch {
   Write-Log "Sync FAILED: $_"
   exit 1
 }
+
+$failed = @()
+foreach ($branch in $Branches) {
+  $refspec = "+refs/heads/${branch}:refs/heads/${branch}"
+  try {
+    Invoke-Git -C $MirrorDir fetch -q origin $refspec
+    Invoke-Git -C $MirrorDir push --porcelain gitlab $refspec
+    Write-Log "Sync OK: $branch"
+  } catch {
+    Write-Log "Sync FAILED: ${branch}: $_"
+    $failed += $branch
+  }
+}
+if ($failed.Count -gt 0) { exit 1 }
