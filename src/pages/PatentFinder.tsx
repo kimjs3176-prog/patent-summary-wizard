@@ -53,14 +53,13 @@ function ResultCard({ r, rank, onOpen }: { r: FinderResult; rank: number; onOpen
       <div className="flex items-start gap-3 md:gap-4">
         <div className={`finder-fit finder-fit-${band.tone} shrink-0 flex flex-col items-center justify-center rounded-xl w-14 h-14 md:w-16 md:h-16`}>
           <span className="text-lg md:text-xl font-bold tabular-nums leading-none">{r.fit}</span>
-          <span className="text-[10px] font-semibold mt-1">{band.label}</span>
+          <span className="text-[11px] font-semibold mt-1">{band.label}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">{rank}위</span>
-            <span aria-hidden>·</span>
             <span className="truncate">{r.applicant || "기관 미상"}</span>
-            {r.applicationDate && (<><span aria-hidden>·</span><span className="tabular-nums">{r.applicationDate.slice(0, 4)}년 출원</span></>)}
+            {r.applicationDate && <span className="tabular-nums shrink-0">{r.applicationDate.slice(0, 4)}년 출원</span>}
           </div>
           <button
             type="button"
@@ -92,12 +91,12 @@ function ResultCard({ r, rank, onOpen }: { r: FinderResult; rank: number; onOpen
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <span className="text-xs text-muted-foreground">
             {typeof r.trl === "number"
-              ? <>기술 완성도 <b className="text-foreground">TRL {r.trl}</b>{r.readinessMatch === true ? " · 원하는 완성도와 맞음" : r.readinessMatch === false ? " · 원하는 완성도와 차이 있음" : ""}</>
+              ? <>기술 완성도 <b className="text-foreground">TRL {r.trl}</b>{r.readinessMatch === true ? ", 원하는 완성도와 맞음" : r.readinessMatch === false ? ", 원하는 완성도와 차이 있음" : ""}</>
               : "기술 완성도는 AI 요약에서 확인할 수 있어요"}
             <span className="ml-2 tabular-nums">{r.patentId}</span>
           </span>
           <Button size="sm" className="rounded-full h-8 gap-1 btn-press" onClick={() => onOpen(r.patentId)}>
-            AI 요약 보기 <ArrowRight className="w-3.5 h-3.5" />
+            AI 요약 보기
           </Button>
         </div>
       </div>
@@ -251,7 +250,7 @@ export default function PatentFinder() {
                       className={`finder-chip rounded-xl border px-3 py-2 text-left transition-colors ${active ? "finder-chip-active" : ""}`}
                     >
                       <span className="block text-sm font-semibold">{r.label}</span>
-                      <span className="block text-[11px] opacity-75">{r.hint}</span>
+                      <span className="block text-[11px]">{r.hint}</span>
                     </button>
                   );
                 })}

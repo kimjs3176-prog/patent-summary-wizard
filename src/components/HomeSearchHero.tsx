@@ -37,8 +37,8 @@ function FinderQuickForm() {
           <Sparkles className="w-4 h-4" /> 추천받기
         </Button>
       </div>
-      <button type="button" onClick={() => go(false)} className="mt-2 px-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
-        도입 목적·보유 설비·기술 완성도까지 상세 설정하기 →
+      <button type="button" onClick={() => go(false)} className="mt-2 px-1 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-primary hover:underline transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        도입 목적, 보유 설비, 기술 완성도까지 상세 설정하기
       </button>
     </form>
   );
@@ -57,7 +57,7 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
       </div>
       <div className="relative max-w-5xl mx-auto px-5 md:px-0 py-7 md:py-9">
         <h1 id="home-title" className="text-[30px] md:text-[44px] font-extrabold leading-tight tracking-normal">
-          Agri IP <span className="home-hero-accent">Summary</span> <span className="text-lg md:text-2xl font-semibold">(AIS)</span>
+          Agri IP Summary <span className="home-hero-muted text-lg md:text-2xl font-semibold">(AIS)</span>
         </h1>
         <p className="home-hero-accent mt-2 text-sm md:text-base font-medium">농업기술 특허를 한눈에, AI로 쉽게</p>
         <p className="home-hero-muted mt-2 text-sm leading-relaxed max-w-2xl">{description}</p>
@@ -73,7 +73,7 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
                 role="tab"
                 aria-selected={active}
                 onClick={() => setMode(t.key)}
-                className={`home-mode-tab inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs md:text-sm font-semibold transition-colors ${active ? "home-mode-tab-active" : ""}`}
+                className={`home-mode-tab inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))] ${active ? "home-mode-tab-active" : ""}`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {t.label}
