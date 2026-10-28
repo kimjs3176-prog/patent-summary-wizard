@@ -16,7 +16,6 @@ const PotentialTech = lazy(() => import("./pages/PotentialTech"));
 const PatentExport = lazy(() => import("./pages/PatentExport"));
 const PatentFinder = lazy(() => import("./pages/PatentFinder"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-import { FloatingChatbot } from "./components/FloatingChatbot";
 import { SplashScreen } from "./components/SplashScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { supabase } from "./integrations/supabase/client";
@@ -95,7 +94,6 @@ const App = () => {
               </Routes>
               </Suspense>
             </ErrorBoundary>
-            <FloatingChatbot />
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
