@@ -16,8 +16,6 @@ export const GENERIC_QUERY_TERMS = [
 /** Suffixes stripped to obtain a matching stem ("저장성" → "저장", "저장기간" → "저장"). */
 const STEM_SUFFIXES = ["기간", "향상", "증진", "연장", "개선", "기술", "방법", "장치", "시스템", "성"];
 
-export const MIN_NL_RESULTS = 10;
-
 export const normalizeText = (s: string) =>
   (s || "")
     .toLowerCase()
@@ -95,6 +93,12 @@ export function buildPlanQueries(
   return Array.from(new Set(queries.map((q) => q.trim()).filter(Boolean))).slice(0, limit);
 }
 
+/** A core concept: its own wording (with stems) plus alternative wordings. */
+export interface ConceptGroup {
+  terms: string[];
+  synonyms: string[];
+}
+
 /**
  * One group per core concept with its own synonyms. Free synonyms (`should`) broaden
  * the last concept, matching how the planner swaps them into queries.
@@ -104,19 +108,20 @@ export function buildConceptGroups(
   should: string[],
   extracted: string[] = [],
   synonyms: Record<string, string[]> = {},
-): string[][] {
+): ConceptGroup[] {
   const core = sanitizeNlTerms(must).slice(0, 3);
   const base = core.length > 0 ? core : sanitizeNlTerms(extracted).slice(0, 3);
   if (base.length === 0) return [];
-  const groups = base.map((t) => termVariants(t));
+  const groups: ConceptGroup[] = base.map((t) => ({ terms: termVariants(t), synonyms: [] }));
+  const taken = (s: string) => groups.some((g) => g.terms.includes(s) || g.synonyms.includes(s));
   base.forEach((t, i) => {
     for (const s of (synonyms[t] ?? []).flatMap((x) => termVariants(x))) {
-      if (!groups.some((g) => g.includes(s))) groups[i].push(s);
+      if (!taken(s)) groups[i].synonyms.push(s);
     }
   });
   const last = groups[groups.length - 1];
   for (const s of sanitizeNlTerms(should).flatMap((t) => termVariants(t))) {
-    if (!groups.some((g) => g.includes(s))) last.push(s);
+    if (!taken(s)) last.synonyms.push(s);
   }
   return groups;
 }
@@ -137,7 +142,12 @@ export interface Coverage {
   titleMatched: number;
 }
 
-export function conceptCoverage(title: string, abstract: string, groups: string[][]): Coverage {
+/**
+ * A concept counts when its own wording is in the title or abstract, or a synonym is in
+ * the title. Synonyms in the abstract are ignored: short words like "유지" (oil) also
+ * mean "maintain" and match unrelated abstracts.
+ */
+export function conceptCoverage(title: string, abstract: string, groups: ConceptGroup[]): Coverage {
   const nTitle = normalizeText(title);
   const nAbs = normalizeText(abstract);
   let matched = 0;
@@ -145,8 +155,8 @@ export function conceptCoverage(title: string, abstract: string, groups: string[
   let titleMatched = 0;
   let firstMatched = false;
   groups.forEach((g, i) => {
-    const inTitle = g.some((t) => hasTerm(title, nTitle, t));
-    const inAbs = !inTitle && g.some((t) => hasTerm(abstract, nAbs, t));
+    const inTitle = [...g.terms, ...g.synonyms].some((t) => hasTerm(title, nTitle, t));
+    const inAbs = !inTitle && g.terms.some((t) => hasTerm(abstract, nAbs, t));
     if (inTitle || inAbs) {
       matched++;
       if (i === 0) firstMatched = true;
@@ -161,6 +171,12 @@ export function conceptCoverage(title: string, abstract: string, groups: string[
   return { matched, coverage: groups.length ? score / groups.length : 0, firstMatched, titleMatched };
 }
 
+/** Concepts a result must cover: all of 1-2 concepts, at least 2 of 3. */
+export function requiredConcepts(groupCount: number): number {
+  if (groupCount <= 2) return groupCount;
+  return Math.max(2, groupCount - 1);
+}
+
 interface Rankable {
   title: string;
   titleKo?: string;
@@ -168,23 +184,23 @@ interface Rankable {
 }
 
 /**
- * Patents covering every concept come first. Partial matches only fill the list up to
- * MIN_NL_RESULTS, and patents matching no concept are dropped.
+ * Only patents whose TITLE covers enough of the question's concepts are returned (an
+ * empty list is better than unrelated patents). Abstracts mention concepts in passing
+ * ("이물질을 제거", "유체를 저장", "건강기능식품"), so abstract hits only affect ranking.
+ * Single-concept questions still accept an abstract hit.
  */
-export function rankNaturalLanguage<T extends Rankable>(patents: T[], groups: string[][]): T[] {
+export function rankNaturalLanguage<T extends Rankable>(patents: T[], groups: ConceptGroup[]): T[] {
   if (groups.length === 0) return patents;
-  const scored = patents
+  const need = requiredConcepts(groups.length);
+  return patents
     .map((p, idx) => ({ p, idx, c: conceptCoverage(p.titleKo || p.title || "", p.snippet || "", groups) }))
-    .filter((x) => x.c.matched > 0)
+    .filter((x) => (need <= 1 ? x.c.matched >= 1 : x.c.titleMatched >= need))
     .sort((a, b) =>
       b.c.matched - a.c.matched ||
       Number(b.c.firstMatched) - Number(a.c.firstMatched) ||
       b.c.coverage - a.c.coverage ||
       b.c.titleMatched - a.c.titleMatched ||
       a.idx - b.idx,
-    );
-  const full = scored.filter((x) => x.c.matched === groups.length);
-  if (groups.length === 1 || full.length >= MIN_NL_RESULTS) return full.map((x) => x.p);
-  const partial = scored.filter((x) => x.c.matched < groups.length).slice(0, MIN_NL_RESULTS - full.length);
-  return [...full, ...partial].map((x) => x.p);
+    )
+    .map((x) => x.p);
 }
