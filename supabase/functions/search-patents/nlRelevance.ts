@@ -54,18 +54,68 @@ export function termVariants(term: string): string[] {
   return Array.from(new Set(out));
 }
 
+/** Keep only synonym lists keyed by an actual must term (matched after normalization). */
+export function sanitizeSynonymMap(raw: unknown, must: string[]): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [key, list] of Object.entries(raw as Record<string, unknown>)) {
+    const target = must.find((m) => normalizeText(m) === normalizeText(key));
+    if (!target || !Array.isArray(list)) continue;
+    const syns = sanitizeNlTerms(list).filter((s) => normalizeText(s) !== normalizeText(target)).slice(0, 3);
+    if (syns.length > 0) out[target] = syns;
+  }
+  return out;
+}
+
 /**
- * One group per core concept. Synonyms (`should`) broaden the last concept, matching
- * how the planner builds its queries (synonym replaces the last must term).
+ * KIPRIS title queries in priority order: all concepts AND-ed, then each concept swapped
+ * for one of its synonyms, then concept pairs keeping the target (first term), then
+ * single terms as a recall net.
  */
-export function buildConceptGroups(must: string[], should: string[], extracted: string[] = []): string[][] {
+export function buildPlanQueries(
+  must: string[],
+  synonyms: Record<string, string[]> = {},
+  should: string[] = [],
+  limit = 7,
+): string[] {
+  if (must.length === 0) return [];
+  const queries: string[] = [must.length > 1 ? must.join("*") : must[0]];
+  const lastIdx = must.length - 1;
+  for (let i = lastIdx; i >= (must.length > 1 ? 1 : 0); i--) {
+    const syns = [...(synonyms[must[i]] ?? []), ...(i === lastIdx ? should : [])];
+    for (const syn of syns) {
+      const swapped = must.map((m, j) => (j === i ? syn : m));
+      queries.push(swapped.join("*"));
+    }
+  }
+  if (must.length === 3) {
+    queries.push(`${must[0]}*${must[2]}`, `${must[0]}*${must[1]}`);
+  }
+  for (const k of must) queries.push(k);
+  return Array.from(new Set(queries.map((q) => q.trim()).filter(Boolean))).slice(0, limit);
+}
+
+/**
+ * One group per core concept with its own synonyms. Free synonyms (`should`) broaden
+ * the last concept, matching how the planner swaps them into queries.
+ */
+export function buildConceptGroups(
+  must: string[],
+  should: string[],
+  extracted: string[] = [],
+  synonyms: Record<string, string[]> = {},
+): string[][] {
   const core = sanitizeNlTerms(must).slice(0, 3);
   const base = core.length > 0 ? core : sanitizeNlTerms(extracted).slice(0, 3);
   if (base.length === 0) return [];
   const groups = base.map((t) => termVariants(t));
-  const syns = sanitizeNlTerms(should).flatMap((t) => termVariants(t));
+  base.forEach((t, i) => {
+    for (const s of (synonyms[t] ?? []).flatMap((x) => termVariants(x))) {
+      if (!groups.some((g) => g.includes(s))) groups[i].push(s);
+    }
+  });
   const last = groups[groups.length - 1];
-  for (const s of syns) {
+  for (const s of sanitizeNlTerms(should).flatMap((t) => termVariants(t))) {
     if (!groups.some((g) => g.includes(s))) last.push(s);
   }
   return groups;

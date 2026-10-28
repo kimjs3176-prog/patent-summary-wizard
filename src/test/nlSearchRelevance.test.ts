@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   buildConceptGroups,
+  buildPlanQueries,
   rankNaturalLanguage,
   sanitizeNlTerms,
+  sanitizeSynonymMap,
   MIN_NL_RESULTS,
 } from "../../supabase/functions/search-patents/nlRelevance";
 
@@ -53,5 +55,24 @@ describe("문장형 검색 정합도 규칙", () => {
     const ranked = rankNaturalLanguage([...partial, p("딸기 저장 방법")], groups);
     expect(ranked).toHaveLength(10);
     expect(ranked[0].title).toBe("딸기 저장 방법");
+  });
+
+  it("문장 속 세 개념(돼지·질병·진단)을 모두 충족한 특허가 일부만 충족한 특허보다 먼저 나옴", () => {
+    const groups = buildConceptGroups(["돼지", "질병", "진단"], [], [], { 질병: ["증후군"], 진단: ["검출"] });
+    const ranked = rankNaturalLanguage([
+      p("돼지 임신 진단 장치"),
+      p("돼지 생식기호흡기증후군 진단용 조성물"),
+    ], groups);
+    expect(ranked[0].title).toBe("돼지 생식기호흡기증후군 진단용 조성물");
+  });
+
+  it("검색어 조합은 전체 AND → 동의어 치환 → 대상 포함 쌍 → 단일어 순", () => {
+    expect(buildPlanQueries(["돼지", "질병", "진단"], { 진단: ["검출"] })).toEqual([
+      "돼지*질병*진단", "돼지*질병*검출", "돼지*진단", "돼지*질병", "돼지", "질병", "진단",
+    ]);
+  });
+
+  it("동의어 목록은 실제 핵심어에 연결된 것만 유지", () => {
+    expect(sanitizeSynonymMap({ 진단: ["검출", "기술"], 사과: ["배"] }, ["돼지", "진단"])).toEqual({ 진단: ["검출"] });
   });
 });
