@@ -43,11 +43,10 @@ export function fallbackRoute(text: string): ChatRoute {
   const tools = new Set<ChatTool>();
   if (TREND_RE.test(text)) tools.add("trends");
   if (TRANSFER_RE.test(text)) tools.add("transfer");
-  const query = tools.size && !RECOMMEND_RE.test(text) ? "" : sanitizeQuery(text);
+  const query = tools.size ? "" : sanitizeQuery(text);
   if (query) tools.add("search");
-  const recommendFromTrend = !query && tools.has("trends") && RECOMMEND_RE.test(text);
-  if (!tools.size) tools.add("search");
-  return { tools: CHAT_TOOLS.filter((t) => tools.has(t)), query: query || (tools.has("search") ? sanitizeQuery(text) : ""), recommendFromTrend };
+  const recommendFromTrend = tools.has("trends") && RECOMMEND_RE.test(text);
+  return { tools: CHAT_TOOLS.filter((t) => tools.has(t)), query, recommendFromTrend };
 }
 
 /** Validate the AI router's JSON; anything malformed falls back to the keyword heuristics. */
