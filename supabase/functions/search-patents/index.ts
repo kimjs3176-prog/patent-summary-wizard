@@ -4,7 +4,7 @@ import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { resolveKiprisKey } from "../_shared/kipris.ts";
 import { classifyTechnology, FIELD_SEARCH_TERMS, isTechnologyFieldId } from "../_shared/technologyFields.ts";
-import { buildConceptGroups, rankNaturalLanguage, sanitizeNlTerms } from "./nlRelevance.ts";
+import { buildConceptGroups, buildPlanQueries, rankNaturalLanguage, sanitizeNlTerms, sanitizeSynonymMap } from "./nlRelevance.ts";
 
 
 // Fetch with timeout + retry on transient errors
@@ -356,8 +356,8 @@ serve(async (req) => {
     // background while stage-1 KIPRIS search fires immediately on the raw input.
     // Previously these two AI calls ran sequentially *before* any network search,
     // adding up to ~15s of dead time to every query.
-    const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[]; should: string[] }> = (async () => {
-      if (fieldId) return { queries: [rawInput], must: [], should: [] };
+    const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[]; should: string[]; synonyms: Record<string, string[]> }> = (async () => {
+      if (fieldId) return { queries: [rawInput], must: [], should: [], synonyms: {} };
       if (isNaturalLanguageQuery(rawInput)) {
         isNLQuery = true;
         const extraction = await extractKeywordsWithAI(rawInput);
@@ -368,7 +368,7 @@ serve(async (req) => {
         searchKeywords = words.length > 0 ? words : [rawInput];
       }
 
-      const refined = await recommendQueriesWithAI(rawInput, searchKeywords);
+      const refined = await recommendQueriesWithAI(rawInput, searchKeywords, isNLQuery);
       let recommendedQueries = refined.queries;
       if (!recommendedQueries || recommendedQueries.length === 0) {
         const fb: string[] = [];
@@ -376,8 +376,8 @@ serve(async (req) => {
         for (const k of searchKeywords) fb.push(k);
         recommendedQueries = Array.from(new Set(fb));
       }
-      return { queries: recommendedQueries, corrected: refined.corrected, must: refined.must || [], should: refined.should || [] };
-    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined, must: [] as string[], should: [] as string[] }));
+      return { queries: recommendedQueries, corrected: refined.corrected, must: refined.must || [], should: refined.should || [], synonyms: refined.synonyms || {} };
+    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined, must: [] as string[], should: [] as string[], synonyms: {} as Record<string, string[]> }));
 
     // 특허 파싱 헬퍼
     const parsePatentsFromXml = (searchText: string, orgName: string): KeywordSearchResult[] => {
@@ -677,7 +677,7 @@ serve(async (req) => {
     // separately (title + abstract) so the relevance ranker has enough candidates.
     // Sentence mode uses the AI concepts instead of raw words ("늘리고", "싶음").
     const inputTokens = isNLQuery
-      ? sanitizeNlTerms([...plan.must, ...plan.should, ...searchKeywords]).slice(0, 4)
+      ? sanitizeNlTerms([...plan.must, ...plan.should, ...searchKeywords]).slice(0, 5)
       : Array.from(
         new Set(
           [rawTrim, correctedInput || ""]
@@ -865,7 +865,7 @@ serve(async (req) => {
 
     let relevant = activePatents;
     // 문장형 검색: 대화체 어절이 아니라 AI가 뽑은 핵심 개념을 몇 개 충족하는지로 순위를 매긴다.
-    const conceptGroups = isNLQuery ? buildConceptGroups(plan.must, plan.should, searchKeywords) : [];
+    const conceptGroups = isNLQuery ? buildConceptGroups(plan.must, plan.should, searchKeywords, plan.synonyms) : [];
     if (conceptGroups.length > 0) {
       relevant = rankNaturalLanguage(activePatents, conceptGroups);
       console.log(`NL concept ranking [${conceptGroups.map(g => g.join("/")).join(" + ")}]: kept ${relevant.length} of ${activePatents.length}`);
