@@ -173,10 +173,9 @@ export default function PatentChat({ onOpenPatent }: { onOpenPatent: (patentId: 
                         const Icon = TOOL_ICONS[p.toolName] ?? FileSearch;
                         return (
                           <Tool key={p.toolCallId} defaultOpen={false} className="mb-0 rounded-lg">
-                            <ToolHeader type="dynamic-tool" toolName={p.toolName} title={p.title} state={p.state} className="p-2.5 [&_svg:first-child]:hidden" />
+                            <ToolHeader type="dynamic-tool" toolName={p.toolName} title={p.title} state={p.state} icon={<Icon className="size-4 text-primary" aria-hidden="true" />} className="p-2.5" />
                             <ToolContent className="space-y-3 p-3 pt-0">
-                              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                              <p className="text-xs text-muted-foreground">
                                 {p.state === "output-available" ? toolSummary(p.toolName, p.output) : p.state === "output-error" ? p.errorText : "자료를 확인하고 있습니다."}
                               </p>
                               <ToolInput input={p.input} />

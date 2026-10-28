@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Compass, Search, Sparkles } from "lucide-react";
+import { Compass, MessagesSquare, Search, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { PatentInput } from "@/components/PatentInput";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,10 @@ interface HomeSearchHeroProps {
   placeholder: string;
 }
 
-type Mode = "search" | "finder";
+type Mode = "search" | "finder" | "chat";
+
+// Loaded only when the 물어보기 tab is opened so the home page stays light.
+const PatentChat = lazy(() => import("@/components/PatentChat"));
 
 function FinderQuickForm() {
   const navigate = useNavigate();
@@ -49,6 +52,7 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
   const tabs: { key: Mode; label: string; icon: typeof Search }[] = [
     { key: "search", label: "특허검색", icon: Search },
     { key: "finder", label: "나만의 특허찾기", icon: Compass },
+    { key: "chat", label: "물어보기", icon: MessagesSquare },
   ];
   return (
     <section className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-6" aria-labelledby="home-title">
@@ -83,10 +87,14 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
         </div>
 
         <div className="home-search-surface relative mt-3 max-w-2xl rounded-xl bg-card p-1.5 text-card-foreground">
-          {mode === "search" ? (
+          {mode === "search" && (
             <PatentInput onSubmit={onSubmit} isLoading={isLoading} onKeywordSearch={onKeywordSearch} placeholder={placeholder} />
-          ) : (
-            <FinderQuickForm />
+          )}
+          {mode === "finder" && <FinderQuickForm />}
+          {mode === "chat" && (
+            <Suspense fallback={<p className="px-3 py-6 text-sm text-muted-foreground">상담 창을 여는 중…</p>}>
+              <PatentChat onOpenPatent={onSubmit} />
+            </Suspense>
           )}
         </div>
         <div className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
