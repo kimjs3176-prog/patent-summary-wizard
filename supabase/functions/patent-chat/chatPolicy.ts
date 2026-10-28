@@ -60,7 +60,7 @@ export function normalizeRoute(raw: unknown, text: string): ChatRoute {
   if (tools.has("search") && !query) tools.delete("search");
   const recommendFromTrend = r.recommendFromTrend === true && !query;
   if (recommendFromTrend) tools.add("trends");
-  if (!tools.size && r.smalltalk !== true) return fallbackRoute(text);
+  if (!tools.size && r.smalltalk !== true && r.fromHistory !== true) return fallbackRoute(text);
   return { tools: CHAT_TOOLS.filter((t) => tools.has(t)), query, recommendFromTrend };
 }
 
