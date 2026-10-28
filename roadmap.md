@@ -1,21 +1,6 @@
-# Tasks
-- [x] Combine filing-trend highlights and the keyword treemap into a home 특허 인사이트 section with a 상세보기 link to Insights.
-- [x] Turn Insights into a recent agri-food patent filing trend report (yearly, field, institute, recent filings) and verify it with live data.
-- [x] 나만의 특허찾기: company-profile finder page, home hero tab and header menu; verify a real recommendation end-to-end.
-- [x] Compare five identical patents with reference cases off/on using frozen inputs and no production cache writes; report TRL, market figures and commercialization differences.
-- [x] Accumulate automatically validated source-evidence cases within the six-institute scope, retrieve relevant cases without changing analysis rules, and verify a real analysis.
-- [x] Rename TRL 5 display name to 시제품 성능 평가 and verify the summary.
-- [x] Shorten TRL 7 display name to 신뢰성 검증 and verify the summary.
-- [x] Align TRL display names and definitions with the attached reference across summaries and exports, and verify a real summary.
-- [x] Balance summary section lengths without dropping key facts, and verify a newly generated summary.
-- [x] Optimize homepage visual hierarchy, spacing and search presentation while preserving existing features.
-- [x] Fit all fields with at least 10 filings inside a shorter rectangular keyword treemap and verify navigation.
-- [x] Further split combined technology categories without double-counting.
-- [x] Show all low-count fields in a readable rotating card grid.
-- [x] Verify updated statistics, rotation controls and field search.
-- [x] Split biotechnology and breeding, and refine meaningful IPC technology fields.
-- [x] Restyle the proportional keyword cards to match the homepage.
-- [x] Refresh server statistics and verify real counts and field-search navigation.
-- [x] Replace homepage keyword chips with a technology-field treemap.
-- [x] Aggregate applicant-filtered KIPRIS filings over the rolling last three years, with cached counts.
-- [x] Verify classification, sizing, and live field-search navigation.- [x] Upgrade analysis models to gemini-3.8-flash and bump summary cache version.
+# Roadmap
+
+- [ ] 대화형 특허 상담: 홈 검색창에 '물어보기' 탭 추가 (하나의 대화, 이 브라우저에만 저장)
+  - [ ] 답변 범위: 최근 유망 분야·동향, 질문 맞춤 특허 추천, 추천 특허 TRL·사업화 점수, 기술이전 절차
+  - [ ] 실제 검색·통계·저장 점수만 근거로 답변 (없는 특허·숫자 금지)
+- [ ] 오른쪽 아래 기존 챗봇 버튼 삭제 (관리자 챗봇 설정 포함)
