@@ -516,12 +516,15 @@ serve(async (req) => {
     const MAX_QUERIES = 5;
     const allPatents: KeywordSearchResult[] = [];
     const seenIds = new Set<string>();
+    // 같은 출원이 등록번호/출원번호 표기로 두 번 잡히지 않도록 출원번호로도 중복을 거른다.
+    const seenApps = new Set<string>();
     const collect = (arr: KeywordSearchResult[]) => {
       for (const p of arr) {
-        if (!seenIds.has(p.patentId)) {
-          seenIds.add(p.patentId);
-          allPatents.push(p);
-        }
+        const app = (p.applicationNumber || "").replace(/[^0-9]/g, "");
+        if (seenIds.has(p.patentId) || (app && seenApps.has(app))) continue;
+        seenIds.add(p.patentId);
+        if (app) seenApps.add(app);
+        allPatents.push(p);
       }
     };
 
