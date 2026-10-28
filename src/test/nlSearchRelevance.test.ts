@@ -42,6 +42,15 @@ describe("문장형 검색 정합도 규칙", () => {
     expect(ranked.map((x) => x.title)).toEqual(["튀김 음식의 기름 제거 장치"]);
   });
 
+  it("두 번째 개념이 초록에만 스치듯 나오면 제외('딸기 재배용 냉난방'의 '유체를 저장')", () => {
+    const groups = buildConceptGroups(["딸기", "저장"], []);
+    const ranked = rankNaturalLanguage([
+      p("딸기 재배용 냉난방 시스템", "태양열을 집열하고 유체를 저장하는 버퍼부"),
+      p("딸기의 저장 유통성 향상 처리 방법"),
+    ], groups);
+    expect(ranked.map((x) => x.title)).toEqual(["딸기의 저장 유통성 향상 처리 방법"]);
+  });
+
   it("동의어는 초록에만 있으면 개념 충족으로 치지 않음", () => {
     const groups = buildConceptGroups(["과일", "기름"], [], [], { 기름: ["유지"] });
     expect(rankNaturalLanguage([p("과일 세척 장치", "형태가 유지될 수 있도록")], groups)).toEqual([]);

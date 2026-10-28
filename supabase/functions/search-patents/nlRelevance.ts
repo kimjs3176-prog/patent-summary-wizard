@@ -184,15 +184,17 @@ interface Rankable {
 }
 
 /**
- * Only patents covering enough of the question's concepts are returned (an empty list
- * is better than unrelated patents); full matches come first.
+ * Only patents whose TITLE covers enough of the question's concepts are returned (an
+ * empty list is better than unrelated patents). Abstracts mention concepts in passing
+ * ("이물질을 제거", "유체를 저장", "건강기능식품"), so abstract hits only affect ranking.
+ * Single-concept questions still accept an abstract hit.
  */
 export function rankNaturalLanguage<T extends Rankable>(patents: T[], groups: ConceptGroup[]): T[] {
   if (groups.length === 0) return patents;
   const need = requiredConcepts(groups.length);
   return patents
     .map((p, idx) => ({ p, idx, c: conceptCoverage(p.titleKo || p.title || "", p.snippet || "", groups) }))
-    .filter((x) => x.c.matched >= need)
+    .filter((x) => (need <= 1 ? x.c.matched >= 1 : x.c.titleMatched >= need))
     .sort((a, b) =>
       b.c.matched - a.c.matched ||
       Number(b.c.firstMatched) - Number(a.c.firstMatched) ||
