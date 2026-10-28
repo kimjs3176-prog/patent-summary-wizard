@@ -621,13 +621,15 @@ serve(async (req) => {
       }
       return out.slice(0, 3);
     };
-    const variantQueries = Array.from(
+    // 문장형 입력은 원문 띄어쓰기 변형("딸기*저장기간*늘리고*싶음")이 의미가 없으므로
+    // AI가 뽑은 핵심어 조합만 사용한다.
+    const variantQueries = isNLQuery ? [] : Array.from(
       new Set([...spacingVariants(rawTrim), ...(correctedInput ? spacingVariants(correctedInput) : [])]),
     );
 
     // 복합어 앞부분(예: "스마트팜" -> "스마트")은 같은 기술군 특허를 폭넓게 회수하는
     // 재현율 보조 검색어로 사용한다. 정합도 점수에서는 보조어로만 반영된다.
-    const recallTerms = Array.from(
+    const recallTerms = isNLQuery ? [] : Array.from(
       new Set(
         [rawTrim, correctedInput || ""]
           .filter(t => t && !/\s/.test(t) && /^[가-힣]{4,10}$/.test(t))
@@ -638,7 +640,7 @@ serve(async (req) => {
     const uniqueQueries = Array.from(
       new Set([
         rawTrim,
-        ...(correctedInput ? [correctedInput] : []),
+        ...(correctedInput && !isNLQuery ? [correctedInput] : []),
         ...variantQueries,
         ...recommendedQueries,
         ...recallTerms,
@@ -662,17 +664,19 @@ serve(async (req) => {
     }
 
     // Stage 3: abstract search — title alone misses many filings where the keyword
-    // only appears in the abstract/claims. Run for the top 2 queries whenever we
-    // haven't already saturated results.
-    if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 0) {
-      const absQueries = queriesToTry.slice(0, 2);
+    // only appears in the abstract/claims. Keyword mode runs it for the top 2 queries
+    // when results are thin; sentence mode always runs it for the precise AI keyword
+    // combinations (the raw sentence never appears in an abstract).
+    const nlAbsQueries = isNLQuery ? recommendedQueries.slice(0, 2) : [];
+    if (nlAbsQueries.length > 0 || (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 0)) {
+      const absQueries = nlAbsQueries.length > 0 ? nlAbsQueries : queriesToTry.slice(0, 2);
       const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
       for (const q of absQueries) {
         for (const org of AGRI_ORGANIZATIONS) {
           tasks.push(() => kiprisSearch(q, org, "abstract"));
         }
       }
-      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 6) {
+      for (let i = 0; i < tasks.length && (nlAbsQueries.length > 0 || allPatents.length < EARLY_EXIT_HITS); i += 6) {
         const batch = await Promise.all(tasks.slice(i, i + 6).map(fn => fn()));
         batch.forEach(collect);
       }
@@ -681,15 +685,18 @@ serve(async (req) => {
     // Stage 4: per-token recall net — multi-word inputs (e.g. "기능성 식품 건강")
     // are AND-matched by KIPRIS and return very few hits. Search each token
     // separately (title + abstract) so the relevance ranker has enough candidates.
-    const inputTokens = Array.from(
-      new Set(
-        [rawTrim, correctedInput || ""]
-          .join(" ")
-          .split(/\s+/)
-          .map(t => t.trim())
-          .filter(t => t.length >= 2),
-      ),
-    ).slice(0, 4);
+    // Sentence mode uses the AI concepts instead of raw words ("늘리고", "싶음").
+    const inputTokens = isNLQuery
+      ? sanitizeNlTerms([...plan.must, ...plan.should, ...searchKeywords]).slice(0, 4)
+      : Array.from(
+        new Set(
+          [rawTrim, correctedInput || ""]
+            .join(" ")
+            .split(/\s+/)
+            .map(t => t.trim())
+            .filter(t => t.length >= 2),
+        ),
+      ).slice(0, 4);
     if (allPatents.length < EARLY_EXIT_HITS && inputTokens.length > 1) {
       const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
       for (const t of inputTokens) {
