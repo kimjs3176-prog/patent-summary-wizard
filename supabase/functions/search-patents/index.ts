@@ -196,8 +196,10 @@ Rules:
 async function recommendQueriesWithAI(
   rawInput: string,
   baseKeywords: string[],
-): Promise<{ must: string[]; should: string[]; queries: string[]; corrected?: string }> {
+  sentence = false,
+): Promise<{ must: string[]; should: string[]; synonyms: Record<string, string[]>; queries: string[]; corrected?: string }> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const maxMust = sentence ? 3 : 2;
   // Conservative fallback: just use base keywords, no synonyms.
   const fallback = () => {
     const must = baseKeywords.slice(0, 2).filter(Boolean);
@@ -205,7 +207,7 @@ async function recommendQueriesWithAI(
     const queries: string[] = [];
     if (must.length > 1) queries.push(must.join("*"));
     for (const k of [...must, ...should]) queries.push(k);
-    return { must, should, queries: Array.from(new Set(queries)) };
+    return { must, should, synonyms: {}, queries: Array.from(new Set(queries)) };
   };
   if (!LOVABLE_API_KEY) return fallback();
 
@@ -228,13 +230,14 @@ Tasks:
 1. Typo correction: fix obvious Korean typos / spacing (e.g. "병해중" -> "병해충", "스마트팜자동화" -> "스마트팜 자동화").
 2. Normalize: drop particles, verb endings, generic words ("기간","방법","시스템","기술","개발","제조방법","향상" are too generic and must never be output).
 3. Classify keywords:
-   - "must": 1-2 core concepts that MUST appear, in priority order: first the crop / animal / target object, then the core technique or purpose.
+   - "must": 1-${maxMust} core concepts that MUST appear, in priority order: first the crop / animal / target object, then the problem or purpose, then the core technique.
+     Keep every distinct concept the user stated (e.g. "돼지 질병을 빨리 진단" -> ["돼지","질병","진단"]${sentence ? "" : " but at most 2"}).
      Use the short noun stem that patent titles actually use (e.g. "저장기간 늘리기" -> "저장", "빨리 진단" -> "진단", "쌀로 만든" -> "쌀").
-   - "should": 1-3 synonyms or concrete alternative expressions of the LAST must item that BROADEN recall (e.g. "저장" <-> "보관" <-> "선도유지"; "간식" <-> "과자" <-> "스낵"; "진단" <-> "검출").
+   - "synonyms": for each must item except the first, 0-3 synonyms or concrete forms patent titles use instead (e.g. "저장": ["보관","선도유지"]; "간식": ["과자","스낵"]; "질병": ["감염","바이러스","증후군"]; "진단": ["검출","판별"]).
+   - "should": leave empty unless a synonym does not belong to one specific must item.
 4. Each keyword: 1-3 Korean characters/words, no particles, no punctuation, no English unless it's a standard term.
-5. Output ONLY JSON: {"corrected":"<corrected raw input>","must":["..."],"should":["..."]}
-   - must: 1-2 items
-   - should: 0-3 items (synonyms of must items, NOT new unrelated topics, NOT generic words)`,
+5. Output ONLY JSON: {"corrected":"<corrected raw input>","must":["..."],"synonyms":{"<must item>":["..."]},"should":["..."]}
+   - Synonyms must not be new unrelated topics or generic words.`,
           },
           {
             role: "user",
@@ -243,7 +246,7 @@ Tasks:
           },
         ],
         temperature: 0.2,
-        max_tokens: 250,
+        max_tokens: 300,
       }),
     }, 7000);
 
@@ -257,8 +260,12 @@ Tasks:
     if (!jsonMatch) return fallback();
     const parsed = JSON.parse(jsonMatch[0]);
     // Generic words ("제조방법", "기술") match almost every patent, so they are dropped.
-    const must: string[] = Array.isArray(parsed.must) ? sanitizeNlTerms(parsed.must).slice(0, 2) : [];
+    const must: string[] = Array.isArray(parsed.must) ? sanitizeNlTerms(parsed.must).slice(0, maxMust) : [];
+    const synonyms = sanitizeSynonymMap(parsed.synonyms, must);
     const should: string[] = Array.isArray(parsed.should) ? sanitizeNlTerms(parsed.should).slice(0, 3) : [];
+    // Backward-compatible "should": synonyms of the last must item plus any free synonyms.
+    const lastSyns = must.length > 0 ? synonyms[must[must.length - 1]] ?? [] : [];
+    const shouldAll = sanitizeNlTerms([...lastSyns, ...should]).slice(0, 4);
     const corrected: string | undefined =
       typeof parsed.corrected === "string" && parsed.corrected.trim().length > 0
         ? parsed.corrected.trim()
@@ -266,26 +273,9 @@ Tasks:
 
     if (must.length === 0) return fallback();
 
-    // Build query list:
-    //  1) AND of all must keywords (most precise)
-    //  2) For each should-synonym: replace the last must term with the synonym -> AND combined
-    //     (treats `should` as alternatives to broaden recall)
-    //  3) Each must keyword alone (recall safety net)
-    const queries: string[] = [];
-    if (must.length > 1) queries.push(must.join("*"));
-    if (must.length === 1) queries.push(must[0]);
-    for (const syn of should) {
-      if (must.length > 1) {
-        queries.push([...must.slice(0, -1), syn].join("*"));
-      } else {
-        queries.push(syn);
-      }
-    }
-    for (const k of must) if (!queries.includes(k)) queries.push(k);
-
-    const uniq = Array.from(new Set(queries.map(q => q.trim()).filter(Boolean))).slice(0, 6);
-    console.log(`AI refined queries: must=[${must.join(",")}] should=[${should.join(",")}] -> ${uniq.join(" | ")}`);
-    return { must, should, queries: uniq, corrected };
+    const uniq = buildPlanQueries(must, synonyms, should);
+    console.log(`AI refined queries: must=[${must.join(",")}] synonyms=${JSON.stringify(synonyms)} -> ${uniq.join(" | ")}`);
+    return { must, should: shouldAll, synonyms, queries: uniq, corrected };
   } catch (e) {
     console.error("AI query refine error:", e);
     return fallback();
