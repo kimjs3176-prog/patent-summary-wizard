@@ -874,7 +874,12 @@ serve(async (req) => {
     };
 
     let relevant = activePatents;
-    if (coreTerms.length > 0 || synTerms.length > 0) {
+    // 문장형 검색: 대화체 어절이 아니라 AI가 뽑은 핵심 개념을 몇 개 충족하는지로 순위를 매긴다.
+    const conceptGroups = isNLQuery ? buildConceptGroups(plan.must, plan.should, searchKeywords) : [];
+    if (conceptGroups.length > 0) {
+      relevant = rankNaturalLanguage(activePatents, conceptGroups);
+      console.log(`NL concept ranking [${conceptGroups.map(g => g.join("/")).join(" + ")}]: kept ${relevant.length} of ${activePatents.length}`);
+    } else if (coreTerms.length > 0 || synTerms.length > 0) {
       const scored = activePatents
         .map(p => ({ p, s: scoreOf(p) }))
         // 동의어가 초록에만 스치듯 등장하는 경우(1점)는 오탐이 많아 제외
