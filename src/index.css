@@ -1355,3 +1355,5 @@ time, .tabular-nums, [data-numeric] {
 .patent-chat-card:hover { border-color: hsl(var(--primary) / 0.35); }
 .patent-chat-score { background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); }
 .patent-chat-composer [data-slot="input-group"] { border-radius: 0.75rem; }
+/* The scroll library reserves a scrollbar gutter on both edges; keep it on the scrollbar side only. */
+.patent-chat-log > div { scrollbar-gutter: stable !important; }

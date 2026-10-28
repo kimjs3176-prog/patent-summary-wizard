@@ -167,7 +167,7 @@ export default function PatentChat({ onOpenPatent }: { onOpenPatent: (patentId: 
               const hasText = m.parts.some((p) => p.type === "text" && p.text);
               return (
                 <Message key={m.id} from="assistant" className="max-w-full">
-                  <MessageContent className="w-full">
+                  <MessageContent className="w-full overflow-visible">
                     {m.parts.map((p, i) => {
                       if (p.type === "dynamic-tool") {
                         const Icon = TOOL_ICONS[p.toolName] ?? FileSearch;

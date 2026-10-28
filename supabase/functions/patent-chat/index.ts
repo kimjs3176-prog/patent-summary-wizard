@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
 
         const dataBlock = Object.keys(facts).length
           ? `\n\n[자료]\n${JSON.stringify(facts)}`
-          : "\n\n[자료]\n(이번 질문에는 새로 조회한 자료가 없습니다. 이전 대화에 나온 내용만 근거로 답하고, 없으면 무엇을 찾아볼지 되물어 주세요.)";
+          : "\n\n[자료]\n(이번 질문에는 새로 조회한 자료가 없습니다. 이전 대화에 나온 내용만 근거로 답하고, 없으면 무엇을 찾아볼지 되물어 주세요. 이번 답변 아래에는 카드가 없으니 카드 안내는 하지 마세요.)";
 
         const aiStream = await streamChatCompletion({
           model: "google/gemini-3.8-flash",
