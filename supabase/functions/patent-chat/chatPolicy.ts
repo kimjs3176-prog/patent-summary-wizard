@@ -145,6 +145,14 @@ export interface PatentCard {
 
 export const digitsOf = (id: string) => id.replace(/\D/g, "");
 
+export const INSTITUTE_NAMES = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
+
+/** Service scope: only patents filed by the 6 agricultural institutes may be shown. */
+export function isInScope(h: Pick<PatentHit, "applicant" | "organizationName">): boolean {
+  const owner = h.applicant || h.organizationName || "";
+  return INSTITUTE_NAMES.some((n) => owner.includes(n));
+}
+
 /** Build cards from retrieved patents only, attaching stored scores when they exist. */
 export function buildCards(hits: PatentHit[], scores: ScoreRow[], opts: { newestFirst?: boolean } = {}): PatentCard[] {
   const byKey = new Map<string, ScoreRow>();
@@ -152,7 +160,7 @@ export function buildCards(hits: PatentHit[], scores: ScoreRow[], opts: { newest
   const seen = new Set<string>();
   const list = hits.filter((h) => {
     const key = digitsOf(h.patentId);
-    if (!key || !h.title || seen.has(key)) return false;
+    if (!key || !h.title || seen.has(key) || !isInScope(h)) return false;
     seen.add(key);
     return true;
   });

@@ -1344,3 +1344,14 @@ time, .tabular-nums, [data-numeric] {
     background-image: none;
   }
 }
+
+/* 홈 물어보기(대화형 특허 상담) */
+.patent-chat-suggestion {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+.patent-chat-suggestion:hover { border-color: hsl(var(--primary) / 0.45); color: hsl(var(--primary)); }
+.patent-chat-card { box-shadow: var(--shadow-card); transition: border-color 0.2s ease; }
+.patent-chat-card:hover { border-color: hsl(var(--primary) / 0.35); }
+.patent-chat-score { background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); }
+.patent-chat-composer [data-slot="input-group"] { border-radius: 0.75rem; }
