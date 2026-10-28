@@ -79,12 +79,35 @@ const AGRI_ORGANIZATIONS = [
 const AGRI_ORG_IDS = AGRI_ORGANIZATIONS.map(org => org.id);
 const AGRI_ORG_NAMES = AGRI_ORGANIZATIONS.map(org => org.name);
 
+// Korean personal name(s): 2-4 hangul chars starting with a common surname.
+function isPersonName(s: string): boolean {
+  const t = s.trim();
+  if (!t) return false;
+  // Restrict to common Korean surnames to avoid misclassifying substance/noun
+  // keywords like "전통주", "발효주", "청국장" as inventor names.
+  const SURNAMES = new Set([
+    "김","이","박","최","정","강","조","윤","장","임","한","오","서","신","권",
+    "황","안","송","전","홍","유","고","문","양","손","배","백","허","남","심",
+    "노","하","곽","성","차","주","우","구","민","진","지","엄","채","원","천",
+    "방","공","현","함","변","염","여","추","도","소","석","선","설","마","길",
+    "연","위","표","명","기","반","라","왕","금","옥","육","인","맹","제","모"
+  ]);
+  const isKoreanName = (p: string) =>
+    /^[가-힣]{2,4}$/.test(p) && SURNAMES.has(p[0]);
+  if (isKoreanName(t)) return true;
+  const parts = t.split(/[\s,]+/).filter(Boolean);
+  if (parts.length >= 2 && parts.length <= 5 && parts.every(isKoreanName)) return true;
+  return false;
+}
+
 /**
  * Detect if the input is a natural language problem/question rather than simple keywords.
  * Returns true for sentences like "딸기 저장기간 늘리고 싶음", "스마트팜 자동화 도입 검토"
  */
 function isNaturalLanguageQuery(text: string): boolean {
   const trimmed = text.trim();
+  // Lists of inventor names ("김철수 이영희 박민수") are handled by inventor search.
+  if (isPersonName(trimmed)) return false;
   // If it's very short (1-2 words, no verb endings), treat as keyword
   const words = trimmed.split(/\s+/);
   if (words.length <= 2 && !/[다음임요죠네게려고싶]+$/u.test(trimmed)) {
@@ -108,8 +131,8 @@ function isNaturalLanguageQuery(text: string): boolean {
     /가능/u, // possible
     /[?？]/u, // question mark
   ];
-  // If 3+ words or matches NL patterns, it's likely natural language
-  if (words.length >= 4) return true;
+  // 3+ words ("음식 기름 제거") describe a need, so rank by concept coverage
+  if (words.length >= 3) return true;
   return nlPatterns.some(p => p.test(trimmed));
 }
 
@@ -553,25 +576,6 @@ serve(async (req) => {
 
     // Stage 1b: inventor-name search — if the raw input looks like a Korean personal name
     // (2-4 hangul chars, or space-separated hangul names), also query the `inventors` field.
-    const isPersonName = (s: string): boolean => {
-      const t = s.trim();
-      if (!t) return false;
-      // Restrict to common Korean surnames to avoid misclassifying substance/noun
-      // keywords like "전통주", "발효주", "청국장" as inventor names.
-      const SURNAMES = new Set([
-        "김","이","박","최","정","강","조","윤","장","임","한","오","서","신","권",
-        "황","안","송","전","홍","유","고","문","양","손","배","백","허","남","심",
-        "노","하","곽","성","차","주","우","구","민","진","지","엄","채","원","천",
-        "방","공","현","함","변","염","여","추","도","소","석","선","설","마","길",
-        "연","위","표","명","기","반","라","왕","금","옥","육","인","맹","제","모"
-      ]);
-      const isKoreanName = (p: string) =>
-        /^[가-힣]{2,4}$/.test(p) && SURNAMES.has(p[0]);
-      if (isKoreanName(t)) return true;
-      const parts = t.split(/[\s,]+/).filter(Boolean);
-      if (parts.length >= 2 && parts.length <= 5 && parts.every(isKoreanName)) return true;
-      return false;
-    };
     if (isPersonName(rawInput)) {
       console.log(`Detected person name, running inventor search: "${rawInput}"`);
       const stageInv = await Promise.all(
@@ -868,7 +872,7 @@ serve(async (req) => {
     const conceptGroups = isNLQuery ? buildConceptGroups(plan.must, plan.should, searchKeywords, plan.synonyms) : [];
     if (conceptGroups.length > 0) {
       relevant = rankNaturalLanguage(activePatents, conceptGroups);
-      console.log(`NL concept ranking [${conceptGroups.map(g => g.join("/")).join(" + ")}]: kept ${relevant.length} of ${activePatents.length}`);
+      console.log(`NL concept ranking [${conceptGroups.map(g => [...g.terms, ...g.synonyms].join("/")).join(" + ")}]: kept ${relevant.length} of ${activePatents.length}`);
     } else if (coreTerms.length > 0 || synTerms.length > 0) {
       const scored = activePatents
         .map(p => ({ p, s: scoreOf(p) }))
