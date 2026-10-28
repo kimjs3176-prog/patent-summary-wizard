@@ -61,13 +61,35 @@ export function cardsOf(m: ChatMessage): ChatPatentCard[] {
   return cards;
 }
 
+const squash = (t: string) => t.replace(/[^0-9A-Za-z가-힣]/g, "").toLowerCase();
+
+/**
+ * Cards to show under an answer: retrieved patents the answer actually talks about, in the order it mentions them.
+ * When the answer names none of them (e.g. an empty or generic reply), every retrieved card is shown.
+ */
+export function visibleCards(m: ChatMessage): ChatPatentCard[] {
+  const cards = cardsOf(m);
+  const text = squash(messageText(m));
+  if (!text) return cards;
+  const mentioned = cards
+    .map((c) => {
+      const key = squash(c.title);
+      const probe = key.slice(0, Math.min(key.length, 12));
+      return { c, at: probe.length >= 4 ? text.indexOf(probe) : -1 };
+    })
+    .filter((x) => x.at >= 0)
+    .sort((a, b) => a.at - b.at)
+    .map((x) => x.c);
+  return mentioned.length ? mentioned : cards;
+}
+
 /** Plain-text history for the server; assistant turns carry the patents they showed so follow-ups can refer to them. */
 export function toRequestMessages(messages: ChatMessage[]) {
   return messages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => {
       let content = messageText(m);
-      const cards = m.role === "assistant" ? cardsOf(m) : [];
+      const cards = m.role === "assistant" ? visibleCards(m) : [];
       if (cards.length) {
         content += `\n[이 답변에서 보여준 특허: ${cards.map((c, i) => `${i + 1}) ${c.title} (TRL ${c.trl ?? "미분석"}, 사업화 종합 ${c.totalScore ?? "미분석"})`).join("; ")}]`;
       }

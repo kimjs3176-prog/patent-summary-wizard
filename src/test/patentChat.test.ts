@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildCards, fallbackRoute, normalizeRoute, pickTrendField, sanitizeQuery, MAX_PATENT_CARDS,
 } from "../../supabase/functions/patent-chat/chatPolicy";
-import { applyEvent, toRequestMessages, type ChatMessage } from "@/lib/patentChat";
+import { applyEvent, toRequestMessages, visibleCards, type ChatMessage } from "@/lib/patentChat";
 
 const RDA = "대한민국(농촌진흥청장)";
 
@@ -76,5 +76,27 @@ describe("대화 기록", () => {
     a = applyEvent(a, { type: "text-delta", delta: "추천합니다" });
     const msgs = toRequestMessages([{ id: "u", role: "user", parts: [{ type: "text", text: "딸기" }] }, a]);
     expect(msgs[1].content).toContain("1) 딸기 포장 (TRL 6, 사업화 종합 90)");
+  });
+});
+
+describe("답변 아래 카드", () => {
+  const withCards = (text: string): ChatMessage => {
+    let a: ChatMessage = { id: "a", role: "assistant", parts: [] };
+    a = applyEvent(a, { type: "tool-start", id: "t", toolName: "search", title: "특허 검색", input: {} });
+    a = applyEvent(a, { type: "tool-result", id: "t", output: { cards: [
+      { patentId: "1", title: "딸기 재배용 냉난방 시스템" },
+      { patentId: "2", title: "선도 유지를 위한 딸기 포장 용기" },
+      { patentId: "3", title: "딸기 전용 포장용기" },
+    ] } });
+    return applyEvent(a, { type: "text-delta", delta: text });
+  };
+
+  it("답변이 언급한 특허만, 언급한 순서대로 보여줌", () => {
+    const cards = visibleCards(withCards("**딸기 전용 포장용기**와 **선도 유지를 위한 딸기 포장 용기**를 추천합니다."));
+    expect(cards.map((c) => c.patentId)).toEqual(["3", "2"]);
+  });
+
+  it("어느 특허도 언급하지 않으면 찾은 카드를 모두 보여줌", () => {
+    expect(visibleCards(withCards("관련 특허를 찾았습니다."))).toHaveLength(3);
   });
 });

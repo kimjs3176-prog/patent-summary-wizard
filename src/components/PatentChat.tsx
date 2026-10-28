@@ -11,7 +11,7 @@ import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/componen
 import { Button } from "@/components/ui/button";
 import chatMark from "@/assets/patent-chat-mark.png";
 import {
-  applyEvent, cardsOf, clearConversation, loadConversation, saveConversation, streamChat, SUGGESTED_QUESTIONS,
+  applyEvent, clearConversation, loadConversation, saveConversation, streamChat, SUGGESTED_QUESTIONS, visibleCards,
   type ChatMessage, type ChatPatentCard,
 } from "@/lib/patentChat";
 
@@ -190,7 +190,7 @@ export default function PatentChat({ onOpenPatent }: { onOpenPatent: (patentId: 
                       return null;
                     })}
                     {isLast && busy && !hasText && <Shimmer className="text-sm">특허와 통계를 찾아보는 중…</Shimmer>}
-                    {(!isLast || !busy) && <PatentCards cards={cardsOf(m)} onOpen={onOpenPatent} />}
+                    {(!isLast || !busy) && <PatentCards cards={visibleCards(m)} onOpen={onOpenPatent} />}
                   </MessageContent>
                 </Message>
               );
