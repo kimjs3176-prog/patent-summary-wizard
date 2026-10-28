@@ -11,10 +11,6 @@ export interface ChatPatentCard {
   applicationDate: string;
   snippet: string;
   trl: number | null;
-  totalScore: number | null;
-  technologyScore: number | null;
-  marketScore: number | null;
-  businessScore: number | null;
 }
 
 export const STORAGE_KEY = "ais-patent-chat-v1";
@@ -91,7 +87,7 @@ export function toRequestMessages(messages: ChatMessage[]) {
       let content = messageText(m);
       const cards = m.role === "assistant" ? visibleCards(m) : [];
       if (cards.length) {
-        content += `\n[이 답변에서 보여준 특허: ${cards.map((c, i) => `${i + 1}) ${c.title} (TRL ${c.trl ?? "미분석"}, 사업화 종합 ${c.totalScore ?? "미분석"})`).join("; ")}]`;
+        content += `\n[이 답변에서 보여준 특허: ${cards.map((c, i) => `${i + 1}) ${c.title} (TRL ${c.trl ?? "미분석"})`).join("; ")}]`;
       }
       return { role: m.role as "user" | "assistant", content: content.slice(0, 3000) };
     })

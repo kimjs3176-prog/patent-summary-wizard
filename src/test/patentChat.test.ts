@@ -56,10 +56,16 @@ describe("특허 카드", () => {
     expect(buildCards(hits, []).map((c) => c.patentId)).toEqual(["10-2762769", "10-2023-0186270"]);
   });
 
-  it("저장된 점수만 붙이고, 없으면 미분석(null)으로 둠", () => {
-    const cards = buildCards(hits, [{ patent_number: "102762769", total_score: 84, technology_score: 85, market_score: 80, business_score: 82, trl: 6 }]);
-    expect(cards[0]).toMatchObject({ trl: 6, totalScore: 84 });
-    expect(cards[1]).toMatchObject({ trl: null, totalScore: null });
+  it("저장된 TRL만 붙이고, 없으면 미분석(null)으로 둠", () => {
+    const cards = buildCards(hits, [{ patent_number: "102762769", trl: 6 }]);
+    expect(cards[0].trl).toBe(6);
+    expect(cards[1].trl).toBeNull();
+  });
+
+  it("사업화 점수는 카드에 싣지 않음(요약서에서 확인)", () => {
+    const rows = [{ patent_number: "102762769", trl: 6, total_score: 84 }];
+    const card = buildCards(hits, rows)[0] as unknown as Record<string, unknown>;
+    expect(Object.keys(card).some((k) => /score/i.test(k))).toBe(false);
   });
 
   it("카드는 최대 5건", () => {
@@ -72,10 +78,11 @@ describe("대화 기록", () => {
   it("이전 답변의 특허 목록을 다음 질문에 함께 보냄", () => {
     let a: ChatMessage = { id: "a", role: "assistant", parts: [] };
     a = applyEvent(a, { type: "tool-start", id: "t1", toolName: "search", title: "특허 검색", input: {} });
-    a = applyEvent(a, { type: "tool-result", id: "t1", output: { cards: [{ patentId: "10-1", title: "딸기 포장", trl: 6, totalScore: 90 }] } });
+    a = applyEvent(a, { type: "tool-result", id: "t1", output: { cards: [{ patentId: "10-1", title: "딸기 포장", trl: 6 }] } });
     a = applyEvent(a, { type: "text-delta", delta: "추천합니다" });
     const msgs = toRequestMessages([{ id: "u", role: "user", parts: [{ type: "text", text: "딸기" }] }, a]);
-    expect(msgs[1].content).toContain("1) 딸기 포장 (TRL 6, 사업화 종합 90)");
+    expect(msgs[1].content).toContain("1) 딸기 포장 (TRL 6)");
+    expect(msgs[1].content).not.toContain("사업화");
   });
 });
 
