@@ -42,13 +42,10 @@ function PatentCards({ cards, onOpen }: { cards: ChatPatentCard[]; onOpen: (id: 
             {c.applicationDate && <span>출원 {c.applicationDate}</span>}
           </div>
           <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-            {c.trl !== null && c.totalScore !== null ? (
-              <div className="flex flex-wrap gap-1.5 text-xs font-semibold">
-                <span className="patent-chat-score rounded-md px-2 py-0.5">TRL {c.trl}</span>
-                <span className="patent-chat-score rounded-md px-2 py-0.5">사업화 {c.totalScore}점</span>
-              </div>
+            {c.trl !== null ? (
+              <span className="patent-chat-score rounded-md px-2 py-0.5 text-xs font-semibold">TRL {c.trl}</span>
             ) : (
-              <span className="text-xs text-muted-foreground">아직 분석 전</span>
+              <span className="text-xs text-muted-foreground">사업화 평가는 요약서에서 확인</span>
             )}
             <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-semibold" onClick={() => onOpen(c.patentId)}>
               AI 요약 보기

@@ -122,12 +122,9 @@ export interface PatentHit {
   snippet?: string;
 }
 
+/** Only TRL is shown in chat; commercialization scores are viewed inside the patent summary. */
 export interface ScoreRow {
   patent_number: string;
-  total_score: number;
-  technology_score: number;
-  market_score: number;
-  business_score: number;
   trl: number;
 }
 
@@ -139,10 +136,6 @@ export interface PatentCard {
   snippet: string;
   /** null = not analyzed yet; never estimated. */
   trl: number | null;
-  totalScore: number | null;
-  technologyScore: number | null;
-  marketScore: number | null;
-  businessScore: number | null;
 }
 
 export const digitsOf = (id: string) => id.replace(/\D/g, "");
@@ -155,7 +148,7 @@ export function isInScope(h: Pick<PatentHit, "applicant" | "organizationName">):
   return INSTITUTE_NAMES.some((n) => owner.includes(n));
 }
 
-/** Build cards from retrieved patents only, attaching stored scores when they exist. */
+/** Build cards from retrieved patents only, attaching the stored TRL when it exists. */
 export function buildCards(hits: PatentHit[], scores: ScoreRow[], opts: { newestFirst?: boolean } = {}): PatentCard[] {
   const byKey = new Map<string, ScoreRow>();
   for (const s of scores) byKey.set(s.patent_number, s);
@@ -176,10 +169,6 @@ export function buildCards(hits: PatentHit[], scores: ScoreRow[], opts: { newest
       applicationDate: h.applicationDate ?? "",
       snippet: (h.snippet ?? "").slice(0, 160),
       trl: s ? s.trl : null,
-      totalScore: s ? s.total_score : null,
-      technologyScore: s ? s.technology_score : null,
-      marketScore: s ? s.market_score : null,
-      businessScore: s ? s.business_score : null,
     };
   });
 }

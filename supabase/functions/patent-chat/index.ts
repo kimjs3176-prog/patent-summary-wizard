@@ -1,6 +1,7 @@
 // Conversational patent assistant for the home '물어보기' tab.
 // Answers only from retrieved, applicant-scoped patents (search-patents), the
-// filing-trend snapshot, stored analysis scores and the fixed tech-transfer guide.
+// filing-trend snapshot, stored TRL values and the fixed tech-transfer guide.
+// Commercialization scores are intentionally not shown here — users see them in the patent summary.
 import { z } from "npm:zod@3.23.8";
 import {
   generateChatCompletion, streamChatCompletion, GatewayError, PaymentRequiredError, RateLimitError,
@@ -119,7 +120,7 @@ async function scoresFor(hits: PatentHit[]): Promise<ScoreRow[]> {
   const keys = [...new Set(hits.slice(0, 40).flatMap((h) => [h.patentId, digitsOf(h.patentId)]).filter(Boolean))];
   if (!keys.length) return [];
   const { data } = await supabaseAdmin().from("patent_score_cache")
-    .select("patent_number, total_score, technology_score, market_score, business_score, trl")
+    .select("patent_number, trl")
     .in("patent_number", keys);
   return (data as ScoreRow[] | null) ?? [];
 }
@@ -131,10 +132,6 @@ const cardFacts = (cards: PatentCard[]) => cards.map((c, i) => ({
   출원일: c.applicationDate,
   요약: c.snippet,
   TRL: c.trl ?? "미분석",
-  사업화_종합점수: c.totalScore ?? "미분석",
-  기술성: c.technologyScore ?? "미분석",
-  시장성: c.marketScore ?? "미분석",
-  사업성: c.businessScore ?? "미분석",
 }));
 
 const ANSWER_RULES = `당신은 '농업 국가연구기관 6곳(농촌진흥청 등)이 보유한 특허'를 안내하는 Agri IP Summary의 특허 상담원입니다.
@@ -142,7 +139,8 @@ const ANSWER_RULES = `당신은 '농업 국가연구기관 6곳(농촌진흥청 
 - 한국어 존댓말로, 핵심을 먼저 말하고 3~8문장 또는 짧은 목록으로 답합니다. 굵게(**)와 목록은 써도 되지만 표와 제목(#)은 쓰지 않습니다.
 - [자료]에 있는 특허와 숫자만 사용합니다. 자료에 없는 특허명, 특허번호, 통계, 시장 규모, 금액은 절대 만들지 않습니다.
 - 특허는 제목으로 언급하고, 특허번호는 나열하지 않습니다. [자료]에 특허가 있을 때만 답변 아래 카드에서 AI 요약을 볼 수 있다고 한 번 안내합니다.
-- TRL과 사업화 점수는 값이 있을 때만 "TRL 6, 사업화 종합 82점"처럼 그대로 씁니다. "미분석"이면 추정하지 말고 "아직 분석 전이며 카드를 눌러 AI 요약을 열면 확인할 수 있다"고 안내합니다.
+- TRL은 값이 있을 때만 "TRL 6"처럼 그대로 씁니다. "미분석"이면 추정하지 말고 "카드를 눌러 AI 요약을 열면 확인할 수 있다"고 안내합니다.
+- 사업화 점수·등급(종합·기술성·시장성·사업성)은 이 상담에서 말하지 않습니다. 물어보면 "카드의 AI 요약 보기를 누르면 요약서에서 사업화 평가를 확인할 수 있다"고 안내합니다.
 - 특허 검색 결과가 비어 있으면 찾지 못했다고 솔직히 말하고, 더 구체적인 작물·제품·공정 이름으로 다시 물어보도록 제안합니다.
 - 동향은 기준연도와 통계 숫자를 그대로 인용하고, 원인이나 전망을 단정하지 않습니다.
 - 이 서비스 범위(6개 농업 국가연구기관 특허, 출원 동향, 기술이전 절차) 밖의 질문은 범위를 정중히 안내합니다. 법률 자문은 하지 않습니다.
