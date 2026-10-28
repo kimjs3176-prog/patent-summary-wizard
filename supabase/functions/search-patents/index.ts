@@ -4,6 +4,7 @@ import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { resolveKiprisKey } from "../_shared/kipris.ts";
 import { classifyTechnology, FIELD_SEARCH_TERMS, isTechnologyFieldId } from "../_shared/technologyFields.ts";
+import { buildConceptGroups, buildPlanQueries, rankNaturalLanguage, sanitizeNlTerms, sanitizeSynonymMap } from "./nlRelevance.ts";
 
 
 // Fetch with timeout + retry on transient errors
@@ -195,8 +196,10 @@ Rules:
 async function recommendQueriesWithAI(
   rawInput: string,
   baseKeywords: string[],
-): Promise<{ must: string[]; should: string[]; queries: string[]; corrected?: string }> {
+  sentence = false,
+): Promise<{ must: string[]; should: string[]; synonyms: Record<string, string[]>; queries: string[]; corrected?: string }> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const maxMust = sentence ? 3 : 2;
   // Conservative fallback: just use base keywords, no synonyms.
   const fallback = () => {
     const must = baseKeywords.slice(0, 2).filter(Boolean);
@@ -204,7 +207,7 @@ async function recommendQueriesWithAI(
     const queries: string[] = [];
     if (must.length > 1) queries.push(must.join("*"));
     for (const k of [...must, ...should]) queries.push(k);
-    return { must, should, queries: Array.from(new Set(queries)) };
+    return { must, should, synonyms: {}, queries: Array.from(new Set(queries)) };
   };
   if (!LOVABLE_API_KEY) return fallback();
 
@@ -225,14 +228,16 @@ Given a user's raw Korean search input and pre-extracted candidate keywords, out
 
 Tasks:
 1. Typo correction: fix obvious Korean typos / spacing (e.g. "병해중" -> "병해충", "스마트팜자동화" -> "스마트팜 자동화").
-2. Normalize: drop particles, verb endings, generic words ("기간","방법","시스템" alone is usually too generic).
+2. Normalize: drop particles, verb endings, generic words ("기간","방법","시스템","기술","개발","제조방법","향상" are too generic and must never be output).
 3. Classify keywords:
-   - "must": 1-2 core concepts that MUST appear (typically the crop / target object, the core technique).
-   - "should": 1-3 synonyms or alternative expressions that BROADEN recall (e.g. "스마트팜" <-> "지능형 농장" <-> "스마트 농업"; "병해충" <-> "해충"; "저장" <-> "보관" <-> "저장성").
+   - "must": 1-${maxMust} core concepts that MUST appear, in priority order: first the crop / animal / target object, then the problem or purpose, then the core technique.
+     Keep every distinct concept the user stated (e.g. "돼지 질병을 빨리 진단" -> ["돼지","질병","진단"]${sentence ? "" : " but at most 2"}).
+     Use the short noun stem that patent titles actually use (e.g. "저장기간 늘리기" -> "저장", "빨리 진단" -> "진단", "쌀로 만든" -> "쌀").
+   - "synonyms": for each must item except the first, 0-3 synonyms or concrete forms patent titles use instead (e.g. "저장": ["보관","선도유지"]; "간식": ["과자","스낵"]; "질병": ["감염","바이러스","증후군"]; "진단": ["검출","판별"]).
+   - "should": leave empty unless a synonym does not belong to one specific must item.
 4. Each keyword: 1-3 Korean characters/words, no particles, no punctuation, no English unless it's a standard term.
-5. Output ONLY JSON: {"corrected":"<corrected raw input>","must":["..."],"should":["..."]}
-   - must: 1-2 items
-   - should: 0-3 items (synonyms / alternative spellings of must items, NOT new unrelated topics)`,
+5. Output ONLY JSON: {"corrected":"<corrected raw input>","must":["..."],"synonyms":{"<must item>":["..."]},"should":["..."]}
+   - Synonyms must not be new unrelated topics or generic words.`,
           },
           {
             role: "user",
@@ -241,7 +246,7 @@ Tasks:
           },
         ],
         temperature: 0.2,
-        max_tokens: 250,
+        max_tokens: 300,
       }),
     }, 7000);
 
@@ -254,12 +259,13 @@ Tasks:
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return fallback();
     const parsed = JSON.parse(jsonMatch[0]);
-    const must: string[] = Array.isArray(parsed.must)
-      ? parsed.must.filter((x: unknown) => typeof x === "string" && x.trim().length > 0).slice(0, 2)
-      : [];
-    const should: string[] = Array.isArray(parsed.should)
-      ? parsed.should.filter((x: unknown) => typeof x === "string" && x.trim().length > 0).slice(0, 3)
-      : [];
+    // Generic words ("제조방법", "기술") match almost every patent, so they are dropped.
+    const must: string[] = Array.isArray(parsed.must) ? sanitizeNlTerms(parsed.must).slice(0, maxMust) : [];
+    const synonyms = sanitizeSynonymMap(parsed.synonyms, must);
+    const should: string[] = Array.isArray(parsed.should) ? sanitizeNlTerms(parsed.should).slice(0, 3) : [];
+    // Backward-compatible "should": synonyms of the last must item plus any free synonyms.
+    const lastSyns = must.length > 0 ? synonyms[must[must.length - 1]] ?? [] : [];
+    const shouldAll = sanitizeNlTerms([...lastSyns, ...should]).slice(0, 4);
     const corrected: string | undefined =
       typeof parsed.corrected === "string" && parsed.corrected.trim().length > 0
         ? parsed.corrected.trim()
@@ -267,26 +273,9 @@ Tasks:
 
     if (must.length === 0) return fallback();
 
-    // Build query list:
-    //  1) AND of all must keywords (most precise)
-    //  2) For each should-synonym: replace the last must term with the synonym -> AND combined
-    //     (treats `should` as alternatives to broaden recall)
-    //  3) Each must keyword alone (recall safety net)
-    const queries: string[] = [];
-    if (must.length > 1) queries.push(must.join("*"));
-    if (must.length === 1) queries.push(must[0]);
-    for (const syn of should) {
-      if (must.length > 1) {
-        queries.push([...must.slice(0, -1), syn].join("*"));
-      } else {
-        queries.push(syn);
-      }
-    }
-    for (const k of must) if (!queries.includes(k)) queries.push(k);
-
-    const uniq = Array.from(new Set(queries.map(q => q.trim()).filter(Boolean))).slice(0, 6);
-    console.log(`AI refined queries: must=[${must.join(",")}] should=[${should.join(",")}] -> ${uniq.join(" | ")}`);
-    return { must, should, queries: uniq, corrected };
+    const uniq = buildPlanQueries(must, synonyms, should);
+    console.log(`AI refined queries: must=[${must.join(",")}] synonyms=${JSON.stringify(synonyms)} -> ${uniq.join(" | ")}`);
+    return { must, should: shouldAll, synonyms, queries: uniq, corrected };
   } catch (e) {
     console.error("AI query refine error:", e);
     return fallback();
@@ -367,8 +356,8 @@ serve(async (req) => {
     // background while stage-1 KIPRIS search fires immediately on the raw input.
     // Previously these two AI calls ran sequentially *before* any network search,
     // adding up to ~15s of dead time to every query.
-    const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[]; should: string[] }> = (async () => {
-      if (fieldId) return { queries: [rawInput], must: [], should: [] };
+    const planPromise: Promise<{ queries: string[]; corrected?: string; must: string[]; should: string[]; synonyms: Record<string, string[]> }> = (async () => {
+      if (fieldId) return { queries: [rawInput], must: [], should: [], synonyms: {} };
       if (isNaturalLanguageQuery(rawInput)) {
         isNLQuery = true;
         const extraction = await extractKeywordsWithAI(rawInput);
@@ -379,7 +368,7 @@ serve(async (req) => {
         searchKeywords = words.length > 0 ? words : [rawInput];
       }
 
-      const refined = await recommendQueriesWithAI(rawInput, searchKeywords);
+      const refined = await recommendQueriesWithAI(rawInput, searchKeywords, isNLQuery);
       let recommendedQueries = refined.queries;
       if (!recommendedQueries || recommendedQueries.length === 0) {
         const fb: string[] = [];
@@ -387,8 +376,8 @@ serve(async (req) => {
         for (const k of searchKeywords) fb.push(k);
         recommendedQueries = Array.from(new Set(fb));
       }
-      return { queries: recommendedQueries, corrected: refined.corrected, must: refined.must || [], should: refined.should || [] };
-    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined, must: [] as string[], should: [] as string[] }));
+      return { queries: recommendedQueries, corrected: refined.corrected, must: refined.must || [], should: refined.should || [], synonyms: refined.synonyms || {} };
+    })().catch(() => ({ queries: [rawInput] as string[], corrected: undefined, must: [] as string[], should: [] as string[], synonyms: {} as Record<string, string[]> }));
 
     // 특허 파싱 헬퍼
     const parsePatentsFromXml = (searchText: string, orgName: string): KeywordSearchResult[] => {
@@ -622,13 +611,15 @@ serve(async (req) => {
       }
       return out.slice(0, 3);
     };
-    const variantQueries = Array.from(
+    // 문장형 입력은 원문 띄어쓰기 변형("딸기*저장기간*늘리고*싶음")이 의미가 없으므로
+    // AI가 뽑은 핵심어 조합만 사용한다.
+    const variantQueries = isNLQuery ? [] : Array.from(
       new Set([...spacingVariants(rawTrim), ...(correctedInput ? spacingVariants(correctedInput) : [])]),
     );
 
     // 복합어 앞부분(예: "스마트팜" -> "스마트")은 같은 기술군 특허를 폭넓게 회수하는
     // 재현율 보조 검색어로 사용한다. 정합도 점수에서는 보조어로만 반영된다.
-    const recallTerms = Array.from(
+    const recallTerms = isNLQuery ? [] : Array.from(
       new Set(
         [rawTrim, correctedInput || ""]
           .filter(t => t && !/\s/.test(t) && /^[가-힣]{4,10}$/.test(t))
@@ -639,7 +630,7 @@ serve(async (req) => {
     const uniqueQueries = Array.from(
       new Set([
         rawTrim,
-        ...(correctedInput ? [correctedInput] : []),
+        ...(correctedInput && !isNLQuery ? [correctedInput] : []),
         ...variantQueries,
         ...recommendedQueries,
         ...recallTerms,
@@ -663,17 +654,19 @@ serve(async (req) => {
     }
 
     // Stage 3: abstract search — title alone misses many filings where the keyword
-    // only appears in the abstract/claims. Run for the top 2 queries whenever we
-    // haven't already saturated results.
-    if (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 0) {
-      const absQueries = queriesToTry.slice(0, 2);
+    // only appears in the abstract/claims. Keyword mode runs it for the top 2 queries
+    // when results are thin; sentence mode always runs it for the precise AI keyword
+    // combinations (the raw sentence never appears in an abstract).
+    const nlAbsQueries = isNLQuery ? recommendedQueries.slice(0, 2) : [];
+    if (nlAbsQueries.length > 0 || (allPatents.length < EARLY_EXIT_HITS && queriesToTry.length > 0)) {
+      const absQueries = nlAbsQueries.length > 0 ? nlAbsQueries : queriesToTry.slice(0, 2);
       const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
       for (const q of absQueries) {
         for (const org of AGRI_ORGANIZATIONS) {
           tasks.push(() => kiprisSearch(q, org, "abstract"));
         }
       }
-      for (let i = 0; i < tasks.length && allPatents.length < EARLY_EXIT_HITS; i += 6) {
+      for (let i = 0; i < tasks.length && (nlAbsQueries.length > 0 || allPatents.length < EARLY_EXIT_HITS); i += 6) {
         const batch = await Promise.all(tasks.slice(i, i + 6).map(fn => fn()));
         batch.forEach(collect);
       }
@@ -682,15 +675,18 @@ serve(async (req) => {
     // Stage 4: per-token recall net — multi-word inputs (e.g. "기능성 식품 건강")
     // are AND-matched by KIPRIS and return very few hits. Search each token
     // separately (title + abstract) so the relevance ranker has enough candidates.
-    const inputTokens = Array.from(
-      new Set(
-        [rawTrim, correctedInput || ""]
-          .join(" ")
-          .split(/\s+/)
-          .map(t => t.trim())
-          .filter(t => t.length >= 2),
-      ),
-    ).slice(0, 4);
+    // Sentence mode uses the AI concepts instead of raw words ("늘리고", "싶음").
+    const inputTokens = isNLQuery
+      ? sanitizeNlTerms([...plan.must, ...plan.should, ...searchKeywords]).slice(0, 5)
+      : Array.from(
+        new Set(
+          [rawTrim, correctedInput || ""]
+            .join(" ")
+            .split(/\s+/)
+            .map(t => t.trim())
+            .filter(t => t.length >= 2),
+        ),
+      ).slice(0, 4);
     if (allPatents.length < EARLY_EXIT_HITS && inputTokens.length > 1) {
       const tasks: Array<() => Promise<KeywordSearchResult[]>> = [];
       for (const t of inputTokens) {
@@ -868,7 +864,12 @@ serve(async (req) => {
     };
 
     let relevant = activePatents;
-    if (coreTerms.length > 0 || synTerms.length > 0) {
+    // 문장형 검색: 대화체 어절이 아니라 AI가 뽑은 핵심 개념을 몇 개 충족하는지로 순위를 매긴다.
+    const conceptGroups = isNLQuery ? buildConceptGroups(plan.must, plan.should, searchKeywords, plan.synonyms) : [];
+    if (conceptGroups.length > 0) {
+      relevant = rankNaturalLanguage(activePatents, conceptGroups);
+      console.log(`NL concept ranking [${conceptGroups.map(g => g.join("/")).join(" + ")}]: kept ${relevant.length} of ${activePatents.length}`);
+    } else if (coreTerms.length > 0 || synTerms.length > 0) {
       const scored = activePatents
         .map(p => ({ p, s: scoreOf(p) }))
         // 동의어가 초록에만 스치듯 등장하는 경우(1점)는 오탐이 많아 제외
