@@ -4,6 +4,7 @@ import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { resolveKiprisKey } from "../_shared/kipris.ts";
 import { classifyTechnology, FIELD_SEARCH_TERMS, isTechnologyFieldId } from "../_shared/technologyFields.ts";
+import { buildConceptGroups, rankNaturalLanguage, sanitizeNlTerms } from "./nlRelevance.ts";
 
 
 // Fetch with timeout + retry on transient errors
@@ -225,14 +226,15 @@ Given a user's raw Korean search input and pre-extracted candidate keywords, out
 
 Tasks:
 1. Typo correction: fix obvious Korean typos / spacing (e.g. "병해중" -> "병해충", "스마트팜자동화" -> "스마트팜 자동화").
-2. Normalize: drop particles, verb endings, generic words ("기간","방법","시스템" alone is usually too generic).
+2. Normalize: drop particles, verb endings, generic words ("기간","방법","시스템","기술","개발","제조방법","향상" are too generic and must never be output).
 3. Classify keywords:
-   - "must": 1-2 core concepts that MUST appear (typically the crop / target object, the core technique).
-   - "should": 1-3 synonyms or alternative expressions that BROADEN recall (e.g. "스마트팜" <-> "지능형 농장" <-> "스마트 농업"; "병해충" <-> "해충"; "저장" <-> "보관" <-> "저장성").
+   - "must": 1-2 core concepts that MUST appear, in priority order: first the crop / animal / target object, then the core technique or purpose.
+     Use the short noun stem that patent titles actually use (e.g. "저장기간 늘리기" -> "저장", "빨리 진단" -> "진단", "쌀로 만든" -> "쌀").
+   - "should": 1-3 synonyms or concrete alternative expressions of the LAST must item that BROADEN recall (e.g. "저장" <-> "보관" <-> "선도유지"; "간식" <-> "과자" <-> "스낵"; "진단" <-> "검출").
 4. Each keyword: 1-3 Korean characters/words, no particles, no punctuation, no English unless it's a standard term.
 5. Output ONLY JSON: {"corrected":"<corrected raw input>","must":["..."],"should":["..."]}
    - must: 1-2 items
-   - should: 0-3 items (synonyms / alternative spellings of must items, NOT new unrelated topics)`,
+   - should: 0-3 items (synonyms of must items, NOT new unrelated topics, NOT generic words)`,
           },
           {
             role: "user",
@@ -254,12 +256,9 @@ Tasks:
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return fallback();
     const parsed = JSON.parse(jsonMatch[0]);
-    const must: string[] = Array.isArray(parsed.must)
-      ? parsed.must.filter((x: unknown) => typeof x === "string" && x.trim().length > 0).slice(0, 2)
-      : [];
-    const should: string[] = Array.isArray(parsed.should)
-      ? parsed.should.filter((x: unknown) => typeof x === "string" && x.trim().length > 0).slice(0, 3)
-      : [];
+    // Generic words ("제조방법", "기술") match almost every patent, so they are dropped.
+    const must: string[] = Array.isArray(parsed.must) ? sanitizeNlTerms(parsed.must).slice(0, 2) : [];
+    const should: string[] = Array.isArray(parsed.should) ? sanitizeNlTerms(parsed.should).slice(0, 3) : [];
     const corrected: string | undefined =
       typeof parsed.corrected === "string" && parsed.corrected.trim().length > 0
         ? parsed.corrected.trim()
