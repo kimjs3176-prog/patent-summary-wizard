@@ -34,7 +34,9 @@ export function sanitizeQuery(raw: unknown): string {
   if (typeof raw !== "string") return "";
   const cleaned = raw.replace(QUERY_RE, " ").replace(/\s+/g, " ").trim().slice(0, 40).trim();
   if (cleaned.length < 2) return "";
-  const meaningful = cleaned.split(" ").filter((w) => w.length >= 1 && !GENERIC_WORDS.has(w));
+  // A word counts as generic when it is (or starts with) a generic stem, e.g. "추천해줘", "기술을".
+  const isGeneric = (w: string) => GENERIC_WORDS.has(w) || [...GENERIC_WORDS].some((g) => g.length >= 2 && w.startsWith(g));
+  const meaningful = cleaned.split(" ").filter((w) => w.length >= 1 && !isGeneric(w));
   return meaningful.length ? cleaned : "";
 }
 
