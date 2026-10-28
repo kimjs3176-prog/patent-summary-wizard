@@ -115,6 +115,7 @@ export interface PatentHit {
   patentId: string;
   title: string;
   applicant?: string;
+  organizationName?: string;
   applicationDate?: string;
   snippet?: string;
 }
@@ -161,7 +162,7 @@ export function buildCards(hits: PatentHit[], scores: ScoreRow[], opts: { newest
     return {
       patentId: h.patentId,
       title: h.title,
-      applicant: h.applicant ?? "",
+      applicant: h.applicant || h.organizationName || "",
       applicationDate: h.applicationDate ?? "",
       snippet: (h.snippet ?? "").slice(0, 160),
       trl: s ? s.trl : null,
