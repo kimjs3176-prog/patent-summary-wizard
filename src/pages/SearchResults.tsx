@@ -4,7 +4,7 @@ import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User }
 import { Button } from "@/components/ui/button";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { PatentInput } from "@/components/PatentInput";
+import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { safeFetch } from "@/lib/safeFetch";
 import { FieldTrendPanel } from "@/components/FieldTrendPanel";
 
@@ -152,16 +152,22 @@ export default function SearchResults() {
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
       <main className="container mx-auto px-4 md:px-6 py-10 md:py-14 relative z-10">
         {/* Persistent sticky search bar */}
-        <div className="sticky top-2 z-30 mb-6">
-          <div className="max-w-3xl mx-auto rounded-2xl bg-background/85 backdrop-blur-md p-1.5">
-            <PatentInput
-              onSubmit={(patentNumber) => navigate(`/?patent=${encodeURIComponent(patentNumber)}`)}
-              isLoading={isLoading}
-              onKeywordSearch={(_r, kw) => navigate(`/search?keyword=${encodeURIComponent(kw)}`)}
-              skipKeywordFetch
-            />
-          </div>
-        </div>
+        {/* Same classification as home: questions open the assistant here, keywords/sentences search. */}
+        <SmartSearchBox
+          onSubmit={(patentNumber) => navigate(`/?patent=${encodeURIComponent(patentNumber)}`)}
+          isLoading={isLoading}
+          onKeywordSearch={(_r, kw) => navigate(`/search?keyword=${encodeURIComponent(kw)}`)}
+          skipKeywordFetch
+          frame={(content, chatOpen) => (
+            // The conversation is tall, so it scrolls with the page instead of sticking over the results.
+            <div className={chatOpen ? "relative z-30 mb-6" : "sticky top-2 z-30 mb-6"}>
+              <div className={`max-w-3xl mx-auto rounded-2xl p-1.5 ${chatOpen ? "border bg-card shadow-[var(--shadow-card)]" : "bg-background/85 backdrop-blur-md"}`}>
+                {content}
+              </div>
+            </div>
+          )}
+          resumeClassName="text-primary -mt-4 mb-6 ml-[max(0px,calc((100%-48rem)/2))]"
+        />
         {/* Search header */}
         <div className="max-w-3xl mx-auto mb-10">
           <div className="flex items-center gap-4 mb-1">
