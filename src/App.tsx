@@ -50,15 +50,30 @@ const ScrollToTop = () => {
   return null;
 };
 
+const readSplashShown = () => {
+  try { return sessionStorage.getItem("splash-shown") === "1"; } catch { return true; }
+};
+
 const App = () => {
-  const alreadyShown = sessionStorage.getItem("splash-shown") === "1";
   const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
-  const [showSplash, setShowSplash] = useState(!alreadyShown && !isAdminRoute);
+  const [showSplash, setShowSplash] = useState(() => !readSplashShown() && !isAdminRoute);
+
+  // Mark the intro as seen as soon as it starts, so a reload mid-intro doesn't replay it.
+  useEffect(() => {
+    if (!showSplash) return;
+    try { sessionStorage.setItem("splash-shown", "1"); } catch { /* ignore */ }
+  }, [showSplash]);
 
   const handleSplashComplete = useCallback(() => {
-    sessionStorage.setItem("splash-shown", "1");
     setShowSplash(false);
   }, []);
+
+  // No intro this visit: make sure the static boot background from index.html is gone.
+  useEffect(() => {
+    if (showSplash) return;
+    document.getElementById("boot-splash")?.remove();
+    document.documentElement.removeAttribute("data-splash");
+  }, [showSplash]);
 
   useEffect(() => {
     if (isAdminRoute) return;

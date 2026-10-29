@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 
 /**
  * Animated neural-network / AI brain visual for the hero section.
- * Pure canvas – no extra dependencies.
+ * Pure canvas – no extra dependencies. Pauses while off-screen or in a
+ * background tab, and caps pixel density so phones stay smooth.
  */
 export const AiHeroAnimation = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -13,23 +14,28 @@ export const AiHeroAnimation = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let animId: number;
+    let animId = 0;
+    let running = false;
+    let inView = true;
     let w = 0;
     let h = 0;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
+      if (rect.width === w && rect.height === h) return;
       w = rect.width;
       h = rect.height;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
-    window.addEventListener("resize", resize);
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null;
+    ro?.observe(canvas);
+    if (!ro) window.addEventListener("resize", resize);
 
-    const NODE_COUNT = 31;
+    const NODE_COUNT = w < 640 ? 20 : 31;
     interface Node {
       x: number; y: number; vx: number; vy: number;
       radius: number; phase: number; speed: number;
@@ -64,6 +70,7 @@ export const AiHeroAnimation = () => {
         n.y = Math.max(0, Math.min(h, n.y));
       }
 
+      ctx.lineWidth = 1;
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x;
@@ -76,7 +83,6 @@ export const AiHeroAnimation = () => {
             const g = Math.round(PRIMARY_G + (ACCENT_G - PRIMARY_G) * pulse);
             const b = Math.round(PRIMARY_B + (ACCENT_B - PRIMARY_B) * pulse);
             ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
-            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
@@ -114,11 +120,33 @@ export const AiHeroAnimation = () => {
       animId = requestAnimationFrame(draw);
     };
 
-    draw();
+    const start = () => {
+      if (running || !inView || document.hidden) return;
+      running = true;
+      animId = requestAnimationFrame(draw);
+    };
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(animId);
+    };
+
+    const io = typeof IntersectionObserver !== "undefined"
+      ? new IntersectionObserver(([entry]) => {
+          inView = entry.isIntersecting;
+          if (inView) start(); else stop();
+        })
+      : null;
+    io?.observe(canvas);
+    const onVisibility = () => (document.hidden ? stop() : start());
+    document.addEventListener("visibilitychange", onVisibility);
+    start();
 
     return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", resize);
+      stop();
+      io?.disconnect();
+      ro?.disconnect();
+      if (!ro) window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 

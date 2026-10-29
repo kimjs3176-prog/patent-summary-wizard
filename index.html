@@ -10,10 +10,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Agri IP Summary" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#6366f1" />
+    <meta name="theme-color" content="#25a87a" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" />
+    <style>
+      /* Painted before any script loads: page tone + intro background, so the first frame is never blank white. */
+      html { background: hsl(60 5% 98%); }
+      #boot-splash { position: fixed; inset: 0; z-index: 9998; background: linear-gradient(135deg, hsl(158 64% 40%) 0%, hsl(172 56% 42%) 50%, hsl(184 48% 44%) 100%); }
+    </style>
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="canonical" href="https://atipsum.lovable.app/" />
@@ -41,6 +46,18 @@
   <meta name="twitter:description" content="Agri IP Summary(AIS)는 농식품 분야 특허를 AI가 자동으로 분석·요약해주는 서비스입니다">
 </head>
   <body>
+    <div id="boot-splash" aria-hidden="true"></div>
+    <script>
+      (function () {
+        var remove = function () { var el = document.getElementById("boot-splash"); if (el) el.remove(); document.documentElement.removeAttribute("data-splash"); };
+        try {
+          var skip = sessionStorage.getItem("splash-shown") === "1" || location.pathname.indexOf("/admin") === 0;
+          if (skip) remove(); else document.documentElement.setAttribute("data-splash", "on");
+        } catch (e) { remove(); }
+        // Safety net: never leave the intro background up if the app fails to start.
+        setTimeout(function () { if (document.getElementById("boot-splash")) remove(); }, 10000);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
