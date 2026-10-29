@@ -9,37 +9,51 @@ try {
   if ([1, 1.15, 1.3].includes(saved)) applyFontScale(saved);
 } catch { /* ignore */ }
 
+// 이전 캐시 초기화 때 붙은 _swreset 파라미터는 주소창에서 조용히 제거한다.
+try {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has("_swreset")) {
+    url.searchParams.delete("_swreset");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  }
+} catch { /* ignore */ }
+
 createRoot(document.getElementById("root")!).render(<App />);
 
 // ============================================================
-// One-time kill switch — forces every existing client to reset
-// their (possibly stale) service worker + caches exactly once.
+// One-time kill switch — resets clients that still carry the old
+// app-shell service worker or its caches. Visitors without any
+// leftovers (all new visitors) are never reloaded, so the first
+// visit and its intro animation are not interrupted.
 // Bump KILL_SWITCH_VERSION whenever stale SWs are suspected.
 // ============================================================
-// Bumped 2026-06-19: removed app-shell service worker entirely.
-// Existing visitors will unregister the old SW and clear its caches once.
 const KILL_SWITCH_VERSION = "2026-06-19-no-sw";
 (() => {
   try {
     const key = "sw-kill-switch";
     if (localStorage.getItem(key) === KILL_SWITCH_VERSION) return;
     const run = async () => {
+      let hadLeftovers = false;
       try {
         if ("serviceWorker" in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations();
+          if (regs.length > 0) hadLeftovers = true;
           await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
         }
         if ("caches" in window) {
           const keys = await caches.keys();
+          if (keys.length > 0) hadLeftovers = true;
           await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)));
         }
-      } finally {
+      } catch { /* ignore */ } finally {
         localStorage.setItem(key, KILL_SWITCH_VERSION);
-        // Bypass HTTP cache on reload — preserve existing query params (e.g. ?patent=...)
-        const sep = window.location.search ? "&" : "?";
-        window.location.replace(
-          window.location.pathname + window.location.search + sep + "_swreset=" + Date.now() + window.location.hash
-        );
+        if (hadLeftovers) {
+          // Bypass HTTP cache on reload — preserve existing query params (e.g. ?patent=...)
+          const sep = window.location.search ? "&" : "?";
+          window.location.replace(
+            window.location.pathname + window.location.search + sep + "_swreset=" + Date.now() + window.location.hash
+          );
+        }
       }
     };
     run();
