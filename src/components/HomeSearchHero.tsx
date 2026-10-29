@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass, MessagesSquare, Search, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
@@ -6,6 +6,8 @@ import { PatentInput } from "@/components/PatentInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { KeywordSearchResult } from "@/components/PatentSummary/types";
+import type { PendingQuestion } from "@/components/PatentChat";
+import { loadConversation } from "@/lib/patentChat";
 
 interface HomeSearchHeroProps {
   onSubmit: (patentNumber: string) => void;
@@ -15,9 +17,9 @@ interface HomeSearchHeroProps {
   placeholder: string;
 }
 
-type Mode = "search" | "finder" | "chat";
+type Mode = "search" | "finder";
 
-// Loaded only when the 물어보기 tab is opened so the home page stays light.
+// Loaded only when a question is asked so the home page stays light.
 const PatentChat = lazy(() => import("@/components/PatentChat"));
 
 function FinderQuickForm() {
@@ -49,11 +51,23 @@ function FinderQuickForm() {
 
 export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, description, placeholder }: HomeSearchHeroProps) {
   const [mode, setMode] = useState<Mode>("search");
+  // The search box classifies each entry itself; questions open the conversation in place.
+  const [chatOpen, setChatOpen] = useState(false);
+  const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | null>(null);
+  const [savedTurns, setSavedTurns] = useState(() => loadConversation().length);
   const tabs: { key: Mode; label: string; icon: typeof Search }[] = [
-    { key: "search", label: "특허검색", icon: Search },
+    { key: "search", label: "통합검색", icon: Search },
     { key: "finder", label: "나만의 특허찾기", icon: Compass },
-    { key: "chat", label: "물어보기", icon: MessagesSquare },
   ];
+  const askQuestion = useCallback((text: string) => {
+    setPendingQuestion({ id: `${Date.now()}-${Math.random()}`, text });
+    setChatOpen(true);
+  }, []);
+  const closeChat = useCallback(() => {
+    setChatOpen(false);
+    setPendingQuestion(null);
+    setSavedTurns(loadConversation().length);
+  }, []);
   return (
     <section className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-6" aria-labelledby="home-title">
       <div aria-hidden="true" className="absolute inset-0 overflow-hidden opacity-25 pointer-events-none motion-reduce:hidden">
@@ -76,7 +90,7 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setMode(t.key)}
+                onClick={() => { setMode(t.key); if (t.key !== "search") closeChat(); }}
                 className={`home-mode-tab inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))] ${active ? "home-mode-tab-active" : ""}`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -87,16 +101,25 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
         </div>
 
         <div className="home-search-surface relative mt-3 max-w-2xl rounded-xl bg-card p-1.5 text-card-foreground">
-          {mode === "search" && (
-            <PatentInput onSubmit={onSubmit} isLoading={isLoading} onKeywordSearch={onKeywordSearch} placeholder={placeholder} />
+          {mode === "search" && !chatOpen && (
+            <PatentInput onSubmit={onSubmit} isLoading={isLoading} onKeywordSearch={onKeywordSearch} placeholder={placeholder} onQuestion={askQuestion} />
           )}
-          {mode === "finder" && <FinderQuickForm />}
-          {mode === "chat" && (
+          {mode === "search" && chatOpen && (
             <Suspense fallback={<p className="px-3 py-6 text-sm text-muted-foreground">상담 창을 여는 중…</p>}>
-              <PatentChat onOpenPatent={onSubmit} />
+              <PatentChat onOpenPatent={onSubmit} pendingQuestion={pendingQuestion} onClose={closeChat} />
             </Suspense>
           )}
+          {mode === "finder" && <FinderQuickForm />}
         </div>
+        {mode === "search" && !chatOpen && savedTurns > 0 && (
+          <button
+            type="button"
+            onClick={() => { setPendingQuestion(null); setChatOpen(true); }}
+            className="home-hero-accent mt-2 inline-flex items-center gap-1.5 rounded px-1 text-xs font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
+          >
+            <MessagesSquare className="h-3.5 w-3.5" aria-hidden="true" /> 이전 대화 이어서 보기
+          </button>
+        )}
         <div className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
           <span>농업분야 국가연구기관 보유 특허</span>
           <span>KIPRIS 실시간 연동</span>
