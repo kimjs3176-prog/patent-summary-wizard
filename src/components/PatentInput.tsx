@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, FileText, ArrowRight, Sparkles, History, TrendingUp, X } from "lucide-react";
+import { Search, FileText, ArrowRight, Sparkles, History, TrendingUp, X, MessagesSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { safeFetch } from "@/lib/safeFetch";
 import { parseIpNumber, parseIpNumberList, isBatchNumberInput, IP_KIND_LABEL } from "@/lib/ipNumber";
+import { classifyQuery, INTENT_HINT } from "@/lib/queryIntent";
+import { SUGGESTED_QUESTIONS } from "@/lib/patentChat";
 
 interface PatentInputProps {
   onSubmit: (patentNumber: string) => void;
@@ -15,6 +17,8 @@ interface PatentInputProps {
   helperTexts?: string[];
   skipKeywordFetch?: boolean;
   suggestions?: string[];
+  /** When set, questions ("요새 좋은 기술 있을까?") go to the conversational assistant instead of search. */
+  onQuestion?: (question: string) => void;
 }
 
 const RECENT_KEYWORDS_KEY = "recent-keyword-searches";
@@ -44,6 +48,12 @@ const PLACEHOLDER_NL_SAMPLES = [
   "예) '기후변화 대응 벼 품종' 한 줄로 관련 특허를 찾아드려요",
 ];
 
+const PLACEHOLDER_QUESTION_SAMPLES = [
+  "예) '요새 활용하면 좋은 기술 있을까?' 처럼 물어보면 대화로 답해 드려요",
+  "예) '기술이전은 어떻게 받나요?' 같은 질문도 바로 답해 드려요",
+  "예) '최근 출원이 늘어난 분야는 어디야?' 처럼 편하게 물어보세요",
+];
+
 // Topic pool — combined into rotating "예) A, B, C" hints
 const PLACEHOLDER_TOPIC_POOL = [
   "기능성 발효 음료", "항산화 추출물", "프로바이오틱스", "유산균 발효",
@@ -68,7 +78,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function generatePlaceholderExamples(count = 8): string[] {
+function generatePlaceholderExamples(count = 8, withQuestion = false): string[] {
   const intro = PLACEHOLDER_INTROS[Math.floor(Math.random() * PLACEHOLDER_INTROS.length)];
   const numberHint = PLACEHOLDER_NUMBER_SAMPLES[Math.floor(Math.random() * PLACEHOLDER_NUMBER_SAMPLES.length)];
   const nlHint = PLACEHOLDER_NL_SAMPLES[Math.floor(Math.random() * PLACEHOLDER_NL_SAMPLES.length)];
@@ -80,11 +90,16 @@ function generatePlaceholderExamples(count = 8): string[] {
     topicHints.push(`예) ${topics[i]}, ${topics[i + 1]}, ${topics[i + 2]}`);
   }
 
+  if (withQuestion) {
+    const questionHint = PLACEHOLDER_QUESTION_SAMPLES[Math.floor(Math.random() * PLACEHOLDER_QUESTION_SAMPLES.length)];
+    const rest = shuffle(topicHints).slice(0, Math.max(0, count - 4));
+    return [intro, questionHint, numberHint, nlHint, ...rest];
+  }
   const rest = shuffle(topicHints).slice(0, Math.max(0, count - 3));
   return [intro, numberHint, nlHint, ...rest];
 }
 
-export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, skipKeywordFetch, suggestions }: PatentInputProps) {
+export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, skipKeywordFetch, suggestions, onQuestion }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const navigate = useNavigate();
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
@@ -93,11 +108,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
   const [recentPatents, setRecentPatents] = useState<{ patentNumber: string; title?: string }[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
   // Regenerate randomized placeholder examples on mount and every 60s
-  const [placeholderExamples, setPlaceholderExamples] = useState<string[]>(() => generatePlaceholderExamples(8));
+  const [placeholderExamples, setPlaceholderExamples] = useState<string[]>(() => generatePlaceholderExamples(8, !!onQuestion));
+  const withQuestion = !!onQuestion;
   useEffect(() => {
-    const id = window.setInterval(() => setPlaceholderExamples(generatePlaceholderExamples(8)), 60_000);
+    const id = window.setInterval(() => setPlaceholderExamples(generatePlaceholderExamples(8, withQuestion)), 60_000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [withQuestion]);
 
   // Load recent searches from localStorage
   const loadRecents = () => {
@@ -179,7 +195,10 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
     ).slice(0, 3);
   }, [inputValue, recentPatents]);
 
-  const showDropdown = isFocused && (filteredRecents.length > 0 || filteredSuggestions.length > 0 || filteredRecentPatents.length > 0);
+  const exampleQuestions = onQuestion && !inputValue.trim() ? SUGGESTED_QUESTIONS.slice(0, 3) : [];
+  const showDropdown = isFocused && (filteredRecents.length > 0 || filteredSuggestions.length > 0 || filteredRecentPatents.length > 0 || exampleQuestions.length > 0);
+  const intent = onQuestion ? classifyQuery(inputValue) : "empty";
+  const isQuestion = intent === "question";
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -197,6 +216,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
       const list = parseIpNumberList(value);
       const numbers = [...list.supported, ...list.unsupported].map((ip) => ip.normalized).join(",");
       navigate(`/batch?numbers=${encodeURIComponent(numbers)}`);
+      return;
+    }
+    if (onQuestion && classifyQuery(value) === "question") {
+      setIsFocused(false);
+      onQuestion(value);
+      setInputValue("");
       return;
     }
     const ip = parseIpNumber(value);
@@ -324,7 +349,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
                 </>
               ) : (
                 <>
-                  {inputValue.trim() && !isPatentNumber(inputValue.trim()) ? (
+                  {isQuestion ? (
+                    <>
+                      <MessagesSquare className="w-4 h-4" />
+                      <span className="hidden sm:inline">물어보기</span>
+                    </>
+                  ) : inputValue.trim() && !isPatentNumber(inputValue.trim()) ? (
                     <>
                       <Sparkles className="w-4 h-4" />
                       <span className="hidden sm:inline">AI 검색</span>
@@ -393,6 +423,23 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
                     ))}
                   </div>
                 )}
+                {exampleQuestions.length > 0 && (
+                  <div className="px-1.5 pb-1 border-t border-border/30 pt-1.5 first:border-t-0 first:pt-0">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground">
+                      <MessagesSquare className="w-3 h-3" /> 이렇게 물어볼 수도 있어요
+                    </div>
+                    {exampleQuestions.map((q) => (
+                      <button
+                        key={`q-${q}`}
+                        type="button"
+                        onClick={() => submitKeyword(q)}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-foreground hover:bg-muted/60 transition-colors text-left"
+                      >
+                        <span className="truncate">{q}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {filteredSuggestions.length > 0 && (
                   <div className="px-1.5 pb-1 border-t border-border/30 pt-1.5">
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
@@ -416,7 +463,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             </div>
           )}
         </div>
-        
+        {onQuestion && intent !== "empty" && !showDropdown && (
+          <p aria-live="polite" className="search-intent-hint flex items-center gap-1.5 px-2 text-xs text-muted-foreground">
+            <span className="search-intent-chip rounded-md px-1.5 py-0.5 font-semibold">{INTENT_HINT[intent].label}</span>
+            <span className="truncate">{INTENT_HINT[intent].detail}</span>
+          </p>
+        )}
       </form>
     </div>
   );
