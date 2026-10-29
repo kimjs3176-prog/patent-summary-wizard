@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatStatus } from "ai";
-import { BarChart3, FileSearch, Handshake, RotateCcw } from "lucide-react";
+import { ArrowLeft, BarChart3, FileSearch, Handshake, RotateCcw } from "lucide-react";
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
@@ -57,7 +57,17 @@ function PatentCards({ cards, onOpen }: { cards: ChatPatentCard[]; onOpen: (id: 
   );
 }
 
-export default function PatentChat({ onOpenPatent }: { onOpenPatent: (patentId: string) => void }) {
+export interface PendingQuestion { id: string; text: string }
+
+interface PatentChatProps {
+  onOpenPatent: (patentId: string) => void;
+  /** A question typed into the main search box; sent once per id. */
+  pendingQuestion?: PendingQuestion | null;
+  /** Shows a back button that returns to the search box. */
+  onClose?: () => void;
+}
+
+export default function PatentChat({ onOpenPatent, pendingQuestion, onClose }: PatentChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadConversation());
   const [status, setStatus] = useState<ChatStatus>("ready");
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +116,22 @@ export default function PatentChat({ onOpenPatent }: { onOpenPatent: (patentId: 
     focusComposer();
   }, [busy, messages, focusComposer]);
 
+  // Questions handed over from the search box. Sent on the next tick so React's dev double-mount
+  // (which aborts in-flight requests on its simulated unmount) cannot cancel them.
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const sentIds = useRef(new Set<string>());
+  const pendingId = pendingQuestion?.id;
+  const pendingText = pendingQuestion?.text;
+  useEffect(() => {
+    if (!pendingId || !pendingText || sentIds.current.has(pendingId)) return;
+    const timer = window.setTimeout(() => {
+      sentIds.current.add(pendingId);
+      void sendRef.current(pendingText);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [pendingId, pendingText]);
+
   const handleSubmit = (message: PromptInputMessage) => { void send(message.text ?? ""); };
   const stop = () => abortRef.current?.abort();
   const reset = () => {
@@ -121,6 +147,11 @@ export default function PatentChat({ onOpenPatent }: { onOpenPatent: (patentId: 
     <div className="patent-chat flex flex-col">
       <div className="flex items-center justify-between gap-3 px-2.5 pt-2 pb-1.5">
         <div className="flex min-w-0 items-center gap-2.5">
+          {onClose && (
+            <Button type="button" size="icon" variant="ghost" onClick={onClose} aria-label="검색창으로 돌아가기" className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          )}
           <img src={chatMark} alt="" width={32} height={32} className="h-8 w-8 shrink-0" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">농업특허 상담</p>
@@ -134,7 +165,7 @@ export default function PatentChat({ onOpenPatent }: { onOpenPatent: (patentId: 
         )}
       </div>
 
-      {messages.length === 0 ? (
+      {messages.length === 0 && !pendingQuestion ? (
         <div className="flex flex-wrap gap-1.5 px-2.5 pb-2.5 pt-1">
           {SUGGESTED_QUESTIONS.map((q) => (
             <button
