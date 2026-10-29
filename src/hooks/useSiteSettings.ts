@@ -44,6 +44,20 @@ const DEFAULT_SETTINGS: SiteSettings = {
 
 // Shared cache to prevent multiple fetches
 let cachedSettings: SiteSettings | null = null;
+
+// Last fetched settings, kept in the browser so returning visitors see the
+// page at once (no blank loading screen) while fresh values load in the background.
+const SNAPSHOT_KEY = "site-settings-snapshot-v1";
+const snapshot: SiteSettings | null = (() => {
+  try {
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? { ...DEFAULT_SETTINGS, ...parsed } : null;
+  } catch {
+    return null;
+  }
+})();
 let fetchPromise: Promise<SiteSettings> | null = null;
 
 async function fetchSettings(): Promise<SiteSettings> {
@@ -61,6 +75,7 @@ async function fetchSettings(): Promise<SiteSettings> {
           if (row.key && row.value) map[row.key] = row.value;
         }
         cachedSettings = map;
+        try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(map)); } catch { /* ignore */ }
         return map;
       }
     } catch {
@@ -73,9 +88,12 @@ async function fetchSettings(): Promise<SiteSettings> {
   return fetchPromise;
 }
 
+// Start loading as soon as the app code runs, in parallel with the first render.
+if (typeof window !== "undefined") void fetchSettings();
+
 export function useSiteSettings() {
-  const [settings, setSettings] = useState<SiteSettings>(cachedSettings || DEFAULT_SETTINGS);
-  const [isLoading, setIsLoading] = useState(!cachedSettings);
+  const [settings, setSettings] = useState<SiteSettings>(cachedSettings || snapshot || DEFAULT_SETTINGS);
+  const [isLoading, setIsLoading] = useState(!cachedSettings && !snapshot);
 
   useEffect(() => {
     if (cachedSettings) {
