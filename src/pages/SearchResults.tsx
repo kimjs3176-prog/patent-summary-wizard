@@ -166,7 +166,8 @@ export default function SearchResults() {
               </div>
             </div>
           )}
-          resumeClassName="text-primary -mt-4 mb-6 ml-[max(0px,calc((100%-48rem)/2))]"
+          resumeClassName="text-primary mt-0"
+          resumeRowClassName="max-w-2xl mx-auto -mt-4 mb-6 px-2"
         />
         {/* Search header */}
         <div className="max-w-3xl mx-auto mb-10">

@@ -17,6 +17,8 @@ interface SmartSearchBoxProps {
   /** Wraps the input or the conversation (e.g. a card surface). Receives whether the conversation is open. */
   frame?: (content: ReactNode, chatOpen: boolean) => ReactNode;
   resumeClassName?: string;
+  /** Positions the "이전 대화 이어서 보기" row (e.g. align it under a centred box). */
+  resumeRowClassName?: string;
 }
 
 /**
@@ -24,7 +26,7 @@ interface SmartSearchBoxProps {
  * questions (classified in queryIntent) open the patent assistant in place.
  */
 export function SmartSearchBox({
-  onSubmit, onKeywordSearch, isLoading, placeholder, skipKeywordFetch, frame, resumeClassName,
+  onSubmit, onKeywordSearch, isLoading, placeholder, skipKeywordFetch, frame, resumeClassName, resumeRowClassName,
 }: SmartSearchBoxProps) {
   const [chatOpen, setChatOpen] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | null>(null);
@@ -59,6 +61,7 @@ export function SmartSearchBox({
     <>
       {frame ? frame(content, chatOpen) : content}
       {!chatOpen && savedTurns > 0 && (
+        <div className={resumeRowClassName}>
         <button
           type="button"
           onClick={() => { setPendingQuestion(null); setChatOpen(true); }}
@@ -66,6 +69,7 @@ export function SmartSearchBox({
         >
           <MessagesSquare className="h-3.5 w-3.5" aria-hidden="true" /> 이전 대화 이어서 보기
         </button>
+        </div>
       )}
     </>
   );
