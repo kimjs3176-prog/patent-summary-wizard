@@ -68,6 +68,13 @@ const App = () => {
     setShowSplash(false);
   }, []);
 
+  // No intro this visit: make sure the static boot background from index.html is gone.
+  useEffect(() => {
+    if (showSplash) return;
+    document.getElementById("boot-splash")?.remove();
+    document.documentElement.removeAttribute("data-splash");
+  }, [showSplash]);
+
   useEffect(() => {
     if (isAdminRoute) return;
     if (sessionStorage.getItem("visit-tracked") === "1") return;
