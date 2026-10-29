@@ -47,8 +47,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     const at = (ms: number, fn: () => void) => timers.push(window.setTimeout(fn, ms));
     const start = performance.now();
 
-    const exit = (why?: string) => {
-      console.log('[tl] splash exit', why, Math.round(performance.now() - start));
+    const exit = () => {
       if (cancelled) return;
       cancelled = true;
       setPhase("exit");
@@ -64,9 +63,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       const fontsReady: Promise<unknown> = document.fonts?.ready ?? Promise.resolve();
       fontsReady.then(() => {
         const wait = Math.max(0, MIN_VISIBLE - (performance.now() - start));
-        at(wait, () => exit('fonts+min'));
-      }, () => at(MIN_VISIBLE, () => exit('fontsfail')));
-      at(MAX_VISIBLE, () => exit('max'));
+        at(wait, exit);
+      }, () => at(MIN_VISIBLE, exit));
+      at(MAX_VISIBLE, exit);
     }
     return () => { cancelled = true; timers.forEach(clearTimeout); };
   }, [reduced]);
