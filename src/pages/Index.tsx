@@ -2,16 +2,6 @@ import { Heart, RotateCcw, BarChart3, Layers, FileSpreadsheet, Compass } from "l
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
-// Result-only screens load on demand so the first home visit downloads less code.
-const TossPatentSummary = lazy(() =>
-  import("@/components/PatentSummary/TossPatentSummary").then((m) => ({ default: m.TossPatentSummary })),
-);
-const SatisfactionPanel = lazy(() =>
-  import("@/components/SatisfactionPanel").then((m) => ({ default: m.SatisfactionPanel })),
-);
-const SummaryQuickNav = lazy(() =>
-  import("@/components/SummaryQuickNav").then((m) => ({ default: m.SummaryQuickNav })),
-);
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
 import { SearchHistory } from "@/components/SearchHistory";
@@ -34,6 +24,17 @@ import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronDown } from "lucide-react";
+
+// Result-only screens load on demand so the first home visit downloads less code.
+const TossPatentSummary = lazy(() =>
+  import("@/components/PatentSummary/TossPatentSummary").then((m) => ({ default: m.TossPatentSummary })),
+);
+const SatisfactionPanel = lazy(() =>
+  import("@/components/SatisfactionPanel").then((m) => ({ default: m.SatisfactionPanel })),
+);
+const SummaryQuickNav = lazy(() =>
+  import("@/components/SummaryQuickNav").then((m) => ({ default: m.SummaryQuickNav })),
+);
 
 const Index = () => {
   const navigate = useNavigate();
