@@ -2,9 +2,16 @@ import { Heart, RotateCcw, BarChart3, Layers, FileSpreadsheet, Compass } from "l
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
-import { TossPatentSummary } from "@/components/PatentSummary/TossPatentSummary";
-import { SatisfactionPanel } from "@/components/SatisfactionPanel";
-import { SummaryQuickNav } from "@/components/SummaryQuickNav";
+// Result-only screens load on demand so the first home visit downloads less code.
+const TossPatentSummary = lazy(() =>
+  import("@/components/PatentSummary/TossPatentSummary").then((m) => ({ default: m.TossPatentSummary })),
+);
+const SatisfactionPanel = lazy(() =>
+  import("@/components/SatisfactionPanel").then((m) => ({ default: m.SatisfactionPanel })),
+);
+const SummaryQuickNav = lazy(() =>
+  import("@/components/SummaryQuickNav").then((m) => ({ default: m.SummaryQuickNav })),
+);
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
 import { SearchHistory } from "@/components/SearchHistory";
@@ -23,7 +30,7 @@ import { NoticeSection } from "@/components/NoticeSection";
 import { PotentialTechBanner } from "@/components/PotentialTechBanner";
 import { HomeSearchHero } from "@/components/HomeSearchHero";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronDown } from "lucide-react";
@@ -270,6 +277,7 @@ const Index = () => {
                 />
               </div>
             </div>
+            <Suspense fallback={<div className="mb-8 min-h-[60vh] max-w-[864px] mx-auto rounded-3xl bg-muted/40 animate-pulse" aria-hidden="true" />}>
             <section className="mb-8 flex justify-center items-start gap-4 xl:gap-5">
               <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <SummaryQuickNav
@@ -309,6 +317,7 @@ const Index = () => {
                 <SatisfactionPanel patentNumber={currentPatent}  />
               </div>
             </section>
+            </Suspense>
           </div>
         )}
       </main>
