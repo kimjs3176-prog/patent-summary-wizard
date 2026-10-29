@@ -535,6 +535,17 @@ time, .tabular-nums, [data-numeric] {
 }
 
 /* 2026 Keyframes — organic spring easing */
+@keyframes splash-glow-pulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@keyframes splash-progress {
+  0% { width: 0%; }
+  60% { width: 70%; }
+  100% { width: 100%; }
+}
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(28px); }
   to { opacity: 1; transform: translateY(0); }
