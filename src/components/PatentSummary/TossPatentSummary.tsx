@@ -20,6 +20,7 @@ import { HeroSection } from "./toss/HeroSection";
 import { BasicInfoSection } from "./toss/BasicInfoSection";
 import { ScoreSection } from "./toss/ScoreSection";
 import { FiguresSection } from "./toss/FiguresSection";
+import { VideoSection } from "./toss/VideoSection";
 import { AiSummarySections } from "./toss/AiSummarySections";
 import { AnalysisSection } from "./toss/AnalysisSection";
 import { RelatedSection } from "./toss/RelatedSection";
@@ -241,6 +242,9 @@ function TossPatentSummaryInner({
 
           {/* 도면 */}
           <FiguresSection drawings={drawings} figureItems={figureItems} setLightboxIndex={setLightboxIndex} />
+
+          {/* 기술소개영상 (R2에 있을 때만 표시) */}
+          <VideoSection patentNumber={patentNumber} />
 
           {/* AI 요약 본문 */}
           <AiSummarySections isStreaming={isStreaming} sections={sections} annotate={annotate} />
