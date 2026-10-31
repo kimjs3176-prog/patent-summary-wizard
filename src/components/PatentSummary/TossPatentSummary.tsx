@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { Share2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
-import { useTrlConfig, type CommercializationDetails } from "./TechnologyCommercializationScore";
-import { TechValuation } from "./TechValuation";
+import { useTrlConfig, type CommercializationDetails } from "./commercialization";
 import { printWebSummary } from "./PdfGenerator";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -282,13 +281,6 @@ function TossPatentSummaryInner({
 
           {/* 사업화 예상 규제 — 요약서 하단으로 이동 */}
           <RegulationSection patentData={patentData} isStreaming={isStreaming} patentNumber={patentNumber} />
-
-          {/* 기술가치 간이평가 (임시 숨김) */}
-          {false && patentData && !isStreaming && (
-            <section id="sec-valuation" data-summary-section data-summary-label="가치평가" className="mb-10 scroll-mt-24">
-              <TechValuation patentData={patentData} score={score} details={details} />
-            </section>
-          )}
 
           {/* 액션 버튼 */}
           {!isStreaming && content && (

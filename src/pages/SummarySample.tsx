@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Sparkles, Bookmark, Share2, Download, Loader2, Lightbulb, TrendingUp, Leaf, Rocket, FileText, Mail, QrCode, X, Copy, Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
-import type { CommercializationDetails } from "@/components/PatentSummary/TechnologyCommercializationScore";
+import type { CommercializationDetails } from "@/components/PatentSummary/commercialization";
 
 const SOFT = "#F2F4F6";
 const ACCENT = "hsl(var(--primary))"; // 프로젝트 emerald

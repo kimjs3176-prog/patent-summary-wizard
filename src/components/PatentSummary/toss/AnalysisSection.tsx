@@ -1,5 +1,5 @@
 
-import type { CommercializationDetails } from "../TechnologyCommercializationScore";
+import type { CommercializationDetails } from "../commercialization";
 
 import { ACCENT_HEX } from "./helpers";
 import { SectionTitle } from "./SectionTitle";
