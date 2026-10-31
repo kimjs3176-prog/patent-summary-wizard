@@ -108,7 +108,7 @@ serve(async (req) => {
       }
     }
 
-    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats", "visitor-stats", "satisfaction-comments", "list-notices", "create-notice", "update-notice", "delete-notice"];
+    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats", "visitor-stats", "satisfaction-comments", "list-notices", "create-notice", "update-notice", "delete-notice", "list-market-refs", "update-market-ref"];
     if (typeof action !== "string" || !validActions.includes(action)) {
       return new Response(
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
@@ -615,6 +615,87 @@ serve(async (req) => {
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ========== 시장 표준값(market_reference) 검토 ==========
+    if (action === "list-market-refs") {
+      const MARKET_REF_STATUSES = ["official", "approved", "ai_pending"];
+      const page = typeof data?.page === "number" && data.page >= 0 ? Math.floor(data.page) : 0;
+      const pageSize = 30;
+      const status = typeof data?.status === "string" && MARKET_REF_STATUSES.includes(data.status) ? data.status : null;
+      const query = typeof data?.query === "string" ? data.query.replace(/[%_,().*\\]/g, "").trim().slice(0, 40) : "";
+      let q = supabase
+        .from("market_reference")
+        .select("market_key, label, base_year, base_value_eok, cagr, source, source_url, status, verified_at, created_at", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      if (status) q = q.eq("status", status);
+      if (query) q = q.or(`label.ilike.%${query}%,market_key.ilike.%${query.replace(/\s+/g, "")}%`);
+      const { data: refs, count, error } = await q;
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      for (const st of MARKET_REF_STATUSES) {
+        const { count: c } = await supabase.from("market_reference").select("market_key", { count: "exact", head: true }).eq("status", st);
+        counts[st] = c || 0;
+      }
+      return json({ success: true, items: refs || [], total: count || 0, counts, page, pageSize });
+    }
+
+    if (action === "update-market-ref") {
+      const key = typeof data?.market_key === "string" ? data.market_key.trim() : "";
+      if (!key || key.length > 100) return json({ success: false, error: "시장 키가 필요합니다." }, 400);
+      const { data: current, error: readError } = await supabase.from("market_reference").select("status, source").eq("market_key", key).maybeSingle();
+      if (readError) throw readError;
+      if (!current) return json({ success: false, error: "해당 시장 표준값이 없습니다." }, 404);
+      // 공식 통계값은 KOSIS에서 30일마다 다시 받아오므로 화면에서 고치지 않는다.
+      if (current.status === "official") return json({ success: false, error: "공식 통계(KOSIS) 값은 자동 갱신되어 수정할 수 없습니다." }, 400);
+
+      const status = data?.status === "approved" || data?.status === "ai_pending" ? data.status : null;
+      if (!status) return json({ success: false, error: "상태는 approved 또는 ai_pending만 지정할 수 있습니다." }, 400);
+      const patch: Record<string, unknown> = { status };
+      if (data.source !== undefined) {
+        const source = typeof data.source === "string" ? data.source.replace(/\s+/g, " ").trim().slice(0, 200) : "";
+        patch.source = source || null;
+      }
+      if (data.source_url !== undefined) {
+        const url = typeof data.source_url === "string" ? data.source_url.trim() : "";
+        if (url) {
+          let ok = false;
+          try { ok = new URL(url).protocol === "https:"; } catch { ok = false; }
+          if (!ok || url.length > 500) return json({ success: false, error: "출처 URL은 https 주소만 입력할 수 있습니다." }, 400);
+        }
+        patch.source_url = url || null;
+      }
+      if (data.label !== undefined) {
+        const label = typeof data.label === "string" ? data.label.replace(/\s+/g, " ").trim().slice(0, 60) : "";
+        if (!label) return json({ success: false, error: "시장명이 비어 있습니다." }, 400);
+        patch.label = label;
+      }
+      const thisYear = Number(new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", year: "numeric" }).format(new Date()));
+      if (data.base_year !== undefined) {
+        const y = Number(data.base_year);
+        if (!Number.isInteger(y) || y < 2000 || y > thisYear) return json({ success: false, error: `기준연도는 2000~${thisYear} 사이여야 합니다.` }, 400);
+        patch.base_year = y;
+      }
+      if (data.base_value_eok !== undefined) {
+        const v = Number(data.base_value_eok);
+        if (!Number.isFinite(v) || v <= 0 || v > 10_000_000) return json({ success: false, error: "기준값이 올바르지 않습니다." }, 400);
+        patch.base_value_eok = v;
+      }
+      if (data.cagr !== undefined) {
+        const c = Number(data.cagr);
+        if (!Number.isFinite(c) || c < -20 || c > 50) return json({ success: false, error: "CAGR은 -20~50% 사이여야 합니다." }, 400);
+        patch.cagr = c;
+      }
+      if (status === "approved") {
+        const source = patch.source !== undefined ? patch.source : current.source;
+        // 출처가 없으면 승인하지 않는다(요약서에 출처를 지어내지 않기 위해).
+        if (!source || source === "USD") return json({ success: false, error: "승인하려면 확인한 출처(기관명·보고서명)를 입력해야 합니다." }, 400);
+      }
+      patch.verified_at = status === "approved" ? new Date().toISOString() : null;
+      const { error } = await supabase.from("market_reference").update(patch).eq("market_key", key);
+      if (error) throw error;
+      return json({ success: true });
     }
 
     return new Response(
