@@ -282,7 +282,7 @@ function ensureMarketFigures(content: string, data: PatentData): string {
 
 // "관련시장 동향" 섹션의 본문(### 출처 이전)을 단일 문단으로 강제 병합한다.
 function mergeMarketParagraphs(content: string): string {
-  return content.replace(/(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/, (_m, header, body) => {
+  return content.replace(/(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/, (_m: string, header: string, body: string) => {
     // 본문과 출처 블록을 분리
     const sourceIdx = body.search(/\n###\s*출처/);
     const mainPart = sourceIdx >= 0 ? body.slice(0, sourceIdx) : body;
@@ -303,7 +303,7 @@ function mergeMarketParagraphs(content: string): string {
 // 본문 내 괄호 출처 표기로 변환한다. (예: "...이다[^1]" + "[^1]: A, 2024" → "...이다(A, 2024)")
 // 출처 블록이 없으면 본문의 [^N]만 제거한다.
 function inlineMarketCitations(content: string): string {
-  return content.replace(/(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/, (_m, header, body) => {
+  return content.replace(/(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/, (_m: string, header: string, body: string) => {
     const sourceMatch = body.match(/\n+###\s*출처[^\n]*\n([\s\S]*)$/);
     const sourcesRaw = sourceMatch ? sourceMatch[1] : "";
     const mainPart = sourceMatch ? body.slice(0, body.indexOf(sourceMatch[0])) : body;
@@ -318,7 +318,7 @@ function inlineMarketCitations(content: string): string {
     }
 
     // 본문의 [^N]을 (source) 로 치환. 매핑 없으면 제거.
-    const newMain = mainPart.replace(/\s*\[\^(\d+)\]/g, (_full, n: string) => {
+    const newMain = mainPart.replace(/\s*\[\^(\d+)\]/g, (_full: string, n: string) => {
       const src = sourceMap.get(n);
       return src ? `(${src})` : "";
     }).replace(/\s+([.,。、])/g, "$1").replace(/\s{2,}/g, " ").trimEnd();

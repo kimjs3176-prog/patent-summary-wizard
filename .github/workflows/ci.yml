@@ -62,15 +62,30 @@ jobs:
   edge-functions:
     name: deno check (edge functions)
     runs-on: ubuntu-latest
-    # Reported, not gating, until every function type-checks under Deno 2.
-    continue-on-error: true
+    env:
+      # Known type debt, reported but not failing the job: these three call @lovable.dev/ai-gateway, whose
+      # published typings resolve the request parameter to `never` (and filing-trends uses the EdgeRuntime global).
+      # Remove a name once it type-checks; every other function fails the job on any new type error.
+      KNOWN_TYPE_DEBT: "filing-trends find-my-patents patent-chat"
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      # Each function is checked from its own directory so a function-level deno.json (filing-api) applies,
+      # and every function is checked even when an earlier one fails.
       - run: |
-          set -e
-          for f in supabase/functions/*/index.ts; do
-            echo "::group::$f"; deno check "$f"; echo "::endgroup::"
+          failed=""
+          for dir in supabase/functions/*/; do
+            [ -f "$dir/index.ts" ] || continue
+            name=$(basename "$dir")
+            echo "::group::$name"
+            if ! (cd "$dir" && deno check --node-modules-dir=none index.ts); then
+              case " $KNOWN_TYPE_DEBT " in
+                *" $name "*) echo "::warning::deno check: known type debt in $name" ;;
+                *) failed="$failed $name" ;;
+              esac
+            fi
+            echo "::endgroup::"
           done
+          if [ -n "$failed" ]; then echo "::error::deno check failed for:$failed"; exit 1; fi
