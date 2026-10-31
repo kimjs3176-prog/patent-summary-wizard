@@ -57,7 +57,6 @@ export const SETTINGS_FIELDS = [
 { key: "footer_line2", label: "푸터 2줄", placeholder: "KIPRIS 데이터 연동..." },
 { key: "search_placeholder", label: "검색창 예시 텍스트", placeholder: "관심 키워드 또는 특허 등록번호, 출원번호를 입력하세요" },
 { key: "search_helper_text", label: "검색창 안내 텍스트", placeholder: "관심있는 키워드나 특허 등록번호(예: 10-2920574)/출원번호(예:10-2022-1213421)를 입력하세요" },
-{ key: "kipris_api_key", label: "KIPRIS API 키", placeholder: "API 키를 입력하세요", isSecret: true },
 { key: "filing_url", label: "출원지원 주소 — 비우면 이 사이트 안의 /filing-app/ (바깥 서버를 쓰려면 https 주소)", placeholder: "/filing-app/" },
 ];
 
