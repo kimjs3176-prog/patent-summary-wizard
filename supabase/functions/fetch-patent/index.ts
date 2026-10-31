@@ -254,8 +254,8 @@ serve(async (req) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         } else {
+          // 오래된 행은 새 데이터가 upsert 될 때 교체된다. 미리 지우면 KIPRIS 장애 중 캐시까지 잃는다.
           console.log(`Cache invalidated (version=${cached.cache_version}, age=${cacheAge}ms):`, trimmedNumber);
-          await sb.from("patent_data_cache").delete().eq("patent_number", trimmedNumber);
         }
       } else {
         console.log("Cache MISS for patent:", trimmedNumber);
@@ -282,7 +282,7 @@ serve(async (req) => {
 
     // KIPRIS Plus API로 특허 검색
     // getAdvancedSearch API 사용하여 번호로 검색
-    const searchUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+    const searchUrl = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
     searchUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
     searchUrl.searchParams.set("astrtCont", "");
     searchUrl.searchParams.set("inventionTitle", "");
@@ -360,7 +360,7 @@ serve(async (req) => {
       const keyword = words.length > 0 ? words[0] : "";
       if (!keyword) return;
       console.log("Related patents search keyword:", keyword);
-      const relatedUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+      const relatedUrl = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
       relatedUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
       relatedUrl.searchParams.set("inventionTitle", keyword);
       relatedUrl.searchParams.set("applicant", RDA_APPLICANT_ID);
@@ -456,7 +456,7 @@ serve(async (req) => {
       // 2차 상세 조회: 청구항(claims) 확보
       // getAdvancedSearch에는 청구항이 포함되지 않는 경우가 많아 별도 상세 API를 호출합니다.
       try {
-        const detailUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getBibliographyDetailInfoSearch");
+        const detailUrl = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getBibliographyDetailInfoSearch");
         detailUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
         // 상세 API는 일반적으로 applicationNumber 기반 조회가 안정적
         if (applicationNumber) {
@@ -555,7 +555,7 @@ serve(async (req) => {
       // 3차: 도면이 1개 이하인 경우, 출원번호 기반 추가 검색으로 보충
       if ((patentData.images?.length || 0) < 2 && applicationNumber) {
         try {
-          const suppUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+          const suppUrl = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
           suppUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
           suppUrl.searchParams.set("astrtCont", "");
           suppUrl.searchParams.set("inventionTitle", "");

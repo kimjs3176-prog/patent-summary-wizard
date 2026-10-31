@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { loadServerPatentData, loadServerSummary } from "../_shared/patentSource.ts";
 import { reconcileTrl } from "./trlConsistency.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
 
@@ -359,9 +360,9 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { patentNumber, patentData, summaryContent } = body;
+    const { patentNumber, patentData: clientPatentData, summaryContent: clientSummaryContent } = body;
 
-    if (!patentNumber || typeof patentNumber !== "string" || !patentData) {
+    if (!patentNumber || typeof patentNumber !== "string") {
       return new Response(
         JSON.stringify({ error: "특허 정보가 필요합니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -373,6 +374,20 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "유효하지 않은 특허 번호 형식입니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 원문과 요약서는 서버 캐시에서만 읽는다. 요청 본문의 patentData/summaryContent 는 공유 점수 캐시와
+    // TRL 을 누구나 바꿀 수 있게 하므로 무시한다(클라이언트 호환을 위해 필드 자체는 받아들인다).
+    if (clientPatentData || clientSummaryContent) console.log(`[score] client patentData/summaryContent ignored for ${trimmedPatent}; using server source`);
+    const [patentData, summaryContent] = await Promise.all([
+      loadServerPatentData(req, trimmedPatent),
+      loadServerSummary(trimmedPatent),
+    ]);
+    if (!patentData) {
+      return new Response(
+        JSON.stringify({ success: false, error: "특허 원문 데이터를 가져오지 못해 점수를 분석할 수 없습니다. 잠시 후 다시 시도해 주세요." }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -415,10 +430,9 @@ serve(async (req) => {
             trl: cached.trl ?? 5,
           };
         } else {
-        // 캐시된 TRL도 이번 요약서 서술과 어긋나면 보정 후 캐시 갱신
-        const cachedSummary = typeof summaryContent === "string" ? summaryContent : "";
-        const rc = reconcileTrl(cached.trl ?? 5, cachedSummary);
-        if (rc.changed) {
+        // 캐시된 TRL도 서버에 저장된 요약서 서술과 어긋나면 보정 후 캐시 갱신 (요약이 아직 없으면 건너뜀)
+        const rc = summaryContent ? reconcileTrl(cached.trl ?? 5, summaryContent) : null;
+        if (rc && rc.changed) {
           console.log(`[TRL-CONSISTENCY][cache] ${trimmedPatent} trl ${cached.trl} -> ${rc.trl} (stage=${rc.band?.label})`);
           cached.trl = rc.trl;
           cached.trl_reason = makeTrlFallback(rc.trl);
@@ -461,9 +475,7 @@ serve(async (req) => {
     }
 
     const data = patentData as PatentData;
-    const summaryText = typeof summaryContent === "string"
-      ? summaryContent.replace(/\s+/g, " ").trim().slice(0, 3500)
-      : "";
+    const summaryText = summaryContent.replace(/\s+/g, " ").trim().slice(0, 3500);
 
 
 
@@ -932,7 +944,7 @@ JSON형식:
       scores.technologyScore = lockedScores.technologyScore;
       scores.marketScore = lockedScores.marketScore;
       scores.businessScore = lockedScores.businessScore;
-      const r = reconcileTrl(lockedScores.trl, summaryText);
+      const r = summaryText ? reconcileTrl(lockedScores.trl, summaryText) : { trl: lockedScores.trl, changed: false };
       scores.trl = r.trl;
       if (r.changed || !new RegExp(`TRL\\s*${r.trl}(?!\\d)`).test(scores.trlReason || "")) {
         scores.trlReason = makeTrlFallback(r.trl);

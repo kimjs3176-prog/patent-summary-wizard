@@ -92,7 +92,7 @@ serve(async (req) => {
       }
     }
 
-    const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+    const url = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
     const p = url.searchParams;
     p.set("ServiceKey", key);
     p.set("applicant", org);
@@ -134,7 +134,7 @@ serve(async (req) => {
       for (let i = 0; i < items.length; i += CONCURRENCY) {
         await Promise.all(items.slice(i, i + CONCURRENCY).map(async (it) => {
           try {
-            const dUrl = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getBibliographyDetailInfoSearch");
+            const dUrl = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getBibliographyDetailInfoSearch");
             dUrl.searchParams.set("ServiceKey", key);
             dUrl.searchParams.set("applicationNumber", it.applicationNumber.replace(/[^0-9]/g, ""));
             const dXml = await kiprisFetchText(dUrl.toString(), { retries: 1, timeoutMs: 15000 });

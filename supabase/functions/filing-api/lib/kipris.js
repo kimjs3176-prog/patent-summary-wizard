@@ -2,7 +2,7 @@
 // 서비스 키는 서버에만 두고, 브라우저는 /api/* 를 통해서만 접근한다.
 import { XMLParser } from "fast-xml-parser";
 
-export const DEFAULT_BASE_URL = "http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice";
+export const DEFAULT_BASE_URL = "https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice";
 
 // 행정처분 상태(lastvalue) 코드
 export const STATUS = { ALL: "", OPEN: "A", WITHDRAWN: "C", EXPIRED: "F", ABANDONED: "G", INVALID: "I", REJECTED: "J", REGISTERED: "R" };

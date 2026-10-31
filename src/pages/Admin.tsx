@@ -47,12 +47,12 @@ const Admin = () => {
   const [satComments, setSatComments] = useState<{ rating: number; comment: string; patent_number: string | null; created_at: string }[]>([]);
 
   const loadSatisfaction = async () => {
-    const [{ data: stats }, { data: comments }] = await Promise.all([
+    const [{ data: stats }, commentsRes] = await Promise.all([
       supabase.rpc("get_satisfaction_stats"),
-      supabase.rpc("get_satisfaction_comments", { p_limit: 30 }),
+      apiCall("satisfaction-comments", { limit: 30 }),
     ]);
     setSatisfaction((stats as any) || []);
-    setSatComments((comments as any) || []);
+    setSatComments(commentsRes?.success ? (commentsRes.comments as any) || [] : []);
   };
 
   const loadUsageStats = async () => {

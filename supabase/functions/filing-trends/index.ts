@@ -17,7 +17,7 @@ async function fetchFilings(key: string, start: string, end: string): Promise<Ra
     const items: RawFiling[] = [];
     let total = Infinity;
     for (let page = 1; (page - 1) * 500 < total; page++) {
-      const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+      const url = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
       for (const [name, value] of Object.entries({ ServiceKey: key, applicant, applicationDate: `${start}~${end}`, patent: "true", utility: "true", pageNo: String(page), numOfRows: "500", sortSpec: "AD", descSort: "true" })) url.searchParams.set(name, value);
       const xml = await kiprisFetchText(url.toString(), { retries: 2, timeoutMs: 20000 });
       const count = xmlTag(xml, "totalCount");

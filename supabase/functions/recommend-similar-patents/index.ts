@@ -292,7 +292,7 @@ JSON만 출력:
       const results: SimilarPatent[] = [];
 
       try {
-        const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+        const url = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
         url.searchParams.set("ServiceKey", KIPRIS_API_KEY!);
         url.searchParams.set("inventionTitle", kw);
         url.searchParams.set("applicant", applicantFilter || "");
