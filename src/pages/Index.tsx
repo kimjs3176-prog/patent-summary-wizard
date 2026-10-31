@@ -1,4 +1,4 @@
-import { Heart, RotateCcw, BarChart3, Layers, FileSpreadsheet, Compass, FileSignature } from "lucide-react";
+import { Heart, RotateCcw, BarChart3, Layers, Compass, FileSignature } from "lucide-react";
 import { filingEnabled } from "@/lib/filing";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -151,15 +151,9 @@ const Index = () => {
         </Button>
       </Link>
       <Link to="/batch">
-        <Button aria-label="일괄조회" title="일괄조회" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+        <Button aria-label="일괄조회·다운로드" title="일괄조회·목록 다운로드: 번호 여러 건 조회 또는 조건별 목록을 엑셀·CSV로" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <Layers className="w-3 h-3 md:w-3.5 md:h-3.5" />
-          <span className="hidden sm:inline">일괄조회</span>
-        </Button>
-      </Link>
-      <Link to="/export">
-        <Button aria-label="목록 다운로드" title="목록 다운로드" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
-          <FileSpreadsheet className="w-3 h-3 md:w-3.5 md:h-3.5" />
-          <span className="hidden sm:inline">목록 다운로드</span>
+          <span className="hidden sm:inline">일괄조회·다운로드</span>
         </Button>
       </Link>
       <Link to="/compare">

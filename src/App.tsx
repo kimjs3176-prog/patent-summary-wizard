@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 const Admin = lazy(() => import("./pages/Admin"));
 const Compare = lazy(() => import("./pages/Compare"));
@@ -13,7 +13,6 @@ const Batch = lazy(() => import("./pages/Batch"));
 const SummarySample = lazy(() => import("./pages/SummarySample"));
 const TechVideos = lazy(() => import("./pages/TechVideos"));
 const PotentialTech = lazy(() => import("./pages/PotentialTech"));
-const PatentExport = lazy(() => import("./pages/PatentExport"));
 const PatentFinder = lazy(() => import("./pages/PatentFinder"));
 const Filing = lazy(() => import("./pages/Filing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -101,7 +100,8 @@ const App = () => {
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/batch" element={<Batch />} />
-                <Route path="/export" element={<PatentExport />} />
+                {/* 예전 목록 다운로드 주소 → 통합된 일괄조회·목록 다운로드(조건 모드) */}
+                <Route path="/export" element={<Navigate to="/batch?mode=criteria" replace />} />
                 <Route path="/finder" element={<PatentFinder />} />
                 <Route path="/filing" element={<Filing />} />
                 <Route path="/summary-sample" element={<SummarySample />} />
