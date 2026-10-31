@@ -187,6 +187,9 @@ export function usePatentSummary() {
             },
             body: JSON.stringify({
               patentNumber,
+              // The current server reads the original from its own cache and ignores this field; it is still
+              // sent so the page keeps working against a not-yet-redeployed function that requires it.
+              patentData: fetchedPatentData,
               // Force regenerate on retries so we bypass any partially-cached/stale state
               forceRegenerate: force || attempt > 1,
             }),

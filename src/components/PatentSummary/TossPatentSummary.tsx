@@ -96,8 +96,9 @@ function TossPatentSummaryInner({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            // 서버는 patent_data_cache / patent_ai_cache 의 저장본만 사용한다. 번호만 보낸다.
-            body: JSON.stringify({ patentNumber, analysisMode: "detailed" }),
+            // 현재 서버는 patent_data_cache / patent_ai_cache 저장본만 쓰고 아래 두 필드는 무시한다.
+            // 재배포 전의 이전 함수가 이 필드를 요구하므로 배포 순서와 무관하게 동작하도록 함께 보낸다.
+            body: JSON.stringify({ patentNumber, patentData, summaryContent: content, analysisMode: "detailed" }),
             timeoutMs: 90000,
             retries: 1,
             signal: controller.signal,
