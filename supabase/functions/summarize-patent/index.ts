@@ -254,6 +254,15 @@ function hasRequiredMarketFigures(content: string): boolean {
   return hasMoney && hasCagr;
 }
 
+/** 표준 참고 문단의 첫 구절. 캐시된 요약서가 대체 문단을 썼는지 판별하는 데 쓴다. */
+const MARKET_FALLBACK_MARKERS = [
+  "본 기술의 상위 시장은 농업·공공안전 드론 솔루션 시장으로 정의할 수 있으며",
+  "본 기술의 상위 시장은 농식품 스마트 기술 및 관련 응용 솔루션 시장으로 정의할 수 있으며",
+];
+export function isMarketFallbackText(content: string): boolean {
+  return MARKET_FALLBACK_MARKERS.some((m) => content.includes(m));
+}
+
 function buildMarketFallback(data: PatentData): string {
   const sourceText = `${data.title || ""} ${data.abstract || ""} ${(data.classifications || []).join(" ")}`;
   if (/드론|무인\s*비행|항공영상|B64U|B64C/i.test(sourceText)) {
@@ -451,7 +460,7 @@ serve(async (req) => {
       const supabase = getSupabaseClient();
       const { data: cached } = await supabase
         .from("patent_ai_cache")
-        .select("summary_content, cache_version")
+        .select("summary_content, cache_version, created_at")
         .eq("patent_number", trimmedPatent)
         .eq("analysis_mode", summaryAnalysisMode)
         .maybeSingle();
@@ -463,6 +472,10 @@ serve(async (req) => {
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
+            // 생성 정보(모델·저장 시각·대체 문단 여부)를 먼저 보내 화면이 신뢰 표식을 그릴 수 있게 한다.
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              meta: { model: aiModel, cached: true, generatedAt: cached.created_at ?? null, promptVersion, marketFallback: isMarketFallbackText(content) },
+            })}\n\n`));
             const chunkSize = 50;
             for (let i = 0; i < content.length; i += chunkSize) {
               const chunk = content.slice(i, i + chunkSize);
@@ -606,6 +619,7 @@ serve(async (req) => {
           analysis_mode: summaryAnalysisMode,
           summary_content: content,
           cache_version: SUMMARY_CACHE_VERSION,
+          created_at: new Date().toISOString(), // 재생성 시각이 "생성 시각"으로 표시되도록 갱신
         }, { onConflict: "patent_number,analysis_mode" });
         if (error) throw error;
         // Drop summaries saved under outdated settings only after the new one is stored.
@@ -621,6 +635,10 @@ serve(async (req) => {
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
+        // 생성 정보를 먼저 보낸다(모델·시각·분석 기준). 대체 문단 여부는 후처리 뒤 final_content 와 함께 보낸다.
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          meta: { model: aiModel, cached: false, generatedAt: new Date().toISOString(), promptVersion },
+        })}\n\n`));
         // 첫 바이트를 즉시 내보내 프록시 버퍼링을 풀고 클라이언트가 바로 진행 상태를 받게 한다.
         try { controller.enqueue(encoder.encode(": open\n\n")); } catch { /* ignore */ }
         const keepAlive = setInterval(() => {
@@ -705,13 +723,15 @@ serve(async (req) => {
           // 기관명 정규화: 구 명칭(농업기술실용화재단 등)을 현행 명칭으로 교정
           fullContent = fullContent
             .replace(/농업기술\s*실용화\s*재단|농식품\s*실용화\s*재단/g, "한국농업기술진흥원");
+          const beforeMarketFallback = fullContent;
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
+          const usedMarketFallback = fullContent !== beforeMarketFallback;
           fullContent = mergeMarketParagraphs(fullContent);
           fullContent = inlineMarketCitations(fullContent);
-           fullContent = stripDurationFromCommercialization(fullContent);
+          fullContent = stripDurationFromCommercialization(fullContent);
           fullContent = await unifyMarketFigures(fullContent);
-          if (fullContent !== raw.trim()) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent })}\n\n`));
+          if (fullContent !== raw.trim() || usedMarketFallback) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent, meta: { marketFallback: usedMarketFallback } })}\n\n`));
           }
           // 스트림을 닫기 전에 저장해, 종료 직후 호출되는 점수 분석이 서버 요약을 읽을 수 있게 한다.
           await saveCache(fullContent);

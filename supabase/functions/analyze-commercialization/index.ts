@@ -813,6 +813,30 @@ JSON형식:
       }
     }
 
+    // ▼ 점수 JSON 검증: 숫자가 아니거나 범위를 벗어난 값은 저장하지 않고 실패 처리한다(영구 캐시 오염 방지).
+    const toScore = (v: unknown): number | null => {
+      const n = typeof v === "string" ? parseFloat(v.replace(/[^0-9.-]/g, "")) : typeof v === "number" ? v : NaN;
+      return Number.isFinite(n) ? Math.round(n) : null;
+    };
+    const normalizedScores = {
+      technologyScore: toScore(scores?.technologyScore),
+      marketScore: toScore(scores?.marketScore),
+      businessScore: toScore(scores?.businessScore),
+    };
+    const invalidScoreFields = Object.entries(normalizedScores)
+      .filter(([, v]) => v === null || v < 1 || v > 100)
+      .map(([k]) => k);
+    if (invalidScoreFields.length > 0) {
+      console.error(`[SCORE] invalid fields for ${trimmedPatent}: ${invalidScoreFields.join(",")} raw=${JSON.stringify(scores).slice(0, 300)}`);
+      throw new Error("점수 분석 결과가 올바르지 않습니다. 잠시 후 다시 시도해 주세요.");
+    }
+    Object.assign(scores, normalizedScores);
+    const trlParsed = toScore(scores?.trl);
+    scores.trl = trlParsed != null ? Math.max(1, Math.min(9, trlParsed)) : 5;
+    for (const key of ["technologyReason", "marketReason", "businessReason", "analysis", "trlReason"]) {
+      if (typeof scores[key] !== "string") scores[key] = scores[key] == null ? "" : String(scores[key]);
+    }
+
     // ▼ TRL ↔ 요약서 기술완성도 서술 정합성 보정 (V-RAY 계산 전에 적용)
     let trlReasonNeedsRewrite = false;
     {
