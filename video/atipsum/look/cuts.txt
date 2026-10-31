@@ -1,0 +1,5 @@
+# cuts from events draft.mp4.events.json (time s, frame, timecode, source)
+3.200	frame 96	0:03.20	event cut 'hide #s1 show #s2'
+3.600	frame 108	0:03.60	event hide '#ph'
+5.267	frame 158	0:05.27	event cut 'hide #s2 show #s3'
+12.333	frame 370	0:12.33	event cut 'hide #s3 show #s5'
