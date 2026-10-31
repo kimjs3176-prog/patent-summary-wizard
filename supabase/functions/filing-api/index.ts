@@ -1,15 +1,14 @@
 // 출원지원 API (에이프 server/*.js 를 그대로 가져와 Deno 로 돌린다) — scripts/sync-filing-app.mjs 가 lib/ 를 갱신한다.
-//   GET  /filing-api/api/health · trends · kr-trends · trade · notices · news
+//   GET  /filing-api/api/health · trends · kr-trends
 //   POST /filing-api/api/explore (KIPRIS 유사 특허·공백 맵) · draft (명세서 초안) · ai (AI 분석) · prompt (사용자 키로 쓸 지침)
-// 비밀값: KIPRIS_API_KEY(필수, 기존 함수와 공유) · DATA_GO_KR_SERVICE_KEY(수출 실적·지원사업) · ANTHROPIC_API_KEY(서버 AI, 없으면 화면 키로)
-//   선택: NAVER_CLIENT_ID/SECRET(기사), KIPRIS_MOCK=1(모의)
+// 수출 실적·지원사업 공고·기사(에이프 해외동향·해외사업용)는 출원지원에 필요 없어 두지 않는다.
+// 비밀값: KIPRIS_API_KEY(필수, 기존 함수와 공유) · 선택 ANTHROPIC_API_KEY(서버 AI, 없으면 화면에서 넣는 키로) · KIPRIS_MOCK=1(모의)
 import "./lib/env.ts";
 import { kipris, MOCK, validate, explore, allowed, health, KiprisError } from "./lib/explore.js";
 import { draftEnabled, validateDraftInput, draftSpec, draftErrorResponse, draftPrompt } from "./lib/draft.js";
 import { trends } from "./lib/trends.js";
 import { aiPrompt, runAi } from "./lib/ai.js";
 import { krTrendsCached, krCached, validateKr } from "./lib/kr-trends.js";
-import { trade, validateTrade, notices, validateNotices, news, validateNews } from "./lib/publicdata.js";
 
 // 같은 사이트(AIS)와 Lovable 미리보기, 로컬 개발만 받는다
 const ORIGIN_OK = /^https:\/\/([a-z0-9-]+\.)*(lovable\.app|lovableproject\.com)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
@@ -58,15 +57,6 @@ Deno.serve(async (req: Request) => {
       const input = validateKr(q), mode = MOCK ? "mock" : "live";
       if (!krCached(input.field, mode) && !allowed(`kr:${who}`, 6)) return json(req, 429, { error: "요청이 너무 많습니다. 1분 뒤 다시 시도하세요." });
       return json(req, 200, await krTrendsCached(kipris, input, { mode }), "public, max-age=21600");
-    }
-    if (req.method === "GET" && path === "/api/news") {
-      try { const out = await news(validateNews(q)); return json(req, 200, out, out.mode === "live" ? "public, max-age=600" : "no-store"); }
-      catch (e) { const err = e as { status?: number; message?: string }; return json(req, err.status || 502, { error: err.message || "기사를 불러오지 못했습니다." }); }
-    }
-    if (req.method === "GET" && (path === "/api/trade" || path === "/api/notices")) {
-      if (!allowed(`${path}:${who}`, 10)) return json(req, 429, { error: "요청이 너무 많습니다. 1분 뒤 다시 시도하세요." });
-      const out = path === "/api/trade" ? await trade(validateTrade(q)) : await notices(validateNotices(q));
-      return json(req, 200, out, out?.mode === "live" ? "public, max-age=3600" : "no-store");
     }
     if (req.method === "GET" && path === "/api/trends") return json(req, 200, trends(q), "public, max-age=3600");
     if (req.method === "POST" && path === "/api/prompt") {
