@@ -4,13 +4,14 @@ import type { CommercializationDetails } from "../TechnologyCommercializationSco
 
 
 
-import { ExternalLink, FileText, Printer, RefreshCw, Share2, Heart, FileSignature } from "lucide-react";
+import { Handshake, FileText, Printer, RefreshCw, Share2, Heart, FileSignature } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { filingEnabled, sendPatentToFiling } from "@/lib/filing";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PdfGenerator } from "../PdfGenerator";
+import { TRANSFER_SECTION_ID } from "./TransferActionSection";
 import type { useFavoritePatents } from "@/hooks/useFavoritePatents";
 
 interface Props {
@@ -31,12 +32,15 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
       {!isStreaming && content && (
         <div className="flex items-center justify-between flex-wrap gap-2 mb-6 print:hidden">
           <div className="flex items-center gap-1.5">
-            <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full bg-[#191F28] text-white hover:bg-[#333D4B] font-semibold shadow-sm">
-                <ExternalLink className="w-3.5 h-3.5" />
-                기술이전 신청
-              </Button>
-            </a>
+            <Button
+              size="sm"
+              onClick={() => document.getElementById(TRANSFER_SECTION_ID)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              title="요약서 하단의 기술이전 안내로 이동합니다"
+              className="gap-1.5 text-[12.5px] h-9 rounded-full bg-[#191F28] text-white hover:bg-[#333D4B] font-semibold shadow-sm"
+            >
+              <Handshake className="w-3.5 h-3.5" />
+              기술이전 신청
+            </Button>
             {patentData?.applicationNumber && (
               <a href={`https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`} target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">

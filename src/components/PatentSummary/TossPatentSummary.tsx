@@ -26,6 +26,7 @@ import { AnalysisSection } from "./toss/AnalysisSection";
 import { RelatedSection } from "./toss/RelatedSection";
 import { RegulationSection } from "./toss/RegulationSection";
 import { ShareDialog } from "./toss/ShareDialog";
+import { TransferActionSection } from "./toss/TransferActionSection";
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
@@ -277,6 +278,11 @@ function TossPatentSummaryInner({
 
           {/* AI 종합 의견 */}
           <AnalysisSection details={details} />
+
+          {/* 기술이전 안내 — 보유·관리 기관과 NATI 신청 경로 (ActionBar '기술이전 신청'이 여기로 이동) */}
+          {!isStreaming && content && (
+            <TransferActionSection patentData={patentData} patentNumber={patentNumber} ownerChanged={ownerChanged} finalOwner={finalOwner} govtPatent={govtPatent} />
+          )}
 
           {/* 관련 특허 — 기능·특징이 유사한 특허 */}
           <RelatedSection patentData={patentData} onRelatedPatentClick={onRelatedPatentClick} />
