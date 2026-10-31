@@ -5,6 +5,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 interface PotentialPatent {
   id: string;
@@ -28,6 +29,7 @@ const gradeClass = (g: string | null) => {
 };
 
 const PotentialTech = () => {
+  useDocumentTitle("잠재기술 무상기술이전");
   const navigate = useNavigate();
   const [rows, setRows] = useState<PotentialPatent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,6 @@ const PotentialTech = () => {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    document.title = "잠재기술(무상기술이전) | Agri IP Summary";
     const load = async () => {
       const { data } = await supabase
         .from("potential_patents")

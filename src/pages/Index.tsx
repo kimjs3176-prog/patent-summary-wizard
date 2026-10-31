@@ -26,6 +26,7 @@ import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronDown } from "lucide-react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 // Result-only screens load on demand so the first home visit downloads less code.
 const TossPatentSummary = lazy(() =>
@@ -47,6 +48,7 @@ const Index = () => {
   } = usePatentSummary();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { settings } = useSiteSettings();
+  useDocumentTitle(summary || isLoading ? patentData?.titleKo || patentData?.title || currentPatent || "특허 요약" : null);
   const { favorites } = useFavoritePatents();
   const resultRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();

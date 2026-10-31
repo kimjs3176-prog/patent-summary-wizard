@@ -13,6 +13,7 @@ import { safeFetch } from "@/lib/safeFetch";
 import { PatentData } from "@/components/PatentSummary/types";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { TossPatentSummary } from "@/components/PatentSummary/TossPatentSummary";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /* ------------------------------------------------------------------ */
 /* 공통: 모드, 다운로드                                                 */
@@ -340,6 +341,7 @@ const chip = (active: boolean, size: "sm" | "md" = "md") =>
 /* ------------------------------------------------------------------ */
 
 const Batch = () => {
+  useDocumentTitle("일괄조회·목록 다운로드");
   const [params, setParams] = useSearchParams();
   const presetNumbers = params.get("numbers");
   const [mode, setMode] = useState<Mode>(() =>

@@ -10,6 +10,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { safeFetch } from "@/lib/safeFetch";
 import { FieldTrendPanel } from "@/components/FieldTrendPanel";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -20,6 +21,7 @@ export default function SearchResults() {
   const rawQ = (searchParams.get("q") || "").trim();
   const keyword = searchParams.get("keyword") || (rawQ && !parseIpNumber(rawQ) ? rawQ : "");
   const { settings } = useSiteSettings();
+  useDocumentTitle(keyword ? `'${keyword}' 검색 결과` : searchParams.get("field") ? `'${searchParams.get("field")}' 분야 특허` : "검색 결과");
   useEffect(() => {
     if (rawQ && parseIpNumber(rawQ)) navigate(`/?patent=${encodeURIComponent(rawQ)}${searchParams.get("from") === "agri-ip" ? "&from=agri-ip" : ""}`, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps

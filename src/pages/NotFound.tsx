@@ -2,8 +2,10 @@ import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { FileText, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const NotFound = () => {
+  useDocumentTitle("페이지를 찾을 수 없음");
   const location = useLocation();
 
   useEffect(() => {

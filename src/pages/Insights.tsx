@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TECHNOLOGY_FIELDS } from "../../supabase/functions/_shared/technologyFields";
 import { trendHeadline, useFilingTrends } from "@/hooks/useFilingTrends";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 
 const FIELD_META = Object.fromEntries(TECHNOLOGY_FIELDS.map((f) => [f.id, f])) as Record<string, typeof TECHNOLOGY_FIELDS[number]>;
@@ -60,6 +61,7 @@ function Card({ title, icon: Icon, action, children, className = "" }: { title: 
 }
 
 export default function Insights() {
+  useDocumentTitle("특허 인사이트");
   const navigate = useNavigate();
   const { data, isPending, isError, error, refetch, isFetching } = useFilingTrends();
   const [sort, setSort] = useState<"count" | "growth">("count");
