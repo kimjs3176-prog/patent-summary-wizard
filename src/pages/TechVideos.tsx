@@ -5,6 +5,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { supabase } from "@/integrations/supabase/client";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 interface TechVideo {
   title: string;
@@ -21,6 +22,7 @@ function getYouTubeId(url: string): string | null {
 function isStorageUrl(url: string) { return url.startsWith("storage://"); }
 
 const TechVideos = () => {
+  useDocumentTitle("온라인 기술 홍보관");
   const { settings } = useSiteSettings();
 
   const videos = useMemo<TechVideo[]>(() => {

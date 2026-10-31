@@ -16,10 +16,12 @@ import { AdminHomepagePanel } from '@/components/admin/AdminHomepagePanel';
 import { AdminSummaryPanel } from '@/components/admin/AdminSummaryPanel';
 import { AdminOutputPanel } from '@/components/admin/AdminOutputPanel';
 import { AdminSystemPanel } from '@/components/admin/AdminSystemPanel';
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 
 
 const Admin = () => {
+  useDocumentTitle("관리자");
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [patents, setPatents] = useState<FeaturedPatent[]>([]);

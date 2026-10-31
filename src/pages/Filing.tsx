@@ -6,6 +6,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { parseIpNumber } from "@/lib/ipNumber";
 import { buildFilingSrc, buildFilingStandaloneUrl, filingEnabled, filingOrigin, parseFilingMessage, type FilingState } from "@/lib/filing";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 // 출원지원 — 관리자 설정 '출원지원' 토글로 켜고 끄는 옵션 메뉴. 화면에는 AIS 의 한 기능으로만 보이고 바깥 서비스 이름은 쓰지 않는다.
 // 출원지원 서버(에이프)의 5단계 출원 준비(아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리·해외 출원)를 본문만 iframe 으로 넣고,
@@ -25,6 +26,7 @@ const DEFAULT_STEPS: FilingState["steps"] = [
 ];
 
 const Filing = () => {
+  useDocumentTitle("출원지원");
   const { settings } = useSiteSettings();
   const [params] = useSearchParams();
   const navigate = useNavigate();

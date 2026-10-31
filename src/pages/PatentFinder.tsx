@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   EMPTY_FINDER_FORM, FINDER_CAPABILITY_CHIPS, FINDER_HISTORY_MAX, FINDER_INDUSTRIES, FINDER_PURPOSES, FINDER_READINESS,
   finderFormFromParams, finderResultsCsv, finderShareParams, finderStage, findMyPatents, fitBand,
@@ -189,6 +190,7 @@ function ResultCard({ r, rank, onOpen, favorite }: {
 }
 
 export default function PatentFinder() {
+  useDocumentTitle("나만의 특허찾기");
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const last = useRef(loadLast()).current;
@@ -332,7 +334,7 @@ export default function PatentFinder() {
           >
             <div>
               <FieldLabel icon={Building2}>업종</FieldLabel>
-              <Input value={form.industry} maxLength={60} onChange={(e) => update("industry", e.target.value)} placeholder="예: 식품가공" className="h-11 rounded-xl" />
+              <Input aria-label="업종" value={form.industry} maxLength={60} onChange={(e) => update("industry", e.target.value)} placeholder="예: 식품가공" className="h-11 rounded-xl" />
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {FINDER_INDUSTRIES.map((i) => (
                   <Chip key={i} active={form.industry === i} onClick={() => update("industry", form.industry === i ? "" : i)}>{i}</Chip>
@@ -342,7 +344,7 @@ export default function PatentFinder() {
 
             <div>
               <FieldLabel icon={Package}>아이템</FieldLabel>
-              <Input value={form.item} maxLength={120} onChange={(e) => update("item", e.target.value)} placeholder="예: 저당 딸기잼, 버섯 배지, 한우 사료" className="h-11 rounded-xl" />
+              <Input aria-label="아이템" value={form.item} maxLength={120} onChange={(e) => update("item", e.target.value)} placeholder="예: 저당 딸기잼, 버섯 배지, 한우 사료" className="h-11 rounded-xl" />
               <p className="mt-1.5 text-xs text-muted-foreground">만들거나 개선하려는 제품·서비스를 구체적으로 적을수록 정확해요.</p>
             </div>
 
@@ -358,6 +360,7 @@ export default function PatentFinder() {
             <div>
               <FieldLabel icon={Wrench} optional>보유 설비·역량</FieldLabel>
               <Textarea
+                aria-label="보유 설비·역량 (선택)"
                 value={form.capabilities}
                 maxLength={300}
                 onChange={(e) => update("capabilities", e.target.value)}

@@ -11,6 +11,7 @@ import { Growth } from "@/components/insights/Growth";
 import { InstituteRanking } from "@/components/insights/InstituteRanking";
 import { InsightsDownload } from "@/components/insights/InsightsDownload";
 import { MonthlyTrendChart } from "@/components/insights/MonthlyTrendChart";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 
 const FIELD_META = Object.fromEntries(TECHNOLOGY_FIELDS.map((f) => [f.id, f])) as Record<string, typeof TECHNOLOGY_FIELDS[number]>;
@@ -52,6 +53,7 @@ function Card({ title, icon: Icon, action, children, className = "" }: { title: 
 }
 
 export default function Insights() {
+  useDocumentTitle("특허 인사이트");
   const navigate = useNavigate();
   const { data, isPending, isError, error, refetch, isFetching } = useFilingTrends();
   const [sort, setSort] = useState<"count" | "growth">("count");
