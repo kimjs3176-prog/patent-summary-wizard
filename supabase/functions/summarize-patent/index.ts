@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { loadServerPatentData } from "../_shared/patentSource.ts";
 import { addSourceNote, applyGlobalRef, applyMarketRef, claimToRef, extractGlobalClaims, extractMarketClaims, formatKrwEok, formatUsdEok, type MarketClaim, type MarketRef } from "./marketConsistency.ts";
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
@@ -370,8 +371,18 @@ serve(async (req) => {
       );
     }
 
+    // 재생성은 캐시를 건너뛰어 매번 유료 생성이 일어나므로 별도의 더 엄격한 한도를 둔다.
+    if (forceRegenerate) {
+      const regenLimited = await enforceRateLimit(req, { bucket: "summarize-regenerate", limit: 6, windowSeconds: 3600 });
+      if (regenLimited) return regenLimited;
+    }
+
+    // 원문은 서버 캐시(patent_data_cache)에서만 읽는다. 요청 본문의 patentData는 모든 사용자가 보는
+    // 공유 캐시를 오염시킬 수 있으므로 무시한다(클라이언트 호환을 위해 필드 자체는 받아들인다).
+    if (patentData) console.log(`[summary] client patentData ignored for ${trimmedPatent}; using server source`);
+    const pd = (await loadServerPatentData(req, trimmedPatent)) as PatentData | null;
+
     // 가드: 실제 특허 데이터가 없으면 AI가 가짜 요약을 만들어내므로 즉시 실패한다.
-    const pd = (patentData ?? null) as PatentData | null;
     const hasUsableData = !!(
       pd && (
         (pd.title && pd.title.trim().length > 1) ||
@@ -702,9 +713,10 @@ serve(async (req) => {
           if (fullContent !== raw.trim()) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent })}\n\n`));
           }
+          // 스트림을 닫기 전에 저장해, 종료 직후 호출되는 점수 분석이 서버 요약을 읽을 수 있게 한다.
+          await saveCache(fullContent);
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
-          await saveCache(fullContent);
           if (finishReason === "stop") await recordAnalysisCase(caseContext, trimmedPatent, "summary", fullContent);
         } catch (err) {
           console.error(`[SUMMARY COMPLETE ERROR] ${trimmedPatent}`, err);
