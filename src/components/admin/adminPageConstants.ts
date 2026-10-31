@@ -84,7 +84,6 @@ export const DEFAULT_SECTION_LENGTHS: Record<string, number> = {
 export const DEFAULT_VISIBLE_SECTIONS: Record<string, boolean> = {
   commercialization: true,
   claims: true,
-  competitorComparison: true,
   familyTree: true,
 };
 export const DEFAULT_CARD_ICONS: Record<string, string> = {

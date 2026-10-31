@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { PatentData } from "@/components/PatentSummary/types";
 import { CommercializationDetails } from "@/components/PatentSummary/TechnologyCommercializationScore";
 
@@ -23,10 +24,8 @@ export interface FavoriteFolder {
 const STORAGE_KEY = "favorite-patents";
 const FOLDERS_KEY = "favorite-folders";
 const TAGS_KEY = "favorite-tags";
-
-const DEFAULT_FOLDERS: FavoriteFolder[] = [
-  { id: "all", name: "전체", color: "hsl(var(--primary))", createdAt: "" },
-];
+/** Fired after this tab writes favorites so every mounted hook instance (header count, compare page…) reloads. */
+const CHANGE_EVENT = "ais:favorites-change";
 
 const DEFAULT_COLORS = [
   "hsl(158 64% 40%)",
@@ -46,6 +45,32 @@ function loadJSON<T>(key: string, fallback: T): T {
   }
 }
 
+let quotaWarned = false;
+/** Writes to localStorage without ever throwing into React's commit phase (quota, private mode, blocked storage). */
+function saveJSON(key: string, value: unknown): boolean {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (e) {
+    console.warn(`[favorites] failed to persist ${key}:`, e instanceof Error ? e.message : String(e));
+    if (!quotaWarned) {
+      quotaWarned = true;
+      toast.error("브라우저 저장 공간이 부족해 관심특허를 저장하지 못했습니다. 일부 항목을 정리해 주세요.");
+    }
+    return false;
+  }
+}
+
+/**
+ * Only what the favorites/compare screens display is persisted. Full claims, the
+ * description and every drawing of a patent are several hundred KB each, so a
+ * handful of favorites could exceed the 5MB localStorage quota.
+ */
+export function slimPatentData(data: PatentData): PatentData {
+  const { description: _description, claims: _claims, images: _images, ...rest } = data;
+  return rest;
+}
+
 export function useFavoritePatents() {
   const [favorites, setFavorites] = useState<FavoritePatent[]>(() => loadJSON(STORAGE_KEY, []));
   const [folders, setFolders] = useState<FavoriteFolder[]>(() => {
@@ -53,20 +78,66 @@ export function useFavoritePatents() {
     return stored.length > 0 ? stored : [];
   });
   const [allTags, setAllTags] = useState<string[]>(() => loadJSON(TAGS_KEY, []));
+  // Serialized value this instance wrote last, so a change event echoing our own write is ignored.
+  const lastWritten = useRef<Record<string, string>>({});
 
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites)); }, [favorites]);
-  useEffect(() => { localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders)); }, [folders]);
-  useEffect(() => { localStorage.setItem(TAGS_KEY, JSON.stringify(allTags)); }, [allTags]);
+  const persist = useCallback((key: string, value: unknown) => {
+    const serialized = JSON.stringify(value);
+    if (lastWritten.current[key] === serialized) return;
+    lastWritten.current[key] = serialized;
+    if (saveJSON(key, value)) window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: key }));
+  }, []);
+
+  useEffect(() => { persist(STORAGE_KEY, favorites); }, [favorites, persist]);
+  useEffect(() => { persist(FOLDERS_KEY, folders); }, [folders, persist]);
+  useEffect(() => { persist(TAGS_KEY, allTags); }, [allTags, persist]);
+
+  // Keep every instance in sync (same tab via CHANGE_EVENT, other tabs via the storage event).
+  useEffect(() => {
+    const reload = (key: string | null) => {
+      const apply = <T,>(k: string, setter: (v: T) => void, fallback: T) => {
+        if (key && key !== k) return;
+        let raw: string | null = null;
+        try { raw = localStorage.getItem(k); } catch { return; }
+        if (raw === null || raw === lastWritten.current[k]) return;
+        lastWritten.current[k] = raw;
+        try { setter(JSON.parse(raw) as T); } catch { setter(fallback); }
+      };
+      apply<FavoritePatent[]>(STORAGE_KEY, setFavorites, []);
+      apply<FavoriteFolder[]>(FOLDERS_KEY, setFolders, []);
+      apply<string[]>(TAGS_KEY, setAllTags, []);
+    };
+    const onChange = (e: Event) => reload(typeof (e as CustomEvent).detail === "string" ? (e as CustomEvent<string>).detail : null);
+    const onStorage = (e: StorageEvent) => { if (!e.key || [STORAGE_KEY, FOLDERS_KEY, TAGS_KEY].includes(e.key)) reload(e.key); };
+    window.addEventListener(CHANGE_EVENT, onChange);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(CHANGE_EVENT, onChange);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   const addFavorite = useCallback((patent: FavoritePatent) => {
     setFavorites((prev) => {
       if (prev.some((p) => p.patentNumber === patent.patentNumber)) return prev;
-      return [...prev, { ...patent, addedAt: new Date().toISOString() }];
+      const { summary: _summary, ...rest } = patent;
+      return [...prev, { ...rest, patentData: slimPatentData(patent.patentData), addedAt: new Date().toISOString() }];
     });
   }, []);
 
   const removeFavorite = useCallback((patentNumber: string) => {
     setFavorites((prev) => prev.filter((p) => p.patentNumber !== patentNumber));
+  }, []);
+
+  /** Patches a stored favorite (e.g. fills in the score that arrived after it was added). */
+  const updateFavorite = useCallback((patentNumber: string, patch: Partial<Omit<FavoritePatent, "patentNumber">>) => {
+    setFavorites((prev) => prev.map((p) => {
+      if (p.patentNumber !== patentNumber) return p;
+      const next = { ...p, ...patch };
+      if (patch.patentData) next.patentData = slimPatentData(patch.patentData);
+      delete (next as { summary?: string }).summary;
+      return next;
+    }));
   }, []);
 
   const isFavorite = useCallback(
@@ -138,7 +209,7 @@ export function useFavoritePatents() {
   }, []);
 
   return {
-    favorites, addFavorite, removeFavorite, isFavorite, toggleFavorite,
+    favorites, addFavorite, removeFavorite, updateFavorite, isFavorite, toggleFavorite,
     folders, addFolder, removeFolder, renameFolder, assignFolder,
     allTags, addTagToPatent, removeTagFromPatent, removeGlobalTag,
   };

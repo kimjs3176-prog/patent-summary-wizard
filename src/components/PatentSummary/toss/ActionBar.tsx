@@ -52,7 +52,7 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
               </Button>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center justify-end gap-1">
             <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
               <Printer className="w-3.5 h-3.5" /> 인쇄
             </Button>
