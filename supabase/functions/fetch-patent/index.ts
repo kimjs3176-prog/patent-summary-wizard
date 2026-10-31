@@ -3,6 +3,9 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { resolveKiprisKey } from "../_shared/kipris.ts";
+import { log, withRequestLog, type RequestLogger } from "../_shared/log.ts";
+
+const FN = "fetch-patent";
 
 
 // Retry fetch with exponential backoff + per-attempt timeout.
@@ -26,7 +29,7 @@ async function fetchWithRetry(
     } catch (error) {
       clearTimeout(timer);
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(`Fetch attempt ${attempt + 1}/${maxRetries} failed:`, lastError.message);
+      log("warn", "kipris.fetch_failed", { fn: FN, attempt: attempt + 1, maxRetries, error: lastError });
 
       const msg = lastError.message.toLowerCase();
       const isRetryable =
@@ -42,7 +45,6 @@ async function fetchWithRetry(
       }
 
       const delay = initialDelay * Math.pow(2, attempt) + Math.random() * 400;
-      console.log(`Retrying in ${Math.round(delay)}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -196,7 +198,7 @@ function parsePatentNumber(input: string): { searchNumber: string; displayNumber
 // 캐시 버전 — 데이터 캐시 포맷이 바뀔 때마다 증가시켜 자동 무효화
 const DATA_CACHE_VERSION = "v3-legal-status";
 
-serve(async (req) => {
+serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -248,24 +250,24 @@ serve(async (req) => {
         const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7일
         const versionOk = (cached.cache_version || "v1") === DATA_CACHE_VERSION;
         if (versionOk && cacheAge < CACHE_TTL) {
-          console.log("Cache HIT for patent:", trimmedNumber);
+          logger.info("cache.hit", { patentNumber: trimmedNumber, ageMs: cacheAge });
           return new Response(
             JSON.stringify({ success: true, data: cached.patent_data, relatedPatents: cached.related_patents }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         } else {
           // 오래된 행은 새 데이터가 upsert 될 때 교체된다. 미리 지우면 KIPRIS 장애 중 캐시까지 잃는다.
-          console.log(`Cache invalidated (version=${cached.cache_version}, age=${cacheAge}ms):`, trimmedNumber);
+          logger.info("cache.stale", { patentNumber: trimmedNumber, cacheVersion: cached.cache_version, ageMs: cacheAge });
         }
       } else {
-        console.log("Cache MISS for patent:", trimmedNumber);
+        logger.info("cache.miss", { patentNumber: trimmedNumber });
       }
     }
 
     // Try site_settings first, then env
     const KIPRIS_API_KEY = await resolveKiprisKey();
     if (!KIPRIS_API_KEY) {
-      console.error("[CONFIG] KIPRIS_API_KEY not configured");
+      logger.error("config.missing", { setting: "KIPRIS_API_KEY" });
       return new Response(
         JSON.stringify({ success: false, error: "서비스 일시적 오류입니다. 잠시 후 다시 시도해주세요." }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -273,7 +275,6 @@ serve(async (req) => {
     }
 
     const parsed = parsePatentNumber(patentNumber);
-    console.log("Fetching patent from KIPRIS:", patentNumber, "->", parsed);
 
     let patentData: PatentData = {
       displayNumber: parsed.displayNumber,
@@ -299,23 +300,25 @@ serve(async (req) => {
     searchUrl.searchParams.set("patent", "true");
     searchUrl.searchParams.set("utility", "true");
 
-    console.log("KIPRIS search URL:", searchUrl.toString().replace(KIPRIS_API_KEY, "***"));
-
+    const searchStartedAt = Date.now();
     const searchResponse = await fetchWithRetry(searchUrl.toString());
     const searchText = await searchResponse.text();
 
-    console.log("KIPRIS API response status:", searchResponse.status);
-    console.log("KIPRIS API response preview:", searchText.substring(0, 1500));
+    logger.info("kipris.search", {
+      searchType: parsed.searchType,
+      status: searchResponse.status,
+      bytes: searchText.length,
+      durationMs: Date.now() - searchStartedAt,
+    });
 
     // Check for API error
     if (searchText.includes("<successYN>N</successYN>") ||
       searchText.includes("INVALID REQUEST") ||
       searchText.includes("<resultCode>10</resultCode>")) {
       const errorMsg = searchText.match(/<resultMsg>([^<]+)<\/resultMsg>/)?.[1] || "API 오류";
-      console.error("[UPSTREAM] KIPRIS API error:", errorMsg);
-      
       // Distinguish quota exceeded from other errors
       const isQuotaExceeded = errorMsg.includes("월") && (errorMsg.includes("호출") || errorMsg.includes("Exceeds"));
+      logger.error("kipris.search.error", { status: searchResponse.status, resultMsg: errorMsg, quotaExceeded: isQuotaExceeded });
       const userMessage = isQuotaExceeded
         ? "KIPRIS API 월간 호출 한도를 초과했습니다. 다음 달에 다시 시도해주세요."
         : "외부 서비스 연동 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
@@ -359,7 +362,6 @@ serve(async (req) => {
         .filter(w => !['우수한', '이를', '하는', '위한', '관한', '대한', '있는', '방법', '장치', '시스템'].includes(w));
       const keyword = words.length > 0 ? words[0] : "";
       if (!keyword) return;
-      console.log("Related patents search keyword:", keyword);
       const relatedUrl = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
       relatedUrl.searchParams.set("ServiceKey", KIPRIS_API_KEY);
       relatedUrl.searchParams.set("inventionTitle", keyword);
@@ -377,7 +379,7 @@ serve(async (req) => {
           const text = await res.text();
           return res.ok && !text.includes("<successYN>N</successYN>") ? text : null;
         } catch (e) {
-          console.error("Error fetching related patents:", e);
+          logger.warn("kipris.related.error", { error: e });
           return null;
         }
       })();
@@ -466,10 +468,10 @@ serve(async (req) => {
           detailUrl.searchParams.set("applicationNumber", parsed.searchNumber.replace(/[^0-9]/g, ""));
         }
 
-        console.log("KIPRIS detail URL:", detailUrl.toString().replace(KIPRIS_API_KEY, "***"));
-
+        const detailStartedAt = Date.now();
         const detailRes = await fetchWithRetry(detailUrl.toString());
         const detailText = await detailRes.text();
+        logger.info("kipris.detail", { status: detailRes.status, bytes: detailText.length, durationMs: Date.now() - detailStartedAt });
 
 
         if (detailRes.ok && !detailText.includes("<successYN>N</successYN>")) {
@@ -511,7 +513,6 @@ serve(async (req) => {
             }
             if (inventors.length > 0) {
               patentData.inventors = inventors;
-              console.log("Inventors extracted from detail API:", inventors.join(", "));
             }
           }
 
@@ -545,10 +546,10 @@ serve(async (req) => {
             patentData.images = uniqueImages;
           }
         } else {
-          console.warn("Detail API returned error or empty payload");
+          logger.warn("kipris.detail.empty", { status: detailRes.status });
         }
       } catch (detailErr) {
-        console.error("Error fetching patent detail (claims):", detailErr);
+        logger.warn("kipris.detail.error", { error: detailErr });
       }
 
 
@@ -591,12 +592,13 @@ serve(async (req) => {
             console.log("Total drawings after supplementary search:", existingImages.length);
           }
         } catch (suppErr) {
-          console.error("Supplementary drawing search error:", suppErr);
+          logger.warn("kipris.drawings.error", { error: suppErr });
         }
       }
     }
 
     if (!patentData.title) {
+      logger.info("patent.not_found", { patentNumber: trimmedNumber, searchItems: allSearchItems.length });
       return new Response(
         JSON.stringify({
           success: false,
@@ -611,7 +613,6 @@ serve(async (req) => {
 
     patentData.patentNumber = patentData.displayNumber;
 
-    console.log("Patent data fetched successfully:", patentData.title);
 
     // 관련 특허 검색 결과 수집 (요청은 상세 조회와 병렬로 이미 진행됨)
     let relatedPatents: RelatedPatent[] = [];
@@ -674,35 +675,40 @@ serve(async (req) => {
           }
         }
       } catch (relatedError) {
-        console.error("Error fetching related patents:", relatedError);
+        logger.warn("kipris.related.error", { error: relatedError });
       }
     }
-    
-    console.log("Final related patents count:", relatedPatents.length);
 
     // ★ 캐시 저장: KIPRIS에서 가져온 데이터를 DB에 저장
     try {
-      await sb.from("patent_data_cache").upsert({
+      const { error: cacheWriteError } = await sb.from("patent_data_cache").upsert({
         patent_number: trimmedNumber,
         patent_data: patentData,
         related_patents: relatedPatents,
         created_at: new Date().toISOString(),
         cache_version: DATA_CACHE_VERSION,
       }, { onConflict: "patent_number" });
-      console.log("Patent data cached for:", trimmedNumber);
+      if (cacheWriteError) logger.warn("cache.write_failed", { error: cacheWriteError.message });
     } catch (cacheErr) {
-      console.error("Failed to cache patent data:", cacheErr);
+      logger.warn("cache.write_failed", { error: cacheErr });
     }
+
+    logger.info("patent.fetched", {
+      patentNumber: trimmedNumber,
+      claims: patentData.claims?.length ?? 0,
+      images: patentData.images?.length ?? 0,
+      related: relatedPatents.length,
+    });
 
     return new Response(
       JSON.stringify({ success: true, data: patentData, relatedPatents }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("fetch-patent error:", error);
+    logger.error("request.error", { error });
     return new Response(
       JSON.stringify({ success: false, error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}));

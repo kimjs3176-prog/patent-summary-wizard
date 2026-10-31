@@ -3,6 +3,9 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { AiUnavailableError, aiUnavailableResponse, fetchAiWithRetry } from "../_shared/aiRetry.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { publicLawLink } from "./lawLink.ts";
+import { log, withRequestLog, type RequestLogger } from "../_shared/log.ts";
+
+const FN = "analyze-regulations";
 
 
 interface RegulationLaw {
@@ -47,7 +50,10 @@ async function callGemini(prompt: string): Promise<string> {
         const j = await r.json();
         return j.choices?.[0]?.message?.content ?? "";
       }
-    } catch (_) { /* fallback */ }
+      log("warn", "ai.gemini.failed", { fn: FN, status: r.status, fallback: "lovable" });
+    } catch (e) {
+      log("warn", "ai.gemini.error", { fn: FN, error: e, fallback: "lovable" });
+    }
   }
 
   const r = await fetchAiWithRetry("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -75,13 +81,13 @@ async function fetchLawSearch(url: string): Promise<any | null> {
       if (res.ok) {
         const text = await res.text();
         try { return JSON.parse(text); } catch {
-          console.error("law.go.kr non-JSON response", text.slice(0, 200));
+          log("warn", "law.search.non_json", { fn: FN, bytes: text.length });
           return null; // e.g. account verification message; retrying won't help
         }
       }
-      console.error("law.go.kr HTTP", res.status);
+      log("warn", "law.search.http_error", { fn: FN, status: res.status, attempt: attempt + 1 });
     } catch (e) {
-      console.error("law.go.kr fetch error", e);
+      log("warn", "law.search.error", { fn: FN, error: e, attempt: attempt + 1 });
     }
     await new Promise((r) => setTimeout(r, 600));
   }
@@ -103,7 +109,7 @@ async function searchLaw(oc: string, query: string): Promise<RegulationLaw[]> {
   } as RegulationLaw));
 }
 
-serve(async (req) => {
+serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const limited = await enforceRateLimit(req, { bucket: "analyze-regulations", limit: 20, windowSeconds: 300 });
@@ -112,6 +118,7 @@ serve(async (req) => {
   try {
     const OC = Deno.env.get("LAW_GO_KR_OC");
     if (!OC) {
+      logger.error("config.missing", { setting: "LAW_GO_KR_OC" });
       return new Response(JSON.stringify({ success: false, error: "LAW_GO_KR_OC not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -148,13 +155,22 @@ JSON 형식:
   "summary": "전체 규제 개요 2문장"
 }`;
 
+    const aiStartedAt = Date.now();
     const aiRaw = await callGemini(prompt);
-    const parsed = extractJson(aiRaw) || { keywords: [], reasons: {}, summary: "" };
+    const parsedJson = extractJson(aiRaw);
+    const parsed = parsedJson || { keywords: [], reasons: {}, summary: "" };
     const keywords: string[] = Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, 5) : [];
     const reasons: Record<string, string> = parsed.reasons || {};
+    logger.info("ai.done", { durationMs: Date.now() - aiStartedAt, parsed: Boolean(parsedJson), lawNames: keywords.length });
 
     // Search law.go.kr for each keyword in parallel
+    const lawStartedAt = Date.now();
     const results = await Promise.all(keywords.map((k) => searchLaw(OC, k)));
+    logger.info("law.search", {
+      durationMs: Date.now() - lawStartedAt,
+      queries: keywords.length,
+      matched: results.filter((hits) => hits.length > 0).length,
+    });
     const laws: RegulationLaw[] = [];
     const seen = new Set<string>();
     keywords.forEach((k, idx) => {
@@ -185,10 +201,10 @@ JSON 형식:
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("analyze-regulations error", e);
+    logger.error("request.error", { error: e });
     if (e instanceof AiUnavailableError) return aiUnavailableResponse(corsHeaders);
     return new Response(JSON.stringify({ success: false, error: String(e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));
