@@ -152,7 +152,7 @@ const Filing = () => {
                     </li>
                   );
                 })}
-                <li className="flex-shrink-0 pl-1 md:pl-2 ml-1 border-l border-border/60">
+                {!state?.filingOnly && <li className="flex-shrink-0 pl-1 md:pl-2 ml-1 border-l border-border/60">
                   <button
                     type="button"
                     onClick={() => post({ type: "agri-ip:go", step: "global" })}
@@ -164,7 +164,7 @@ const Filing = () => {
                     <Globe className="w-3.5 h-3.5" />
                     <span className="whitespace-nowrap">해외동향</span>
                   </button>
-                </li>
+                </li>}
               </ol>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {state?.dday && (

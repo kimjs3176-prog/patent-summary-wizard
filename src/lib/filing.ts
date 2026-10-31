@@ -6,7 +6,8 @@
 //   에이프 → AIS: {type:"agri-ip:state", …} 그릴 때마다 단계·쪽·이전/다음·D-day (이 페이지가 단계 바를 그린다) · {type:"agri-ip:ais", q} 'AIS로 분석' → AIS 가 직접 검색
 // 반대로 AIS 가 에이프 안(iframe)에 열렸을 때는(?from=agri-ip) 비교 특허를 부모 창으로 postMessage 한다.
 
-export const FILING_DEFAULT_URL = "https://koat-axlab.vercel.app/";
+// 기본은 이 사이트 안의 사본(public/filing-app, scripts/sync-filing-app.mjs 로 갱신). 바깥 서버를 쓰려면 관리자 설정 filing_url 에 https 주소
+export const FILING_DEFAULT_URL = "/filing-app/";
 
 export type SettingsLike = Record<string, string | undefined>;
 
@@ -14,11 +15,13 @@ export function filingEnabled(settings: SettingsLike): boolean {
   return settings.feature_filing !== "false";
 }
 
-/** 관리자가 적은 주소를 정리한다 (비어 있거나 https 가 아니면 기본 주소). */
+/** 관리자가 적은 주소를 정리한다: 이 사이트 안의 경로(/…/)나 https 주소만, 그 밖에는 기본 주소. */
 export function filingBaseUrl(settings: SettingsLike): string {
   const raw = (settings.filing_url || "").trim();
+  if (!raw) return FILING_DEFAULT_URL;
+  if (/^\/[A-Za-z0-9_\-./]*$/.test(raw) && !raw.startsWith("//")) return raw.replace(/\/?$/, "/");
   try {
-    const u = new URL(raw || FILING_DEFAULT_URL);
+    const u = new URL(raw);
     if (u.protocol !== "https:" && u.hostname !== "localhost" && u.hostname !== "127.0.0.1") return FILING_DEFAULT_URL;
     u.search = "";
     u.hash = "";
@@ -28,8 +31,10 @@ export function filingBaseUrl(settings: SettingsLike): string {
   }
 }
 
-export function filingOrigin(settings: SettingsLike): string {
-  return new URL(filingBaseUrl(settings)).origin;
+/** iframe(출원지원)의 출처 — 같은 사이트 경로면 이 사이트 */
+export function filingOrigin(settings: SettingsLike, here: string = typeof window !== "undefined" ? window.location.origin : "https://atipsum.lovable.app"): string {
+  const base = filingBaseUrl(settings);
+  return base.startsWith("/") ? here : new URL(base).origin;
 }
 
 /** 에이프 단계 이름 (주소 #… 에 들어가는 값). 모르는 값은 1단계로. */
@@ -94,6 +99,8 @@ export interface FilingState {
   title: string;
   dday: { label: string; text: string; warn: boolean } | null;
   api: string;
+  /** 출원지원 전용 빌드(이 사이트 안의 사본): 해외동향 탭이 없다 */
+  filingOnly: boolean;
 }
 export type FilingMessage = { type: "agri-ip:state"; state: FilingState } | { type: "agri-ip:ais"; q: string };
 
@@ -125,6 +132,7 @@ export function parseFilingMessage(ev: { origin: string; data: unknown }, expect
         title: str(d.title, 120),
         dday: dd && typeof dd.text === "string" ? { label: str(dd.label, 40), text: str(dd.text, 20), warn: dd.warn === true } : null,
         api: str(d.api, 40),
+        filingOnly: d.filingOnly === true,
       },
     };
   }
