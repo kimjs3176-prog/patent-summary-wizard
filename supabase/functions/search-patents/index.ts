@@ -925,6 +925,8 @@ serve(async (req) => {
         isNaturalLanguage: true,
         extractedKeywords: searchKeywords,
         intent: aiIntent,
+        // Report-only: how many retrieved (active) patents the relevance filter above dropped.
+        droppedByRelevance: Math.max(0, activePatents.length - relevant.length),
       } : {}),
     };
 

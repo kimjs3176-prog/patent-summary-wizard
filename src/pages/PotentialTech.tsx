@@ -5,6 +5,8 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { FavoriteToggle } from "@/components/search/FavoriteToggle";
+import { useCardFavorites } from "@/components/search/useCardFavorites";
 
 interface PotentialPatent {
   id: string;
@@ -34,6 +36,7 @@ const PotentialTech = () => {
   const [query, setQuery] = useState("");
   const [grade, setGrade] = useState("전체");
   const [page, setPage] = useState(1);
+  const favorites = useCardFavorites();
 
   useEffect(() => {
     document.title = "잠재기술(무상기술이전) | Agri IP Summary";
@@ -137,11 +140,11 @@ const PotentialTech = () => {
               </p>
               <ul className="rounded-2xl border border-border/50 bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
                 {pageRows.map((r) => (
-                  <li key={r.id} className="border-b border-border/40 last:border-b-0">
+                  <li key={r.id} className="border-b border-border/40 last:border-b-0 flex items-center">
                     <button
                       type="button"
                       onClick={() => navigate(`/?patent=${encodeURIComponent(r.application_number)}`)}
-                      className="w-full text-left px-4 py-3.5 hover:bg-muted/40 transition-colors flex items-start gap-3"
+                      className="min-w-0 flex-1 text-left px-4 py-3.5 hover:bg-muted/40 transition-colors flex items-start gap-3"
                     >
                       <span className={`shrink-0 mt-0.5 px-2 py-0.5 rounded-md border text-[11px] font-mono font-bold ${gradeClass(r.grade)}`}>
                         {r.grade ?? "-"}
@@ -156,6 +159,22 @@ const PotentialTech = () => {
                       </span>
                       <ArrowRight className="shrink-0 w-4 h-4 text-muted-foreground mt-1" />
                     </button>
+                    {favorites.enabled && (
+                      <FavoriteToggle
+                        className="shrink-0 mr-3"
+                        active={favorites.isFavorite(r.application_number)}
+                        title={r.title}
+                        onToggle={() => favorites.toggle({
+                          patentNumber: r.application_number,
+                          title: r.title,
+                          // This list holds 농촌진흥청-owned unused patents only (see the page intro).
+                          assignee: "농촌진흥청",
+                          applicationNumber: r.application_number,
+                          registrationNumber: r.registration_number,
+                          registrationDate: r.registration_date,
+                        })}
+                      />
+                    )}
                   </li>
                 ))}
                 {pageRows.length === 0 && (
