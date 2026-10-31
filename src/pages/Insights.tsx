@@ -1,28 +1,20 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, BarChart3, FileText, Info, Layers, RefreshCw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, Building2, CalendarRange, FileText, Info, Layers, RefreshCw, Sparkles, TrendingUp } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TECHNOLOGY_FIELDS } from "../../supabase/functions/_shared/technologyFields";
 import { trendHeadline, useFilingTrends } from "@/hooks/useFilingTrends";
+import { Growth } from "@/components/insights/Growth";
+import { InstituteRanking } from "@/components/insights/InstituteRanking";
+import { InsightsDownload } from "@/components/insights/InsightsDownload";
+import { MonthlyTrendChart } from "@/components/insights/MonthlyTrendChart";
 
 
 const FIELD_META = Object.fromEntries(TECHNOLOGY_FIELDS.map((f) => [f.id, f])) as Record<string, typeof TECHNOLOGY_FIELDS[number]>;
 const fmtDate = (d: string) => `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}`;
-const pct = (n: number | null) => (n === null ? "—" : `${n > 0 ? "+" : ""}${n}%`);
-
-function Growth({ value, className = "" }: { value: number | null; className?: string }) {
-  if (value === null) return <span className={`text-muted-foreground ${className}`}>—</span>;
-  const up = value >= 0;
-  const Icon = up ? TrendingUp : TrendingDown;
-  return (
-    <span className={`inline-flex items-center gap-0.5 font-semibold tabular-nums ${up ? "trend-up" : "trend-down"} ${className}`}>
-      <Icon className="w-3.5 h-3.5" />{pct(value)}
-    </span>
-  );
-}
 
 function Sparkline({ values, tone }: { values: number[]; tone: string }) {
   const max = Math.max(1, ...values);
@@ -120,6 +112,11 @@ export default function Insights() {
 
           {data && view && (
             <>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">공개가 끝난 <span className="font-semibold text-foreground">{view.y}년</span>을 기준으로 비교해요.</p>
+                <div className="ml-auto"><InsightsDownload data={data} /></div>
+              </div>
+
               {/* KPI */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Kpi icon={FileText} label={`${view.y}년 출원`} value={view.latest?.count ?? 0} unit="건" sub={<>전년 대비 <Growth value={view.growth} /></>} />
@@ -143,7 +140,7 @@ export default function Insights() {
                 </Card>
               )}
 
-              <div>
+              <div className="grid lg:grid-cols-2 gap-4 md:gap-5">
                 {/* Yearly */}
                 <Card title="연도별 출원 추이" icon={BarChart3}>
                   <div className="h-56">
@@ -183,6 +180,10 @@ export default function Insights() {
                   </p>
                 </Card>
 
+                {/* Monthly */}
+                <Card title="월별 출원 추이" icon={CalendarRange} action={<span className="text-[11px] text-muted-foreground">최근 {data.monthly.length}개월</span>}>
+                  <MonthlyTrendChart data={data} />
+                </Card>
               </div>
 
               {/* Fields */}
@@ -233,6 +234,11 @@ export default function Insights() {
                   })}
                 </ul>
                 <p className="mt-2 text-[11px] text-muted-foreground">전년 출원이 5건 미만인 분야는 증감률을 표시하지 않아요. 분야를 누르면 관련 특허를 볼 수 있어요.</p>
+              </Card>
+
+              {/* Institutes */}
+              <Card title="기관별 출원" icon={Building2} action={<span className="text-[11px] text-muted-foreground">누적 많은 순</span>}>
+                <InstituteRanking data={data} />
               </Card>
 
               {/* Recent */}
