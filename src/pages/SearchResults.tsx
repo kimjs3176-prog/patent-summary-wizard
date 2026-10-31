@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User } from "lucide-react";
+import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User, FileSignature } from "lucide-react";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { filingEnabled } from "@/lib/filing";
+import { parseIpNumber } from "@/lib/ipNumber";
 import { Button } from "@/components/ui/button";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -13,7 +16,14 @@ const ITEMS_PER_PAGE = 12;
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const keyword = searchParams.get("keyword") || "";
+  // 에이프(출원지원)가 여는 /search?q=출원번호|키워드&from=agri-ip : 번호면 요약으로, 아니면 키워드 검색으로
+  const rawQ = (searchParams.get("q") || "").trim();
+  const keyword = searchParams.get("keyword") || (rawQ && !parseIpNumber(rawQ) ? rawQ : "");
+  const { settings } = useSiteSettings();
+  useEffect(() => {
+    if (rawQ && parseIpNumber(rawQ)) navigate(`/?patent=${encodeURIComponent(rawQ)}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawQ]);
   const fieldName = searchParams.get("field") || "";
   const fieldId = searchParams.get("fieldId") || "";
   const [results, setResults] = useState<KeywordSearchResult[]>([]);
@@ -128,12 +138,22 @@ export default function SearchResults() {
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(url)}`;
 
   const headerRight = (
+    <>
+    {filingEnabled(settings) && keyword && (
+      <Link to={`/filing?kw=${encodeURIComponent(keyword)}`}>
+        <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all" title="이 키워드로 에이프 출원지원에서 아이디어·명칭 초안을 시작합니다">
+          <FileSignature className="w-3.5 h-3.5" />
+          이 키워드로 출원 준비
+        </Button>
+      </Link>
+    )}
     <Link to="/">
       <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
         <ArrowLeft className="w-3.5 h-3.5" />
         메인으로
       </Button>
     </Link>
+    </>
   );
 
   const getPageNumbers = () => {

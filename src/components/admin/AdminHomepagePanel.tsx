@@ -79,6 +79,7 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                     { key: "feature_search_history", label: "최근 검색 기록", desc: "메인 화면의 검색 기록 카드 노출" },
                     { key: "feature_glossary", label: "용어집 자동 주석", desc: "AI 요약 본문의 학술 용어 툴팁 자동 표시" },
                     { key: "feature_competitor_analysis", label: "경쟁 특허 비교 분석", desc: "요약 하단의 유사 특허 비교 표 노출" },
+                    { key: "feature_filing", label: "출원지원 (에이프 Agri-IP)", desc: "메인 상단의 ‘출원지원’ 메뉴, 요약·검색 화면의 ‘출원지원으로’ 버튼 (에이프 5단계 출원 준비를 이 사이트 안에서 엽니다)" },
                   ].map(feat => {
                     const isOn = siteSettings[feat.key] !== "false";
                     return (

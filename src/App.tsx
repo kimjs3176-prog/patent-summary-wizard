@@ -15,6 +15,7 @@ const TechVideos = lazy(() => import("./pages/TechVideos"));
 const PotentialTech = lazy(() => import("./pages/PotentialTech"));
 const PatentExport = lazy(() => import("./pages/PatentExport"));
 const PatentFinder = lazy(() => import("./pages/PatentFinder"));
+const Filing = lazy(() => import("./pages/Filing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 import { SplashScreen } from "./components/SplashScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -102,6 +103,7 @@ const App = () => {
                 <Route path="/batch" element={<Batch />} />
                 <Route path="/export" element={<PatentExport />} />
                 <Route path="/finder" element={<PatentFinder />} />
+                <Route path="/filing" element={<Filing />} />
                 <Route path="/summary-sample" element={<SummarySample />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
                 <Route path="/potential" element={<PotentialTech />} />
