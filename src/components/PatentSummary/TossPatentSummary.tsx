@@ -7,6 +7,7 @@ import { TechValuation } from "./TechValuation";
 import { printWebSummary } from "./PdfGenerator";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { safeFetch } from "@/lib/safeFetch";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { extractKeywordsFromPatent } from "./_keywords";
@@ -71,13 +72,15 @@ function TossPatentSummaryInner({
   );
   const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text, autoGlossary) : text);
 
-  // 사업화 점수 호출
+  // 사업화 점수 호출 — 특허가 바뀌면 이전 요청의 늦은 응답은 버린다.
   useEffect(() => {
+    if (!patentData || !patentNumber || isStreaming) return;
+    let cancelled = false;
+    const controller = new AbortController();
     const run = async () => {
-      if (!patentData || !patentNumber || isStreaming) return;
       setScoreLoading(true);
       try {
-        const res = await fetch(
+        const res = await safeFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-commercialization`,
           {
             method: "POST",
@@ -85,22 +88,31 @@ function TossPatentSummaryInner({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ patentNumber, patentData, summaryContent: content, analysisMode: "detailed" }),
+            // 서버는 patent_data_cache / patent_ai_cache 의 저장본만 사용한다. 번호만 보낸다.
+            body: JSON.stringify({ patentNumber, analysisMode: "detailed" }),
+            timeoutMs: 90000,
+            retries: 1,
+            signal: controller.signal,
           }
         );
         const json = await res.json();
+        if (cancelled) return;
         if (json.success) {
           setScore(json.score);
           setDetails(json.details);
           onScoreReady?.(json.score);
         }
       } catch (e) {
-        console.error("Commercialization analysis error:", e);
+        if (!cancelled) console.error("Commercialization analysis error:", e);
       } finally {
-        setScoreLoading(false);
+        if (!cancelled) setScoreLoading(false);
       }
     };
     run();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patentData, patentNumber, isStreaming, content]);
 

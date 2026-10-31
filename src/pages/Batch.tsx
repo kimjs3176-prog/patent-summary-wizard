@@ -714,6 +714,7 @@ const Batch = () => {
                       </div>
                     ) : (
                       <TossPatentSummary
+                        key={currentPatent}
                         content={summary}
                         patentNumber={currentPatent}
                         isStreaming={isLoading}

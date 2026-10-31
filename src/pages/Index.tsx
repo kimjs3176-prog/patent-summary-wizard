@@ -290,6 +290,7 @@ const Index = () => {
               </div>
               <div className="min-w-0 flex-1">
               <TossPatentSummary
+                key={currentPatent}
                 content={summary}
                 patentNumber={currentPatent}
                 isStreaming={isLoading}
