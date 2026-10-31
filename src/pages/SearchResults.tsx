@@ -1,20 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User, FileSignature } from "lucide-react";
+import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User, FileSignature, Info } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { filingEnabled } from "@/lib/filing";
 import { parseIpNumber } from "@/lib/ipNumber";
 import { Button } from "@/components/ui/button";
-import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { safeFetch } from "@/lib/safeFetch";
 import { FieldTrendPanel } from "@/components/FieldTrendPanel";
+import { SearchFilterBar } from "@/components/search/SearchFilterBar";
+import { FavoriteToggle } from "@/components/search/FavoriteToggle";
+import { useCardFavorites } from "@/components/search/useCardFavorites";
+import {
+  applySearchFilters, EMPTY_SEARCH_FILTERS, parseFilterParams, writeFilterParams,
+  type SearchFilterState, type SearchResultRow,
+} from "@/components/search/searchFilters";
 
 const ITEMS_PER_PAGE = 12;
 
 export default function SearchResults() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   // 에이프(출원지원)가 여는 /search?q=출원번호|키워드&from=agri-ip : 번호면 요약으로, 아니면 키워드 검색으로
   const rawQ = (searchParams.get("q") || "").trim();
@@ -26,12 +32,17 @@ export default function SearchResults() {
   }, [rawQ]);
   const fieldName = searchParams.get("field") || "";
   const fieldId = searchParams.get("fieldId") || "";
-  const [results, setResults] = useState<KeywordSearchResult[]>([]);
+  const [results, setResults] = useState<SearchResultRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [extractedKeywords, setExtractedKeywords] = useState<string[]>([]);
   const [aiIntent, setAiIntent] = useState("");
+  // Sentence searches: how many retrieved patents the strict concept filter dropped (server-reported).
+  const [droppedByRelevance, setDroppedByRelevance] = useState(0);
+  const filters = useMemo(() => parseFilterParams(searchParams), [searchParams]);
+  const filtered = useMemo(() => applySearchFilters(results, filters), [results, filters]);
+  const favorites = useCardFavorites();
 
   const [searchError, setSearchError] = useState("");
   const [retryNonce, setRetryNonce] = useState(0);
@@ -74,6 +85,7 @@ export default function SearchResults() {
     setSuggestions([]);
     setCorrected("");
     setResults([]);
+    setDroppedByRelevance(0);
     const doSearch = async () => {
       setIsLoading(true);
       try {
@@ -97,6 +109,11 @@ export default function SearchResults() {
           setTotalCount(result.totalCount || result.patents.length);
           setExtractedKeywords(result.extractedKeywords || []);
           setAiIntent(result.intent || "");
+          setDroppedByRelevance(
+            result.isNaturalLanguage && typeof result.droppedByRelevance === "number" && result.droppedByRelevance > 0
+              ? Math.round(result.droppedByRelevance)
+              : 0,
+          );
           if (result.patents.length === 0) fetchSuggestions(keyword, isCancelled);
         } else {
           setSearchError(
@@ -119,8 +136,14 @@ export default function SearchResults() {
 
   const searchFor = (kw: string) => navigate(`/search?keyword=${encodeURIComponent(kw)}`);
 
-  const totalPages = Math.ceil(results.length / ITEMS_PER_PAGE);
-  const paginatedResults = results.slice(
+  // Filters live in the URL (replace, so the back button still leaves the page) and restart paging.
+  const updateFilters = (next: SearchFilterState) => {
+    setCurrentPage(1);
+    setSearchParams(writeFilterParams(searchParams, next), { replace: true });
+  };
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedResults = filtered.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -225,7 +248,27 @@ export default function SearchResults() {
         {fieldName && !isLoading && results.length > 0 && <FieldTrendPanel fieldName={fieldName} results={results} />}
         <div id="field-patents" className="scroll-mt-24" />
 
+        {!isLoading && droppedByRelevance > 0 && results.length > 0 && (
+          <p className="max-w-5xl mx-auto mb-3 flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+            <span>문장 검색은 핵심 개념이 제목에 함께 나오는 특허만 보여 드려요. 관련성이 약한 {droppedByRelevance}건은 제외했습니다.</span>
+          </p>
+        )}
 
+        {!isLoading && results.length > 0 && (
+          <SearchFilterBar results={results} state={filters} onChange={updateFilters} filteredCount={filtered.length} />
+        )}
+
+        {/* Filters exclude everything */}
+        {!isLoading && results.length > 0 && filtered.length === 0 && (
+          <div className="max-w-5xl mx-auto text-center py-14 rounded-2xl border border-dashed border-border bg-card/60">
+            <p className="text-foreground font-semibold mb-1">필터 조건에 맞는 특허가 없습니다</p>
+            <p className="text-sm text-muted-foreground mb-4">연도·기관·등록 여부 조건을 넓혀 보세요.</p>
+            <Button variant="outline" onClick={() => updateFilters(EMPTY_SEARCH_FILTERS)} className="rounded-full px-5">
+              필터 초기화
+            </Button>
+          </div>
+        )}
 
         {/* Loading */}
         {isLoading && (
@@ -245,10 +288,10 @@ export default function SearchResults() {
           <>
             <div className="max-w-5xl mx-auto grid gap-3 sm:grid-cols-1 md:grid-cols-2">
               {paginatedResults.map((patent, idx) => (
+                <div key={patent.patentId} className="relative h-full">
                 <button
-                  key={patent.patentId}
                   onClick={() => handlePatentClick(patent.patentId)}
-                  className="w-full h-full p-5 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left group flex flex-col"
+                  className={`w-full h-full p-5 ${favorites.enabled ? "pr-14" : ""} rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left group flex flex-col`}
                   style={{ boxShadow: 'var(--shadow-xs)' }}
                 >
                   <div className="flex gap-4 flex-1">
@@ -319,6 +362,25 @@ export default function SearchResults() {
                     </span>
                   </div>
                 </button>
+                {favorites.enabled && (
+                  <FavoriteToggle
+                    className="absolute top-3.5 right-3.5"
+                    active={favorites.isFavorite(patent.patentId)}
+                    title={patent.titleKo || patent.title}
+                    onToggle={() => favorites.toggle({
+                      patentNumber: patent.patentId,
+                      title: patent.title,
+                      titleKo: patent.titleKo,
+                      assignee: patent.assignee || patent.applicant || patent.organizationName,
+                      applicationNumber: patent.applicationNumber,
+                      registrationNumber: patent.registrationNumber,
+                      applicationDate: patent.applicationDate,
+                      publicationDate: patent.publicationDate,
+                      representativeImage: patent.thumbnail,
+                    })}
+                  />
+                )}
+                </div>
               ))}
             </div>
 
@@ -396,7 +458,7 @@ export default function SearchResults() {
 
             {/* Page info */}
             <p className="text-center text-xs text-muted-foreground mt-3">
-              {results.length}건 중 {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, results.length)}건 표시
+              {filtered.length}건 중 {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}건 표시
             </p>
           </>
         )}
