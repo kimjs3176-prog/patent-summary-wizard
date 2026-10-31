@@ -60,7 +60,7 @@ export async function fetchKosisRef(key: string, s: KosisSeries, serviceKey: str
       .map((i) => ({ year: Number(i.PRD_DE), eok: Number(i.DT) * s.unitToEok }));
     const r = refFromSeries(points);
     if (!r) return null;
-    return { market_key: key, label: s.label, base_year: r.baseYear, base_value_eok: r.baseEok, cagr: r.cagr, source: s.source };
+    return { market_key: key, label: s.label, base_year: r.baseYear, base_value_eok: r.baseEok, cagr: r.cagr, source: s.source, source_url: "https://kosis.kr", status: "official" };
   } catch (e) {
     console.error("[KOSIS] fetch failed", e);
     return null;

@@ -4,8 +4,12 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { loadServerPatentData, loadServerSummary } from "../_shared/patentSource.ts";
-import { reconcileTrl } from "./trlConsistency.ts";
+import { buildScoringSummary, reconcileTrl } from "./trlConsistency.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
+
+// 점수 산정 규칙 버전. 새로 쓰거나 갱신하는 patent_score_cache 행에 기록한다(기존 행은 다시 계산하지 않는다).
+// s2: TRL 단계를 문장 순서가 아닌 현재 도달 단계로 판정, 상용화전망 섹션은 잘리지 않게 유지.
+const SCORE_VERSION = "s2-2026-11";
 
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
@@ -437,7 +441,9 @@ serve(async (req) => {
           cached.trl = rc.trl;
           cached.trl_reason = makeTrlFallback(rc.trl);
           try {
-            await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason }).eq("patent_number", cached.patent_number);
+            const { error: trlError } = await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason, score_version: SCORE_VERSION }).eq("patent_number", cached.patent_number);
+            if (trlError) await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason }).eq("patent_number", cached.patent_number);
+            else cached.score_version = SCORE_VERSION;
           } catch (_) { /* ignore */ }
         }
         await recordAnalysisCase(caseContext, trimmedPatent, "commercialization", cachedAnalysis, cached.trl, true);
@@ -455,6 +461,7 @@ serve(async (req) => {
               technologyReason: cachedTechnologyReason,
               marketReason: cachedMarketReason,
               businessReason: cachedBusinessReason,
+              scoreVersion: cached.score_version ?? null,
             },
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -475,7 +482,8 @@ serve(async (req) => {
     }
 
     const data = patentData as PatentData;
-    const summaryText = summaryContent.replace(/\s+/g, " ").trim().slice(0, 3500);
+    // 3,500자로 줄이되 상용화전망 섹션(TRL·사업성 근거)은 통째로 남긴다.
+    const summaryText = buildScoringSummary(summaryContent, 3500);
 
 
 
@@ -983,7 +991,7 @@ JSON형식:
       if (trimmedPatent !== digitsKey) {
         await supabase.from("patent_score_cache").delete().eq("patent_number", trimmedPatent);
       }
-      await supabase.from("patent_score_cache").upsert({
+      const row = {
         patent_number: digitsKey,
         total_score: scores.totalScore,
         technology_score: scores.technologyScore,
@@ -995,7 +1003,14 @@ JSON형식:
         technology_reason: scores.technologyReason || "",
         market_reason: scores.marketReason || "",
         business_reason: scores.businessReason || "",
-      }, { onConflict: "patent_number" });
+        score_version: SCORE_VERSION,
+      };
+      const { error: saveError } = await supabase.from("patent_score_cache").upsert(row, { onConflict: "patent_number" });
+      if (saveError) {
+        // score_version 칼럼 마이그레이션 전이면 버전 없이 저장해 점수 캐시가 비지 않게 한다.
+        const { score_version: _omit, ...legacyRow } = row;
+        await supabase.from("patent_score_cache").upsert(legacyRow, { onConflict: "patent_number" });
+      }
       console.log(`[CACHE SAVED] score for ${trimmedPatent}`);
     } catch (saveErr) {
       console.error("Cache save error:", saveErr);
@@ -1015,6 +1030,7 @@ JSON형식:
           technologyReason: scores.technologyReason || "",
           marketReason: scores.marketReason || "",
           businessReason: scores.businessReason || "",
+          scoreVersion: SCORE_VERSION,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
