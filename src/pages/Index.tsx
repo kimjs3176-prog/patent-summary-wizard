@@ -1,4 +1,5 @@
-import { Heart, RotateCcw, BarChart3, Layers, FileSpreadsheet, Compass } from "lucide-react";
+import { Heart, RotateCcw, BarChart3, Layers, FileSpreadsheet, Compass, FileSignature } from "lucide-react";
+import { filingEnabled } from "@/lib/filing";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
@@ -135,6 +136,14 @@ const Index = () => {
           <span className="hidden sm:inline">나만의 특허찾기</span>
         </Button>
       </Link>
+      {filingEnabled(settings) && (
+        <Link to="/filing">
+          <Button aria-label="출원지원" title="출원지원 (에이프 Agri-IP): 아이디어부터 명세서·해외 출원까지" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+            <FileSignature className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <span className="hidden sm:inline">출원지원</span>
+          </Button>
+        </Link>
+      )}
       <Link to="/insights">
         <Button aria-label="인사이트" title="인사이트" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
           <BarChart3 className="w-3 h-3 md:w-3.5 md:h-3.5" />

@@ -22,6 +22,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
   feature_search_history: "true",
   feature_glossary: "true",
   feature_competitor_analysis: "true",
+  feature_filing: "true",
+  filing_url: "https://koat-axlab.vercel.app/",
   homepage_visible_sections: "",
   summary_disclaimer: "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음",
   summary_section_titles: "",

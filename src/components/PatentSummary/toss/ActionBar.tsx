@@ -4,7 +4,10 @@ import type { CommercializationDetails } from "../TechnologyCommercializationSco
 
 
 
-import { ExternalLink, FileText, Printer, RefreshCw, Share2, Heart } from "lucide-react";
+import { ExternalLink, FileText, Printer, RefreshCw, Share2, Heart, FileSignature } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { filingEnabled, sendPatentToFiling } from "@/lib/filing";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PdfGenerator } from "../PdfGenerator";
@@ -15,6 +18,14 @@ interface Props {
 }
 
 export function ActionBar({ isStreaming, content, patentData, handlePrint, onRegenerate, setShareOpen, favoritesEnabled, toggleFavorite, patentNumber, score, details, patentIsFavorite, featureFlags, printRef, allReady }: Props) {
+  const { settings } = useSiteSettings();
+  const navigate = useNavigate();
+  const applicationNo = patentData?.applicationNumber || "";
+  const toFiling = () => {
+    const r = sendPatentToFiling(settings, applicationNo, patentData?.titleKo || patentData?.title || "");
+    if (r.to) navigate(r.to);
+    else toast.success("출원지원의 비교 특허로 보냈습니다");
+  };
   return (
     <>
       {!isStreaming && content && (
@@ -33,6 +44,12 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
                   특허상세
                 </Button>
               </a>
+            )}
+            {filingEnabled(settings) && /^(10|20)\d{11}$/.test(applicationNo.replace(/[^0-9]/g, "")) && (
+              <Button variant="outline" size="sm" onClick={toFiling} title="에이프 출원지원의 선행기술 조사에 이 특허를 비교 특허로 넣습니다" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
+                <FileSignature className="w-3.5 h-3.5" />
+                출원지원으로
+              </Button>
             )}
           </div>
           <div className="flex items-center gap-1">
