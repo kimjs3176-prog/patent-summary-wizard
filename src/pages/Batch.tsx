@@ -74,10 +74,11 @@ function downloadCsv(XLSX: Xlsx, rows: ExportRow[]) {
 }
 
 /** 이미 분석된 특허의 사업화점수·TRL 캐시만 읽는다(새 분석은 절대 요청하지 않음). */
+// patent_score_cache 는 서버 전용이라 직접 읽지 않고, 세 열만 돌려주는 읽기 전용 함수(get_cached_scores)를 쓴다.
 const fetchScoreRows: ScoreFetcher = async (keys) => {
-  const { data, error } = await supabase.from("patent_score_cache").select("patent_number, total_score, trl").in("patent_number", keys);
+  const { data, error } = await supabase.rpc("get_cached_scores" as never, { p_numbers: keys } as never);
   if (error) throw error;
-  return data ?? [];
+  return (data as unknown as { patent_number: string; total_score: number | null; trl: number | null }[] | null) ?? [];
 };
 
 /** 내보낼 행에 캐시된 사업화점수·TRL을 채운다. 조회 실패 시 빈칸 그대로 둔다. */
