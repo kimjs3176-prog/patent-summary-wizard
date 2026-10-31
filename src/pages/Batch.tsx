@@ -76,6 +76,17 @@ const dash = (n: string) => {
   return n;
 };
 
+/** 파일용 날짜 표기 통일: 2021.11.23 / 20211123 → 2021-11-23 (두 조회 방식의 원본 형식이 다름) */
+const normDate = (v: string | undefined) => {
+  const t = (v || "").trim();
+  const m = t.match(/^(\d{4})[.\-/]?(\d{2})[.\-/]?(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : t;
+};
+
+/** 파일용 목록 표기 통일: KIPRIS 의 "A|B|C" 를 "A, B, C" 로 */
+const normList = (v: string | string[] | undefined) =>
+  (Array.isArray(v) ? v : [v || ""]).join("|").split("|").map((x) => x.trim()).filter(Boolean).join(", ");
+
 /* ------------------------------------------------------------------ */
 /* 번호로 조회                                                          */
 /* ------------------------------------------------------------------ */
@@ -163,14 +174,14 @@ function batchRowsToExport(rows: BatchRow[]): ExportRow[] {
         출원번호: d.applicationNumber ? dash(d.applicationNumber) : (d.searchType === "application" ? r.number : ""),
         등록번호: d.registrationNumber ? dash(d.registrationNumber) : (d.searchType === "registration" ? r.number : ""),
         발명의명칭: d.titleKo || d.title || "",
-        출원일: d.filingDate || "",
-        공개일: d.publicationDate || "",
-        등록일: d.registrationDate || "",
+        출원일: normDate(d.filingDate),
+        공개일: normDate(d.publicationDate),
+        등록일: normDate(d.registrationDate),
         등록상태: d.legalStatus || "",
         검색기관: "",
         출원인: d.assignee || "",
         발명자: (d.inventors || []).join(", "),
-        IPC: (d.classifications || []).join(", "),
+        IPC: normList(d.classifications),
         초록: (d.abstract || "").replace(/\s+/g, " "),
         요약서링크: summaryLink(r.number),
       };
@@ -287,14 +298,14 @@ function criteriaToExport(items: Item[], trademarks: TmItem[], ipType: string): 
       출원번호: dash(i.applicationNumber),
       등록번호: i.registrationNumber ? dash(i.registrationNumber) : "",
       발명의명칭: i.title,
-      출원일: i.applicationDate,
-      공개일: i.openDate,
-      등록일: i.registerDate,
+      출원일: normDate(i.applicationDate),
+      공개일: normDate(i.openDate),
+      등록일: normDate(i.registerDate),
       등록상태: i.status,
       검색기관: i.org ?? "",
       출원인: i.applicant.replace(/\|/g, ", "),
       발명자: i.inventors ?? "",
-      IPC: i.ipc.replace(/\|/g, ", "),
+      IPC: normList(i.ipc),
       초록: i.abstract,
       요약서링크: summaryLink(num),
     };
@@ -305,9 +316,9 @@ function criteriaToExport(items: Item[], trademarks: TmItem[], ipType: string): 
     출원번호: dash(t.applicationNumber),
     등록번호: t.registrationNumber ? dash(t.registrationNumber) : "",
     발명의명칭: t.title,
-    출원일: t.applicationDate,
+    출원일: normDate(t.applicationDate),
     공개일: "",
-    등록일: t.registerDate,
+    등록일: normDate(t.registerDate),
     등록상태: t.status,
     검색기관: t.org ?? "",
     출원인: t.applicant,
@@ -747,7 +758,7 @@ const Batch = () => {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-2 min-w-0">
                   <div className="text-sm font-semibold">출원 기간</div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <SegmentedDate value={from} onChange={setFrom} />
                     <span className="text-muted-foreground shrink-0">~</span>
                     <SegmentedDate value={to} onChange={setTo} />
