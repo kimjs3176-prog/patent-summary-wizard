@@ -1,4 +1,5 @@
-import { Heart, RotateCcw, BarChart3, Layers, Compass, FileSignature } from "lucide-react";
+import { Heart, RotateCcw, BarChart3, Layers, Compass, FileSignature, Menu } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { filingEnabled } from "@/lib/filing";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,7 +43,7 @@ const Index = () => {
   const {
     isLoading, isFetching, summary, currentPatent, patentData,
     relatedPatents, analysisStep, generateSummary,
-    loadFromHistory, reset
+    loadFromHistory, reset, summaryMeta
   } = usePatentSummary();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { settings } = useSiteSettings();
@@ -128,6 +129,22 @@ const Index = () => {
     navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
   };
 
+  // 헤더 메뉴: 데스크톱은 전부 펼치고, 좁은 화면은 주 메뉴 하나와 "메뉴" 드롭다운으로 접는다.
+  // (아이콘 6개를 한 줄에 놓으면 390px 화면에서 뒤쪽 버튼이 잘려 눌리지 않았다.)
+  const navItems: { to: string; label: string; title: string; icon: typeof Compass; badge?: string }[] = [
+    ...(filingEnabled(settings) ? [{ to: "/filing", label: "출원지원", title: "출원지원: 아이디어부터 명세서·해외 출원까지", icon: FileSignature }] : []),
+    { to: "/insights", label: "인사이트", title: "인사이트", icon: BarChart3 },
+    { to: "/batch", label: "일괄조회·다운로드", title: "일괄조회·목록 다운로드: 번호 여러 건 조회 또는 조건별 목록을 엑셀·CSV로", icon: Layers },
+    { to: "/compare", label: "관심특허", title: "관심특허", icon: Heart, badge: favorites.length > 0 ? `(${favorites.length})` : undefined },
+  ];
+  const resultActions = (summary || isLoading)
+    ? [
+        { key: "new", label: "새로운 검색", icon: undefined as typeof RotateCcw | undefined, onClick: () => { updateUrl(); reset(); } },
+        { key: "reset", label: "초기화", icon: RotateCcw, onClick: () => { updateUrl(); reset(); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); } },
+      ]
+    : [];
+  const headerBtn = "rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium";
+
   const headerRight = (
     <>
       <Link to="/finder">
@@ -136,53 +153,49 @@ const Index = () => {
           <span className="hidden sm:inline">나만의 특허찾기</span>
         </Button>
       </Link>
-      {filingEnabled(settings) && (
-        <Link to="/filing">
-          <Button aria-label="출원지원" title="출원지원: 아이디어부터 명세서·해외 출원까지" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
-            <FileSignature className="w-3 h-3 md:w-3.5 md:h-3.5" />
-            <span className="hidden sm:inline">출원지원</span>
+      <div className="hidden sm:flex items-center gap-1.5 md:gap-2">
+        {navItems.map(({ to, label, title, icon: Icon, badge }) => (
+          <Link key={to} to={to}>
+            <Button aria-label={label} title={title} variant="outline" size="sm" className={headerBtn}>
+              <Icon className="w-3 h-3 md:w-3.5 md:h-3.5" />
+              <span>{label}</span>{badge ? ` ${badge}` : ""}
+            </Button>
+          </Link>
+        ))}
+        {resultActions.map(({ key, label, icon: Icon, onClick }) => (
+          <Button key={key} variant="outline" size="sm" onClick={onClick} className={headerBtn}>
+            {Icon && <RotateCcw className="w-3 h-3" />}
+            {label}
           </Button>
-        </Link>
-      )}
-      <Link to="/insights">
-        <Button aria-label="인사이트" title="인사이트" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
-          <BarChart3 className="w-3 h-3 md:w-3.5 md:h-3.5" />
-          <span className="hidden sm:inline">인사이트</span>
-        </Button>
-      </Link>
-      <Link to="/batch">
-        <Button aria-label="일괄조회·다운로드" title="일괄조회·목록 다운로드: 번호 여러 건 조회 또는 조건별 목록을 엑셀·CSV로" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
-          <Layers className="w-3 h-3 md:w-3.5 md:h-3.5" />
-          <span className="hidden sm:inline">일괄조회·다운로드</span>
-        </Button>
-      </Link>
-      <Link to="/compare">
-        <Button aria-label="관심특허" title="관심특허" variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
-          <Heart className="w-3 h-3 md:w-3.5 md:h-3.5" />
-          <span className="hidden sm:inline">관심특허</span>{favorites.length > 0 ? ` (${favorites.length})` : ""}
-        </Button>
-      </Link>
-      {(summary || isLoading) && (
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { updateUrl(); reset(); }}
-            className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card btn-press font-medium"
-          >
-            새로운 검색
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { updateUrl(); reset(); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); }}
-            className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-1.5 btn-press font-medium"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span className="hidden sm:inline">초기화</span>
-          </Button>
-        </>
-      )}
+        ))}
+      </div>
+      <div className="sm:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button aria-label="메뉴 열기" variant="outline" size="sm" className={headerBtn}>
+              <Menu className="w-3.5 h-3.5" />
+              {favorites.length > 0 && <span className="text-[10px] font-semibold">{favorites.length}</span>}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[200px]">
+            {navItems.map(({ to, label, icon: Icon, badge }) => (
+              <DropdownMenuItem key={to} asChild>
+                <Link to={to} className="flex items-center gap-2 cursor-pointer">
+                  <Icon className="w-4 h-4 text-primary" />
+                  <span>{label}{badge ? ` ${badge}` : ""}</span>
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            {resultActions.length > 0 && <DropdownMenuSeparator />}
+            {resultActions.map(({ key, label, icon: Icon, onClick }) => (
+              <DropdownMenuItem key={key} onSelect={onClick} className="flex items-center gap-2 cursor-pointer">
+                {Icon ? <RotateCcw className="w-4 h-4 text-muted-foreground" /> : <span className="w-4" />}
+                <span>{label}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </>
   );
 
@@ -211,16 +224,18 @@ const Index = () => {
 
             {/* 세로 스크롤 단일 컬럼 — 공지·기록 → 추천특허 → 기술영상 → 기술이전 안내 */}
             <div className="max-w-5xl mx-auto space-y-6 md:space-y-7 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-              {(homepageVisible.notices !== false || (settings.feature_search_history !== "false" && history.length > 0)) && (
+              {(homepageVisible.notices !== false || homepageVisible.popularSearches !== false || (settings.feature_search_history !== "false" && history.length > 0)) && (
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 home-support-section">
                   {homepageVisible.notices !== false && (
                     <div className="min-w-0">
                       <NoticeSection compact />
                     </div>
                   )}
-                  <div className="min-w-0">
-                    <PopularSearches onPatentSelect={handleSubmit} />
-                  </div>
+                  {homepageVisible.popularSearches !== false && (
+                    <div className="min-w-0">
+                      <PopularSearches onPatentSelect={handleSubmit} />
+                    </div>
+                  )}
                   {settings.feature_search_history !== "false" && history.length > 0 && (
                     <div className="min-w-0 border-t border-border pt-5 md:col-span-2">
                       <SearchHistory history={history} onSelect={handleHistorySelect} onRemove={removeFromHistory} onClear={clearHistory} />
@@ -290,6 +305,7 @@ const Index = () => {
               </div>
               <div className="min-w-0 flex-1">
               <TossPatentSummary
+                key={currentPatent}
                 content={summary}
                 patentNumber={currentPatent}
                 isStreaming={isLoading}
@@ -311,7 +327,8 @@ const Index = () => {
                     });
                   }
                 }}
-                featureFlags={{ pdfEnabled: settings.feature_pdf !== "false", pptEnabled: settings.feature_ppt !== "false" }}
+                featureFlags={{ pdfEnabled: settings.feature_pdf !== "false" }}
+                summaryMeta={summaryMeta}
               />
               <div className="lg:hidden mt-5 flex justify-center">
                 <SatisfactionPanel patentNumber={currentPatent} className="w-full max-w-[864px]" />

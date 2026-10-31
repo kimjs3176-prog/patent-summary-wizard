@@ -19,7 +19,8 @@ export const FONT_SCALE_LABELS: Record<number, string> = {
 
 function read(): FontScale {
   if (typeof window === "undefined") return 1;
-  const raw = Number(localStorage.getItem(STORAGE_KEY));
+  let raw = 1;
+  try { raw = Number(localStorage.getItem(STORAGE_KEY)); } catch { /* storage blocked */ }
   return (FONT_SCALES as readonly number[]).includes(raw) ? (raw as FontScale) : 1;
 }
 
@@ -96,7 +97,7 @@ export function useFontScale() {
   }, []);
 
   const setScale = (next: FontScale) => {
-    localStorage.setItem(STORAGE_KEY, String(next));
+    try { localStorage.setItem(STORAGE_KEY, String(next)); } catch { /* storage blocked: keep in memory */ }
     setScaleState(next);
     applyFontScale(next);
     window.dispatchEvent(new CustomEvent(EVENT, { detail: next }));

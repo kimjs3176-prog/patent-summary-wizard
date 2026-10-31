@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from "react";
 import { MessagesSquare } from "lucide-react";
 import { PatentInput } from "@/components/PatentInput";
 import type { PendingQuestion } from "@/components/PatentChat";
@@ -19,6 +19,8 @@ interface SmartSearchBoxProps {
   resumeClassName?: string;
   /** Positions the "이전 대화 이어서 보기" row (e.g. align it under a centred box). */
   resumeRowClassName?: string;
+  /** Lets the surrounding layout adapt (e.g. collapse a hero) while the conversation is open. */
+  onChatOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -26,9 +28,10 @@ interface SmartSearchBoxProps {
  * questions (classified in queryIntent) open the patent assistant in place.
  */
 export function SmartSearchBox({
-  onSubmit, onKeywordSearch, isLoading, placeholder, skipKeywordFetch, frame, resumeClassName, resumeRowClassName,
+  onSubmit, onKeywordSearch, isLoading, placeholder, skipKeywordFetch, frame, resumeClassName, resumeRowClassName, onChatOpenChange,
 }: SmartSearchBoxProps) {
   const [chatOpen, setChatOpen] = useState(false);
+  useEffect(() => { onChatOpenChange?.(chatOpen); }, [chatOpen, onChatOpenChange]);
   const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | null>(null);
   const [savedTurns, setSavedTurns] = useState(() => loadConversation().length);
 

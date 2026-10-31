@@ -179,7 +179,7 @@ export default function PatentChat({ onOpenPatent, pendingQuestion, onClose }: P
           ))}
         </div>
       ) : (
-        <Conversation className="patent-chat-log h-[min(58vh,520px)] flex-none border-t">
+        <Conversation className="patent-chat-log grid grid-rows-[minmax(0,1fr)] max-h-[clamp(240px,calc(100dvh-22rem),520px)] flex-none border-t">
           <ConversationContent className="gap-5 px-2.5 py-4">
             {messages.map((m, idx) => {
               const isLast = idx === messages.length - 1;

@@ -450,7 +450,13 @@ export default function Compare() {
                         {selectedPatents.map((p) => (
                           <td key={p.patentNumber} className="p-3 border-b border-border/30">
                             {p.patentData.representativeImage ? (
-                              <img src={p.patentData.representativeImage} alt="대표도면" className="w-full max-w-[180px] h-auto rounded-lg border border-border/30" />
+                              <img
+                                src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(p.patentData.representativeImage)}`}
+                                alt="대표도면"
+                                loading="lazy"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                className="w-full max-w-[180px] h-auto rounded-lg border border-border/30"
+                              />
                             ) : <span className="text-sm text-muted-foreground">-</span>}
                           </td>
                         ))}

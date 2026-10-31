@@ -77,8 +77,12 @@ const App = () => {
 
   useEffect(() => {
     if (isAdminRoute) return;
-    if (sessionStorage.getItem("visit-tracked") === "1") return;
-    sessionStorage.setItem("visit-tracked", "1");
+    try {
+      if (sessionStorage.getItem("visit-tracked") === "1") return;
+      sessionStorage.setItem("visit-tracked", "1");
+    } catch {
+      // storage blocked (private mode / quota): count the visit anyway, once per load
+    }
     void supabase.rpc("increment_daily_visit").then(() => {}, () => {});
   }, [isAdminRoute]);
 

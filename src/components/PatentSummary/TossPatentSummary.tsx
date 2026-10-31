@@ -7,6 +7,7 @@ import { TechValuation } from "./TechValuation";
 import { printWebSummary } from "./PdfGenerator";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { safeFetch } from "@/lib/safeFetch";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { extractKeywordsFromPatent } from "./_keywords";
@@ -32,6 +33,14 @@ interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onRegenerate?: () => void;
 }
 
+function formatGeneratedAt(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return iso;
+  }
+}
+
 function TossPatentSummaryInner({
   content,
   patentNumber,
@@ -42,11 +51,12 @@ function TossPatentSummaryInner({
   onKeywordClick,
   onScoreReady,
   onRegenerate,
-  featureFlags = { pdfEnabled: true, pptEnabled: true },
+  featureFlags = { pdfEnabled: true },
+  summaryMeta = null,
 }: TossPatentSummaryProps) {
   const { settings } = useSiteSettings();
   const trlConfig = useTrlConfig();
-  const { isFavorite, toggleFavorite } = useFavoritePatents();
+  const { isFavorite, toggleFavorite, favorites, updateFavorite } = useFavoritePatents();
   const patentIsFavorite = patentNumber ? isFavorite(patentNumber) : false;
 
   const [score, setScore] = useState<number | null>(null);
@@ -60,7 +70,6 @@ function TossPatentSummaryInner({
   const qrRef = useRef<HTMLDivElement>(null);
 
   const favoritesEnabled = settings.feature_favorites !== "false";
-  const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
   const glossaryEnabled = settings.feature_glossary !== "false";
   const autoGlossary = useAutoGlossary(
     patentNumber,
@@ -71,13 +80,15 @@ function TossPatentSummaryInner({
   );
   const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text, autoGlossary) : text);
 
-  // 사업화 점수 호출
+  // 사업화 점수 호출 — 특허가 바뀌면 이전 요청의 늦은 응답은 버린다.
   useEffect(() => {
+    if (!patentData || !patentNumber || isStreaming) return;
+    let cancelled = false;
+    const controller = new AbortController();
     const run = async () => {
-      if (!patentData || !patentNumber || isStreaming) return;
       setScoreLoading(true);
       try {
-        const res = await fetch(
+        const res = await safeFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-commercialization`,
           {
             method: "POST",
@@ -85,24 +96,42 @@ function TossPatentSummaryInner({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ patentNumber, patentData, summaryContent: content, analysisMode: "detailed" }),
+            // 서버는 patent_data_cache / patent_ai_cache 의 저장본만 사용한다. 번호만 보낸다.
+            body: JSON.stringify({ patentNumber, analysisMode: "detailed" }),
+            timeoutMs: 90000,
+            retries: 1,
+            signal: controller.signal,
           }
         );
         const json = await res.json();
+        if (cancelled) return;
         if (json.success) {
           setScore(json.score);
           setDetails(json.details);
           onScoreReady?.(json.score);
         }
       } catch (e) {
-        console.error("Commercialization analysis error:", e);
+        if (!cancelled) console.error("Commercialization analysis error:", e);
       } finally {
-        setScoreLoading(false);
+        if (!cancelled) setScoreLoading(false);
       }
     };
     run();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patentData, patentNumber, isStreaming, content]);
+
+  // "담기"를 분석 완료 전에 눌렀으면 점수·TRL이 비어 저장된다. 점수가 도착하면 저장본을 채운다.
+  useEffect(() => {
+    if (!patentNumber || score == null || !details) return;
+    const stored = favorites.find((f) => f.patentNumber === patentNumber);
+    if (stored && (stored.commercializationScore == null || !stored.commercializationDetails)) {
+      updateFavorite(patentNumber, { commercializationScore: score, commercializationDetails: details });
+    }
+  }, [favorites, patentNumber, score, details, updateFavorite]);
 
   const registrationNumberForLookup =
     patentData?.registrationNumber || (patentData && patentData.searchType !== 'application' ? patentNumber : undefined);
@@ -275,15 +304,27 @@ function TossPatentSummaryInner({
             </section>
           )}
 
-          {/* 분석 모델 표기 */}
+          {/* 분석 모델·생성 정보 표기 — 서버가 보낸 실제 값을 우선 사용한다 */}
           {!isStreaming && content && (
-            <section className="mt-6 mb-2">
+            <section className="mt-6 mb-2 space-y-1.5">
               <div className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#8B95A1]">
                 <Sparkles className="w-3 h-3" style={{ color: ACCENT_HEX }} />
                 <span>
-                  본 분석은 <span className="font-semibold text-[#4E5968]">{formatAiModelLabel(settings.ai_model)}</span> 모델로 생성되었습니다
+                  본 분석은 <span className="font-semibold text-[#4E5968]">{formatAiModelLabel(summaryMeta?.model || settings.ai_model)}</span> 모델로 생성되었습니다
                 </span>
               </div>
+              {(summaryMeta?.generatedAt || summaryMeta?.cached != null) && (
+                <p className="text-center text-[11px] text-[#8B95A1] tabular-nums">
+                  {summaryMeta?.generatedAt ? `생성 ${formatGeneratedAt(summaryMeta.generatedAt)}` : "생성 시각 미상"}
+                  {summaryMeta?.cached ? " · 저장된 요약서" : " · 이번에 새로 생성"}
+                  {summaryMeta?.promptVersion ? ` · 분석 기준 ${summaryMeta.promptVersion}` : ""}
+                </p>
+              )}
+              {summaryMeta?.marketFallback && (
+                <p className="text-center text-[11px] leading-relaxed text-[#B45309]">
+                  ※ 관련시장 동향의 수치는 이 특허에 맞는 통계를 확인하지 못해 농식품 분야 표준 참고값을 사용했습니다.
+                </p>
+              )}
             </section>
           )}
 

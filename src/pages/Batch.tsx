@@ -361,7 +361,7 @@ const Batch = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const {
-    isLoading, summary, currentPatent, patentData, relatedPatents, generateSummary,
+    isLoading, summary, summaryMeta, currentPatent, patentData, relatedPatents, generateSummary,
   } = usePatentSummary();
 
   const openSummary = (num: string) => {
@@ -714,11 +714,13 @@ const Batch = () => {
                       </div>
                     ) : (
                       <TossPatentSummary
+                        key={currentPatent}
                         content={summary}
                         patentNumber={currentPatent}
                         isStreaming={isLoading}
                         patentData={patentData}
                         relatedPatents={relatedPatents}
+                        summaryMeta={summaryMeta}
                         onRelatedPatentClick={(num: string) => openSummary(num)}
                       />
                     )}
