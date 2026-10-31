@@ -131,10 +131,9 @@ export function parseFilingMessage(ev: { origin: string; data: unknown }, expect
   return null;
 }
 
-/** AIS 가 에이프 안(iframe)에 열려 있는가 — 주소의 from=agri-ip 와 부모 창 출처로 판단 */
-export function embeddedInFiling(settings: SettingsLike, loc: { search: string } = window.location, referrer: string = document.referrer): boolean {
+/** AIS 가 에이프 안(iframe)에 열려 있는가 — 부모 창(referrer) 출처가 설정된 출원지원 주소와 같을 때만. 주소의 from=agri-ip 는 화면을 옮겨 다니면 사라지므로 보지 않는다 */
+export function embeddedInFiling(settings: SettingsLike, referrer: string = document.referrer): boolean {
   if (typeof window === "undefined" || window.parent === window) return false;
-  if (new URLSearchParams(loc.search).get("from") !== "agri-ip") return false;
   try {
     return new URL(referrer).origin === filingOrigin(settings);
   } catch {

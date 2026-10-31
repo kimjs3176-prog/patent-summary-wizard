@@ -46,7 +46,7 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
               </a>
             )}
             {filingEnabled(settings) && /^(10|20)\d{11}$/.test(applicationNo.replace(/[^0-9]/g, "")) && (
-              <Button variant="outline" size="sm" onClick={toFiling} title="에이프 출원지원의 선행기술 조사에 이 특허를 비교 특허로 넣습니다" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
+              <Button variant="outline" size="sm" onClick={toFiling} title="출원지원의 선행기술 조사에 이 특허를 비교 특허로 넣습니다" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
                 <FileSignature className="w-3.5 h-3.5" />
                 출원지원으로
               </Button>

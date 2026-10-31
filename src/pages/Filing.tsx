@@ -7,8 +7,8 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { parseIpNumber } from "@/lib/ipNumber";
 import { buildFilingSrc, buildFilingStandaloneUrl, filingEnabled, filingOrigin, parseFilingMessage, type FilingState } from "@/lib/filing";
 
-// 출원지원(에이프 Agri-IP) — 관리자 설정 '출원지원' 토글로 켜고 끄는 옵션 메뉴.
-// 에이프의 5단계 출원 준비(아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리·해외 출원)를 본문만 iframe 으로 넣고,
+// 출원지원 — 관리자 설정 '출원지원' 토글로 켜고 끄는 옵션 메뉴. 화면에는 AIS 의 한 기능으로만 보이고 바깥 서비스 이름은 쓰지 않는다.
+// 출원지원 서버(에이프)의 5단계 출원 준비(아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리·해외 출원)를 본문만 iframe 으로 넣고,
 // 단계 탭·쪽 이동·이전/다음·D-day·도움말·환경설정은 이 페이지가 AIS 디자인으로 그린다 (에이프가 그릴 때마다 상태를 보내 준다).
 //   /filing?p=단계            그 단계로 (에이프가 쪽을 바꾸면 주소도 따라 바뀐다)
 //   /filing?cite=출원번호&title= 요약 화면의 특허를 비교 특허로 넣고 선행기술 조사로
@@ -78,7 +78,7 @@ const Filing = () => {
   const headerRight = (
     <>
       <a href={standalone} target="_blank" rel="noopener noreferrer">
-        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 gap-1 md:gap-2 glossy-card btn-press font-medium" title="에이프를 새 창으로 엽니다">
+        <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 gap-1 md:gap-2 glossy-card btn-press font-medium" title="출원지원을 새 창으로 엽니다">
           <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
           <span className="hidden sm:inline">새 창으로</span>
         </Button>
@@ -100,7 +100,7 @@ const Filing = () => {
             <FileSignature className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-xl font-bold text-foreground mb-2">출원지원은 지금 꺼져 있습니다</h1>
-          <p className="text-sm text-muted-foreground">관리자 페이지의 기능 설정에서 ‘출원지원(에이프)’을 켜면 이 메뉴가 열립니다.</p>
+          <p className="text-sm text-muted-foreground">관리자 페이지의 기능 설정에서 ‘출원지원’을 켜면 이 메뉴가 열립니다.</p>
         </div>
       </PageLayout>
     );
@@ -113,7 +113,7 @@ const Filing = () => {
 
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
-      <section aria-label="출원지원 · 에이프 Agri-IP" className="relative z-10">
+      <section aria-label="출원지원" className="relative z-10">
         {/* 단계 바 — AIS 디자인. 누르면 iframe 안 에이프가 그 단계로 간다 */}
         <div className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 md:pt-3">
           <div className="glossy-card rounded-2xl md:rounded-3xl px-2.5 md:px-4 py-2 md:py-2.5">
@@ -218,14 +218,14 @@ const Filing = () => {
         <iframe
           ref={frameRef}
           src={src}
-          title="출원지원 · 에이프 Agri-IP"
+          title="출원지원"
           className="block w-full border-0 bg-background mt-2"
           style={{ height: `calc(100dvh - ${frameTop}px)`, minHeight: 520 }}
           allow="clipboard-read; clipboard-write; fullscreen"
           referrerPolicy="strict-origin-when-cross-origin"
         />
         <p className="container mx-auto px-4 py-2.5 text-[11px] md:text-xs text-muted-foreground/70">
-          출원지원은 에이프(Agri-IP) 서비스로, 작성 내용은 이 브라우저에 저장됩니다{state?.api ? ` · ${state.api}` : ""}. 특허 가능성 판단과 명세서 초안은 AI가 만든 참고 자료이며 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. 화면이 보이지 않으면{" "}
+          작성 내용은 이 브라우저에 저장됩니다{state?.api ? ` · ${state.api}` : ""}. 특허 가능성 판단과 명세서 초안은 AI가 만든 참고 자료이며 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. 화면이 보이지 않으면{" "}
           <a href={standalone} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground/70">새 창으로 열기</a>를 누르세요.
         </p>
       </section>

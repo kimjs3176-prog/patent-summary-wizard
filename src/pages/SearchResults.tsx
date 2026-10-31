@@ -21,7 +21,7 @@ export default function SearchResults() {
   const keyword = searchParams.get("keyword") || (rawQ && !parseIpNumber(rawQ) ? rawQ : "");
   const { settings } = useSiteSettings();
   useEffect(() => {
-    if (rawQ && parseIpNumber(rawQ)) navigate(`/?patent=${encodeURIComponent(rawQ)}`, { replace: true });
+    if (rawQ && parseIpNumber(rawQ)) navigate(`/?patent=${encodeURIComponent(rawQ)}${searchParams.get("from") === "agri-ip" ? "&from=agri-ip" : ""}`, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawQ]);
   const fieldName = searchParams.get("field") || "";
@@ -141,7 +141,7 @@ export default function SearchResults() {
     <>
     {filingEnabled(settings) && keyword && (
       <Link to={`/filing?kw=${encodeURIComponent(keyword)}`}>
-        <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all" title="이 키워드로 에이프 출원지원에서 아이디어·명칭 초안을 시작합니다">
+        <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all" title="이 키워드로 출원지원에서 아이디어·명칭 초안을 시작합니다">
           <FileSignature className="w-3.5 h-3.5" />
           이 키워드로 출원 준비
         </Button>
