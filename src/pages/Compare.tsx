@@ -7,6 +7,7 @@ import { useFavoritePatents, FavoritePatent, FavoriteFolder } from "@/hooks/useF
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PatentTrendChart } from "@/components/PatentTrendChart";
 import { toast } from "sonner";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 function getScoreColor(value: number): string {
   if (value >= 80) return "text-chart-3";
@@ -71,8 +72,8 @@ function TagInput({ patentNumber, existingTags, allTags, onAdd, onRemove }: {
       {existingTags.map((tag) => (
         <span key={tag} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-medium">
           #{tag}
-          <button onClick={() => onRemove(patentNumber, tag)} className="hover:text-destructive ml-0.5">
-            <X className="w-2.5 h-2.5" />
+          <button onClick={() => onRemove(patentNumber, tag)} aria-label={`${tag} 태그 삭제`} className="hover:text-destructive ml-0.5">
+            <X className="w-2.5 h-2.5" aria-hidden="true" />
           </button>
         </span>
       ))}
@@ -112,6 +113,7 @@ function TagInput({ patentNumber, existingTags, allTags, onAdd, onRemove }: {
 }
 
 export default function Compare() {
+  useDocumentTitle("관심특허");
   const {
     favorites, removeFavorite,
     folders, addFolder, removeFolder, renameFolder, assignFolder,
@@ -196,11 +198,11 @@ export default function Compare() {
   };
 
   const headerRight = (
-    <Link to="/">
-      <Button variant="ghost" size="sm" className="gap-2 rounded-full">
+    <Button asChild variant="ghost" size="sm" className="gap-2 rounded-full">
+      <Link to="/">
         <ArrowLeft className="w-4 h-4" /> 홈으로
-      </Button>
-    </Link>
+      </Link>
+    </Button>
   );
 
   return (
@@ -208,14 +210,14 @@ export default function Compare() {
       <main className="container mx-auto px-4 md:px-6 py-8 relative z-10">
         <div className="flex items-center gap-2 mb-6">
           <Heart className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold text-lg text-foreground">관심특허</h2>
+          <h1 className="font-semibold text-lg text-foreground">관심특허</h1>
           <span className="text-xs text-muted-foreground ml-1">({favorites.length})</span>
         </div>
 
         {favorites.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-muted-foreground mb-4">관심특허가 없습니다. 먼저 특허를 검색하고 관심특허에 담아주세요.</p>
-            <Link to="/"><Button>홈으로 돌아가기</Button></Link>
+            <Button asChild><Link to="/">홈으로 돌아가기</Link></Button>
           </div>
         ) : (
           <>
@@ -245,31 +247,38 @@ export default function Compare() {
                         autoFocus
                         className="h-7 w-24 text-[11px] rounded-lg"
                       />
-                      <button onClick={() => handleRenameFolder(f.id)}><Check className="w-3 h-3 text-primary" /></button>
-                      <button onClick={() => setEditingFolder(null)}><X className="w-3 h-3 text-muted-foreground" /></button>
+                      <button onClick={() => handleRenameFolder(f.id)} aria-label="폴더 이름 저장"><Check className="w-3 h-3 text-primary" aria-hidden="true" /></button>
+                      <button onClick={() => setEditingFolder(null)} aria-label="이름 변경 취소"><X className="w-3 h-3 text-muted-foreground" aria-hidden="true" /></button>
                     </div>
                   ) : (
-                    <button
+                    // Folder chip: select and delete are sibling buttons (no button inside a button).
+                    <div
                       key={f.id}
-                      onClick={() => { setActiveFolder(f.id); setActiveTag(null); }}
-                      onDoubleClick={() => { setEditingFolder(f.id); setEditFolderName(f.name); }}
-                      className={`group px-3 py-1.5 rounded-xl text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                      className={`group rounded-xl text-[11px] font-medium transition-all flex items-center ${
                         activeFolder === f.id
                           ? "text-primary-foreground"
                           : "bg-muted/50 text-muted-foreground hover:bg-muted"
                       }`}
                       style={activeFolder === f.id ? { background: f.color } : {}}
-                      title="더블클릭으로 이름 변경"
                     >
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.color }} />
-                      {f.name} ({count})
                       <button
-                        onClick={(e) => { e.stopPropagation(); removeFolder(f.id); toast.success("폴더가 삭제되었습니다"); }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => { setActiveFolder(f.id); setActiveTag(null); }}
+                        onDoubleClick={() => { setEditingFolder(f.id); setEditFolderName(f.name); }}
+                        aria-pressed={activeFolder === f.id}
+                        className="pl-3 py-1.5 rounded-xl flex items-center gap-1.5"
+                        title="더블클릭으로 이름 변경"
                       >
-                        <X className="w-2.5 h-2.5" />
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.color }} />
+                        {f.name} ({count})
                       </button>
-                    </button>
+                      <button
+                        onClick={() => { removeFolder(f.id); toast.success("폴더가 삭제되었습니다"); }}
+                        aria-label={`${f.name} 폴더 삭제`}
+                        className="ml-1.5 mr-3 py-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                      >
+                        <X className="w-2.5 h-2.5" aria-hidden="true" />
+                      </button>
+                    </div>
                   );
                 })}
                 {showAddFolder ? (
@@ -282,8 +291,8 @@ export default function Compare() {
                       placeholder="폴더 이름"
                       className="h-7 w-24 text-[11px] rounded-lg"
                     />
-                    <button onClick={handleAddFolder}><Check className="w-3 h-3 text-primary" /></button>
-                    <button onClick={() => setShowAddFolder(false)}><X className="w-3 h-3 text-muted-foreground" /></button>
+                    <button onClick={handleAddFolder} aria-label="폴더 만들기"><Check className="w-3 h-3 text-primary" aria-hidden="true" /></button>
+                    <button onClick={() => setShowAddFolder(false)} aria-label="폴더 추가 취소"><X className="w-3 h-3 text-muted-foreground" aria-hidden="true" /></button>
                   </div>
                 ) : (
                   <button
@@ -383,8 +392,8 @@ export default function Compare() {
                               ))}
                             </select>
                           )}
-                          <button onClick={() => removeFavorite(f.patentNumber)} className="text-muted-foreground hover:text-destructive">
-                            <Trash2 className="w-3.5 h-3.5" />
+                          <button onClick={() => removeFavorite(f.patentNumber)} aria-label={`${f.patentData.titleKo || f.patentData.title || f.patentNumber} 관심특허 삭제`} className="text-muted-foreground hover:text-destructive">
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
                         </div>
                       </div>
@@ -430,8 +439,8 @@ export default function Compare() {
                                 <p className="text-xs text-muted-foreground">{p.patentNumber}</p>
                                 <p className="text-sm font-semibold line-clamp-2 mt-0.5">{p.patentData.titleKo || p.patentData.title}</p>
                               </div>
-                              <button onClick={() => removeFromCompare(p.patentNumber)} className="text-muted-foreground hover:text-foreground shrink-0">
-                                <X className="w-4 h-4" />
+                              <button onClick={() => removeFromCompare(p.patentNumber)} aria-label={`${p.patentData.titleKo || p.patentData.title || p.patentNumber} 비교에서 빼기`} className="text-muted-foreground hover:text-foreground shrink-0">
+                                <X className="w-4 h-4" aria-hidden="true" />
                               </button>
                             </div>
                           </th>

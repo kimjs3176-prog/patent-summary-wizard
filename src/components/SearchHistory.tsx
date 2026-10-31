@@ -50,47 +50,53 @@ function HistoryCard({
   const score = item.commercializationScore;
 
   return (
-    <button
-      onClick={() => onSelect(item)}
-      className="group relative rounded-3xl border border-border/20 bg-card/70 backdrop-blur-lg hover:border-primary/15 transition-all duration-500 text-left overflow-hidden card-interactive btn-press"
-      style={{ boxShadow: 'var(--shadow-card)' }}
-      title={`${displayNum} ${title}`}
-    >
+    // Card and delete control are siblings (a button may not contain another button), so both stay reachable by Tab.
+    <div className="group relative rounded-3xl card-interactive" style={{ boxShadow: 'var(--shadow-card)' }}>
       <button
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 text-muted-foreground hover:text-destructive z-10 bg-background/70 backdrop-blur-sm rounded-xl p-1"
-        onClick={(e) => { e.stopPropagation(); onRemove(item.patentNumber); }}
+        type="button"
+        onClick={() => onSelect(item)}
+        className="relative block w-full h-full rounded-3xl border border-border/20 bg-card/70 backdrop-blur-lg group-hover:border-primary/15 transition-all duration-500 text-left overflow-hidden btn-press"
+        title={`${displayNum} ${title}`}
       >
-        <X className="w-3 h-3" />
-      </button>
-      {/* Score badge */}
-      {score != null && (
-        <span
-          className="absolute top-2 left-2 z-10 text-[11px] font-bold px-2 py-0.5 rounded-xl text-white backdrop-blur-sm"
-          style={{
-            background: score >= 80 ? 'hsl(158 64% 40% / 0.9)' : score >= 65 ? 'hsl(45 93% 47% / 0.9)' : 'hsl(0 84% 60% / 0.9)',
-          }}
-        >
-          {score}점
-        </span>
-      )}
-      <div className="w-full h-[80px] sm:h-[100px] bg-muted/20 flex items-center justify-center overflow-hidden rounded-t-3xl">
-        {thumbnailUrl && !imgError ? (
-          <img
-            src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(thumbnailUrl)}`}
-            alt=""
-            className="w-full h-full object-contain"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <span className="text-2xl text-muted-foreground/20">📄</span>
+        {/* Score badge */}
+        {score != null && (
+          <span
+            className="absolute top-2 left-2 z-10 text-[11px] font-bold px-2 py-0.5 rounded-xl text-white backdrop-blur-sm"
+            style={{
+              background: score >= 80 ? 'hsl(158 64% 40% / 0.9)' : score >= 65 ? 'hsl(45 93% 47% / 0.9)' : 'hsl(0 84% 60% / 0.9)',
+            }}
+          >
+            {score}점
+          </span>
         )}
-      </div>
-      <div className="px-3 py-3">
-        <p className="text-xs font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-300 min-h-[32px]">
-          {title || displayNum}
-        </p>
-        <p className="text-[11px] text-muted-foreground/50 mt-1.5 truncate">{displayNum}</p>
-      </div>
-    </button>
+        <div className="w-full h-[80px] sm:h-[100px] bg-muted/20 flex items-center justify-center overflow-hidden rounded-t-3xl">
+          {thumbnailUrl && !imgError ? (
+            <img
+              src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(thumbnailUrl)}`}
+              alt=""
+              className="w-full h-full object-contain"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <span className="text-2xl text-muted-foreground/20">📄</span>
+          )}
+        </div>
+        <div className="px-3 py-3">
+          <p className="text-xs font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-300 min-h-[32px]">
+            {title || displayNum}
+          </p>
+          <p className="text-[11px] text-muted-foreground/50 mt-1.5 truncate">{displayNum}</p>
+        </div>
+      </button>
+      <button
+        type="button"
+        aria-label={`${title || displayNum} 기록 삭제`}
+        title="기록 삭제"
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-all duration-300 text-muted-foreground hover:text-destructive z-10 bg-background/70 backdrop-blur-sm rounded-xl p-1"
+        onClick={() => onRemove(item.patentNumber)}
+      >
+        <X className="w-3 h-3" aria-hidden="true" />
+      </button>
+    </div>
   );
 }

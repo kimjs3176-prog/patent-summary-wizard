@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Star, Send, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
   const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
+  const commentId = useId();
 
   useEffect(() => {
     setRating(0); setComment(""); setDone(false);
@@ -57,6 +58,7 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
                 key={n}
                 type="button"
                 aria-label={`${n}점`}
+                aria-pressed={rating === n}
                 onMouseEnter={() => setHover(n)}
                 onClick={() => setRating(n)}
                 className="p-0.5 transition-transform hover:scale-110"
@@ -66,7 +68,9 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
             ))}
           </div>
           <p className="text-[11px] font-medium text-[#8B95A1] h-4 mb-2">{active ? LABELS[active - 1] : ""}</p>
+          <label htmlFor={commentId} className="sr-only">개선 의견 (선택, 500자 이내)</label>
           <textarea
+            id={commentId}
             value={comment}
             onChange={(e) => setComment(e.target.value.slice(0, 500))}
             rows={3}
