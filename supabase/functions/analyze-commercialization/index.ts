@@ -292,7 +292,7 @@ function normalizeAnalysis(value: unknown, fallback: string): string {
 const getSupabaseClient = supabaseAdmin;
 
 // ===== V-RAY(로열티공제법) 기반 사업성 보정 =====
-// src/lib/valuation.ts 의 간이 기술가치평가 모델과 동일한 인자(성숙도/사업화 소요기간,
+// 간이 기술가치평가(V-RAY) 모델의 인자(성숙도/사업화 소요기간,
 // 권리 유효성, 법적 잔존권리기간, 권리 적용 폭)를 사용해 결정론적 '사업화 실행성 지수'를
 // 산출하고, AI 체크리스트 점수와 가중 결합한다.
 function stageFromTrl(trl: number): { name: string; lead: number; immaturePremium: number } {

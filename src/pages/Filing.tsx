@@ -115,7 +115,8 @@ const Filing = () => {
 
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
-      <section aria-label="출원지원" className="relative z-10">
+      <section aria-labelledby="filing-title" className="relative z-10">
+        <h1 id="filing-title" className="sr-only">출원지원</h1>
         {/* 단계 바 — AIS 디자인. 누르면 iframe 안 에이프가 그 단계로 간다 */}
         <div className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 md:pt-3">
           <div className="glossy-card rounded-2xl md:rounded-3xl px-2.5 md:px-4 py-2 md:py-2.5">

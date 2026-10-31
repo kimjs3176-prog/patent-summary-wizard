@@ -149,20 +149,20 @@ const Index = () => {
 
   const headerRight = (
     <>
-      <Link to="/finder">
-        <Button aria-label="나만의 특허찾기" title="나만의 특허찾기" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 gap-1 md:gap-2 btn-press font-semibold">
+      <Button asChild size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 gap-1 md:gap-2 btn-press font-semibold">
+        <Link to="/finder" aria-label="나만의 특허찾기" title="나만의 특허찾기">
           <Compass className="w-3 h-3 md:w-3.5 md:h-3.5" />
           <span className="hidden sm:inline">나만의 특허찾기</span>
-        </Button>
-      </Link>
+        </Link>
+      </Button>
       <div className="hidden sm:flex items-center gap-1.5 md:gap-2">
         {navItems.map(({ to, label, title, icon: Icon, badge }) => (
-          <Link key={to} to={to}>
-            <Button aria-label={label} title={title} variant="outline" size="sm" className={headerBtn}>
+          <Button key={to} asChild variant="outline" size="sm" className={headerBtn}>
+            <Link to={to} aria-label={badge ? `${label} ${badge}` : label} title={title}>
               <Icon className="w-3 h-3 md:w-3.5 md:h-3.5" />
               <span>{label}</span>{badge ? ` ${badge}` : ""}
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         ))}
         {resultActions.map(({ key, label, icon: Icon, onClick }) => (
           <Button key={key} variant="outline" size="sm" onClick={onClick} className={headerBtn}>

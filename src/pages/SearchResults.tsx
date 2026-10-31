@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User, FileSignature, Info } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { safeFetch } from "@/lib/safeFetch";
-import { FieldTrendPanel } from "@/components/FieldTrendPanel";
+// Charts (recharts) are only needed for field searches; keep them out of every /search visit.
+const FieldTrendPanel = lazy(() => import("@/components/FieldTrendPanel").then((m) => ({ default: m.FieldTrendPanel })));
 import { SearchFilterBar } from "@/components/search/SearchFilterBar";
 import { FavoriteToggle } from "@/components/search/FavoriteToggle";
 import { useCardFavorites } from "@/components/search/useCardFavorites";
@@ -165,19 +166,19 @@ export default function SearchResults() {
   const headerRight = (
     <>
     {filingEnabled(settings) && keyword && (
-      <Link to={`/filing?kw=${encodeURIComponent(keyword)}`}>
-        <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all" title="이 키워드로 출원지원에서 아이디어·명칭 초안을 시작합니다">
+      <Button asChild variant="outline" size="sm" className="rounded-full text-xs h-8 px-3 sm:px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
+        <Link to={`/filing?kw=${encodeURIComponent(keyword)}`} aria-label="이 키워드로 출원 준비" title="이 키워드로 출원지원에서 아이디어·명칭 초안을 시작합니다">
           <FileSignature className="w-3.5 h-3.5" />
-          이 키워드로 출원 준비
-        </Button>
-      </Link>
-    )}
-    <Link to="/">
-      <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
-        <ArrowLeft className="w-3.5 h-3.5" />
-        메인으로
+          <span className="hidden sm:inline">이 키워드로 출원 준비</span>
+        </Link>
       </Button>
-    </Link>
+    )}
+    <Button asChild variant="outline" size="sm" className="rounded-full text-xs h-8 px-3 sm:px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
+      <Link to="/" aria-label="메인으로">
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">메인으로</span>
+      </Link>
+    </Button>
     </>
   );
 
@@ -196,6 +197,7 @@ export default function SearchResults() {
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
       <main className="container mx-auto px-4 md:px-6 py-10 md:py-14 relative z-10">
+        <h1 className="sr-only">{keyword ? `'${keyword}' 검색 결과` : "특허 검색 결과"}</h1>
         {/* Persistent sticky search bar */}
         {/* Same classification as home: questions open the assistant here, keywords/sentences search. */}
         <SmartSearchBox
@@ -247,7 +249,11 @@ export default function SearchResults() {
           </div>
         </div>
 
-        {fieldName && !isLoading && results.length > 0 && <FieldTrendPanel fieldName={fieldName} results={results} />}
+        {fieldName && !isLoading && results.length > 0 && (
+          <Suspense fallback={null}>
+            <FieldTrendPanel fieldName={fieldName} results={results} />
+          </Suspense>
+        )}
         <div id="field-patents" className="scroll-mt-24" />
 
         {!isLoading && droppedByRelevance > 0 && results.length > 0 && (
@@ -510,12 +516,12 @@ export default function SearchResults() {
                   </button>
                 ))}
             </div>
-            <Link to="/">
-              <Button variant="outline" className="rounded-full px-6 gap-2 border-border/60 hover:border-primary/40">
+            <Button asChild variant="outline" className="rounded-full px-6 gap-2 border-border/60 hover:border-primary/40">
+              <Link to="/">
                 <ArrowLeft className="w-3.5 h-3.5" />
                 메인으로 돌아가기
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         )}
       </main>
