@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: typecheck · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans history
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # AGENTS.md: npm 10 crashes on this dependency tree; the lockfile is maintained with npm 11.
+      - run: npm i -g npm@11
+
+      # Fails when package-lock.json drifts from package.json, which is exactly what we want to catch.
+      - run: npm ci --no-audit --no-fund
+
+      - run: npx tsc --noEmit -p tsconfig.app.json
+
+      # Lint is reported but not yet gating: the tree carries ~60 pre-existing errors.
+      # Flip continue-on-error to false once `npm run lint` is clean.
+      - run: npm run lint
+        continue-on-error: true
+
+      - run: npm test
+
+      - run: npm run build
+
+      # The committed .env must only ever hold the public (anon) Supabase key.
+      - name: Check committed .env holds the anon key only
+        run: |
+          node -e '
+            const fs = require("fs");
+            const env = fs.readFileSync(".env", "utf8");
+            const m = env.match(/VITE_SUPABASE_PUBLISHABLE_KEY="?([^"\n]+)"?/);
+            if (!m) process.exit(0);
+            const key = m[1];
+            if (!key.startsWith("eyJ")) process.exit(0); // publishable (sb_publishable_…) keys are not JWTs
+            const payload = JSON.parse(Buffer.from(key.split(".")[1], "base64url").toString());
+            if (payload.role !== "anon") { console.error("non-anon key committed in .env:", payload.role); process.exit(1); }
+          '
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  edge-functions:
+    name: deno check (edge functions)
+    runs-on: ubuntu-latest
+    # Reported, not gating, until every function type-checks under Deno 2.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: |
+          set -e
+          for f in supabase/functions/*/index.ts; do
+            echo "::group::$f"; deno check "$f"; echo "::endgroup::"
+          done
