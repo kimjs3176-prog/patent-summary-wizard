@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { PatentData } from "@/components/PatentSummary/types";
-import { CommercializationDetails } from "@/components/PatentSummary/TechnologyCommercializationScore";
+import { CommercializationDetails } from "@/components/PatentSummary/commercialization";
 
 export interface FavoritePatent {
   patentNumber: string;

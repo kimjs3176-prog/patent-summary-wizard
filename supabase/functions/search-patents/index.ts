@@ -3,8 +3,11 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { resolveKiprisKey } from "../_shared/kipris.ts";
+import { log, withRequestLog, type RequestLogger } from "../_shared/log.ts";
 import { classifyTechnology, FIELD_SEARCH_TERMS, isTechnologyFieldId } from "../_shared/technologyFields.ts";
 import { buildConceptGroups, buildPlanQueries, rankNaturalLanguage, sanitizeNlTerms, sanitizeSynonymMap } from "./nlRelevance.ts";
+
+const FN = "search-patents";
 
 
 // Fetch with timeout + retry on transient errors
@@ -182,7 +185,7 @@ Rules:
     }, 8000);
 
     if (!response.ok) {
-      console.error("AI keyword extraction failed:", response.status);
+      log("warn", "ai.keywords.failed", { fn: FN, status: response.status });
       return { keywords: [query], originalIntent: query };
     }
 
@@ -194,7 +197,7 @@ Rules:
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       if (parsed.keywords && Array.isArray(parsed.keywords) && parsed.keywords.length > 0) {
-        console.log(`AI extracted keywords: ${parsed.keywords.join(", ")} from query: "${query}"`);
+        log("info", "ai.keywords", { fn: FN, keywords: parsed.keywords.length, queryLength: query.length });
         return { 
           keywords: parsed.keywords.slice(0, 4), 
           originalIntent: parsed.intent || query 
@@ -204,7 +207,7 @@ Rules:
     
     return { keywords: [query], originalIntent: query };
   } catch (error) {
-    console.error("AI keyword extraction error:", error);
+    log("warn", "ai.keywords.error", { fn: FN, error });
     return { keywords: [query], originalIntent: query };
   }
 }
@@ -274,7 +277,7 @@ Tasks:
     }, 7000);
 
     if (!response.ok) {
-      console.error("AI query refine failed:", response.status);
+      log("warn", "ai.refine.failed", { fn: FN, status: response.status });
       return fallback();
     }
     const data = await response.json();
@@ -297,15 +300,15 @@ Tasks:
     if (must.length === 0) return fallback();
 
     const uniq = buildPlanQueries(must, synonyms, should);
-    console.log(`AI refined queries: must=[${must.join(",")}] synonyms=${JSON.stringify(synonyms)} -> ${uniq.join(" | ")}`);
+    log("info", "ai.refine", { fn: FN, must: must.length, synonymGroups: Object.keys(synonyms).length, queries: uniq.length });
     return { must, should: shouldAll, synonyms, queries: uniq, corrected };
   } catch (e) {
-    console.error("AI query refine error:", e);
+    log("warn", "ai.refine.error", { fn: FN, error: e });
     return fallback();
   }
 }
 
-serve(async (req) => {
+serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -349,25 +352,26 @@ serve(async (req) => {
     // Try site_settings first, then env
     const KIPRIS_API_KEY = await resolveKiprisKey();
     if (!KIPRIS_API_KEY) {
-      console.error("[CONFIG] KIPRIS_API_KEY not configured");
+      logger.error("config.missing", { setting: "KIPRIS_API_KEY" });
       return new Response(
         JSON.stringify({ success: false, error: "서비스 일시적 오류입니다. 잠시 후 다시 시도해주세요." }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Searching patents with input:", keyword);
+    logger.info("search.query", { queryLength: keyword.trim().length, words: keyword.trim().split(/\s+/).length, fieldId });
 
     // === In-memory short-term cache (per-instance) ===
     // Reduces KIPRIS load and latency for repeated searches within a few minutes.
     const cacheKey = `${fieldId ? `field:${fieldId}:` : ""}${keyword.trim().toLowerCase()}`;
     const cached = SEARCH_CACHE.get(cacheKey);
     if (cached && Date.now() - cached.at < SEARCH_CACHE_TTL_MS) {
-      console.log(`Search cache HIT: "${cacheKey}" (age ${Math.round((Date.now()-cached.at)/1000)}s)`);
+      logger.info("cache.hit", { ageMs: Date.now() - cached.at });
       return new Response(JSON.stringify(cached.payload), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    logger.info("cache.miss", { fieldId });
 
     // Determine if this is a natural language query and extract keywords
     const rawInput = keyword.trim();
@@ -492,6 +496,9 @@ serve(async (req) => {
 
     const rawTrim = rawInput.trim();
 
+    // KIPRIS 호출 통계 — 요청마다 수십 건이 나가므로 건별이 아니라 요청 끝에 한 줄로 기록한다.
+    const kiprisStats = { calls: 0, failed: 0, upstreamErrors: 0, hits: 0, statuses: {} as Record<string, number> };
+
     // KIPRIS 단일 요청 (title 또는 abstract 검색)
     const kiprisSearch = async (
       kw: string,
@@ -515,17 +522,19 @@ serve(async (req) => {
         url.searchParams.set("descSort", "true");
         url.searchParams.set("patent", "true");
         url.searchParams.set("utility", "true");
+        kiprisStats.calls++;
         const res = await fetchWithRetry(url.toString(), {}, { retries: 1, timeoutMs: 12000, baseDelay: 500 });
+        kiprisStats.statuses[res.status] = (kiprisStats.statuses[res.status] ?? 0) + 1;
         const text = await res.text();
         if (res.ok && !text.includes("<successYN>N</successYN>")) {
           const parsed = parsePatentsFromXml(text, org.name);
-          if (parsed.length > 0) {
-            console.log(`✓ ${field}/${org.name}/"${kw}": ${parsed.length} hits`);
-          }
+          kiprisStats.hits += parsed.length;
           return parsed;
         }
+        kiprisStats.upstreamErrors++;
       } catch (e) {
-        console.error(`✗ ${field}/${org.name}/"${kw}":`, e instanceof Error ? e.message : e);
+        kiprisStats.failed++;
+        logger.warn("kipris.search.error", { field, org: org.name, error: e });
       }
       return [];
     };
@@ -562,7 +571,7 @@ serve(async (req) => {
       const unknown = allPatents.filter(p => !p.ipc);
       const relevant = [...matched, ...(matched.length < 10 ? unknown : [])]
         .sort((a, b) => (b.applicationDate || "").localeCompare(a.applicationDate || ""));
-      console.log(`Field ${fieldId}: ${matched.length} IPC-matched of ${allPatents.length}`);
+      logger.info("search.done", { mode: "field", fieldId, matched: matched.length, candidates: allPatents.length, kipris: kiprisStats });
       const payload = { success: true, patents: relevant.slice(0, 100), keyword: keyword.trim(), totalCount: relevant.length, recommendedQueries: terms, fieldId };
       if (relevant.length > 0) SEARCH_CACHE.set(cacheKey, { at: Date.now(), payload });
       return new Response(JSON.stringify(payload), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -577,7 +586,7 @@ serve(async (req) => {
     // Stage 1b: inventor-name search — if the raw input looks like a Korean personal name
     // (2-4 hangul chars, or space-separated hangul names), also query the `inventors` field.
     if (isPersonName(rawInput)) {
-      console.log(`Detected person name, running inventor search: "${rawInput}"`);
+      logger.info("search.inventor", { queryLength: rawInput.length });
       const stageInv = await Promise.all(
         AGRI_ORGANIZATIONS.map(org => kiprisSearch(rawInput, org, "inventor")),
       );
@@ -591,9 +600,6 @@ serve(async (req) => {
     const recommendedQueries = plan.queries;
     const correctedInput = plan.corrected;
 
-    if (correctedInput && correctedInput !== rawInput) {
-      console.log(`Typo/spacing corrected: "${rawInput}" -> "${correctedInput}"`);
-    }
     // 띄어쓰기 변형 보정: KIPRIS 제목 검색은 문자열을 그대로 매칭하므로
     // "스마트팜"으로는 "스마트 팜" 표기의 특허가 잡히지 않는다.
     // 붙여쓴 한글 복합어는 AND(`*`) 분할형을, 띄어쓴 입력은 붙여쓴 형태를 함께 시도한다.
@@ -640,7 +646,6 @@ serve(async (req) => {
         ...recallTerms,
       ].filter(Boolean)),
     ).slice(0, 10);
-    console.log(`Final KIPRIS queries: [${uniqueQueries.join(" | ")}]`);
     const queriesToTry = uniqueQueries.slice(0, MAX_QUERIES + variantQueries.length + recallTerms.length);
 
     // Stage 2: remaining queries × all orgs (title), batched 6-at-a-time
@@ -738,9 +743,6 @@ serve(async (req) => {
       return now - appMs < TWENTY_YEARS_MS;
     });
     const expiredCount = allPatents.length - activePatents.length;
-    if (expiredCount > 0) {
-      console.log(`Filtered ${expiredCount} expired (>20y) patents`);
-    }
 
     // ── Relevance filter ──────────────────────────────────────────────
     // Broadened queries (synonyms, abstract fallback, single-term safety nets)
@@ -872,7 +874,6 @@ serve(async (req) => {
     const conceptGroups = isNLQuery ? buildConceptGroups(plan.must, plan.should, searchKeywords, plan.synonyms) : [];
     if (conceptGroups.length > 0) {
       relevant = rankNaturalLanguage(activePatents, conceptGroups);
-      console.log(`NL concept ranking [${conceptGroups.map(g => [...g.terms, ...g.synonyms].join("/")).join(" + ")}]: kept ${relevant.length} of ${activePatents.length}`);
     } else if (coreTerms.length > 0 || synTerms.length > 0) {
       const scored = activePatents
         .map(p => ({ p, s: scoreOf(p) }))
@@ -904,12 +905,20 @@ serve(async (req) => {
       } else {
         relevant = [];
       }
-      const dropped = activePatents.length - relevant.length;
-      if (dropped > 0) console.log(`Relevance filter dropped ${dropped} unrelated patents`);
     }
 
     const topPatents = relevant.slice(0, 100);
-    console.log(`Total unique patents: ${relevant.length} (of ${allPatents.length}), returning: ${topPatents.length}`);
+    logger.info("search.done", {
+      mode: isNLQuery ? "sentence" : "keyword",
+      queries: uniqueQueries.length,
+      corrected: Boolean(correctedInput && correctedInput !== rawInput),
+      conceptGroups: conceptGroups.length,
+      candidates: allPatents.length,
+      expired: expiredCount,
+      relevant: relevant.length,
+      returned: topPatents.length,
+      kipris: kiprisStats,
+    });
 
     const payload = {
       success: true,
@@ -944,13 +953,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("search-patents error:", error);
+    logger.error("request.error", { error });
     return new Response(
       JSON.stringify({ success: false, error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}));
 
 // Per-instance LRU-ish cache for search responses (15 minutes)
 const SEARCH_CACHE_TTL_MS = 15 * 60 * 1000;

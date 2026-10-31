@@ -1,5 +1,5 @@
 import type { PatentSummaryProps as BasePatentSummaryProps } from "../types";
-import type { CommercializationDetails } from "../TechnologyCommercializationScore";
+import type { CommercializationDetails } from "../commercialization";
 
 
 

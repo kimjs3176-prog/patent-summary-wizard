@@ -2,8 +2,6 @@ import { useState, type RefObject } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
 
 interface TextItem {
@@ -175,6 +173,11 @@ export async function downloadWebSummaryPdf(
   document.body.appendChild(clone);
 
   try {
+    // Loaded on click so summary views don't download the PDF libraries up front.
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
     if (document.fonts?.ready) await document.fonts.ready;
     await waitForImages(clone);
     await new Promise<void>((resolve) => {

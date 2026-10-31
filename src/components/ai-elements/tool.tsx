@@ -19,7 +19,20 @@ import {
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 
-import { CodeBlock } from "./code-block";
+/**
+ * Tool input/output is small JSON shown to curious users, so it is rendered as
+ * plain pretty-printed text instead of a syntax highlighter (which would pull
+ * every grammar and an oniguruma wasm into the chat chunk).
+ */
+const ToolJson = ({ value }: { value: unknown }) => {
+  const text =
+    typeof value === "string" ? value : JSON.stringify(value, null, 2) ?? "";
+  return (
+    <pre className="m-0 max-h-64 overflow-auto whitespace-pre-wrap break-all p-3 font-mono text-xs leading-relaxed">
+      <code>{text}</code>
+    </pre>
+  );
+};
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -125,7 +138,7 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
       조회 조건
     </h4>
     <div className="rounded-md bg-muted/50">
-      <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+      <ToolJson value={input} />
     </div>
   </div>
 );
@@ -148,11 +161,9 @@ export const ToolOutput = ({
   let Output = <div>{output as ReactNode}</div>;
 
   if (typeof output === "object" && !isValidElement(output)) {
-    Output = (
-      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
-    );
+    Output = <ToolJson value={output} />;
   } else if (typeof output === "string") {
-    Output = <CodeBlock code={output} language="json" />;
+    Output = <ToolJson value={output} />;
   }
 
   return (

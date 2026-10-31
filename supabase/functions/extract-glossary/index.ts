@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { AiUnavailableError, aiUnavailableResponse, fetchAiWithRetry } from "../_shared/aiRetry.ts";
+import { withRequestLog, type RequestLogger } from "../_shared/log.ts";
 
 
 async function callGemini(prompt: string): Promise<string> {
@@ -31,7 +32,7 @@ function extractJson(text: string): any {
   return null;
 }
 
-serve(async (req) => {
+serve(withRequestLog("extract-glossary", async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const limited = await enforceRateLimit(req, { bucket: "extract-glossary", limit: 40, windowSeconds: 300 });
@@ -63,8 +64,10 @@ ${trimmed}
 JSON 형식:
 { "terms": [ { "term": "용어", "definition": "정의" } ] }`;
 
+    const aiStartedAt = Date.now();
     const raw = await callGemini(prompt);
-    const parsed = extractJson(raw) || { terms: [] };
+    const parsedJson = extractJson(raw);
+    const parsed = parsedJson || { terms: [] };
     const list = Array.isArray(parsed.terms) ? parsed.terms : [];
     const glossary: Record<string, string> = {};
     for (const it of list) {
@@ -79,14 +82,21 @@ JSON 형식:
       if (Object.keys(glossary).length >= 20) break;
     }
 
+    logger.info("glossary.done", {
+      aiMs: Date.now() - aiStartedAt,
+      contentLength: content.length,
+      parsed: Boolean(parsedJson),
+      candidates: list.length,
+      kept: Object.keys(glossary).length,
+    });
     return new Response(JSON.stringify({ success: true, glossary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("extract-glossary error", e);
+    logger.error("request.error", { error: e });
     if (e instanceof AiUnavailableError) return aiUnavailableResponse(corsHeaders);
     return new Response(JSON.stringify({ success: false, error: String(e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));
