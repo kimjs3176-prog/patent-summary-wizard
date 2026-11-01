@@ -6,7 +6,7 @@
 //   에이프 → AIS: {type:"agri-ip:state", …} 그릴 때마다 단계·쪽·이전/다음·D-day (이 페이지가 단계 바를 그린다) · {type:"agri-ip:ais", q} 'AIS로 분석' → AIS 가 직접 검색
 // 반대로 AIS 가 에이프 안(iframe)에 열렸을 때는(?from=agri-ip) 비교 특허를 부모 창으로 postMessage 한다.
 
-// 기본은 이 사이트 안의 사본(public/filing-app, scripts/sync-filing-app.mjs 로 갱신). 바깥 서버를 쓰려면 관리자 설정 filing_url 에 https 주소
+// 기본은 이 사이트 안의 사본(public/filing-app, 이 저장소에서 직접 고친다). 바깥 서버를 쓰려면 관리자 설정 filing_url 에 https 주소
 export const FILING_DEFAULT_URL = "/filing-app/";
 
 export type SettingsLike = Record<string, string | undefined>;

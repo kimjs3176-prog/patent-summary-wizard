@@ -1,4 +1,4 @@
-// 출원지원 API (에이프 server/*.js 를 그대로 가져와 Deno 로 돌린다) — scripts/sync-filing-app.mjs 가 lib/ 를 갱신한다.
+// 출원지원 API (에이프 server/*.js 에서 가져온 lib/ 를 Deno 로 돌린다) — lib/ 는 이제 이 저장소에서 직접 고친다(에이프와 동기화하지 않음).
 //   GET  /filing-api/api/health · trends · kr-trends
 //   POST /filing-api/api/explore (KIPRIS 유사 특허·공백 맵) · draft (명세서 초안) · ai (AI 분석) · prompt (사용자 키로 쓸 지침)
 // 수출 실적·지원사업 공고·기사(에이프 해외동향·해외사업용)는 출원지원에 필요 없어 두지 않는다.
