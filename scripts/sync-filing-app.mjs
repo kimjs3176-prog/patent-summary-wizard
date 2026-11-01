@@ -7,8 +7,13 @@
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, unlinkSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+// .git/HEAD 는 보통 "ref: refs/heads/main" 이라 그대로 적으면 어떤 커밋을 복사했는지 알 수 없다 → 실제 커밋 SHA 로 푼다
+const sourceCommit = (dir) => {
+  try { return execFileSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(); } catch { return "?"; }
+};
 const src = resolve(process.argv[2] || resolve(ROOT, "../koat-axlab"));
 const env = Object.fromEntries(readFileSync(resolve(ROOT, ".env"), "utf8").split("\n").filter(l => /^[A-Z_]+=/.test(l)).map(l => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^["']|["']$/g, "")]; }));
 const api = process.argv.includes("--api") ? process.argv[process.argv.indexOf("--api") + 1] : `${env.VITE_SUPABASE_URL}/functions/v1/filing-api`;
@@ -24,5 +29,5 @@ mkdirSync(lib, { recursive: true });
 const files = readdirSync(resolve(src, "server")).filter(f => f.endsWith(".js") && !["server.js", "http.js", "publicdata.js"].includes(f));
 for (const old of ["publicdata.js"]) { try { unlinkSync(resolve(lib, old)); } catch { /* 없으면 그만 */ } }
 for (const f of files) copyFileSync(resolve(src, "server", f), resolve(lib, f));
-writeFileSync(resolve(lib, "SOURCE.md"), `에이프(koat-axlab) server/ 의 사본입니다. 직접 고치지 말고 원본을 고친 뒤 \`node scripts/sync-filing-app.mjs\` 로 다시 가져오세요.\n원본 커밋: ${(() => { try { return readFileSync(resolve(src, ".git/HEAD"), "utf8").trim(); } catch { return "?"; } })()}\n파일: ${files.join(", ")}\n`);
+writeFileSync(resolve(lib, "SOURCE.md"), `에이프(koat-axlab) server/ 의 사본입니다. 직접 고치지 말고 원본을 고친 뒤 \`node scripts/sync-filing-app.mjs\` 로 다시 가져오세요.\n원본 커밋: ${sourceCommit(src)}\n파일: ${files.join(", ")}\n`);
 console.log(`public/filing-app/index.html ${(html.length / 1024).toFixed(0)} KB (API ${api})\nsupabase/functions/filing-api/lib: ${files.join(", ")}`);

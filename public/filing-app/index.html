@@ -725,7 +725,6 @@ table.cmp td.num { font-variant-numeric: tabular-nums; font-weight: 600; }
 .next-due { display: grid; gap: 4px; margin: 6px 0 14px; padding: 14px 16px; border-radius: var(--r); border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--line)); background: var(--grad-soft), var(--surface); }
 .next-due b { font-size: 1.05rem; } .next-due.urgent { border-color: color-mix(in oklab, var(--bad) 40%, var(--line)); } .next-due.urgent b { color: var(--bad); }
 .next-due .actions { margin-top: 6px; }
-.sup-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 10px; font-size: .86rem; }
 .of-toc { position: sticky; top: 64px; z-index: 5; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 8px 0; margin-bottom: 6px; background: var(--surface); }
 .of-toc .chip { flex: none; cursor: pointer; } .of-sec { scroll-margin-top: 120px; }
 @media (max-width: 820px) { .of-toc { top: 104px; } .of-sec { scroll-margin-top: 170px; } }
@@ -1163,7 +1162,7 @@ h1, h2, h3 { font-weight: 600; }
 
   <footer class="foot">
     <div class="foot-brand"><span class="logo sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5V12.5"/><path d="M12 13.5c-3.8 0-6.2-2.4-6.2-6.2 3.8 0 6.2 2.4 6.2 6.2z"/><path d="M12 11.5c0-3.3 2.2-5.6 6.2-5.6 0 3.3-2.2 5.6-6.2 5.6z"/><path d="M6.5 20.5h11"/></svg></span>에이프 <em>Agri-IP</em><small>농식품 기술 사업 지원 서비스</small></div>
-    <p class="legal">에이프는 농식품 기술의 출원과 사업화 준비를 돕는 참고용 도구입니다. 특허 가능성 판단과 명세서 초안은 AI가 생성한 참고 자료이며, 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. KIPRIS를 연결하지 않았을 때의 선행특허·출원·거절 통계와 사례, 출원지원의 대표 지원사업 카드는 프로토타입용 예시이며 실제 정보가 아닙니다. 지원사업 공고와 나라별 수출 실적은 공공데이터포털(기업마당·관세청) 자료입니다. ‘KIPRIS 실데이터’ 표시가 붙은 칸은 KIPRIS Plus에서 조회한 값입니다.</p>
+    <p class="legal">에이프는 농식품 기술의 출원과 사업화 준비를 돕는 참고용 도구입니다. 특허 가능성 판단과 명세서 초안은 AI가 생성한 참고 자료이며, 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. KIPRIS를 연결하지 않았을 때의 선행특허·출원·거절 통계와 사례는 프로토타입용 예시이며 실제 정보가 아닙니다. 지원사업 공고와 나라별 수출 실적은 공공데이터포털(기업마당·관세청) 자료입니다. ‘KIPRIS 실데이터’ 표시가 붙은 칸은 KIPRIS Plus에서 조회한 값입니다.</p>
     <p class="legal">KIPRIS(한국특허정보원) 공공데이터를 활용합니다. 기술분석은 <a href="#ais">Agri IP Summary(AIS)</a>를 에이프 안에서 엽니다.</p>
   </footer>
 </div>
@@ -1656,22 +1655,16 @@ function suggestPage() {
 
 // 5. 제출·관리: 지원사업·변리사 → 기한 관리 → 해외 출원
 function supportPage() {
-  const all = PROGRAMS.map(p => ({ ...p, fit: p.who.includes(S.userType) })).sort((a, b) => b.fit - a.fit), progs = S.supportFit ? all.filter(p => p.fit) : all;
   const atts = ATTORNEYS.filter(a => a.f.includes(S.idea.field)), L = liveData(), ags = L?.agents ?? [];
   const agentsHtml = ags.length ? `<div class="field"><span class="label">비슷한 특허를 대리한 특허사무소·변리사 <span class="kr-badge">${L.mode === "mock" ? "KIPRIS 모의" : "KIPRIS 서지정보"}</span></span>
       <div class="cards">${ags.map(a => `<article class="card"><div class="attorney"><span class="avatar" aria-hidden="true">${esc(a.name.replace(/^\[모의\]\s*/, "").slice(0, 1))}</span><div><h3>${esc(a.name)}</h3><span class="org">비슷한 특허 ${a.count}건 대리</span></div></div>
         <p class="muted" style="font-size:.82rem">${a.cases.map(c => `${esc(c.title)} (${esc(c.applicationNumber)}, 유사도 ${c.sim}%)`).join(" · ")}</p></article>`).join("")}</div>
       <p class="hint">선행기술 조사에서 가장 비슷했던 특허의 공개 서지정보에 나온 대리인을 대리 건수 순으로 보여 줍니다. 추천이나 평가가 아니며, 상담 전에 변리사 등록 여부를 대한변리사회에서 확인하세요.</p></div>` : "";
-  return `<p class="example-note">‘대표 지원사업’ 카드는 화면 구성용 예시입니다. 위쪽 공고는 기업마당 공고입니다.${ags.length ? " 아래 특허사무소·변리사는 KIPRIS 공개 서지정보입니다." : (S.api === "off" ? " 변리사 정보도 예시이며, 서버에 KIPRIS 키를 설정하고 선행기술 조사를 실행하면 비슷한 특허를 대리한 사무소를 찾아 드립니다." : " 변리사 정보도 예시이며, 선행기술 조사를 실행하면 비슷한 특허를 대리한 사무소를 KIPRIS로 찾아 드립니다.")}</p>
-    <div class="grid2">
-      <div class="field"><label for="userType">신청자 유형</label><select id="userType">
-        ${[["farmer", "농업인·개인"], ["pre", "예비창업자"], ["sme", "농식품 중소기업"], ["lab", "연구기관·대학"]].map(([v, l]) => `<option value="${v}" ${S.userType === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+  return `<p class="example-note">${ags.length ? "아래 특허사무소·변리사는 KIPRIS 공개 서지정보입니다." : (S.api === "off" ? "아래 변리사 정보는 예시이며, 서버에 KIPRIS 키를 설정하고 선행기술 조사를 실행하면 비슷한 특허를 대리한 사무소를 찾아 드립니다." : "아래 변리사 정보는 예시이며, 선행기술 조사를 실행하면 비슷한 특허를 대리한 사무소를 KIPRIS로 찾아 드립니다.")}</p>
+    ${(n => n ? `<div class="grid2">
       <div class="field"><label for="region">지역</label><select id="region">${["서울", "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"].map(r => `<option ${S.region === r ? "selected" : ""}>${r}</option>`).join("")}</select></div>
     </div>
-    ${(n => n ? `<div class="field"><span class="label">지금 신청할 수 있는 특허·지식재산 공고 <span class="kr-badge">기업마당</span></span>${n}</div>` : "")(noticesHtml("ip", () => S.mode === "apply" && S.step === "manage"))}
-    <span class="label">대표 지원사업 <span class="muted h-meta">예시</span></span>
-    <div class="sup-bar"><span class="muted">${all.filter(p => p.fit).length}개 신청 가능 · ${all.length - all.filter(p => p.fit).length}개 요건 확인 필요</span><button type="button" class="btn ghost sm" id="sup-fit" aria-pressed="${!!S.supportFit}">${S.supportFit ? "모두 보기" : "신청 가능만 보기"}</button></div>
-    <div class="cards">${progs.map(p => `<article class="card"><span class="fit ${p.fit ? "" : "partial"}">${p.fit ? "신청 가능" : "요건 확인 필요"}</span><h3>${p.n}</h3><span class="org">${p.org}${p.n.startsWith("지역") ? ` · ${esc(S.region)}` : ""}</span><p style="font-size:.86rem">${p.what}</p></article>`).join("")}</div>
+    <div class="field"><span class="label">지금 신청할 수 있는 특허·지식재산 공고 <span class="kr-badge">기업마당</span></span>${n}</div>` : "")(noticesHtml("ip", () => S.mode === "apply" && S.step === "manage"))}
     ${agentsHtml || `<div class="field"><span class="label">${esc(fieldName(S.idea.field))} 분야 변리사 (예시)</span>
       <div class="cards">${(atts.length ? atts : ATTORNEYS.slice(0, 2)).map(a => `<article class="card"><div class="attorney"><span class="avatar" aria-hidden="true">${a.i}</span><div><h3>${a.n}</h3><span class="org">${a.tag}</span></div></div>
         <button class="btn sm ghost" data-consult="${a.n}">진단 리포트 보내고 상담 요청</button></article>`).join("")}</div></div>`}
@@ -1987,15 +1980,6 @@ const TPL = {
 };
 
 
-// 프로토타입용 지원사업 예시 (실제 공고 아님)
-const PROGRAMS = [
-  { n: "무료 특허 상담", org: "공익변리사 상담 (예시)", who: ["farmer", "pre"], what: "개인·소기업 대상 출원 전 무료 상담과 서류 검토" },
-  { n: "출원 비용 감면", org: "지식재산처 감면 제도 (예시)", who: ["farmer", "pre", "sme", "lab"], what: "출원료·심사청구료·초기 등록료 감면 대상 여부 확인" },
-  { n: "지식재산 바우처", org: "지식재산 지원기관 (예시)", who: ["sme"], what: "선행조사, 출원 대리, 기술가치평가 비용 지원" },
-  { n: "지역 IP 창출 지원", org: "지역지식재산센터 (예시)", who: ["sme", "pre"], what: "지역 소재 기업의 국내외 출원 비용 일부 지원" },
-  { n: "농식품 기술사업화 지원", org: "농식품 기술사업화 기관 (예시)", who: ["farmer", "sme", "lab"], what: "등록 특허의 기술이전, 시제품 제작, 투자 연계" },
-  { n: "연구성과 권리화 지원", org: "기관 기술이전 전담조직 (예시)", who: ["lab"], what: "연구 결과의 논문 발표 전 출원과 기술이전 마케팅" }
-];
 const ATTORNEYS = [
   { i: "가", n: "변리사 A (예시)", tag: "발효·미생물, 비료", f: ["ferment", "functional"] },
   { i: "나", n: "변리사 B (예시)", tag: "식품 조성물, 가공 공정", f: ["food", "functional"] },
@@ -2025,7 +2009,6 @@ function OVERSEAS_BODY(sec, base) {
     ${sec("무엇을 보호할까", `<div class="g-tools">${GUIDE.tools.map(x => `<article><span class="g-tag">${x.t}</span><h4>${x.k}</h4><p class="muted">${x.d}</p><p>${x.g}</p></article>`).join("")}</div>`, GUIDE.tools.map(x => x.k).join(" · "))}
     ${sec("먼저 공개했다면: 나라별 공지예외", `<p class="muted">한국에서 공지예외로 출원해도 유럽·중국에서는 신규성을 잃습니다.</p><div class="table-wrap"><table class="g-grace"><thead><tr><th>나라</th><th>기간</th><th>조건</th></tr></thead><tbody>${GUIDE.grace.map(([c, p, n]) => `<tr><td><b>${c}</b></td><td class="${/없음|6개월/.test(p) ? "warn-t" : ""}">${p}</td><td>${n}</td></tr>`).join("")}</tbody></table></div>`, "유럽·중국은 공지예외가 좁습니다")}
     ${sec("사례로 보는 교훈", `<div class="g-cases">${GUIDE.cases.map(c => `<article class="g-route"><h4>${c.t}</h4><p>${c.d}</p><p class="g-lesson">${c.l}</p><a class="hint" href="${c.src}" target="_blank" rel="noopener">출처</a></article>`).join("")}</div>`, GUIDE.cases.map(c => c.t).join(" · "))}
-    ${sec("해외 출원 비용 지원", `${(n => n ? `<h4 class="biz-sub">지금 신청할 수 있는 공고 <span class="kr-badge">기업마당</span></h4>${n}<h4 class="biz-sub">상시 지원 제도 (2026)</h4>` : "")(noticesHtml("overseas", () => S.mode === "apply" && S.step === "manage"))}<ul class="g-support">${GUIDE.support.map(x => `<li><a href="${x.url}" target="_blank" rel="noopener"><b>${x.k}</b><span class="muted">${x.by}</span><span>${x.d}</span></a></li>`).join("")}</ul>`, `지원사업 ${GUIDE.support.length}개`)}
     <p class="hint">${GUIDE.asOf} 기준 일반 안내입니다. 나라별 제도와 비용은 출원 전에 변리사나 지원기관에 확인하세요. 출처: ${GUIDE.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(" · ")}</p>`;
 }
 
@@ -2180,7 +2163,7 @@ function subNav() {
 
 function navLabels() {
   const br = BRANCH[S.step], i = stepIdx(), subs = subsFor(S.step), n = Math.max(1, subs.length);
-  return { prev: S.sub > 0 ? subs[S.sub - 1] : br ? `${STEPS[i].t}로 돌아가기` : STEPS[i - 1] ? `${i}단계 ${STEPS[i - 1].t}` : "",
+  return { prev: S.sub > 0 ? subs[S.sub - 1] : br ? `${J(STEPS[i].t, "으로")} 돌아가기` : STEPS[i - 1] ? `${i}단계 ${STEPS[i - 1].t}` : "",
     next: S.sub < n - 1 ? subs[S.sub + 1] : br ? "" : STEPS[i + 1] ? `${i + 2}단계 ${STEPS[i + 1].t}` : "" };
 }
 function pageBar() {
@@ -2343,13 +2326,6 @@ const GUIDE = {
     { t: "샤인머스캣", d: "일본이 2006년 등록한 품종이지만 해외 품종보호 출원 기한(자국 판매 후 6년)을 넘겨 중국·한국에서의 재배가 합법이 됐습니다. 2022년 재배면적은 중국 73,700ha, 한국 6,067ha로 일본(2,673ha)보다 넓고, 일본은 손실을 연 200억 엔 미만 규모로 추산합니다.", l: "품종은 수출·해외 판매 전에 주요 재배국에 품종보호를 출원해야 합니다.", src: "https://www.maff.go.jp/j/shokusan/syubyouhou/attach/pdf/index-29.pdf" },
     { t: "국산 딸기 품종", d: "외국 품종이 90%를 넘던 딸기는 설향 등 국산 품종이 보급되면서 국산 비율이 2005년 9.2%에서 2021년 96.3%로 올라 로열티 부담을 덜었습니다.", l: "품종 개발과 보호가 함께 가야 해외 로열티에서 자유로워집니다.", src: "https://www.rda.go.kr/webzine/2022/02/sub1-2.html" },
     { t: "K-식품 상표 무단선점", d: "해외에서 K-식품 상표를 제3자가 먼저 출원한 의심 사례가 2023년 399건에서 2025년 738건으로 늘었습니다. 업종 전체로는 중국·인도네시아·베트남·태국 순으로 많습니다.", l: "수출 계획이 생기면 현지 상표부터 출원하고, 무단선점 알림서비스를 신청하세요.", src: "https://www.fnnews.com/news/202601191816598213" }
-  ],
-  support: [
-    { k: "글로벌 IP스타기업 육성", by: "지식재산처·지자체 · 지역지식재산센터", d: "수출(예정) 중소기업을 3년간 지원: 해외권리화(출원·등록), 특허맵, 브랜드. 기업 분담 40%, 연초 모집", url: "https://www.ripc.org" },
-    { k: "지식재산 긴급지원", by: "지역지식재산센터", d: "분기마다 모집, 기업당 2천만 원 이내 (예: PCT 228만 원, 2026년 지역 공고 기준)", url: "https://www.ripc.org" },
-    { k: "K-브랜드 분쟁 대응전략 지원", by: "한국지식재산보호원", d: "무단선점 대응 최대 4천만 원(비용의 50~70%), 무단선점 알림서비스·가짜 K-브랜드 신고센터", url: "https://www.koipa.re.kr" },
-    { k: "농식품 수출기업 해외 지재권 지원", by: "농림축산식품부 · aT", d: "해외 전문기관(32개국 45곳)을 통한 상표·특허 출원과 유사상표 조사", url: "https://www.at.or.kr" },
-    { k: "지식재산공제", by: "기술보증기금", d: "낸 부금의 최대 5배까지 해외출원·분쟁 비용 대출", url: "https://www.kibo.or.kr" }
   ],
   // 실데이터 연결에 필요한 API (화면 아래 표로 보여 준다)
   apis: [
@@ -2579,8 +2555,6 @@ const BIZ = {
       fit: { g: ["수출"] }, when: "연중 (분기별 모집)", req: "수출 희망 중소·중견기업", next: "관심 시장의 무역관을 고르면 그 나라 바이어 발굴을 맡길 수 있습니다" },
     { k: "수출바우처", by: "중소벤처기업부 · KOTRA", d: "전년 수출 실적에 따라 3천만~1억 원(관세 대응 추가 시 최대 1.5억 원), 정부 50~70%. 인증·전시회·지재권 등 메뉴에서 선택", url: "https://www.exportvoucher.com",
       fit: { g: ["수출"] }, when: "1~2월 공고 (해마다)", req: "중소·중견기업, 전년 수출 실적 구간별", next: "‘지식재산권’ 메뉴로 해외 상표·특허 출원 비용을 쓸 수 있습니다" },
-    { k: "해외 출원 비용 지원", by: "지역지식재산센터 (특허청)", d: "PCT·개별국 특허 출원, 해외 상표 출원 비용의 일부를 지역별로 지원 (해마다 공고)", url: "https://pms.ripc.org",
-      fit: {}, when: "연초 공고, 지역별 수시", req: "지역 내 중소기업·개인", next: "국내 출원 뒤 12개월 안에 해외 출원해야 하니 우선권 기한보다 앞선 공고를 노리세요" },
     { k: "KOPIA 해외농업기술개발", by: "농촌진흥청", d: "22개국(2026. 7.) 해외농업기술센터. 기업을 직접 지원하지는 않지만 현지 정부·연구기관 네트워크를 활용할 수 있습니다", url: "https://www.rda.go.kr",
       fit: { g: ["현지 실증·파일럿", "기술이전·라이선싱"], m: ["SEA", "ME"] }, when: "연중 (센터별 문의)", req: "현지 연구기관과 협력할 기술", next: "현지 실증 협력기관 후보로 KOPIA 센터의 상대 기관을 알아보세요" },
     { k: "단기수출보험 (농수산물 패키지)", by: "한국무역보험공사", d: "수출 대금 미회수 위험 보장. aT 수출 지원 선정 기업과 연계", url: "https://www.ksure.or.kr/rh-kr/bbs/i-671/detail.do?ntt_sn=292",
@@ -2963,8 +2937,12 @@ const farmMarkup = () => "";
 /* ---------- 출원용 명세서: 서식 생성 · 점검 · 저장 ---------- */
 const NEED = s => `〔입력 필요: ${s}〕`;
 // 받침에 맞는 조사: J("쌀겨", "을") → "쌀겨를", J("키토산", "은") → "키토산은"
-const jong = w => { const ch = String(w).trim().slice(-1), c = ch.charCodeAt(0);
+const jong = w => { const s = String(w).trim(), ch = s.slice(-1), c = ch.charCodeAt(0);
   if (c >= 0xac00 && c <= 0xd7a3) return (c - 0xac00) % 28;
+  // 라틴 문자: 대문자 약어는 글자 이름으로(PCR → 알 ㄹ, SEM → 엠), 소문자 낱말은 -m·-n(받침)·-l(ㄹ)로 끝날 때만 받침으로 읽는다
+  // (Lactobacillus plantarum → 플란타룸으로). 모음 없는 단위(mm·cm·rpm)는 받침 없이 읽는다(밀리미터로)
+  const word = (s.match(/[A-Za-z]+$/) || [""])[0];
+  if (word) return /^[A-Z]+$/.test(word) ? ({ L: 8, R: 8, M: 16, N: 4 }[ch] ?? 0) : word.length >= 3 && /[aeiouy]/i.test(word) ? ({ m: 16, n: 4, l: 8 }[ch] ?? 0) : 0;
   return { "0": 21, "1": 8, "3": 21, "6": 1, "7": 8, "8": 8 }[ch] ?? 0; };
 const JOSA = { "을": ["을", "를"], "은": ["은", "는"], "이": ["이", "가"], "과": ["과", "와"] };
 const J = (w, t) => t === "으로" ? w + (jong(w) && jong(w) !== 8 ? "으로" : "로") : w + JOSA[t][jong(w) ? 0 : 1];
@@ -2974,6 +2952,10 @@ const krAppNo = n => /^\d{13}$/.test(n) ? `한국 특허출원 제${n.slice(0, 2
 const RANGE_G = /\d[\d.,]*\s*(?:~|-|내지)\s*\d[\d.,]*\s*(?:중량|부피|w\/w|v\/v)?\s*(?:%|℃|시간|분|일|mg\/kg|g\/L|ppm|배|cm|mm|lux)?|\d[\d.,]*\s*(?:중량|부피)?\s*(?:%|℃|시간|분|일|ppm)/g;
 const EX_G = /\s*\(\s*예(?:시)?\s*[:：]\s*([^()]*)\)/g;
 const TRIVIAL = /^(물|정제수|증류수|희석제|부형제|용매)$/;
+// 발명이 만들거나 정한 구성(발효물·추출물·서열번호의 프라이머 등). ‘시판품을 쓸 수 있다’고 쓰면 신규성·실시 가능 요건과 어긋나므로 얻는 방법을 묻는다
+const OWN_PART = /발효|추출|배양|농축|합성|서열번호|프라이머|마커|변이|형질전환/;
+// 담체·부형제·제형 문단은 조성물류에만 쓴다 (프라이머 세트·키트·균주 같은 물건에는 맞지 않는다)
+const MIX_SUBJECT = /(조성물|제제|비료|사료|식품|음료|소재|첨가물|농약|제품|간편식|분말)$/;
 function parsePart(p) {
   const raw = String(p).trim(), balance = /^잔량의\s*/.test(raw), body = raw.replace(/^잔량의\s*/, "");
   const ex = [...body.matchAll(EX_G)].map(m => m[1].trim()).filter(Boolean).join(", ");
@@ -3039,6 +3021,7 @@ function priorGaps(prior, pp) {
 function formsOf({ subject, isDevice, isProcess, ferment }) {
   if (isDevice || isProcess) return "";
   const f = S.idea.field, w = subject.replace(/\s+/g, " ");
+  if (!MIX_SUBJECT.test(w.split(" ").at(-1))) return "";
   if (ferment || f === "ferment" || /비료|농약|방제|생장|생육|병해|토양|사료/.test(w)) return "액상, 분말, 과립 또는 펠릿";
   if (f === "food" || f === "functional" || f === "pack" || /식품|음료|조성물|소재|제제/.test(w)) return "분말, 과립, 정제, 캡슐 또는 액상";
   return "";
@@ -3053,7 +3036,7 @@ function specBoiler({ t, subject, pp, isDevice, isProcess, ferment }) {
   if (/식물|작물|생장|생육|병해|토양/.test(all)) out.push("본 명세서에서 ‘식물’ 또는 ‘작물’은 엽채류, 과채류, 근채류, 과수, 화훼, 곡류 및 특용작물을 포함하며, 실시예에 기재한 작물로 한정되지 않는다.");
   if (isDevice) out.push("본 발명의 각 구성은 하나의 모듈로 통합되거나 복수의 장치로 나뉘어 구현될 수 있으며, 구성 사이의 연결은 유선 또는 무선 통신으로 이루어질 수 있다. 제어부는 프로세서와 메모리를 포함하는 컴퓨팅 장치로 구현될 수 있다.");
   else if (isProcess) out.push("본 발명의 각 단계는 기재한 순서와 다르게 수행되거나 일부 단계가 동시에 수행될 수 있으며, 통상의 기술자가 통상적으로 수행하는 전처리·후처리 단계를 더 포함할 수 있다.");
-  else {
+  else if (MIX_SUBJECT.test(whole)) {
     const forms = formsOf({ subject, isDevice, isProcess, ferment });
     out.push(`본 발명의 ${J(whole, "은")} 상기 구성 외에 담체, 부형제, 희석제, 안정제, 보존제, 계면활성제 등 해당 분야에서 통상적으로 쓰는 첨가 성분을 본 발명의 효과를 해치지 않는 범위에서 더 포함할 수 있다.`);
     if (forms) out.push(/액상, 분말, 과립 또는 펠릿/.test(forms)
@@ -3125,7 +3108,7 @@ function buildSpecTemplate() {
   };
   if (isProcess) steps.forEach((p, i) => rangeSentence(p, stepLabel(p, i), true));
   else comps.forEach(p => !p.balance && rangeSentence(p, p.name, false));
-  if (newStrain) para(`상기 발효에 사용하는 균주는 ${strainLabel()}로서, ${depText()}로 기탁된 것일 수 있다.`);
+  if (newStrain) para(`상기 발효에 사용하는 균주는 ${J(strainLabel(), "으로")}서, ${depText()}로 기탁된 것일 수 있다.`);
   if (knownStrain) para(`상기 발효에 사용하는 균주는 ${strainLabel()}일 수 있다.`);
   if (!isProcess && !isDevice) para(useMethod
     ? `또한, 본 발명은 상기 ${J(subject, "을")} 이용한 ${J(useMethod, "을")} 제공한다. 상기 방법은 ${steps.length ? `${J(join(methodSteps()), "을")} 포함할 수 있다.` : `${NEED("방법의 단계와 단계별 조건")}을 포함할 수 있다.`}`
@@ -3146,11 +3129,11 @@ function buildSpecTemplate() {
   // 청구 유형마다 채울 내용이 다르다: 물건은 원료·규격, 장치는 구조·연결·동작, 방법은 장비·조건·순서
   const hint = p => p.ex ? ` (예시: ${p.ex})` : p.note ? ` (참고: ${p.note})` : "";
   if (isDevice) comps.forEach((p, i) => para(`${draw && i === 0 ? "도 1을 참조하면, " : ""}본 발명의 ${Jn(p.name, i, "은")} ${NEED(`${p.name}의 구조, 다른 구성과의 연결 관계, 동작${hint(p)}`)}`));
-  else comps.filter(p => !p.trivial && !(ferment && S.strain && /균주$/.test(p.name))).forEach(p => para(`본 발명의 ${J(p.name, "은")} ${steps.length && /발효|추출|배양|농축|분쇄|가공/.test(p.name) ? `후술하는 제조방법의 ${listKo(steps.map((q, i) => `(${String.fromCharCode(97 + i)})`))} 단계를 거쳐 제조할 수 있으며, 원료의 품종·산지·입자 크기 등은 특별히 한정되지 않는다.` : `${NEED(`${p.name}의 정의와 역할${p.ex ? ` (예시: ${p.ex})` : p.note ? ` (참고: ${p.note})` : ""}`)} ${J(p.name, "은")} 시판품 또는 통상의 방법으로 얻은 것을 사용할 수 있으며, 그 규격은 특별히 한정되지 않는다.`}${p.ranges.length ? ` 상기 ${J(p.name, "은")} ${amount(p.ranges[0])}${J(listKo(p.ranges.map(rangeKo)), "으로")} 포함되는 것이 바람직하다.` : ""}`));
+  else comps.filter(p => !p.trivial && !(ferment && S.strain && /균주$/.test(p.name))).forEach(p => para(`본 발명의 ${J(p.name, "은")} ${steps.length && /발효|추출|배양|농축|분쇄|가공/.test(p.name) ? `후술하는 제조방법의 ${listKo(steps.map((q, i) => `(${String.fromCharCode(97 + i)})`))} 단계를 거쳐 제조할 수 있으며, 원료의 품종·산지·입자 크기 등은 특별히 한정되지 않는다.` : OWN_PART.test(p.name) ? NEED(`${p.name}의 정의, 얻는 방법(원료·조건)과 역할${p.ex ? ` (예시: ${p.ex})` : p.note ? ` (참고: ${p.note})` : ""}`) : `${NEED(`${p.name}의 정의와 역할${p.ex ? ` (예시: ${p.ex})` : p.note ? ` (참고: ${p.note})` : ""}`)} ${J(p.name, "은")} 시판품 또는 통상의 방법으로 얻은 것을 사용할 수 있으며, 그 규격은 특별히 한정되지 않는다.`}${p.ranges.length ? ` 상기 ${J(p.name, "은")} ${amount(p.ranges[0])}${J(listKo(p.ranges.map(rangeKo)), "으로")} 포함되는 것이 바람직하다.` : ""}`));
   const flowFig = draw && figModel()?.type === "flow", sNo = i => flowFig ? `(S${110 + i * 10})` : "";
   steps.forEach((p, i) => para(`${flowFig && i === 0 ? "도 1을 참조하면, " : ""}상기 ${stepLabel(p, i)}${sNo(i)}${J(stepLabel(p, i), "은").slice(stepLabel(p, i).length)} ${NEED(`${p.name}에 쓰는 장비·재료, 조건(온도·시간·비율), 앞뒤 단계와의 순서${hint(p)}`)}`));
   if (newStrain) para(`본 발명에 사용하는 균주는 ${strainLabel()}이다. ${NEED("균주를 분리·선발한 출처와 방법, 16S rRNA 유전자 염기서열 등 동정 결과(서열번호 1)")} 상기 균주는 ${depText()}로 기탁되었다.`);
-  if (knownStrain) para(`본 발명에 사용하는 균주는 ${strainLabel()}로, ${strainSrc()}에서 입수하였다.`);
+  if (knownStrain) para(`본 발명에 사용하는 균주는 ${J(strainLabel(), "으로")}, ${strainSrc()}에서 입수하였다.`);
   head("【실시예 1】");
   // 실험 결과 그래프에 넣은 측정값이 있으면 그 값으로 표 1과 비교 문장을 쓴다 (그래프마다 실험예 하나). 측정 방법·반복 수·대조군 조건도 그래프 입력에서 가져온다
   const gfigs = draw ? figList().filter(x => x.src === "graph") : [], G0 = gfigs[0]?.g ?? (draw ? null : expGraphs()[0]);
@@ -3282,9 +3265,213 @@ function syncSpecIds() {
   return changed;
 }
 
-// 출원 전 자동 점검 — 특허법 제42조, 시행령 제5조, 시행규칙 제21조, 별지 제15·16호서식 기준
-const REQUIRED = ["【발명의 설명】", "【발명의 명칭】", "【발명의 배경이 되는 기술】", "【발명을 실시하기 위한 구체적인 내용】", "【청구범위】", "【청구항 1】", "【요약서】", "【요약】"];
-const RECOMMENDED = ["【기술분야】", "【발명의 내용】", "【해결하려는 과제】", "【과제의 해결 수단】", "【발명의 효과】"];
+// 출원 전 자동 점검 — 특허법 제42조, 시행령 제5조, 시행규칙 제21조, 별지 제15·16호서식, WIPO ST.14 기준
+// 서식·청구항 규칙은 server/specCheck.js 와 같은 코드(아래 구간)를 쓴다. 고칠 때는 server/specCheck.js 를 고치고 node scripts/sync-spec-check.mjs 로 옮긴다
+// specCheck:begin
+const SpecCheck = (() => {
+  // 별지 제15·16호서식의 식별항목 순서 (해당할 때만 쓰는 항목 포함)
+  const ORDER = ["【발명의 설명】", "【발명의 명칭】", "【기술분야】", "【발명의 배경이 되는 기술】", "【선행기술문헌】", "【특허문헌】", "【비특허문헌】",
+    "【발명의 내용】", "【해결하려는 과제】", "【과제의 해결 수단】", "【발명의 효과】", "【도면의 간단한 설명】", "【발명을 실시하기 위한 구체적인 내용】",
+    "【산업상 이용가능성】", "【부호의 설명】", "【수탁번호】", "【청구범위】", "【요약서】", "【요약】", "【대표도】"];
+  const REQUIRED = ["【발명의 설명】", "【발명의 명칭】", "【발명의 배경이 되는 기술】", "【발명을 실시하기 위한 구체적인 내용】", "【청구범위】", "【청구항 1】", "【요약서】", "【요약】"];
+  const RECOMMENDED = ["【기술분야】", "【발명의 내용】", "【해결하려는 과제】", "【과제의 해결 수단】", "【발명의 효과】"];
+  const OLD = ["【해결하고자 하는 과제】", "【발명의 상세한 설명】", "【특허청구범위】"];
+  // 청구항에 쓰면 범위가 불명확해지는 말 (특허법 제42조 제4항 제2호, 심사기준). 〔입력 필요〕 안은 보지 않는다
+  const VAGUE = [/적정량|적당량|적량|유효량|다량|소량|대략/g, /약\s?\d[\d.,]*/g, /(^|[^가-힣])등(?=을|의|이|과|으로|에|은|를|\s|\.|,|$)/g,
+    /바람직하게는|바람직한|바람직하다/g, /(^|[^가-힣])특히/g, /(^|[^가-힣])주로/g, /실질적으로|거의|대부분/g, /\d[^\s,]*\s*(?:정도|내외|전후)/g,
+    /필요에 따라|필요시|경우에 따라|가능한 한|예를 들어|예컨대|예를 들면/g, /적절한|적절히|적당한|적당히/g];
+  const UNIT = /^\s*(?:중량\s*부|중량\s*%|부피\s*%|몰\s*%|%|℃|°C|K\b|시간|분|초|일|주|개월|년|배|회|개|층|단계|nm|μm|um|mm|cm|m\b|km|kg|mg|μg|ng|g\b|mL|ml|μL|L\b|ppm|ppb|rpm|kPa|MPa|Pa\b|bar|lux|lx|kW|W\b|mV|V\b|mA|A\b|kHz|MHz|Hz|dS\/m|mS\/cm|mM|μM|M\b|N\b|CFU|cfu|log|°Bx|Brix|브릭스|kcal|cal|kJ|J\b|mol|bp|kb|nt|w\/w|v\/v|w\/v|메쉬|mesh)/;
+  const ST14 = /^[A-Z]{2}\s+\d[\d\-\/]*\s+[A-Z]\d?(?:\s+\d{4}\.\s?\d{1,2}\.\s?\d{1,2}\.?)?$/;
+  const PARTICLE = /(으로서|으로써|에서는|에서|으로|에게|에는|부터|까지|보다|와|과|은|는|이|가|을|를|의|에|로|도|만)$/;
+  const REF = /(?:청구항\s*제?\s*(\d+)\s*항?|제\s*(\d+)\s*항)/g;
+  const RANGE = /(?:청구항\s*제?\s*|제\s*)(\d+)\s*항?\s*(?:내지|~|∼)\s*(?:청구항\s*제?\s*|제\s*)?(\d+)/g;
+  const unfill = s => String(s ?? "").replace(/〔[^〕]*〕/g, " ");
+  const squash = s => String(s).replace(/\s+/g, "");
+  const uniq = a => [...new Set(a)];
+  const list = (a, n = 5) => a.slice(0, n).join(", ") + (a.length > n ? ` 외 ${a.length - n}곳` : "");
+
+  function sections(text) {
+    const t = String(text ?? "").replace(/\r/g, "");
+    const ci = t.indexOf("【청구범위】"), si = t.indexOf("【요약서】");
+    const desc = ci >= 0 ? t.slice(0, ci) : si >= 0 ? t.slice(0, si) : t;
+    const claims = ci >= 0 ? t.slice(ci, si > ci ? si : undefined) : "";
+    const tail = si >= 0 ? t.slice(si) : "";
+    const summary = ((t.split("【요약】")[1] || "").split("【대표도】")[0]).trim();
+    return { t, desc, claims, tail, summary };
+  }
+
+  // 청구항: 번호, 본문, 인용한 항(‘내지’는 사이 번호까지), 종속항 형식(‘…에 있어서’), 끝 명사(청구 대상)
+  function parseClaims(text) {
+    const sec = typeof text === "string" ? sections(text).claims : text.claims;
+    return [...sec.matchAll(/【청구항\s*(\d+)】\s*([\s\S]*?)(?=【청구항\s*\d+】|$)/g)].map(m => {
+      const body = m[2].trim(), bare = unfill(body), hits = [...bare.matchAll(REF)];
+      const refs = hits.map(h => +(h[1] || h[2]));
+      for (const r of bare.matchAll(RANGE)) { const a = +r[1], b = +r[2]; if (b > a && b - a < 100) for (let i = a + 1; i < b; i++) refs.push(i); }
+      const span = hits.length ? bare.slice(hits[0].index, hits[hits.length - 1].index + hits[hits.length - 1][0].length + 16) : "";
+      const subj = /〕\s*\.?\s*$/.test(body) ? "" : bare.replace(/[\s.]+$/, "").split(/\s+/).pop() || "";
+      return { n: +m[1], body, refs: uniq(refs).sort((x, y) => x - y), dependent: /^\s*(?:청구항|제\s*\d+\s*항)[^,]*?에\s*있어서/.test(bare), span, subject: subj };
+    });
+  }
+
+  function vagueTerms(claimText) {
+    const s = unfill(claimText);
+    return uniq(VAGUE.flatMap(re => [...s.matchAll(re)].map(m => m[0].replace(/^[^가-힣\d]+/, "").trim()))).filter(Boolean);
+  }
+
+  // ‘상기 X’의 X: 조사가 붙은 낱말까지(최대 5낱말). 조사가 끝내 없으면 첫 낱말만 본다
+  function antecedentPhrases(body) {
+    const s = unfill(body), out = [];
+    for (const m of s.matchAll(/상기\s+(?=\S)/g)) {
+      const toks = s.slice(m.index + m[0].length).split("\n")[0].split(/\s+/).slice(0, 5), got = [];
+      let done = false;
+      for (const tk of toks) {
+        const w = tk.replace(/[,.;:]+$/, "");
+        if (!w || /^(및|또는|중|내지)$/.test(w)) break;
+        const p = w.match(PARTICLE);
+        if (p && w.length > p[0].length) { got.push(w.slice(0, -p[0].length)); done = true; break; }
+        got.push(w);
+        if (w !== tk) break;
+      }
+      const phrase = (done ? got : got.slice(0, 1)).join(" ").trim();
+      if (phrase && !/^[\d()]+$/.test(phrase)) out.push({ phrase, first: got[0], raw: (toks[0] || "").replace(/[,.;:]+$/, ""), at: m.index });
+    }
+    return out;
+  }
+
+  function lintSpec(text, opts = {}) {
+    const S = sections(text), t = S.t, out = [];
+    const add = (ok, title, d) => out.push({ ok: !!ok, t: title, d });
+
+    const missing = REQUIRED.filter(h => !t.includes(h));
+    add(!missing.length, "필수 항목", missing.length ? `빠진 항목: ${missing.join(", ")} (시행규칙 제21조, 별지 제15호서식)` : "명세서·요약서의 필수 식별항목이 모두 있습니다.");
+    const rec = RECOMMENDED.filter(h => !t.includes(h));
+    add(!rec.length, "권장 항목", rec.length ? `없는 항목: ${rec.join(", ")} — 해당 내용이 있으면 적으세요.` : "기술분야·발명의 내용·과제·해결 수단·효과 항목이 있습니다.");
+    const old = OLD.filter(h => t.includes(h));
+    add(!old.length, "항목 이름", old.length ? `${old.join(", ")}은(는) 현행 서식의 이름이 아닙니다. 【해결하려는 과제】, 【발명을 실시하기 위한 구체적인 내용】, 【청구범위】로 고치세요.` : "식별항목 이름이 현행 서식과 같습니다.");
+
+    // 식별항목 순서·중복
+    const pos = ORDER.map(h => [h, t.indexOf(h)]).filter(x => x[1] >= 0);
+    const swapped = pos.findIndex((x, i) => i > 0 && x[1] < pos[i - 1][1]);
+    const dup = ORDER.filter(h => t.split(h).length > 2);
+    add(swapped < 0 && !dup.length, "식별항목 순서", swapped >= 0 ? `${pos[swapped][0]}이(가) ${pos[swapped - 1][0]}보다 앞에 있습니다. 별지 제15·16호서식의 순서대로 옮기세요.` : dup.length ? `${dup.join(", ")}이(가) 두 번 이상 나옵니다. 한 번만 쓰세요.` : "식별항목이 서식의 순서대로 한 번씩 있습니다.");
+
+    const titleLine = (t.match(/【발명의 명칭】[^\n]*/) || [""])[0];
+    const ko = (titleLine.match(/【발명의 명칭】[ \t]*([^\n{]*)/) || [])[1]?.trim() || "";
+    const titleOk = !!ko && /\{[^}]*[A-Za-z][^}]*\}/.test(titleLine);
+    add(titleOk, "발명의 명칭", titleOk ? "국문 명칭과 {영문 명칭}이 한 줄에 있습니다." : "【발명의 명칭】 다음에 국문 명칭과 {영문 명칭}을 같은 줄에 적으세요. 예: 발효 쌀겨 조성물{FERMENTED RICE BRAN COMPOSITION}");
+
+    // 식별번호: 【0001】부터 이어지고, 청구범위·요약서에는 붙이지 않는다
+    const paras = [...t.matchAll(/【(\d{4})】/g)].map(m => +m[1]);
+    const seqOk = paras.length > 0 && paras.every((n, i) => n === i + 1);
+    const late = /【\d{4}】/.test(S.claims + S.tail);
+    add(seqOk && !late, "문단 번호", !seqOk ? (paras.length ? "문단 번호가 빠졌거나 순서가 맞지 않습니다. 【0001】부터 하나씩 이어 붙이세요." : "문단 번호가 없습니다. 【기술분야】부터 각 문단 앞에 【0001】처럼 네 자리 번호를 붙이세요.")
+      : late ? "【청구범위】와 【요약서】에는 식별번호(【0001】)를 붙이지 않습니다 (별지 제15호서식 기재요령)." : `【0001】부터 【${String(paras.length).padStart(4, "0")}】까지 차례대로 붙어 있습니다.`);
+
+    const claims = parseClaims(S), byN = new Map(claims.map(c => [c.n, c]));
+    const numOk = claims.length > 0 && claims.every((c, i) => c.n === i + 1);
+    add(numOk, "청구항 번호", claims.length ? `청구항 ${claims.length}개${numOk ? "" : ", 번호가 1부터 연속되지 않습니다"}` : "청구항이 없습니다.");
+
+    // 인용: 자기 자신·뒤 번호·없는 항을 인용하지 않는다 (시행령 제5조 제7항)
+    const badRef = claims.filter(c => c.refs.some(r => r >= c.n || !byN.has(r))).map(c => c.n);
+    add(!badRef.length, "인용 관계", badRef.length ? `청구항 ${badRef.join(", ")}이(가) 자기 자신, 뒤 번호 또는 없는 청구항을 인용합니다 (시행령 제5조 제7항).` : "모든 종속항이 앞 번호 청구항을 인용합니다.");
+    // 다중 인용: 택일적으로 쓰고, 다른 다중 인용항을 직접·간접으로 인용하지 않는다 (시행령 제5조 제6항)
+    const multi = c => c.refs.length > 1;
+    const notAlt = claims.filter(c => multi(c) && !/또는|중\s*어느\s*(?:한\s*)?(?:하나의?\s*)?항/.test(c.span)).map(c => c.n);
+    const multiOnMulti = claims.filter(c => {
+      if (!multi(c)) return false;
+      const seen = new Set(), stack = [...c.refs];
+      while (stack.length) { const r = stack.pop(); if (seen.has(r) || r >= c.n) continue; seen.add(r); const p = byN.get(r); if (!p) continue; if (multi(p)) return true; stack.push(...p.refs); }
+      return false;
+    }).map(c => c.n);
+    const multiBad = [multiOnMulti.length && `청구항 ${multiOnMulti.join(", ")}이(가) 다른 다중 인용항을 직접 또는 간접으로 인용합니다 (시행령 제5조 제6항).`,
+      notAlt.length && `청구항 ${notAlt.join(", ")}은(는) 2 이상의 항을 택일적으로 인용하지 않습니다. ‘청구항 1 또는 청구항 2에 있어서’, ‘청구항 1 내지 청구항 3 중 어느 한 항에 있어서’처럼 쓰세요 (시행령 제5조 제6항).`].filter(Boolean);
+    add(!multiBad.length, "다중 인용", multiBad.join(" ") || "다중 인용항은 택일적으로 쓰였고 다른 다중 인용항을 인용하지 않습니다.");
+
+    // 종속항은 인용하는 항과 같은 대상으로 끝난다 (조성물 항을 인용한 종속항이 방법으로 끝나면 범주가 바뀐 것)
+    const offSubj = claims.filter(c => c.dependent && c.subject).flatMap(c => c.refs.map(r => byN.get(r)).filter(p => p && p.n < c.n && p.subject && p.subject !== c.subject).map(p => `청구항 ${c.n}(‘${c.subject}’으로 끝남, 인용한 청구항 ${p.n}의 대상은 ‘${p.subject}’)`));
+    add(!offSubj.length, "종속항 대상", offSubj.length ? `${list(offSubj, 3)}: ‘…에 있어서’로 인용한 항과 끝 대상이 다릅니다. 같은 대상으로 끝내거나, 범주가 다르면 ‘청구항 1의 …를 제조하는 방법’처럼 독립항 형식으로 쓰세요.` : "종속항이 인용하는 청구항과 같은 대상으로 끝납니다.");
+
+    // ‘상기 X’의 선행 기재: 그 청구항의 앞부분이나 인용한 청구항(간접 포함)에 X가 먼저 나와야 한다
+    const ancestors = c => { const seen = new Set(), stack = [...c.refs]; while (stack.length) { const r = stack.pop(); if (seen.has(r) || r >= c.n) continue; seen.add(r); stack.push(...(byN.get(r)?.refs ?? [])); } return unfill([...seen].map(r => byN.get(r)?.body ?? "").join("\n")); };
+    const noBasis = [], unsupported = [], descFlat = squash(unfill(S.desc).replace(/【[^】]*】/g, " "));
+    for (const c of claims) {
+      const anc = ancestors(c), bare = unfill(c.body);
+      for (const a of antecedentPhrases(c.body)) {
+        const before = squash(`${anc}\n${bare.slice(0, a.at)}`), head = a.phrase.split(" ").pop();
+        const known = w => w.length >= 2 && before.includes(squash(w));
+        if (!known(a.phrase) && !known(a.raw) && !known(head) && !known(a.first)) noBasis.push(`청구항 ${c.n}의 ‘상기 ${a.phrase}’`);
+        if (S.desc && a.phrase.split(" ").length <= 3 && !descFlat.includes(squash(a.phrase)) && !descFlat.includes(squash(a.raw))) unsupported.push(`청구항 ${c.n}의 ‘${a.phrase}’`);
+      }
+      // 물건 독립항의 구성요소(‘A, B 및 C를 포함하는’)가 발명의 설명에 같은 말로 나오는지
+      if (!c.refs.length && S.desc && !/(방법|공정)$/.test(c.subject)) {
+        const m = bare.match(/^([\s\S]+?)(?:을|를)\s*(?:포함|함유|구비)하(?:는|고|며)/);
+        const els = m ? m[1].split(/,\s*|\s+및\s+|;\s*/).map(x => x.replace(/^\s*(?:\([a-z0-9]+\)\s*)?/, "").trim()).filter(x => x && x.length <= 30 && !/\d/.test(x)) : [];
+        if (els.length <= 8) for (const e of els) if (!descFlat.includes(squash(e))) unsupported.push(`청구항 ${c.n}의 ‘${e}’`);
+      }
+    }
+    add(!noBasis.length, "선행 기재(상기)", noBasis.length ? `${list(uniq(noBasis))}: 그 청구항이나 인용한 청구항에 앞서 나오지 않은 구성을 ‘상기’로 가리킵니다. 처음 나오는 구성에는 ‘상기’를 빼고, 앞의 구성과 같은 말로 쓰세요 (특허법 제42조 제4항 제2호).` : "청구항의 ‘상기 …’가 모두 앞에 나온 구성을 가리킵니다.");
+    add(!unsupported.length, "청구항 용어 뒷받침", unsupported.length ? `${list(uniq(unsupported))}이(가) 발명의 설명에 같은 말로 나오지 않습니다. 발명의 설명에 그 구성을 같은 용어로 적어 뒷받침하세요 (특허법 제42조 제4항 제1호).` : "청구항의 구성 용어가 발명의 설명에 같은 말로 나옵니다.");
+
+    const vague = vagueTerms(S.claims);
+    add(!vague.length, "불명확한 표현", vague.length ? `청구항에 ${vague.map(v => `'${v}'`).join(", ")} 표현이 있습니다. 수치나 구체적 구성으로 바꾸세요 (특허법 제42조 제4항 제2호).` : "청구항에 불명확한 표현이 없습니다.");
+
+    // 수치 범위에는 단위를 쓴다 (pH·탄소수·서열번호·청구항 번호·비율은 단위 없이 쓴다)
+    const claimBare = unfill(S.claims), noUnit = [];
+    for (const m of claimBare.matchAll(/\d+(?:[.,]\d+)?\s*(?:내지|~|∼)\s*\d+(?:[.,]\d+)?/g)) {
+      const before = claimBare.slice(Math.max(0, m.index - 8), m.index), after = claimBare.slice(m.index + m[0].length);
+      if (/(pH|탄소수|서열번호|청구항|제|:|\^)\s*$/.test(before) || /^\s*(?::|항|번)/.test(after) || UNIT.test(after)) continue;
+      noUnit.push(m[0].trim());
+    }
+    add(!noUnit.length, "수치 단위", noUnit.length ? `청구항의 수치 범위 ${uniq(noUnit).map(x => `'${x}'`).join(", ")}에 단위가 없습니다. ‘5 내지 20 중량%’처럼 단위와 기준을 함께 쓰세요.` : "청구항의 수치 범위에 단위가 있습니다.");
+
+    add(S.summary.length > 0 && S.summary.length <= 400, "요약 길이", S.summary ? `${S.summary.length}자 (400자 이내, 별지 제16호서식)` : "요약이 비어 있습니다.");
+
+    // 선행기술문헌: WIPO ST.14 표기, 번호 연속, 본문이 가리키는 문헌이 목록에 있는지
+    const cites = [...S.desc.matchAll(/(^|[^비])\(특허문헌\s*(\d+)\)\s*([^\n]*)/g)].map(m => ({ n: +m[2], cite: m[3].trim() }));
+    const said = uniq([...S.desc.replace(/\(특허문헌\s*\d+\)/g, " ").matchAll(/(^|[^비])특허문헌\s*(\d+)/g)].map(m => +m[2]));
+    if (cites.length || said.length || t.includes("【선행기술문헌】")) {
+      const offForm = cites.filter(c => !/〔/.test(c.cite) && !ST14.test(c.cite)).map(c => `(특허문헌 ${c.n}) ${c.cite.slice(0, 40)}`);
+      const gap = !cites.every((c, i) => c.n === i + 1), dangling = said.filter(n => !cites.some(c => c.n === n));
+      const head = t.includes("【선행기술문헌】") && !/【특허문헌】|【비특허문헌】/.test(t);
+      add(!offForm.length && !gap && !dangling.length && !head, "선행문헌 표기", head ? "【선행기술문헌】 아래에 【특허문헌】 또는 【비특허문헌】 항목을 두세요."
+        : dangling.length ? `본문의 특허문헌 ${dangling.join(", ")}이(가) 【특허문헌】 목록에 없습니다. 목록에 없는 문헌은 인용하지 마세요.`
+        : gap ? "특허문헌 번호가 1부터 이어지지 않습니다."
+        : offForm.length ? `${list(offForm, 3)}: WIPO ST.14 표기(예: KR 10-2020-0012345 A 2020. 2. 3.)가 아닙니다. 공개·등록번호가 없는 출원은 아직 공개 전일 수 있으니 선행기술문헌이 되는지 확인하세요.`
+        : `특허문헌 ${cites.length}건이 ST.14 표기로 적혀 있습니다.`);
+    }
+
+    // 도면: 낼 때만 도면 설명·부호·대표도를 쓰고, 본문이 가리키는 도면·부호가 목록과 맞아야 한다
+    if (typeof opts.hasDrawings === "boolean") {
+      const draw = opts.hasDrawings, hasDesc = t.includes("【도면의 간단한 설명】"), hasRep = t.includes("【대표도】"), hasSign = t.includes("【부호의 설명】");
+      const figSec = hasDesc ? t.split("【도면의 간단한 설명】")[1].split(/【발명을 실시하기 위한 구체적인 내용】|【청구범위】/)[0] : "";
+      const figs = new Set([...figSec.matchAll(/【도\s*(\d+)】/g)].map(m => +m[1]));
+      const used = uniq([...unfill(S.desc.replace(figSec, " ")).matchAll(/(^|[^가-힣【])도\s*(\d+)(?=[^\d]|$)/g)].map(m => +m[2]));
+      const rep = (S.tail.split("【대표도】")[1] || "").match(/도\s*(\d+)/);
+      const signSec = hasSign ? t.split("【부호의 설명】")[1].split(/【수탁번호】|【청구범위】/)[0] : "";
+      const signs = new Set([...signSec.matchAll(/(\d{2,4}[a-z]?)\s*[:：]?\s*[가-힣A-Za-z]/g)].map(m => m[1]));
+      const signUsed = uniq([...unfill(S.desc.replace(signSec, " ") + S.claims).matchAll(/[가-힣A-Za-z]\s?\((\d{2,4}[a-z]?)\)/g)].map(m => m[1]));
+      let d = "";
+      if (!draw && (hasDesc || hasRep || hasSign)) d = "도면이 없으면 【도면의 간단한 설명】, 【부호의 설명】, 【대표도】 항목을 지우세요 (별지 제16호서식 기재요령 1.사.(3)).";
+      else if (draw && (!hasDesc || !hasRep)) d = "도면을 낸다고 했는데 【도면의 간단한 설명】 또는 【대표도】가 없습니다.";
+      else if (draw && figs.size && used.some(n => !figs.has(n))) d = `본문의 도 ${used.filter(n => !figs.has(n)).join(", ")}이(가) 【도면의 간단한 설명】에 없습니다.`;
+      else if (draw && rep && figs.size && !figs.has(+rep[1])) d = `【대표도】의 도 ${rep[1]}이(가) 【도면의 간단한 설명】에 없습니다.`;
+      else if (draw && hasSign && signUsed.some(s => !signs.has(s))) d = `부호 ${signUsed.filter(s => !signs.has(s)).slice(0, 6).join(", ")}이(가) 【부호의 설명】에 없습니다.`;
+      else if (draw && hasSign && [...signs].some(s => !signUsed.includes(s))) d = `【부호의 설명】의 부호 ${[...signs].filter(s => !signUsed.includes(s)).slice(0, 6).join(", ")}이(가) 본문에 쓰이지 않습니다.`;
+      add(!d, "도면", d || (draw ? "도면 설명과 【대표도】가 있습니다. 도면 이미지(흑백 TIFF 300dpi)를 함께 내세요." : "도면 없이 출원합니다. 【도면의 간단한 설명】과 【대표도】가 없습니다."));
+    }
+
+    // 제출 파일에 남으면 안 되는 것: 마크다운·HTML 기호, 서식에 없는 식별항목, 검토 메모 구분 표시, 번역되지 않은 영어 문장
+    const noParen = S.t.replace(/\([^()]*\)|\{[^{}]*\}|〔[^〕]*〕/g, " ").replace(/^【\d{4}】\s*\((?:비)?특허문헌[^\n]*$/gm, " ");
+    const marks = [[/^\s{0,3}#{1,6}\s/m, "# 제목 기호"], [/```/, "``` 코드 블록"], [/\*\*|__/, "** 굵게 기호"], [/^\s*[-*•]\s+\S/m, "글머리 기호(- , * )"], [/\|\s*:?-{3,}/, "마크다운 표 구분선"],
+      [/<\/?(?:br|p|div|span|b|i|sup|sub|table|tr|td)\b[^>]*>/i, "HTML 태그"], [/<<<검토메모>>>/, "검토 메모 구분 표시"], [/【(?:비교예|실험예)\s*\d*】/, "서식에 없는 【비교예】·【실험예】 항목"],
+      [/(?:[A-Za-z][A-Za-z'-]*[ ,]+){5,}[A-Za-z]/, "번역되지 않은 영어 문장"]].filter(([re]) => re.test(noParen)).map(x => x[1]);
+    add(!marks.length, "서식 기호", marks.length ? `남아 있는 것: ${marks.join(", ")}. 서식작성기·Word에 그대로 들어가니 지우세요 (비교예·실험예는 문단 첫머리 <비교예 1>처럼 씁니다).` : "마크다운·HTML 기호나 서식에 없는 항목이 없습니다.");
+    return out;
+  }
+
+  return { lintSpec, parseClaims, vagueTerms, antecedentPhrases, sections, ORDER };
+})();
+// specCheck:end
 // 국문·영문 명칭의 발명 유형이 같은지 (기재요령: 국문명칭과 같은 내용의 영문명칭)
 const TITLE_KIND = [["조성물", /COMPOSITION/i], ["장치·기기", /(DEVICE|APPARATUS|EQUIPMENT|MACHINE)/i], ["시스템", /SYSTEM/i], ["방법", /(METHOD|PROCESS)/i], ["용기·포장", /(CONTAINER|PACKAG|WRAP)/i], ["균주", /STRAIN/i], ["식품", /FOOD/i]];
 const TITLE_KO = { "조성물": /조성물/, "장치·기기": /(장치|기기|설비|기계)/, "시스템": /시스템/, "방법": /(방법|공정)/, "용기·포장": /(용기|포장)/, "균주": /균주/, "식품": /(식품|간편식|음식)/ };
@@ -3293,53 +3480,16 @@ function titleMismatch(ko, en) {
 }
 function specTitleOf(text) { const m = String(text).match(/【발명의 명칭】[ \t]*([^\n{]*)/); return m ? m[1].trim() : ""; }
 function checkSpec(text) {
-  const out = [];
+  // 서식·청구항 규칙(서버와 같은 코드) 다음에, 이 화면의 입력(출원서 명칭·균주·서열·예시 값)과 맞춰 보는 규칙
+  const out = SpecCheck.lintSpec(text, { hasDrawings: S.hasDrawings === "yes" });
   const add = (ok, t, d) => out.push({ ok, t, d });
-  const missing = REQUIRED.filter(h => !text.includes(h));
-  add(!missing.length, "필수 항목", missing.length ? `빠진 항목: ${missing.join(", ")} (시행규칙 제21조, 별지 제15호서식)` : "명세서·요약서의 필수 식별항목이 모두 있습니다.");
-  const rec = RECOMMENDED.filter(h => !text.includes(h));
-  add(!rec.length, "권장 항목", rec.length ? `없는 항목: ${rec.join(", ")} — 해당 내용이 있으면 적으세요.` : "기술분야·발명의 내용·과제·해결 수단·효과 항목이 있습니다.");
-  const old = ["【해결하고자 하는 과제】", "【발명의 상세한 설명】", "【특허청구범위】"].filter(h => text.includes(h));
-  add(!old.length, "항목 이름", old.length ? `${old.join(", ")}은(는) 현행 서식의 이름이 아닙니다. 【해결하려는 과제】, 【발명을 실시하기 위한 구체적인 내용】, 【청구범위】로 고치세요.` : "식별항목 이름이 현행 서식과 같습니다.");
-  const titleLine = (text.match(/【발명의 명칭】[^\n]*/) || [""])[0];
-  const titleOk = specTitleOf(text) && /\{[^}]*[A-Za-z][^}]*\}/.test(titleLine);
-  add(titleOk, "발명의 명칭", titleOk ? "국문 명칭과 {영문 명칭}이 한 줄에 있습니다." : "【발명의 명칭】 다음에 국문 명칭과 {영문 명칭}을 같은 줄에 적으세요. 예: 발효 쌀겨 조성물{FERMENTED RICE BRAN COMPOSITION}");
-  const engT = (titleLine.match(/\{([^}]*)\}/) || [])[1] || "";
+  const engT = ((text.match(/【발명의 명칭】[^\n]*/) || [""])[0].match(/\{([^}]*)\}/) || [])[1] || "";
   if (/[A-Za-z]/.test(engT)) {
     const off = titleMismatch(specTitleOf(text) || S.idea.title, engT);
     add(!off.length, "국문·영문 명칭", off.length ? `국문 명칭과 영문 명칭이 같은 내용이 아닌 것 같습니다(${off.join(", ")}). 같은 발명을 가리키도록 맞추세요(별지 제14호서식 기재요령 5).` : "국문 명칭과 영문 명칭의 발명 유형이 같습니다.");
   }
   const st = specTitleOf(text);
   add(!st || st === S.idea.title.trim(), "명칭 일치", !st || st === S.idea.title.trim() ? "출원서의 국문명칭과 명세서의 발명의 명칭이 같습니다." : `명세서 명칭 「${st}」과 출원서 명칭 「${S.idea.title}」이 다릅니다. 같게 맞추세요(별지 제14호서식 기재요령 5).`);
-  const paras = [...text.matchAll(/【(\d{4})】/g)].map(m => +m[1]);
-  const seqOk = paras.length > 0 && paras.every((n, i) => n === i + 1);
-  add(seqOk, "문단 번호", seqOk ? `【0001】부터 【${String(paras.length).padStart(4, "0")}】까지 차례대로 붙어 있습니다.` : "문단 번호가 빠졌거나 순서가 맞지 않습니다.");
-  const claimSec = text.slice(text.indexOf("【청구범위】"), text.includes("【요약서】") ? text.indexOf("【요약서】") : undefined);
-  const claims = [...claimSec.matchAll(/【청구항\s*(\d+)】\s*([\s\S]*?)(?=【청구항\s*\d+】|$)/g)].map(m => ({ n: +m[1], body: m[2].trim() }));
-  const numOk = claims.length > 0 && claims.every((c, i) => c.n === i + 1);
-  add(numOk, "청구항 번호", claims.length ? `청구항 ${claims.length}개${numOk ? "" : ", 번호가 연속되지 않습니다"}` : "청구항이 없습니다.");
-  const refsOf = b => [...b.matchAll(/(?:제\s*(\d+)\s*항|청구항\s*(\d+))/g)].map(m => +(m[1] || m[2]));
-  const lead = b => b.split(/에\s*있어서|중\s*어느\s*한\s*항의|의\s/)[0];
-  const isMulti = b => /(내지|또는|중\s*어느)/.test(lead(b));
-  const badRef = [], multiOnMulti = [];
-  claims.forEach(c => {
-    const refs = refsOf(lead(c.body));
-    if (refs.some(r => r >= c.n)) badRef.push(c.n);
-    if (isMulti(c.body)) {
-      // 직접 또는 간접으로 다른 다중 인용항을 인용하는지 (시행령 제5조 제6항)
-      const seen = new Set(); const stack = [...refs];
-      while (stack.length) { const r = stack.pop(); if (seen.has(r)) continue; seen.add(r); const tgt = claims.find(x => x.n === r); if (!tgt) continue; if (isMulti(tgt.body)) { multiOnMulti.push(c.n); break; } stack.push(...refsOf(lead(tgt.body))); }
-    }
-  });
-  add(!badRef.length, "인용 관계", badRef.length ? `청구항 ${badRef.join(", ")}이(가) 자기 자신이나 뒤 번호를 인용합니다 (시행령 제5조 제7항).` : "모든 종속항이 앞 번호 청구항을 인용합니다.");
-  add(!multiOnMulti.length, "다중 인용", multiOnMulti.length ? `청구항 ${[...new Set(multiOnMulti)].join(", ")}이(가) 다른 다중 인용항을 직접 또는 간접으로 인용합니다 (시행령 제5조 제6항).` : "다중 인용항이 다른 다중 인용항을 인용하지 않습니다.");
-  const vague = [...new Set((claimSec.replace(/〔[^〕]*〕/g, "").match(/(적정량|적당량|유효량|다량|소량|대략|약\s?\d|등을|등의|\s등\s)/g) || []))];
-  add(!vague.length, "불명확한 표현", vague.length ? `청구항에 ${vague.map(v => `'${v.trim()}'`).join(", ")} 표현이 있습니다. 수치나 구체적 구성으로 바꾸세요 (특허법 제42조 제4항 제2호).` : "청구항에 불명확한 표현이 없습니다.");
-  const hasDrawDesc = text.includes("【도면의 간단한 설명】"), hasRep = text.includes("【대표도】"), draw = S.hasDrawings === "yes";
-  const drawOk = hasDrawDesc === draw && hasRep === draw;
-  add(drawOk, "도면", drawOk ? (draw ? "도면 설명과 【대표도】가 있습니다. 도면 이미지(흑백 TIFF 300dpi)를 함께 내세요." : "도면 없이 출원합니다. 【도면의 간단한 설명】과 【대표도】가 없습니다.") : (draw ? "도면을 낸다고 했는데 【도면의 간단한 설명】 또는 【대표도】가 없습니다." : "도면이 없으면 【도면의 간단한 설명】과 【대표도】 항목을 지우세요 (별지 제16호서식 기재요령 1.사.(3))."));
-  const sum = (text.split("【요약】")[1] || "").split("【대표도】")[0].trim();
-  add(sum.length > 0 && sum.length <= 400, "요약 길이", sum ? `${sum.length}자 (400자 이내 권장, 별지 제16호서식)` : "요약이 비어 있습니다.");
   if (S.idea.field === "ferment" && S.strain === "known") {
     const got = /입수/.test(text);
     add(got, "미생물 입수 방법", got ? "시판·공지 균주의 입수 방법을 적는 자리가 있습니다. 분양 기관과 번호를 채우세요." : "기탁하지 않은 균주는 명세서에 입수 방법을 적어야 합니다 (특허법 시행령 제3조).");
@@ -3648,7 +3798,7 @@ async function postPrompt(body, signal) {
 const fetchPrompt = signal => postPrompt(draftBody(), signal);
 function splitReviewText(text, mark = "<<<검토메모>>>") {
   const t = String(text).replace(/^\s*```.*$/gm, ""), i = t.indexOf(mark); // 코드 블록 표시는 뺀다
-  const spec = (i < 0 ? t : t.slice(0, i)).replace(/\*\*/g, "").trim();
+  const spec = (i < 0 ? t : t.slice(0, i)).replace(/\*\*/g, "").replace(/^[ \t]*#{1,6}[ \t]*(?=【)/gm, "").trim(); // 식별항목 앞의 # 제목 기호도 뺀다
   const review = i < 0 ? [] : t.slice(i + mark.length).split("\n").map(l => l.replace(/^\s*[-•]\s*/, "").trim()).filter(Boolean);
   return { spec, review };
 }
@@ -4081,10 +4231,10 @@ const IDEA_BANK = {
 };
 const kwList = s => [...new Set(String(s).split(/[,，、\n]+/).map(x => x.trim()).filter(Boolean))].slice(0, 6);
 // 키워드 자리: {a}{b}{c}는 키워드 그대로, 분야에 따라 {A}{B}{M}처럼 키워드로 만든 말(derive)도 쓴다. 뒤에 붙은 조사는 받침에 맞춘다
-const JOSA_OF = { 을: "을", 를: "을", 이: "이", 가: "이", 은: "은", 는: "은", 과: "과", 와: "과" };
+const JOSA_OF = { 을: "을", 를: "을", 이: "이", 가: "이", 은: "은", 는: "은", 과: "과", 와: "과", 로: "으로", 으로: "으로" };
 const fillKw = (t, k, extra = {}) => {
   const vals = { a: k[0], b: k[1], c: k[2], ...extra };
-  return t.replace(/\{([abcA-Z])\}([을를이가은는과와])?/g, (m, n, j) => vals[n] == null ? m : j ? J(vals[n], JOSA_OF[j]) : vals[n]);
+  return t.replace(/\{([abcA-Z])\}(으로|로|[을를이가은는과와])?/g, (m, n, j) => vals[n] == null ? m : j ? J(vals[n], JOSA_OF[j]) : vals[n]);
 };
 // 기능성 용도 문구와 측정 지표: ‘혈당’ → ‘혈당 조절’ · 알파-글루코시다아제 저해율
 const USE_KO = [[/혈당/, "혈당 조절", "알파-글루코시다아제 저해율, 혈당 변화"], [/항산화/, "항산화", "DPPH 라디칼 소거율"], [/(장\s*건강|장내|배변)/, "장 건강 개선", "유익균 수, 배변 지표"],
@@ -4593,7 +4743,7 @@ function smart5(text) {
   const tables = [...t.matchAll(/【표\s*\d+】([\s\S]*?)(?=\n\s*\n|【(?!\d{4}】))/g)], tableData = tables.some(m => /\d/.test(m[1].replace(/〔[^〕]*〕/g, "").replace(/【\d{4}】/g, "")));
   const nums = (claimBare.match(/\d+(?:\.\d+)?\s*(?:내지|~|∼)\s*\d+|\d+(?:\.\d+)?\s*(?:중량\s*%|%|℃|°C|시간|분|mm|cm|nm|μm|rpm|ppm|kPa|mg|kg|mL|g\b|L\b)/g) || []).length;
   const c1 = (claims[0]?.body || "").replace(/\s+/g, ""), c1len = c1.length;
-  const vague = /(적정량|적당량|유효량|다량|소량|대략|약\s?\d|등을|등의|\s등\s)/.test(claimBare), needInClaims = (claimTxt.match(/〔입력 필요/g) || []).length;
+  const vague = SpecCheck.vagueTerms(claimTxt).length > 0, needInClaims = (claimTxt.match(/〔입력 필요/g) || []).length;
   const top = liveData()?.similar?.items?.[0]?.sim, mock = liveData()?.mode === "mock", cites = new Set(t.match(/\(특허문헌\s*\d+\)/g) || []).size;
   const uses = S5_USES.filter(w => desc.includes(w)).length, drawings = /【도면의 간단한 설명】/.test(t), needsDrawing = ["device", "smartfarm"].includes(S.tpl);
   const sum = (t.split("【요약】")[1] || "").split("【대표도】")[0].trim(), engOk = /【발명의 명칭】[^\n]*\{[^}]*[A-Za-z]/.test(t);
@@ -4715,8 +4865,8 @@ document.addEventListener("click", e => {
 });
 
 /* ---------- 〔입력 필요〕 칸을 AI로 한꺼번에 채우기 (누를 때만, 결과는 되돌릴 수 있음) ---------- */
-// 실험값·기탁 정보·입수 방법처럼 사용자만 아는 사실 칸은 AI에 보내지 않고 남긴다. 보낸 칸에서도 확인하지 않은 값은 〔입력 필요: …〕로 남기게 한다
-const FILL_FACT = /수탁번호|기탁기관|학명|실제 값|실험으로 확인|측정 결과|측정 항목·결과|분양|입수 방법|분리·선발|16S|출원번호|효과와 그 수치|확인한 효과|^항목$/;
+// 실험값·기탁 정보·입수 방법·발명 구성을 얻는 방법(원료·조건)처럼 사용자만 아는 사실 칸은 AI에 보내지 않고 남긴다. 보낸 칸에서도 확인하지 않은 값은 〔입력 필요: …〕로 남기게 한다
+const FILL_FACT = /수탁번호|기탁기관|학명|실제 값|얻는 방법|실험으로 확인|측정 결과|측정 항목·결과|분양|입수 방법|분리·선발|16S|출원번호|효과와 그 수치|확인한 효과|^항목$/;
 const needLabel = m => m[0].replace(/^〔입력 필요:?\s*|〕$/g, "");
 function fillSlots(text = S.spec?.text ?? "") {
   return [...text.matchAll(/〔입력 필요[^〕]*〕/g)].map((m, i) => {
@@ -5365,7 +5515,7 @@ function expEditor() {
           <td><input type="text" inputmode="decimal" id="${id(ri, "sd")}" data-xr="${gi}.${ri}.sd" value="${esc(r.sd)}" aria-label="${esc(r.name || `구분 ${ri + 1}`)} 표준편차" placeholder="${line ? "예: 0.4, 0.6, 0.5" : "예: 0.8"}"></td>
           <td>${g.rows.length > 2 ? `<button type="button" class="linklike" data-xrow-del="${gi}.${ri}">삭제</button>` : ""}</td></tr>`).join("")}</tbody></table></div>
       <div class="actions"><button type="button" class="btn ghost sm" data-xrow-add="${gi}">+ 구분 추가</button><button type="button" class="btn ghost sm" data-xg-del="${gi}">이 그래프 삭제</button></div>
-      <p class="hint" role="status" data-xstat="${gi}">${chk.err ? `아직 그리지 않았습니다 · ${esc(chk.err)}` : S.hasDrawings === "yes" ? `도 ${fg?.n}로 그렸습니다. 첨부서류 쪽에서 미리 보고 받을 수 있습니다.` : "‘도면 있음’을 고르면 도면으로 들어갑니다."}</p>
+      <p class="hint" role="status" data-xstat="${gi}">${chk.err ? `아직 그리지 않았습니다 · ${esc(chk.err)}` : S.hasDrawings === "yes" ? `${J(`도 ${fg?.n}`, "으로")} 그렸습니다. 첨부서류 쪽에서 미리 보고 받을 수 있습니다.` : "‘도면 있음’을 고르면 도면으로 들어갑니다."}</p>
       </fieldset>`; }).join("")}
     <div class="actions"><button type="button" class="btn ghost sm" data-xg-add>+ 실험 결과 그래프 추가</button></div></div>`;
 }
@@ -5377,7 +5527,7 @@ document.addEventListener("input", e => { const t = e.target, path = t.dataset?.
 const expStatus = () => (S.expFigs ?? []).forEach((g, gi) => {
   const el = document.querySelector(`[data-xstat="${gi}"]`); if (!el) return;
   const chk = expGraphOf(g), n = chk.g ? figList().find(f => f.src === "graph" && f.g.metric === chk.g.metric)?.n : null;
-  el.textContent = chk.err ? `아직 그리지 않았습니다 · ${chk.err}` : S.hasDrawings === "yes" ? `도 ${n ?? "?"}로 그렸습니다. 첨부서류 쪽에서 미리 보고 받을 수 있습니다.` : "‘도면 있음’을 고르면 도면으로 들어갑니다.";
+  el.textContent = chk.err ? `아직 그리지 않았습니다 · ${chk.err}` : S.hasDrawings === "yes" ? `${J(`도 ${n ?? "?"}`, "으로")} 그렸습니다. 첨부서류 쪽에서 미리 보고 받을 수 있습니다.` : "‘도면 있음’을 고르면 도면으로 들어갑니다.";
 });
 document.addEventListener("change", e => {
   const t = e.target, path = t.dataset?.xf ?? t.dataset?.xr; if (!path) return;
@@ -5401,7 +5551,7 @@ document.addEventListener("click", e => {
 function figHint() {
   const was = S.hasDrawings, on = S.app.autoFig !== "no"; S.hasDrawings = "yes"; const can = (S.app.autoFig = "yes", figModel()); S.app.autoFig = on ? "yes" : "no"; S.hasDrawings = was;
   if (!can) return "";
-  if (was !== "yes") return `<span class="hint">핵심 ${can.type === "flow" ? "단계" : "구성"}로 도 1(${can.name})을 자동으로 그릴 수 있습니다. ‘도면 있음’을 고르세요.</span>`;
+  if (was !== "yes") return `<span class="hint">핵심 ${can.type === "flow" ? "단계로" : "구성으로"} 도 1(${can.name})을 자동으로 그릴 수 있습니다. ‘도면 있음’을 고르세요.</span>`;
   return `<label class="ai-key-keep" style="margin-top:6px"><input type="checkbox" id="auto-fig" ${on ? "checked" : ""}><span>도 1(${can.name})을 자동으로 그리기 <span class="muted h-meta">첨부서류 쪽에서 미리 보고 받을 수 있습니다</span></span></label>`;
 }
 
@@ -6249,7 +6399,6 @@ document.addEventListener("click", e => {
   if (e.target.closest("[data-ics]")) { saveFile(`agri-ip-deadlines_${iso(today)}.ics`, "text/calendar;charset=utf-8", deadlinesIcs()); S.done.add("manage"); renderSteps(); renderSide(); toast("달력 파일을 받았습니다. 열어서 달력에 추가하세요"); }
   if (e.target.id === "due-copy") navigator.clipboard?.writeText(deadlinesText()).then(() => toast("기한 목록을 복사했습니다"), () => toast("복사가 막혀 있습니다"));
   if (e.target.id === "gap-clear") { S.gapSel = new Set(); rerenderKeepScroll(); toast("고른 공백 칸을 지웠습니다"); return; }
-  if (e.target.id === "sup-fit") { S.supportFit = !S.supportFit; rerenderKeepScroll(); }
 });
 
 document.addEventListener("submit", e => {
@@ -6375,7 +6524,6 @@ document.addEventListener("change", e => {
     t.checked ? sel.add(n) : sel.delete(n); S.disc.ideas = null; rerenderKeepScroll();
   }
   if (t.id === "cmp-parts") { S.parts = t.value; invalidateSpec(); deferRender(); }
-  if (t.id === "userType") { S.userType = t.value; render(); }
   if (t.id === "region") { S.region = t.value; render(); }
   if (t.id === "kw") S.kw = t.value;
   if (t.id === "ipcSel") S.ipc = t.value;
