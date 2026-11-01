@@ -89,3 +89,29 @@ jobs:
             echo "::endgroup::"
           done
           if [ -n "$failed" ]; then echo "::error::deno check failed for:$failed"; exit 1; fi
+
+  lovable-deploy:
+    # Lovable Cloud does not deploy Edge Functions or run migrations that arrive through GitHub.
+    # This job lists what has to be deployed in Lovable for this change (with a prompt to paste
+    # into the Lovable chat) in the run summary. It never fails the build.
+    name: Lovable 배포 목록
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: List functions and migrations to deploy
+        continue-on-error: true
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then base="origin/$BASE_REF"; else base="$BEFORE"; fi
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            echo "비교할 이전 커밋이 없어 건너뜁니다." >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          node scripts/lovable-deploy-list.mjs "$base" HEAD --markdown | tee -a "$GITHUB_STEP_SUMMARY"
