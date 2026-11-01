@@ -244,17 +244,28 @@ textarea { min-height: 84px; resize: vertical; }
 .cards, .mk-cards, .disc-fields { --cols: 3; --min: 240px; --gap: 12px; display: flex; flex-wrap: wrap; gap: var(--gap); }
 :is(.cards, .mk-cards, .disc-fields) > * { flex: 1 1 max(min(100%, var(--min)), calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols))); min-width: 0; }
 :is(.cards, .mk-cards):has(> :nth-child(4):last-child) { --cols: 2; }
-.lights { --cols: 4; display: flex; flex-wrap: wrap; gap: 10px; }
-.lights > .light { flex: 1 1 calc((100% - (var(--cols) - 1) * 10px) / var(--cols)); min-width: 0; }
-.light { display: grid; gap: 4px; align-content: start; padding: 14px; border-radius: 12px; border: 1px solid transparent; }
-.light .k { display: flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 700; }
-.light .k::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
-.light .q { font-size: .76rem; color: var(--muted); }
-.light .v { font-size: .84rem; color: var(--fg); }
-.light.ok { background: var(--ok-soft); color: var(--ok); border-color: color-mix(in oklab, var(--ok) 18%, transparent); }
-.light.warn { background: var(--warn-soft); color: var(--warn); border-color: color-mix(in oklab, var(--warn) 18%, transparent); }
-.light.bad { background: var(--bad-soft); color: var(--bad); border-color: color-mix(in oklab, var(--bad) 18%, transparent); }
-.light.na { background: var(--sunk); color: var(--muted); }
+/* 특허 요건 진단: 요약 막대 + 고칠 요건 목록 */
+.req-lead { margin: 0; font-size: .95rem; }
+.req-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 12px 14px; border-radius: 12px; background: var(--sunk); }
+.req-bar { display: flex; flex: 1 1 220px; height: 10px; border-radius: 99px; overflow: hidden; gap: 2px; background: var(--line); }
+.req-bar i { display: block; min-width: 6px; }
+.req-bar .bad { background: var(--bad); } .req-bar .warn { background: var(--warn); } .req-bar .ok { background: var(--ok); } .req-bar .na { background: var(--muted); opacity: .5; }
+.req-count { margin: 0; padding: 0; list-style: none; display: flex; gap: 14px; font-size: .84rem; color: var(--muted); }
+.req-count b { margin-right: 4px; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.req-count .bad b { color: var(--bad); } .req-count .warn b { color: var(--warn); } .req-count .ok b { color: var(--ok); }
+.req-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.req { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 6px 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); border-left-width: 4px; background: var(--surface); }
+.req.bad { border-left-color: var(--bad); } .req.warn { border-left-color: var(--warn); }
+.req-badge { padding: 2px 8px; border-radius: 99px; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+.req.bad .req-badge { background: var(--bad-soft); color: var(--bad); } .req.warn .req-badge { background: var(--warn-soft); color: var(--warn); }
+.req-body { display: grid; gap: 2px; min-width: 0; }
+.req-name { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.req-name .muted { font-size: .8rem; }
+.req-why { margin: 0; font-size: .88rem; line-height: 1.6; }
+.req-allok { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--ok-soft); font-size: .9rem; }
+.req-fine { font-size: .86rem; } .req-fine summary { cursor: pointer; color: var(--muted); }
+.req-fine ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+@media (max-width: 560px) { .req { grid-template-columns: 1fr; } .req .btn, .req-badge { justify-self: start; } }
 .recommend { display: grid; gap: 10px; }
 .rec-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { font-size: .8rem; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--sunk); }
@@ -661,6 +672,12 @@ html { scroll-padding-top: 120px; scroll-padding-bottom: 96px; touch-action: man
 .checks li.dim { opacity: .6; }
 .fill-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 14px; border-radius: 12px; background: var(--moss-soft); font-size: .88rem; }
 .fill-done { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--ok-soft); font-size: .88rem; }
+/* AI가 입력 없이 쓴 수치 */
+.unv-box { margin: 10px 0; padding: 12px 14px; border: 1px solid var(--warn); border-radius: 12px; background: var(--warn-soft); font-size: .88rem; }
+.unv-box p { margin: 0 0 8px; }
+.unv-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.unv-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.unv-list .muted { font-size: .8rem; }
 /* 쪽 끝 이동 (AIS 안) · 단계의 남은 일 */
 .page-end { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
 .page-end-btns { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
@@ -958,7 +975,6 @@ body.app .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 820px) {
   .topbar-in { flex-wrap: wrap; }
   .modes { order: 3; width: 100%; overflow-x: auto; scrollbar-width: none; }
-  .lights > .light { flex-basis: calc((100% - 10px) / 2); }
   .compare { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
@@ -1566,17 +1582,36 @@ function requirementCards() {
   [...r.lights, ...riskCheck().map(l => ({ ...l, k: l.k.replace(/\s*부족$/, "") }))].forEach(l => {
     const m = map.get(l.k);
     if (!m) return map.set(l.k, { k: l.k, c: l.c, v: [l.v] });
-    if (sev[l.c] > sev[m.c]) { m.v = m.c === "ok" ? [l.v] : [l.v, ...m.v]; m.c = l.c; } else if (l.c !== "ok" && !m.v.includes(l.v)) m.v.push(l.v);
+    const same = x => x.includes(l.v) || l.v.includes(x) || x.slice(0, 18) === l.v.slice(0, 18); // 앞부분이 같은 문장은 같은 말
+    if (sev[l.c] > sev[m.c]) { m.v = m.c === "ok" ? [l.v] : [l.v, ...m.v.filter(x => !same(x))]; m.c = l.c; } else if (l.c !== "ok" && !m.v.some(same)) m.v.push(l.v);
   });
   return { r, cards: [...map.values()] };
 }
 const RISK_WORD = { bad: "위험 높음", warn: "확인 필요", ok: "양호", na: "해당 없음" };
+// 요건마다 고칠 자리 (쪽:쪽 이름:입력칸). data-fact-go 로 그 칸까지 데려간다
+const REQ_FIX = { "신규성": "idea:pick:input[name=disclosed]", "진보성": "idea:pick:#diff", "기재불비": "draft:0:#parts", "실험 데이터": "idea:pick:input[name=data]",
+  "실시가능요건": "idea:pick:input[name=strain]", "선행기술": "prior:compare:main", "발명 성립성": "draft:0:#parts" };
+function reqBoard(cards) {
+  const order = { bad: 0, warn: 1, na: 2, ok: 3 }, sorted = [...cards].sort((a, b) => order[a.c] - order[b.c]);
+  const n = c => cards.filter(x => x.c === c).length, todo = sorted.filter(x => x.c === "bad" || x.c === "warn"), fine = sorted.filter(x => x.c === "ok" || x.c === "na");
+  const seg = c => n(c) ? `<i class="${c}" style="flex:${n(c)}" title="${RISK_WORD[c]} ${n(c)}개"></i>` : "";
+  return `<div class="req-sum">
+      <div class="req-bar" role="img" aria-label="요건 ${cards.length}개 중 위험 높음 ${n("bad")}개, 확인 필요 ${n("warn")}개, 양호 ${n("ok") + n("na")}개">${seg("bad")}${seg("warn")}${seg("ok")}${seg("na")}</div>
+      <ul class="req-count">${["bad", "warn", "ok"].map(c => `<li class="${c}"><b>${n(c) + (c === "ok" ? n("na") : 0)}</b>${RISK_WORD[c]}</li>`).join("")}</ul>
+    </div>
+    ${todo.length ? `<ol class="req-list" aria-label="고칠 요건 (심각한 것부터)">${todo.map(l => `<li class="req ${l.c}">
+        <span class="req-badge">${RISK_WORD[l.c]}</span>
+        <div class="req-body"><p class="req-name"><b>${l.k}</b>${LQ[l.k] ? `<span class="muted">${LQ[l.k]}</span>` : ""}</p><p class="req-why">${l.v.join(" ")}</p></div>
+        ${REQ_FIX[l.k] ? `<button type="button" class="btn ghost sm" data-fact-go="${REQ_FIX[l.k]}">고치러 가기</button>` : ""}</li>`).join("")}</ol>`
+      : `<p class="req-allok">모든 요건이 양호합니다. 그래도 진단은 참고용이니 변리사 검토를 받아 보세요.</p>`}
+    ${fine.length ? `<details class="req-fine"><summary>문제없는 요건 ${fine.length}개 · ${fine.map(l => l.k).join(", ")}</summary><ul>${fine.map(l => `<li><b>${l.k}</b> ${l.v.join(" ")}</li>`).join("")}</ul></details>` : ""}`;
+}
 function diagResultPage() {
   const i = S.idea, k = claimKinds(), { r, cards } = requirementCards(), bad = cards.filter(c => c.c === "bad").length, warn = cards.filter(c => c.c === "warn").length;
   return `<div class="result" aria-live="polite">
       <div class="sub-head"><h3>특허 요건과 거절 위험<span class="muted h-meta">${esc(fieldName(i.field))}</span></h3><span class="g-tag">청구 유형 ${KIND_NAME[k.main]}${k.all.length > 1 ? ` + ${k.all.slice(1).map(x => KIND_NAME[x]).join(", ")}` : ""}</span></div>
-      <p class="muted" style="margin:0">${bad ? `<b>위험이 높은 요건 ${bad}개</b>` : "위험이 높은 요건은 없습니다"}${warn ? ` · 확인할 요건 ${warn}개` : ""}. 요건마다 공개 이력·차별성·수치·실험 데이터·선행기술을 함께 봤습니다.</p>
-      <div class="lights" style="--cols:${cards.length <= 5 ? cards.length : Math.ceil(cards.length / Math.ceil(cards.length / 5))}">${cards.map(l => `<div class="light ${l.c}"><span class="k">${l.k} <span class="rw">${RISK_WORD[l.c] ?? ""}</span></span>${LQ[l.k] ? `<span class="q">${LQ[l.k]}</span>` : ""}<span class="v">${l.v.join(" ")}</span></div>`).join("")}</div>
+      <p class="req-lead">${bad ? `특허가 되려면 <b>먼저 고칠 요건이 ${bad}개</b> 있습니다.` : warn ? "큰 위험은 없고, <b>확인할 요건</b>만 남았습니다." : "<b>점검한 요건이 모두 양호</b>합니다."} 위에서부터 하나씩 고치면 됩니다.</p>
+      ${reqBoard(cards)}
       ${r.alerts.map(a => `<div class="alert ${a.c === "warn" ? "warn" : ""}"><strong>${a.h}</strong><span>${a.b}</span></div>`).join("")}
       ${discTimeline()}
       ${aiSlot("reject")}${rejectAiHtml()}
@@ -1928,10 +1963,10 @@ function riskCheck() {
   out.push(hasNum && hasData
     ? { k: "진보성 부족", c: "warn", v: "수치 효과가 있지만, 가장 가까운 선행기술과 직접 비교한 비교예가 필요합니다." }
     : { k: "진보성 부족", c: "bad", v: "기존 기술보다 나은 효과를 숫자로 보여줄 데이터가 부족합니다." });
-  const numbered = parts.filter(p => /\d/.test(p)).length;
-  out.push(parts.length && numbered === parts.length
-    ? { k: "기재불비", c: "ok", v: "핵심 구성마다 수치 범위가 적혀 있습니다." }
-    : { k: "기재불비", c: "bad", v: `수치 범위가 없는 구성이 ${parts.length - numbered}개 있습니다. '적정량', '유효량' 표현을 피하세요.` });
+  const real = p => /\d/.test(p.replace(/\(\s*예(?:시)?\s*[:：][^)]*\)/g, "")), numbered = parts.filter(real).length, onlyEx = parts.filter(p => !real(p) && /\d/.test(p)).length;
+  out.push(!parts.length ? { k: "기재불비", c: "warn", v: "핵심 구성을 아직 적지 않았습니다. 구성마다 수치 범위(예: 5 내지 20 중량%)를 함께 적어 주세요." }
+    : numbered === parts.length ? { k: "기재불비", c: "ok", v: "핵심 구성마다 수치 범위가 적혀 있습니다." }
+    : { k: "기재불비", c: "bad", v: `핵심 구성 ${parts.length}개 중 ${parts.length - numbered}개에 실제 수치 범위가 없습니다${onlyEx ? `(${onlyEx}개는 ‘예:’ 예시 값만 있음)` : ""}. ‘적정량’·‘유효량’ 대신 확인한 범위를 적으세요.` });
   if (i.field === "ferment") out.push(S.strain === "yes" ? { k: "실시가능요건", c: "ok", v: "새 균주를 기탁했습니다. 명세서에 학명, 기탁기관, 수탁번호를 함께 적으세요." }
     : S.strain === "known" ? { k: "실시가능요건", c: "ok", v: "시판·공지 균주는 기탁하지 않아도 됩니다. 대신 입수 방법(분양 기관과 번호)을 명세서에 적으세요." }
     : S.strain === "no" ? { k: "실시가능요건", c: "bad", v: "새 균주를 기탁하지 않고 출원하면 재현할 수 없다는 이유로 거절되고, 출원 뒤에는 보완할 수 없습니다. 출원 전에 기탁하세요." }
@@ -2135,7 +2170,7 @@ function discTimeline() {
     ], { start: addMonths(d, -1), end: addMonths(due, 1) })}</div>`;
 }
 
-const LQ = { "신규성": "세상에 처음 나온 기술인가요?", "선행기술": "비슷한 특허가 이미 있나요?", "진보성": "전문가가 쉽게 떠올릴 수 없나요?", "산업상 이용가능성": "실제 산업에서 쓸 수 있나요?", "실험 데이터": "효과를 증명할 자료가 있나요?" };
+const LQ = { "신규성": "세상에 처음 나온 기술인가요?", "선행기술": "비슷한 특허가 이미 있나요?", "진보성": "전문가가 쉽게 떠올릴 수 없나요?", "산업상 이용가능성": "실제 산업에서 쓸 수 있나요?", "실험 데이터": "효과를 증명할 자료가 있나요?", "기재불비": "명세서 설명이 구체적인가요?", "실시가능요건": "명세서만 보고 따라 만들 수 있나요?", "발명 성립성": "기계·장치와 연결된 기술인가요?" };
 
 // 단계 안의 쪽. 출원 서류 작성·유망기술 발굴은 쪽을 한꺼번에 그리고 숨긴다(SUBS, data-pg). 나머지는 pagesFor 의 쪽 이름으로 그린다
 const SUBS = { discover: ["관심 분야", "유망기술 지도", "AI 아이디어"], draft: ["내용 확인", "명세서", "출원서", "첨부서류", "최종 점검"] };
@@ -3575,7 +3610,8 @@ async function runAiDraft() {
     const r = await fetch("/api/draft", { method: "POST", signal: st.ctrl.signal, headers: { "content-type": "application/json" }, body: JSON.stringify(draftBody()) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || `서버 오류 (${r.status})`);
-    const next = { text: j.spec, review: j.review || [], source: "ai", truncated: j.truncated, ids: specIds() };
+    const next = { text: j.spec, review: cleanMemos(j.review), source: "ai", truncated: j.truncated, ids: specIds() };
+    next.unv = unverifiedNums(next.text, draftBody()); // 입력에 없던 수치(지어냈을 수 있는 값)는 사용자가 확인할 때까지 표시한다
     if (S.spec?.edited) {
       // 쓰는 동안 사용자가 명세서를 고치기 시작했으면 덮어쓰지 않고 임시저장본으로 남긴다
       if (putSpecDrafts([{ id: Date.now(), at: new Date().toISOString(), title: S.idea.title, source: "ai", edited: false, text: next.text, review: next.review }, ...specDrafts()])) toast("명세서를 고치고 있어서 AI 작성본은 임시저장에 넣었습니다");
@@ -4639,6 +4675,7 @@ function renderSpecNav() {
   box.innerHTML = n ? `<span><b>〔입력 필요〕 ${n}곳</b> 남음 · 고른 칸에 바로 덮어써 넣으세요</span><button type="button" class="btn ghost sm" data-need-step="-1">앞 칸</button><button type="button" class="btn sm" data-need-step="1">다음 채울 곳</button>`
     : `<span class="ok-t">채울 곳을 모두 채웠습니다 ✓</span><button type="button" class="btn ghost sm" data-sub="4">최종 점검으로</button>`;
   const fb = $("#fill-box"); if (fb) fb.innerHTML = fillBox();
+  const ub = $("#unv-box"); if (ub) ub.innerHTML = unvBox();
 }
 function stepNeed(dir) {
   const ta = $("#spec-text"), list = specNeeds().map(m => m.index); if (!ta || !list.length) return;
@@ -4666,13 +4703,14 @@ function renderTodo() {
   const box = $("#todo-box"); if (!box || !S.spec) return;
   const needs = specNeeds().length, warn = checkSpec(S.spec.text).filter(r => !r.ok).length, atts = attachmentList(), attLeft = atts.filter(x => !x.ready), ap = apRequired().filter(x => !x.ok);
   const item = (n, t, btn) => `<li class="${n ? "" : "done"}"><b>${n ? n : "✓"}</b><span>${t}</span>${n && btn ? btn : ""}</li>`;
-  const all = needs + warn + attLeft.length + ap.length;
+  const unv = unvLive().length, all = needs + warn + attLeft.length + ap.length + unv;
   const chk = checkSpec(S.spec.text), apAll = apRequired();
   const score = Math.round(40 * Math.max(0, 1 - needs / 30) + 25 * chk.filter(r => r.ok).length / chk.length + 20 * (apAll.length - ap.length) / apAll.length + 15 * (atts.length - attLeft.length) / atts.length);
   box.innerHTML = `<div class="sub-head"><h3>출원까지 남은 일</h3><span class="mono">${all ? `${all}가지` : "모두 끝"}</span></div>
     <div class="done-meter" role="img" aria-label="출원 서류 완성도 ${score}%"><span>출원 서류 완성도 <b>${score}%</b></span><i style="--p:${score}%"></i></div>
     <ul class="todo">
       ${item(needs, "명세서의 〔입력 필요〕 칸", `<button type="button" class="btn sm" data-need-step="1">첫 칸으로</button>`)}
+      ${unv ? item(unv, "AI가 입력 없이 쓴 수치 (사실인지 확인)", `<button type="button" class="btn ghost sm" data-unv-go="${unvLive()[0].k}">확인하러</button>`) : ""}
       ${item(ap.length, `출원서의 꼭 채울 칸${ap.length ? ` (${ap.map(x => x.t).join(", ")})` : ""}`, `<button type="button" class="btn ghost sm" data-ap-go="${ap[0]?.k ?? ""}">출원서로</button>`)}
       ${item(warn, "출원 전 점검에서 확인할 항목", `<button type="button" class="btn ghost sm" data-scroll="#spec-check">점검 보기</button>`)}
       ${item(attLeft.length, `준비할 서류${attLeft.length ? ` (${attLeft.map(x => x.name).join(", ")})` : ""}`, `<button type="button" class="btn ghost sm" data-scroll="#ready-list">서류 보기</button>`)}
@@ -4718,10 +4756,54 @@ function specDraftList() {
 }
 
 // ‘채워야 할 곳’: 명세서 쪽(2쪽)으로 넘어가 그 〔입력 필요〕를 골라 보여 준다. 줄바꿈된 긴 줄도 맞게 스크롤하려고 앞부분만 넣어 높이를 잰다
-function jumpToNeed(i) {
+/* ---------- AI 명세서의 '입력에 없는 수치': 단위가 붙은 숫자 가운데 사용자가 넣은 정보에 없던 값을 찾아 확인하게 한다 ---------- */
+// AI는 지침을 받아도 시험 조건(배지·온도·기간)이나 실시예 배합량을 그럴듯하게 지어낼 때가 있다. 지어낸 값이 출원되면 사실과 다른 명세서가 되므로,
+// 받은 순간의 목록을 남겨 두고(사용자가 직접 넣은 값은 섞이지 않게) 명세서에 그대로 남아 있는 것만 보여 준다
+const NUM_UNIT = "(?:중량%|부피%|w\\/w%|v\\/v%|%|℃|°C|시간|분|초|일|주|개월|CFU\\/(?:g|mL|ml)|CFU|cfu|mg\\/(?:kg|L|mL)|mg|μg|ug|kg|g|mL|ml|μL|L|mm|cm|μm|nm|m|rpm|×\\s?g|kDa|Da|MPa|kPa|bar|ppm|ppb|Brix|°Bx|kW|W|V|Hz|lux|mesh|메시)";
+const NUM_RE = new RegExp(`(?:pH\\s?)?(\\d+(?:[.,]\\d+)?)(?:\\s*(?:내지|~|∼|-|–)\\s*(\\d+(?:[.,]\\d+)?))?\\s?${NUM_UNIT}(?![A-Za-z가-힣])|pH\\s?(\\d+(?:\\.\\d+)?)`, "g");
+const numKey = v => String(+String(v).replace(/,/g, ""));
+function unverifiedNums(text, body) {
+  const known = new Set((JSON.stringify(body ?? {}).match(/\d+(?:[.,]\d+)?/g) ?? []).map(numKey));
+  const out = [], blank = /〔입력 필요[^〕]*〕/g, holes = [...String(text).matchAll(blank)].map(m => [m.index, m.index + m[0].length]);
+  for (const m of String(text).matchAll(NUM_RE)) {
+    if (holes.some(([a, b]) => m.index >= a && m.index < b)) continue; // 〔입력 필요: …(예시: …)〕 안의 예시는 빼고
+    const nums = [m[1], m[2], m[3]].filter(Boolean);
+    if (nums.every(n => known.has(numKey(n)))) continue;
+    const para = text.slice(0, m.index).match(/【([^】]+)】[^【]*$/)?.[1] ?? "";
+    out.push({ v: m[0].trim(), ctx: text.slice(Math.max(0, m.index - 30), m.index), where: para });
+    if (out.length >= 30) break;
+  }
+  return out;
+}
+// 아직 명세서에 그대로 남아 있고, 사용자가 '맞는 값'으로 표시하지 않은 것
+const unvLive = () => (S.spec?.unv ?? []).map((u, k) => ({ ...u, k, at: locate(S.spec.text, u.ctx, u.v) })).filter(u => !u.ok && u.at >= 0);
+function unvBox() {
+  const L = unvLive(); if (!L.length) return "";
+  return `<div class="unv-box" role="group" aria-label="AI가 입력 없이 쓴 수치"><p><b>AI가 입력하지 않은 수치를 썼습니다 ${L.length}곳</b> <span class="muted">— 시험 조건이나 실시예 값을 지어냈을 수 있습니다. 실제로 확인한 값이 아니면 〔입력 필요〕로 바꾸세요.</span></p>
+    <ul class="unv-list">${L.slice(0, 12).map(u => `<li><button type="button" class="chip need" data-unv-go="${u.k}" title="명세서의 이 자리로 이동">${esc(u.v)}</button><span class="muted">${u.where ? `【${esc(u.where)}】` : ""}</span>
+      <button type="button" class="linklike" data-unv-blank="${u.k}">〔입력 필요〕로 바꾸기</button><button type="button" class="linklike" data-unv-ok="${u.k}">맞는 값</button></li>`).join("")}</ul>
+    ${L.length > 1 ? `<div class="actions"><button type="button" class="btn ghost sm" data-unv-blank-all>모두 〔입력 필요〕로 바꾸기</button></div>` : ""}</div>`;
+}
+const unvBlank = u => `〔입력 필요: 확인한 값 (AI가 적은 값: ${u.v})〕`;
+document.addEventListener("click", e => {
+  const go = e.target.closest("[data-unv-go]"), bl = e.target.closest("[data-unv-blank]"), ok = e.target.closest("[data-unv-ok]"), all = e.target.closest("[data-unv-blank-all]");
+  if (!(go || bl || ok || all) || !S.spec?.unv) return;
+  const byK = k => unvLive().find(u => u.k === +k);
+  if (go) { const u = byK(go.dataset.unvGo); if (u) jumpToNeed(u.at, u.at + u.v.length); return; }
+  if (ok) { const u = S.spec.unv[+ok.dataset.unvOk]; if (u) u.ok = true; toast("맞는 값으로 표시했습니다"); }
+  else {
+    const list = all ? unvLive() : [byK(bl.dataset.unvBlank)].filter(Boolean);
+    [...list].sort((a, b) => b.at - a.at).forEach(u => { S.spec.text = S.spec.text.slice(0, u.at) + unvBlank(u) + S.spec.text.slice(u.at + u.v.length); S.spec.unv[u.k].ok = true; });
+    S.spec.edited = true; S.fillLast = null; toast(`${list.length}곳을 〔입력 필요〕로 바꿨습니다`);
+  }
+  scheduleSave(); rerenderKeepScroll();
+});
+// AI 검토 메모의 마크다운 기호(*, **, #, 1.)를 뺀다
+const cleanMemos = list => (Array.isArray(list) ? list : []).map(t => String(t).replace(/\*\*/g, "").replace(/^\s*(?:[-*•#]+|\d+[.)])\s*/, "").trim()).filter(t => t && !/^[^.。]{0,40}:$/.test(t)); // '…:'로 끝나는 제목 줄은 뺀다
+function jumpToNeed(i, endAt) {
   const show = () => {
     const ta = $("#spec-text"); if (!ta || !S.spec) return;
-    const full = ta.value, end = full.indexOf("〕", i) + 1;
+    const full = ta.value, end = endAt ?? full.indexOf("〕", i) + 1;
     ta.value = full.slice(0, i); const h = ta.scrollHeight; ta.value = full;
     ta.scrollIntoView({ block: "center" });
     ta.focus({ preventScroll: true }); ta.setSelectionRange(i, end > i ? end : i);
@@ -4762,6 +4844,7 @@ function viewDraft() {
       <textarea id="spec-text" class="doc" spellcheck="false">${esc(S.spec.text)}</textarea></div>
     <div class="spec-nav" id="spec-nav" data-pg="1" role="group" aria-label="채울 곳 이동"></div>
     <div class="fill-box" id="fill-box" data-pg="1"></div>
+    <div id="unv-box" data-pg="1"></div>
     <div class="actions" data-pg="1">
       <button class="btn ghost" id="spec-save">임시저장</button>
       <button class="btn ghost" id="spec-reset">초기화</button>
@@ -5312,7 +5395,7 @@ function figList() {
 // 예전 이름 그대로: 자동 도 1
 function figImage() { const f = figList().find(x => x.src === "auto"); return f ? { ...f.img, m: f.m, file: f.file, tifFile: f.tifFile } : null; }
 function figTiff(img = figImage()) { return img ? tiffOf(FIGC.get(JSON.stringify(img.m)) || img) : null; }
-// 흑백(1비트) TIFF, 300dpi, PackBits 압축. 특허청이 권하는 도면 형식이다
+// 흑백(1비트) TIFF, 300dpi, PackBits 압축. 지식재산처(옛 특허청)가 권하는 도면 형식이다
 function tiffOf(img) {
   if (img.tif) return img.tif;
   const { width: W, height: H } = img.canvas, px = img.canvas.getContext("2d").getImageData(0, 0, W, H).data, rowBytes = Math.ceil(W / 8);
@@ -5535,7 +5618,7 @@ function saveFilingZip() {
 function saveDocx(name, text, layout = FORM_LAYOUT) { saveFile(name, DOCX_MIME, docxFor(text, layout)); }
 // 묶음 안내에 덧붙이는 줄: 자동 도면, 청구항 대비표
 const extraGuide = () => [...figList().map(f => `\r\n· ${f.tifFile}: ${f.src === "auto" ? `자동으로 그린 도 ${f.n}(${f.m.name})` : `실험 결과 그래프 도 ${f.n}(${f.g.metric})`}, 흑백 TIFF 300dpi. 명세서작성기 도면란에는 이 파일을 넣으세요. 넣기 전에 내용이 맞는지 확인하세요. 같은 그림의 JPG(${f.file})는 보기·공유용이며 명세서 Word에도 들어 있습니다.`),
-  claimChart() && "\r\n· 참고_청구항_대비표.docx: 청구항 1의 구성과 인용 문헌을 맞대어 본 표(요약 기준 참고용). 특허청에 내지 않으며, 변리사 상담이나 우선심사 검토에 씁니다."].filter(Boolean).join("");
+  claimChart() && "\r\n· 참고_청구항_대비표.docx: 청구항 1의 구성과 인용 문헌을 맞대어 본 표(요약 기준 참고용). 지식재산처에 내지 않으며, 변리사 상담이나 우선심사 검토에 씁니다."].filter(Boolean).join("");
 
 function apField(key, label, hint = "", type = "text") {
   return `<div class="field"><label for="ap-${key}">${label}</label>${type === "textarea"
@@ -5718,7 +5801,7 @@ function stepTodo(id) {
   } else if (id === "prior") { if (S.api !== "off" && i.title.trim() && !liveData()) add("비슷한 특허 찾기", "results"); }
   else if (id === "draft") {
     if (!S.spec) add("명세서 초안 만들기", 0);
-    else { const n = specNeeds().length; if (n) add(`명세서 빈칸 ${n}곳 채우기`, 1); }
+    else { const n = specNeeds().length, u = unvLive().length; if (n) add(`명세서 빈칸 ${n}곳 채우기`, 1); if (u) add(`AI가 쓴 확인 안 된 수치 ${u}곳 확인`, 1); }
     const ap = apRequired().filter(x => !x.ok).length; if (ap) add(`출원서 꼭 채울 칸 ${ap}개 넣기`, 2);
   } else if (id === "manage") { if (!S.fileDate) add("출원일(예정일) 넣기", "deadline"); }
   return out;
@@ -5969,7 +6052,7 @@ function viewAis() {
 const COACH = {
   "idea:start": { do: ["현장에서 떠올린 아이디어를 키워드 2~5개로 적어요. (예: 쌀겨, 발효, 비료)", "‘초안 제안 받기’를 누르면 특허 서류에 쓰는 말로 다듬은 후보가 나와요."], tip: "아이디어가 막연해도 괜찮아요. 오른쪽 ‘연습용 예시로 해보기’로 끝까지 한 번 따라가 보면 흐름이 잡혀요." },
   "idea:pick": { do: ["후보 가운데 내 아이디어와 가장 가까운 것을 하나씩 고르고, 아래 칸에서 내 말로 고쳐요.", "맨 아래 ‘출원 전에 확인할 사실’ 질문은 꼭 사실대로 골라요."], tip: "온도·시간·비율 같은 숫자를 실제 값으로 적을수록 특허 받을 가능성이 높아져요." },
-  "prior:results": { do: ["내 아이디어와 비슷한 특허가 이미 있는지 특허청 자료(KIPRIS)에서 자동으로 찾아요.", "정말 비슷한 특허만 골라 두면 명세서의 ‘기존 기술’ 칸에 들어가요."], tip: "비슷한 특허가 있어도 괜찮아요. 내 것만의 다른 점을 분명히 하면 출원할 수 있어요." },
+  "prior:results": { do: ["내 아이디어와 비슷한 특허가 이미 있는지 특허 정보(KIPRIS)에서 자동으로 찾아요.", "정말 비슷한 특허만 골라 두면 명세서의 ‘기존 기술’ 칸에 들어가요."], tip: "비슷한 특허가 있어도 괜찮아요. 내 것만의 다른 점을 분명히 하면 출원할 수 있어요." },
   "prior:sample": { do: ["내 아이디어와 비슷한 특허가 이미 있는지 살펴봐요.", "정말 비슷한 특허만 골라 두면 명세서의 ‘기존 기술’ 칸에 들어가요."], tip: "비슷한 특허가 있어도 괜찮아요. 내 것만의 다른 점을 분명히 하면 출원할 수 있어요." },
   "prior:compare": { do: ["비슷한 특허와 내 아이디어의 구성을 한 줄씩 비교해요.", "비슷한 특허에 없는, 내 것에만 있는 구성이 특허의 핵심이 돼요."], tip: "표가 어렵다면 ‘다음’을 눌러 넘어가도 돼요. 비교 결과는 진단에 자동으로 쓰여요." },
   "prior:gap": { do: ["아직 출원이 적은 기술 조합(빈자리)을 표로 보여 줘요.", "내 아이디어를 빈자리 쪽으로 조금 바꾸면 등록 가능성이 높아질 수 있어요."], tip: "참고용이에요. 그냥 다음 단계로 넘어가도 돼요." },
@@ -5977,7 +6060,7 @@ const COACH = {
   "diag:suggest": { do: ["비슷한 출원이 거절된 이유와 피하는 방법을 알려 드려요.", "마음에 드는 제안만 눌러서 아이디어에 넣어요."], tip: "제안을 모두 받아들일 필요는 없어요." },
   "draft:0": { do: ["앞에서 정리한 내용으로 특허 서류(명세서) 초안을 만들어요.", "내용을 확인하고 ‘기본 초안 만들고 보기’를 누르세요."], tip: "잘 모르는 칸은 비워 두어도 돼요. 다음 쪽에서 빈칸으로 표시해 드려요." },
   "draft:1": { do: ["명세서 초안이 완성됐어요. 〔입력 필요〕로 표시된 빈칸만 채우면 돼요.", "‘AI로 한꺼번에 채우기’를 한 번 누르면 문장으로 쓸 수 있는 빈칸은 AI가 끝까지 채워요.", "실험값처럼 나만 아는 사실은 ‘직접 채울 곳’에서 넣어요."], tip: "AI가 채운 문장도 사실과 맞는지 한 번 읽어 보세요. 마음에 들지 않으면 ‘모두 되돌리기’로 되돌릴 수 있어요." },
-  "draft:2": { do: ["특허청에 내는 신청서(출원서)에 출원인 이름과 번호를 넣어요.", "특허고객번호가 없으면 특허로(patent.go.kr)에서 먼저 무료로 신청해요."], tip: "수수료와 감면(개인 70% 등)은 자동으로 계산돼요." },
+  "draft:2": { do: ["지식재산처에 내는 신청서(출원서)에 출원인 이름과 번호를 넣어요.", "특허고객번호가 없으면 특허로(patent.go.kr)에서 먼저 무료로 신청해요."], tip: "수수료와 감면(개인 70% 등)은 자동으로 계산돼요." },
   "draft:3": { do: ["출원 때 함께 낼 서류를 확인해요.", "‘아직’으로 남은 서류만 준비하면 돼요."], tip: "대부분은 앞 단계에서 자동으로 만들어져요." },
   "draft:4": { do: ["출원까지 남은 일을 한곳에 모았어요. 위에서부터 하나씩 끝내요.", "다 되면 ‘제출용 파일 한 번에 받기’로 받아 특허로에서 제출해요."], tip: "혼자 제출하기 부담되면 5단계에서 비용 지원과 변리사·무료 상담을 찾을 수 있어요." },
   "manage:support": { do: ["출원 비용을 지원하는 사업과 상담할 변리사를 찾아요.", "진단 결과를 보내 상담을 받아 보세요."], tip: "공익변리사 특허상담센터(pcc.or.kr)에서도 무료로 상담받을 수 있어요." },
@@ -6002,7 +6085,7 @@ document.addEventListener("toggle", e => { if (e.target.matches?.("[data-coach]"
 
 /* ---------- 어려운 용어: 화면에 처음 나오는 전문용어에 밑줄을 긋고, 누르거나 올려 두면 쉬운 뜻을 보여 준다 ---------- */
 const TERMS = [
-  ["명세서", "발명을 글로 자세히 설명한 서류. 특허청에 내는 가장 중요한 서류예요."],
+  ["명세서", "발명을 글로 자세히 설명한 서류. 지식재산처(옛 특허청)에 내는 가장 중요한 서류예요."],
   ["청구범위", "특허로 지키고 싶은 범위를 문장으로 정한 부분. 여기에 쓴 만큼만 권리가 생겨요."],
   ["청구항", "청구범위의 한 문장 한 문장. 독립항은 넓게, 종속항은 좁고 구체적으로 써요."],
   ["독립항", "다른 청구항에 기대지 않는 넓은 범위의 청구항이에요."],
@@ -6019,10 +6102,11 @@ const TERMS = [
   ["공지예외주장", "내가 먼저 공개했더라도 12개월 안에 출원하면서 신청하면 그 공개를 없던 일로 봐 주는 제도예요."],
   ["거절이유", "심사관이 특허를 줄 수 없다고 본 이유. 의견서나 보정으로 대응할 수 있어요."],
   ["의견제출통지서", "심사관이 거절 이유를 알려 주며 의견을 내라고 보내는 서류예요."],
-  ["특허고객번호", "특허청에 처음 한 번 등록하면 받는 내 번호. 특허로에서 무료로 신청해요."],
-  ["특허로", "특허청의 온라인 출원 사이트(patent.go.kr). 여기서 서류를 내요.", "특허로(?=\\(|에서| 서식| 전자| 제출)"], // '특허로 보호' 같은 말은 빼고 사이트 이름일 때만
+  ["지식재산처", "옛 특허청. 2025년 10월부터 특허 출원과 심사를 맡는 정부 기관이에요."],
+  ["특허고객번호", "지식재산처에 처음 한 번 등록하면 받는 내 번호. 특허로에서 무료로 신청해요."],
+  ["특허로", "지식재산처의 온라인 출원 사이트(patent.go.kr). 여기서 서류를 내요.", "특허로(?=\\(|에서| 서식| 전자| 제출)"], // '특허로 보호' 같은 말은 빼고 사이트 이름일 때만
   ["전자출원 인증서", "특허로에서 서류를 낼 때 본인임을 확인하는 인증서(공동인증서 등)예요."],
-  ["심사청구", "특허청에 심사를 해 달라는 신청. 출원일부터 3년 안에 해야 해요."],
+  ["심사청구", "지식재산처에 심사를 해 달라는 신청. 출원일부터 3년 안에 해야 해요."],
   ["우선권 주장", "먼저 낸 출원의 날짜를 인정받아 1년 안에 개량 출원이나 해외 출원을 하는 제도예요."],
   ["PCT", "한 번의 국제출원으로 여러 나라에 출원한 효과를 내는 제도예요."],
   ["출원 공개", "출원하고 1년 6개월이 지나면 내용이 누구나 볼 수 있게 공개돼요."],

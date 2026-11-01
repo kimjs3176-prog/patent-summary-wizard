@@ -1,6 +1,7 @@
 # Frontend rules
 
 - Normalize commercialization prose through the shared summary presentation helper before parsing web or print output, so cached and new summaries format the same way.
+- The summary reads as a report (핵심 요약·목차 → sections with a lead sentence; market table and 공식 통계/AI 추정 badges) built by lib/summaryReport.ts from the server-labelled text; it only reads figures and citations, never changes them.
 - TRL presentation uses the shared reference levels and legacy-default resolver across admin and summaries; terminology updates must not change inferred scores or overwrite custom labels.
 - Keep homepage search presentation in HomeSearchHero and shared semantic CSS tokens. The home and results-page boxes share SmartSearchBox and classify entries in lib/queryIntent.ts (number/batch → summary, 1–2 words → broad search, described needs → strict sentence search, questions → patent-chat in place); its split mirrors isNaturalLanguageQuery in search-patents.
 - `technology-tile-<tone>` classes are composed dynamically and safelisted in tailwind.config.ts; never remove the safelist.

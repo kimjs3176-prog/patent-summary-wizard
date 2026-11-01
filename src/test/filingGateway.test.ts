@@ -1,7 +1,7 @@
 // 출원도우미 서버 AI(Lovable AI 게이트웨이) — supabase/functions/filing-api/lib/gateway.js · draft.js · ai.js
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { chat, GatewayError, gatewayErrorResponse, GATEWAY_URL, SERVER_MODEL } from "../../supabase/functions/filing-api/lib/gateway.js";
-import { draftSpec, draftEnabled, validateDraftInput } from "../../supabase/functions/filing-api/lib/draft.js";
+import { draftSpec, draftEnabled, validateDraftInput, buildUserPrompt, SYSTEM_PROMPT } from "../../supabase/functions/filing-api/lib/draft.js";
 import { runAi, parseJsonObject } from "../../supabase/functions/filing-api/lib/ai.js";
 
 const ok = (content: string, finish = "stop") =>
@@ -56,6 +56,19 @@ describe("filing-api gateway", () => {
     expect(out.truncated).toBe(true);
     expect(out.model).toBe("m");
     expect(out.checks).toBeTruthy();
+  });
+
+  it("draftSpec strips markdown bullets and heading lines from the review memo", async () => {
+    const chatImpl = vi.fn(async () => ({ text: "【발명의 설명】\n본문\n<<<검토메모>>>\n〔입력 필요〕 항목 요약:\n* 균주 기탁\n**진보성**: 비교예 필요\n1. 영문 명칭\n• 공지예외 증명", finishReason: "stop", model: "m" }));
+    const out = await draftSpec(validateDraftInput({ title: "딸기 저장 장치" }), { chatImpl });
+    expect(out.review).toEqual(["균주 기탁", "진보성: 비교예 필요", "영문 명칭", "공지예외 증명"]);
+  });
+
+  it("draft instructions forbid invented test conditions and unfinished deposits", () => {
+    const user = buildUserPrompt(validateDraftInput({ title: "발효 조성물", strain: "no" }));
+    expect(user).toContain("'기탁되었다'고 쓰지 말고");
+    expect(SYSTEM_PROMPT).toContain("시험 방법과 조건(배지, 온도, 기간, 반복 수, 기기, 처리 간격)은 제공된 것만");
+    expect(SYSTEM_PROMPT).toContain("비교 대상이 분명하지 않으면");
   });
 
   it("runAi sends the JSON schema in the instructions and reads fenced JSON", async () => {
