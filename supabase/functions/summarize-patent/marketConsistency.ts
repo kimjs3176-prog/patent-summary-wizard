@@ -230,6 +230,10 @@ function findLabels(text: string): Label[] {
 
 function isBoundary(cur: Label, next: Label): boolean {
   if (next.kind === "generic") return next.core !== cur.core;
+  // "국내 관련 시장", "국내 해당 시장"처럼 지역만 붙은 지시 표현은 앞 시장을 다시 가리킨다.
+  // 새 시장으로 끊으면 그 문장의 환산값이 표준값·출처 보정에서 빠져 같은 시장이 다른 숫자로 남는다.
+  // ("국내 콩가공품 상위 시장"처럼 고유한 이름이 붙은 시장은 여전히 별개 시장으로 본다.)
+  if (next.kind === cur.kind && /^(?:관련|해당|동|이|같은)?시장$/.test(next.core)) return false;
   return next.kind !== cur.kind || next.core !== cur.core;
 }
 

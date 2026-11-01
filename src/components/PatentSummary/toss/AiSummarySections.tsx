@@ -3,6 +3,7 @@
 
 import { sectionMeta, type MdSection } from "./helpers";
 import { SectionTitle } from "./SectionTitle";
+import { splitBold, splitItalic } from "@/lib/summaryMarkup";
 
 import { Loader2 } from "lucide-react";
 
@@ -46,45 +47,36 @@ export function AiSummarySections({ isStreaming, sections, annotate }: Props) {
                         } else if (part) {
                           // 2) 볼드(**...**) → 학명 이탤릭(*...*) 순서로 분리.
                           //    볼드 밖 텍스트는 용어집 주석까지 적용.
-                          const boldParts = part.split(/(\*\*[^*\n]+?\*\*)/g);
-                          boldParts.forEach((bp, bi) => {
-                            if (!bp) return;
-                            const bm = bp.match(/^\*\*([^*\n]+?)\*\*$/);
-                            if (bm) {
+                          //    볼드 안에 학명 이탤릭이 있어도(**신규 *Leuconostoc* 균주**) 한 볼드로 묶는다.
+                          splitBold(part).forEach((bp, bi) => {
+                            if (bp.bold) {
                               // 볼드 내부: 이탤릭만 렌더링 (용어집은 성능/노이즈 회피)
-                              const inner = bm[1];
-                              const italicInside = inner.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
                               processed.push(
                                 <strong
                                   key={`b-${i}-${j}-${bi}`}
                                   className="font-bold text-[#191F28]"
                                 >
-                                  {italicInside.map((ip, ii) => {
-                                    const im = ip.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
-                                    if (im) return <em key={ii} className="italic">{im[1]}</em>;
-                                    return <span key={ii}>{ip}</span>;
-                                  })}
+                                  {splitItalic(bp.text).map((ip, ii) =>
+                                    ip.italic ? <em key={ii} className="italic">{ip.text}</em> : <span key={ii}>{ip.text}</span>,
+                                  )}
                                 </strong>,
                               );
                               return;
                             }
                             // 볼드 바깥: 학명 이탤릭 → 나머지에 용어집 주석
-                            const italicParts = bp.split(/(\*[A-Za-z][A-Za-z0-9 .\-]{1,60}\*)/g);
-                            italicParts.forEach((ip, k) => {
-                              if (!ip) return;
-                              const im = ip.match(/^\*([A-Za-z][A-Za-z0-9 .\-]{1,60})\*$/);
-                              if (im) {
+                            splitItalic(bp.text).forEach((ip, k) => {
+                              if (ip.italic) {
                                 processed.push(
                                   <em
                                     key={`it-${i}-${j}-${bi}-${k}`}
                                     className="italic"
                                     style={{ fontStyle: "italic" }}
                                   >
-                                    {im[1]}
+                                    {ip.text}
                                   </em>,
                                 );
                               } else {
-                                const annotated = annotate(ip);
+                                const annotated = annotate(ip.text);
                                 const nodes = Array.isArray(annotated) ? annotated : [annotated];
                                 processed.push(...(nodes as React.ReactNode[]));
                               }
