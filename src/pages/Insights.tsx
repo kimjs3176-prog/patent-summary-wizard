@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, BarChart3, Building2, CalendarRange, FileText, Info, Layers, RefreshCw, Sparkles, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, BarChart3, Building2, CalendarRange, FileText, Info, Layers, RefreshCw, Sparkles, TrendingUp } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";

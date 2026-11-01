@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, FileSignature, FileText, Globe, HelpCircle, Lightbulb, Search, Send, Settings, Stethoscope } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, FileSignature, FileText, Globe, HelpCircle, Lightbulb, Search, Send, Settings, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useSiteSettings } from "@/hooks/useSiteSettings";

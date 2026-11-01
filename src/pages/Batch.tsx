@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  ArrowLeft, Layers, Download, ExternalLink, Loader2, AlertTriangle, CheckCircle2, FileText, X, Search, Hash, SlidersHorizontal,
+  Layers, Download, ExternalLink, Loader2, AlertTriangle, CheckCircle2, FileText, X, Search, Hash, SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";

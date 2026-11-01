@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, X, Heart, Trash2, FolderPlus, Folder, Tag, Plus, Check } from "lucide-react";
+import { X, Heart, Trash2, FolderPlus, Folder, Tag, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFavoritePatents, FavoritePatent, FavoriteFolder } from "@/hooks/useFavoritePatents";

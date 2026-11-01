@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  AlertCircle, ArrowLeft, Building2, Check, ClipboardCheck, Download, Gauge, History, Link2, Loader2, Package,
+  AlertCircle, Building2, Check, ClipboardCheck, Download, Gauge, History, Link2, Loader2, Package,
   RotateCcw, Search, Sparkles, Target, Trash2, Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
