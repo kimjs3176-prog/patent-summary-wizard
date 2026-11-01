@@ -376,6 +376,20 @@ export function claimToRef(c: MarketClaim): MarketRef | null {
   return { market_key: c.key, label: c.label, base_year: c.baseYear, base_value_eok: c.baseEok, cagr: c.cagr, source: null, status: "ai_pending" };
 }
 
+/**
+ * 시장 키에 맞는 신뢰 표준값(공식·승인)을 고른다. 같은 키의 값이 검증 전(ai_pending)이거나 없더라도,
+ * 신뢰 표준값 가운데 시장명(label)이 같거나 같은 공식 통계표(sameSeries)를 쓰는 값이 있으면 그 값을 이 키로 쓴다.
+ * (예전 규칙의 키로 저장된 KOSIS 값을 못 찾아 같은 시장이 "(AI 추정치)"로 표기되던 문제를 막는다)
+ */
+export function pickTrustedRef(key: string, current: MarketRef | undefined, trusted: MarketRef[], sameSeries?: (a: string, b: string) => boolean): MarketRef | undefined {
+  if (current && isTrustedRef(current)) return current;
+  const ok = trusted.filter(isTrustedRef);
+  const hit = ok.find((t) => t.market_key === key)
+    ?? ok.find((t) => normalizeMarketKey(t.label) === key || globalKey(t.label) === key)
+    ?? (sameSeries ? ok.find((t) => sameSeries(t.market_key, key)) : undefined);
+  return hit ? { ...hit, market_key: key } : current;
+}
+
 /** 검증 전 표준값은 CAGR이 저장 허용 범위 안일 때만 다시 적용한다(예전 규칙으로 저장된 과도한 값 제외). */
 export function isUsableRef(ref: MarketRef): boolean {
   const cagr = Number(ref.cagr);
