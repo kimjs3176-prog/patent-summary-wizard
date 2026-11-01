@@ -5,9 +5,6 @@
 > 본 문서는 한국어로 작성되었습니다.
 
 ## 프로젝트 정보
-
-- **Lovable 프로젝트**: https://lovable.dev/projects/5d67c532-7ab7-4cb4-9934-6cf82c86f25d
-- **프리뷰 URL**: https://id-preview--5d67c532-7ab7-4cb4-9934-6cf82c86f25d.lovable.app
 - **퍼블리시 URL**: https://atipsum.lovable.app
 
 ## 주요 기능
@@ -29,31 +26,6 @@
 - **백엔드**: Lovable Cloud (Supabase Edge Functions)
 - **AI**: Lovable AI Gateway (Gemini 모델)
 - **데이터**: KIPRIS API, 국가법령정보 API
-
-## 로컬 개발 방법
-
-프로젝트를 로컬에서 실행하려면 아래 단계를 따라 주세요.
-
-```sh
-# 1. 저장소를 클론합니다.
-git clone <YOUR_GIT_URL>
-
-# 2. 프로젝트 디렉터리로 이동합니다.
-cd <YOUR_PROJECT_NAME>
-
-# 3. 의존성을 설치합니다.
-npm i
-
-# 4. 개발 서버를 실행합니다.
-npm run dev
-```
-
-> Lovable 편집기에서 수정한 내용은 저장소에 자동으로 반영되며, GitHub에서 직접 푸시한 변경 사항도 Lovable에 동기화됩니다.
-
-## 배포 방법
-
-1. [Lovable 프로젝트](https://lovable.dev/projects/5d67c532-7ab7-4cb4-9934-6cf82c86f25d)로 이동합니다.
-2. 우측 상단의 **Share → Publish**를 클릭해 배포를 진행합니다.
 
 ## 연락 및 지원
 
