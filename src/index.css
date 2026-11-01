@@ -1101,6 +1101,17 @@ time, .tabular-nums, [data-numeric] {
   box-shadow: 0 2px 8px -2px hsl(165 50% 4% / 0.35);
 }
 .home-mode-tab-active:hover { color: hsl(var(--primary)); }
+/* 출원도우미 link beside the mode tabs: same pill size, outlined so it reads as navigation, not a tab */
+.home-filing-link {
+  color: hsl(var(--home-hero-foreground));
+  border: 1px solid hsl(var(--home-hero-foreground) / 0.22);
+  background: hsl(var(--home-hero-foreground) / 0.04);
+}
+.home-filing-link:hover {
+  color: hsl(var(--home-hero-accent));
+  border-color: hsl(var(--home-hero-accent) / 0.6);
+  background: hsl(var(--home-hero-accent) / 0.08);
+}
 
 /* 주요 기술소개 — solid band in the hero's green */
 .tech-video-band { background: hsl(var(--home-hero-surface)); color: hsl(var(--home-hero-foreground)); }

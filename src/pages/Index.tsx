@@ -1,4 +1,4 @@
-import { Heart, RotateCcw, BarChart3, Layers, Compass, FileSignature, Menu } from "lucide-react";
+import { Heart, RotateCcw, BarChart3, Layers, Compass, Menu } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { filingEnabled } from "@/lib/filing";
 import { Link, useNavigate } from "react-router-dom";
@@ -134,7 +134,6 @@ const Index = () => {
   // 헤더 메뉴: 데스크톱은 전부 펼치고, 좁은 화면은 주 메뉴 하나와 "메뉴" 드롭다운으로 접는다.
   // (아이콘 6개를 한 줄에 놓으면 390px 화면에서 뒤쪽 버튼이 잘려 눌리지 않았다.)
   const navItems: { to: string; label: string; title: string; icon: typeof Compass; badge?: string }[] = [
-    ...(filingEnabled(settings) ? [{ to: "/filing", label: "출원지원", title: "출원지원: 아이디어부터 명세서·해외 출원까지", icon: FileSignature }] : []),
     { to: "/insights", label: "인사이트", title: "인사이트", icon: BarChart3 },
     { to: "/batch", label: "일괄조회·다운로드", title: "일괄조회·목록 다운로드: 번호 여러 건 조회 또는 조건별 목록을 엑셀·CSV로", icon: Layers },
     { to: "/compare", label: "관심특허", title: "관심특허", icon: Heart, badge: favorites.length > 0 ? `(${favorites.length})` : undefined },
@@ -207,6 +206,7 @@ const Index = () => {
         {!summary && !isLoading ? (
           <>
             <HomeSearchHero
+              showFiling={filingEnabled(settings)}
               onSubmit={handleSubmit}
               onKeywordSearch={handleKeywordSearch}
               isLoading={isLoading}
