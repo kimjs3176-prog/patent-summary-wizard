@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Compass, FileSignature, Search, Sparkles } from "lucide-react";
+import { Compass, FileSignature, ListFilter, MessagesSquare, Search, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { Button } from "@/components/ui/button";
@@ -138,11 +138,12 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
           </div>
         )}
         {!compact && (
-          <div className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
-            <span>농업분야 국가연구기관 보유 특허</span>
-            <span>KIPRIS 실시간 연동</span>
-            <span>Gemini AI 분석</span>
-          </div>
+          // How the one search box treats each kind of entry (see queryIntent), so visitors know they can just ask.
+          <ul aria-label="검색창 사용법" className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs md:text-[13px]">
+            <li className="inline-flex items-center gap-1.5"><Search className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />단어를 넣으면 넓게 찾아요</li>
+            <li className="inline-flex items-center gap-1.5"><ListFilter className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />문장으로 쓰면 꼭 맞는 것만 골라요</li>
+            <li className="inline-flex items-center gap-1.5"><MessagesSquare className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />물어보면 AI가 대화로 답해요</li>
+          </ul>
         )}
       </div>
     </section>

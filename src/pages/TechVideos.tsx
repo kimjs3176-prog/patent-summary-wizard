@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Play, Video, ArrowLeft } from "lucide-react";
+import { Play, Video } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -69,20 +67,12 @@ const TechVideos = () => {
     return () => { cancelled = true; };
   }, [videos]);
 
-  const headerRight = (
-    <Button asChild variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1.5 btn-press font-medium">
-      <Link to="/" aria-label="홈으로">
-        <ArrowLeft className="w-3 h-3 md:w-3.5 md:h-3.5" />
-        <span className="hidden sm:inline">홈으로</span>
-      </Link>
-    </Button>
-  );
 
   // Show all videos; pad to at least 9 slots for a complete 3x3 visual when fewer exist
   const slots = Array.from({ length: Math.max(9, filteredVideos.length) }, (_, i) => filteredVideos[i] || null);
 
   return (
-    <PageLayout headerRight={headerRight}>
+    <PageLayout>
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-10 relative z-10">
         <section className="max-w-6xl mx-auto mb-6 md:mb-10 animate-fade-down">
           <div className="flex items-center gap-2.5 mb-2">

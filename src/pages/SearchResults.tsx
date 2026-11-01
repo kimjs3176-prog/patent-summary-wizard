@@ -169,16 +169,10 @@ export default function SearchResults() {
       <Button asChild variant="outline" size="sm" className="rounded-full text-xs h-8 px-3 sm:px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
         <Link to={`/filing?kw=${encodeURIComponent(keyword)}`} aria-label="이 키워드로 출원 준비" title="이 키워드로 출원지원에서 아이디어·명칭 초안을 시작합니다">
           <FileSignature className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">이 키워드로 출원 준비</span>
+          <span className="hidden xl:inline">이 키워드로 출원 준비</span>
         </Link>
       </Button>
     )}
-    <Button asChild variant="outline" size="sm" className="rounded-full text-xs h-8 px-3 sm:px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
-      <Link to="/" aria-label="메인으로">
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">메인으로</span>
-      </Link>
-    </Button>
     </>
   );
 
