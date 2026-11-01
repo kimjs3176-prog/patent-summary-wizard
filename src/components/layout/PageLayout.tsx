@@ -75,9 +75,10 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               <FileText className="w-3 h-3 md:w-4 md:h-4 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-bold text-[13px] md:text-[15px] text-foreground tracking-tight leading-tight truncate max-w-[160px] sm:max-w-none">
+              {/* Not a heading: each page owns its single <h1>. The font matches the heading base style it used to inherit. */}
+              <p className="[font-family:'Plus_Jakarta_Sans','Noto_Sans_KR',-apple-system,system-ui,sans-serif] font-bold text-[13px] md:text-[15px] text-foreground tracking-tight leading-tight truncate max-w-[160px] sm:max-w-none">
                 {settings.header_title}
-              </h1>
+              </p>
               <p className="text-[10px] md:text-[11px] text-muted-foreground/60 hidden sm:block leading-tight tracking-wide">
                 {settings.header_subtitle}
               </p>

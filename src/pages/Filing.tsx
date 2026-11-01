@@ -6,6 +6,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { parseIpNumber } from "@/lib/ipNumber";
 import { buildFilingSrc, buildFilingStandaloneUrl, filingEnabled, filingOrigin, parseFilingMessage, type FilingState } from "@/lib/filing";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 // 출원지원 — 관리자 설정 '출원지원' 토글로 켜고 끄는 옵션 메뉴. 화면에는 AIS 의 한 기능으로만 보이고 바깥 서비스 이름은 쓰지 않는다.
 // 출원지원 서버(에이프)의 5단계 출원 준비(아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리·해외 출원)를 본문만 iframe 으로 넣고,
@@ -25,6 +26,7 @@ const DEFAULT_STEPS: FilingState["steps"] = [
 ];
 
 const Filing = () => {
+  useDocumentTitle("출원지원");
   const { settings } = useSiteSettings();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -113,7 +115,8 @@ const Filing = () => {
 
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
-      <section aria-label="출원지원" className="relative z-10">
+      <section aria-labelledby="filing-title" className="relative z-10">
+        <h1 id="filing-title" className="sr-only">출원지원</h1>
         {/* 단계 바 — AIS 디자인. 누르면 iframe 안 에이프가 그 단계로 간다 */}
         <div className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 md:pt-3">
           <div className="glossy-card rounded-2xl md:rounded-3xl px-2.5 md:px-4 py-2 md:py-2.5">

@@ -16,10 +16,12 @@ import { AdminHomepagePanel } from '@/components/admin/AdminHomepagePanel';
 import { AdminSummaryPanel } from '@/components/admin/AdminSummaryPanel';
 import { AdminOutputPanel } from '@/components/admin/AdminOutputPanel';
 import { AdminSystemPanel } from '@/components/admin/AdminSystemPanel';
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 
 
 const Admin = () => {
+  useDocumentTitle("관리자");
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [patents, setPatents] = useState<FeaturedPatent[]>([]);
@@ -460,7 +462,7 @@ const Admin = () => {
           <AdminHomepagePanel siteSettings={siteSettings} setSiteSettings={setSiteSettings} isSavingSettings={isSavingSettings} categoryOptions={categoryOptions} setCategoryOptions={setCategoryOptions} techVideos={techVideos} setTechVideos={setTechVideos} dragVideoIdx={dragVideoIdx} setDragVideoIdx={setDragVideoIdx} homepageVisibleSections={homepageVisibleSections} setHomepageVisibleSections={setHomepageVisibleSections} handleSaveSettings={handleSaveSettings} />
 
           {/* ===== Summary Customization Tab ===== */}
-          <AdminSummaryPanel summaryTitles={summaryTitles} setSummaryTitles={setSummaryTitles} summarySectionLengths={summarySectionLengths} setSummarySectionLengths={setSummarySectionLengths} summaryDisclaimer={summaryDisclaimer} setSummaryDisclaimer={setSummaryDisclaimer} summaryVisibleSections={summaryVisibleSections} setSummaryVisibleSections={setSummaryVisibleSections} summaryAiPromptExtra={summaryAiPromptExtra} setSummaryAiPromptExtra={setSummaryAiPromptExtra} summaryCardIcons={summaryCardIcons} setSummaryCardIcons={setSummaryCardIcons} summaryInfoLabels={summaryInfoLabels} setSummaryInfoLabels={setSummaryInfoLabels} isSavingSummarySettings={isSavingSummarySettings} newSectionKey={newSectionKey} setNewSectionKey={setNewSectionKey} summaryMaxTokens={summaryMaxTokens} setSummaryMaxTokens={setSummaryMaxTokens} scoreConfig={scoreConfig} setScoreConfig={setScoreConfig} trlConfig={trlConfig} setTrlConfig={setTrlConfig} handleSaveSummarySettings={handleSaveSummarySettings} />
+          <AdminSummaryPanel summaryTitles={summaryTitles} setSummaryTitles={setSummaryTitles} summarySectionLengths={summarySectionLengths} setSummarySectionLengths={setSummarySectionLengths} summaryDisclaimer={summaryDisclaimer} setSummaryDisclaimer={setSummaryDisclaimer} summaryVisibleSections={summaryVisibleSections} setSummaryVisibleSections={setSummaryVisibleSections} summaryAiPromptExtra={summaryAiPromptExtra} setSummaryAiPromptExtra={setSummaryAiPromptExtra} summaryCardIcons={summaryCardIcons} setSummaryCardIcons={setSummaryCardIcons} summaryInfoLabels={summaryInfoLabels} setSummaryInfoLabels={setSummaryInfoLabels} isSavingSummarySettings={isSavingSummarySettings} newSectionKey={newSectionKey} setNewSectionKey={setNewSectionKey} summaryMaxTokens={summaryMaxTokens} setSummaryMaxTokens={setSummaryMaxTokens} scoreConfig={scoreConfig} setScoreConfig={setScoreConfig} trlConfig={trlConfig} setTrlConfig={setTrlConfig} handleSaveSummarySettings={handleSaveSummarySettings} apiCall={apiCall} />
 
           {/* ===== Output Tab (Print + PDF) ===== */}
           <AdminOutputPanel printSections={printSections} setPrintSections={setPrintSections} isSavingPrintSettings={isSavingPrintSettings} pdfLayoutConfig={pdfLayoutConfig} apiCall={apiCall} handleSavePrintSettings={handleSavePrintSettings} />

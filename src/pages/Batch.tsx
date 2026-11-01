@@ -4,15 +4,17 @@ import {
   ArrowLeft, Layers, Download, ExternalLink, Loader2, AlertTriangle, CheckCircle2, FileText, X, Search, Hash, SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { parseIpNumberList, IP_KIND_LABEL, IpNumberInfo } from "@/lib/ipNumber";
 import { safeFetch } from "@/lib/safeFetch";
+import { supabase } from "@/integrations/supabase/client";
+import { lookupCachedScores, registrationShortForm, scoreFor, type ScoreFetcher } from "@/lib/scoreCacheLookup";
 import { PatentData } from "@/components/PatentSummary/types";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
 import { TossPatentSummary } from "@/components/PatentSummary/TossPatentSummary";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /* ------------------------------------------------------------------ */
 /* 공통: 모드, 다운로드                                                 */
@@ -40,17 +42,21 @@ interface ExportRow {
   출원인: string;
   발명자: string;
   IPC: string;
+  사업화점수: number | "";
+  TRL: number | "";
   초록: string;
   요약서링크: string;
 }
 
-const EXPORT_COL_WIDTHS = [6, 12, 18, 14, 50, 11, 11, 11, 8, 16, 30, 24, 24, 60, 40];
+const EXPORT_COL_WIDTHS = [6, 12, 18, 14, 50, 11, 11, 11, 8, 16, 30, 24, 24, 10, 6, 60, 40];
 
 const fileName = (ext: string) => `특허목록_${new Date().toISOString().slice(0, 10)}.${ext}`;
 
 const summaryLink = (num: string) => `${window.location.origin}/?patent=${encodeURIComponent(num)}`;
 
-function downloadXlsx(rows: ExportRow[]) {
+type Xlsx = typeof import("xlsx");
+
+function downloadXlsx(XLSX: Xlsx, rows: ExportRow[]) {
   const ws = XLSX.utils.json_to_sheet(rows);
   ws["!cols"] = EXPORT_COL_WIDTHS.map((w) => ({ wch: w }));
   const wb = XLSX.utils.book_new();
@@ -58,7 +64,7 @@ function downloadXlsx(rows: ExportRow[]) {
   XLSX.writeFile(wb, fileName("xlsx"));
 }
 
-function downloadCsv(rows: ExportRow[]) {
+function downloadCsv(XLSX: Xlsx, rows: ExportRow[]) {
   const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(rows));
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
@@ -66,6 +72,32 @@ function downloadCsv(rows: ExportRow[]) {
   a.download = fileName("csv");
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+/** 이미 분석된 특허의 사업화점수·TRL 캐시만 읽는다(새 분석은 절대 요청하지 않음). */
+// patent_score_cache 는 서버 전용이라 직접 읽지 않고, 세 열만 돌려주는 읽기 전용 함수(get_cached_scores)를 쓴다.
+const fetchScoreRows: ScoreFetcher = async (keys) => {
+  const { data, error } = await supabase.rpc("get_cached_scores" as never, { p_numbers: keys } as never);
+  if (error) throw error;
+  return (data as unknown as { patent_number: string; total_score: number | null; trl: number | null }[] | null) ?? [];
+};
+
+/** 내보낼 행에 캐시된 사업화점수·TRL을 채운다. 조회 실패 시 빈칸 그대로 둔다. */
+async function attachCachedScores(rows: ExportRow[]): Promise<{ rows: ExportRow[]; failed: boolean }> {
+  const candidates = (r: ExportRow) =>
+    r.구분 === "상표" ? [] : [r.출원번호, r.등록번호, registrationShortForm(r.등록번호) ?? ""].filter(Boolean);
+  try {
+    const map = await lookupCachedScores(rows.flatMap(candidates), fetchScoreRows);
+    return {
+      failed: false,
+      rows: rows.map((r) => {
+        const hit = scoreFor(map, candidates(r));
+        return { ...r, 사업화점수: hit?.totalScore ?? "", TRL: hit?.trl ?? "" };
+      }),
+    };
+  } catch {
+    return { rows, failed: true };
+  }
 }
 
 /** 숫자만 있는 KIPRIS 번호를 10-2021-0162560 / 10-2456789 형태로 */
@@ -182,6 +214,8 @@ function batchRowsToExport(rows: BatchRow[]): ExportRow[] {
         출원인: d.assignee || "",
         발명자: (d.inventors || []).join(", "),
         IPC: normList(d.classifications),
+        사업화점수: "",
+        TRL: "",
         초록: (d.abstract || "").replace(/\s+/g, " "),
         요약서링크: summaryLink(r.number),
       };
@@ -306,6 +340,8 @@ function criteriaToExport(items: Item[], trademarks: TmItem[], ipType: string): 
       출원인: i.applicant.replace(/\|/g, ", "),
       발명자: i.inventors ?? "",
       IPC: normList(i.ipc),
+      사업화점수: "",
+      TRL: "",
       초록: i.abstract,
       요약서링크: summaryLink(num),
     };
@@ -324,6 +360,8 @@ function criteriaToExport(items: Item[], trademarks: TmItem[], ipType: string): 
     출원인: t.applicant,
     발명자: "",
     IPC: "",
+    사업화점수: "",
+    TRL: "",
     초록: "",
     요약서링크: "",
   }));
@@ -340,6 +378,7 @@ const chip = (active: boolean, size: "sm" | "md" = "md") =>
 /* ------------------------------------------------------------------ */
 
 const Batch = () => {
+  useDocumentTitle("일괄조회·목록 다운로드");
   const [params, setParams] = useSearchParams();
   const presetNumbers = params.get("numbers");
   const [mode, setMode] = useState<Mode>(() =>
@@ -531,16 +570,34 @@ const Batch = () => {
   const canDownload = !busy && (mode === "numbers" ? stats.done > 0 : items.length > 0 || trademarks.length > 0);
   const downloadCount = mode === "numbers" ? stats.done : items.length + trademarks.length;
 
+  const [exporting, setExporting] = useState<"xlsx" | "csv" | null>(null);
+  const download = async (kind: "xlsx" | "csv") => {
+    if (exporting) return;
+    setExporting(kind);
+    try {
+      const { rows: scored, failed } = await attachCachedScores(exportRows());
+      if (failed) toast.warning("사업화점수·TRL을 불러오지 못해 빈칸으로 저장했습니다.");
+      // 엑셀 라이브러리는 내려받을 때만 불러와 첫 화면 용량에서 뺀다.
+      const XLSX = await import("xlsx");
+      if (kind === "xlsx") downloadXlsx(XLSX, scored);
+      else downloadCsv(XLSX, scored);
+    } catch {
+      toast.error("파일을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setExporting(null);
+    }
+  };
+
   const downloadButtons = (
     <>
-      <Button variant="outline" className="rounded-xl gap-2" onClick={() => downloadXlsx(exportRows())} disabled={!canDownload} title={canDownload ? `${downloadCount.toLocaleString()}건 저장` : undefined}>
-        <Download className="w-4 h-4" /> 엑셀 받기
-      </Button>
-      <Button variant="outline" className="rounded-xl gap-2" onClick={() => downloadCsv(exportRows())} disabled={!canDownload} title={canDownload ? `${downloadCount.toLocaleString()}건 저장` : undefined}>
-        <Download className="w-4 h-4" /> CSV 받기
-      </Button>
+      {(["xlsx", "csv"] as const).map((kind) => (
+        <Button key={kind} variant="outline" className="rounded-xl gap-2" onClick={() => void download(kind)} disabled={!canDownload || exporting !== null} title={canDownload ? `${downloadCount.toLocaleString()}건 저장` : undefined}>
+          {exporting === kind ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} {kind === "xlsx" ? "엑셀 받기" : "CSV 받기"}
+        </Button>
+      ))}
     </>
   );
+  const scoreNote = <p className="text-xs text-muted-foreground">사업화점수·TRL은 이미 분석된 특허만 표시됩니다</p>;
 
   const wide = mode === "numbers" && selected;
 
@@ -616,6 +673,7 @@ const Batch = () => {
                   </>
                 )}
               </div>
+              {rows.length > 0 && scoreNote}
             </div>
 
             <div className={selected ? "flex flex-col lg:flex-row gap-5 items-start" : ""}>
@@ -811,6 +869,7 @@ const Batch = () => {
                   </span>
                 )}
               </div>
+              {scoreNote}
               {progress && progress.total > 0 && (
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, (progress.done / progress.total) * 100)}%` }} />

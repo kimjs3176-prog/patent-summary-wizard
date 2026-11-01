@@ -43,6 +43,9 @@ export function useGovtPatent(registrationNumber?: string) {
 
 /** 국유특허 · 유무상 실시 구분 강조 뱃지 (상단 노출용) */
 // 유무상 실시 여부 표시 — 우선 숨김 (다시 노출하려면 true로 변경)
+// 요약서 '기술이전 안내'에도 노출하지 않는다: KIPRIS NochargeType 은 갱신 시점이 불분명하고
+// 무상기술이전은 최초 이전에 한해 이후 유상으로 전환되므로(patent-chat TRANSFER_GUIDE),
+// '무상 실시 가능'·'실시료 최대 3%' 문구가 실제와 다를 수 있다. 근거 확인 후에만 켠다.
 const SHOW_CHARGE_BADGE = false;
 
 export function GovtPatentBadges({ data }: { data: GovtPatentData | null }) {

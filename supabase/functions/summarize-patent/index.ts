@@ -4,7 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { loadServerPatentData } from "../_shared/patentSource.ts";
-import { addSourceNote, applyGlobalRef, applyMarketRef, claimToRef, extractGlobalClaims, extractMarketClaims, formatKrwEok, formatUsdEok, type MarketClaim, type MarketRef } from "./marketConsistency.ts";
+import { claimToRef, currentSeoulYear, extractGlobalClaims, extractMarketClaims, formatKrwEok, formatUsdEok, hasRequiredMarketFigures, isTrustedRef, isUsableRef, reconcileMarketSection, refStatus, type MarketClaim, type MarketRef } from "./marketConsistency.ts";
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
@@ -136,122 +136,122 @@ interface PatentData {
   description?: string;
 }
 
-// 같은 국내 시장은 항상 같은 기준값·CAGR·2026년 값으로 표기되도록 표준값 테이블로 통일한다.
-async function unifyMarketFigures(content: string): Promise<string> {
-  return unifyGlobalFigures(await unifyDomesticFigures(content));
+// 같은 시장은 항상 같은 기준값·CAGR·전망값으로 표기되도록 표준값 테이블(market_reference)로 통일하고,
+// 공식(KOSIS)·관리자 승인값이 아닌 수치에는 기관명 대신 "(AI 추정치)"를 단다.
+const MARKET_SECTION_RE = /(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/;
+type StoredMarketRef = MarketRef & { created_at?: string };
+
+function normalizeRef(row: StoredMarketRef): StoredMarketRef {
+  return { ...row, base_year: Number(row.base_year), base_value_eok: Number(row.base_value_eok), cagr: Number(row.cagr), status: refStatus(row) };
 }
 
-// 한 시장의 표준값을 찾거나(기존 저장값, KOSIS 공식값 우선) 없으면 새로 등록한다.
-async function resolveDomesticRef(claim: MarketClaim): Promise<(MarketRef & { created_at?: string }) | null> {
+async function loadRefs(keys: string[]): Promise<Map<string, StoredMarketRef>> {
+  const map = new Map<string, StoredMarketRef>();
+  if (!keys.length) return map;
+  const { data, error } = await supabaseAdmin().from("market_reference").select("*").in("market_key", keys);
+  if (error) throw error;
+  for (const row of (data || []) as StoredMarketRef[]) map.set(row.market_key, normalizeRef(row));
+  return map;
+}
+
+// 처음 나온 AI 시장값은 '검증 전(ai_pending)'으로만 저장한다(출처 없음). 같은 시장이 다시 나오면 같은 수치를 쓰게 하는 용도이며
+// 공식값으로 승격되지 않는다. 동시에 다른 요청이 먼저 저장했으면 그 값을 쓴다.
+async function registerPendingRef(claim: MarketClaim): Promise<StoredMarketRef | null> {
+  const fresh = claimToRef(claim);
+  if (!fresh) return null;
   const supabase = supabaseAdmin();
-  const { data: existing } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
-  let ref = existing as (MarketRef & { created_at?: string }) | null;
-  // 국가통계(KOSIS)에 등록된 시장이면 공식 통계값을 우선 사용(30일마다 갱신)
+  const { error } = await supabase.from("market_reference").insert({ ...fresh, status: "ai_pending", source: null });
+  if (error) {
+    const { data: again } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
+    return again ? normalizeRef(again as StoredMarketRef) : fresh;
+  }
+  console.log(`[MARKET-REF] pending ${claim.key} ${claim.baseYear} ${claim.baseEok} CAGR ${claim.cagr}%`);
+  return fresh;
+}
+
+// 국가통계(KOSIS)에 등록된 국내 시장이면 공식 통계값을 우선 사용한다(30일마다 갱신).
+async function refreshKosisRef(claim: MarketClaim, ref: StoredMarketRef | undefined): Promise<StoredMarketRef | undefined> {
   const series = findSeries(claim.key);
   const kosisKey = Deno.env.get("KOSIS_SERVICE_KEY");
-  const stale = !ref || !String(ref.source || "").startsWith("KOSIS") ||
+  if (!series || !kosisKey) return ref;
+  const stale = !ref || refStatus(ref) !== "official" ||
     (ref.created_at && Date.now() - new Date(ref.created_at).getTime() > 30 * 86400_000);
-  if (series && kosisKey && stale) {
-    const official = await fetchKosisRef(claim.key, series, kosisKey);
-    if (official) {
-      await supabase.from("market_reference").upsert({ ...official, created_at: new Date().toISOString() }, { onConflict: "market_key" });
-      ref = official;
-      console.log(`[MARKET-REF] KOSIS ${claim.key} ${official.base_year} ${official.base_value_eok}억 CAGR ${official.cagr}%`);
-    }
-  }
-  if (!ref) {
-    const fresh = claimToRef(claim);
-    if (!fresh) return null;
-    const { error } = await supabase.from("market_reference").insert(fresh);
-    if (error) {
-      // 동시에 다른 요청이 먼저 저장했으면 그 값을 사용
-      const { data: again } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
-      ref = (again as MarketRef | null) ?? fresh;
-    } else ref = fresh;
-    console.log(`[MARKET-REF] registered ${claim.key} ${claim.baseYear} ${claim.baseEok}억 CAGR ${claim.cagr}%`);
-  }
-  return ref;
+  if (!stale) return ref;
+  const official = await fetchKosisRef(claim.key, series, kosisKey);
+  if (!official) return ref;
+  const now = new Date().toISOString();
+  await supabaseAdmin().from("market_reference").upsert({ ...official, status: "official", verified_at: now, created_at: now }, { onConflict: "market_key" });
+  console.log(`[MARKET-REF] KOSIS ${claim.key} ${official.base_year} ${official.base_value_eok}억 CAGR ${official.cagr}%`);
+  return normalizeRef({ ...official, status: "official", verified_at: now, created_at: now });
 }
 
-// 본문에 등장하는 모든 국내 시장을 각각 찾아 시장별 표준값으로 개별 보정한다.
-async function unifyDomesticFigures(content: string): Promise<string> {
-  const secRe = /(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/;
-  const m = content.match(secRe);
+async function resolveMarketRefs(section: string, targetYear: number): Promise<MarketRef[]> {
+  const domestic = extractMarketClaims(section, targetYear);
+  const global = extractGlobalClaims(section, targetYear);
+  if (!domestic.length && !global.length) return [];
+  const refs = await loadRefs([...domestic, ...global].map((c) => c.key));
+  for (const claim of domestic) {
+    let ref = await refreshKosisRef(claim, refs.get(claim.key));
+    if (!ref) ref = (await registerPendingRef(claim)) ?? undefined;
+    if (ref) refs.set(claim.key, ref);
+  }
+  for (const claim of global) {
+    if (refs.has(claim.key)) continue;
+    const ref = await registerPendingRef(claim);
+    if (ref) refs.set(claim.key, ref);
+  }
+  return [...refs.values()];
+}
+
+async function unifyMarketFigures(content: string): Promise<string> {
+  const m = content.match(MARKET_SECTION_RE);
   if (!m) return content;
-  const claims = extractMarketClaims(m[2]);
-  if (!claims.length) return content;
-  let section = m[2];
+  const targetYear = currentSeoulYear();
+  let refs: MarketRef[] = [];
   try {
-    for (const claim of claims) {
-      const ref = await resolveDomesticRef(claim);
-      if (!ref) continue;
-      const norm = { ...ref, base_value_eok: Number(ref.base_value_eok), cagr: Number(ref.cagr) };
-      section = applyMarketRef(section, norm);
-      if (String(ref.source || "").startsWith("KOSIS") && !section.includes("KOSIS")) {
-        section = addSourceNote(section, `${formatKrwEok(norm.base_value_eok)}`, `(출처: ${ref.source}, ${norm.base_year}년 기준)`);
-      }
-    }
-    return content.replace(secRe, (_x, h) => h + section);
+    refs = await resolveMarketRefs(m[2], targetYear);
   } catch (e) {
+    // 표준값을 못 읽어도 출처 표기 규칙((AI 추정치))은 그대로 적용한다.
     console.error("[MARKET-REF] error", e);
-    return content;
   }
-}
-
-// 본문에 등장하는 모든 글로벌(USD) 시장을 각각 찾아 시장별 표준값으로 개별 보정한다.
-async function unifyGlobalFigures(content: string): Promise<string> {
-  const secRe = /(##\s*관련시장\s*동향[^\n]*\n)([\s\S]*?)(?=\n##\s|$)/;
-  const m = content.match(secRe);
-  if (!m) return content;
-  const claims = extractGlobalClaims(m[2]);
-  if (!claims.length) return content;
-  let section = m[2];
   try {
-    const supabase = supabaseAdmin();
-    for (const claim of claims) {
-      const { data: existing } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
-      let ref = existing as MarketRef | null;
-      if (!ref) {
-        const fresh = claimToRef(claim);
-        if (!fresh) continue;
-        const { error } = await supabase.from("market_reference").insert({ ...fresh, source: "USD" });
-        if (error) {
-          const { data: again } = await supabase.from("market_reference").select("*").eq("market_key", claim.key).maybeSingle();
-          ref = (again as MarketRef | null) ?? fresh;
-        } else ref = fresh;
-        console.log(`[MARKET-REF] registered ${claim.key} ${claim.baseYear} USD ${claim.baseEok}억 CAGR ${claim.cagr}%`);
-      }
-      section = applyGlobalRef(section, { ...ref, base_value_eok: Number(ref.base_value_eok), cagr: Number(ref.cagr) });
-    }
-    return content.replace(secRe, (_x, h) => h + section);
+    const section = reconcileMarketSection(m[2], refs, { targetYear, exempt: MARKET_FALLBACK_TEXTS });
+    return content.replace(MARKET_SECTION_RE, (_x, h) => h + section);
   } catch (e) {
-    console.error("[MARKET-REF] global error", e);
+    console.error("[MARKET-REF] reconcile error", e);
     return content;
   }
 }
 
 // 이미 저장된 표준 시장값을 AI에게 미리 알려 처음부터 같은 시장명·수치를 쓰게 한다.
+// 공식·승인값만 출처와 함께 '표준값'으로 주고, 검증 전 AI 추정값은 출처 없이 '참고용 추정치'로만 준다.
 async function loadMarketRefInstruction(): Promise<string> {
   try {
-    const { data } = await supabaseAdmin().from("market_reference").select("label, market_key, base_year, base_value_eok, cagr, source").order("market_key").limit(150);
+    const { data } = await supabaseAdmin()
+      .from("market_reference")
+      .select("label, market_key, base_year, base_value_eok, cagr, source, status")
+      .order("market_key")
+      .limit(300);
     if (!data?.length) return "";
-    const lines = data.map((r: any) => {
+    const refs = (data as StoredMarketRef[]).map(normalizeRef).filter(isUsableRef);
+    const line = (r: MarketRef, withSource: boolean) => {
       const usd = String(r.market_key).startsWith("글로벌");
-      const amt = usd ? formatUsdEok(Number(r.base_value_eok)) : `${formatKrwEok(Number(r.base_value_eok))} 원`;
-      const src = r.source && r.source !== "USD" ? ` (출처: ${r.source})` : "";
-      return `- ${r.label}: ${r.base_year}년 ${amt}, 연평균 ${Number(r.cagr)}%${src}`;
-    });
-    return `\n\n[표준 시장값 — 최우선 준수]\n아래는 이미 확정된 시장 표준값이다. 이 특허의 상위 시장이 아래 목록 중 하나에 해당하면 시장명을 목록과 똑같이 쓰고, 기준연도·규모·연평균 성장률·출처를 그대로 사용한다. 비슷한 이름의 새 시장을 만들지 말고 가장 가까운 목록 시장을 우선 선택한다. 목록에 없는 시장만 새로 산출한다.\n${lines.join("\n")}`;
+      const amt = usd ? formatUsdEok(r.base_value_eok) : `${formatKrwEok(r.base_value_eok)} 원`;
+      return `- ${r.label}: ${r.base_year}년 ${amt}, 연평균 ${r.cagr}%${withSource ? ` (출처: ${r.source})` : ""}`;
+    };
+    const trusted = refs.filter(isTrustedRef).slice(0, 120);
+    const pending = refs.filter((r) => !isTrustedRef(r)).slice(0, 60);
+    let out = "";
+    if (trusted.length) {
+      out += `\n\n[표준 시장값 — 최우선 준수]\n아래는 공식 통계 또는 관리자 검증을 거친 시장 표준값이다. 이 특허의 상위 시장이 아래 목록 중 하나에 해당하면 시장명을 목록과 똑같이 쓰고, 기준연도·규모·연평균 성장률·출처를 그대로 사용한다. 비슷한 이름의 새 시장을 만들지 말고 가장 가까운 목록 시장을 우선 선택한다.\n${trusted.map((r) => line(r, true)).join("\n")}`;
+    }
+    if (pending.length) {
+      out += `\n\n[참고용 추정치(검증 전)]\n아래는 이전 요약에서 AI가 추정한 값으로 출처가 확인되지 않았다. 같은 시장을 다룰 때는 시장명과 수치를 그대로 써서 일관성을 유지하되, 이 수치에는 기관명·보고서명·발행연도 같은 출처 괄호를 절대 붙이지 말고 해당 문장 끝에 "(AI 추정치)"라고만 표기한다.\n${pending.map((r) => line(r, false)).join("\n")}`;
+    }
+    return out;
   } catch {
     return "";
   }
-}
-
-function hasRequiredMarketFigures(content: string): boolean {
-  const section = content.match(/##\s*관련시장\s*동향[\s\S]*?(?=\n##\s|$)/)?.[0] || "";
-  const hasMoney = /(?:\d[\d,]*(?:\.\d+)?\s*(?:조|억|만)\s*원|USD\s*\d|\d[\d,]*(?:\.\d+)?\s*(?:억|십억|billion)\s*달러)/i.test(section);
-  const hasCagr = /(?:CAGR|연평균\s*성장률|연평균)[^\n.。]{0,40}\d+(?:\.\d+)?\s*%|\d+(?:\.\d+)?\s*%[^\n.。]{0,40}(?:CAGR|연평균|성장)/i.test(section);
-  return hasMoney && hasCagr;
 }
 
 /** 표준 참고 문단의 첫 구절. 캐시된 요약서가 대체 문단을 썼는지 판별하는 데 쓴다. */
@@ -263,12 +263,14 @@ export function isMarketFallbackText(content: string): boolean {
   return MARKET_FALLBACK_MARKERS.some((m) => content.includes(m));
 }
 
+// 운영자가 작성해 둔 고정 문단(공개 자료 인용). 출처 표기 보정 대상에서 제외한다.
+const MARKET_FALLBACK_DRONE = `본 기술의 상위 시장은 농업·공공안전 드론 솔루션 시장으로 정의할 수 있으며, 국내 드론 산업은 2022년 약 8,406억 원에서 정부 목표 기준 2032년 약 3.9조 원 규모로 확대되는 흐름이다(국토교통부 「제2차 드론산업발전 기본계획」, 2023). 이를 2026년 현재 시점으로 환산하면 약 1.45조 원 규모에 해당하고, 2022~2032년 목표치의 내재 성장률은 연평균 약 16.6%로 추정된다(국토교통부 「제2차 드론산업발전 기본계획」, 2023). 또한 글로벌 농업용 드론 시장은 2024년 약 USD 54억 규모에서 2030년까지 연평균 약 28.6% 성장할 것으로 전망되어, 유해 생물 탐지·방제용 특수 드론의 세부 시장 확장 여지가 있다(Grand View Research 「Agriculture Drone Market Size Report」, 2024).`;
+const MARKET_FALLBACK_SMART = `본 기술의 상위 시장은 농식품 스마트 기술 및 관련 응용 솔루션 시장으로 정의할 수 있으며, 국내 스마트농업 관련 시장은 2024년 약 7,000억 원 수준에서 2026년 약 9,000억 원 규모로 확대되는 흐름이다(농림축산식품부 「스마트농업 육성정책 자료」, 2024). 기준연도 시장규모에 정책 보급 확대와 민간 솔루션 도입률을 반영하면 연평균 성장률은 약 12.0% 수준으로 추정되며, 정밀 모니터링·자동화·데이터 기반 의사결정 수요가 세부 시장 성장을 견인한다(농림축산식품부 「스마트농업 육성정책 자료」, 2024). 글로벌 스마트농업 시장도 2024년 약 USD 180억 규모에서 2030년까지 연평균 약 13.4% 성장할 것으로 전망되어, 특허 기술의 응용 시장은 농가 단위 실증과 공공 보급 사업을 통해 확대될 수 있다(MarketsandMarkets 「Smart Agriculture Market Global Forecast」, 2024).`;
+const MARKET_FALLBACK_TEXTS = [MARKET_FALLBACK_DRONE, MARKET_FALLBACK_SMART];
+
 function buildMarketFallback(data: PatentData): string {
   const sourceText = `${data.title || ""} ${data.abstract || ""} ${(data.classifications || []).join(" ")}`;
-  if (/드론|무인\s*비행|항공영상|B64U|B64C/i.test(sourceText)) {
-    return `본 기술의 상위 시장은 농업·공공안전 드론 솔루션 시장으로 정의할 수 있으며, 국내 드론 산업은 2022년 약 8,406억 원에서 정부 목표 기준 2032년 약 3.9조 원 규모로 확대되는 흐름이다(국토교통부 「제2차 드론산업발전 기본계획」, 2023). 이를 2026년 현재 시점으로 환산하면 약 1.45조 원 규모에 해당하고, 2022~2032년 목표치의 내재 성장률은 연평균 약 16.6%로 추정된다(국토교통부 「제2차 드론산업발전 기본계획」, 2023). 또한 글로벌 농업용 드론 시장은 2024년 약 USD 54억 규모에서 2030년까지 연평균 약 28.6% 성장할 것으로 전망되어, 유해 생물 탐지·방제용 특수 드론의 세부 시장 확장 여지가 있다(Grand View Research 「Agriculture Drone Market Size Report」, 2024).`;
-  }
-  return `본 기술의 상위 시장은 농식품 스마트 기술 및 관련 응용 솔루션 시장으로 정의할 수 있으며, 국내 스마트농업 관련 시장은 2024년 약 7,000억 원 수준에서 2026년 약 9,000억 원 규모로 확대되는 흐름이다(농림축산식품부 「스마트농업 육성정책 자료」, 2024). 기준연도 시장규모에 정책 보급 확대와 민간 솔루션 도입률을 반영하면 연평균 성장률은 약 12.0% 수준으로 추정되며, 정밀 모니터링·자동화·데이터 기반 의사결정 수요가 세부 시장 성장을 견인한다(농림축산식품부 「스마트농업 육성정책 자료」, 2024). 글로벌 스마트농업 시장도 2024년 약 USD 180억 규모에서 2030년까지 연평균 약 13.4% 성장할 것으로 전망되어, 특허 기술의 응용 시장은 농가 단위 실증과 공공 보급 사업을 통해 확대될 수 있다(MarketsandMarkets 「Smart Agriculture Market Global Forecast」, 2024).`;
+  return /드론|무인\s*비행|항공영상|B64U|B64C/i.test(sourceText) ? MARKET_FALLBACK_DRONE : MARKET_FALLBACK_SMART;
 }
 
 function ensureMarketFigures(content: string, data: PatentData): string {
@@ -446,7 +448,8 @@ serve(async (req) => {
 
     // promptVersion: bump when system prompt structure (section names, instructions) changes
     const caseContext = await loadAnalysisCases(trimmedPatent, pd as PatentData);
-    const promptVersion = `v19-${CASE_POLICY_VERSION}`;
+    // v20: 시장 수치 신뢰 수준(공식·승인 표준값만 출처, 검증 전 값은 (AI 추정치)) + 기준연도를 올해(한국 시간)로 계산
+    const promptVersion = `v20-${CASE_POLICY_VERSION}`;
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -545,6 +548,7 @@ serve(async (req) => {
 
     const lengthInstruction = buildSectionBalanceInstruction(sectionLengthSettings);
     const sectionLengthInstruction = await loadMarketRefInstruction();
+    const marketYear = currentSeoulYear();
 
     const systemPrompt = `한국 특허 기술 분석 전문가. 제공된 특허 데이터만으로 5개 섹션 보고서를 작성한다.
 사용 섹션은 정확히 다음 5개이며 순서를 지킨다: ## 기술분야 / ## 발명요약 및 특징 / ## 관련시장 동향 / ## 농산업활용 가능성 / ## 상용화전망. 다른 ## 섹션 추가 금지, "특허 기본 정보"·헤더·작성일 금지.
@@ -575,12 +579,13 @@ serve(async (req) => {
 [섹션 지침]
 ## 기술분야 — IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 충실히 서술.
 ## 발명요약 및 특징 — 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과를 서술형 산문으로 충분히 작성. 핵심 구성요소의 역할·차별점을 종속절·연결어구로 녹여낸다.
-## 관련시장 동향 — 2026년 현재시점 기준으로 시장규모·CAGR·경쟁기술·정책동향을 수치 중심으로 서술. 본문에 (1) KRW 또는 USD 시장규모 수치 1개 이상, (2) CAGR(%) 수치 1개 이상이 반드시 포함되어야 한다(누락 시 잘못된 출력으로 간주). 회피 표현("정보 없음"·"추정이 어렵다") 금지.
+## 관련시장 동향 — ${marketYear}년 현재시점 기준으로 시장규모·CAGR·경쟁기술·정책동향을 수치 중심으로 서술. 본문에 (1) KRW 또는 USD 시장규모 수치 1개 이상, (2) CAGR(%) 수치 1개 이상이 반드시 포함되어야 한다(누락 시 잘못된 출력으로 간주). 회피 표현("정보 없음"·"추정이 어렵다") 금지.
   · 본문은 반드시 하나의 단일 문단으로 작성한다. 본문 중간에 빈 줄(문단 구분) 절대 금지 — 상위 시장 정의·국내 시장규모·글로벌 시장규모·CAGR·경쟁/정책동향을 연결어구로 이어 하나의 문단에 통합한다.
-  · 2026년 실측치 없으면 최근(2023~2025) 기준값에 CAGR 복리 적용해 환산하고 산출 근거(기준연도·기준값·CAGR)를 한 문장으로 명시.
+  · ${marketYear}년 실측치 없으면 최근(${marketYear - 3}~${marketYear - 1}) 기준값에 CAGR 복리 적용해 환산하고 산출 근거(기준연도·기준값·CAGR)를 한 문장으로 명시.
   · 동일 상위 시장(프로바이오틱스/스마트팜/기능성식품 등)은 항상 동일 표준 출처로 일관 산출. 출처 우선순위: ① KISTEP/KIET/KREI/농식품부 → ② Grand View Research·MarketsandMarkets·IRS Global·Statista·Mordor → ③ 학회/협회 백서. 세부 시장은 "상위 시장 × 비중(%)" 형태로 도출.
-  · 출처는 본문 내 괄호 표기만 사용한다. 형식: "(기관명, 발행연도)" 또는 "(기관명 「보고서명」, 발행연도)". 예: "국내 건강기능식품 시장 규모는 약 6조 2,022억 원이다(한국건강기능식품협회, 2023)". 동일 문장에 여러 출처가 필요하면 ";"로 구분해 한 괄호에 합친다. [^N] 형식의 각주, "### 출처" 블록, 별도 출처 목록은 절대 사용하지 않는다. 가공된/허위 출처 금지(실존 기관·보고서만 인용).
-  · 과거 보고 사실만 과거형, 환산된 2026년 수치 및 전망은 현재형·미래형.
+  · 출처는 본문 내 괄호 표기만 사용한다. 기관명 출처 "(기관명, 발행연도)" 또는 "(기관명 「보고서명」, 발행연도)"는 [표준 시장값] 목록의 값처럼 공식 통계·검증된 자료에서 그대로 가져온 수치에만 붙인다. 출처를 확인할 수 없는 추정·환산 수치에는 기관명·보고서명·발행연도를 지어내 붙이지 말고 그 문장 끝에 "(AI 추정치)"라고만 쓴다. 동일 문장에 여러 출처가 필요하면 ";"로 구분해 한 괄호에 합친다. [^N] 형식의 각주, "### 출처" 블록, 별도 출처 목록은 절대 사용하지 않는다. 가공된/허위 출처 절대 금지.
+  · 연평균 성장률(CAGR)은 근거 있는 현실적 범위(통상 30% 이하)로 쓰고, 국내 시장과 글로벌 시장의 CAGR은 각 시장 문장에 따로 적는다("각각 a%, b%" 같은 묶음 표기 금지).
+  · 과거 보고 사실만 과거형, 환산된 ${marketYear}년 수치 및 전망은 현재형·미래형.
 ## 농산업활용 가능성 — 청구항·기술원리에서 직접 도출되는 적용 분야 → 현장 시나리오(누가/어디서/어떤 문제를 어떻게) → 기대 효과(수율·품질·인건비·에너지·로스율 등 정량 지표)를 연결어구로 자연스럽게 잇는다. 기술 원리와 무관한 비약(토양센서를 의료·우주에 적용 등) 금지. 확장 시 "기술원리가 동일하게 적용 가능한 인접 분야"임을 명시.
  ## 상용화전망 — 다른 섹션과 동일한 분량 범위에서 다음 7요소를 관련성에 따라 통합해 작성한다: (1) 기술완성도(실험실/파일럿/실증/양산준비)와 남은 핵심 과제 1개 이상, (2) 단기(1~2년)·중기(3~5년) 상용화 경로·사업화 단계(라이선싱·기술이전·자체양산·합작), (3) 1차 수요처와 수익모델(B2B·로열티·OEM·구독), (4) 양산·스케일업 시 예상되는 기술적·공정적 제약과 원가 요인(설비·원료·수율·인증 비용 등) 1개 이상, (5) 인허가·표준·규격 등 제도적 진입 요건(식품·사료·농약·비료·기계 안전 등 해당 분야 기준) 1개 이상, (6) 경쟁·대체 기술 대비 우위 요소와 열위 요소를 각각 구체적으로 대비, (7) 마지막 문장은 강점·한계·성공조건·유망 적용영역을 종합한 결론으로 마무리한다. 정량 지표는 원문 또는 검증된 근거가 있을 때만 포함한다. TRL 숫자 직접 언급 금지, "발전 가능성이 크다"식 막연한 마무리 금지.
   · 특허 존속기간·잔여기간·보호기간·권리 수명·출원 후 경과연수·만료 시점은 상용화 근거 또는 한계로 절대 언급하지 않는다. 출원일이 입력에 있더라도 기간을 계산하거나 평가하지 않는다. 기간 서술을 뺀 만큼 기술완성도·양산 제약·인허가 요건·경쟁 비교 내용을 더 구체적으로 채워 분량을 유지한다.

@@ -1,5 +1,5 @@
 
-import type { CommercializationDetails, useTrlConfig } from "../TechnologyCommercializationScore";
+import type { CommercializationDetails, useTrlConfig } from "../commercialization";
 
 import { ACCENT_HEX } from "./helpers";
 import { SectionTitle } from "./SectionTitle";

@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { Share2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
-import { useTrlConfig, type CommercializationDetails } from "./TechnologyCommercializationScore";
-import { TechValuation } from "./TechValuation";
+import { useTrlConfig, type CommercializationDetails } from "./commercialization";
 import { printWebSummary } from "./PdfGenerator";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -26,6 +25,7 @@ import { AnalysisSection } from "./toss/AnalysisSection";
 import { RelatedSection } from "./toss/RelatedSection";
 import { RegulationSection } from "./toss/RegulationSection";
 import { ShareDialog } from "./toss/ShareDialog";
+import { TransferActionSection } from "./toss/TransferActionSection";
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
@@ -96,8 +96,9 @@ function TossPatentSummaryInner({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            // 서버는 patent_data_cache / patent_ai_cache 의 저장본만 사용한다. 번호만 보낸다.
-            body: JSON.stringify({ patentNumber, analysisMode: "detailed" }),
+            // 현재 서버는 patent_data_cache / patent_ai_cache 저장본만 쓰고 아래 두 필드는 무시한다.
+            // 재배포 전의 이전 함수가 이 필드를 요구하므로 배포 순서와 무관하게 동작하도록 함께 보낸다.
+            body: JSON.stringify({ patentNumber, patentData, summaryContent: content, analysisMode: "detailed" }),
             timeoutMs: 90000,
             retries: 1,
             signal: controller.signal,
@@ -277,18 +278,16 @@ function TossPatentSummaryInner({
           {/* AI 종합 의견 */}
           <AnalysisSection details={details} />
 
+          {/* 기술이전 안내 — 보유·관리 기관과 NATI 신청 경로 (ActionBar '기술이전 신청'이 여기로 이동) */}
+          {!isStreaming && content && (
+            <TransferActionSection patentData={patentData} patentNumber={patentNumber} ownerChanged={ownerChanged} finalOwner={finalOwner} govtPatent={govtPatent} />
+          )}
+
           {/* 관련 특허 — 기능·특징이 유사한 특허 */}
           <RelatedSection patentData={patentData} onRelatedPatentClick={onRelatedPatentClick} />
 
           {/* 사업화 예상 규제 — 요약서 하단으로 이동 */}
           <RegulationSection patentData={patentData} isStreaming={isStreaming} patentNumber={patentNumber} />
-
-          {/* 기술가치 간이평가 (임시 숨김) */}
-          {false && patentData && !isStreaming && (
-            <section id="sec-valuation" data-summary-section data-summary-label="가치평가" className="mb-10 scroll-mt-24">
-              <TechValuation patentData={patentData} score={score} details={details} />
-            </section>
-          )}
 
           {/* 액션 버튼 */}
           {!isStreaming && content && (

@@ -3,6 +3,9 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { resolveKiprisKey } from "../_shared/kipris.ts";
+import { log, withRequestLog, type RequestLogger } from "../_shared/log.ts";
+
+const FN = "recommend-similar-patents";
 
 
 // Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
@@ -54,16 +57,16 @@ async function callAIChatCompletions(
         },
       );
       if (r.ok) {
-        console.log("[AI] using personal Gemini API");
+        log("info", "ai.provider", { fn: FN, provider: "gemini" });
         t.cancel();
         return r;
       }
       const errText = await r.text().catch(() => "");
       if (r.status >= 500 || r.status === 429) markCooldown("gemini");
-      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
+      log("warn", "ai.gemini.failed", { fn: FN, status: r.status, bodyBytes: errText.length, fallback: "lovable" });
     } catch (e) {
       markCooldown("gemini");
-      console.warn("[AI] personal Gemini error, falling back:", e);
+      log("warn", "ai.gemini.error", { fn: FN, error: e, fallback: "lovable" });
     } finally {
       t.cancel();
     }
@@ -105,7 +108,7 @@ async function fetchWithRetry(url: string, init: RequestInit = {}, opts: { timeo
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
-serve(async (req) => {
+serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -180,7 +183,7 @@ JSON만 출력:
     }
 
     if (!aiResponse.ok) {
-      console.error("AI query generation failed:", aiResponse.status);
+      logger.error("ai.queries.failed", { status: aiResponse.status });
       return new Response(
         JSON.stringify({ success: false, error: "AI 추천 서비스 오류" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -201,7 +204,7 @@ JSON만 출력:
         corePhrases = Array.isArray(parsed.corePhrases) ? parsed.corePhrases.filter((s: unknown) => typeof s === "string") : [];
         negativeTerms = Array.isArray(parsed.negativeTerms) ? parsed.negativeTerms.filter((s: unknown) => typeof s === "string") : [];
       } catch {
-        console.error("Failed to parse AI response:", aiContent);
+        logger.warn("ai.queries.unparsable", { contentLength: aiContent.length });
       }
     }
 
@@ -252,9 +255,12 @@ JSON만 출력:
         if (k && k.length >= 2 && !genericTerms.has(k)) groundingVocab.add(k);
     for (const p of corePhrases) if (p && p.length >= 3) groundingVocab.add(p);
 
-    console.log("AI generated search queries:", JSON.stringify(searchQueries));
-    console.log("Core phrases:", JSON.stringify(corePhrases), "Negative:", JSON.stringify(negativeTerms));
-    console.log("Grounding vocab:", JSON.stringify([...groundingVocab]));
+    logger.info("ai.queries", {
+      queries: searchQueries.length,
+      corePhrases: corePhrases.length,
+      negativeTerms: negativeTerms.length,
+      vocab: groundingVocab.size,
+    });
 
     // Step 2: Search KIPRIS with generated queries
     const KIPRIS_API_KEY = await resolveKiprisKey();
@@ -277,6 +283,8 @@ JSON만 출력:
     }
 
     const allPatents: SimilarPatent[] = [];
+    // KIPRIS 호출 통계 — 건별 로그 대신 요청 끝에 한 줄로 기록한다.
+    const kiprisStats = { calls: 0, failed: 0, upstreamErrors: 0, items: 0, statuses: {} as Record<string, number>, fallbacks: [] as string[] };
 
     const ALLOWED_KEYWORDS = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
     // KIPRIS applicant IDs for the 4 main institutes (used to scope the search server-side)
@@ -304,17 +312,20 @@ JSON만 출력:
         url.searchParams.set("patent", "true");
         url.searchParams.set("utility", "true");
 
+        kiprisStats.calls++;
         const res = await fetchWithRetry(url.toString(), {}, { timeoutMs: 12000, retries: 2 });
+        kiprisStats.statuses[res.status] = (kiprisStats.statuses[res.status] ?? 0) + 1;
         const text = await res.text();
 
         if (!res.ok || text.includes("<successYN>N</successYN>")) {
           const errMatch = text.match(/<resultMsg>([^<]*)<\/resultMsg>/);
-          console.log(`KIPRIS NG status=${res.status} kw="${kw}" applicant="${applicantFilter || ""}" msg="${errMatch?.[1] || ""}"`);
+          kiprisStats.upstreamErrors++;
+          logger.warn("kipris.search.error", { status: res.status, resultMsg: errMatch?.[1] || "", scoped: Boolean(applicantFilter) });
           return results;
         }
 
         const itemMatches = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-        console.log(`KIPRIS OK kw="${kw}" applicant="${applicantFilter || ""}" items=${itemMatches.length}`);
+        kiprisStats.items += itemMatches.length;
         for (const match of itemMatches) {
           const itemXml = match[1];
           const getField = (field: string): string | undefined => {
@@ -377,8 +388,8 @@ JSON만 출력:
           });
         }
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error(`KIPRIS search error for "${kw}" (op=${operator}):`, msg);
+        kiprisStats.failed++;
+        logger.warn("kipris.search.failed", { operator, error: e });
       }
 
       return results;
@@ -392,7 +403,7 @@ JSON만 출력:
 
     // Fallback 1: if no results, retry with OR operator (broader)
     if (allPatents.length === 0) {
-      console.log("AND search empty — retrying with OR operator");
+      kiprisStats.fallbacks.push("or");
       const orResults = await Promise.all(
         searchQueries.map((q, i) => searchKipris(q, i, "+"))
       );
@@ -401,7 +412,7 @@ JSON만 출력:
 
     // Fallback 2: still empty — try single keywords from first query
     if (allPatents.length === 0 && searchQueries[0]?.length) {
-      console.log("OR search empty — retrying with single keywords");
+      kiprisStats.fallbacks.push("single");
       const singles = await Promise.all(
         searchQueries[0].slice(0, 3).map((kw, i) => searchKipris([kw], i, "*"))
       );
@@ -410,7 +421,7 @@ JSON만 출력:
 
     // Fallback 3: search per allowed institute (applicant-scoped) using top keyword
     if (allPatents.length === 0) {
-      console.log("Single-keyword search empty — retrying per allowed institute");
+      kiprisStats.fallbacks.push("institute");
       const allKeywords = Array.from(
         new Set(searchQueries.flat().filter((k) => k && k.length >= 2))
       );
@@ -481,7 +492,6 @@ JSON만 출력:
       })
       .filter((x) => x.score > 0);
 
-    console.log(`Relevance scoring: ${allPatents.length} candidates -> ${scored.length} scored`);
 
     // Dedupe by patentId, keeping highest score
     const byId = new Map<string, { p: SimilarPatent; score: number; matched: string[] }>();
@@ -497,7 +507,13 @@ JSON만 출력:
     }));
     const uniquePatents = ranked;
 
-    console.log(`Found ${uniquePatents.length} unique similar patents, returning ${topPatents.length}`);
+    logger.info("recommend.done", {
+      candidates: allPatents.length,
+      scored: scored.length,
+      unique: uniquePatents.length,
+      returned: topPatents.length,
+      kipris: kiprisStats,
+    });
 
     return new Response(
       JSON.stringify({
@@ -511,10 +527,10 @@ JSON만 출력:
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("recommend-similar-patents error:", error);
+    logger.error("request.error", { error });
     return new Response(
       JSON.stringify({ success: false, error: "서버 오류가 발생했습니다." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}));

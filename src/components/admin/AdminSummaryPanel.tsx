@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TabsContent } from "@/components/ui/tabs";
 import { Plus, Trash2, Save, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
 import { ScoreTrlSettings, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
+import { MarketReferencePanel, type MarketRefApiCall } from "@/components/admin/MarketReferencePanel";
 import type { Dispatch, SetStateAction } from "react";
 
 interface AdminSummaryPanelProps {
@@ -32,9 +33,11 @@ interface AdminSummaryPanelProps {
   trlConfig: TrlConfig;
   setTrlConfig: Dispatch<SetStateAction<TrlConfig>>;
   handleSaveSummarySettings: () => Promise<void>;
+  /** 관리자 API 호출(있으면 시장 표준값 검토 패널을 함께 보여준다) */
+  apiCall?: MarketRefApiCall;
 }
 
-export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySectionLengths, setSummarySectionLengths, summaryDisclaimer, setSummaryDisclaimer, summaryVisibleSections, setSummaryVisibleSections, summaryAiPromptExtra, setSummaryAiPromptExtra, summaryCardIcons, setSummaryCardIcons, summaryInfoLabels, setSummaryInfoLabels, isSavingSummarySettings, newSectionKey, setNewSectionKey, summaryMaxTokens, setSummaryMaxTokens, scoreConfig, setScoreConfig, trlConfig, setTrlConfig, handleSaveSummarySettings }: AdminSummaryPanelProps) {
+export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySectionLengths, setSummarySectionLengths, summaryDisclaimer, setSummaryDisclaimer, summaryVisibleSections, setSummaryVisibleSections, summaryAiPromptExtra, setSummaryAiPromptExtra, summaryCardIcons, setSummaryCardIcons, summaryInfoLabels, setSummaryInfoLabels, isSavingSummarySettings, newSectionKey, setNewSectionKey, summaryMaxTokens, setSummaryMaxTokens, scoreConfig, setScoreConfig, trlConfig, setTrlConfig, handleSaveSummarySettings, apiCall }: AdminSummaryPanelProps) {
   return (
           <TabsContent value="summary">
             <div className="space-y-6">
@@ -308,6 +311,12 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                 {isSavingSummarySettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 요약서 설정 저장
               </Button>
+
+              {apiCall && (
+                <div className="pt-4 border-t border-border/50">
+                  <MarketReferencePanel apiCall={apiCall} />
+                </div>
+              )}
             </div>
           </TabsContent>
   );
