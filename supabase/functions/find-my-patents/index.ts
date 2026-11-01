@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.23.8";
+import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   CancelledError, generateChatCompletion, GatewayError, PaymentRequiredError, RateLimitError, TimeoutError,
 } from "npm:@lovable.dev/ai-gateway@0.1.11";

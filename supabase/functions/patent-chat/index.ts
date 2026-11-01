@@ -2,7 +2,7 @@
 // Answers only from retrieved, applicant-scoped patents (search-patents), the
 // filing-trend snapshot, stored TRL values and the fixed tech-transfer guide.
 // Commercialization scores are intentionally not shown here — users see them in the patent summary.
-import { z } from "npm:zod@3.23.8";
+import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   generateChatCompletion, streamChatCompletion, GatewayError, PaymentRequiredError, RateLimitError,
 } from "npm:@lovable.dev/ai-gateway@0.1.11";
