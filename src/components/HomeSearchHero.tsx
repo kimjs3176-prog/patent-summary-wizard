@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Compass, Search, Sparkles } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Compass, FileSignature, Search, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ interface HomeSearchHeroProps {
   isLoading: boolean;
   description: string;
   placeholder: string;
+  /** Shows the 출원도우미 link next to the mode tabs (site setting feature_filing). */
+  showFiling?: boolean;
 }
 
 type Mode = "search" | "finder";
@@ -44,7 +46,7 @@ function FinderQuickForm() {
   );
 }
 
-export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, description, placeholder }: HomeSearchHeroProps) {
+export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, description, placeholder, showFiling = false }: HomeSearchHeroProps) {
   const [mode, setMode] = useState<Mode>("search");
   // While the patent assistant is open the hero becomes a compact chat stage: the intro copy folds away
   // and the conversation is sized to the viewport, so the composer never drops below the fold.
@@ -80,7 +82,8 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
           </>
         )}
 
-        <div role="tablist" aria-label="검색 방식" className={`home-mode-tabs inline-flex rounded-full p-1 gap-1 ${compact ? "mt-3" : "mt-5 md:mt-6"}`}>
+        <div className={`flex flex-wrap items-center gap-2 ${compact ? "mt-3" : "mt-5 md:mt-6"}`}>
+        <div role="tablist" aria-label="검색 방식" className="home-mode-tabs inline-flex rounded-full p-1 gap-1">
           {tabs.map((t) => {
             const active = mode === t.key;
             const Icon = t.icon;
@@ -98,6 +101,18 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
               </button>
             );
           })}
+        </div>
+        {/* 출원도우미 opens another page, so it sits beside the tabs as a link rather than as a third tab. */}
+        {showFiling && (
+          <Link
+            to="/filing"
+            title="출원도우미: 아이디어부터 명세서·해외 출원까지"
+            className="home-filing-link inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
+          >
+            <FileSignature className="w-3.5 h-3.5" />
+            출원도우미
+          </Link>
+        )}
         </div>
 
         {/* The search box classifies each entry itself; questions open the conversation in place. */}

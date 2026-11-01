@@ -7,6 +7,7 @@ import { loadServerPatentData } from "../_shared/patentSource.ts";
 import { claimToRef, currentSeoulYear, extractGlobalClaims, extractMarketClaims, formatKrwEok, formatUsdEok, hasRequiredMarketFigures, isTrustedRef, isUsableRef, reconcileMarketSection, refStatus, type MarketClaim, type MarketRef } from "./marketConsistency.ts";
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
+import { stripUnsupportedEffectFigures } from "./summaryGrounding.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
 import { CASE_POLICY_VERSION } from "../_shared/analysisCasePolicy.ts";
 
@@ -449,7 +450,8 @@ serve(async (req) => {
     // promptVersion: bump when system prompt structure (section names, instructions) changes
     const caseContext = await loadAnalysisCases(trimmedPatent, pd as PatentData);
     // v20: 시장 수치 신뢰 수준(공식·승인 표준값만 출처, 검증 전 값은 (AI 추정치)) + 기준연도를 올해(한국 시간)로 계산
-    const promptVersion = `v20-${CASE_POLICY_VERSION}`;
+    // v21: 원문 근거 규칙(원문에 없는 효과 수치·시험·실증 서술 금지, 직접 시장 우선, 예시 수치 제거) + 서버 원문으로 프롬프트 구성
+    const promptVersion = `v21-${CASE_POLICY_VERSION}`;
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -470,7 +472,7 @@ serve(async (req) => {
 
       if (cached?.summary_content && (cached.cache_version || "v1") === SUMMARY_CACHE_VERSION) {
         console.log(`[CACHE HIT] ${trimmedPatent}`);
-        const content = await unifyMarketFigures(stripDurationFromCommercialization(cached.summary_content));
+        const content = await unifyMarketFigures(stripUnsupportedEffectFigures(stripDurationFromCommercialization(cached.summary_content), pd));
         await recordAnalysisCase(caseContext, trimmedPatent, "summary", content, undefined, true);
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
@@ -515,10 +517,12 @@ serve(async (req) => {
       );
     }
 
-    // Build patent context
+    // Build the prompt from the server-side original (pd), never from the request body: the body's
+    // patentData is ignored for caching above, and a client that omits it would otherwise leave the
+    // model with no source text at all (a summary invented from the number alone).
     let patentContext = "";
-    if (patentData) {
-      const data = patentData as PatentData;
+    if (pd) {
+      const data = pd as PatentData;
       const parts: string[] = [];
       parts.push(`번호: ${data.patentNumber || data.applicationNumber || patentNumber}`);
       if (data.title) parts.push(`명칭: ${data.title}`);
@@ -565,12 +569,21 @@ serve(async (req) => {
 [표현 자제 — 반드시 준수]
 - 기술이전·통상실시가 주된 활용 방식인 농식품 공공기관 특허의 특성상, "독점적 사용", "배타적 독점권", "monopoly", "exclusive right" 등 배타·독점 의미를 암시하는 표현은 절대 사용하지 않는다.
 - 대신 "활용", "적용", "도입", "기술이전", "통상실시" 등 중립적이고 개방적인 표현을 사용한다.
+- "획기적", "비약적", "독보적", "극대화", "폭넓게 적용" 같은 과장 표현 대신 근거가 되는 구성·효과를 그대로 쓴다.
+
+[원문 근거 — 최우선 준수]
+- 기술 서술(구성·작동원리·효과)은 입력된 명칭·초록·청구항·설명에 있는 내용만 쓴다. 원문에 없는 구성요소, 실험·시험포·현장 실증, 성능 수치, 인증·수상 이력을 만들지 않는다.
+- 효과·성능 수치(%, 배, cm, 중량%, 기간, 횟수 등)는 원문에 있는 값만 그대로 인용한다. 원문에 효과 수치가 없으면 "줄일 수 있다", "높일 수 있다"처럼 정성적으로 쓴다. 관련시장 동향의 시장규모·CAGR은 아래 시장 규칙을 따른다.
+- 기술완성도는 원문 기재 내용으로만 판단한다. 시험포·현장 적용·시제품·양산 기재가 없으면 "실험실 수준" 또는 "개발 단계"로 쓰고, "포장 테스트로 확인된", "실증 단계에 진입한" 같은 원문에 없는 사실을 쓰지 않는다.
+- 배경기술의 한계는 원문에 근거가 있을 때만 구체적으로 쓰고, 없으면 일반적인 과제 수준으로 짧게 쓴다.
+- 법령·제도·기관명은 실제로 존재가 확실한 명칭만 쓴다(예: 농약관리법, 사료관리법, 종자산업법). 확실하지 않으면 "관련 인증 제도"처럼 일반 명칭으로 쓴다.
+- 농업인·기업 실무자도 읽을 수 있도록 핵심 전문용어(예: 여교배, SNP, 내생균)는 처음 나올 때 짧은 풀이를 덧붙인다.
 
 [중요도 볼드 규칙 — 반드시 준수]
 - 본문에서 문장 중 "중요도가 높은 핵심 문구"에만 마크다운 볼드(**...**)를 씌운다. 각 섹션당 2~5개소가 적정하며, 한 섹션에서 전체 글자의 30%를 넘기지 않는다.
 - 볼드 대상: 핵심 기술수단·차별점, 정량 수치(시장규모·CAGR·성능개선치), 고유명사(균주·품종·기관·보고서), 상용화 단계·수요처·수익모델.
 - 볼드 대상이 아닌 것: 접속사·조사·일반 서술어·수식어만 있는 구절, "매우 중요한", "다양한 산업" 같은 모호한 표현.
-- 의미가 하나로 묶이는 문구는 띄어쓰기·조사가 있어도 하나의 볼드 범위로 묶는다. 예) **국내 프로바이오틱스 시장 규모 6조 2,022억 원**, **Lactobacillus plantarum 균주의 위산 내성**. 절대 "**국내** **프로바이오틱스** **시장**"처럼 조각내지 않는다.
+- 의미가 하나로 묶이는 문구는 띄어쓰기·조사가 있어도 하나의 볼드 범위로 묶는다. 예) **국내 프로바이오틱스 시장 규모**, **Lactobacillus plantarum 균주의 위산 내성**(예시의 시장명·균주명을 다른 특허에 옮겨 쓰지 않는다). 절대 "**국내** **프로바이오틱스** **시장**"처럼 조각내지 않는다.
 - 각 볼드 범위는 그 자체만 떼어 읽어도 문장 의미가 유지되는 명사구/수치구여야 한다. 술어(~한다, ~된다)나 조사만으로 끝나는 조각은 볼드 금지.
 - 학명의 이탤릭 *..* 표기와 볼드는 병행 가능하다: **\`*Lactobacillus plantarum*\` 균주**. 볼드 안에 이탤릭을 그대로 유지한다.
 - 볼드 마커는 반드시 한 문장 안에서 열고 닫는다. 문단·문장 경계를 넘지 않는다.
@@ -580,23 +593,24 @@ serve(async (req) => {
 ## 기술분야 — IPC 해석, 산업 분야, 응용 영역, 기술적 맥락을 충실히 서술.
 ## 발명요약 및 특징 — 배경기술 한계→기술과제→핵심 해결수단→작동원리→차별적 효과를 서술형 산문으로 충분히 작성. 핵심 구성요소의 역할·차별점을 종속절·연결어구로 녹여낸다.
 ## 관련시장 동향 — ${marketYear}년 현재시점 기준으로 시장규모·CAGR·경쟁기술·정책동향을 수치 중심으로 서술. 본문에 (1) KRW 또는 USD 시장규모 수치 1개 이상, (2) CAGR(%) 수치 1개 이상이 반드시 포함되어야 한다(누락 시 잘못된 출력으로 간주). 회피 표현("정보 없음"·"추정이 어렵다") 금지.
+  · 시장은 이 기술의 제품·서비스가 직접 판매·도입되는 시장(예: 분자마커 → 종자·분자진단 시장, 사료 첨가제 → 사료첨가제 시장)으로 먼저 정의한다. 직접 시장 수치가 없으면 가장 가까운 상위 시장을 쓰되 상위 시장임을 밝히고, 제품 형태가 다른 시장(장치·플랫폼·스마트농업 일반 등)이나 이 기술과 무관한 포괄 시장은 쓰지 않는다.
   · 본문은 반드시 하나의 단일 문단으로 작성한다. 본문 중간에 빈 줄(문단 구분) 절대 금지 — 상위 시장 정의·국내 시장규모·글로벌 시장규모·CAGR·경쟁/정책동향을 연결어구로 이어 하나의 문단에 통합한다.
   · ${marketYear}년 실측치 없으면 최근(${marketYear - 3}~${marketYear - 1}) 기준값에 CAGR 복리 적용해 환산하고 산출 근거(기준연도·기준값·CAGR)를 한 문장으로 명시.
   · 동일 상위 시장(프로바이오틱스/스마트팜/기능성식품 등)은 항상 동일 표준 출처로 일관 산출. 출처 우선순위: ① KISTEP/KIET/KREI/농식품부 → ② Grand View Research·MarketsandMarkets·IRS Global·Statista·Mordor → ③ 학회/협회 백서. 세부 시장은 "상위 시장 × 비중(%)" 형태로 도출.
   · 출처는 본문 내 괄호 표기만 사용한다. 기관명 출처 "(기관명, 발행연도)" 또는 "(기관명 「보고서명」, 발행연도)"는 [표준 시장값] 목록의 값처럼 공식 통계·검증된 자료에서 그대로 가져온 수치에만 붙인다. 출처를 확인할 수 없는 추정·환산 수치에는 기관명·보고서명·발행연도를 지어내 붙이지 말고 그 문장 끝에 "(AI 추정치)"라고만 쓴다. 동일 문장에 여러 출처가 필요하면 ";"로 구분해 한 괄호에 합친다. [^N] 형식의 각주, "### 출처" 블록, 별도 출처 목록은 절대 사용하지 않는다. 가공된/허위 출처 절대 금지.
   · 연평균 성장률(CAGR)은 근거 있는 현실적 범위(통상 30% 이하)로 쓰고, 국내 시장과 글로벌 시장의 CAGR은 각 시장 문장에 따로 적는다("각각 a%, b%" 같은 묶음 표기 금지).
   · 과거 보고 사실만 과거형, 환산된 ${marketYear}년 수치 및 전망은 현재형·미래형.
-## 농산업활용 가능성 — 청구항·기술원리에서 직접 도출되는 적용 분야 → 현장 시나리오(누가/어디서/어떤 문제를 어떻게) → 기대 효과(수율·품질·인건비·에너지·로스율 등 정량 지표)를 연결어구로 자연스럽게 잇는다. 기술 원리와 무관한 비약(토양센서를 의료·우주에 적용 등) 금지. 확장 시 "기술원리가 동일하게 적용 가능한 인접 분야"임을 명시.
+## 농산업활용 가능성 — 청구항·기술원리에서 직접 도출되는 적용 분야 → 현장 시나리오(누가/어디서/어떤 문제를 어떻게) → 기대 효과(수율·품질·인건비·에너지·로스율 등)를 연결어구로 자연스럽게 잇는다. 효과 수치는 원문에 있을 때만 쓰고, 없으면 무엇이 줄거나 좋아지는지를 정성적으로 쓴다. 기술 원리와 무관한 비약(토양센서를 의료·우주에 적용 등) 금지. 확장 시 "기술원리가 동일하게 적용 가능한 인접 분야"임을 명시.
  ## 상용화전망 — 다른 섹션과 동일한 분량 범위에서 다음 7요소를 관련성에 따라 통합해 작성한다: (1) 기술완성도(실험실/파일럿/실증/양산준비)와 남은 핵심 과제 1개 이상, (2) 단기(1~2년)·중기(3~5년) 상용화 경로·사업화 단계(라이선싱·기술이전·자체양산·합작), (3) 1차 수요처와 수익모델(B2B·로열티·OEM·구독), (4) 양산·스케일업 시 예상되는 기술적·공정적 제약과 원가 요인(설비·원료·수율·인증 비용 등) 1개 이상, (5) 인허가·표준·규격 등 제도적 진입 요건(식품·사료·농약·비료·기계 안전 등 해당 분야 기준) 1개 이상, (6) 경쟁·대체 기술 대비 우위 요소와 열위 요소를 각각 구체적으로 대비, (7) 마지막 문장은 강점·한계·성공조건·유망 적용영역을 종합한 결론으로 마무리한다. 정량 지표는 원문 또는 검증된 근거가 있을 때만 포함한다. TRL 숫자 직접 언급 금지, "발전 가능성이 크다"식 막연한 마무리 금지.
   · 특허 존속기간·잔여기간·보호기간·권리 수명·출원 후 경과연수·만료 시점은 상용화 근거 또는 한계로 절대 언급하지 않는다. 출원일이 입력에 있더라도 기간을 계산하거나 평가하지 않는다. 기간 서술을 뺀 만큼 기술완성도·양산 제약·인허가 요건·경쟁 비교 내용을 더 구체적으로 채워 분량을 유지한다.
 
 [완성도]
-- 정보 부족 시 IPC·청구항·초록을 근거로 합리적 추론하되 "추정/예상" 단어로 명시. "정보 없음" 한 줄 마무리 금지.
-- 각 섹션은 구체적 수치·고유명사·기관명·작물명·균주명·공정명 중 최소 1개 포함. "다양한 산업/여러 분야" 같은 모호한 명사로만 채우지 않는다.
-- 모든 수치는 단위·기준연도 표기. "기존 대비 약 2.5배" 형태로 비교 기준 명시.
+- 정보 부족 시 IPC·청구항·초록을 근거로 합리적 추론하되 "추정/예상" 단어로 명시하고, 추론으로 새 수치를 만들지 않는다. "정보 없음" 한 줄 마무리 금지.
+- 각 섹션은 원문에 있는 고유명사·작물명·균주명·공정명·수치 중 최소 1개 포함. "다양한 산업/여러 분야" 같은 모호한 명사로만 채우지 않는다.
+- 수치를 쓸 때는 단위·기준연도와 비교 기준을 함께 표기한다(원문 수치 또는 시장 규칙에 따른 수치에 한함).
 - 각 섹션 첫 문장은 핵심 메시지 1줄 요약(총괄)로 시작해 세부→근거→함의 순으로 구체화.${lengthInstruction}${sectionLengthInstruction}${customPromptExtra ? `\n\n추가 지시사항:\n${customPromptExtra}` : ""}`;
 
-    const userMessage = patentData
+    const userMessage = pd
       ? `아래 실제 특허 데이터만 근거로 요약서를 작성한다. 테스트 데이터로 간주하거나 특허 기본 정보 섹션을 만들지 말고, 반드시 ## 기술분야 / ## 발명요약 및 특징 / ## 관련시장 동향 / ## 농산업활용 가능성 / ## 상용화전망 5개 섹션만 출력한다.\n\n${patentContext}${caseContext.prompt}`
       : `특허 ${patentNumber} 요약서 작성.`;
 
@@ -734,6 +748,7 @@ serve(async (req) => {
           fullContent = mergeMarketParagraphs(fullContent);
           fullContent = inlineMarketCitations(fullContent);
           fullContent = stripDurationFromCommercialization(fullContent);
+          fullContent = stripUnsupportedEffectFigures(fullContent, pd);
           fullContent = await unifyMarketFigures(fullContent);
           if (fullContent !== raw.trim() || usedMarketFallback) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent, meta: { marketFallback: usedMarketFallback } })}\n\n`));
