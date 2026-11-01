@@ -14,9 +14,7 @@ interface PageLayoutProps {
 }
 
 export function PageLayout({ children, headerRight, showFooterLogo = true }: PageLayoutProps) {
-  // Renders at once with the default (or last seen) settings: a full-screen placeholder that was
-  // swapped for the page used to move every element on screen (layout shift).
-  const { settings } = useSiteSettings();
+  const { settings, isLoading } = useSiteSettings();
   const { enabled: kioskEnabled, toggle: toggleKiosk } = useKioskMode();
   const { scale, cycle: cycleFontScale, label: fontScaleLabel } = useFontScale();
 
@@ -37,6 +35,11 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
       );
     }
   };
+
+  // First visit only (returning visitors have the settings snapshot): an empty full-height block until the
+  // settings arrive. It must stay empty — the old centred spinner's nodes were reused for the page and moved
+  // (layout shift) — and rendering the whole page at once with defaults instead doubled main-thread blocking time.
+  if (isLoading) return <div className="min-h-screen bg-background" aria-busy="true" />;
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-clip">
