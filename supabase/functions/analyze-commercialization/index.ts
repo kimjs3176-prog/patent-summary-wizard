@@ -4,7 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { loadServerPatentData, loadServerSummary } from "../_shared/patentSource.ts";
-import { buildScoringSummary, reconcileTrl } from "./trlConsistency.ts";
+import { buildScoringSummary, describeTrlFromStage, reconcileTrl, type TrlBand } from "./trlConsistency.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
 
 // 점수 산정 규칙 버전. 새로 쓰거나 갱신하는 patent_score_cache 행에 기록한다(기존 행은 다시 계산하지 않는다).
@@ -194,6 +194,11 @@ function makeTrlFallback(trl: number): string {
   if (trl === 7) return `실환경 적용 또는 상용화 언급이 확인돼 TRL 7로 판단되며, 기존 설비 기반의 안정적 양산·유통 근거가 확보되면 8단계로 인정 가능하다.`;
   if (trl === 8) return `제조방법과 실시예가 구체적이고 기존 설비로 즉시 구현 가능한 수준이어서 TRL 8로 판단되며, 동일 형태의 시판이 확인되면 9단계로 평가된다.`;
   return `본 기술이 동일 형태로 시판·유통되는 근거가 확인돼 상용화 완료 단계인 TRL 9로 판단된다.`;
+}
+
+/** 요약서 서술 단계로 TRL을 맞췄으면 그 단계를 근거로 밝히고, 단계를 모르면 기존 고정 문구를 쓴다. */
+function trlReasonFor(trl: number, stage: TrlBand | null | undefined): string {
+  return stage ? describeTrlFromStage(trl, stage) : makeTrlFallback(trl);
 }
 
 // technology/market/business 평가 코멘트에서 TRL 관련 문구를 제거한다.
@@ -439,7 +444,7 @@ serve(async (req) => {
         if (rc && rc.changed) {
           console.log(`[TRL-CONSISTENCY][cache] ${trimmedPatent} trl ${cached.trl} -> ${rc.trl} (stage=${rc.band?.label})`);
           cached.trl = rc.trl;
-          cached.trl_reason = makeTrlFallback(rc.trl);
+          cached.trl_reason = trlReasonFor(rc.trl, rc.band);
           try {
             const { error: trlError } = await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason, score_version: SCORE_VERSION }).eq("patent_number", cached.patent_number);
             if (trlError) await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason }).eq("patent_number", cached.patent_number);
@@ -847,12 +852,14 @@ JSON형식:
 
     // ▼ TRL ↔ 요약서 기술완성도 서술 정합성 보정 (V-RAY 계산 전에 적용)
     let trlReasonNeedsRewrite = false;
+    let trlStage: TrlBand | null = null;
     {
       const r = reconcileTrl(Number(scores.trl) || 5, summaryText);
       if (r.changed) {
         console.log(`[TRL-CONSISTENCY] ${trimmedPatent} trl ${scores.trl} -> ${r.trl} (summary stage=${r.band?.label})`);
         scores.trl = r.trl;
         trlReasonNeedsRewrite = true;
+        trlStage = r.band;
       }
     }
 
@@ -951,7 +958,7 @@ JSON형식:
     scores.marketReason = normalizeReason(scores.marketReason, marketFallback);
     scores.businessReason = normalizeReason(scores.businessReason, businessFallback);
     scores.trlReason = trlReasonNeedsRewrite
-      ? makeTrlFallback(normalizedTrl)
+      ? trlReasonFor(normalizedTrl, trlStage)
       : ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
     // trlReason 안의 TRL 숫자가 최종 TRL과 다르면 근거문을 재작성
     {
@@ -976,10 +983,10 @@ JSON형식:
       scores.technologyScore = lockedScores.technologyScore;
       scores.marketScore = lockedScores.marketScore;
       scores.businessScore = lockedScores.businessScore;
-      const r = summaryText ? reconcileTrl(lockedScores.trl, summaryText) : { trl: lockedScores.trl, changed: false };
+      const r = summaryText ? reconcileTrl(lockedScores.trl, summaryText) : { trl: lockedScores.trl, changed: false, band: null };
       scores.trl = r.trl;
       if (r.changed || !new RegExp(`TRL\\s*${r.trl}(?!\\d)`).test(scores.trlReason || "")) {
-        scores.trlReason = makeTrlFallback(r.trl);
+        scores.trlReason = trlReasonFor(r.trl, r.band);
       }
     }
 

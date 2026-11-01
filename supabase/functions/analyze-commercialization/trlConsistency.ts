@@ -92,6 +92,28 @@ export function reconcileTrl(trl: number, summary: string): { trl: number; chang
   return { trl: fixed, changed: fixed !== t, band };
 }
 
+const NEXT_STEP: Record<number, string> = {
+  1: "핵심 원리에 대한 단편 실험 데이터가 확보되어야 다음 단계로 진입할 수 있다.",
+  2: "단편 실험 데이터가 확보되어야 다음 단계로 진입할 수 있다.",
+  3: "실험실 수준의 정량 데이터가 누적되어야 4단계로 진입할 수 있다.",
+  4: "모사 환경의 통합 실시예가 보강되면 5단계로 진입 가능하다.",
+  5: "파일럿·시작품 단계의 현장 적용 사례가 추가되면 6단계로 올라설 수 있다.",
+  6: "실환경 운영 데이터가 누적되어야 상용화 단계인 7로 진입할 수 있다.",
+  7: "기존 설비 기반의 안정적 양산·유통 근거가 확보되면 8단계로 인정 가능하다.",
+  8: "동일 형태의 시판이 확인되면 9단계로 평가된다.",
+  9: "동일 형태의 시판·유통이 이어지는 상용화 완료 단계로 본다.",
+};
+
+/**
+ * TRL을 요약서 서술 단계에 맞춰 보정했을 때의 근거문. 고정 문구("실험실 수준의 수치 데이터가 확인돼")는
+ * 원문에 없는 근거를 단정할 수 있으므로, 실제 판단 근거인 요약서의 서술 단계를 밝힌다. 점수·TRL 값은 바꾸지 않는다.
+ */
+export function describeTrlFromStage(trl: number, band: TrlBand): string {
+  const t = Math.max(1, Math.min(9, Math.round(Number(trl) || 5)));
+  const josa = t === 3 || t === 6 ? "으로" : "로";
+  return `요약서 상용화전망이 기술완성도를 '${band.label}' 단계로 서술하고 있어 TRL ${t}${josa} 판단되며, ${NEXT_STEP[t]}`;
+}
+
 /**
  * 점수 산정용 요약 본문. 공백을 합치고 limit 글자로 줄이되, 상용화전망 섹션은 잘리지 않게 통째로 남긴다
  * (TRL 단계 판정과 사업성 근거가 이 섹션에 있으므로).
