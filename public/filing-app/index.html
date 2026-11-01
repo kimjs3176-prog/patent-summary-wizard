@@ -661,6 +661,30 @@ table.ops { min-width: 460px; font-size: .84rem; }
 table.ops td { text-align: right; }
 .fill-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 14px; border-radius: 12px; background: var(--moss-soft); font-size: .88rem; }
 .fill-done { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--ok-soft); font-size: .88rem; }
+/* 쪽 끝 이동 (AIS 안) · 단계의 남은 일 */
+.page-end { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.page-end-btns { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.page-end-todo { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--warn-soft); font-size: .86rem; }
+.steps .left-n { display: inline-grid; place-items: center; width: 100%; height: 100%; font-size: .78rem; color: var(--warn); }
+/* 쉬운 안내 · 용어 풀이 */
+.coach { margin: 4px 0 18px; padding: 12px 16px; border-radius: 14px; border: 1px solid color-mix(in oklab, var(--primary) 22%, var(--line)); background: color-mix(in oklab, var(--primary) 6%, var(--surface)); font-size: .92rem; }
+.coach > summary { cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; list-style: none; }
+.coach > summary::-webkit-details-marker { display: none; }
+.coach > summary::after { content: "접기"; margin-left: auto; font-size: .78rem; font-weight: 500; color: var(--muted); }
+.coach:not([open]) > summary::after { content: "펼치기"; }
+.coach-ico { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: var(--on-primary); font-size: .8rem; }
+.coach-do { margin: 10px 0 0; padding-left: 1.3em; display: grid; gap: 4px; line-height: 1.6; }
+.coach-tip { margin: 8px 0 0; color: var(--muted); font-size: .86rem; }
+.coach-foot { margin: 6px 0 0; color: var(--muted); font-size: .78rem; }
+.coach-flow { margin: 10px 0 4px; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+.coach-flow li { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: .84rem; }
+.coach-flow span { color: var(--muted); font-size: .8rem; }
+.term { text-decoration: underline dotted color-mix(in oklab, var(--primary) 70%, transparent); text-underline-offset: 3px; text-decoration-thickness: 1.5px; cursor: help; border-radius: 3px; }
+.term:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+#term-pop { position: fixed; z-index: 60; padding: 10px 12px; border-radius: 10px; background: var(--fg); color: var(--surface); font-size: .84rem; line-height: 1.55; box-shadow: 0 6px 24px oklch(18% 0.006 60 / 0.25); pointer-events: none; }
+#term-pop b { display: block; margin-bottom: 2px; }
+.fact-box .need-list { margin-top: 8px; }
+.fact-box .fact-sub { margin: 8px 0 0; font-size: .82rem; }
 table.cmp { min-width: 560px; }
 table.cmp td, table.cmp tfoot th { text-align: center; }
 table.cmp tbody th, table.cmp tfoot th { text-align: left; font-family: var(--f-body); font-size: .84rem; font-weight: 600; color: var(--fg); background: transparent; }
@@ -1347,9 +1371,9 @@ function renderSteps() {
   const idx = stepIdx(), nav = $("#steps");
   nav.style.setProperty("--n", STEPS.length);
   requestAnimationFrame(() => { const cur = nav.querySelector('[aria-selected="true"]'); if (cur) nav.scrollLeft = Math.max(0, cur.offsetLeft - 24); });
-  nav.innerHTML = STEPS.map((x, n) => { const cur = n === idx, done = S.done.has(x.id) && !cur;
-    return `<button role="tab" id="tab-${x.id}" aria-selected="${cur}" class="${done ? "done" : ""} ${n < idx ? "passed" : ""}" data-step="${x.id}">
-      <span class="dot" aria-hidden="true">${done ? "✓" : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${STEP_ICON[x.id]}</svg>`}</span>
+  nav.innerHTML = STEPS.map((x, n) => { const cur = n === idx, todo = stepTodoSafe(x.id), seen = S.done.has(x.id) && !cur, done = seen && !todo.length, left = seen && todo.length;
+    return `<button role="tab" id="tab-${x.id}" aria-selected="${cur}" class="${done ? "done" : ""} ${n < idx ? "passed" : ""}" data-step="${x.id}"${left ? ` title="남은 일: ${esc(todo.map(t => t.t).join(", "))}"` : ""}>
+      <span class="dot" aria-hidden="true">${done ? "✓" : left ? `<b class="left-n">${todo.length}</b>` : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${STEP_ICON[x.id]}</svg>`}</span>
       <span class="t"><small>${n + 1}</small>${x.t}</span><span class="d">${x.s}</span></button>`; }).join("");
 }
 
@@ -2176,6 +2200,14 @@ function pageBar() {
   </div>`;
 }
 
+// AIS 안(임베드)에서는 아래 쪽 이동 막대가 없으므로, 쪽 끝에 이전·다음과 이 단계의 남은 일을 둔다
+function pageEndNav() {
+  const { prev, next } = navLabels(), todo = stepTodoSafe(BRANCH[S.step] || S.step).filter(t => t.sub === S.sub);
+  if (!prev && !next) return "";
+  return `<nav class="page-end" aria-label="쪽 이동">
+    ${todo.length ? `<p class="page-end-todo"><b>이 쪽에 남은 일</b> ${todo.map(t => esc(t.t)).join(" · ")} <span class="muted">— 나중에 해도 넘어갈 수 있어요.</span></p>` : ""}
+    <div class="page-end-btns">${prev ? `<button type="button" class="btn ghost" data-nav="prev">← ${esc(prev)}</button>` : "<span></span>"}${next ? `<button type="button" class="btn" data-nav="next">다음: ${esc(next)} →</button>` : ""}</div></nav>`;
+}
 function toPage(step, sub = 0, dir = 1) {
   S.dir = dir;
   if (step !== S.step) {
@@ -3902,14 +3934,14 @@ const aiSlot = task => aiMode() ? `<div class="ai-slot" data-ai-slot="${task}">$
 function aiStatus(task) {
   const st = aiState(task), label = task === "draft" ? "명세서를 쓰는" : `${AI_TASK_UI[task].label}하는`;
   if (!st.busy && !navigator.onLine) return `<p class="ai-status" role="status">인터넷 연결이 끊겨 AI를 잠시 멈췄습니다. 다시 연결되면 자동으로 이어 합니다.</p>`;
-  if (st.busy) return `<p class="ai-status busy" role="status"><i aria-hidden="true"></i>AI가 ${label} 중입니다 · <span class="ai-elapsed" data-task="${task}">${aiElapsed(st)}</span> · <span class="ai-progress" data-task="${task}">${aiProgress(st)}</span>${st.note ? ` · ${esc(st.note)}` : ""} <button type="button" class="linklike" data-ai-stop="${task}">멈추기</button></p>`;
+  if (st.busy) return `<p class="ai-status busy" role="status"><i aria-hidden="true"></i>AI가 ${label} 중입니다 · <span class="ai-elapsed" data-task="${task}">${aiElapsed(st)}</span> · <span class="ai-progress" data-task="${task}">${aiProgress(st)}</span>${st.stage ? ` · ${esc(st.stage)}` : ""}${st.note ? ` · ${esc(st.note)}` : ""} <button type="button" class="linklike" data-ai-stop="${task}">멈추기</button></p>`;
   if (st.err) return `<p class="ai-status err" role="alert">AI가 하지 못했습니다: ${esc(st.err)} <button type="button" class="linklike" data-ai-run="${task}">다시 시도</button></p>`;
   if (task === "draft" && S.spec?.source === "ai" && !S.spec.edited && /lite/.test(S.spec.model || "")) return `<p class="ai-status" role="status">좋은 모델들이 붐벼 가벼운 모델(${esc(S.spec.model)})로 썼습니다. 내용이 짧을 수 있습니다. <button type="button" class="linklike" data-ai-run="draft">더 좋은 모델로 다시 쓰기</button></p>`;
   return "";
 }
 // 실행 시작·끝: 멈추기 신호, 전체 시간 제한(분), 경과 시간
 function aiStart(st, sig, minutes) {
-  st.sig = sig; st.busy = true; st.err = ""; st.got = 0; st.note = ""; st.started = Date.now(); st.timedOut = false; st.ctrl = new AbortController(); st.min = minutes;
+  st.sig = sig; st.busy = true; st.err = ""; st.got = 0; st.note = ""; st.stage = ""; st.started = Date.now(); st.timedOut = false; st.ctrl = new AbortController(); st.min = minutes;
   aiArm(st);
   refreshAiSlots();
 }
@@ -4056,7 +4088,12 @@ function chApply(c, from, to) {
   const at = locate(S.spec.text, c.ctx, from, from === c.before && c.st === "held"); if (at < 0) return false;
   S.spec.text = S.spec.text.slice(0, at) + to + S.spec.text.slice(at + from.length); S.spec.edited = true; return true;
 }
-function chOk(c) { if (!chApply(c, c.before, c.after)) return false; c.st = "ok"; return true; }
+function chOk(c) {
+  if (!chApply(c, c.before, c.after)) return false;
+  c.st = "ok";
+  if (c.task === "fill" && c.after.includes("〔입력 필요")) { const at = locate(S.spec.text, c.ctx, c.after); if (at >= 0) markFillTried(S.spec.text, needAts(S.spec.text, at, c.after.length)); } // AI가 승인 문장 안에 남긴 칸은 다시 보내지 않는다
+  return true;
+}
 document.addEventListener("click", e => {
   const ok = e.target.closest("[data-ch-ok]"), no = e.target.closest("[data-ch-no]"), back = e.target.closest("[data-ch-back]"), all = e.target.closest("[data-ch-ok-all]");
   if (!(ok || no || back || all) || !S.spec) return;
@@ -4110,9 +4147,11 @@ function fitSchema(v, s) {
 async function runAiTask(task) {
   const st = aiState(task), ui = AI_TASK_UI[task], mode = aiMode();
   if (!mode || st.busy) return;
-  const sig = aiSig(task); if (!sig) return;
-  aiStart(st, sig, 4);
+  let sig = aiSig(task); if (!sig) return;
+  aiStart(st, sig, 4); ui.begin?.();
   try {
+   // 칸이 많은 작업(빈칸 채우기)은 반영한 뒤 남은 것을 이어서 보낸다 (ui.more · ui.rounds)
+   for (let round = 1; ; round++) {
     let result;
     if (mode === "key") {
       const p = await aiTaskPrompt(task, st.ctrl.signal);
@@ -4133,10 +4172,14 @@ async function runAiTask(task) {
       if (!r.ok) throw new Error(j.error || `서버 오류 (${r.status})`);
       result = j.result;
     }
-    if (aiSig(task) === sig) { ui.apply(result, "ai"); st.okSig = sig; toast(ui.applied?.() ?? `AI 결과를 반영했습니다 (${ui.label})`); } // 그사이 입력이 바뀌었으면 버리고 새 입력으로 다시 돈다
-    else if (ui.manual) st.err = "그사이 명세서가 바뀌어 반영하지 않았습니다. 다시 눌러 주세요.";
+    if (aiSig(task) !== sig) { if (ui.manual) st.err = "그사이 명세서가 바뀌어 반영하지 않았습니다. 다시 눌러 주세요."; break; } // 그사이 입력이 바뀌었으면 버리고 새 입력으로 다시 돈다
+    ui.apply(result, "ai"); st.okSig = sig;
+    const next = round < (ui.rounds ?? 1) && ui.more?.() ? aiSig(task) : "";
+    if (!next) { toast(ui.applied?.() ?? `AI 결과를 반영했습니다 (${ui.label})`); break; }
+    sig = st.sig = next; st.stage = `${round}묶음 반영, 남은 칸 이어서`; st.got = 0; aiArm(st); scheduleSave(); softRender();
+   }
   } catch (e) { st.err = aiFail(st, e); st.netFail = isNetErr(e) || !navigator.onLine; }
-  finally { aiEnd(st); logRun(task, st); softRender(); }
+  finally { ui.end?.(); aiEnd(st); logRun(task, st); softRender(); }
 }
 
 // 3단계 요건·거절 위험 쪽의 AI 거절이유 예상 (diagResultPage)
@@ -4868,17 +4911,40 @@ document.addEventListener("click", e => {
 // 실험값·기탁 정보·입수 방법·발명 구성을 얻는 방법(원료·조건)처럼 사용자만 아는 사실 칸은 AI에 보내지 않고 남긴다. 보낸 칸에서도 확인하지 않은 값은 〔입력 필요: …〕로 남기게 한다
 const FILL_FACT = /수탁번호|기탁기관|학명|실제 값|얻는 방법|실험으로 확인|측정 결과|측정 항목·결과|분양|입수 방법|분리·선발|16S|출원번호|효과와 그 수치|확인한 효과|^항목$/;
 const needLabel = m => m[0].replace(/^〔입력 필요:?\s*|〕$/g, "");
+// AI에 한 번 보낸 뒤에도 남은 칸(AI가 근거가 없어 비운 칸, AI가 쓴 문장 안에 새로 남긴 〔입력 필요: …〕)은 '직접 쓸 칸'으로 돌린다.
+// 같은 칸을 다시 보내도 AI는 또 비우므로, 버튼을 몇 번씩 누르지 않게 한다. 칸은 항목 이름과 바로 앞 글자로 알아본다 (명세서가 새로 만들어지면 지운다)
+const fillKey = (text, at, label) => `${label}|${text.slice(Math.max(0, at - 24), at)}`;
+const fillTriedSet = () => new Set(S.spec && S.fillTried?.sid === specId() ? S.fillTried.keys : []);
+function markFillTried(text, ats) {
+  if (!ats.length) return;
+  const keys = new Set(fillTriedSet());
+  ats.forEach(at => { const m = text.slice(at).match(/^〔입력 필요[^〕]*〕/); if (m) keys.add(fillKey(text, at, needLabel(m))); });
+  S.fillTried = { sid: specId(), keys: [...keys].slice(-200) };
+}
+// 텍스트 안에서 〔입력 필요〕가 있는 자리 (from 부터 len 글자 안)
+const needAts = (text, from, len) => [...text.slice(from, from + len).matchAll(/〔입력 필요[^〕]*〕/g)].map(m => from + m.index);
 function fillSlots(text = S.spec?.text ?? "") {
+  const tried = fillTriedSet();
   return [...text.matchAll(/〔입력 필요[^〕]*〕/g)].map((m, i) => {
-    const head = text.slice(0, m.index).match(/【([^】]+)】[^【]*$/);
-    return { id: String(i), at: m.index, label: needLabel(m), section: head ? head[1] : "", fact: FILL_FACT.test(needLabel(m)),
+    const head = text.slice(0, m.index).match(/【([^】]+)】[^【]*$/), label = needLabel(m);
+    return { id: String(i), at: m.index, label, section: head ? head[1] : "", fact: FILL_FACT.test(label), tried: tried.has(fillKey(text, m.index, label)),
       before: text.slice(Math.max(0, m.index - 220), m.index).replace(/^[^\n]*\n(?=[\s\S]{60})/, ""), after: text.slice(m.index + m[0].length, m.index + m[0].length + 140) };
   });
 }
+// AI에 보낼 칸: 사실 칸·승인 대기·이미 한 번 보낸 칸은 뺀다
+function fillTodo() {
+  if (!S.spec) return [];
+  const held = new Set(heldLive("fill").map(c => locate(S.spec.text, c.ctx, c.before, true)));
+  return fillSlots().filter(x => !x.fact && !x.tried && !held.has(x.at));
+}
+const FILL_BATCH = 40, FILL_ROUNDS = 6; // 서버가 한 번에 40칸까지 받으므로 칸이 많으면 묶음으로 나눠 이어서 보낸다
 AI_TASK_UI.fill = {
-  label: "빈칸 작성", manual: true, ready: () => fillSlots().some(x => !x.fact),
+  label: "빈칸 작성", manual: true, rounds: FILL_ROUNDS, ready: () => fillTodo().length > 0,
+  more: () => fillTodo().length > 0,
+  begin: () => { S.fillRun = { batch: Date.now(), i: 0, n: 0, held: 0, notes: [], undo: S.spec?.text ?? "" }; },
+  end: () => { S.fillRun = null; },
   input: () => {
-    const held = new Set(heldLive("fill").map(c => locate(S.spec.text, c.ctx, c.before, true))), slots = fillSlots().filter(x => !x.fact && !held.has(x.at)).slice(0, 40).map(({ fact, at, ...x }) => x), i = S.idea;
+    const slots = fillTodo().slice(0, FILL_BATCH).map(({ fact, at, tried, ...x }) => x), i = S.idea;
     return { idea: { title: i.title, field: fieldName(i.field), kind: KIND_NAME[claimKinds().main], problem: i.problem, diff: i.diff, effect: S.effect, parts: S.parts.split("\n").map(x => x.trim()).filter(Boolean) },
       prior: citedPrior().map((p, n) => ({ n: n + 1, title: p.title, abstract: String(p.abstract ?? "").slice(0, 700) })), slots, engTitle: S.app.engTitle };
   },
@@ -4891,40 +4957,53 @@ AI_TASK_UI.fill = {
       fills[k] = t; risk[k] = aiRisk({ where: x.section, label: x.label, before: `${x.before} ${x.label} ${x.after}`, after: t }); // 앞뒤 문장에 이미 있는 숫자(실시예 1 등)는 새 숫자가 아니다
     });
     const ks = slots.map((_, k) => k).filter(k => fills[k]);
-    if (!ks.length) throw new Error("AI가 채울 수 있는 칸이 없었습니다. 남은 칸은 사실 확인이 필요한 곳입니다.");
+    const R = S.fillRun ?? { batch: Date.now(), i: 0, n: 0, held: 0, notes: [], undo: text }, sent = new Set(AI_TASK_UI.fill.input().slots.map(x => x.id)); R.i++;
     const build = keep => { let out = "", prev = 0; const pos = []; all.forEach((m, k) => { out += text.slice(prev, m.index); pos[k] = out.length; out += keep.has(k) ? fills[k] : m[0]; prev = m.index + m[0].length; }); return { out: out + text.slice(prev), pos }; };
     const auto = new Set(ks.filter(k => risk[k][0] === "low"));
     // 넣은 뒤 출원 전 점검 규칙에 새로 걸리면, 걸리게 한 칸은 넣지 않고 승인 대기로 돌린다
     const base = failRules(text), newFail = t => [...failRules(t)].find(x => !base.has(x));
     if (auto.size && newFail(build(auto).out)) for (const k of [...auto]) { const f = newFail(build(new Set([k])).out); if (f) { auto.delete(k); risk[k] = ["high", `넣으면 출원 전 점검 '${f}'에 걸립니다`]; } }
-    const { out, pos } = build(auto), batch = Date.now();
-    addChanges(ks.map(k => ({ id: `f${batch}-${k}`, batch, task: "fill", where: slots[k].label, before: all[k][0], after: fills[k], ctx: out.slice(Math.max(0, pos[k] - 40), pos[k]), risk: risk[k][0], why: risk[k][1], st: auto.has(k) ? "auto" : "held" })).reverse());
+    const { out, pos } = build(auto), batch = R.batch;
+    addChanges(ks.map(k => ({ id: `f${batch}-${R.i}-${k}`, batch, task: "fill", where: slots[k].label, before: all[k][0], after: fills[k], ctx: out.slice(Math.max(0, pos[k] - 40), pos[k]), risk: risk[k][0], why: risk[k][1], st: auto.has(k) ? "auto" : "held" })).reverse());
     for (const k of auto) if (slots[k].label === "영문 명칭" && !S.app.engTitle.trim() && /^[A-Z0-9 ,.;:()'&-]+$/i.test(fills[k])) S.app.engTitle = fills[k].toUpperCase();
-    S.fillLast = { n: auto.size, held: ks.length - auto.size, batch, left: [...out.matchAll(/〔입력 필요[^〕]*〕/g)].length, notes: r.notes ?? [], undo: text, after: out };
+    R.n += auto.size; R.held += ks.length - auto.size; R.notes = [...new Set([...R.notes, ...(r?.notes ?? [])])].slice(0, 6);
+    S.fillLast = { n: R.n, held: R.held, batch, notes: R.notes, undo: R.undo, after: out };
     S.spec.text = out; S.spec.edited = true;
+    // 보냈는데 AI가 비운 칸, AI가 쓴 문장 안에 남긴 〔입력 필요: …〕는 다시 보내지 않는다
+    markFillTried(out, [...slots.map((x, k) => sent.has(x.id) && !x.fact && !fills[k] ? pos[k] : -1).filter(at => at >= 0), ...[...auto].flatMap(k => needAts(out, pos[k], fills[k].length))]);
     logAct("fill", "auto", auto.size);
   },
-  applied: () => S.fillLast?.held ? `AI가 ${S.fillLast.n}곳을 채우고 ${S.fillLast.held}곳은 승인 대기로 두었습니다` : `AI가 ${S.fillLast?.n ?? 0}곳을 채웠습니다`
+  applied: () => { const L = S.fillLast, u = fillSlots().filter(x => x.tried).length; return L ? `AI가 ${L.n}곳을 채웠습니다${L.held ? ` · 승인 대기 ${L.held}곳` : ""}${u ? ` · AI가 비워 둔 칸 ${u}곳(직접 채울 곳에 모았습니다)` : ""}` : "AI가 채울 수 있는 칸이 없었습니다"; }
 };
 // 명세서 쪽과 최종 점검 쪽에 함께 둔다
 function fillBox() {
   if (S.fillLast && S.spec?.text !== S.fillLast.after) S.fillLast = null; // 그 뒤 명세서가 바뀌었으면 되돌리기는 없앤다
-  const slots = S.spec ? fillSlots() : [], ai = slots.filter(x => !x.fact).length, fact = slots.length - ai, L = S.fillLast, facts = factGroups(slots);
-  const last = (L ? `<p class="fill-done" role="status"><b>AI가 ${L.n}곳을 채웠습니다.</b>${L.held ? ` 위험이 높은 ${L.held}곳은 아래에서 승인해야 들어갑니다.` : ""} 남은 〔입력 필요〕는 승인 대기 칸과 실험값·기탁 정보처럼 직접 넣을 사실입니다. 채운 문장도 사실과 맞는지 꼭 읽어 보세요.
-    <button type="button" class="linklike" data-fill-undo>되돌리기</button></p>${L.notes.length ? `<ul class="checks">${L.notes.map(t => `<li><span class="st warn">확인</span><span>${esc(t)}</span></li>`).join("")}</ul>` : ""}` : "") + heldHtml("fill");
+  const slots = S.spec ? fillSlots() : [], L = S.fillLast, facts = factGroups(slots), busy = aiState("fill").busy, mode = aiMode();
+  const todo = mode ? fillTodo().length : 0, tried = mode ? slots.filter(x => !x.fact && x.tried) : [], loose = slots.filter(x => x.fact && !FACT_GROUPS.some(([re]) => re.test(x.label)));
+  const last = (L && !busy ? `<p class="fill-done" role="status"><b>AI 채우기를 마쳤습니다 · 바로 넣은 곳 ${L.n}${L.held ? ` · 승인 대기 ${L.held}` : ""}${tried.length ? ` · AI가 비워 둔 칸 ${tried.length}` : ""}</b><br>채운 문장도 사실과 맞는지 꼭 읽어 보세요.${L.held ? " 승인 대기는 아래에서 읽고 넣거나 거부합니다." : ""}
+    <button type="button" class="linklike" data-fill-undo>모두 되돌리기</button></p>${L.notes.length ? `<ul class="checks">${L.notes.map(t => `<li><span class="st warn">확인</span><span>${esc(t)}</span></li>`).join("")}</ul>` : ""}` : "") + heldHtml("fill");
   if (!slots.length) return last;
-  const heldN = heldLive("fill").length, factBox = facts.length ? `<div class="fact-box"><b>직접 넣을 사실 ${fact}곳</b> <span class="muted">— 아래 ${facts.length}가지를 입력칸에 넣으면 명세서의 같은 자리가 함께 채워집니다. AI는 이 칸을 지어 쓰지 않습니다.</span>
-    <ul class="fact-list">${facts.map(g => `<li><span><b>${g.t}</b><span class="muted"> · 명세서 ${g.n}곳</span></span><button type="button" class="btn ghost sm" data-fact-go="${g.go}">입력하러 가기</button></li>`).join("")}</ul></div>` : "";
-  if (!aiMode()) return `${last}${factBox}` + (slots.length >= 5 ? `<p class="hint">채울 곳이 많다면 <button type="button" class="linklike" data-settings>환경설정</button>에서 AI 키를 넣으세요. 문장으로 쓸 수 있는 칸을 AI가 한꺼번에 채웁니다.</p>` : "");
-  if (ai <= heldN) return `${last}${factBox}`;
-  return `${last}<div class="fill-row"><span><b>AI로 채울 수 있는 곳 ${ai - heldN}곳</b>${fact ? ` · 직접 넣을 사실 ${fact}곳` : ""}</span>
-    <button type="button" class="btn sm" data-ai-run="fill" ${aiState("fill").busy ? "disabled" : ""}>AI로 한꺼번에 채우기</button></div>${aiSlot("fill")}${factBox}`;
+  // 직접 채울 곳: 입력칸으로 가면 한꺼번에 채워지는 사실 묶음 + 명세서에서 바로 쓸 칸 (어느 묶음에도 없는 사실 칸, AI가 근거가 없어 비운 칸)
+  const own = [...loose, ...tried].sort((a, b) => a.at - b.at), ownN = slots.filter(x => x.fact).length + tried.length;
+  const chip = x => `<button type="button" class="chip need" data-need="${x.at}" title="명세서의 이 자리로 이동">${esc(x.label.slice(0, 36) || "입력 필요")}</button>`;
+  const factBox = facts.length || own.length ? `<div class="fact-box"><b>직접 채울 곳 ${ownN}곳</b> <span class="muted">— 실험값·기탁 정보처럼 사용자만 아는 내용이라 AI가 지어 쓰지 않는 칸입니다.</span>
+    ${facts.length ? `<ul class="fact-list">${facts.map(g => `<li><span><b>${g.t}</b><span class="muted"> · 명세서 ${g.n}곳</span></span><button type="button" class="btn ghost sm" data-fact-go="${g.go}">입력하러 가기</button></li>`).join("")}</ul>${facts.length && own.length ? `<p class="muted fact-sub">입력칸에 넣으면 명세서의 같은 자리가 함께 채워집니다. 아래 칸은 명세서에서 바로 고쳐 쓰세요.</p>` : ""}` : ""}
+    ${own.length ? `<div class="need-list">${own.slice(0, 12).map(chip).join("")}${own.length > 12 ? `<span class="muted">외 ${own.length - 12}곳</span>` : ""}</div>` : ""}
+    ${tried.length && !busy ? `<p class="hint fact-sub">AI가 근거를 찾지 못해 비워 둔 칸 ${tried.length}곳이 들어 있습니다. 아이디어·핵심 구성을 더 적었다면 <button type="button" class="linklike" data-fill-retry>AI에게 다시 맡기기</button></p>` : ""}</div>` : "";
+  if (!mode) return `${last}${factBox}` + (slots.length >= 5 ? `<p class="hint">채울 곳이 많다면 <button type="button" class="linklike" data-settings>환경설정</button>에서 AI 키를 넣으세요. 문장으로 쓸 수 있는 칸을 AI가 한꺼번에 채웁니다.</p>` : "");
+  if (!todo && !busy) return `${last}${factBox}`;
+  return `${last}<div class="fill-row"><span><b>AI로 채울 수 있는 곳 ${todo}곳</b><span class="muted"> · 한 번 누르면 ${todo > FILL_BATCH ? `${Math.ceil(todo / FILL_BATCH)}묶음으로 나눠 ` : ""}끝까지 채웁니다</span></span>
+    <button type="button" class="btn sm" data-ai-run="fill" ${busy ? "disabled" : ""}>AI로 한꺼번에 채우기</button></div>${aiSlot("fill")}${factBox}`;
 }
+document.addEventListener("click", e => {
+  if (!e.target.closest("[data-fill-retry]") || !S.spec) return;
+  S.fillTried = null; scheduleSave(); rerenderKeepScroll(); runAi("fill");
+});
 document.addEventListener("click", e => {
   if (!e.target.closest("[data-fill-undo]") || !S.fillLast || !S.spec) return;
   if (S.spec.text !== S.fillLast.after) { S.fillLast = null; toast("그 뒤 명세서가 바뀌어 되돌릴 수 없습니다"); rerenderKeepScroll(); return; }
   const b = S.fillLast.batch; (S.aiChanges ?? []).forEach(c => { if (c.batch !== b) return; if (c.st === "auto" || c.st === "ok") c.st = "back"; else if (c.st === "held") c.st = "x"; }); logAct("fill", "rollback", S.fillLast.n);
-  S.spec.text = S.fillLast.undo; S.fillLast = null; toast("AI가 채우기 전으로 되돌렸습니다"); scheduleSave(); rerenderKeepScroll();
+  S.spec.text = S.fillLast.undo; S.fillLast = null; S.fillTried = null; toast("AI가 채우기 전으로 되돌렸습니다"); scheduleSave(); rerenderKeepScroll();
 });
 // 사실 칸을 '무엇을 어디에 넣으면 되는지'로 묶는다. 같은 사실이 명세서 여러 곳에 나와도 입력은 한 번
 const FACT_GROUPS = [
@@ -6022,11 +6101,30 @@ if (EMBED) {
   document.querySelector(".brand")?.setAttribute("href", "#idea");
 }
 // AIS 가 단계 탭·쪽·이전/다음·D-day 를 그릴 수 있게, 그릴 때마다 상태를 보낸다
+// 단계마다 아직 남은 '꼭 할 일' (단계 표시·남은 일 목록·이동용). 들르기만 해도 ✓ 가 붙지 않게, 남은 일이 없을 때만 완료로 본다
+function stepTodo(id) {
+  const i = S.idea, out = [], add = (t, pg) => out.push({ t, step: id, sub: typeof pg === "number" ? pg : pageIndex(id, pg) });
+  if (id === "idea") {
+    if (!i.title.trim()) add("아이디어(발명의 명칭) 정하기", "start");
+    else {
+      if (!i.problem.trim()) add("해결할 문제 적기", "pick");
+      if (!i.diff.trim()) add("기존과 다른 점 적기", "pick");
+      const m = missingFacts(); if (m.length) add(`출원 전에 확인할 사실 ${m.length}개 고르기`, "pick");
+    }
+  } else if (id === "prior") { if (S.api !== "off" && i.title.trim() && !liveData()) add("비슷한 특허 찾기", "results"); }
+  else if (id === "draft") {
+    if (!S.spec) add("명세서 초안 만들기", 0);
+    else { const n = specNeeds().length; if (n) add(`명세서 빈칸 ${n}곳 채우기`, 1); }
+    const ap = apRequired().filter(x => !x.ok).length; if (ap) add(`출원서 꼭 채울 칸 ${ap}개 넣기`, 2);
+  } else if (id === "manage") { if (!S.fileDate) add("출원일(예정일) 넣기", "deadline"); }
+  return out;
+}
+const stepTodoSafe = id => { try { return stepTodo(id); } catch { return []; } };
 function embedState() {
   const i = stepIdx(), apply = S.mode === "apply", subs = apply ? subsFor(S.step) : [], L = apply ? navLabels() : { prev: "", next: "" };
   const disc = S.idea.disclosed === "yes" ? parse(S.idea.discDate) : null, left = disc ? daysBetween(today, addMonths(disc, 12)) : null;
   return { type: "agri-ip:state", mode: S.mode, step: S.step, sub: S.sub, branch: BRANCH[S.step] || null, hash: location.hash, filingOnly: FILING_ONLY,
-    steps: STEPS.map((x, n) => ({ id: x.id, t: x.t, s: x.s, done: S.done.has(x.id) && !(apply && n === i), cur: apply && n === i })),
+    steps: STEPS.map((x, n) => { const todo = stepTodoSafe(x.id); return { id: x.id, t: x.t, s: x.s, done: S.done.has(x.id) && !todo.length && !(apply && n === i), cur: apply && n === i, visited: S.done.has(x.id), todo: todo.slice(0, 4) }; }),
     subs, prev: L.prev || "", next: L.next || "", title: S.idea.title || "",
     dday: left == null ? null : { label: "공지예외주장 기한", text: left >= 0 ? `D-${left}` : "기한 지남", warn: left <= 60 }, api: $("#mode-badge")?.textContent || "" };
 }
@@ -6262,6 +6360,111 @@ function viewAis() {
     <p class="ais-note">기술분석은 Agri IP Summary(AIS) 서비스입니다. 화면이 보이지 않으면 <a href="${TECH_URL}" target="_blank" rel="noopener">새 창으로 열기</a></p>
   </section>`;
 }
+/* ---------- 쉬운 안내: 출원을 처음 하는 사람에게 쪽마다 '지금 할 일'을 쉬운 말로 알려 준다 (접으면 이 기기에 기억) ---------- */
+// do: 할 일(차례대로), tip: 몰라도 되는 것·안심할 점. 쪽 열쇠는 pagesFor 의 쪽 이름(서류 작성·유망기술은 쪽 번호)
+const COACH = {
+  "idea:start": { do: ["현장에서 떠올린 아이디어를 키워드 2~5개로 적어요. (예: 쌀겨, 발효, 비료)", "‘초안 제안 받기’를 누르면 특허 서류에 쓰는 말로 다듬은 후보가 나와요."], tip: "아이디어가 막연해도 괜찮아요. 오른쪽 ‘연습용 예시로 해보기’로 끝까지 한 번 따라가 보면 흐름이 잡혀요." },
+  "idea:pick": { do: ["후보 가운데 내 아이디어와 가장 가까운 것을 하나씩 고르고, 아래 칸에서 내 말로 고쳐요.", "맨 아래 ‘출원 전에 확인할 사실’ 질문은 꼭 사실대로 골라요."], tip: "온도·시간·비율 같은 숫자를 실제 값으로 적을수록 특허 받을 가능성이 높아져요." },
+  "prior:results": { do: ["내 아이디어와 비슷한 특허가 이미 있는지 특허청 자료(KIPRIS)에서 자동으로 찾아요.", "정말 비슷한 특허만 골라 두면 명세서의 ‘기존 기술’ 칸에 들어가요."], tip: "비슷한 특허가 있어도 괜찮아요. 내 것만의 다른 점을 분명히 하면 출원할 수 있어요." },
+  "prior:sample": { do: ["내 아이디어와 비슷한 특허가 이미 있는지 살펴봐요.", "정말 비슷한 특허만 골라 두면 명세서의 ‘기존 기술’ 칸에 들어가요."], tip: "비슷한 특허가 있어도 괜찮아요. 내 것만의 다른 점을 분명히 하면 출원할 수 있어요." },
+  "prior:compare": { do: ["비슷한 특허와 내 아이디어의 구성을 한 줄씩 비교해요.", "비슷한 특허에 없는, 내 것에만 있는 구성이 특허의 핵심이 돼요."], tip: "표가 어렵다면 ‘다음’을 눌러 넘어가도 돼요. 비교 결과는 진단에 자동으로 쓰여요." },
+  "prior:gap": { do: ["아직 출원이 적은 기술 조합(빈자리)을 표로 보여 줘요.", "내 아이디어를 빈자리 쪽으로 조금 바꾸면 등록 가능성이 높아질 수 있어요."], tip: "참고용이에요. 그냥 다음 단계로 넘어가도 돼요." },
+  "diag:result": { do: ["특허가 되기 위한 조건(새로운가·쉽게 떠올릴 수 없나·산업에 쓸 수 있나)을 점검했어요.", "‘위험 높음’이나 ‘확인 필요’ 항목의 설명대로 아이디어를 고치면 돼요."], tip: "진단은 참고용이에요. 위험이 보여도 보완해서 출원할 수 있어요." },
+  "diag:suggest": { do: ["비슷한 출원이 거절된 이유와 피하는 방법을 알려 드려요.", "마음에 드는 제안만 눌러서 아이디어에 넣어요."], tip: "제안을 모두 받아들일 필요는 없어요." },
+  "draft:0": { do: ["앞에서 정리한 내용으로 특허 서류(명세서) 초안을 만들어요.", "내용을 확인하고 ‘기본 초안 만들고 보기’를 누르세요."], tip: "잘 모르는 칸은 비워 두어도 돼요. 다음 쪽에서 빈칸으로 표시해 드려요." },
+  "draft:1": { do: ["명세서 초안이 완성됐어요. 〔입력 필요〕로 표시된 빈칸만 채우면 돼요.", "‘AI로 한꺼번에 채우기’를 한 번 누르면 문장으로 쓸 수 있는 빈칸은 AI가 끝까지 채워요.", "실험값처럼 나만 아는 사실은 ‘직접 채울 곳’에서 넣어요."], tip: "AI가 채운 문장도 사실과 맞는지 한 번 읽어 보세요. 마음에 들지 않으면 ‘모두 되돌리기’로 되돌릴 수 있어요." },
+  "draft:2": { do: ["특허청에 내는 신청서(출원서)에 출원인 이름과 번호를 넣어요.", "특허고객번호가 없으면 특허로(patent.go.kr)에서 먼저 무료로 신청해요."], tip: "수수료와 감면(개인 70% 등)은 자동으로 계산돼요." },
+  "draft:3": { do: ["출원 때 함께 낼 서류를 확인해요.", "‘아직’으로 남은 서류만 준비하면 돼요."], tip: "대부분은 앞 단계에서 자동으로 만들어져요." },
+  "draft:4": { do: ["출원까지 남은 일을 한곳에 모았어요. 위에서부터 하나씩 끝내요.", "다 되면 ‘제출용 파일 한 번에 받기’로 받아 특허로에서 제출해요."], tip: "혼자 제출하기 부담되면 5단계에서 비용 지원과 변리사·무료 상담을 찾을 수 있어요." },
+  "manage:support": { do: ["출원 비용을 지원하는 사업과 상담할 변리사를 찾아요.", "진단 결과를 보내 상담을 받아 보세요."], tip: "공익변리사 특허상담센터(pcc.or.kr)에서도 무료로 상담받을 수 있어요." },
+  "manage:deadline": { do: ["출원일을 넣으면 꼭 지켜야 할 날짜를 계산해 드려요.", "‘달력에 넣기’로 휴대폰 달력에 알림을 걸어 두세요."], tip: "기한을 놓치면 권리를 잃을 수 있으니 달력에 꼭 넣어 두세요." },
+  "manage:overseas": { do: ["해외에서도 권리가 필요하면 한국 출원일부터 1년 안에 해외 출원을 해야 해요.", "진출하고 싶은 나라를 골라 일정과 비용을 확인해요."], tip: "해외 계획이 없으면 넘어가도 돼요." },
+  "discover:0": { do: ["관심 있는 농식품 분야를 골라요.", "세계에서는 늘지만 한국에서는 아직 출원이 적은 기술을 찾아 드려요."], tip: "아이디어가 이미 있다면 1단계 ‘아이디어’로 바로 가도 돼요." },
+  "discover:1": { do: ["지도에서 눈에 띄는 기술을 하나 골라요."], tip: "점이 위쪽·오른쪽일수록 세계에서 빠르게 느는 기술이에요." },
+  "discover:2": { do: ["고른 기술로 만든 아이디어 후보를 보고 마음에 드는 것을 골라요.", "고르면 1단계 아이디어로 이어져요."], tip: "후보는 출발점이에요. 내 현장 경험을 더해 고치면 돼요." }
+};
+// 처음 화면에만: 출원이 어떻게 진행되는지 한눈에
+const COACH_FLOW = `<ol class="coach-flow">${STEPS.map((x, i) => `<li><b>${i + 1}. ${x.t}</b><span>${x.d}</span></li>`).join("")}</ol>`;
+const COACH_KEY = "agri-ip:coach-closed";
+const coachClosed = () => { try { return localStorage.getItem(COACH_KEY) === "1"; } catch { return false; } };
+function coachHtml() {
+  const pg = pagesFor(S.step)?.[S.sub]?.[0], c = COACH[`${S.step}:${pg}`]; if (!c) return "";
+  const first = S.step === "idea" && pg === "start";
+  return `<details class="coach" ${coachClosed() ? "" : "open"} data-coach><summary><span class="coach-ico" aria-hidden="true">?</span>${first ? "출원이 처음이세요? 이렇게 진행돼요" : "이 쪽에서 할 일"}</summary>
+    ${first ? COACH_FLOW : ""}<ol class="coach-do">${c.do.map(t => `<li>${esc(t)}</li>`).join("")}</ol>${c.tip ? `<p class="coach-tip">${esc(c.tip)}</p>` : ""}
+    <p class="coach-foot">밑줄 친 낱말은 누르면 뜻이 나와요.</p></details>`;
+}
+document.addEventListener("toggle", e => { if (e.target.matches?.("[data-coach]")) try { localStorage.setItem(COACH_KEY, e.target.open ? "0" : "1"); } catch {} }, true);
+
+/* ---------- 어려운 용어: 화면에 처음 나오는 전문용어에 밑줄을 긋고, 누르거나 올려 두면 쉬운 뜻을 보여 준다 ---------- */
+const TERMS = [
+  ["명세서", "발명을 글로 자세히 설명한 서류. 특허청에 내는 가장 중요한 서류예요."],
+  ["청구범위", "특허로 지키고 싶은 범위를 문장으로 정한 부분. 여기에 쓴 만큼만 권리가 생겨요."],
+  ["청구항", "청구범위의 한 문장 한 문장. 독립항은 넓게, 종속항은 좁고 구체적으로 써요."],
+  ["독립항", "다른 청구항에 기대지 않는 넓은 범위의 청구항이에요."],
+  ["종속항", "앞의 청구항을 받아 범위를 더 좁고 구체적으로 정한 청구항이에요."],
+  ["선행기술", "내가 출원하기 전에 이미 알려진 기술(특허·논문·제품). 이것과 달라야 특허가 돼요."],
+  ["선행문헌", "선행기술이 실린 특허·논문 같은 문서예요."],
+  ["신규성", "출원 전에 세상에 알려지지 않은 새로운 기술이어야 한다는 조건이에요."],
+  ["진보성", "그 분야 전문가가 기존 기술로 쉽게 떠올릴 수 없어야 한다는 조건이에요."],
+  ["산업상 이용가능성", "실제 농업·식품 산업에서 되풀이해 쓸 수 있어야 한다는 조건이에요."],
+  ["기재불비", "명세서 설명이 모자라거나 애매해서 거절되는 이유예요. 숫자와 조건을 구체적으로 쓰면 피할 수 있어요."],
+  ["실시가능요건", "그 분야 사람이 명세서만 보고 그대로 따라 만들 수 있어야 한다는 조건이에요."],
+  ["실시예", "발명을 실제로 만들어 본 예. 재료·조건·결과를 적어요."],
+  ["비교예", "효과를 보여 주려고 비교 대상으로 만든 예(예: 처리하지 않은 것)예요."],
+  ["공지예외주장", "내가 먼저 공개했더라도 12개월 안에 출원하면서 신청하면 그 공개를 없던 일로 봐 주는 제도예요."],
+  ["거절이유", "심사관이 특허를 줄 수 없다고 본 이유. 의견서나 보정으로 대응할 수 있어요."],
+  ["의견제출통지서", "심사관이 거절 이유를 알려 주며 의견을 내라고 보내는 서류예요."],
+  ["특허고객번호", "특허청에 처음 한 번 등록하면 받는 내 번호. 특허로에서 무료로 신청해요."],
+  ["특허로", "특허청의 온라인 출원 사이트(patent.go.kr). 여기서 서류를 내요.", "특허로(?=\\(|에서| 서식| 전자| 제출)"], // '특허로 보호' 같은 말은 빼고 사이트 이름일 때만
+  ["전자출원 인증서", "특허로에서 서류를 낼 때 본인임을 확인하는 인증서(공동인증서 등)예요."],
+  ["심사청구", "특허청에 심사를 해 달라는 신청. 출원일부터 3년 안에 해야 해요."],
+  ["우선권 주장", "먼저 낸 출원의 날짜를 인정받아 1년 안에 개량 출원이나 해외 출원을 하는 제도예요."],
+  ["PCT", "한 번의 국제출원으로 여러 나라에 출원한 효과를 내는 제도예요."],
+  ["출원 공개", "출원하고 1년 6개월이 지나면 내용이 누구나 볼 수 있게 공개돼요."],
+  ["기탁", "새로 찾은 미생물을 공인 기관에 맡기는 일. 출원 전에 해야 해요."],
+  ["수탁번호", "미생물을 기탁하면 받는 번호. 명세서에 적어요."],
+  ["IPC", "국제특허분류. 기술 분야별로 특허를 묶는 코드예요. 몰라도 괜찮아요."],
+  ["공백 맵", "출원이 많은 기술 조합과 적은 조합(빈자리)을 표로 보여 주는 지도예요."],
+  ["요약서", "발명 내용을 짧게(400자 이내) 줄인 글이에요."],
+  ["대표도", "발명을 가장 잘 보여 주는 도면 하나예요."],
+  ["감면", "개인·중소기업 등은 출원 수수료를 깎아 주는 제도예요(개인 70% 등)."],
+  ["〔입력 필요〕", "아직 채우지 않은 빈칸 표시. 모두 채워야 제출할 수 있어요."]
+];
+const TERM_MAP = new Map(TERMS.map(([t, d]) => [t, d]));
+const TERM_RE = new RegExp(TERMS.map(([t, , re]) => re || t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).sort((a, b) => b.length - a.length).join("|"), "g");
+const TERM_SKIP = "input, textarea, select, option, button, a, label, summary, code, pre, svg, .term, .chip, .rev-fix, .no-term, [contenteditable], #term-pop";
+function glossify(root = $("#main")) {
+  if (!root) return;
+  const seen = new Set(), nodes = [], w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => !n.nodeValue.trim() || n.parentElement?.closest(TERM_SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  for (let n; (n = w.nextNode());) nodes.push(n);
+  for (const n of nodes) {
+    const v = n.nodeValue; TERM_RE.lastIndex = 0; let m, last = 0, frag = null;
+    while ((m = TERM_RE.exec(v))) {
+      if (seen.has(m[0])) continue; seen.add(m[0]); frag ??= document.createDocumentFragment();
+      frag.append(v.slice(last, m.index));
+      const sp = document.createElement("span"); sp.className = "term"; sp.tabIndex = 0; sp.setAttribute("role", "button"); sp.dataset.term = m[0]; sp.setAttribute("aria-label", `${m[0]}: 뜻 보기`); sp.textContent = m[0];
+      frag.append(sp); last = m.index + m[0].length;
+    }
+    if (frag) { frag.append(v.slice(last)); n.replaceWith(frag); }
+  }
+}
+function termPop(el) {
+  let pop = $("#term-pop");
+  if (!el) { if (pop) pop.hidden = true; return; }
+  if (!pop) { pop = document.createElement("div"); pop.id = "term-pop"; pop.setAttribute("role", "tooltip"); document.body.append(pop); }
+  pop.innerHTML = `<b>${esc(el.dataset.term)}</b> ${esc(TERM_MAP.get(el.dataset.term) || "")}`; pop.hidden = false;
+  const r = el.getBoundingClientRect(), pw = Math.min(300, innerWidth - 24);
+  pop.style.width = `${pw}px`; pop.style.left = `${Math.max(12, Math.min(innerWidth - pw - 12, r.left + r.width / 2 - pw / 2))}px`;
+  const below = r.bottom + 8 + pop.offsetHeight < innerHeight; pop.style.top = `${below ? r.bottom + 8 : Math.max(8, r.top - pop.offsetHeight - 8)}px`;
+}
+document.addEventListener("click", e => termPop(e.target.closest?.(".term") || null)); // 다른 곳을 누르면 닫는다
+document.addEventListener("keydown", e => { if (e.key === "Escape") termPop(null); else if ((e.key === "Enter" || e.key === " ") && e.target.matches?.(".term")) { e.preventDefault(); termPop(e.target); } });
+document.addEventListener("mouseover", e => { const t = e.target.closest?.(".term"); if (t && matchMedia("(hover: hover)").matches) termPop(t); });
+document.addEventListener("mouseout", e => { if (e.target.closest?.(".term") && matchMedia("(hover: hover)").matches) termPop(null); });
+document.addEventListener("focusout", e => { if (e.target.matches?.(".term")) termPop(null); });
+addEventListener("scroll", () => termPop(null), { passive: true });
+
 const VIEWS = { discover: viewDiscover, draft: viewDraft };
 // 다시 그리는 동안 포커스가 빠지며(blur·change) 또 render 가 불리면 끝난 뒤 한 번 더 그린다
 // 다시 그리기 전 포커스를 기억했다가 같은 칸으로 돌려준다
@@ -6304,11 +6507,13 @@ function renderView() {
   S.sub = Math.min(S.sub || 0, Math.max(0, subs.length - 1));
   const legacy = VIEWS[S.step];
   $("#main").innerHTML = legacy ? legacy() : viewStep(S.step);
+  termPop(null); $("#main .panel-head")?.insertAdjacentHTML("afterend", coachHtml()); glossify();
   $("#rail-subs").innerHTML = subNav(); $("#rail-card").innerHTML = railCardHtml();
   if (legacy) $("#main").querySelectorAll("[data-pg]").forEach(el => { el.hidden = subs.length > 1 && +el.dataset.pg !== S.sub; });
   const panel = $("#main .panel");
   if (panel && S.dir) { panel.classList.add(S.dir < 0 ? "in-back" : "in-fwd"); S.dir = 0; }
   $("#pagebar").innerHTML = pageBar();
+  if (EMBED) $("#main .panel")?.insertAdjacentHTML("beforeend", pageEndNav());
   renderSide();
   if (S.step === "draft") renderCheck();
   if (S.step === "discover") drawDiscoverChart();
@@ -6585,7 +6790,7 @@ document.addEventListener("click", e => { if (e.target.closest("[data-restart]")
 
 /* ---------- 작업 저장: 이 기기의 브라우저(localStorage)에만 자동 저장한다. 서버로 보내지 않는다 ---------- */
 const SAVE_KEY = "agri-ip:work:v1";
-const SAVE_FIELDS = ["filed", "supportFit", "step", "sub", "idea", "tpl", "tplAuto", "parts", "effect", "strain", "userType", "region", "fileDate", "hasDrawings", "app", "spec", "kw", "kwField", "ipc", "live", "liveField", "refined", "refinedSel", "axesCustom", "aiGap", "cmpAI", "rejAI", "revAI", "supAI", "expFigs", "aiChanges", "aiFeedback", "watch", "practice"];
+const SAVE_FIELDS = ["filed", "supportFit", "step", "sub", "idea", "tpl", "tplAuto", "parts", "effect", "strain", "userType", "region", "fileDate", "hasDrawings", "app", "spec", "kw", "kwField", "ipc", "live", "liveField", "refined", "refinedSel", "axesCustom", "aiGap", "cmpAI", "rejAI", "revAI", "supAI", "expFigs", "aiChanges", "aiFeedback", "fillTried", "watch", "practice"];
 const AI_KEEP = ["draft", "ideate", "compare", "whitespace", "reject", "review"];
 const SAVE_SETS = ["done", "gapSel", "citeSel"];
 const SAVE = { at: null, restored: null, t: 0, off: false };
@@ -6611,6 +6816,7 @@ function restoreWork(o) {
   // AI 변경 기록·피드백이 없는 파일이면 앞 작업의 것을 남기지 않는다. 형식이 맞지 않는 기록은 버린다
   S.aiChanges = Array.isArray(o.aiChanges) ? o.aiChanges.filter(c => c && typeof c.id === "string" && c.st in CH_ST && ["fill", "review"].includes(c.task) && [c.before, c.after, c.ctx].every(x => typeof x === "string")) : undefined;
   S.aiFeedback = o.aiFeedback && typeof o.aiFeedback === "object" ? Object.fromEntries(Object.entries(o.aiFeedback).filter(([, v]) => Array.isArray(v)).map(([k, v]) => [k, v.filter(x => typeof x === "string").slice(0, 8)])) : undefined;
+  S.fillTried = o.fillTried && typeof o.fillTried.sid === "string" && Array.isArray(o.fillTried.keys) ? { sid: o.fillTried.sid, keys: o.fillTried.keys.filter(k => typeof k === "string").slice(-200) } : undefined;
   // 쪽 이름이 있으면 그 쪽으로. 진단·보완을 2쪽으로 합치기 전 파일은 (진단 0·거절 위험 1·보완 제안 2) → (0·0·1)
   if (typeof o.pg === "string") S.sub = pageIndex(S.step, o.pg);
   else if (S.step === "diag" && S.sub > 0) S.sub -= 1;

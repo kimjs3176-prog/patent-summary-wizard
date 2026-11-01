@@ -87,12 +87,18 @@ export function buildFilingStandaloneUrl(settings: SettingsLike, opts: FilingSrc
   return buildFilingSrc(settings, opts).replace(/\?embed=ais[^#]*/, "");
 }
 
+export interface FilingTodo {
+  t: string;
+  step: string;
+  sub: number;
+}
 export interface FilingState {
   mode: "apply" | "global";
   step: string;
   sub: number;
   branch: string | null;
-  steps: { id: string; t: string; s: string; done: boolean; cur: boolean }[];
+  /** done 은 들렀고 남은 일이 없을 때만. todo 는 그 단계에 아직 남은 꼭 할 일(누르면 sub 쪽으로 간다) */
+  steps: { id: string; t: string; s: string; done: boolean; cur: boolean; visited: boolean; todo: FilingTodo[] }[];
   subs: string[];
   prev: string;
   next: string;
@@ -114,7 +120,11 @@ export function parseFilingMessage(ev: { origin: string; data: unknown }, expect
   if (d.type === "agri-ip:state" && Array.isArray(d.steps)) {
     const steps = (d.steps as unknown[]).slice(0, 8).map((x) => {
       const o = (x && typeof x === "object" ? x : {}) as Record<string, unknown>;
-      return { id: str(o.id, 20), t: str(o.t, 40), s: str(o.s, 60), done: o.done === true, cur: o.cur === true };
+      const todo = (Array.isArray(o.todo) ? (o.todo as unknown[]) : []).slice(0, 4).map((y) => {
+        const q = (y && typeof y === "object" ? y : {}) as Record<string, unknown>;
+        return { t: str(q.t, 60), step: str(q.step, 20), sub: Math.max(0, Math.min(20, Number(q.sub) || 0)) };
+      }).filter((y) => y.t && /^[a-z]+$/.test(y.step));
+      return { id: str(o.id, 20), t: str(o.t, 40), s: str(o.s, 60), done: o.done === true, cur: o.cur === true, visited: o.visited === true, todo };
     }).filter((x) => /^[a-z]+$/.test(x.id) && x.t);
     if (!steps.length) return null;
     const dd = d.dday && typeof d.dday === "object" ? (d.dday as Record<string, unknown>) : null;

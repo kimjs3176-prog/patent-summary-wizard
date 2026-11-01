@@ -71,6 +71,16 @@ describe("출원지원(에이프) 연결", () => {
     expect(parseFilingMessage({ origin, data: { type: "agri-ip:state", steps: [] } }, origin)).toBeNull();
   });
 
+  it("단계별 남은 일은 형식이 맞는 것만 4개까지", () => {
+    const origin = "https://atipsum.lovable.app";
+    const todo = [{ t: "명세서 빈칸 3곳 채우기", step: "draft", sub: 1 }, { t: "출원서 꼭 채울 칸 2개 넣기", step: "draft", sub: "2" }, { t: "", step: "draft", sub: 0 }, { t: "나쁜 단계", step: "<x>", sub: 0 }, { t: "넘침", step: "draft", sub: 99 }, { t: "다섯째", step: "draft", sub: 0 }];
+    const m = parseFilingMessage({ origin, data: { type: "agri-ip:state", step: "draft", steps: [{ id: "draft", t: "서류 작성", s: "", done: false, cur: true, visited: true, todo }, { id: "idea", t: "아이디어", s: "", done: true, cur: false }] } }, origin);
+    if (m?.type !== "agri-ip:state") throw new Error("state expected");
+    expect(m.state.steps[0].todo).toEqual([{ t: "명세서 빈칸 3곳 채우기", step: "draft", sub: 1 }, { t: "출원서 꼭 채울 칸 2개 넣기", step: "draft", sub: 2 }]);
+    expect(m.state.steps[0].visited).toBe(true);
+    expect(m.state.steps[1]).toMatchObject({ visited: false, todo: [] });
+  });
+
   it("메시지는 에이프 출처에서 온 아는 형식만", () => {
     const origin = "https://koat-axlab.vercel.app";
     expect(parseFilingMessage({ origin, data: { type: "agri-ip:ais", q: "10-2020-0123456" } }, origin)).toEqual({ type: "agri-ip:ais", q: "10-2020-0123456" });
