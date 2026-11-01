@@ -1,7 +1,6 @@
-import { Heart, RotateCcw, BarChart3, Layers, Compass, Menu } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { RotateCcw, Search } from "lucide-react";
 import { filingEnabled } from "@/lib/filing";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
@@ -16,10 +15,9 @@ import { PopularSearches } from "@/components/PopularSearches";
 import { HomeInsights } from "@/components/HomeInsights";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
 import { NoticeSection } from "@/components/NoticeSection";
-import { PotentialTechBanner } from "@/components/PotentialTechBanner";
+import { HomeServiceGrid } from "@/components/HomeServiceGrid";
 import { HomeSearchHero } from "@/components/HomeSearchHero";
 
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
@@ -53,7 +51,6 @@ const Index = () => {
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { settings } = useSiteSettings();
   useDocumentTitle(summary || isLoading ? patentData?.titleKo || patentData?.title || currentPatent || "특허 요약" : null);
-  const { favorites } = useFavoritePatents();
   const resultRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
@@ -135,74 +132,27 @@ const Index = () => {
     navigate(`/search?keyword=${encodeURIComponent(keyword)}`);
   };
 
-  // 헤더 메뉴: 데스크톱은 전부 펼치고, 좁은 화면은 주 메뉴 하나와 "메뉴" 드롭다운으로 접는다.
-  // (아이콘 6개를 한 줄에 놓으면 390px 화면에서 뒤쪽 버튼이 잘려 눌리지 않았다.)
-  const navItems: { to: string; label: string; title: string; icon: typeof Compass; badge?: string }[] = [
-    { to: "/insights", label: "인사이트", title: "인사이트", icon: BarChart3 },
-    { to: "/batch", label: "일괄조회·다운로드", title: "일괄조회·목록 다운로드: 번호 여러 건 조회 또는 조건별 목록을 엑셀·CSV로", icon: Layers },
-    { to: "/compare", label: "관심특허", title: "관심특허", icon: Heart, badge: favorites.length > 0 ? `(${favorites.length})` : undefined },
-  ];
-  const resultActions = (summary || isLoading)
-    ? [
-        { key: "new", label: "새로운 검색", icon: undefined as typeof RotateCcw | undefined, onClick: () => { updateUrl(); reset(); } },
-        { key: "reset", label: "초기화", icon: RotateCcw, onClick: () => { updateUrl(); reset(); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); } },
-      ]
-    : [];
-  const headerBtn = "rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium";
-
-  const headerRight = (
+  // Site-wide services live in the shared header menu (SiteNav); only the summary view adds its own actions here.
+  const headerBtn = "rounded-full text-[11px] md:text-xs h-8 md:h-9 px-2.5 md:px-3.5 glossy-card gap-1.5 btn-press font-medium";
+  const headerRight = (summary || isLoading) ? (
     <>
-      <Button asChild size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 gap-1 md:gap-2 btn-press font-semibold">
-        <Link to="/finder" aria-label="나만의 특허찾기" title="나만의 특허찾기">
-          <Compass className="w-3 h-3 md:w-3.5 md:h-3.5" />
-          <span className="hidden sm:inline">나만의 특허찾기</span>
-        </Link>
+      <Button variant="outline" size="sm" onClick={() => { updateUrl(); reset(); }} className={headerBtn} aria-label="새로운 검색">
+        <Search className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">새로운 검색</span>
       </Button>
-      <div className="hidden sm:flex items-center gap-1.5 md:gap-2">
-        {navItems.map(({ to, label, title, icon: Icon, badge }) => (
-          <Button key={to} asChild variant="outline" size="sm" className={headerBtn}>
-            <Link to={to} aria-label={badge ? `${label} ${badge}` : label} title={title}>
-              <Icon className="w-3 h-3 md:w-3.5 md:h-3.5" />
-              <span>{label}</span>{badge ? ` ${badge}` : ""}
-            </Link>
-          </Button>
-        ))}
-        {resultActions.map(({ key, label, icon: Icon, onClick }) => (
-          <Button key={key} variant="outline" size="sm" onClick={onClick} className={headerBtn}>
-            {Icon && <RotateCcw className="w-3 h-3" />}
-            {label}
-          </Button>
-        ))}
-      </div>
-      <div className="sm:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button aria-label="메뉴 열기" variant="outline" size="sm" className={headerBtn}>
-              <Menu className="w-3.5 h-3.5" />
-              {favorites.length > 0 && <span className="text-[10px] font-semibold">{favorites.length}</span>}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[200px]">
-            {navItems.map(({ to, label, icon: Icon, badge }) => (
-              <DropdownMenuItem key={to} asChild>
-                <Link to={to} className="flex items-center gap-2 cursor-pointer">
-                  <Icon className="w-4 h-4 text-primary" />
-                  <span>{label}{badge ? ` ${badge}` : ""}</span>
-                </Link>
-              </DropdownMenuItem>
-            ))}
-            {resultActions.length > 0 && <DropdownMenuSeparator />}
-            {resultActions.map(({ key, label, icon: Icon, onClick }) => (
-              <DropdownMenuItem key={key} onSelect={onClick} className="flex items-center gap-2 cursor-pointer">
-                {Icon ? <RotateCcw className="w-4 h-4 text-muted-foreground" /> : <span className="w-4" />}
-                <span>{label}</span>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => { updateUrl(); reset(); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); }}
+        className={headerBtn}
+        aria-label="검색 기록 초기화"
+        title="검색 기록 초기화"
+      >
+        <RotateCcw className="w-3.5 h-3.5" />
+        <span className="hidden xl:inline">초기화</span>
+      </Button>
     </>
-  );
+  ) : undefined;
 
   return (
     <PageLayout headerRight={headerRight}>
@@ -218,10 +168,10 @@ const Index = () => {
               placeholder={settings.search_placeholder}
             />
 
-            {/* 잠재기술 무상기술이전 배너 */}
-            <section className="max-w-5xl mx-auto mb-5 md:mb-6 animate-fade-up" style={{ animationDelay: "0.12s" }}>
-              <PotentialTechBanner />
-            </section>
+            {/* 서비스 바로가기 — 검색 외 기능을 한 줄 설명과 함께 */}
+            <div className="max-w-5xl mx-auto mb-7 md:mb-9 animate-fade-up" style={{ animationDelay: "0.12s" }}>
+              <HomeServiceGrid />
+            </div>
 
             {/* 특허 인사이트 — 출원 동향 + 주요 키워드 */}
             <section className="max-w-5xl mx-auto mb-5 md:mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
