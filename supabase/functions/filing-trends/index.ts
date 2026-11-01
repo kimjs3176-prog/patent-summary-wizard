@@ -1,4 +1,4 @@
-import { generateChatCompletion, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.10";
+import { generateChatCompletion, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.11";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";

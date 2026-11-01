@@ -1,7 +1,7 @@
 import { z } from "npm:zod@3.23.8";
 import {
   CancelledError, generateChatCompletion, GatewayError, PaymentRequiredError, RateLimitError, TimeoutError,
-} from "npm:@lovable.dev/ai-gateway@0.1.10";
+} from "npm:@lovable.dev/ai-gateway@0.1.11";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
