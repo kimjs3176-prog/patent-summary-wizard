@@ -1,8 +1,8 @@
 // 출원지원 AI 분석 — 아이디어 초안(ideate), 유망기술 아이디어(discover), 유사 특허 심층 비교(compare), 공백기술 아이디어(whitespace),
 // 거절이유 예상(reject), 명세서 검토(review), 〔입력 필요〕 칸 채우기(fill), 검토 메모·누락 항목 보완(supplement), 해외 사업화 전략(globalbiz), 키워드 사업 인사이트(insight).
-// 서버 키가 있으면 Claude(공식 SDK, 구조화 출력)로 실행하고, 사용자가 화면에 키를 넣으면 같은 요청 내용(aiPrompt)으로 브라우저가 직접 실행한다.
-import Anthropic from "@anthropic-ai/sdk";
+// 서버에서는 Lovable AI 게이트웨이(gateway.js, JSON 출력)로 실행하고, 사용자가 화면에 키를 넣으면 같은 요청 내용(aiPrompt)으로 브라우저가 직접 실행한다.
 import { DRAFT_MODEL } from "./draft.js";
+import { chat } from "./gateway.js";
 
 // 짧은 JSON 작업이라 기본은 low (빠르게). 더 깊게 보려면 AI_EFFORT 로 올린다
 const EFFORT = ["low", "medium", "high", "xhigh", "max"].includes(process.env.AI_EFFORT) ? process.env.AI_EFFORT : "low";
@@ -295,26 +295,27 @@ export function aiPrompt(task, body) {
   return { task, system: SYSTEM, user: t.user(input) + feedbackOf(body), schema: t.schema, model: DRAFT_MODEL, effort: EFFORT, maxTokens: MAX_TOKENS };
 }
 
-let client;
-const getClient = () => (client ??= new Anthropic());
+// 게이트웨이는 JSON 객체로만 답하게 할 수 있고 스키마를 강제하지는 않으므로, 지켜야 할 형식(JSON 스키마)을 지침에 함께 적는다
+export const schemaNote = schema => `\n\n[답 형식]\n아래 JSON 스키마를 그대로 따르는 JSON 객체 하나로만 답하세요. 설명 문장이나 코드 블록 표시(\`\`\`)를 붙이지 마세요.\n${JSON.stringify(schema)}`;
 
-export async function runAi(task, body, { anthropic = getClient() } = {}) {
+// 앞뒤에 코드 블록 표시나 군말이 붙어 와도 가장 바깥 { … } 를 읽는다
+export function parseJsonObject(text) {
+  const t = String(text ?? "").trim();
+  try { return JSON.parse(t); } catch { /* 아래에서 다시 */ }
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a < 0 || b <= a) throw new Error("no json");
+  return JSON.parse(t.slice(a, b + 1));
+}
+
+export async function runAi(task, body, { chatImpl = chat } = {}) {
   const t = AI_TASKS[task]; if (!t) throw bad("알 수 없는 작업입니다.");
   const input = t.validate(body);
-  const stream = anthropic.beta.messages.stream({
-    model: DRAFT_MODEL,
-    max_tokens: MAX_TOKENS,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    thinking: { type: "adaptive" },
-    output_config: { effort: EFFORT, format: { type: "json_schema", schema: t.schema } },
-    system: SYSTEM,
-    messages: [{ role: "user", content: t.user(input) + feedbackOf(body) }]
-  });
-  const msg = await stream.finalMessage();
-  if (msg.stop_reason === "refusal") throw Object.assign(new Error("AI가 요청을 처리하지 않았습니다. 입력 내용을 확인한 뒤 다시 시도하세요."), { status: 422 });
-  if (msg.stop_reason === "max_tokens") throw Object.assign(new Error("AI 답변이 너무 길어 잘렸습니다. 다시 시도하세요."), { status: 502 });
-  const text = msg.content.filter(b => b.type === "text").map(b => b.text).join("");
-  try { return { task, result: JSON.parse(text), model: msg.model }; }
+  const msg = await chatImpl({ system: SYSTEM + schemaNote(t.schema), user: t.user(input) + feedbackOf(body), json: true, maxTokens: MAX_TOKENS });
+  if (msg.finishReason === "content_filter") throw Object.assign(new Error("AI가 요청을 처리하지 않았습니다. 입력 내용을 확인한 뒤 다시 시도하세요."), { status: 422 });
+  if (msg.finishReason === "length") throw Object.assign(new Error("AI 답변이 너무 길어 잘렸습니다. 다시 시도하세요."), { status: 502 });
+  let result;
+  try { result = parseJsonObject(msg.text); }
   catch { throw Object.assign(new Error("AI 답변을 읽지 못했습니다. 다시 시도하세요."), { status: 502 }); }
+  if (!result || typeof result !== "object" || Array.isArray(result)) throw Object.assign(new Error("AI 답변을 읽지 못했습니다. 다시 시도하세요."), { status: 502 });
+  return { task, result, model: msg.model };
 }
