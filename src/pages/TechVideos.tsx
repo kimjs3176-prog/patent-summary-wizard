@@ -70,12 +70,12 @@ const TechVideos = () => {
   }, [videos]);
 
   const headerRight = (
-    <Link to="/">
-      <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1.5 btn-press font-medium">
+    <Button asChild variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1.5 btn-press font-medium">
+      <Link to="/" aria-label="홈으로">
         <ArrowLeft className="w-3 h-3 md:w-3.5 md:h-3.5" />
         <span className="hidden sm:inline">홈으로</span>
-      </Button>
-    </Link>
+      </Link>
+    </Button>
   );
 
   // Show all videos; pad to at least 9 slots for a complete 3x3 visual when fewer exist
@@ -144,7 +144,7 @@ const TechVideos = () => {
                       key={`empty-${idx}`}
                       className="aspect-video rounded-2xl border border-dashed border-border/40 bg-secondary/20 flex items-center justify-center"
                     >
-                      <span className="text-[11px] text-muted-foreground/50">등록 예정</span>
+                      <span className="text-[11px] text-muted-foreground">등록 예정</span>
                     </div>
                   );
                 }
@@ -172,7 +172,7 @@ const TechVideos = () => {
                             className="w-full h-full object-contain bg-black"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground/50 text-[11px]">불러오는 중…</div>
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[11px]">불러오는 중…</div>
                         )
                       ) : thumbnail ? (
                         <a href={video.url} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative">

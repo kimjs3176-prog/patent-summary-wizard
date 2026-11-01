@@ -18,6 +18,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 import { SplashScreen } from "./components/SplashScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { supabase } from "./integrations/supabase/client";
+import { CanonicalUrl } from "@/components/CanonicalUrl";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,6 +94,7 @@ const App = () => {
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
           <BrowserRouter>
             <ScrollToTop />
+            <CanonicalUrl />
             <ErrorBoundary>
               <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
               <Routes>

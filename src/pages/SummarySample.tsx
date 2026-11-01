@@ -14,10 +14,10 @@ const SAMPLE_PATENT = "10-2017-0078319";
 function Stat({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
   return (
     <div>
-      <p className="text-[13px] text-[#8B95A1] font-medium mb-1.5">{label}</p>
+      <p className="text-[13px] text-[#6B7684] font-medium mb-1.5">{label}</p>
       <p className="text-[22px] font-bold text-[#191F28] tracking-tight tabular-nums">
         {value}
-        {suffix && <span className="text-[14px] text-[#8B95A1] font-semibold ml-0.5">{suffix}</span>}
+        {suffix && <span className="text-[14px] text-[#6B7684] font-semibold ml-0.5">{suffix}</span>}
       </p>
     </div>
   );
@@ -45,7 +45,7 @@ function SoftCard({ children, className = "" }: { children: React.ReactNode; cla
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-3.5 border-b border-[#E5E8EB] last:border-0">
-      <span className="text-[14px] text-[#8B95A1] font-medium">{label}</span>
+      <span className="text-[14px] text-[#6B7684] font-medium">{label}</span>
       <span className="text-[14px] text-[#191F28] font-semibold text-right max-w-[60%]">{value}</span>
     </div>
   );
@@ -57,7 +57,7 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
       <div className="flex items-baseline justify-between mb-2">
         <span className="text-[14px] font-semibold text-[#191F28]">{label}</span>
         <span className="text-[16px] font-bold tabular-nums" style={{ color }}>
-          {value}<span className="text-[12px] text-[#8B95A1] ml-0.5">점</span>
+          {value}<span className="text-[12px] text-[#6B7684] ml-0.5">점</span>
         </span>
       </div>
       <div className="h-1.5 rounded-full bg-[#E5E8EB] overflow-hidden">
@@ -241,24 +241,24 @@ export default function SummarySample() {
           <h1 className="text-[24px] sm:text-[28px] font-bold leading-[1.3] tracking-[-0.02em] mb-2">
             {title}
           </h1>
-          <p className="text-[14px] text-[#8B95A1] font-medium mb-6">샘플 특허 · {SAMPLE_PATENT}</p>
+          <p className="text-[14px] text-[#6B7684] font-medium mb-6">샘플 특허 · {SAMPLE_PATENT}</p>
 
           <div className="flex items-end gap-3 mb-2">
             {scoreLoading || score == null ? (
               <div className="flex items-center gap-2 h-[72px]">
                 <Loader2 className="w-6 h-6 animate-spin" style={{ color: ACCENT_HEX_FALLBACK }} />
-                <span className="text-[16px] text-[#8B95A1] font-semibold">사업화 점수 분석 중...</span>
+                <span className="text-[16px] text-[#6B7684] font-semibold">사업화 점수 분석 중...</span>
               </div>
             ) : (
               <>
                 <span className="text-[72px] font-bold leading-none tabular-nums tracking-tight" style={{ color: ACCENT_HEX_FALLBACK }}>
                   {score}
                 </span>
-                <span className="text-[20px] text-[#8B95A1] font-semibold mb-2">/ 100점</span>
+                <span className="text-[20px] text-[#6B7684] font-semibold mb-2">/ 100점</span>
               </>
             )}
           </div>
-          <p className="text-[14px] text-[#8B95A1] font-medium">상용화 잠재력이 <span className="font-bold text-[#191F28]">{scoreSummary}</span>이에요</p>
+          <p className="text-[14px] text-[#6B7684] font-medium">상용화 잠재력이 <span className="font-bold text-[#191F28]">{scoreSummary}</span>이에요</p>
         </section>
 
         {/* 핵심 지표 */}
@@ -277,10 +277,10 @@ export default function SummarySample() {
           <SoftCard>
             <div className="flex items-baseline justify-between mb-3">
               <div>
-                <p className="text-[13px] text-[#8B95A1] font-medium mb-1">기술 성숙도 (TRL)</p>
+                <p className="text-[13px] text-[#6B7684] font-medium mb-1">기술 성숙도 (TRL)</p>
                 <p className="text-[18px] font-bold">
                   <span className="text-[24px]" style={{ color: trlColor }}>{trl ?? "-"}</span>
-                  <span className="text-[#8B95A1] text-[14px] font-semibold ml-1">/ 9 단계</span>
+                  <span className="text-[#6B7684] text-[14px] font-semibold ml-1">/ 9 단계</span>
                 </p>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[12px] font-bold text-white" style={{ background: trlColor }}>
@@ -362,7 +362,7 @@ export default function SummarySample() {
                         (e.currentTarget.parentElement as HTMLElement).style.display = "none";
                       }}
                     />
-                    <p className="text-[12px] text-[#8B95A1] mt-2 font-medium">
+                    <p className="text-[12px] text-[#6B7684] mt-2 font-medium">
                       {i === 0 && patentData?.representativeImage ? "【대표 도면】" : `【도면 ${i + 1}】`}
                     </p>
                   </div>
@@ -375,7 +375,7 @@ export default function SummarySample() {
         {/* AI 요약서의 모든 섹션을 토스 스타일로 매핑 */}
         {isLoading && sections.length === 0 ? (
           <section className="mb-10">
-            <div className="flex items-center gap-2 text-[#8B95A1]">
+            <div className="flex items-center gap-2 text-[#6B7684]">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-[14px]">AI가 요약서를 생성 중입니다...</span>
             </div>
@@ -434,7 +434,7 @@ export default function SummarySample() {
           </button>
         </section>
 
-        <p className="text-[12px] text-[#8B95A1] text-center leading-relaxed mt-8">
+        <p className="text-[12px] text-[#6B7684] text-center leading-relaxed mt-8">
           ※ 본 분석은 특허명세서를 바탕으로 실시하여<br />실제 연구 및 개발 단계와는 상이할 수 있습니다.
         </p>
       </main>
@@ -467,7 +467,7 @@ export default function SummarySample() {
               <div className="bg-white p-3 rounded-[12px]">
                 <QRCodeSVG value={shareUrl} size={168} level="M" />
               </div>
-              <p className="text-[12px] text-[#8B95A1] mt-3 text-center leading-relaxed">
+              <p className="text-[12px] text-[#6B7684] mt-3 text-center leading-relaxed">
                 카메라 앱으로 QR을 스캔하면<br />이 요약서가 바로 열려요
               </p>
             </div>
@@ -500,7 +500,7 @@ export default function SummarySample() {
               )}
             </button>
 
-            <p className="text-[11px] text-[#8B95A1] text-center mt-4 leading-relaxed">
+            <p className="text-[11px] text-[#6B7684] text-center mt-4 leading-relaxed">
               ※ 이메일 버튼은 기기의 메일 앱이 열리며,<br />수신자·내용을 확인 후 발송할 수 있어요.
             </p>
           </div>

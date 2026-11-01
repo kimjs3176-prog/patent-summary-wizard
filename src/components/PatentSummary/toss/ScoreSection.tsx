@@ -22,11 +22,11 @@ export function ScoreSection({ scoreLoading, score, scoreSummary, details, trlCo
               {/* 종합점수 헤더 */}
               <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#E5E8EB]">
                 <div className="min-w-0">
-                  <p className="text-[12px] text-[#8B95A1] font-semibold mb-1">종합 사업화 점수</p>
+                  <p className="text-[12px] text-[#6B7684] font-semibold mb-1">종합 사업화 점수</p>
                   {scoreLoading || score == null ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" style={{ color: ACCENT_HEX }} />
-                      <span className="text-[13px] text-[#8B95A1] font-semibold">분석 중...</span>
+                      <span className="text-[13px] text-[#6B7684] font-semibold">분석 중...</span>
                     </div>
                   ) : (
                     <p className="text-[13px] text-[#4E5968] font-medium">
@@ -54,13 +54,13 @@ export function ScoreSection({ scoreLoading, score, scoreSummary, details, trlCo
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <div className="flex items-baseline gap-2">
                       <span className="text-[13px] text-[#191F28] font-bold">기술 성숙도</span>
-                      <span className="text-[11px] text-[#8B95A1] font-semibold">TRL</span>
+                      <span className="text-[11px] text-[#6B7684] font-semibold">TRL</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[22px] font-black tabular-nums leading-none" style={{ color: trlColor }}>
                         {trl ?? "-"}
                       </span>
-                      <span className="text-[#8B95A1] text-[11px] font-semibold">/ 9</span>
+                      <span className="text-[#6B7684] text-[11px] font-semibold">/ 9</span>
                       {trlName && (
                         <span className="text-[12px] font-bold leading-none" style={{ color: trlColor }}>
                           · {trlName}
@@ -105,7 +105,7 @@ export function ScoreSection({ scoreLoading, score, scoreSummary, details, trlCo
                       );
                     })}
                   </div>
-                  <div className="flex justify-between mt-2 text-[10.5px] text-[#8B95A1] font-semibold">
+                  <div className="flex justify-between mt-2 text-[10.5px] text-[#6B7684] font-semibold">
                     <span>1–3 · 기초 연구</span>
                     <span>4–6 · 개발/실증</span>
                     <span>7–9 · 상용화</span>

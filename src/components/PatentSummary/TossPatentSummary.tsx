@@ -251,10 +251,10 @@ function TossPatentSummaryInner({
 
       <div ref={(node) => { aiBodyRef.current = node; printRef.current = node; }} data-toss-summary data-toss-surface className="bp-doc precision-report border border-border overflow-hidden max-w-[864px] mx-auto">
         <div className="bp-doc-head">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#8B95A1]">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#6B7684]">
             AI TECH ANALYSIS REPORT
           </span>
-          <span className="font-mono text-[10px] tabular-nums tracking-[0.12em] text-[#8B95A1]">
+          <span className="font-mono text-[10px] tabular-nums tracking-[0.12em] text-[#6B7684]">
             DOC · {patentNumber}
           </span>
         </div>
@@ -300,14 +300,14 @@ function TossPatentSummaryInner({
           {/* 분석 모델·생성 정보 표기 — 서버가 보낸 실제 값을 우선 사용한다 */}
           {!isStreaming && content && (
             <section className="mt-6 mb-2 space-y-1.5">
-              <div className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#8B95A1]">
+              <div className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#6B7684]">
                 <Sparkles className="w-3 h-3" style={{ color: ACCENT_HEX }} />
                 <span>
                   본 분석은 <span className="font-semibold text-[#4E5968]">{formatAiModelLabel(summaryMeta?.model || settings.ai_model)}</span> 모델로 생성되었습니다
                 </span>
               </div>
               {(summaryMeta?.generatedAt || summaryMeta?.cached != null) && (
-                <p className="text-center text-[11px] text-[#8B95A1] tabular-nums">
+                <p className="text-center text-[11px] text-[#6B7684] tabular-nums">
                   {summaryMeta?.generatedAt ? `생성 ${formatGeneratedAt(summaryMeta.generatedAt)}` : "생성 시각 미상"}
                   {summaryMeta?.cached ? " · 저장된 요약서" : " · 이번에 새로 생성"}
                   {summaryMeta?.promptVersion ? ` · 분석 기준 ${summaryMeta.promptVersion}` : ""}
@@ -321,7 +321,7 @@ function TossPatentSummaryInner({
             </section>
           )}
 
-          <p className="text-[12px] text-[#8B95A1] text-center leading-relaxed mt-8">
+          <p className="text-[12px] text-[#6B7684] text-center leading-relaxed mt-8">
             ※ 본 분석은 특허명세서를 바탕으로 실시하여<br />실제 연구 및 개발 단계와는 상이할 수 있습니다.
           </p>
         </div>

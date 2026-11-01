@@ -39,6 +39,10 @@ const SummaryQuickNav = lazy(() =>
   import("@/components/SummaryQuickNav").then((m) => ({ default: m.SummaryQuickNav })),
 );
 
+const SummaryPlaceholder = () => (
+  <div className="mb-8 min-h-[60vh] max-w-[864px] mx-auto rounded-3xl bg-muted/40 animate-pulse" aria-hidden="true" />
+);
+
 const Index = () => {
   const navigate = useNavigate();
   const {
@@ -287,7 +291,7 @@ const Index = () => {
           </>
         ) : (
           <div ref={resultRef} data-results-visible="true">
-            {isLoading && (<AnalysisProgressStepper currentStep={analysisStep} />)}
+            {isLoading && (<AnalysisProgressStepper currentStep={analysisStep} floating />)}
             <div className="sticky top-2 z-30 mb-5 md:mb-7">
               <div className="max-w-2xl mx-auto rounded-2xl bg-background/85 backdrop-blur-md p-1.5">
                 <PatentInput
@@ -298,9 +302,13 @@ const Index = () => {
                 />
               </div>
             </div>
-            <Suspense fallback={<div className="mb-8 min-h-[60vh] max-w-[864px] mx-auto rounded-3xl bg-muted/40 animate-pulse" aria-hidden="true" />}>
+            <Suspense fallback={<SummaryPlaceholder />}>
+            {/* Until the patent record arrives the report has no title or basic-info block; showing it early made
+                every section jump down when they appeared (layout shift), so a placeholder holds the space instead. */}
+            {!patentData && isLoading ? <SummaryPlaceholder /> : (
             <section className="mb-8 flex justify-center items-start gap-4 xl:gap-5">
-              <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {/* Side columns keep their width before their content is ready, so the report does not slide sideways (layout shift). */}
+              <div className="hidden lg:block w-[196px] shrink-0 sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <SummaryQuickNav
                   deps={`${currentPatent}-${summary.length}`}
                 />
@@ -336,10 +344,11 @@ const Index = () => {
                 <SatisfactionPanel patentNumber={currentPatent} className="w-full max-w-[864px]" />
               </div>
               </div>
-              <div className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="hidden lg:block w-[240px] shrink-0 sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <SatisfactionPanel patentNumber={currentPatent}  />
               </div>
             </section>
+            )}
             </Suspense>
           </div>
         )}

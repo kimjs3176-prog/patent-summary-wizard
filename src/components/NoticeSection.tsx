@@ -94,7 +94,7 @@ export function NoticeSection({ compact = false }: NoticeSectionProps = {}) {
               {notice.is_pinned && <Pin className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
               {importanceBadge(notice.importance)}
               <span className="text-[13px] font-medium text-foreground flex-1 truncate">{notice.title}</span>
-              <span className="text-[11px] text-muted-foreground/60 flex-shrink-0">
+              <span className="text-[11px] text-muted-foreground flex-shrink-0">
                 {new Date(notice.created_at).toLocaleDateString("ko-KR")}
               </span>
               {notice.content && (

@@ -92,7 +92,7 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
           <PopularSearchItem key={item.patent_number} item={item} idx={idx} onSelect={onPatentSelect} />
         )}
         {popular.length === 0 && (
-          <p className="text-[11.5px] text-muted-foreground/70 px-2 py-3">이번 달 검색 데이터가 아직 없습니다.</p>
+          <p className="text-[11.5px] text-muted-foreground px-2 py-3">이번 달 검색 데이터가 아직 없습니다.</p>
         )}
       </div>
     </div>
@@ -118,7 +118,7 @@ function PopularSearchItem({ item, idx, onSelect }: { item: PopularSearch; idx: 
           {title}
         </span>
       </div>
-      <span className="text-[11px] text-muted-foreground/60 flex-shrink-0 tabular-nums">{item.search_count}회</span>
+      <span className="text-[11px] text-muted-foreground flex-shrink-0 tabular-nums">{item.search_count}회</span>
     </button>
   );
 }

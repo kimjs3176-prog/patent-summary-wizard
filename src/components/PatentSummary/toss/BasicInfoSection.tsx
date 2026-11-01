@@ -38,7 +38,7 @@ export function BasicInfoSection({ patentData, ownerChanged, finalOwner, keyword
                   {/* 관련 키워드 — IPC 우측 여백 활용 */}
                   {keywords.length > 0 && (
                     <div className="py-3 border-b border-[#F2F4F6] last:border-0">
-                      <p className="text-[12px] text-[#8B95A1] font-semibold mb-2">관련 키워드</p>
+                      <p className="text-[12px] text-[#6B7684] font-semibold mb-2">관련 키워드</p>
                       {(() => {
                         const grouped = keywords.reduce<Record<KeywordCategory, string[]>>((acc, k) => {
                           (acc[k.cat] ||= []).push(k.word);

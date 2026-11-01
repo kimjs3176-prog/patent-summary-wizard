@@ -46,12 +46,12 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
             <Check className="w-5 h-5" />
           </div>
           <p className="text-[13px] font-bold text-[#191F28]">응답이 등록되었습니다</p>
-          <p className="text-[12px] text-[#8B95A1] mt-1">더 나은 분석으로 보답하겠습니다.</p>
+          <p className="text-[12px] text-[#6B7684] mt-1">더 나은 분석으로 보답하겠습니다.</p>
         </div>
       ) : (
         <>
           <p className="text-[13px] font-bold text-[#191F28]">이 분석이 도움이 되셨나요?</p>
-          <p className="text-[11px] text-[#8B95A1] mt-1 mb-3">만족도를 남겨주시면 서비스 개선에 반영합니다.</p>
+          <p className="text-[11px] text-[#6B7684] mt-1 mb-3">만족도를 남겨주시면 서비스 개선에 반영합니다.</p>
           <div className="flex items-center gap-1 mb-1.5" onMouseLeave={() => setHover(0)}>
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -67,7 +67,7 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
               </button>
             ))}
           </div>
-          <p className="text-[11px] font-medium text-[#8B95A1] h-4 mb-2">{active ? LABELS[active - 1] : ""}</p>
+          <p className="text-[11px] font-medium text-[#6B7684] h-4 mb-2">{active ? LABELS[active - 1] : ""}</p>
           <label htmlFor={commentId} className="sr-only">개선 의견 (선택, 500자 이내)</label>
           <textarea
             id={commentId}

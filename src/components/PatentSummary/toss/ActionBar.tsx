@@ -28,7 +28,8 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
   };
   return (
     <>
-      {!isStreaming && content && (
+      {/* Shown from the start (print and regenerate wait for the text): appearing only after streaming pushed the whole report down (layout shift). */}
+      {(isStreaming || content) && (
         <div className="flex items-center justify-between flex-wrap gap-2 mb-6 print:hidden">
           <div className="flex items-center gap-1.5">
             <Button asChild size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full bg-[#191F28] text-white hover:bg-[#333D4B] font-semibold shadow-sm">
@@ -38,12 +39,12 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
               </a>
             </Button>
             {patentData?.applicationNumber && (
-              <a href={`https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
+              <Button asChild variant="outline" size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
+                <a href={`https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`} target="_blank" rel="noopener noreferrer">
                   <FileText className="w-3.5 h-3.5" />
                   특허상세
-                </Button>
-              </a>
+                </a>
+              </Button>
             )}
             {filingEnabled(settings) && /^(10|20)\d{11}$/.test(applicationNo.replace(/[^0-9]/g, "")) && (
               <Button variant="outline" size="sm" onClick={toFiling} title="출원지원의 선행기술 조사에 이 특허를 비교 특허로 넣습니다" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
@@ -53,13 +54,14 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
             )}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-1">
-            <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
+            <Button variant="ghost" size="sm" onClick={handlePrint} disabled={isStreaming} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
               <Printer className="w-3.5 h-3.5" /> 인쇄
             </Button>
             {onRegenerate && (
               <Button
                 variant="ghost"
                 size="sm"
+                disabled={isStreaming}
                 onClick={() => {
                   if (window.confirm("기존 요약서 캐시를 삭제하고 새로 생성합니다. 진행할까요?")) {
                     onRegenerate();

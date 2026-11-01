@@ -20,12 +20,12 @@ const NotFound = () => {
         </div>
         <h1 className="mb-2 text-5xl font-extrabold text-foreground">404</h1>
         <p className="mb-6 text-lg text-muted-foreground">요청하신 페이지를 찾을 수 없습니다</p>
-        <Link to="/">
-          <Button className="rounded-full gap-2">
+        <Button asChild className="rounded-full gap-2">
+          <Link to="/">
             <Home className="w-4 h-4" />
             홈으로 돌아가기
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

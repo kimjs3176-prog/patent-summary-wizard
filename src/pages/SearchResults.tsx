@@ -237,7 +237,7 @@ export default function SearchResults() {
               </p>
               {!isLoading && extractedKeywords.length > 0 && (
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <span className="text-xs text-muted-foreground/70">AI 추출 키워드:</span>
+                  <span className="text-xs text-muted-foreground">AI 추출 키워드:</span>
                   {extractedKeywords.map((kw, i) => (
                     <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/15">
                       {kw}
@@ -319,6 +319,10 @@ export default function SearchResults() {
                         <img
                           src={proxyUrl(patent.thumbnail)}
                           alt=""
+                          width={64}
+                          height={64}
+                          loading="lazy"
+                          decoding="async"
                           className="w-16 h-16 object-contain rounded-xl bg-secondary/50 border border-border/30"
                           onError={(e) => {
                             (e.currentTarget.parentElement as HTMLElement).style.display = "none";
@@ -352,7 +356,7 @@ export default function SearchResults() {
                           <span className="truncate" title={patent.inventors}>
                             대표 발명자: <span className="font-medium text-foreground/80">{patent.inventors.split(/[|,;]/)[0].trim()}</span>
                             {patent.inventors.split(/[|,;]/).length > 1 && (
-                              <span className="text-muted-foreground/70"> 외 {patent.inventors.split(/[|,;]/).length - 1}명</span>
+                              <span className="text-muted-foreground"> 외 {patent.inventors.split(/[|,;]/).length - 1}명</span>
                             )}
                           </span>
                         </div>
@@ -365,7 +369,7 @@ export default function SearchResults() {
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-end">
-                    <span className="text-xs text-primary font-semibold opacity-60 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    <span className="text-xs text-primary font-semibold whitespace-nowrap">
                       AI 요약 보기 →
                     </span>
                   </div>
@@ -400,6 +404,7 @@ export default function SearchResults() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
+                  aria-label="이전 페이지"
                   className="h-9 w-9 p-0 rounded-xl border-border/60"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -427,6 +432,7 @@ export default function SearchResults() {
                     variant={page === currentPage ? "default" : "outline"}
                     size="sm"
                     onClick={() => handlePageChange(page)}
+                    aria-current={page === currentPage ? "page" : undefined}
                     className={`h-9 w-9 p-0 rounded-xl text-xs font-semibold ${
                       page === currentPage ? "" : "border-border/60"
                     }`}
@@ -457,6 +463,7 @@ export default function SearchResults() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
+                  aria-label="다음 페이지"
                   className="h-9 w-9 p-0 rounded-xl border-border/60"
                 >
                   <ChevronRight className="w-4 h-4" />

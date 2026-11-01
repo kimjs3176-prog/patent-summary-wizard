@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { FileText, Tablet, Type } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useKioskMode } from "@/hooks/useKioskMode";
 import { useFontScale } from "@/hooks/useFontScale";
 import { KioskKeyboard } from "@/components/KioskKeyboard";
@@ -37,16 +36,10 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-2xl animate-pulse bg-muted" />
-          <Skeleton className="h-3 w-28 rounded-full" />
-        </div>
-      </div>
-    );
-  }
+  // First visit only (returning visitors have the settings snapshot): an empty full-height block until the
+  // settings arrive. It must stay empty — the old centred spinner's nodes were reused for the page and moved
+  // (layout shift) — and rendering the whole page at once with defaults instead doubled main-thread blocking time.
+  if (isLoading) return <div className="min-h-screen bg-background" aria-busy="true" />;
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-clip">
@@ -79,7 +72,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               <p className="[font-family:'Plus_Jakarta_Sans','Noto_Sans_KR',-apple-system,system-ui,sans-serif] font-bold text-[13px] md:text-[15px] text-foreground tracking-tight leading-tight truncate max-w-[160px] sm:max-w-none">
                 {settings.header_title}
               </p>
-              <p className="text-[10px] md:text-[11px] text-muted-foreground/60 hidden sm:block leading-tight tracking-wide">
+              <p className="text-[10px] md:text-[11px] text-muted-foreground hidden sm:block leading-tight tracking-wide">
                 {settings.header_subtitle}
               </p>
             </div>
@@ -118,7 +111,8 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
         </div>
       </header>
 
-      <div style={{ paddingBottom: kioskEnabled ? "340px" : undefined }}>
+      {/* min-h-screen keeps the footer below the fold while page data loads, so it never jumps (layout shift) */}
+      <div className="min-h-screen" style={{ paddingBottom: kioskEnabled ? "340px" : undefined }}>
         {children}
       </div>
 
@@ -133,15 +127,15 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               <span className="text-xs md:text-sm font-semibold text-foreground tracking-tight">{settings.header_title}</span>
             </div>
           )}
-          <p className="text-[11px] md:text-xs text-muted-foreground/50 leading-relaxed">{settings.footer_line1}</p>
-          <p className="text-[11px] md:text-xs text-muted-foreground/50 mt-1">{settings.footer_line2}</p>
-          <p className="text-[11px] md:text-xs text-muted-foreground/60 mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground/70 transition-colors">kimjs1408@koat.or.kr</a></p>
-          <p className="text-[10.5px] md:text-[11px] text-muted-foreground/50 mt-2">
+          <p className="text-[11px] md:text-xs text-muted-foreground leading-relaxed">{settings.footer_line1}</p>
+          <p className="text-[11px] md:text-xs text-muted-foreground mt-1">{settings.footer_line2}</p>
+          <p className="text-[11px] md:text-xs text-muted-foreground mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground transition-colors">kimjs1408@koat.or.kr</a></p>
+          <p className="text-[10.5px] md:text-[11px] text-muted-foreground mt-2">
             화면이 이전 버전으로 보이나요?{" "}
             <button
               type="button"
               onClick={forceRefresh}
-              className="underline hover:text-foreground/70 transition-colors font-medium"
+              className="underline hover:text-foreground transition-colors font-medium"
             >
               캐시 초기화 후 새로고침
             </button>

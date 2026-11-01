@@ -632,7 +632,7 @@ function ScrollingPlaceholder({ texts }: { texts: string[] }) {
     >
       <span
         ref={textRef}
-        className={`text-sm sm:text-[15px] text-muted-foreground/40 whitespace-nowrap transition-all duration-300 ease-out ${shouldScroll ? 'animate-marquee-placeholder' : ''}`}
+        className={`text-sm sm:text-[15px] text-muted-foreground whitespace-nowrap transition-all duration-300 ease-out ${shouldScroll ? 'animate-marquee-placeholder' : ''}`}
         style={{
           opacity: phase === "in" ? 1 : 0,
           transform: phase === "in" ? "translateY(0)" : "translateY(-4px)",

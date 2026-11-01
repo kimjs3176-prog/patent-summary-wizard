@@ -69,11 +69,11 @@ export default function Insights() {
   const maxShare = Math.max(1, ...fieldRows.map((f) => f.share));
 
   const headerRight = (
-    <Link to="/">
-      <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+    <Button asChild variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
+      <Link to="/" aria-label="홈으로">
         <ArrowLeft className="w-3 h-3 md:w-3.5 md:h-3.5" /><span className="hidden sm:inline">홈으로</span>
-      </Button>
-    </Link>
+      </Link>
+    </Button>
   );
 
   return (
@@ -85,11 +85,10 @@ export default function Insights() {
             <p className="home-hero-muted mt-2 text-sm md:text-base max-w-2xl leading-relaxed">
               농업 국가연구기관 6곳의 최근 특허·실용신안 출원을 기술 분야와 기관별로 정리했어요.
             </p>
-            {data && (
-              <p className="home-hero-muted mt-3 text-xs">
-                {fmtDate(data.start)}~{fmtDate(data.end)} 공개 출원 {data.total.toLocaleString()}건을 모았어요. {new Date(data.updatedAt).toLocaleDateString("ko-KR")}에 갱신했어요.
-              </p>
-            )}
+            {/* The line keeps its height before the data arrives so the content below does not jump (layout shift). */}
+            <p className="home-hero-muted mt-3 text-xs min-h-4">
+              {data ? <>{fmtDate(data.start)}~{fmtDate(data.end)} 공개 출원 {data.total.toLocaleString()}건을 모았어요. {new Date(data.updatedAt).toLocaleDateString("ko-KR")}에 갱신했어요.</> : "\u00a0"}
+            </p>
           </div>
         </section>
 

@@ -19,7 +19,7 @@ export function ScoreRow({ label, value, color, reason }: { label: string; value
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5 mb-1.5">
           <p className="text-[14px] sm:text-[15px] font-bold text-[#191F28] leading-none">{label}</p>
-          <span className="text-[11px] text-[#8B95A1] font-semibold">/ 100</span>
+          <span className="text-[11px] text-[#6B7684] font-semibold">/ 100</span>
         </div>
         <div className="h-[6px] rounded-full bg-[#F1F3F5] overflow-hidden mb-2.5">
           <div
