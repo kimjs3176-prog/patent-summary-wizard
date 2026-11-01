@@ -15,6 +15,9 @@ import {
   type ChatRoute, type ChatTool, type PatentCard, type PatentHit, type ScoreRow, type TrendSnapshotLike,
 } from "./chatPolicy.ts";
 
+// Same site_settings entry that filing-trends writes; keep the two in sync.
+const CACHE_KEY = "filing_trends_v1";
+
 const BodySchema = z.object({
   messages: z.array(z.object({
     role: z.enum(["user", "assistant"]),
@@ -77,7 +80,7 @@ ${question}
 }
 
 async function loadTrends(): Promise<(TrendSnapshotLike & { updatedAt?: string }) | null> {
-  const { data } = await supabaseAdmin().from("site_settings").select("value").eq("key", "filing_trends_v1").maybeSingle();
+  const { data } = await supabaseAdmin().from("site_settings").select("value").eq("key", CACHE_KEY).maybeSingle();
   try {
     if (data?.value) return JSON.parse(data.value);
   } catch { /* fall through to live call */ }

@@ -8,3 +8,7 @@ reason = "Installed from the SheetJS CDN tarball (0.20.3); OSV cannot read a ver
 [[IgnoredVulns]]
 id = "GHSA-67mh-4wv8-2f99"
 reason = "esbuild 0.18.20 comes only from drizzle-kit (dev tool, already latest). The advisory affects the esbuild dev server, which drizzle-kit does not run."
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+reason = "minimatch 3.x/10.x come from eslint tooling and 5.x from openapi-typescript inside @lovable.dev/ai-gateway (type generation only); none receive user-supplied patterns, and no fix exists below 11.0.1."
