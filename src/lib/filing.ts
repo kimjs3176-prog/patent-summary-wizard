@@ -1,7 +1,7 @@
 // 출원지원(에이프 Agri-IP) 연결 — 관리자 설정 feature_filing 으로 켜고 끄는 옵션 기능.
 // AIS 는 에이프를 /filing 페이지의 iframe 으로 열고(임베드 모드), 두 창은 postMessage 로만 주고받는다.
 //   AIS → 에이프: 주소 {filing_url}?embed=ais&skin=ais&theme=light&accent=hsl(…)#단계[?cite=출원번호&title=…|?kw=키워드&field=분야]
-//                 메시지 {type:"agri-ip:go", step, sub} 단계·쪽 이동 · {type:"agri-ip:move", dir} 이전/다음 · {type:"agri-ip:open", panel} 도움말·환경설정
+//                 메시지 {type:"agri-ip:go", step, sub} 단계·쪽 이동 · {type:"agri-ip:move", dir} 이전/다음 · {type:"agri-ip:open", panel:"help"} 도움말
 //                      {type:"agri-ip:cite", no, title} (이미 열린 창에 비교 특허 추가)
 //   에이프 → AIS: {type:"agri-ip:state", …} 그릴 때마다 단계·쪽·이전/다음·D-day (이 페이지가 단계 바를 그린다) · {type:"agri-ip:ais", q} 'AIS로 분석' → AIS 가 직접 검색
 // 반대로 AIS 가 에이프 안(iframe)에 열렸을 때는(?from=agri-ip) 비교 특허를 부모 창으로 postMessage 한다.

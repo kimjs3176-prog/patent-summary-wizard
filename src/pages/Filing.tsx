@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileSignature, FileText, Globe, HelpCircle, Lightbulb, Search, Send, Settings, Stethoscope } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileSignature, FileText, Globe, HelpCircle, Lightbulb, Search, Send, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -10,7 +10,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 // 출원지원 — 관리자 설정 '출원지원' 토글로 켜고 끄는 옵션 메뉴. 화면에는 AIS 의 한 기능으로만 보이고 바깥 서비스 이름은 쓰지 않는다.
 // 출원지원 서버(에이프)의 5단계 출원 준비(아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리·해외 출원)를 본문만 iframe 으로 넣고,
-// 단계 탭·쪽 이동·이전/다음·D-day·도움말·환경설정은 이 페이지가 AIS 디자인으로 그린다 (에이프가 그릴 때마다 상태를 보내 준다).
+// 단계 탭·쪽 이동·이전/다음·남은 일·D-day·도움말은 이 페이지가 AIS 디자인으로 그린다 (에이프가 그릴 때마다 상태를 보내 준다).
 //   /filing?p=단계            그 단계로 (에이프가 쪽을 바꾸면 주소도 따라 바뀐다)
 //   /filing?cite=출원번호&title= 요약 화면의 특허를 비교 특허로 넣고 선행기술 조사로
 //   /filing?kw=키워드&field=   검색 키워드로 새 시나리오 시작
@@ -189,9 +189,6 @@ const Filing = () => {
                 )}
                 <button type="button" onClick={() => post({ type: "agri-ip:open", panel: "help" })} className="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full text-muted-foreground hover:bg-accent/60 transition-colors" title="도움말 · 진행 상황 · 작업 파일 내보내기" aria-label="도움말">
                   <HelpCircle className="w-4 h-4" />
-                </button>
-                <button type="button" onClick={() => post({ type: "agri-ip:open", panel: "settings" })} className="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full text-muted-foreground hover:bg-accent/60 transition-colors" title="환경설정 · AI 키" aria-label="환경설정">
-                  <Settings className="w-4 h-4" />
                 </button>
               </div>
             </div>

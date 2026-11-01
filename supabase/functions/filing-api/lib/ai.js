@@ -1,11 +1,8 @@
 // 출원지원 AI 분석 — 아이디어 초안(ideate), 유망기술 아이디어(discover), 유사 특허 심층 비교(compare), 공백기술 아이디어(whitespace),
 // 거절이유 예상(reject), 명세서 검토(review), 〔입력 필요〕 칸 채우기(fill), 검토 메모·누락 항목 보완(supplement), 해외 사업화 전략(globalbiz), 키워드 사업 인사이트(insight).
-// 서버에서는 Lovable AI 게이트웨이(gateway.js, JSON 출력)로 실행하고, 사용자가 화면에 키를 넣으면 같은 요청 내용(aiPrompt)으로 브라우저가 직접 실행한다.
-import { DRAFT_MODEL } from "./draft.js";
+// 서버에서 Lovable AI 게이트웨이(gateway.js, JSON 출력)로 실행한다.
 import { chat } from "./gateway.js";
 
-// 짧은 JSON 작업이라 기본은 low (빠르게). 더 깊게 보려면 AI_EFFORT 로 올린다
-const EFFORT = ["low", "medium", "high", "xhigh", "max"].includes(process.env.AI_EFFORT) ? process.env.AI_EFFORT : "low";
 const MAX_TOKENS = 16000;
 
 const SYSTEM = `당신은 농식품 분야 특허 전략가입니다. 한국에서 특허 출원을 준비하는 농업인·연구자·중소기업을 돕습니다.
@@ -287,13 +284,6 @@ export const feedbackOf = b => {
   const f = arr(b?.feedback, 20).map(x => str(x, 200)).filter(Boolean).slice(0, 8);
   return f.length ? `\n\n[사용자가 받아들이지 않은 이전 제안]\n${f.map(x => `- ${x}`).join("\n")}\n같은 제안은 되풀이하지 말고, 꼭 필요하면 다른 방법을 제안하세요.` : "";
 };
-
-// 사용자 키로 브라우저에서 바로 실행할 때 쓰는 요청 내용. 서버 실행(runAi)과 같은 지침·형식(JSON 스키마)·모델·설정이다
-export function aiPrompt(task, body) {
-  const t = AI_TASKS[task]; if (!t) throw bad("알 수 없는 작업입니다.");
-  const input = t.validate(body);
-  return { task, system: SYSTEM, user: t.user(input) + feedbackOf(body), schema: t.schema, model: DRAFT_MODEL, effort: EFFORT, maxTokens: MAX_TOKENS };
-}
 
 // 게이트웨이는 JSON 객체로만 답하게 할 수 있고 스키마를 강제하지는 않으므로, 지켜야 할 형식(JSON 스키마)을 지침에 함께 적는다
 export const schemaNote = schema => `\n\n[답 형식]\n아래 JSON 스키마를 그대로 따르는 JSON 객체 하나로만 답하세요. 설명 문장이나 코드 블록 표시(\`\`\`)를 붙이지 마세요.\n${JSON.stringify(schema)}`;

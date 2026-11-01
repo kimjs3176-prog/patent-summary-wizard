@@ -1,12 +1,8 @@
 // 출원용 명세서 작성 — 특허법 시행규칙 서식 구조의 명세서 초안을 작성한다.
-// 서버 AI 는 Lovable AI 게이트웨이(gateway.js, LOVABLE_API_KEY)로 부른다. 사용자가 화면에 넣은 키로 쓸 때는 브라우저가 draftPrompt 의 지침으로 직접 요청한다.
+// 서버 AI 는 Lovable AI 게이트웨이(gateway.js, LOVABLE_API_KEY)로 부른다.
 import { lintSpec } from "./specCheck.js";
 import { chat, gatewayEnabled, gatewayErrorResponse } from "./gateway.js";
 
-// 사용자가 화면에 Claude 키를 넣었을 때 브라우저가 부를 모델 (draftPrompt·aiPrompt 가 알려 준다). 서버 AI 모델은 gateway.js 의 SERVER_MODEL
-export const DRAFT_MODEL = process.env.DRAFT_MODEL || "claude-opus-5-5";
-// 명세서는 길고 서식이 정해져 있어 기본은 medium (시간과 품질 사이). DRAFT_EFFORT 로 바꿀 수 있다
-const EFFORT = ["low", "medium", "high", "xhigh", "max"].includes(process.env.DRAFT_EFFORT) ? process.env.DRAFT_EFFORT : "medium";
 const MAX_TOKENS = 32000;
 export const REVIEW_MARK = "<<<검토메모>>>";
 
@@ -137,10 +133,6 @@ export function buildUserPrompt(d) {
   return lines.join("\n");
 }
 
-// 사용자 키로 브라우저에서 바로 작성할 때 쓰는 요청 내용. 서버 AI와 같은 지침·모델·설정이며, 서버 키 없이도 돌려준다
-export function draftPrompt(input) {
-  return { system: SYSTEM_PROMPT, user: buildUserPrompt(input), reviewMark: REVIEW_MARK, model: DRAFT_MODEL, effort: EFFORT, maxTokens: MAX_TOKENS };
-}
 
 // 명세서와 검토 메모를 나눈다. 코드 블록 표시·식별항목 앞의 # 기호·【 앞의 머리말은 명세서(제출 파일)에 남기지 않는다 (화면 splitReviewText 와 같은 규칙)
 export function splitReview(text) {
