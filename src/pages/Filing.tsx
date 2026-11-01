@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ChevronLeft, ChevronRight, ExternalLink, FileSignature, FileText, Globe, HelpCircle, Lightbulb, Search, Send, Settings, Stethoscope } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileSignature, FileText, Globe, HelpCircle, Lightbulb, Search, Send, Settings, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -17,12 +17,13 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const STEP_ICONS = { idea: Lightbulb, prior: Search, diag: Stethoscope, draft: FileText, manage: Send } as const;
 // 에이프가 첫 상태를 보내기 전에 보여 줄 기본 단계 (에이프 STEPS 와 같은 순서)
+const step0 = { done: false, cur: false, visited: false, todo: [] };
 const DEFAULT_STEPS: FilingState["steps"] = [
-  { id: "idea", t: "아이디어", s: "키워드로 초안", done: false, cur: true },
-  { id: "prior", t: "선행기술 조사", s: "유사 특허·공백", done: false, cur: false },
-  { id: "diag", t: "진단·보완", s: "특허성·거절 위험", done: false, cur: false },
-  { id: "draft", t: "서류 작성", s: "명세서·출원서", done: false, cur: false },
-  { id: "manage", t: "제출·관리", s: "지원·기한·해외", done: false, cur: false },
+  { ...step0, id: "idea", t: "아이디어", s: "키워드로 초안", cur: true },
+  { ...step0, id: "prior", t: "선행기술 조사", s: "유사 특허·공백" },
+  { ...step0, id: "diag", t: "진단·보완", s: "특허성·거절 위험" },
+  { ...step0, id: "draft", t: "서류 작성", s: "명세서·출원서" },
+  { ...step0, id: "manage", t: "제출·관리", s: "지원·기한·해외" },
 ];
 
 const Filing = () => {
@@ -33,6 +34,8 @@ const Filing = () => {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [state, setState] = useState<FilingState | null>(null);
   const [frameTop, setFrameTop] = useState(0);
+  const [todoOpen, setTodoOpen] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
   const enabled = filingEnabled(settings);
   const origin = filingOrigin(settings);
 
@@ -69,13 +72,21 @@ const Filing = () => {
     return () => window.removeEventListener("message", onMessage);
   }, [enabled, origin, navigate]);
 
+  // 좁은 화면에서는 단계·쪽 칩이 옆으로 넘치므로, 지금 단계와 쪽이 늘 보이게 옮긴다
+  useEffect(() => {
+    barRef.current?.querySelectorAll<HTMLElement>('[aria-current="step"], [aria-current="page"]').forEach((el) => {
+      const list = el.closest("ol");
+      if (list && list.scrollWidth > list.clientWidth) list.scrollTo({ left: Math.max(0, el.offsetLeft - list.clientWidth / 2 + el.offsetWidth / 2), behavior: "smooth" });
+    });
+  }, [state?.step, state?.sub, state?.mode]);
+
   // iframe 은 화면 아래 끝까지: 위에 있는 머리글·단계 바 높이만큼 뺀다
   useLayoutEffect(() => {
     const measure = () => { const r = frameRef.current?.getBoundingClientRect(); if (r) setFrameTop(Math.round(r.top + window.scrollY)); };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [state?.subs.length, enabled]);
+  }, [state?.subs.length, enabled, todoOpen]);
 
   const headerRight = (
     <>
@@ -106,6 +117,11 @@ const Filing = () => {
   const inGlobal = state?.mode === "global";
   const subs = state?.subs ?? [];
   const curIdx = steps.findIndex((s) => s.cur);
+  // 남은 일: 들렀거나 지금 단계의 꼭 할 일만 (아직 가지 않은 단계는 재촉하지 않는다)
+  const todoSteps = steps.filter((s) => (s.visited || s.cur) && s.todo.length);
+  const todoN = todoSteps.reduce((n, s) => n + s.todo.length, 0);
+  const pageTodo = !inGlobal && state ? (steps.find((s) => s.cur)?.todo ?? []).filter((t) => t.sub === state.sub) : [];
+  const go = (step: string, sub: number) => { setTodoOpen(false); post({ type: "agri-ip:go", step, sub }); };
 
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
@@ -113,7 +129,7 @@ const Filing = () => {
         <h1 id="filing-title" className="sr-only">출원지원</h1>
         {/* 단계 바 — AIS 디자인. 누르면 iframe 안 에이프가 그 단계로 간다 */}
         <div className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 md:pt-3">
-          <div className="glossy-card rounded-2xl md:rounded-3xl px-2.5 md:px-4 py-2 md:py-2.5">
+          <div ref={barRef} className="glossy-card rounded-2xl md:rounded-3xl px-2.5 md:px-4 py-2 md:py-2.5">
             <div className="flex items-center gap-2 md:gap-3">
               <div className="hidden lg:flex items-center gap-2 pr-3 border-r border-border/60 flex-shrink-0">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "var(--gradient-accent)" }}>
@@ -128,20 +144,22 @@ const Filing = () => {
                 {steps.map((s, i) => {
                   const Icon = STEP_ICONS[s.id as keyof typeof STEP_ICONS] ?? FileText;
                   const active = s.cur && !inGlobal;
+                  const left = s.visited && !s.cur && s.todo.length > 0;
                   return (
                     <li key={s.id} className="flex items-center flex-shrink-0">
                       <button
                         type="button"
                         onClick={() => post({ type: "agri-ip:go", step: s.id, sub: 0 })}
                         aria-current={active ? "step" : undefined}
-                        title={`${i + 1}단계 ${s.t} · ${s.s}`}
+                        aria-label={`${i + 1}단계 ${s.t}${s.done ? " (완료)" : left ? ` (남은 일 ${s.todo.length}개)` : ""}`}
+                        title={`${i + 1}단계 ${s.t} · ${s.s}${s.todo.length ? `\n남은 일: ${s.todo.map((t) => t.t).join(", ")}` : ""}`}
                         className={`flex items-center gap-1.5 md:gap-2 rounded-full h-8 md:h-9 pl-1 pr-2.5 md:pr-3 text-[12px] md:text-[13px] font-semibold transition-all btn-press ${
                           active ? "text-white shadow-md" : s.done ? "text-primary bg-primary/5 hover:bg-primary/10" : "text-muted-foreground hover:bg-accent/60"
                         }`}
                         style={active ? { background: "var(--gradient-accent)" } : undefined}
                       >
-                        <span className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${active ? "bg-white/20" : s.done ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>
-                          {s.done ? <Check className="w-3.5 h-3.5" /> : active ? <Icon className="w-3.5 h-3.5" /> : i + 1}
+                        <span className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${active ? "bg-white/20" : s.done ? "bg-primary text-white" : left ? "bg-amber-100 text-amber-800" : "bg-muted text-muted-foreground"}`}>
+                          {s.done ? <Check className="w-3.5 h-3.5" /> : active ? <Icon className="w-3.5 h-3.5" /> : left ? s.todo.length : i + 1}
                         </span>
                         <span className="whitespace-nowrap">{s.t}</span>
                       </button>
@@ -199,15 +217,43 @@ const Filing = () => {
                   {subs.length > 1 && <li className="pl-1 text-[11px] text-muted-foreground tabular-nums flex-shrink-0">{curIdx + 1}/{steps.length}단계 · {state.sub + 1}/{subs.length}쪽</li>}
                 </ol>
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  {todoN > 0 && (
+                    <Button variant="outline" size="sm" onClick={() => setTodoOpen((v) => !v)} aria-expanded={todoOpen} aria-controls="filing-todo" className="h-8 rounded-full px-2.5 text-[12px] gap-1 border-amber-300 text-amber-800 hover:bg-amber-50 hover:text-amber-900" title="단계별로 아직 남은 일을 보고 바로 갑니다">
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">남은 일</span>
+                      <span className="tabular-nums font-bold">{todoN}</span>
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" disabled={!state.prev} onClick={() => post({ type: "agri-ip:move", dir: -1 })} className="h-8 rounded-full px-2.5 text-[12px] gap-1 text-muted-foreground" title={state.prev || undefined} aria-label={state.prev ? `이전: ${state.prev}` : "이전"}>
                     <ChevronLeft className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline max-w-[140px] truncate">{state.prev || "이전"}</span>
                   </Button>
-                  <Button size="sm" disabled={!state.next} onClick={() => post({ type: "agri-ip:move", dir: 1 })} className="h-8 rounded-full px-3 text-[12px] gap-1 font-semibold btn-press" title={state.next || undefined}>
-                    <span className="max-w-[160px] truncate">{state.next || "마지막 단계"}</span>
+                  <Button size="sm" disabled={!state.next} onClick={() => post({ type: "agri-ip:move", dir: 1 })} className="h-8 rounded-full px-3 text-[12px] gap-1 font-semibold btn-press" title={state.next ? `${state.next}${pageTodo.length ? ` · 이 쪽에 남은 일: ${pageTodo.map((t) => t.t).join(", ")} (나중에 해도 됩니다)` : ""}` : undefined}>
+                    {pageTodo.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-300" aria-hidden="true" />}
+                    <span className="max-w-[160px] truncate"><span className="hidden sm:inline">{state.next ? "다음: " : ""}</span>{state.next || "마지막 단계"}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </Button>
                 </div>
+              </div>
+            )}
+            {/* 남은 일: 단계별 꼭 할 일 — 누르면 그 쪽으로 */}
+            {todoOpen && todoN > 0 && !inGlobal && (
+              <div id="filing-todo" className="mt-1.5 pt-2 border-t border-border/50">
+                <p className="text-[12px] text-muted-foreground mb-1.5">출원 전에 끝내야 할 일입니다. 누르면 그 화면으로 갑니다. 순서대로 하지 않아도 괜찮아요.</p>
+                <ul className="grid gap-1 sm:grid-cols-2">
+                  {todoSteps.flatMap((s) => s.todo.map((t) => {
+                    const n = steps.findIndex((x) => x.id === s.id) + 1;
+                    return (
+                      <li key={`${s.id}-${t.t}`}>
+                        <button type="button" onClick={() => go(t.step, t.sub)} className="w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] hover:bg-accent/60 transition-colors">
+                          <span className="flex-shrink-0 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5">{n}단계 {s.t}</span>
+                          <span className="min-w-0 flex-1 truncate text-foreground">{t.t}</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        </button>
+                      </li>
+                    );
+                  }))}
+                </ul>
               </div>
             )}
           </div>
