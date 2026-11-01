@@ -1,13 +1,13 @@
 // 출원지원 API (에이프 server/*.js 에서 가져온 lib/ 를 Deno 로 돌린다) — lib/ 는 이제 이 저장소에서 직접 고친다(에이프와 동기화하지 않음).
 //   GET  /filing-api/api/health · trends · kr-trends
-//   POST /filing-api/api/explore (KIPRIS 유사 특허·공백 맵) · draft (명세서 초안) · ai (AI 분석) · prompt (사용자 키로 쓸 지침)
+//   POST /filing-api/api/explore (KIPRIS 유사 특허·공백 맵) · draft (명세서 초안) · ai (AI 분석)
 // 수출 실적·지원사업 공고·기사(에이프 해외동향·해외사업용)는 출원지원에 필요 없어 두지 않는다.
-// 비밀값: KIPRIS_API_KEY(필수, 기존 함수와 공유) · LOVABLE_API_KEY(서버 AI, Lovable Cloud 가 넣어 줌. 없으면 화면에서 넣는 키로) · KIPRIS_MOCK=1(모의)
+// 비밀값: KIPRIS_API_KEY(필수, 기존 함수와 공유) · LOVABLE_API_KEY(서버 AI, Lovable Cloud 가 넣어 줌. 없으면 AI 기능은 꺼지고 기본 초안만) · KIPRIS_MOCK=1(모의)
 import "./lib/env.ts";
 import { kipris, MOCK, validate, explore, allowed, health, KiprisError } from "./lib/explore.js";
-import { draftEnabled, validateDraftInput, draftSpec, draftErrorResponse, draftPrompt } from "./lib/draft.js";
+import { draftEnabled, validateDraftInput, draftSpec, draftErrorResponse } from "./lib/draft.js";
 import { trends } from "./lib/trends.js";
-import { aiPrompt, runAi } from "./lib/ai.js";
+import { runAi } from "./lib/ai.js";
 import { krTrendsCached, krCached, validateKr } from "./lib/kr-trends.js";
 
 // 같은 사이트(AIS)와 Lovable 미리보기, 로컬 개발만 받는다
@@ -59,13 +59,8 @@ Deno.serve(async (req: Request) => {
       return json(req, 200, await krTrendsCached(kipris, input, { mode }), "public, max-age=21600");
     }
     if (req.method === "GET" && path === "/api/trends") return json(req, 200, trends(q), "public, max-age=3600");
-    if (req.method === "POST" && path === "/api/prompt") {
-      if (!allowed(`prompt:${who}`, 20)) return json(req, 429, { error: "요청이 너무 많습니다. 1분 뒤 다시 시도하세요." });
-      const body = await readJson(req, 96 * 1024);
-      return json(req, 200, body?.task ? aiPrompt(body.task, body.input) : draftPrompt(validateDraftInput(body)));
-    }
     if (req.method === "POST" && path === "/api/ai") {
-      if (!draftEnabled()) return json(req, 503, { error: "서버 AI 가 꺼져 있습니다(LOVABLE_API_KEY 없음). 화면에서 AI 키를 넣어 쓰세요." });
+      if (!draftEnabled()) return json(req, 503, { error: "서버 AI 가 꺼져 있습니다(LOVABLE_API_KEY 없음)." });
       if (!allowed(`ai:${who}`, 6)) return json(req, 429, { error: "AI 분석은 1분에 6번까지 할 수 있습니다." });
       const body = await readJson(req, 96 * 1024);
       try { return json(req, 200, await runAi(body?.task, body?.input)); }
