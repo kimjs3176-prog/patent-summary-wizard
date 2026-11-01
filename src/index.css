@@ -755,6 +755,7 @@ time, .tabular-nums, [data-numeric] {
     page-break-inside: avoid;
   }
 
+  body.ais-printing .ais-print-target section.report-prose-section,
   body.ais-printing .ais-print-target section:has(.space-y-4) {
     break-inside: auto;
     page-break-inside: auto;
@@ -1363,11 +1364,79 @@ time, .tabular-nums, [data-numeric] {
   color: hsl(var(--muted-foreground) / 0.7);
   letter-spacing: 0.08em;
 }
-.report-prose-section > .space-y-4 {
+.report-prose-section > .report-body {
   max-width: 760px;
   padding-left: 18px;
   border-left: 2px solid hsl(var(--border));
 }
+/* 보고서형 본문: 섹션 요지(첫 문장) */
+.report-lead {
+  max-width: 760px;
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  border-left: 3px solid hsl(var(--primary));
+  border-radius: 0 6px 6px 0;
+  background: hsl(var(--primary) / 0.05);
+  font-size: 16.5px;
+  line-height: 1.75;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+/* 핵심 요약 + 목차 */
+.report-overview {
+  padding: 18px 18px 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.35);
+}
+.report-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.report-overview-cell {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  min-width: 0;
+}
+.report-overview-cell.wide { grid-column: span 2; }
+.report-overview-cell.full { grid-column: 1 / -1; }
+.report-overview-cell dt { font-size: 12px; font-weight: 700; color: #6B7684; }
+.report-overview-cell dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; color: hsl(var(--foreground)); }
+.report-overview-cell dd b { font-size: 24px; line-height: 1.2; font-weight: 800; }
+.report-overview-cell .unit { font-size: 12px; color: #6B7684; }
+.report-overview-cell .sub { flex-basis: 100%; font-size: 13px; color: #4E5968; }
+.report-overview-cell .label { flex-basis: 100%; font-size: 14px; font-weight: 700; }
+.report-overview-cell .fig { font-size: 15px; font-weight: 600; }
+.report-overview-cell p { margin: 0; font-size: 15px; line-height: 1.7; font-weight: 500; }
+.report-toc { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed hsl(var(--border)); }
+.report-toc-title { font-size: 12px; font-weight: 700; color: #6B7684; }
+.report-toc ol { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; }
+.report-toc a { display: inline-flex; align-items: baseline; gap: 5px; font-size: 13px; color: #333D4B; text-decoration: none; }
+.report-toc a:hover { color: hsl(var(--primary)); text-decoration: underline; }
+.report-toc .n { font-family: ui-monospace, monospace; font-size: 11px; color: #6B7684; }
+/* 시장 요약표 · 근거 배지 */
+.report-table-wrap { overflow-x: auto; border: 1px solid hsl(var(--border)); border-radius: 6px; }
+.report-market-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13.5px; }
+.report-market-table th, .report-market-table td { padding: 9px 12px; text-align: left; border-bottom: 1px solid hsl(var(--border)); vertical-align: top; }
+.report-market-table thead th { font-size: 12px; font-weight: 700; color: #4E5968; background: hsl(var(--muted) / 0.5); }
+.report-market-table tbody tr:last-child > * { border-bottom: 0; }
+.report-market-table tbody th { font-weight: 700; color: hsl(var(--foreground)); }
+.report-market-table .yr { display: block; font-size: 11.5px; color: #6B7684; }
+.report-market-note { margin-top: 8px; font-size: 12px; line-height: 1.6; color: #4E5968; }
+.report-market-note b { margin-right: 6px; color: #333D4B; }
+.trust-note { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 0 2px; }
+.trust-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 700; line-height: 1.6; white-space: nowrap; vertical-align: 1px; }
+.trust-badge.official { color: #047857; background: #D1FAE5; }
+.trust-badge.ai { color: #92400E; background: #FEF3C7; }
+.trust-badge.none { color: #4E5968; background: hsl(var(--muted)); }
+.trust-source { font-size: 12px; color: #4E5968; }
 .report-prose-section strong {
   color: hsl(var(--foreground));
 }
@@ -1391,9 +1460,17 @@ time, .tabular-nums, [data-numeric] {
   .report-section + .report-section {
     padding-top: 22px;
   }
-  .report-prose-section > .space-y-4 {
+  .report-prose-section > .report-body {
     padding-left: 14px;
   }
+  .report-overview { padding: 14px 12px; }
+  .report-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .report-overview-cell.wide { grid-column: 1 / -1; }
+}
+
+@media print {
+  .report-overview, .report-lead, .report-market { break-inside: avoid; }
+  .report-toc a { color: inherit; }
 }
 
 @media print {
