@@ -1,4 +1,4 @@
-import { z } from "npm:zod@3.23.8";
+import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   CancelledError, generateChatCompletion, GatewayError, PaymentRequiredError, RateLimitError, TimeoutError,
 } from "npm:@lovable.dev/ai-gateway@0.1.11";
@@ -71,7 +71,7 @@ function parseJson(content: unknown): Record<string, unknown> | null {
 async function planSearchTerms(b: Body): Promise<{ terms: string[]; need: string }> {
   const fallback = [b.item, ...b.item.split(/\s+/)].filter((t) => t.length >= 2);
   try {
-    const res = await generateChatCompletion({
+    const res = await (generateChatCompletion as any)({
       model: "google/gemini-3.1-flash-lite",
       response_format: { type: "json_object" },
       messages: [
@@ -183,7 +183,7 @@ async function rankCandidates(b: Body, need: string, candidates: FinderCandidate
     ipc: c.ipc || "",
     trl: c.trl ?? "미분석",
   }));
-  const res = await generateChatCompletion({
+  const res = await (generateChatCompletion as any)({
     model: "google/gemini-3.8-flash",
     response_format: { type: "json_object" },
     messages: [
@@ -211,7 +211,7 @@ ${JSON.stringify(list)}
 형식: {"results":[{"patentId":"...","fit":0,"reason":"...","matchPoints":["..."],"considerations":"..."}]}`,
       },
     ],
-  }, { signal: AbortSignal.timeout(RANK_TIMEOUT_MS), maxRetries: AI_MAX_RETRIES }).catch((e) => {
+  }, { signal: AbortSignal.timeout(RANK_TIMEOUT_MS), maxRetries: AI_MAX_RETRIES }).catch((e: unknown) => {
     if (isAbort(e)) throw new RankTimeoutError("rank timeout");
     throw e;
   });

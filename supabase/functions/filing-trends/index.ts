@@ -1,4 +1,5 @@
 import { generateChatCompletion, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.11";
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
@@ -60,7 +61,7 @@ async function summarize(report: TrendReport): Promise<string[]> {
     기관별: report.institutes.map((i) => ({ 기관: i.label, 기준연도: i.latest, 전년: i.previous })),
   };
   try {
-    const res = await generateChatCompletion({
+    const res: any = await (generateChatCompletion as any)({
       model: "google/gemini-3.8-flash",
       response_format: { type: "json_object" },
       messages: [
