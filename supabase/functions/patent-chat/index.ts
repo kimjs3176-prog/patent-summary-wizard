@@ -42,7 +42,7 @@ function parseJson(content: unknown): Record<string, unknown> | null {
 async function route(history: ChatMessage[], question: string): Promise<ChatRoute> {
   const context = history.slice(-4).map((m) => `${m.role === "user" ? "사용자" : "상담"}: ${m.content.slice(0, 300)}`).join("\n");
   try {
-    const res = await generateChatCompletion({
+    const res = await (generateChatCompletion as any)({
       model: "google/gemini-3.1-flash-lite",
       response_format: { type: "json_object" },
       messages: [

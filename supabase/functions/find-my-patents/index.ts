@@ -71,7 +71,7 @@ function parseJson(content: unknown): Record<string, unknown> | null {
 async function planSearchTerms(b: Body): Promise<{ terms: string[]; need: string }> {
   const fallback = [b.item, ...b.item.split(/\s+/)].filter((t) => t.length >= 2);
   try {
-    const res = await generateChatCompletion({
+    const res = await (generateChatCompletion as any)({
       model: "google/gemini-3.1-flash-lite",
       response_format: { type: "json_object" },
       messages: [
@@ -183,7 +183,7 @@ async function rankCandidates(b: Body, need: string, candidates: FinderCandidate
     ipc: c.ipc || "",
     trl: c.trl ?? "미분석",
   }));
-  const res = await generateChatCompletion({
+  const res = await (generateChatCompletion as any)({
     model: "google/gemini-3.8-flash",
     response_format: { type: "json_object" },
     messages: [
