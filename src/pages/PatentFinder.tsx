@@ -305,17 +305,9 @@ export default function PatentFinder() {
     saveLast(EMPTY_FINDER_FORM, null);
   };
 
-  const headerRight = (
-    <Button asChild variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
-      <Link to="/" aria-label="홈으로">
-        <ArrowLeft className="w-3 h-3 md:w-3.5 md:h-3.5" />
-        <span className="hidden sm:inline">홈으로</span>
-      </Link>
-    </Button>
-  );
 
   return (
-    <PageLayout headerRight={headerRight}>
+    <PageLayout>
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         <section className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-7">
           <div className="max-w-6xl mx-auto px-5 md:px-6 py-6 md:py-8">

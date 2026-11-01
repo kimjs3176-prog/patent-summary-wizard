@@ -602,15 +602,7 @@ const Batch = () => {
   const wide = mode === "numbers" && selected;
 
   return (
-    <PageLayout
-      headerRight={
-        <Button asChild variant="outline" size="sm" className="rounded-full text-xs h-8 px-3 gap-1.5">
-          <Link to="/" aria-label="홈으로">
-            <ArrowLeft className="w-3.5 h-3.5" /> 홈으로
-          </Link>
-        </Button>
-      }
-    >
+    <PageLayout>
       <div className={`${wide ? "max-w-[1500px]" : "max-w-6xl"} mx-auto px-4 py-8 space-y-6 transition-all`}>
         <header className="space-y-2">
           <div className="font-mono text-[11px] tracking-[0.2em] text-primary uppercase">§ Batch Lookup &amp; Export</div>

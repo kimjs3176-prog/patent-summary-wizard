@@ -197,16 +197,9 @@ export default function Compare() {
     toast.success("폴더 이름이 변경되었습니다");
   };
 
-  const headerRight = (
-    <Button asChild variant="ghost" size="sm" className="gap-2 rounded-full">
-      <Link to="/">
-        <ArrowLeft className="w-4 h-4" /> 홈으로
-      </Link>
-    </Button>
-  );
 
   return (
-    <PageLayout headerRight={headerRight}>
+    <PageLayout>
       <main className="container mx-auto px-4 md:px-6 py-8 relative z-10">
         <div className="flex items-center gap-2 mb-6">
           <Heart className="w-5 h-5 text-primary" />
