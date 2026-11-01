@@ -1,8 +1,9 @@
-// 출원용 명세서 작성 — Claude API(공식 SDK)로 특허법 시행규칙 서식 구조의 명세서 초안을 작성한다.
-// 서버 키는 환경변수 ANTHROPIC_API_KEY 에서만 읽는다. 사용자가 화면에 넣은 키로 쓸 때는 브라우저가 draftPrompt 의 지침으로 직접 요청한다.
-import Anthropic from "@anthropic-ai/sdk";
+// 출원용 명세서 작성 — 특허법 시행규칙 서식 구조의 명세서 초안을 작성한다.
+// 서버 AI 는 Lovable AI 게이트웨이(gateway.js, LOVABLE_API_KEY)로 부른다. 사용자가 화면에 넣은 키로 쓸 때는 브라우저가 draftPrompt 의 지침으로 직접 요청한다.
 import { lintSpec } from "./specCheck.js";
+import { chat, gatewayEnabled, gatewayErrorResponse } from "./gateway.js";
 
+// 사용자가 화면에 Claude 키를 넣었을 때 브라우저가 부를 모델 (draftPrompt·aiPrompt 가 알려 준다). 서버 AI 모델은 gateway.js 의 SERVER_MODEL
 export const DRAFT_MODEL = process.env.DRAFT_MODEL || "claude-opus-5-5";
 // 명세서는 길고 서식이 정해져 있어 기본은 medium (시간과 품질 사이). DRAFT_EFFORT 로 바꿀 수 있다
 const EFFORT = ["low", "medium", "high", "xhigh", "max"].includes(process.env.DRAFT_EFFORT) ? process.env.DRAFT_EFFORT : "medium";
@@ -150,39 +151,18 @@ export function splitReview(text) {
   return { spec, review };
 }
 
-let client;
-const getClient = () => (client ??= new Anthropic());
-export const draftEnabled = () => !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+export const draftEnabled = gatewayEnabled;
 
-export async function draftSpec(input, { anthropic = getClient() } = {}) {
-  const stream = anthropic.beta.messages.stream({
-    model: DRAFT_MODEL,
-    max_tokens: MAX_TOKENS,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    thinking: { type: "adaptive" },
-    output_config: { effort: EFFORT },
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildUserPrompt(input) }]
-  });
-  const msg = await stream.finalMessage();
-  if (msg.stop_reason === "refusal") {
+export async function draftSpec(input, { chatImpl = chat } = {}) {
+  const msg = await chatImpl({ system: SYSTEM_PROMPT, user: buildUserPrompt(input), maxTokens: MAX_TOKENS });
+  if (msg.finishReason === "content_filter") {
     throw Object.assign(new Error("명세서 작성 요청이 거절되었습니다. 발명 정보를 확인한 뒤 다시 시도하세요."), { status: 422 });
   }
-  const text = msg.content.filter(b => b.type === "text").map(b => b.text).join("");
-  if (!text.trim()) throw Object.assign(new Error("명세서가 생성되지 않았습니다. 다시 시도하세요."), { status: 502 });
-  const out = splitReview(text);
-  // checks: 서식·청구항 자동 점검 결과 (server/specCheck.js, 화면의 최종 점검과 같은 규칙). 응답에 더한 항목이라 기존 필드는 그대로다
-  return { ...out, truncated: msg.stop_reason === "max_tokens", model: msg.model, checks: lintSpec(out.spec, { hasDrawings: input.hasDrawings }) };
+  if (!msg.text.trim()) throw Object.assign(new Error("명세서가 생성되지 않았습니다. 다시 시도하세요."), { status: 502 });
+  const out = splitReview(msg.text);
+  // checks: 서식·청구항 자동 점검 결과 (specCheck.js, 화면의 최종 점검과 같은 규칙). 응답에 더한 항목이라 기존 필드는 그대로다
+  return { ...out, truncated: msg.finishReason === "length", model: msg.model, checks: lintSpec(out.spec, { hasDrawings: input.hasDrawings }) };
 }
 
-// SDK 오류를 사용자에게 보여줄 HTTP 응답으로 바꾼다
-export function draftErrorResponse(e) {
-  if (e instanceof Anthropic.RateLimitError) return [429, "AI 사용량이 많습니다. 잠시 뒤 다시 시도하세요."];
-  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return [503, "서버의 ANTHROPIC_API_KEY 를 확인하세요."];
-  if (e instanceof Anthropic.BadRequestError) return [502, `AI 요청 형식 오류: ${e.message}`];
-  if (e instanceof Anthropic.APIConnectionError) return [502, "AI 서버에 연결하지 못했습니다."];
-  if (e instanceof Anthropic.APIError) return [502, `AI 서버 오류 (${e.status ?? "?"})`];
-  if (e.status) return [e.status, e.message];
-  return null;
-}
+// 게이트웨이 오류를 사용자에게 보여줄 HTTP 응답으로 바꾼다
+export const draftErrorResponse = gatewayErrorResponse;
