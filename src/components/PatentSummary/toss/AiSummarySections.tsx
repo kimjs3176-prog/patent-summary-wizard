@@ -16,7 +16,7 @@ export function AiSummarySections({ isStreaming, sections, annotate }: Props) {
     <>
           {isStreaming && sections.length === 0 ? (
             <section className="mb-10">
-              <div className="flex items-center gap-2 text-[#8B95A1]">
+              <div className="flex items-center gap-2 text-[#6B7684]">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-[14px]">AI가 요약서를 생성 중입니다...</span>
               </div>
@@ -101,7 +101,7 @@ export function AiSummarySections({ isStreaming, sections, annotate }: Props) {
                   {/* 출처 (각주) — 시장동향 등 출처가 있는 섹션 */}
                   {sec.footnotes && sec.footnotes.length > 0 && (
                     <div className="mt-5 pt-4 border-t border-[#E5E8EB]">
-                      <p className="text-[12px] font-bold text-[#8B95A1] mb-2">출처</p>
+                      <p className="text-[12px] font-bold text-[#6B7684] mb-2">출처</p>
                       <ol className="space-y-1.5">
                         {sec.footnotes.map((fn) => (
                           <li

@@ -25,14 +25,14 @@ export function FiguresSection({ drawings, figureItems, setLightboxIndex }: Prop
                 >
                   <img
                     src={figureItems[0].src}
-                    alt={figureItems[0].caption}
+                    alt={`${figureItems[0].caption.replace(/[【】]/g, "")} 이미지`}
                     className="w-full h-auto max-h-[340px] object-contain"
                     decoding="async"
                     onError={(e) => {
                       (e.currentTarget.parentElement as HTMLElement).style.display = "none";
                     }}
                   />
-                  <p className="text-[12px] text-[#8B95A1] mt-2 font-medium">{figureItems[0].caption}</p>
+                  <p className="text-[12px] text-[#6B7684] mt-2 font-medium">{figureItems[0].caption}</p>
                 </button>
 
                 {/* 나머지 도면 썸네일 */}
@@ -48,7 +48,7 @@ export function FiguresSection({ drawings, figureItems, setLightboxIndex }: Prop
                       >
                         <img
                           src={item.src}
-                          alt={item.caption}
+                          alt={`${item.caption.replace(/[【】]/g, "")} 이미지`}
                           className="w-full h-[64px] object-contain"
                           loading="lazy"
                           decoding="async"
@@ -56,7 +56,7 @@ export function FiguresSection({ drawings, figureItems, setLightboxIndex }: Prop
                             (e.currentTarget.parentElement as HTMLElement).style.display = "none";
                           }}
                         />
-                        <span className="text-[10px] text-[#8B95A1] mt-1 font-medium truncate w-full text-center">
+                        <span className="text-[10px] text-[#6B7684] mt-1 font-medium truncate w-full text-center">
                           {item.caption}
                         </span>
                       </button>

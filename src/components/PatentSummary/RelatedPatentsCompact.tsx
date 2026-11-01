@@ -104,7 +104,7 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-3 text-[13px] text-[#8B95A1]">
+      <div className="flex items-center gap-2 py-3 text-[13px] text-[#6B7684]">
         <Loader2 className="w-4 h-4 animate-spin" />
         <span>기능·특징이 유사한 특허를 찾는 중...</span>
       </div>
@@ -112,7 +112,7 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
   }
 
   if (error) {
-    return <p className="text-[13px] text-[#8B95A1] py-2">{error}</p>;
+    return <p className="text-[13px] text-[#6B7684] py-2">{error}</p>;
   }
 
   if (patents.length === 0) return null;
@@ -129,10 +129,10 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
             >
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-semibold text-[#191F28] group-hover:text-[#10B981] flex items-start gap-1.5 leading-[1.45]">
-                  <Link2 className="w-3.5 h-3.5 shrink-0 mt-[3px] text-[#8B95A1] group-hover:text-[#10B981]" />
+                  <Link2 className="w-3.5 h-3.5 shrink-0 mt-[3px] text-[#6B7684] group-hover:text-[#10B981]" />
                   <span className="min-w-0 break-keep">{p.title}</span>
                 </p>
-                <p className="text-[11.5px] text-[#8B95A1] tabular-nums mt-0.5 pl-5">
+                <p className="text-[11.5px] text-[#6B7684] tabular-nums mt-0.5 pl-5">
                   {p.patentId}{p.assignee ? ` · ${truncate(p.assignee, 24)}` : ""}
                 </p>
               </div>
@@ -141,7 +141,7 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
                   className="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full"
                   style={{
                     background: score >= 80 ? "#10B98115" : score >= 60 ? "#3B82F615" : "#E5E8EB",
-                    color: score >= 80 ? "#10B981" : score >= 60 ? "#3B82F6" : "#8B95A1",
+                    color: score >= 80 ? "#10B981" : score >= 60 ? "#3B82F6" : "#6B7684",
                   }}
                 >
                   유사도 {score}%

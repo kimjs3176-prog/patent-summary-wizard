@@ -15,11 +15,11 @@ export function SearchHistory({ history, onSelect, onRemove, onClear }: SearchHi
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-[13px] font-semibold text-muted-foreground/60 tracking-wide">최근 검색</span>
+        <span className="text-[13px] font-semibold text-muted-foreground tracking-wide">최근 검색</span>
         {history.length > 1 && (
           <button
             onClick={onClear}
-            className="text-xs text-muted-foreground/50 hover:text-foreground transition-colors duration-300"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-300"
           >
             전체삭제
           </button>
@@ -85,7 +85,7 @@ function HistoryCard({
           <p className="text-xs font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors duration-300 min-h-[32px]">
             {title || displayNum}
           </p>
-          <p className="text-[11px] text-muted-foreground/50 mt-1.5 truncate">{displayNum}</p>
+          <p className="text-[11px] text-muted-foreground mt-1.5 truncate">{displayNum}</p>
         </div>
       </button>
       <button

@@ -58,7 +58,7 @@ export function ShareDialog({ shareOpen, setShareOpen, qrRef, shareUrl, download
                   <QRCodeSVG value={shareUrl} size={QR_SIZE} level="M" role="img" aria-label="이 요약서로 연결되는 QR 코드" />
                 </Suspense>
               </div>
-              <p className="text-[12px] text-[#8B95A1] mt-3 text-center leading-relaxed">
+              <p className="text-[12px] text-[#6B7684] mt-3 text-center leading-relaxed">
                 카메라 앱으로 QR을 스캔하면<br />이 요약서가 바로 열려요
               </p>
               <button
@@ -99,7 +99,7 @@ export function ShareDialog({ shareOpen, setShareOpen, qrRef, shareUrl, download
             </button>
             <span className="sr-only" aria-live="polite">{copied ? "링크를 복사했어요" : ""}</span>
 
-            <p className="text-[11px] text-[#8B95A1] text-center mt-4 leading-relaxed">
+            <p className="text-[11px] text-[#6B7684] text-center mt-4 leading-relaxed">
               ※ 이메일 버튼은 기기의 메일 앱이 열리며,<br />수신자·내용을 확인 후 발송할 수 있어요.
             </p>
           </DialogPrimitive.Content>

@@ -90,10 +90,10 @@ export function GovtPatentBadges({ data }: { data: GovtPatentData | null }) {
         </span>
       )}
       {data.institution && (
-        <span className="text-[12px] text-[#8B95A1]">관리기관 {data.institution}</span>
+        <span className="text-[12px] text-[#6B7684]">관리기관 {data.institution}</span>
       )}
       {data.evaluationGrade && (
-        <span className="text-[12px] text-[#8B95A1]">평가등급 {data.evaluationGrade}</span>
+        <span className="text-[12px] text-[#6B7684]">평가등급 {data.evaluationGrade}</span>
       )}
       <span className="text-[11px] text-[#B0B8C1]">출처: KIPRIS 국유특허 기본조회</span>
     </div>

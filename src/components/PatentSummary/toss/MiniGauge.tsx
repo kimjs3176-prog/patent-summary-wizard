@@ -11,7 +11,7 @@ export function MiniGauge({ score }: { score: number }) {
       >
         <span className="text-[30px] sm:text-[34px] font-bold tabular-nums leading-none text-white">{score}</span>
       </div>
-      <span className="text-[11px] text-[#8B95A1] font-semibold">/ 100</span>
+      <span className="text-[11px] text-[#6B7684] font-semibold">/ 100</span>
     </div>
   );
 }

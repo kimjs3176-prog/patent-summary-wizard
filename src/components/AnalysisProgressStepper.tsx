@@ -4,6 +4,8 @@ export type AnalysisStep = "idle" | "fetching" | "scoring" | "summarizing" | "do
 
 interface AnalysisProgressStepperProps {
   currentStep: AnalysisStep;
+  /** Float over the page bottom instead of taking space above the result, so the result never jumps up when it disappears. */
+  floating?: boolean;
 }
 
 const steps = [
@@ -14,14 +16,18 @@ const steps = [
 
 const stepOrder: AnalysisStep[] = ["fetching", "scoring", "summarizing", "done"];
 
-export function AnalysisProgressStepper({ currentStep }: AnalysisProgressStepperProps) {
+export function AnalysisProgressStepper({ currentStep, floating = false }: AnalysisProgressStepperProps) {
   if (currentStep === "idle") return null;
 
   const currentIdx = stepOrder.indexOf(currentStep);
 
   return (
-    <div className="w-full max-w-xl mx-auto mb-12 animate-fade-up">
-      <div className="rounded-3xl border border-border/30 bg-card/70 backdrop-blur-2xl p-7" style={{ boxShadow: 'var(--shadow-frosted)' }}>
+    <div
+      role="status"
+      aria-label="분석 진행 상황"
+      className={floating ? "fixed inset-x-0 top-14 md:top-auto md:bottom-5 z-40 px-3 pointer-events-none animate-fade-up" : "w-full max-w-xl mx-auto mb-12 animate-fade-up"}
+    >
+      <div className={`rounded-3xl border border-border/30 backdrop-blur-2xl ${floating ? "max-w-xl mx-auto bg-card/90 p-4 md:p-5" : "bg-card/70 p-7"}`} style={{ boxShadow: 'var(--shadow-frosted)' }}>
         <div className="flex items-center justify-between gap-3">
           {steps.map((step, idx) => {
             const isActive = stepOrder[idx] === currentStep;
@@ -75,12 +81,10 @@ export function AnalysisProgressStepper({ currentStep }: AnalysisProgressStepper
                   {step.desc}
                 </p>
 
-                {/* Active spinner */}
-                {isActive && (
-                  <div className="mt-2.5">
-                    <div className="w-4 h-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-                  </div>
-                )}
+                {/* Active spinner — the slot is always there so the card keeps its height as the step changes */}
+                <div className="mt-2.5 h-4" aria-hidden="true">
+                  {isActive && <div className="w-4 h-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />}
+                </div>
               </div>
             );
           })}

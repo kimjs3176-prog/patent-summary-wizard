@@ -1018,6 +1018,7 @@ time, .tabular-nums, [data-numeric] {
 .dark .text-\[\#333D4B\] { color: var(--toss-fg-2) !important; }
 .dark .text-\[\#4E5968\] { color: var(--toss-fg-3) !important; }
 .dark .text-\[\#8B95A1\] { color: var(--toss-fg-4) !important; }
+.dark .text-\[\#6B7684\] { color: var(--toss-fg-4) !important; } /* light-mode muted meta (#8B95A1 darkened to 4.5:1 contrast) */
 .dark .text-\[\#B0B8C1\] { color: var(--toss-fg-5) !important; }
 
 /* Background remaps for the soft/card layers */
