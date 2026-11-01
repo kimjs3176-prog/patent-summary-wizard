@@ -211,7 +211,7 @@ ${JSON.stringify(list)}
 형식: {"results":[{"patentId":"...","fit":0,"reason":"...","matchPoints":["..."],"considerations":"..."}]}`,
       },
     ],
-  }, { signal: AbortSignal.timeout(RANK_TIMEOUT_MS), maxRetries: AI_MAX_RETRIES }).catch((e) => {
+  }, { signal: AbortSignal.timeout(RANK_TIMEOUT_MS), maxRetries: AI_MAX_RETRIES }).catch((e: unknown) => {
     if (isAbort(e)) throw new RankTimeoutError("rank timeout");
     throw e;
   });
