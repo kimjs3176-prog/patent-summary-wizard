@@ -30,8 +30,7 @@ export function HomeServiceGrid() {
             <li key={s.key} className="min-w-0">
               <Link
                 to={s.to}
-                className="group flex h-full flex-col rounded-2xl border border-border/70 bg-card p-3.5 md:p-4 transition-[box-shadow,border-color,transform] hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[var(--shadow-card-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring btn-press"
-                style={{ boxShadow: "var(--shadow-card)" }}
+                className="group flex h-full flex-col rounded-2xl border border-border/70 bg-card p-3.5 md:p-4 transition-[box-shadow,border-color,transform] hover:-translate-y-0.5 hover:border-primary/40 shadow-[var(--shadow-card)] hover:shadow-[0_10px_28px_-14px_hsl(var(--primary)/0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring btn-press"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="grid place-items-center w-10 h-10 rounded-xl bg-primary/10 text-primary shrink-0">
