@@ -18,6 +18,8 @@ function getYouTubeId(url: string): string | null {
 }
 
 function isStorageUrl(url: string) { return url.startsWith("storage://"); }
+// Direct video files (e.g. Cloudflare R2 public URLs) play inline like uploaded ones.
+function isDirectVideoUrl(url: string) { return /^https:\/\/[^\s]+\.(mp4|webm|m4v|mov)(\?.*)?$/i.test(url); }
 
 const TechVideos = () => {
   useDocumentTitle("온라인 기술 홍보관");
@@ -140,8 +142,8 @@ const TechVideos = () => {
                 }
                 const videoId = getYouTubeId(video.url);
                 const thumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
-                const storage = isStorageUrl(video.url);
-                const playSrc = storage ? resolved[video.url] : video.url;
+                const storage = isStorageUrl(video.url) || isDirectVideoUrl(video.url);
+                const playSrc = isStorageUrl(video.url) ? resolved[video.url] : video.url;
                 return (
                   <div
                     key={idx}
