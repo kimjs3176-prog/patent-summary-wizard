@@ -4,32 +4,13 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { AwsClient } from "npm:aws4fetch@1.0.20";
+import { keyFromUrl, publicUrl, titleFromKey, VIDEO_RE } from "./videoKeys.ts";
 
 const ACCOUNT_ID = "766285132f8dac5b41c1f8ece436f600";
 const BUCKET = "techvideo";
 const PUBLIC_BASE = "https://pub-96cddd86429b42fdbdbd867498efaa4f.r2.dev";
-const VIDEO_RE = /\.(mp4|webm|m4v|mov)$/i;
 
 type Video = { url: string; title: string; category?: string; [k: string]: unknown };
-
-export function publicUrl(key: string) {
-  return `${PUBLIC_BASE}/${key.split("/").map(encodeURIComponent).join("/")}`;
-}
-
-export function titleFromKey(key: string): { title: string; category?: string } {
-  let name = key.split("/").pop()!.replace(VIDEO_RE, "");
-  let category: string | undefined;
-  const m = name.match(/^\s*\[([^\]]+)\]\s*/);
-  if (m) { category = m[1].trim(); name = name.slice(m[0].length); }
-  name = name
-    .replace(/^\s*\d+\s*[.)_-]\s*/, "")
-    .replace(/기술\s*소개\s*영상\s*[_-]?\s*/g, "")
-    .replace(/[_\s-]*(v\s*F|v\d+(\.\d+)*|final|최종|\d+회차?|\d{3,4}\s*[x×]\s*\d{3,4}|\d{3,4}p)\s*$/gi, "")
-    .replace(/[_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return { title: name || key, category };
-}
 
 async function listKeys(aws: AwsClient): Promise<string[]> {
   const keys: string[] = [];
@@ -65,14 +46,19 @@ Deno.serve(async (req) => {
     let current: Video[] = [];
     try { const p = JSON.parse(data?.value || "[]"); if (Array.isArray(p)) current = p; } catch { /* keep empty */ }
 
-    const bucketUrls = new Map(keys.map((k) => [publicUrl(k), k]));
-    const kept = current.filter((v) => !v.url?.startsWith(PUBLIC_BASE) || bucketUrls.has(v.url));
-    const known = new Set(kept.map((v) => v.url));
+    // An empty listing is treated as a glitch, never as "delete every video".
+    if (keys.length === 0) return json({ total: current.length, added: [], removed: 0, skipped: "빈 목록" });
+    const bucketKeys = new Set(keys.map((k) => k.normalize("NFC")));
+    const kept = current.filter((v) => {
+      const k = keyFromUrl(PUBLIC_BASE, v.url);
+      return k === null || bucketKeys.has(k);
+    });
+    const known = new Set(kept.map((v) => keyFromUrl(PUBLIC_BASE, v.url)).filter(Boolean));
     const added: Video[] = [];
-    for (const [url, key] of bucketUrls) {
-      if (known.has(url)) continue;
+    for (const key of keys) {
+      if (known.has(key.normalize("NFC"))) continue;
       const { title, category } = titleFromKey(key);
-      added.push({ url, title, category: category ?? "기타" });
+      added.push({ url: publicUrl(PUBLIC_BASE, key), title, category: category ?? "기타" });
     }
     const removed = current.length - kept.length;
     if (added.length || removed) {
@@ -81,6 +67,17 @@ Deno.serve(async (req) => {
         { onConflict: "key" },
       );
       if (error) throw error;
+      // New categories get their own 홍보관 tab.
+      const { data: catRow } = await db.from("site_settings").select("value").eq("key", "video_categories").maybeSingle();
+      let cats: string[] = [];
+      try { const p = JSON.parse(catRow?.value || "[]"); if (Array.isArray(p)) cats = p; } catch { /* keep empty */ }
+      const missing = [...new Set(added.map((a) => a.category!))].filter((c) => !cats.includes(c));
+      if (missing.length) {
+        await db.from("site_settings").upsert(
+          { key: "video_categories", value: JSON.stringify([...cats, ...missing]), updated_at: new Date().toISOString() },
+          { onConflict: "key" },
+        );
+      }
     }
     return json({ total: kept.length + added.length, added: added.map((a) => a.title), removed });
   } catch (e) {
