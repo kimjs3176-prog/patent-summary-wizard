@@ -42,6 +42,13 @@ describe("filing-api gateway", () => {
     expect(gatewayErrorResponse(new Error("plain"))).toBeNull();
   });
 
+  it("asks the gateway for a low reasoning budget so tasks answer quickly", async () => {
+    const fetchImpl = vi.fn(async (_url: string, _init: RequestInit) => ok("{}"));
+    await chat({ system: "S", user: "U", json: true }, { fetchImpl, sleep: noSleep });
+    const body = JSON.parse(String(fetchImpl.mock.calls[0][1].body));
+    expect(body.reasoning_effort).toBe("low");
+  });
+
   it("does not retry a credit or auth error", async () => {
     const fetchImpl = vi.fn(async () => new Response("no credit", { status: 402 }));
     await expect(chat({ system: "S", user: "U" }, { fetchImpl, sleep: noSleep })).rejects.toBeInstanceOf(GatewayError);

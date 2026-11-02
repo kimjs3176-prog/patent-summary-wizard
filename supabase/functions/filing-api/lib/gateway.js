@@ -3,6 +3,9 @@
 export const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 export const SERVER_MODEL = process.env.FILING_AI_MODEL || "google/gemini-3.8-flash";
 export const gatewayEnabled = () => !!process.env.LOVABLE_API_KEY;
+// Gemini 3.x 는 기본으로 생각(thinking) 시간을 길게 써서 짧은 JSON 작업도 15~20초, 명세서는 45초 넘게 걸렸다.
+// 요약서(summarize-patent)처럼 생각 예산을 낮게 둔다. FILING_AI_REASONING(none·low·medium·high)으로 바꿀 수 있다
+export const REASONING = ["none", "low", "medium", "high"].includes(process.env.FILING_AI_REASONING) ? process.env.FILING_AI_REASONING : "low";
 
 /** 게이트웨이가 성공(2xx)이 아닌 답을 줬거나 연결하지 못했을 때. status 0 은 연결 실패·시간 초과다. */
 export class GatewayError extends Error {
@@ -30,6 +33,7 @@ export async function chat({ system, user, json = false, maxTokens }, { fetchImp
     model: SERVER_MODEL,
     messages: [{ role: "system", content: system }, { role: "user", content: user }],
     ...(maxTokens ? { max_tokens: maxTokens } : {}),
+    reasoning_effort: REASONING,
     ...(json ? { response_format: { type: "json_object" } } : {})
   });
   for (let attempt = 0; ; attempt++) {

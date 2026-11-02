@@ -81,6 +81,16 @@ describe("출원지원(에이프) 연결", () => {
     expect(m.state.steps[1]).toMatchObject({ visited: false, todo: [] });
   });
 
+  it("AI 분석 중 표시는 문자열만, 길이를 잘라 받는다", () => {
+    const origin = "https://atipsum.lovable.app";
+    const base = { type: "agri-ip:state", step: "diag", steps: [{ id: "diag", t: "진단·보완", s: "", done: false, cur: true }] };
+    const busy = parseFilingMessage({ origin, data: { ...base, aiBusy: "거절이유 예상" } }, origin);
+    const idle = parseFilingMessage({ origin, data: { ...base, aiBusy: 1 } }, origin);
+    if (busy?.type !== "agri-ip:state" || idle?.type !== "agri-ip:state") throw new Error("state expected");
+    expect(busy.state.aiBusy).toBe("거절이유 예상");
+    expect(idle.state.aiBusy).toBe("");
+  });
+
   it("메시지는 에이프 출처에서 온 아는 형식만", () => {
     const origin = "https://koat-axlab.vercel.app";
     expect(parseFilingMessage({ origin, data: { type: "agri-ip:ais", q: "10-2020-0123456" } }, origin)).toEqual({ type: "agri-ip:ais", q: "10-2020-0123456" });
