@@ -14,9 +14,10 @@ import { ImageLightbox } from "./ImageLightbox";
 import { useGovtPatent } from "./GovtPatentInfo";
 import { useRegisterOwner, isDifferentOwner } from "./useRegisterOwner";
 import { SummaryReadyProvider, useSummaryPending } from "./summaryReady";
-import { ACCENT_HEX, parseSections, formatAiModelLabel } from "./toss/helpers";
+import { ACCENT_HEX, parseSections, formatAiModelLabel, sectionMeta } from "./toss/helpers";
 import { ActionBar } from "./toss/ActionBar";
 import { HeroSection } from "./toss/HeroSection";
+import { ReportOverview, type TocItem } from "./toss/ReportOverview";
 import { BasicInfoSection } from "./toss/BasicInfoSection";
 import { ScoreSection } from "./toss/ScoreSection";
 import { FiguresSection } from "./toss/FiguresSection";
@@ -181,6 +182,17 @@ function TossPatentSummaryInner({
 
   const scoreSummary = score == null ? "분석 중" : score >= 80 ? "높은 편" : score >= 65 ? "보통 수준" : "낮은 편";
 
+  // 보고서 목차: 화면에 그려지는 절 순서 그대로
+  const toc: TocItem[] = useMemo(() => [
+    { id: "sec-basic", label: "기본 정보" },
+    { id: "sec-score", label: "사업화 점수·기술 성숙도" },
+    ...(drawings.length ? [{ id: "sec-figures", label: "특허 도면" }] : []),
+    ...sections.map((s, i) => ({ id: `sec-ai-${i}`, label: sectionMeta(s.title).kicker })),
+    ...(details?.analysis ? [{ id: "sec-analysis", label: "AI 종합 의견" }] : []),
+    { id: "sec-related", label: "관련 특허" },
+    { id: "sec-regulation", label: "예상 규제" },
+  ], [drawings.length, sections, details?.analysis]);
+
   // 공유 URL: 항상 published origin 사용 (수신자 접근성)
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -261,6 +273,9 @@ function TossPatentSummaryInner({
         <div className="px-5 sm:px-7 pb-12">
           {/* HERO */}
           <HeroSection patentData={patentData} title={title} patentNumber={patentNumber} govtPatent={govtPatent} />
+
+          {/* 핵심 요약 + 목차 — 보고서 첫머리 */}
+          <ReportOverview score={score} scoreSummary={scoreSummary} scoreLoading={scoreLoading} trl={trl} trlName={trlName} trlStage={trlStage} analysis={details?.analysis} sections={sections} toc={toc} isStreaming={!!isStreaming} />
 
           {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
           <BasicInfoSection patentData={patentData} ownerChanged={ownerChanged} finalOwner={finalOwner} keywords={keywords} onKeywordClick={onKeywordClick} govtPatent={govtPatent} />

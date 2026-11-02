@@ -11,6 +11,7 @@ import {
   hasRequiredMarketFigures,
   parseKrwEok,
   parseKrwRange,
+  pickTrustedRef,
   reconcileMarketSection,
   type MarketRef,
 } from "../../supabase/functions/summarize-patent/marketConsistency";
@@ -184,5 +185,34 @@ describe("기준연도는 올해(한국 시간)에서 정한다", () => {
     const t = "국내 종자 시장은 2022년 약 8,000억 원이며 연평균 7.2% 성장해 2026년 약 1조 471억 원이다.";
     expect(applyMarketRef(t, ref, 2026)).toContain("1조 565억");
     expect(applyMarketRef(t, ref, 2028)).toContain("1조 565억");
+  });
+});
+
+describe("신뢰 표준값 찾기 (키가 다르게 저장된 같은 시장)", () => {
+  const HFF = "KOSIS 국가통계포털, 식품의약품안전처 「건강기능식품 매출액」";
+  const official: MarketRef = { market_key: "건강기능식품시장", label: "국내 건강기능식품 시장", base_year: 2024, base_value_eok: 40131, cagr: 6.3, source: HFF, status: "official" };
+  const pending: MarketRef = { market_key: "국내건강기능식품시장", label: "국내 건강기능식품 시장", base_year: 2024, base_value_eok: 40131, cagr: 6.3, source: null, status: "ai_pending" };
+
+  it("같은 키가 검증 전 값이어도 시장명이 같은 공식값을 이 키로 쓴다", () => {
+    const r = pickTrustedRef("국내건강기능식품시장", pending, [official]);
+    expect(r).toMatchObject({ market_key: "국내건강기능식품시장", status: "official", source: HFF });
+  });
+
+  it("시장명이 달라도 같은 통계표면 공식값을 쓴다", () => {
+    const r = pickTrustedRef("국내기능성건강기능식품시장", undefined, [{ ...official, label: "건강기능식품" }], (a, b) => a.includes("건강기능식품") && b.includes("건강기능식품"));
+    expect(r?.source).toBe(HFF);
+  });
+
+  it("맞는 신뢰값이 없으면 지금 값을 그대로 둔다", () => {
+    expect(pickTrustedRef("국내버섯시장", pending, [official])).toBe(pending);
+    expect(pickTrustedRef("국내버섯시장", undefined, [official])).toBeUndefined();
+  });
+
+  it("고른 공식값으로 보정하면 출처가 붙고 (AI 추정치)가 붙지 않는다", () => {
+    const sec = "국내 건강기능식품 시장 규모는 2024년 4조 131억 원이며 연평균 6.3% 성장하고 있다(AI 추정치). 이를 2026년 시점으로 환산하면 약 4조 5,348억 원 규모에 달할 것으로 전망된다(AI 추정치).";
+    const ref = pickTrustedRef("국내건강기능식품시장", pending, [official])!;
+    const out = reconcileMarketSection(sec, [ref], { targetYear: 2026 });
+    expect(out).toContain(`출처: ${HFF}, 2024년 기준`);
+    expect(out).not.toContain(AI_ESTIMATE_NOTE);
   });
 });

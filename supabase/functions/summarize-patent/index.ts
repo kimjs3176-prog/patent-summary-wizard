@@ -4,7 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { loadServerPatentData } from "../_shared/patentSource.ts";
-import { claimToRef, currentSeoulYear, extractGlobalClaims, extractMarketClaims, formatKrwEok, formatUsdEok, hasRequiredMarketFigures, isTrustedRef, isUsableRef, reconcileMarketSection, refStatus, type MarketClaim, type MarketRef } from "./marketConsistency.ts";
+import { claimToRef, currentSeoulYear, extractGlobalClaims, extractMarketClaims, formatKrwEok, formatUsdEok, hasRequiredMarketFigures, isTrustedRef, isUsableRef, pickTrustedRef, reconcileMarketSection, refStatus, type MarketClaim, type MarketRef } from "./marketConsistency.ts";
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
 import { stripUnsupportedEffectFigures } from "./summaryGrounding.ts";
@@ -186,18 +186,31 @@ async function refreshKosisRef(claim: MarketClaim, ref: StoredMarketRef | undefi
   return normalizeRef({ ...official, status: "official", verified_at: now, created_at: now });
 }
 
+// 공식·승인 표준값 전체 (키가 다르게 저장된 같은 시장을 시장명·통계표로 찾을 때 쓴다)
+async function loadTrustedRefs(): Promise<MarketRef[]> {
+  const { data, error } = await supabaseAdmin().from("market_reference").select("*").limit(500);
+  if (error) throw error;
+  return ((data || []) as StoredMarketRef[]).map(normalizeRef).filter(isTrustedRef);
+}
+// 두 시장 키가 같은 KOSIS 통계표·분류를 쓰는가
+const sameSeries = (a: string, b: string) => { const s = findSeries(a); return !!s && s === findSeries(b); };
+
 async function resolveMarketRefs(section: string, targetYear: number): Promise<MarketRef[]> {
   const domestic = extractMarketClaims(section, targetYear);
   const global = extractGlobalClaims(section, targetYear);
   if (!domestic.length && !global.length) return [];
   const refs = await loadRefs([...domestic, ...global].map((c) => c.key));
+  const trusted = await loadTrustedRefs().catch((e) => { console.error("[MARKET-REF] trusted load", e); return [] as MarketRef[]; });
   for (const claim of domestic) {
-    let ref = await refreshKosisRef(claim, refs.get(claim.key));
+    let ref: MarketRef | undefined = await refreshKosisRef(claim, refs.get(claim.key));
+    // KOSIS 갱신이 실패했거나 같은 키에 검증 전 값만 있어도, 같은 시장의 공식·승인값이 있으면 그 값을 쓴다
+    ref = pickTrustedRef(claim.key, ref, trusted, sameSeries);
     if (!ref) ref = (await registerPendingRef(claim)) ?? undefined;
-    if (ref) refs.set(claim.key, ref);
+    if (ref) refs.set(claim.key, ref as StoredMarketRef);
   }
   for (const claim of global) {
-    if (refs.has(claim.key)) continue;
+    const picked = pickTrustedRef(claim.key, refs.get(claim.key), trusted);
+    if (picked) { refs.set(claim.key, picked as StoredMarketRef); continue; }
     const ref = await registerPendingRef(claim);
     if (ref) refs.set(claim.key, ref);
   }

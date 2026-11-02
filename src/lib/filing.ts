@@ -105,6 +105,8 @@ export interface FilingState {
   title: string;
   dday: { label: string; text: string; warn: boolean } | null;
   api: string;
+  /** 지금 쪽에서 돌고 있는 AI 작업 이름(없으면 빈 값). 도는 동안 '다음'을 잠근다 */
+  aiBusy: string;
   /** 출원지원 전용 빌드(이 사이트 안의 사본): 해외동향 탭이 없다 */
   filingOnly: boolean;
 }
@@ -142,6 +144,7 @@ export function parseFilingMessage(ev: { origin: string; data: unknown }, expect
         title: str(d.title, 120),
         dday: dd && typeof dd.text === "string" ? { label: str(dd.label, 40), text: str(dd.text, 20), warn: dd.warn === true } : null,
         api: str(d.api, 40),
+        aiBusy: str(d.aiBusy, 60),
         filingOnly: d.filingOnly === true,
       },
     };
