@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { keyFromUrl, publicUrl, titleFromKey } from "./videoKeys";
+import { keyFromUrl, publicUrl, titleFromKey } from "../../supabase/functions/sync-r2-videos/videoKeys";
 
 const BASE = "https://pub-x.r2.dev";
 
