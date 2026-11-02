@@ -46,14 +46,19 @@ Deno.serve(async (req) => {
     let current: Video[] = [];
     try { const p = JSON.parse(data?.value || "[]"); if (Array.isArray(p)) current = p; } catch { /* keep empty */ }
 
-    const bucketUrls = new Map(keys.map((k) => [publicUrl(k), k]));
-    const kept = current.filter((v) => !v.url?.startsWith(PUBLIC_BASE) || bucketUrls.has(v.url));
-    const known = new Set(kept.map((v) => v.url));
+    // An empty listing is treated as a glitch, never as "delete every video".
+    if (keys.length === 0) return json({ total: current.length, added: [], removed: 0, skipped: "빈 목록" });
+    const bucketKeys = new Set(keys.map((k) => k.normalize("NFC")));
+    const kept = current.filter((v) => {
+      const k = keyFromUrl(PUBLIC_BASE, v.url);
+      return k === null || bucketKeys.has(k);
+    });
+    const known = new Set(kept.map((v) => keyFromUrl(PUBLIC_BASE, v.url)).filter(Boolean));
     const added: Video[] = [];
-    for (const [url, key] of bucketUrls) {
-      if (known.has(url)) continue;
+    for (const key of keys) {
+      if (known.has(key.normalize("NFC"))) continue;
       const { title, category } = titleFromKey(key);
-      added.push({ url, title, category: category ?? "기타" });
+      added.push({ url: publicUrl(PUBLIC_BASE, key), title, category: category ?? "기타" });
     }
     const removed = current.length - kept.length;
     if (added.length || removed) {
