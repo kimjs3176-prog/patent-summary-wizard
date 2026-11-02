@@ -4,32 +4,13 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { AwsClient } from "npm:aws4fetch@1.0.20";
+import { keyFromUrl, publicUrl, titleFromKey, VIDEO_RE } from "./videoKeys.ts";
 
 const ACCOUNT_ID = "766285132f8dac5b41c1f8ece436f600";
 const BUCKET = "techvideo";
 const PUBLIC_BASE = "https://pub-96cddd86429b42fdbdbd867498efaa4f.r2.dev";
-const VIDEO_RE = /\.(mp4|webm|m4v|mov)$/i;
 
 type Video = { url: string; title: string; category?: string; [k: string]: unknown };
-
-export function publicUrl(key: string) {
-  return `${PUBLIC_BASE}/${key.split("/").map(encodeURIComponent).join("/")}`;
-}
-
-export function titleFromKey(key: string): { title: string; category?: string } {
-  let name = key.split("/").pop()!.replace(VIDEO_RE, "");
-  let category: string | undefined;
-  const m = name.match(/^\s*\[([^\]]+)\]\s*/);
-  if (m) { category = m[1].trim(); name = name.slice(m[0].length); }
-  name = name
-    .replace(/^\s*\d+\s*[.)_-]\s*/, "")
-    .replace(/기술\s*소개\s*영상\s*[_-]?\s*/g, "")
-    .replace(/[_\s-]*(v\s*F|v\d+(\.\d+)*|final|최종|\d+회차?|\d{3,4}\s*[x×]\s*\d{3,4}|\d{3,4}p)\s*$/gi, "")
-    .replace(/[_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return { title: name || key, category };
-}
 
 async function listKeys(aws: AwsClient): Promise<string[]> {
   const keys: string[] = [];
