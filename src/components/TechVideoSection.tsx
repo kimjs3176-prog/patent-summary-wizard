@@ -18,6 +18,8 @@ function getYouTubeId(url: string): string | null {
 }
 
 const isStorageUrl = (url: string) => url.startsWith("storage://");
+// Direct video files (e.g. Cloudflare R2 public URLs) play inline like uploaded ones.
+const isDirectVideoUrl = (url: string) => /^https:\/\/[^\s]+\.(mp4|webm|m4v|mov)(\?.*)?$/i.test(url);
 
 export function TechVideoSection({ videos }: TechVideoSectionProps) {
   const preview = (videos || []).slice(0, 3);
@@ -69,8 +71,8 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
           const thumbnail = videoId
             ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
             : null;
-          const storage = isStorageUrl(video.url);
-          const playSrc = storage ? resolved[video.url] : video.url;
+          const storage = isStorageUrl(video.url) || isDirectVideoUrl(video.url);
+          const playSrc = isStorageUrl(video.url) ? resolved[video.url] : video.url;
 
           if (storage) {
             return (
