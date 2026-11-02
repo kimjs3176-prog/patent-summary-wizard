@@ -67,6 +67,17 @@ Deno.serve(async (req) => {
         { onConflict: "key" },
       );
       if (error) throw error;
+      // New categories get their own 홍보관 tab.
+      const { data: catRow } = await db.from("site_settings").select("value").eq("key", "video_categories").maybeSingle();
+      let cats: string[] = [];
+      try { const p = JSON.parse(catRow?.value || "[]"); if (Array.isArray(p)) cats = p; } catch { /* keep empty */ }
+      const missing = [...new Set(added.map((a) => a.category!))].filter((c) => !cats.includes(c));
+      if (missing.length) {
+        await db.from("site_settings").upsert(
+          { key: "video_categories", value: JSON.stringify([...cats, ...missing]), updated_at: new Date().toISOString() },
+          { onConflict: "key" },
+        );
+      }
     }
     return json({ total: kept.length + added.length, added: added.map((a) => a.title), removed });
   } catch (e) {
