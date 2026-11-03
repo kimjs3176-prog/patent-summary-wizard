@@ -7,22 +7,28 @@ import type { CommercializationDetails } from "../commercialization";
 import { ExternalLink, FileText, Printer, RefreshCw, Share2, Heart, FileSignature } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { filingEnabled, sendPatentToFiling } from "@/lib/filing";
+import { filingEnabled, filingFieldFromIpc, ideaKeywordsFromTitle, sendPatentToFiling } from "@/lib/filing";
 import { Button } from "@/components/ui/button";
+import { NATI_TRANSFER_URL } from "@/lib/services";
 import { toast } from "sonner";
 import { PdfGenerator } from "../PdfGenerator";
 import type { useFavoritePatents } from "@/hooks/useFavoritePatents";
 
 interface Props {
   isStreaming: boolean; content: string; patentData: BasePatentSummaryProps["patentData"]; handlePrint: () => Promise<void>; onRegenerate?: () => void; setShareOpen: (open: boolean) => void; favoritesEnabled: boolean; toggleFavorite: ReturnType<typeof useFavoritePatents>["toggleFavorite"]; patentNumber: string; score: number | null; details: CommercializationDetails | null; patentIsFavorite: boolean; featureFlags: NonNullable<BasePatentSummaryProps["featureFlags"]>; printRef: React.RefObject<HTMLDivElement>; allReady: boolean;
+  /** 요약서 키워드: 출원 준비를 시작할 때 아이디어 후보를 만들 키워드로 넘긴다 */
+  keywords?: string[];
 }
 
-export function ActionBar({ isStreaming, content, patentData, handlePrint, onRegenerate, setShareOpen, favoritesEnabled, toggleFavorite, patentNumber, score, details, patentIsFavorite, featureFlags, printRef, allReady }: Props) {
+export function ActionBar({ isStreaming, content, patentData, handlePrint, onRegenerate, setShareOpen, favoritesEnabled, toggleFavorite, patentNumber, score, details, patentIsFavorite, featureFlags, printRef, allReady, keywords = [] }: Props) {
   const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const applicationNo = patentData?.applicationNumber || "";
   const toFiling = () => {
-    const r = sendPatentToFiling(settings, applicationNo, patentData?.titleKo || patentData?.title || "");
+    // 키워드는 특허 명칭의 원료·방식·용도를 먼저 쓰고, 뽑지 못하면 요약서 키워드
+    const title = patentData?.titleKo || patentData?.title || "", field = filingFieldFromIpc(patentData?.classifications);
+    const kw = ideaKeywordsFromTitle(title, field) || keywords.map((k) => k.trim()).filter(Boolean).slice(0, 3).join(", ");
+    const r = sendPatentToFiling(settings, applicationNo, title, { kw, field });
     if (r.to) navigate(r.to);
     else toast.success("출원지원의 비교 특허로 보냈습니다");
   };
@@ -33,7 +39,7 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
         <div className="flex items-center justify-between flex-wrap gap-2 mb-6 print:hidden">
           <div className="flex items-center gap-1.5">
             <Button asChild size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full bg-[#191F28] text-white hover:bg-[#333D4B] font-semibold shadow-sm">
-              <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer" title="NATI(농업기술실용화 정보)에서 기술이전을 신청합니다">
+              <a href={NATI_TRANSFER_URL} target="_blank" rel="noopener noreferrer" title="NATI(농업기술실용화 정보)에서 기술이전을 신청합니다">
                 <ExternalLink className="w-3.5 h-3.5" />
                 기술이전 신청
               </a>
@@ -47,9 +53,9 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
               </Button>
             )}
             {filingEnabled(settings) && /^(10|20)\d{11}$/.test(applicationNo.replace(/[^0-9]/g, "")) && (
-              <Button variant="outline" size="sm" onClick={toFiling} title="출원지원의 선행기술 조사에 이 특허를 비교 특허로 넣습니다" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
+              <Button variant="outline" size="sm" onClick={toFiling} title="이 특허를 비교 특허로 넣고, 요약서 키워드로 개량 아이디어 후보를 만들어 출원지원을 시작합니다" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
                 <FileSignature className="w-3.5 h-3.5" />
-                출원지원으로
+                이 기술로 출원 준비
               </Button>
             )}
           </div>

@@ -52,3 +52,6 @@ export function isServiceActive(item: ServiceItem, pathname: string): boolean {
   if (item.to === "/") return pathname === "/" || pathname === "/search";
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
+
+/** 기술이전 신청은 NATI(농업기술실용화 정보)로 보낸다. 이 사이트는 신청서를 받지 않는다 (개인정보 미수집). */
+export const NATI_TRANSFER_URL = "https://www.nati.or.kr/login.do?selPrgId=xfr_apply";

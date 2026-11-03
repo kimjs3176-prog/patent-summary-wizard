@@ -70,9 +70,14 @@ export function buildFilingSrc(settings: SettingsLike, opts: FilingSrcOptions = 
   const hashQ = new URLSearchParams();
   const cite = (opts.cite || "").replace(/[^0-9]/g, "");
   if (/^(10|20)\d{11}$/.test(cite)) {
-    page = "prior";
+    // 키워드도 오면(요약 화면의 '이 기술로 출원 준비') 그 키워드로 새 아이디어 후보를 만들고 이 특허를 비교 특허로 넣는다
+    page = opts.kw && opts.kw.trim() ? "idea" : "prior";
     hashQ.set("cite", cite);
     if (opts.title) hashQ.set("title", opts.title.slice(0, 200));
+    if (page === "idea") {
+      hashQ.set("kw", opts.kw!.trim().slice(0, 200));
+      if (opts.field && /^[a-z]+$/.test(opts.field)) hashQ.set("field", opts.field);
+    }
   } else if (opts.kw && opts.kw.trim()) {
     page = "idea";
     hashQ.set("kw", opts.kw.trim().slice(0, 200));
@@ -162,12 +167,67 @@ export function embeddedInFiling(settings: SettingsLike, referrer: string = docu
   }
 }
 
-/** 요약 화면의 특허를 출원지원 비교 특허로 보낸다: 에이프 안이면 부모 창에, 아니면 /filing 페이지 주소를 돌려준다. */
-export function sendPatentToFiling(settings: SettingsLike, no: string, title: string): { sent: boolean; to?: string } {
+/** 특허분류(IPC)로 출원지원의 기술 분야를 고른다. 앞의 분류부터 보고, 맞는 것이 없으면 undefined (출원지원이 지금 분야를 쓴다) */
+const FIELD_BY_IPC: [RegExp, string][] = [
+  [/^(A01H|C12N 15|C12Q 1\/68)/, "variety"],
+  [/^(C12N|C12R|C05F|A01N 63)/, "ferment"],
+  [/^(A61K 36|A23L 33|A61P)/, "functional"],
+  [/^(A01G|A01B|A01C|A01D|A01K|G05B|G06)/, "smartfarm"],
+  [/^(B65D|B65B|A23B)/, "pack"],
+  [/^A23/, "food"],
+];
+export function filingFieldFromIpc(codes: string[] = []): string | undefined {
+  for (const c of codes) {
+    const s = String(c).toUpperCase().replace(/\s+/g, " ").replace(/^([A-H]\d{2}[A-Z])\s*(\d)/, "$1 $2").trim();
+    const hit = FIELD_BY_IPC.find(([re]) => re.test(s));
+    if (hit) return hit[1];
+  }
+  return undefined;
+}
+
+/**
+ * 특허 명칭에서 출원지원 아이디어 키워드 세 개(원료·방식·용도)를 뽑는다. 출원지원의 분야별 명칭 틀이 이 순서를 쓴다
+ * (기능성 소재만 원료·용도·원료 부위). 뽑지 못하면 빈 문자열 → 요약서 키워드를 쓴다.
+ *   '미생물 발효 유채박을 유효성분으로 함유하는 식물 생장 촉진용 조성물' → '유채박, 미생물 발효, 식물 생장 촉진'
+ *   '콩 들불병 진단용 조성물 및 이의 용도' → '콩, 들불병, 진단'
+ */
+const GENERIC_TAIL = /^(추출물|발효물|분말|농축액|혼합물|배양액|배양물|균주|조성물)$/;
+const DEFAULT_WAY: Record<string, string> = { food: "가공", ferment: "발효", smartfarm: "자동 제어", variety: "육종", pack: "포장", functional: "부산물" };
+export function ideaKeywordsFromTitle(title: string, field = ""): string {
+  const t = String(title ?? "").replace(/\s*및\s+(그|이의|이를|상기).*$/, "").replace(/\s+/g, " ").trim();
+  let a = "", b = "", c = "";
+  const m = t.match(/^(.+?)(?:을|를)\s*(?:유효\s*성분으로\s*)?(포함|함유|이용|사용|첨가|활용)\S*\s+(.+)$/);
+  if (m) {
+    const words = m[1].split(" ").filter(Boolean);
+    while (words.length > 1 && GENERIC_TAIL.test(words[words.length - 1])) words.pop();
+    // '…을 포함하는'은 마지막 낱말이 원료이고 앞은 방식(미생물 발효 유채박), '…을 이용한'은 묶음 전체가 수단(영상 분석)
+    if (/포함|함유|첨가/.test(m[2])) { a = words.pop() ?? ""; b = words.join(" "); } else a = words.join(" ");
+    const use = m[3].match(/^(.+?)용\s/);
+    c = use ? use[1] : m[3].split(" ").slice(0, -1).join(" ");
+  } else {
+    const use = t.match(/^(.+?)용\s/);
+    if (!use) return "";
+    const words = use[1].split(" ").filter(Boolean);
+    if (words.length < 2) return "";
+    a = words[0]; c = words[words.length - 1]; b = words.slice(1, -1).join(" ");
+  }
+  if (!a || !c) return "";
+  const kws = field === "functional" ? [a, c, b || DEFAULT_WAY.functional] : [a, b || DEFAULT_WAY[field] || "가공", c];
+  return [...new Set(kws.map((k) => k.trim()).filter(Boolean))].join(", ");
+}
+
+/**
+ * 요약 화면의 특허로 출원 준비를 시작한다: 에이프 안이면 부모 창에 비교 특허로 보내고, 아니면 /filing 주소를 돌려준다.
+ * 키워드(kw)를 주면 출원지원이 그 키워드로 개량 아이디어 후보를 만들고 이 특허를 비교 특허로 넣는다.
+ */
+export function sendPatentToFiling(settings: SettingsLike, no: string, title: string, idea: { kw?: string; field?: string } = {}): { sent: boolean; to?: string } {
   const n = no.replace(/[^0-9]/g, "");
   if (embeddedInFiling(settings)) {
     window.parent.postMessage({ type: "agri-ip:cite", no: n, title }, filingOrigin(settings));
     return { sent: true };
   }
-  return { sent: false, to: `/filing?cite=${encodeURIComponent(n)}&title=${encodeURIComponent(title.slice(0, 200))}` };
+  const q = new URLSearchParams({ cite: n, title: title.slice(0, 200) });
+  if (idea.kw?.trim()) q.set("kw", idea.kw.trim().slice(0, 200));
+  if (idea.field) q.set("field", idea.field);
+  return { sent: false, to: `/filing?${q.toString()}` };
 }

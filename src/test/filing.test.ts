@@ -5,7 +5,10 @@ import {
   buildFilingStandaloneUrl,
   filingBaseUrl,
   filingEnabled,
+  filingFieldFromIpc,
+  ideaKeywordsFromTitle,
   normalizeFilingPage,
+  sendPatentToFiling,
   parseFilingMessage,
 } from "@/lib/filing";
 
@@ -97,5 +100,36 @@ describe("출원지원(에이프) 연결", () => {
     expect(parseFilingMessage({ origin: "https://evil.example", data: { type: "agri-ip:ais", q: "x" } }, origin)).toBeNull();
     expect(parseFilingMessage({ origin, data: { type: "agri-ip:other" } }, origin)).toBeNull();
     expect(parseFilingMessage({ origin, data: "string" }, origin)).toBeNull();
+  });
+
+  it("요약 화면의 '이 기술로 출원 준비': 비교 특허와 키워드·분야를 함께 넘기면 1단계에서 새 아이디어로 시작", () => {
+    expect(buildFilingSrc({}, { cite: "10-2017-0078319", title: "콩 들불병", kw: "콩, 들불병, 진단", field: "variety" })).toBe(
+      `${FILING_DEFAULT_URL}?embed=ais&skin=ais&theme=light#idea?cite=1020170078319&title=%EC%BD%A9+%EB%93%A4%EB%B6%88%EB%B3%91&kw=%EC%BD%A9%2C+%EB%93%A4%EB%B6%88%EB%B3%91%2C+%EC%A7%84%EB%8B%A8&field=variety`,
+    );
+    // 키워드가 없으면 예전처럼 선행기술 조사에 비교 특허만
+    expect(buildFilingSrc({}, { cite: "10-2017-0078319", kw: "  " })).toBe(`${FILING_DEFAULT_URL}?embed=ais&skin=ais&theme=light#prior?cite=1020170078319`);
+    expect(sendPatentToFiling({}, "10-2017-0078319", "콩 들불병", { kw: " 콩, 진단 ", field: "variety" })).toEqual({ sent: false, to: "/filing?cite=1020170078319&title=%EC%BD%A9+%EB%93%A4%EB%B6%88%EB%B3%91&kw=%EC%BD%A9%2C+%EC%A7%84%EB%8B%A8&field=variety" });
+    expect(sendPatentToFiling({}, "1020170078319", "x")).toEqual({ sent: false, to: "/filing?cite=1020170078319&title=x" });
+  });
+
+  it("특허분류(IPC)로 출원지원 기술 분야를 고른다", () => {
+    expect(filingFieldFromIpc(["C12Q 1/68"])).toBe("variety");
+    expect(filingFieldFromIpc(["A01N63/22", "C05F 11/08"])).toBe("ferment");
+    expect(filingFieldFromIpc(["A23L 33/105"])).toBe("functional");
+    expect(filingFieldFromIpc(["A23L 5/00"])).toBe("food");
+    expect(filingFieldFromIpc(["A01G 9/24"])).toBe("smartfarm");
+    expect(filingFieldFromIpc(["B65D 81/24"])).toBe("pack");
+    expect(filingFieldFromIpc(["H01L 21/00", "A23B 7/148"])).toBe("pack");
+    expect(filingFieldFromIpc(["H01L 21/00"])).toBeUndefined();
+    expect(filingFieldFromIpc()).toBeUndefined();
+  });
+
+  it("특허 명칭에서 아이디어 키워드(원료·방식·용도)를 뽑는다", () => {
+    expect(ideaKeywordsFromTitle("미생물 발효 유채박을 유효성분으로 함유하는 식물 생장 촉진용 조성물 및 이를 이용한 식물 생장 촉진 방법", "ferment")).toBe("유채박, 미생물 발효, 식물 생장 촉진");
+    expect(ideaKeywordsFromTitle("콩 들불병 진단용 조성물 및 이의 용도", "variety")).toBe("콩, 들불병, 진단");
+    expect(ideaKeywordsFromTitle("하이네코사인을 유효성분으로 포함하는 식물 생장 촉진용 조성물", "ferment")).toBe("하이네코사인, 발효, 식물 생장 촉진");
+    expect(ideaKeywordsFromTitle("여주 추출물을 포함하는 혈당 조절용 건강기능식품", "functional")).toBe("여주, 혈당 조절, 부산물");
+    expect(ideaKeywordsFromTitle("영상 분석을 이용한 작물 생육 관리 방법", "smartfarm")).toBe("영상 분석, 자동 제어, 작물 생육 관리");
+    expect(ideaKeywordsFromTitle("스마트 온실", "smartfarm")).toBe("");
   });
 });

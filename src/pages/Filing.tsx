@@ -13,6 +13,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 // 단계 탭·쪽 이동·이전/다음·남은 일·D-day·도움말은 이 페이지가 AIS 디자인으로 그린다 (에이프가 그릴 때마다 상태를 보내 준다).
 //   /filing?p=단계            그 단계로 (에이프가 쪽을 바꾸면 주소도 따라 바뀐다)
 //   /filing?cite=출원번호&title= 요약 화면의 특허를 비교 특허로 넣고 선행기술 조사로
+//   /filing?cite=…&title=…&kw=…&field= 요약 화면의 '이 기술로 출원 준비': 키워드로 새 아이디어 후보를 만들고 그 특허를 비교 특허로
 //   /filing?kw=키워드&field=   검색 키워드로 새 시나리오 시작
 
 const STEP_ICONS = { idea: Lightbulb, prior: Search, diag: Stethoscope, draft: FileText, manage: Send } as const;
