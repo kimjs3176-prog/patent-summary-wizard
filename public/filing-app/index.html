@@ -230,14 +230,26 @@ label, .label { font-size: .86rem; font-weight: 700; }
 input[type="text"], input[type="date"], input[type="number"], select, textarea { width: 100%; font: inherit; font-size: .93rem; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; transition: border-color .15s, box-shadow .15s; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px hsl(86 62% 34% / .15); }
 textarea { min-height: 84px; resize: vertical; }
-.seg { display: flex; flex-wrap: wrap; gap: 6px; }
-.seg label { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: .86rem; font-weight: 500; cursor: pointer; }
-.seg input { margin: 0; accent-color: var(--primary); }
-.seg-desc label { align-items: flex-start; border-radius: 12px; padding: 9px 13px; }
-.seg-desc label > span { display: grid; gap: 1px; }
-.seg-desc input { margin-top: 3px; }
-.seg label small { display: block; font-size: .74rem; font-weight: 400; color: var(--muted); }
-.seg label:has(input:checked) { background: var(--moss-soft); border-color: var(--primary); color: var(--moss); font-weight: 700; }
+.seg { --seg-min: 112px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--seg-min)), 1fr)); gap: 8px; }
+/* 고르는 항목 공통 모양: 보기를 모두 펼쳐 두고, 고른 것은 초록 테두리와 ✓ 로 보인다 (작은 라디오 점 대신) */
+.seg label { position: relative; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 9px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: .9rem; font-weight: 500; line-height: 1.4; cursor: pointer; transition: border-color .12s, background-color .12s; }
+.seg label::before { content: ""; flex: none; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid color-mix(in oklab, var(--muted) 55%, transparent); background: var(--surface); font-size: 11px; font-weight: 800; line-height: 1; color: var(--on-primary); box-sizing: border-box; }
+.seg label:hover { border-color: color-mix(in oklab, var(--primary) 55%, var(--line)); }
+.seg input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.seg label:has(input:checked) { background: var(--moss-soft); border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); color: var(--moss); font-weight: 700; }
+.seg label:has(input:checked)::before { content: "✓"; border-color: var(--primary); background: var(--primary); }
+.seg-desc { --seg-min: 200px; }
+.seg-desc label { align-items: flex-start; padding: 11px 14px; }
+.seg-desc label::before { margin-top: 1px; }
+.seg label > span { display: grid; gap: 2px; min-width: 0; }
+.seg-t { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.seg label small { display: block; font-size: .76rem; font-weight: 400; line-height: 1.45; color: var(--muted); }
+.seg-b { font-style: normal; font-size: .7rem; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--fg); border: 1px solid var(--line); }
+.seg-b.rec { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+/* 답한 질문은 질문 앞에 ✓ (남은 질문이 눈에 띄게) */
+.q > .label::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--warn); vertical-align: 2px; }
+.q:has(input:checked) > .label::before { content: "✓"; width: auto; height: auto; background: none; color: var(--primary); font-weight: 800; vertical-align: 0; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: inherit; font-size: .9rem; font-weight: 700; padding: 10px 18px; border-radius: var(--r-key); border: 1px solid color-mix(in oklab, var(--primary) 78%, var(--fg)); background: var(--primary); color: var(--on-primary); cursor: pointer; text-decoration: none; box-shadow: var(--key-light); min-height: 44px; transition: background .15s, border-color .15s, color .15s; }
 .btn:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
@@ -827,7 +839,6 @@ tr:last-child td { border-bottom: 0; }
 .bar i.hi { background: var(--bad); }
 
 /* ---------- 명세서 · 서류 ---------- */
-.tpl { display: flex; flex-wrap: wrap; gap: 6px; }
 .doc { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; font-size: .9rem; white-space: pre-wrap; max-height: 520px; overflow: auto; line-height: 1.75; }
 textarea.doc { min-height: 560px; max-height: none; font-family: var(--f-body); resize: vertical; }
 textarea.doc.doc-sm { min-height: 280px; background: var(--sunk); }
@@ -1291,6 +1302,8 @@ const S = {
 };
 // 특허분류(IPC) 앞 네 글자의 쉬운 분야 이름 (분야 좁히기 목록에 함께 보여 준다)
 const IPC_NAME = { A01B: "경운·농기계", A01C: "파종·시비 기계", A01D: "수확 기계", A01G: "원예·재배", A01H: "신품종·식물", A01K: "축산·양봉·수산", A01N: "농약·생장조절제", A01P: "생물 활성(농약 효과)", A23B: "식품 보존", A23C: "유제품", A23F: "커피·차", A23J: "단백질 식품", A23K: "사료", A23L: "식품·식료품", A23N: "농산물 처리 기계", A23P: "식품 성형·가공", A61K: "의약·기능성 소재", A61P: "약효(질병 대상)", B65B: "포장 방법", B65D: "포장 용기", C05B: "인산 비료", C05C: "질소 비료", C05F: "유기 비료", C05G: "비료 혼합물", C12G: "주류", C12J: "식초", C12N: "미생물·효소", C12P: "발효 생산", C12Q: "검출·측정(유전자)", C12R: "미생물 종류 표시", G01N: "분석·측정", G05B: "제어 시스템", G06Q: "경영·서비스 시스템", G06T: "영상 처리", H04L: "통신·네트워크" };
+const FIELD_EASY = { food: "가공식품·음료의 재료 배합이나 만드는 법", ferment: "균주·발효물·미생물 비료·농약", functional: "몸에 좋은 추출물·건강 소재", smartfarm: "센서·제어 장치, 농기계", variety: "새 품종, 품종을 가려내는 DNA 마커", pack: "포장재·저장 방법·유통 기술" };
+const fieldPick = () => $('input[name="field"]:checked')?.value;
 const STRAIN_OPTS = [["yes", "새 균주 · 기탁 완료", "직접 찾은 미생물을 공인기관에 맡기고 번호를 받았어요"], ["no", "새 균주 · 아직 기탁 전", "직접 찾았지만 아직 공인기관에 맡기지 않았어요"], ["known", "시판·공지 균주", "사거나 분양받을 수 있는 미생물이에요"]];
 // 출원 전에 직접 답해야 하는 사실. 답하지 않으면 2단계로 넘어가지 않는다
 const FACTS = [["data", "실험 데이터"], ["sold", "판매 이력"], ["disclosed", "외부 공개 이력"]];
@@ -1390,9 +1403,9 @@ function renderSteps() {
       <span class="t"><small>${n + 1}</small>${x.t}</span><span class="d">${x.s}</span></button>`; }).join("");
 }
 
-function seg(name, opts, val) {
+function seg(name, opts, val, { attr = "", label = "" } = {}) {
   // opts: [값, 글, (쉬운 설명)] — 설명이 있으면 버튼 안 둘째 줄에 작게 적는다
-  return `<div class="seg${opts.some(o => o[2]) ? " seg-desc" : ""}" role="radiogroup">${opts.map(([v, l, d]) => `<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${val === v ? "checked" : ""}><span>${l}${d ? `<small>${d}</small>` : ""}</span></label>`).join("")}</div>`;
+  return `<div class="seg${opts.some(o => o[2]) ? " seg-desc" : ""}" role="radiogroup"${label ? ` aria-label="${esc(label)}"` : ""}>${opts.map(([v, l, d, b]) => `<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${attr} ${val === v ? "checked" : ""}><span><span class="seg-t">${l}${b ? `<em class="seg-b${b === "추천" ? " rec" : ""}">${b}</em>` : ""}</span>${d ? `<small>${d}</small>` : ""}</span></label>`).join("")}</div>`;
 }
 
 /* ---------- 출원지원 단계별 쪽 ---------- */
@@ -1417,9 +1430,9 @@ function ideaStartPage() {
   return `<div class="idea-start">
     <div class="idea-kw">
       <div class="grid2">
-        <div class="field"><label for="field">기술 분야</label><select id="field">${Object.entries(FIELDS).map(([k, f]) => `<option value="${k}" ${!i.fieldCustom && i.field === k ? "selected" : ""}>${f.name}</option>`).join("")}<option value="__custom" ${i.fieldCustom != null ? "selected" : ""}>직접 입력…</option></select>
+        <div class="field full"><span class="label">기술 분야 <span class="muted h-meta">가장 가까운 것 하나</span></span>${seg("field", [...Object.entries(FIELDS).map(([k, f]) => [k, f.name, FIELD_EASY[k]]), ["__custom", "직접 입력", "수산·축산처럼 목록에 없을 때"]], i.fieldCustom != null ? "__custom" : i.field, { label: "기술 분야" })}
           ${i.fieldCustom != null ? `<input type="text" id="field-custom" value="${esc(i.fieldCustom)}" placeholder="예: 수산 양식, 축산 사료, 곤충 단백" aria-label="기술 분야 직접 입력" style="margin-top:6px"><span class="hint">초안 틀은 가장 가까운 분야(${esc(FIELDS[i.field].name)})를 바탕으로 만듭니다.</span>` : ""}</div>
-        <div class="field"><label for="idea-kw">핵심 키워드 (쉼표로 구분)</label><input type="text" id="idea-kw" value="${esc(I.kw)}" placeholder="예: 쌀겨, 발효, 생장 촉진"><span class="hint">원료·방법·효과 순서로 2~5개 적으면 좋아요. Enter로도 제안받을 수 있어요.</span></div>
+        <div class="field full"><label for="idea-kw">핵심 키워드 (쉼표로 구분)</label><input type="text" id="idea-kw" value="${esc(I.kw)}" placeholder="예: 쌀겨, 발효, 생장 촉진"><span class="hint">원료·방법·효과 순서로 2~5개 적으면 좋아요. Enter로도 제안받을 수 있어요.</span></div>
       </div>
       <div class="rec-list" ${i.fieldCustom != null ? "hidden" : ""}><span class="label" style="width:100%">추천 키워드 · 눌러서 추가</span>${B.sugg.filter(k => !have.includes(k)).map(k => `<button type="button" class="chip" data-add-kw="${esc(k)}">+ ${esc(k)}</button>`).join("")}</div>
       <div class="actions"><button class="btn" id="ideate-run">초안 제안 받기</button></div>
@@ -1452,10 +1465,10 @@ function ideaPickPage() {
       <fieldset class="facts" id="facts-box"><legend>출원 전에 확인할 사실 <span class="muted h-meta">모두 직접 골라 주세요</span></legend>
         <p class="hint" style="margin-top:0">사실대로 골라 주세요. 답에 따라 서류에 들어가는 내용이 달라져요.</p>
         <div class="grid2">
-          <div class="field"><span class="label">효과를 보여줄 실험 데이터가 있나요?</span>${seg("data", [["yes", "있음", "직접 시험해서 잰 숫자가 있어요"], ["no", "없음", "아직 재 보지 않았어요"]], i.data)}</div>
-          <div class="field"><span class="label">제품을 판매한 적이 있나요?</span>${seg("sold", [["no", "아니요"], ["yes", "예", "시제품을 팔았거나 납품한 적도 포함해요"]], i.sold)}</div>
-          <div class="field"><span class="label">박람회·SNS·논문 등으로 외부에 공개했나요?</span>${seg("disclosed", [["no", "아니요"], ["yes", "예"]], i.disclosed)}</div>
-          ${i.field === "ferment" ? `<div class="field"><span class="label">발명에 쓰는 균주는 어떤 균주인가요?</span>${seg("strain", STRAIN_OPTS, S.strain)}<span class="hint">직접 찾은 균주는 출원 전에 공인기관에 맡겨야(기탁) 해요. 출원한 뒤에는 보완할 수 없어요.</span></div>` : ""}
+          <div class="field q"><span class="label">효과를 보여줄 실험 데이터가 있나요?</span>${seg("data", [["yes", "있음", "직접 시험해서 잰 숫자가 있어요"], ["no", "없음", "아직 재 보지 않았어요"]], i.data, { label: "실험 데이터" })}</div>
+          <div class="field q"><span class="label">제품을 판매한 적이 있나요?</span>${seg("sold", [["yes", "예", "시제품을 팔았거나 납품한 적도 포함해요"], ["no", "아니요", "아직 팔거나 납품한 적이 없어요"]], i.sold, { label: "판매 이력" })}</div>
+          <div class="field q"><span class="label">박람회·SNS·논문 등으로 외부에 공개했나요?</span>${seg("disclosed", [["yes", "예", "전시·게시·발표로 남이 본 적이 있어요"], ["no", "아니요", "가족·동료 말고는 보여 준 적 없어요"]], i.disclosed, { label: "외부 공개 이력" })}</div>
+          ${i.field === "ferment" ? `<div class="field q full"><span class="label">발명에 쓰는 균주는 어떤 균주인가요?</span>${seg("strain", STRAIN_OPTS, S.strain, { label: "균주 종류" })}<span class="hint">직접 찾은 균주는 출원 전에 공인기관에 맡겨야(기탁) 해요. 출원한 뒤에는 보완할 수 없어요.</span></div>` : ""}
           <div class="field" ${i.disclosed === "yes" ? "" : "hidden"} id="disc-wrap-1"><label for="discDate">처음 공개한 날</label><input type="date" id="discDate" value="${esc(i.discDate)}" max="${iso(today)}"></div>
           <div class="field" ${i.disclosed === "yes" ? "" : "hidden"} id="disc-wrap-2"><label for="discWhere">공개한 곳</label><input type="text" id="discWhere" value="${esc(i.discWhere)}" placeholder="예: ○○ 농업기술박람회 부스 전시"></div>
         </div>
@@ -4074,7 +4087,7 @@ AI_TASK_UI.ideate = {
 // 지금 고른 구성·단계 칩으로 만든 핵심 구성 (사용자가 고쳤는지 볼 때)
 const ideaPartsText = () => { const I = S.ideate, D = I.drafts, key = partsKey(); return D ? [...I.parts].sort((a, b) => a - b).map(n => D[key]?.[n]).filter(Boolean).join("\n") : S.parts; };
 function runIdeate() {
-  const kw = $("#idea-kw")?.value ?? S.ideate.kw, sel = $("#field")?.value, f = !sel ? S.idea.field : sel === "__custom" ? guessField(S.idea.fieldCustom || "") : sel;
+  const kw = $("#idea-kw")?.value ?? S.ideate.kw, sel = fieldPick(), f = !sel ? S.idea.field : sel === "__custom" ? guessField(S.idea.fieldCustom || "") : sel;
   if (ideateFrom(f, kw)) toPage("idea", 1, 1);
 }
 // 분야·키워드로 기본 초안 후보를 만들고 첫 후보를 아이디어에 넣는다 (1단계와 해외동향의 '관심 기술로 새로 시작'이 함께 쓴다)
@@ -4853,7 +4866,7 @@ function viewDraft() {
     <div class="panel-head"><h2 id="h-draft">출원 서류 작성</h2>${resetBtn()}
       <p class="muted">명세서·출원서·첨부서류를 현행 서식으로 만들고 수수료를 계산합니다. 〔입력 필요〕를 채우고 최종 점검을 마치면 특허로(patent.go.kr)에서 제출합니다.${aiMode() ? " AI가 켜져 있어 기본 초안을 AI 작성본으로 자동으로 바꿉니다(직접 고친 명세서는 그대로 둡니다)." : ""}</p></div>
     ${aiSlot("draft")}
-    <div class="field" data-pg="0"><span class="label">보호받을 형태 <span class="muted h-meta">청구 유형 · 분야와 명칭으로 미리 골랐어요</span></span><div class="tpl seg">${Object.entries(TPL).map(([k, v]) => `<label><input type="radio" name="tpl" id="tpl-${k}" value="${k}" ${S.tpl === k ? "checked" : ""}>${v.n}</label>`).join("")}</div><span class="hint">${esc(TPL_DESC[S.tpl] ?? "")} 잘 모르면 그대로 두세요.</span></div>
+    <div class="field" data-pg="0"><span class="label">보호받을 형태 <span class="muted h-meta">청구 유형 · 분야와 명칭을 보고 ‘추천’을 골라 두었어요. 잘 모르면 그대로 두세요</span></span>${seg("tpl", Object.entries(TPL).map(([k, v]) => [k, v.n, TPL_DESC[k], k === tplFor() ? "추천" : ""]), S.tpl, { label: "보호받을 형태" })}</div>
     <div class="grid2" data-pg="0">
       <div class="field"><label for="parts">핵심 구성 (한 줄에 하나, 수치 범위 포함)</label><textarea id="parts" rows="4">${esc(S.parts)}</textarea></div>
       <div class="field"><label for="effect">효과 (측정값이 있으면 숫자로)</label><textarea id="effect" rows="4">${esc(S.effect)}</textarea>
@@ -4974,7 +4987,7 @@ const FEE = { app: 46000, appOtherSw: 56000, examBase: 166000, examPerClaim: 510
 // 감경률: 출원료·심사청구료·최초 3년분 등록료에 적용 (징수규칙 별표 5)
 // doc: 첨부하는 증명서류 이름 (징수규칙 제7조 제6항 제3호). 이미 낸 적이 있거나 행정정보 공동이용으로 확인되면 생략할 수 있다
 // 출원인 구분을 고를 때 보여 줄 쉬운 이름 (출원서·계산 근거에는 REDUCE 의 법령 이름을 쓴다)
-const REDUCE_EASY = { individual: "개인 — 발명한 본인이 출원", young: "개인 — 만 19~29세 또는 65세 이상인 본인", small: "중소기업", public: "공공연구기관 (대학·국공립 연구원 등)", tlo: "기술이전 전담조직 (대학·연구원 산하 법인)", local: "지방자치단체", joint: "중소기업과 다른 기업·기관의 공동연구", midsize: "중견기업", none: "감면 없음 (대기업 등)" };
+const REDUCE_EASY = { individual: ["개인", "발명한 본인이 출원"], young: ["청년·어르신", "만 19~29세 또는 65세 이상인 개인 본인"], small: ["중소기업", "중소기업확인서가 있는 회사"], public: ["공공연구기관", "대학·국공립 연구원 등"], tlo: ["기술이전조직", "대학·연구원 산하 기술이전 전담 법인"], local: ["지방자치단체", "시·군·도청 등"], joint: ["공동연구", "중소기업과 다른 기업·기관이 함께"], midsize: ["중견기업", "중견기업확인서가 있는 회사"], none: ["감면 없음", "대기업 등"] };
 const REDUCE = {
   individual: { rate: 70, label: "개인(발명자와 출원인이 같은 경우)", corp: false, proof: false, person: true },
   young: { rate: 85, label: "개인 중 19세 이상 29세 이하 또는 65세 이상", corp: false, proof: false, person: true },
@@ -5672,7 +5685,7 @@ function filingPages() {
     <p class="muted" style="font-size:.9rem">아래 정보를 넣으면 출원서가 완성됩니다. 특허로 서식작성기의 같은 이름 항목에 옮겨 적거나, 변리사에게 그대로 전달하세요.</p>
     <div class="ap-progress" id="ap-progress" role="status"></div>
     <div class="grid2">
-      <div class="field"><label for="ap-type">누가 출원하나요? <span class="muted h-meta">수수료 감면</span></label><select id="ap-type" data-ap="type">${Object.entries(REDUCE).map(([k, r]) => `<option value="${k}" ${a.type === k ? "selected" : ""}>${REDUCE_EASY[k] ?? r.label}${r.rate ? ` · ${r.rate}% 감면` : ""}</option>`).join("")}</select>
+      <div class="field full" id="ap-type"><span class="label">누가 출원하나요? <span class="muted h-meta">고른 대로 수수료 감면이 자동 계산돼요</span></span>${seg("ap-type", Object.entries(REDUCE).map(([k, r]) => [k, REDUCE_EASY[k]?.[0] ?? r.label, REDUCE_EASY[k]?.[1] ?? "", r.rate ? `${r.rate}% 감면` : ""]), a.type, { attr: 'data-ap="type"', label: "출원인 구분" })}
         <span class="hint">${REDUCE[a.type].person ? (reduceOk() ? "개인 감면은 발명자와 출원인이 같을 때만 되며, 출원료 감면은 한 해 20건까지입니다(징수규칙 별표 5)." : "<b>출원인이 발명자 목록에 없어 감면을 넣지 않았습니다.</b> 개인 감면은 발명자와 출원인이 같을 때만 됩니다(징수규칙 별표 5 비고 2). 출원인이 발명자라면 발명자란에도 같은 이름으로 적으세요.") : REDUCE[a.type].proof ? `${REDUCE[a.type].doc}를 첨부합니다. 이미 낸 적이 있거나 행정정보 공동이용으로 확인되면 생략할 수 있습니다.` : ""}</span></div>
       ${apField("name", REDUCE[a.type].corp ? "출원인 명칭(법인명)" : "출원인 성명", "특허고객번호 부여 신청 때 적은 국문 이름과 같게 적습니다.")}
       ${apField("code", "출원인 특허고객번호", "예: 4-2026-012345-6. 없으면 특허로에서 먼저 부여신청하세요.")}
@@ -5693,7 +5706,7 @@ function filingPages() {
       ${apField("priNo", "국내 우선권 주장 선출원번호 (선택)", "1년 이내에 먼저 낸 출원을 개량해 다시 내는 경우. 예: 10-2026-0012345")}
       ${a.priNo.trim() ? apField("priDate", "선출원일자", "", "date") : ""}
       ${apField("seqCount", "서열 개수 (염기·아미노산 서열이 있으면)", "", "number")}
-      ${apSeg("rnd", "국가연구개발사업의 성과인가요?", [["no", "아니요"], ["yes", "예"]], `정부 예산·기금으로 지원받은 연구의 성과면 출원서에 지원 과제를 꼭 적습니다(국가연구개발혁신법 시행령 제32조 제5항).${["public", "tlo", "joint"].includes(a.type) && a.rnd !== "yes" ? " 연구기관·공동연구 출원은 대부분 해당하니 확인하세요." : ""}`)}
+      ${apSeg("rnd", "국가연구개발사업의 성과인가요?", [["yes", "예"], ["no", "아니요"]], `정부 예산·기금으로 지원받은 연구의 성과면 출원서에 지원 과제를 꼭 적습니다(국가연구개발혁신법 시행령 제32조 제5항).${["public", "tlo", "joint"].includes(a.type) && a.rnd !== "yes" ? " 연구기관·공동연구 출원은 대부분 해당하니 확인하세요." : ""}`)}
       ${a.rnd === "yes" ? apField("rndId", "과제고유번호", "NTIS 또는 IRIS의 번호. 아직 받지 않았으면 ‘미부여’로 적고, 받은 뒤 보정합니다.") + apField("rndNo", "과제번호", "과제관리(전문)기관의 세부과제번호") + apField("rndMinistry", "부처명", "예: 농림축산식품부, 농촌진흥청")
         + apField("rndAgency", "과제관리(전문)기관명", "예: 농림식품기술기획평가원") + apField("rndProgram", "연구사업명") + apField("rndTask", "연구과제명") + apField("rndOrg", "과제수행기관명") + apField("rndPeriod", "연구기간", "해당 연도 연구기간. 예: 2026. 1. 1. ～ 2026. 12. 31.") : ""}
     </div>`, a.rnd === "yes" || !!a.agentName.trim() || !!a.priNo.trim())}
@@ -6344,7 +6357,7 @@ document.addEventListener("submit", e => {
 function readDiag() {
   const i = S.idea;
   i.title = $("#title").value.trim() || "이름 없는 발명";
-  i.field = $("#field")?.value || i.field; i.problem = $("#problem").value; i.diff = $("#diff").value;
+  const fp = fieldPick(); if (fp && fp !== "__custom") i.field = fp; i.problem = $("#problem").value; i.diff = $("#diff").value;
   i.disclosed = $('input[name="disclosed"]:checked')?.value || "";
   i.data = $('input[name="data"]:checked')?.value || "";
   i.sold = $('input[name="sold"]:checked')?.value || "";
@@ -6433,7 +6446,7 @@ document.addEventListener("change", e => {
   if (t.dataset?.pickSet) { const set = S.ideate[t.dataset.pickSet], k = +t.value; t.checked ? set.add(k) : set.delete(k); syncParts(); rerenderKeepScroll(); return; }
   // 명칭을 고쳐 방법↔물건이 바뀌면 구성 후보(단계/구성)와 청구 유형을 다시 맞춘다
   if (t.id === "title" && t.closest("#f-diag")) { const k = S.ideate.partsKey; syncParts(); if (S.tplAuto !== false) S.tpl = tplFor(); if (S.ideate.drafts && k !== S.ideate.partsKey) deferRender(); return; }
-  if (t.id === "field" && t.closest(".idea-start")) { const c = t.value === "__custom"; S.idea.fieldCustom = c ? "" : null; S.idea.field = c ? "food" : t.value; S.ideate.kw = ""; S.kwField = null;
+  if (t.name === "field" && t.closest(".idea-start")) { const c = t.value === "__custom"; S.idea.fieldCustom = c ? "" : null; S.idea.field = c ? "food" : t.value; S.ideate.kw = ""; S.kwField = null;
     if (S.ideate.drafts) { S.idea.fieldMoved = true; toast("분야를 바꿨습니다. 새 키워드로 ‘초안 제안 받기’를 눌러 아이디어도 다시 정하세요"); }
     if (S.tplAuto) S.tpl = tplFor(); if (c) setTimeout(() => $("#field-custom")?.focus()); S.gapSel = null; S.citeSel = null; invalidateSpec(); render(); return; }
   if (t.id === "field-custom") { deferRender(); return; } // 가까운 분야 안내를 고친다
