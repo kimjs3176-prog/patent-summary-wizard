@@ -260,7 +260,7 @@ function TossPatentSummaryInner({
   return (
     <div className="text-[#191F28]" style={{ fontFamily: "'Pretendard','Inter',sans-serif" }}>
       {/* 액션바: 토스 스타일 미니멀, 기능은 모두 유지 */}
-          <ActionBar isStreaming={isStreaming} content={content} patentData={patentData} handlePrint={handlePrint} onRegenerate={onRegenerate} setShareOpen={setShareOpen} favoritesEnabled={favoritesEnabled} toggleFavorite={toggleFavorite} patentNumber={patentNumber} score={score} details={details} patentIsFavorite={patentIsFavorite} featureFlags={featureFlags} printRef={printRef} allReady={allReady} />
+          <ActionBar isStreaming={isStreaming} content={content} patentData={patentData} handlePrint={handlePrint} onRegenerate={onRegenerate} setShareOpen={setShareOpen} favoritesEnabled={favoritesEnabled} toggleFavorite={toggleFavorite} patentNumber={patentNumber} score={score} details={details} patentIsFavorite={patentIsFavorite} featureFlags={featureFlags} printRef={printRef} allReady={allReady} keywords={keywords.map((k) => k.word)} />
 
       <div ref={(node) => { aiBodyRef.current = node; printRef.current = node; }} data-toss-summary data-toss-surface className="bp-doc precision-report border border-border overflow-hidden max-w-[864px] mx-auto">
         <div className="bp-doc-head">

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  AlertCircle, Building2, Check, ClipboardCheck, Download, Gauge, History, Link2, Loader2, Package,
+  AlertCircle, Building2, Check, ClipboardCheck, Download, ExternalLink, Gauge, History, Link2, Loader2, Package,
   RotateCcw, Search, Sparkles, Target, Trash2, Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/patentFinder";
 import { FavoriteToggle } from "@/components/search/FavoriteToggle";
 import { useCardFavorites } from "@/components/search/useCardFavorites";
+import { NATI_TRANSFER_URL } from "@/lib/services";
 
 const STORAGE_KEY = "patent-finder:last";
 const STEPS = ["회사 조건 분석", "후보 특허 검색", "적합도 평가"];
@@ -179,6 +180,11 @@ function ResultCard({ r, rank, onOpen, favorite }: {
                 })}
               />
             )}
+            <Button asChild variant="outline" size="sm" className="rounded-full h-8 gap-1">
+              <a href={NATI_TRANSFER_URL} target="_blank" rel="noopener noreferrer" title="NATI(농업기술실용화 정보)에서 이 기술의 이전을 신청합니다. 요약에서 내용을 먼저 확인해 보세요">
+                <ExternalLink className="w-3.5 h-3.5" />기술이전 신청
+              </a>
+            </Button>
             <Button size="sm" className="rounded-full h-8 gap-1 btn-press" onClick={() => onOpen(r.patentId)}>
               AI 요약 보기
             </Button>
