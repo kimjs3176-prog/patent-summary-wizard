@@ -1379,40 +1379,9 @@ time, .tabular-nums, [data-numeric] {
   font-weight: 600;
   color: hsl(var(--foreground));
 }
-/* 핵심 요약 + 목차 */
-.report-overview {
-  padding: 18px 18px 16px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  background: hsl(var(--muted) / 0.35);
-}
-.report-overview-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0;
-}
-.report-overview-cell {
-  display: grid;
-  align-content: start;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 6px;
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  min-width: 0;
-}
-.report-overview-cell.wide { grid-column: span 2; }
-.report-overview-cell.full { grid-column: 1 / -1; }
-.report-overview-cell dt { font-size: 12px; font-weight: 700; color: #6B7684; }
-.report-overview-cell dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; color: hsl(var(--foreground)); }
-.report-overview-cell dd b { font-size: 24px; line-height: 1.2; font-weight: 800; }
-.report-overview-cell .unit { font-size: 12px; color: #6B7684; }
-.report-overview-cell .sub { flex-basis: 100%; font-size: 13px; color: #4E5968; }
-.report-overview-cell .label { flex-basis: 100%; font-size: 14px; font-weight: 700; }
-.report-overview-cell .fig { font-size: 15px; font-weight: 600; }
-.report-overview-cell p { margin: 0; font-size: 15px; line-height: 1.7; font-weight: 500; }
+/* 목차 */
 .report-toc { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed hsl(var(--border)); }
+.report-toc-solo { margin-top: 20px; padding: 12px 0; border-top: 1px solid hsl(var(--border)); border-bottom: 1px solid hsl(var(--border)); }
 .report-toc-title { font-size: 12px; font-weight: 700; color: #6B7684; }
 .report-toc ol { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; }
 .report-toc a { display: inline-flex; align-items: baseline; gap: 5px; font-size: 13px; color: #333D4B; text-decoration: none; }
@@ -1468,13 +1437,10 @@ time, .tabular-nums, [data-numeric] {
   .report-section + .report-section {
     padding-top: 22px;
   }
-  .report-overview { padding: 14px 12px; }
-  .report-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .report-overview-cell.wide { grid-column: 1 / -1; }
 }
 
 @media print {
-  .report-overview, .report-lead, .report-market { break-inside: avoid; }
+  .report-lead, .report-market { break-inside: avoid; }
   .report-toc a { color: inherit; }
 }
 

@@ -10,7 +10,6 @@ import { safeFetch } from "@/lib/safeFetch";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { extractKeywordsFromPatent } from "./_keywords";
-import { analysisNeedsSection } from "@/lib/summaryReport";
 import { ImageLightbox } from "./ImageLightbox";
 import { useGovtPatent } from "./GovtPatentInfo";
 import { useRegisterOwner, isDifferentOwner } from "./useRegisterOwner";
@@ -18,7 +17,7 @@ import { SummaryReadyProvider, useSummaryPending } from "./summaryReady";
 import { ACCENT_HEX, parseSections, formatAiModelLabel, sectionMeta } from "./toss/helpers";
 import { ActionBar } from "./toss/ActionBar";
 import { HeroSection } from "./toss/HeroSection";
-import { ReportOverview, type TocItem } from "./toss/ReportOverview";
+import { ReportToc, type TocItem } from "./toss/ReportToc";
 import { BasicInfoSection } from "./toss/BasicInfoSection";
 import { ScoreSection } from "./toss/ScoreSection";
 import { FiguresSection } from "./toss/FiguresSection";
@@ -190,7 +189,7 @@ function TossPatentSummaryInner({
     { id: "sec-score", label: "사업화 점수·기술 성숙도" },
     ...(drawings.length ? [{ id: "sec-figures", label: "특허 도면" }] : []),
     ...sections.map((s, i) => ({ id: `sec-ai-${i}`, label: sectionMeta(s.title).kicker })),
-    ...(analysisNeedsSection(details?.analysis) ? [{ id: "sec-analysis", label: "AI 종합 의견" }] : []),
+    ...(details?.analysis ? [{ id: "sec-analysis", label: "AI 종합 의견" }] : []),
     { id: "sec-related", label: "관련 특허" },
     { id: "sec-regulation", label: "예상 규제" },
   ], [drawings.length, sections, details?.analysis]);
@@ -276,8 +275,8 @@ function TossPatentSummaryInner({
           {/* HERO */}
           <HeroSection patentData={patentData} title={title} patentNumber={patentNumber} govtPatent={govtPatent} />
 
-          {/* 핵심 요약 + 목차 — 보고서 첫머리 */}
-          <ReportOverview score={score} scoreSummary={scoreSummary} scoreLoading={scoreLoading} trl={trl} trlName={trlName} trlStage={trlStage} analysis={details?.analysis} sections={sections} toc={toc} isStreaming={!!isStreaming} />
+          {/* 목차 — 휴대폰·인쇄용 (핵심 요약 카드는 소유자 요청으로 두지 않는다) */}
+          <ReportToc toc={toc} isStreaming={!!isStreaming} hasSections={sections.length > 0} />
 
           {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
           <BasicInfoSection patentData={patentData} ownerChanged={ownerChanged} finalOwner={finalOwner} keywords={keywords} onKeywordClick={onKeywordClick} govtPatent={govtPatent} />

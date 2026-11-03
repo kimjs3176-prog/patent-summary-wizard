@@ -129,8 +129,3 @@ export function splitTrustNotes(text: string): TrustPart[] {
   if (last < text.length) out.push({ text: text.slice(last) });
   return out;
 }
-
-/** 사업화 종합 의견이 핵심 요약의 '한 줄 결론'(앞 두 문장)보다 길 때만 따로 절을 둔다. 같으면 같은 글을 두 번 보여 주게 된다 */
-export function analysisNeedsSection(analysis?: string | null): boolean {
-  return splitSentences(String(analysis ?? "").replace(/\*\*/g, "")).length > 2;
-}
