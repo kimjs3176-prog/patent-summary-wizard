@@ -23,6 +23,8 @@ interface Props {
   patentNumber: string;
   patentData: PatentData;
   isStreaming: boolean;
+  /** note: 데이터시트형 요약서의 왼쪽 여백 주석으로 짧게 (법령 이름·이유·링크) */
+  variant?: "full" | "note";
 }
 
 function formatEffectiveDate(d?: string): string | undefined {
@@ -32,7 +34,7 @@ function formatEffectiveDate(d?: string): string | undefined {
   return d;
 }
 
-export function RegulationAnalysis({ patentNumber, patentData, isStreaming }: Props) {
+export function RegulationAnalysis({ patentNumber, patentData, isStreaming, variant = "full" }: Props) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RegulationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +63,30 @@ export function RegulationAnalysis({ patentNumber, patentData, isStreaming }: Pr
     run();
     return () => { cancelled = true; };
   }, [patentNumber, isStreaming]);
+
+  if (variant === "note") {
+    return (
+      <div className="ds-reg">
+        <b className="ds-note-t">예상 규제</b>
+        {loading && <p className="ds-wait"><Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" />관련 법령을 찾는 중…</p>}
+        {!loading && error && <p className="ds-wait">규제 정보를 불러오지 못했습니다.</p>}
+        {!loading && !error && result && (result.laws.length === 0
+          ? <p className="ds-wait">추출된 관련 법령이 없습니다.</p>
+          : (
+            <ul className="ds-mini">
+              {result.laws.map((law, i) => (
+                <li key={i}>
+                  <b>{law.name}</b>
+                  {law.reason}
+                  {law.link && <a href={law.link} target="_blank" rel="noreferrer noopener" className="ds-link print:hidden">법령 보기 <ExternalLink className="w-3 h-3 inline" /></a>}
+                </li>
+              ))}
+            </ul>
+          ))}
+        <p className="ds-sub">AI가 추정한 관련 법령이며, 실제 적용 여부는 소관부처 확인이 필요합니다.</p>
+      </div>
+    );
+  }
 
   return (
     <section
