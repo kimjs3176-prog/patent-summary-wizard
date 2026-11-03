@@ -10,3 +10,4 @@
 - patent-chat answers only from data retrieved per question (search-patents results for the 6 institutes, the filing-trends snapshot, stored TRL values — no commercialization scores — and the fixed transfer guide), with routing/card rules in chatPolicy.ts; patent cards come from server data, never model text.
 - filing-api `lib/` started as a copy of 에이프 `server/*.js` (process.env shim in lib/env.ts) and is now owned here: change it directly, never in kimjs3176-prog/koat-axlab.
 - sync-r2-videos (hourly cron + manual call) keeps site_settings.tech_videos in step with the R2 bucket: files are matched by decoded object key (never raw URL), admin-edited titles/categories are kept, and an empty listing never deletes videos.
+- AI calls go only through the Lovable AI Gateway with LOVABLE_API_KEY; never add a personal provider key path (GEMINI_API_KEY etc.), so every call is logged and billed in one place.
