@@ -1,4 +1,5 @@
 import React from "react";
+import { parsePatentTitle } from "@/lib/patentKeywords";
 
 export type KeywordCategory = "function" | "industry" | "material" | "product" | "tech" | "general";
 
@@ -37,7 +38,41 @@ export function KeywordChip({
 
 export type KwItem = { word: string; cat: KeywordCategory };
 
+/**
+ * 요약서 '관련 키워드': 이 특허만의 낱말을 먼저 보여 준다.
+ * 특허 명칭에서 원료·용도·방식(또는 수단)을 뽑고(parsePatentTitle), 형태(최종제품)·활용산업은 분류 규칙에서 하나씩 더한다.
+ * 예전처럼 '발효기능·비료산업·미생물활용' 같은 분류 이름만 나오면 특허마다 비슷하고, 눌러 검색해도 엉뚱한 결과가 나왔다.
+ * 명칭에서 둘 이상 뽑지 못하면(명칭 형식이 다르면) 분류 규칙 결과를 그대로 쓴다.
+ */
 export function extractKeywordsFromPatent(
+  patentData: { titleKo?: string; title?: string; abstract?: string; classifications?: string[] } | null | undefined,
+  max = 5,
+  summary?: string,
+): KwItem[] {
+  const base = ruleKeywords(patentData, Math.max(max, 4), summary);
+  const title = patentData?.titleKo || patentData?.title || "";
+  const p = parsePatentTitle(title);
+  const specific: KwItem[] = [];
+  const add = (word: string, cat: KeywordCategory) => {
+    const w = word.trim();
+    if (!w || w.length > 20 || specific.some((k) => k.word === w)) return; // 콩·쌀·김처럼 한 글자 원료도 있다
+    specific.push({ word: w, cat });
+  };
+  if (p.subject) add(p.subject, "material");
+  if (p.useWords.length >= 2) { add(p.useWords[0], "material"); add(p.useWords.slice(1).join(" "), "function"); }
+  if (p.use) add(p.use, "function");
+  if (p.means) add(p.means, "tech");
+  else if (p.way) add(p.way, "tech");
+  if (specific.length < 2) return base.slice(0, max);
+  for (const cat of ["product", "industry"] as KeywordCategory[]) {
+    const k = base.find((x) => x.cat === cat && !specific.some((s) => s.word === x.word));
+    if (k) specific.push(k);
+  }
+  return specific.slice(0, max);
+}
+
+/** 분류 규칙(기능·산업·제품·기술 사전과 IPC)으로 고르는 키워드. 명칭에서 뽑지 못할 때와 형태·산업 보충에 쓴다 */
+function ruleKeywords(
   patentData: { titleKo?: string; title?: string; abstract?: string; classifications?: string[] } | null | undefined,
   max = 4,
   summary?: string,

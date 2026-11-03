@@ -10,6 +10,7 @@ import { safeFetch } from "@/lib/safeFetch";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { extractKeywordsFromPatent } from "./_keywords";
+import { analysisNeedsSection } from "@/lib/summaryReport";
 import { ImageLightbox } from "./ImageLightbox";
 import { useGovtPatent } from "./GovtPatentInfo";
 import { useRegisterOwner, isDifferentOwner } from "./useRegisterOwner";
@@ -155,7 +156,7 @@ function TossPatentSummaryInner({
   const sections = useMemo(() => parseSections(content), [content]);
   // 스트리밍 중에는 매 토큰마다 재계산하지 않도록 완료 후에만 요약서 기반으로 추출
   const keywords = useMemo(
-    () => extractKeywordsFromPatent(patentData, 8, isStreaming ? undefined : content),
+    () => extractKeywordsFromPatent(patentData, 5, isStreaming ? undefined : content),
     [patentData, content, isStreaming],
   );
 
@@ -189,7 +190,7 @@ function TossPatentSummaryInner({
     { id: "sec-score", label: "사업화 점수·기술 성숙도" },
     ...(drawings.length ? [{ id: "sec-figures", label: "특허 도면" }] : []),
     ...sections.map((s, i) => ({ id: `sec-ai-${i}`, label: sectionMeta(s.title).kicker })),
-    ...(details?.analysis ? [{ id: "sec-analysis", label: "AI 종합 의견" }] : []),
+    ...(analysisNeedsSection(details?.analysis) ? [{ id: "sec-analysis", label: "AI 종합 의견" }] : []),
     { id: "sec-related", label: "관련 특허" },
     { id: "sec-regulation", label: "예상 규제" },
   ], [drawings.length, sections, details?.analysis]);

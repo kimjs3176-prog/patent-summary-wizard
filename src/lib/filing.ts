@@ -5,6 +5,7 @@
 //                      {type:"agri-ip:cite", no, title} (이미 열린 창에 비교 특허 추가)
 //   에이프 → AIS: {type:"agri-ip:state", …} 그릴 때마다 단계·쪽·이전/다음·D-day (이 페이지가 단계 바를 그린다) · {type:"agri-ip:ais", q} 'AIS로 분석' → AIS 가 직접 검색
 // 반대로 AIS 가 에이프 안(iframe)에 열렸을 때는(?from=agri-ip) 비교 특허를 부모 창으로 postMessage 한다.
+import { parsePatentTitle } from "@/lib/patentKeywords";
 
 // 기본은 이 사이트 안의 사본(public/filing-app, 이 저장소에서 직접 고친다). 바깥 서버를 쓰려면 관리자 설정 filing_url 에 https 주소
 export const FILING_DEFAULT_URL = "/filing-app/";
@@ -191,25 +192,13 @@ export function filingFieldFromIpc(codes: string[] = []): string | undefined {
  *   '미생물 발효 유채박을 유효성분으로 함유하는 식물 생장 촉진용 조성물' → '유채박, 미생물 발효, 식물 생장 촉진'
  *   '콩 들불병 진단용 조성물 및 이의 용도' → '콩, 들불병, 진단'
  */
-const GENERIC_TAIL = /^(추출물|발효물|분말|농축액|혼합물|배양액|배양물|균주|조성물)$/;
 const DEFAULT_WAY: Record<string, string> = { food: "가공", ferment: "발효", smartfarm: "자동 제어", variety: "육종", pack: "포장", functional: "부산물" };
 export function ideaKeywordsFromTitle(title: string, field = ""): string {
-  const t = String(title ?? "").replace(/\s*및\s+(그|이의|이를|상기).*$/, "").replace(/\s+/g, " ").trim();
-  let a = "", b = "", c = "";
-  const m = t.match(/^(.+?)(?:을|를)\s*(?:유효\s*성분으로\s*)?(포함|함유|이용|사용|첨가|활용)\S*\s+(.+)$/);
-  if (m) {
-    const words = m[1].split(" ").filter(Boolean);
-    while (words.length > 1 && GENERIC_TAIL.test(words[words.length - 1])) words.pop();
-    // '…을 포함하는'은 마지막 낱말이 원료이고 앞은 방식(미생물 발효 유채박), '…을 이용한'은 묶음 전체가 수단(영상 분석)
-    if (/포함|함유|첨가/.test(m[2])) { a = words.pop() ?? ""; b = words.join(" "); } else a = words.join(" ");
-    const use = m[3].match(/^(.+?)용\s/);
-    c = use ? use[1] : m[3].split(" ").slice(0, -1).join(" ");
-  } else {
-    const use = t.match(/^(.+?)용\s/);
-    if (!use) return "";
-    const words = use[1].split(" ").filter(Boolean);
-    if (words.length < 2) return "";
-    a = words[0]; c = words[words.length - 1]; b = words.slice(1, -1).join(" ");
+  const p = parsePatentTitle(title);
+  let a = p.subject || p.means, b = p.way, c = p.use;
+  if (!a && !c) {
+    if (p.useWords.length < 2) return "";
+    a = p.useWords[0]; c = p.useWords[p.useWords.length - 1]; b = p.useWords.slice(1, -1).join(" ");
   }
   if (!a || !c) return "";
   const kws = field === "functional" ? [a, c, b || DEFAULT_WAY.functional] : [a, b || DEFAULT_WAY[field] || "가공", c];

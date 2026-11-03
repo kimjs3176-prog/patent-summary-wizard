@@ -4,7 +4,8 @@ import { splitBold, splitItalic } from "@/lib/summaryMarkup";
 import { parseMarketRows, splitTrustNotes, toReportParagraphs } from "@/lib/summaryReport";
 import { TrustBadge } from "./TrustBadge";
 
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface Props {
   isStreaming: boolean; sections: MdSection[]; annotate: (text: string) => React.ReactNode;
@@ -79,6 +80,8 @@ function MarketTable({ paragraphs }: { paragraphs: string[] }) {
 }
 
 export function AiSummarySections({ isStreaming, sections, annotate }: Props) {
+  // 절마다 요지와 첫 문단만 먼저 보여 주고 나머지는 '더 보기'로 (인쇄·PDF에는 모두 들어간다)
+  const [open, setOpen] = useState<Set<number>>(() => new Set());
   if (isStreaming && sections.length === 0) {
     return (
       <section className="mb-10">
@@ -97,15 +100,26 @@ export function AiSummarySections({ isStreaming, sections, annotate }: Props) {
         const settled = !isStreaming || idx < sections.length - 1;
         const { lead, body } = settled ? toReportParagraphs(sec.paragraphs) : { lead: "", body: sec.paragraphs };
         return (
-          <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="report-section report-prose-section mb-8 scroll-mt-24">
+          <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} data-open={!settled || open.has(idx) ? "" : undefined} className="report-section report-prose-section mb-7 scroll-mt-24">
             <SectionTitle index={String(idx + 4).padStart(2, "0")} kicker={kicker}>{heading}</SectionTitle>
             {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
             {lead && <p className="report-lead">{renderInline(lead, `l${idx}`, annotate)}</p>}
-            <div className="report-body space-y-3.5">
+            <div className="report-body space-y-3">
               {body.map((p, i) => (
-                <p key={i} className="text-[15.5px] leading-[1.8] text-[#333D4B]">{renderInline(p, `p${idx}-${i}`, annotate)}</p>
+                <p key={i} className={`text-[15px] leading-[1.75] text-[#333D4B]${i > 0 ? " report-extra" : ""}`}>{renderInline(p, `p${idx}-${i}`, annotate)}</p>
               ))}
             </div>
+            {settled && body.length > 1 && (
+              <button
+                type="button"
+                className="report-more print:hidden"
+                aria-expanded={open.has(idx)}
+                onClick={() => setOpen((s) => { const n = new Set(s); if (n.has(idx)) n.delete(idx); else n.add(idx); return n; })}
+              >
+                {open.has(idx) ? "접기" : `더 보기 · 문단 ${body.length - 1}개`}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open.has(idx) ? "rotate-180" : ""}`} />
+              </button>
+            )}
             {/* 출처 (각주) — 시장동향 등 출처가 있는 섹션 */}
             {sec.footnotes && sec.footnotes.length > 0 && (
               <div className="mt-5 pt-4 border-t border-[#E5E8EB]">

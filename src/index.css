@@ -1436,9 +1436,30 @@ time, .tabular-nums, [data-numeric] {
 .trust-badge.ai { color: #92400E; background: #FEF3C7; }
 .trust-badge.none { color: #4E5968; background: hsl(var(--muted)); }
 .trust-source { font-size: 12px; color: #4E5968; }
-.report-prose-section strong {
+/* AI가 굵게 표시한 중요 문구는 형광펜처럼 아래쪽을 칠해 본문에서 바로 보이게 (인쇄·PDF에도) */
+.report-prose-section strong,
+.report-analysis-panel strong,
+.score-reason strong {
   color: hsl(var(--foreground));
+  font-weight: 700;
+  padding: 0 1px;
+  background: linear-gradient(transparent 58%, hsl(var(--primary) / 0.2) 58%);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
+/* 요약서가 길어지지 않게: 절마다 요지와 첫 문단만 먼저, 나머지 문단은 '더 보기' (인쇄·PDF는 모두) */
+.report-section:not([data-open]) .report-extra { display: none; }
+.ais-pdf-capture .report-extra, body.ais-printing .report-extra { display: block !important; }
+@media print { .report-extra { display: block !important; } }
+.report-more {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; padding: 6px 12px;
+  border: 1px solid #E5E8EB; border-radius: 999px; background: #fff;
+  font-size: 12.5px; font-weight: 600; color: #4E5968; cursor: pointer;
+}
+.report-more:hover { border-color: hsl(var(--primary) / 0.5); color: hsl(var(--foreground)); }
+.report-more:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 2px; }
 .report-analysis-panel {
   border: 1px solid hsl(var(--primary) / 0.2);
   border-radius: 8px;
