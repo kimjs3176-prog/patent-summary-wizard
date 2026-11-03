@@ -26,26 +26,38 @@ function useNavData() {
   return { services, pathname, countFor, favoriteCount: favorites.length };
 }
 
-/** Desktop header menu: every service as a direct link, no 더보기. 홈 is left out because the logo already goes home. From lg to xl it wraps to a second header row; below lg the panel takes over. */
+/**
+ * Desktop header menu: every service as a badge (icon + label in a tinted pill), no 더보기; the current page is the filled badge.
+ * 홈 is left out because the logo already goes home. From lg to xl it wraps to a second header row; below lg the panel takes over.
+ */
 export function SiteNavLinks() {
   const { services, pathname, countFor } = useNavData();
   const links = services.filter((s) => s.key !== "home");
-  const link = "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 h-9 text-[13.5px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const badge = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border h-8 px-3 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1";
   return (
-    <nav aria-label="주 메뉴" className="hidden lg:flex items-center gap-0.5 min-w-0 order-last w-full -mx-2.5 xl:order-none xl:w-auto xl:mx-0">
+    <nav aria-label="주 메뉴" className="hidden lg:flex items-center gap-1.5 min-w-0 order-last w-full pb-1 xl:pb-0 xl:order-none xl:w-auto">
       {links.map((s) => {
         const active = isServiceActive(s, pathname);
         const count = countFor(s);
+        const Icon = s.icon;
         return (
           <Link
             key={s.key}
             to={s.to}
             title={s.description}
             aria-current={active ? "page" : undefined}
-            className={cn(link, active ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
+            className={cn(
+              badge,
+              active
+                ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                : "bg-primary/[0.06] border-primary/20 text-foreground/80 hover:bg-primary/10 hover:border-primary/40 hover:text-primary",
+            )}
           >
+            <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             {s.label}
-            {count != null && <span className="text-primary text-xs font-semibold">{count}</span>}
+            {count != null && (
+              <span className={cn("rounded-full px-1.5 text-[11px] leading-[18px]", active ? "bg-primary-foreground/20" : "bg-primary text-primary-foreground")}>{count}</span>
+            )}
           </Link>
         );
       })}
