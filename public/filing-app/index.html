@@ -4006,18 +4006,29 @@ const PRACTICE = {
   disc: [["지역 농업기술박람회 부스 전시", "박람회"], ["학회 포스터 발표", "학회"], ["온라인 쇼핑몰 시제품 소개", "온라인"]]
 };
 // 국문 명칭과 같은 유형의 영문 명칭 (titleMismatch 가 보는 조성물·방법·시스템·장치·포장·식품을 맞춘다)
-function practiceEng(ko, a) {
-  const en = PRACTICE.en[a] || "AGRICULTURAL MATERIAL", method = /(방법|공정)/.test(ko), both = method && /및 (그|이를)/.test(ko);
-  let thing = /건강기능식품/.test(ko) ? "HEALTH FUNCTIONAL FOOD" : /식품 조성물/.test(ko) ? "FOOD COMPOSITION" : /조성물/.test(ko) ? "COMPOSITION" : /미생물 제제/.test(ko) ? "MICROBIAL AGENT"
-    : /프라이머 세트/.test(ko) ? "PRIMER SET" : /용기/.test(ko) ? "CONTAINER" : /포장재/.test(ko) ? "PACKAGING MATERIAL" : /시스템/.test(ko) ? "SYSTEM" : /(장치|기기)/.test(ko) ? "DEVICE" : /간편식/.test(ko) ? "CONVENIENCE FOOD" : /식품/.test(ko) ? "FOOD" : /(음료|차)$/.test(ko.replace(/\s*및.*$/, "")) ? "BEVERAGE" : "PRODUCT";
-  if (/포장/.test(ko) && !/(CONTAINER|PACKAG)/.test(thing)) thing = thing ? `${thing} PACKAGING` : "PACKAGING";
-  const tool = /(SYSTEM|DEVICE|PRIMER)/.test(thing) ? "USING" : "COMPRISING";
-  if (!method) return `${thing} ${tool} ${en}`;
-  if (both) return `${thing} ${tool} ${en} AND METHOD ${/SYSTEM|DEVICE/.test(thing) ? "THEREOF" : "USING SAME"}`;
-  if (/프라이머/.test(ko)) return `PRIMER SET FOR DISCRIMINATING ${en} AND METHOD USING SAME`;
-  if (/육종/.test(ko)) return `METHOD FOR BREEDING ${en}`;
-  if (/선발/.test(ko)) return `METHOD FOR SELECTING ${en}`;
-  return thing ? `METHOD FOR PRODUCING ${thing} USING ${en}` : /제조방법/.test(ko) ? `METHOD FOR PRODUCING ${en} EXTRACT` : `METHOD USING ${en}`;
+// 연습 시나리오의 영문 명칭: 분야별 명칭 틀(IDEA_BANK titles 순서)마다 맞춘 번역. 국문 명칭과 뜻이 같아야 출원서·명세서에 그대로 쓸 수 있다
+const PEN = {
+  n: { ...PRACTICE.en, 양액: "NUTRIENT SOLUTION", 양분: "NUTRIENT", 물: "WATER", 부산물: "BY-PRODUCTS", 껍질: "PEEL", 잔뿌리: "FINE ROOTS", 간편식: "CONVENIENCE FOOD", 고령친화식: "SENIOR-FRIENDLY FOOD", 즉석식품: "INSTANT FOOD", 간식: "SNACK", 소스: "SAUCE",
+    내병성: "DISEASE RESISTANCE", 내서성: "HEAT TOLERANCE", 내건성: "DROUGHT TOLERANCE", "통기 포장": "VENTILATED PACKAGING", 흡습: "MOISTURE ABSORPTION", "선도 유지": "MAINTAINING FRESHNESS", "신선도 유지": "MAINTAINING FRESHNESS" },
+  adj: { 곡물: "GRAIN", 저염: "LOW-SODIUM", 동결건조: "FREEZE-DRIED", 발효: "FERMENTED", 분말: "POWDERED", 저당: "LOW-SUGAR", "유산균 발효": "LACTIC ACID BACTERIA-FERMENTED", "고체 발효": "SOLID-STATE FERMENTED", "효모 발효": "YEAST-FERMENTED",
+    내병성: "DISEASE-RESISTANT", 내서성: "HEAT-TOLERANT", 내건성: "DROUGHT-TOLERANT" },
+  ferm: { 발효: "FERMENTATION", "유산균 발효": "LACTIC ACID BACTERIA FERMENTATION", "고체 발효": "SOLID-STATE FERMENTATION", "효모 발효": "YEAST FERMENTATION" },
+  // 용도: [~용 조성물·식품의 FOR 구, ~방법]
+  use: { "생장 촉진": ["PROMOTING PLANT GROWTH", "METHOD FOR PROMOTING PLANT GROWTH"], "토양 개량": ["IMPROVING SOIL", "METHOD FOR IMPROVING SOIL"], "병해 억제": ["SUPPRESSING PLANT DISEASE", "METHOD FOR SUPPRESSING PLANT DISEASE"],
+    "액상 비료": ["LIQUID FERTILIZER", "LIQUID FERTILIZATION METHOD"], 혈당: ["CONTROLLING BLOOD GLUCOSE"], 항산화: ["ANTIOXIDATION"], 면역: ["ENHANCING IMMUNITY"], 피로: ["RELIEVING FATIGUE"] },
+  pack: { "통기 포장": ["VENTILATED PACKAGING CONTAINER", "VENTILATION"], 흡습: ["MOISTURE-ABSORBING CONTAINER", "MOISTURE-ABSORBING"] }
+};
+function practiceEng(field, idx, [a, b, c]) {
+  const n = w => PEN.n[w] ?? w, adj = w => PEN.adj[w] ?? n(w), A = n(a), use = (w, i) => PEN.use[w]?.[i] ?? n(w), pk = PEN.pack[b] ?? [`${n(b)} CONTAINER`, n(b)];
+  const T = {
+    food: [`FOOD COMPOSITION FOR ${n(c)} COMPRISING ${A}`, `METHOD FOR PRODUCING ${adj(b)} ${adj(a)} FOOD`, `${n(c)} USING ${A} AND METHOD FOR PRODUCING SAME`],
+    ferment: [`COMPOSITION FOR ${use(c, 0)} COMPRISING FERMENTED ${A}`, `MICROBIAL AGENT PRODUCED BY ${PEN.ferm[b] ?? "FERMENTATION"} OF ${A} AND METHOD FOR PRODUCING SAME`, `${PEN.use[c]?.[1] ?? "METHOD"} USING ${adj(b)} ${A} EXTRACT`],
+    functional: [`COMPOSITION FOR ${use(b, 0)} COMPRISING ${A} EXTRACT AS ACTIVE INGREDIENT`, `METHOD FOR PRODUCING ${A} EXTRACT USING ${n(c)}`, `HEALTH FUNCTIONAL FOOD FOR ${use(b, 0)} COMPRISING ${A} EXTRACT`],
+    smartfarm: [`${A}-BASED ${n(b)} CONTROL DEVICE`, `SMART FARM SYSTEM FOR CONTROLLING ${n(b)} SUPPLY AND METHOD THEREOF`, `METHOD FOR MANAGING CROP GROWTH USING ${A}`],
+    variety: [`METHOD FOR BREEDING ${A} WITH IMPROVED ${n(b)}`, `PRIMER SET FOR DISCRIMINATING ${n(b)} OF ${A} AND DISCRIMINATION METHOD USING SAME`, `METHOD FOR SELECTING ${adj(b)} ${A} USING MOLECULAR MARKERS`],
+    pack: [`${pk[0]} FOR ${n(c)} OF ${A}`, `PACKAGING MATERIAL FOR ${A} HAVING ${pk[1]} STRUCTURE`, `${n(b)} METHOD FOR ${n(c)} OF ${A}`]
+  };
+  return T[field]?.[idx] ?? `${A} PRODUCT`;
 }
 function practiceScenario(seed) {
   let x = (seed >>> 0) || 1; const rnd = () => ((x = (x * 1103515245 + 12345) >>> 0) / 4294967296), pick = a => a[Math.floor(rnd() * a.length)], chance = r => rnd() < r;
@@ -4028,7 +4039,7 @@ function practiceScenario(seed) {
   if (field === "ferment") facts.strain = pick(["yes", "no", "known"]);
   const [where, at] = pick(PRACTICE.disc), disc = facts.disclosed === "yes" ? { date: ago(1 + Math.floor(rnd() * 9)), where } : null;
   const draw = /(장치|시스템|용기|포장재)/.test(title), seq = /프라이머/.test(title);
-  const app = { type: who.type, name: who.name, code: who.code, engTitle: practiceEng(title, kws[0]), inventors: person ? `${who.name}, ${who.code}` : who.inventor };
+  const app = { type: who.type, name: who.name, code: who.code, engTitle: practiceEng(field, titleIdx, kws), inventors: person ? `${who.name}, ${who.code}` : who.inventor };
   if (person) app.cert = "yes"; else app.reduceProof = "yes";
   if (chance(.3)) Object.assign(app, { agentName: "이변리", agentCode: "9-2020-000123-4" });
   if (who.type === "public" && chance(.6)) Object.assign(app, { rnd: "yes", rndId: "1395012345", rndNo: "RS-2026-00123456", rndMinistry: "농촌진흥청", rndAgency: "농촌진흥청", rndProgram: "농업기초기반연구", rndTask: `${kws[0]} ${kws[2]} 기술 개발`, rndOrg: who.name, rndPeriod: "2026. 1. 1. ～ 2026. 12. 31." });
