@@ -2,6 +2,7 @@ import { sectionMeta, type MdSection } from "./helpers";
 import { splitBold, splitItalic } from "@/lib/summaryMarkup";
 import { parseMarketRows, splitTrustNotes, toReportParagraphs } from "@/lib/summaryReport";
 import { TrustBadge } from "./TrustBadge";
+import { renderBold } from "./RenderBold";
 
 
 type Annotate = (text: string) => React.ReactNode;
@@ -90,7 +91,7 @@ export function ProseSection({ sec, idx, settled, annotate }: { sec: MdSection; 
       {sec.footnotes && sec.footnotes.length > 0 && (
         <ol className="ds-foot-notes">
           {sec.footnotes.map((fn) => (
-            <li key={fn.num}><b>{fn.num}.</b> {fn.text}</li>
+            <li key={fn.num}><b>{fn.num}.</b> {renderBold(fn.text)}</li>
           ))}
         </ol>
       )}

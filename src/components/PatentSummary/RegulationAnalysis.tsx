@@ -1,3 +1,4 @@
+import { renderBold } from "./toss/RenderBold";
 import { useEffect, useState } from "react";
 import { Loader2, Scale, ExternalLink, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,7 +78,7 @@ export function RegulationAnalysis({ patentNumber, patentData, isStreaming, vari
               {result.laws.map((law, i) => (
                 <li key={i}>
                   <b>{law.name}</b>
-                  {law.reason}
+                  {renderBold(law.reason)}
                   {law.link && <a href={law.link} target="_blank" rel="noreferrer noopener" className="ds-link print:hidden">법령 보기 <ExternalLink className="w-3 h-3 inline" /></a>}
                 </li>
               ))}
@@ -144,7 +145,7 @@ export function RegulationAnalysis({ patentNumber, patentData, isStreaming, vari
                         </div>
                         {law.reason && (
                           <p className="mt-1.5 text-[12.5px] sm:text-[13px] text-foreground/70 leading-[1.65]">
-                            {law.reason}
+                            {renderBold(law.reason)}
                           </p>
                         )}
                         {formatEffectiveDate(law.effectiveDate) && (

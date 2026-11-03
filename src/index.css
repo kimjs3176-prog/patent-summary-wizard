@@ -1384,6 +1384,8 @@ time, .tabular-nums, [data-numeric] {
 /* AI가 굵게 표시한 중요 문구는 형광펜처럼 아래쪽을 칠해 본문에서 바로 보이게 (인쇄·PDF에도) */
 .report-prose-section strong,
 .report-analysis-panel strong,
+.ds-verdict strong,
+.ds-reg strong,
 .score-reason strong {
   color: hsl(var(--foreground));
   font-weight: 700;
