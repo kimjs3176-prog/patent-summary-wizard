@@ -22,7 +22,7 @@ export function ScoreRow({ label, value, color, reason }: { label: string; value
           <span className="text-[11px] text-[#6B7684] font-semibold">/ 100</span>
         </div>
         {reason && (
-          <p className="text-[12.5px] sm:text-[13px] leading-[1.75] text-[#4E5968]">
+          <p className="score-reason text-[12.5px] sm:text-[13px] leading-[1.75] text-[#4E5968]">
             {renderBold(reason)}
           </p>
         )}

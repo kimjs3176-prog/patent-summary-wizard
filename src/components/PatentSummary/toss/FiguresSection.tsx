@@ -26,7 +26,7 @@ export function FiguresSection({ drawings, figureItems, setLightboxIndex }: Prop
                   <img
                     src={figureItems[0].src}
                     alt={`${figureItems[0].caption.replace(/[【】]/g, "")} 이미지`}
-                    className="w-full h-auto max-h-[340px] object-contain"
+                    className="w-full h-auto max-h-[280px] object-contain"
                     decoding="async"
                     onError={(e) => {
                       (e.currentTarget.parentElement as HTMLElement).style.display = "none";

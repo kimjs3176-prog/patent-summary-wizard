@@ -17,7 +17,7 @@ import { SummaryReadyProvider, useSummaryPending } from "./summaryReady";
 import { ACCENT_HEX, parseSections, formatAiModelLabel, sectionMeta } from "./toss/helpers";
 import { ActionBar } from "./toss/ActionBar";
 import { HeroSection } from "./toss/HeroSection";
-import { ReportOverview, type TocItem } from "./toss/ReportOverview";
+import { ReportToc, type TocItem } from "./toss/ReportToc";
 import { BasicInfoSection } from "./toss/BasicInfoSection";
 import { ScoreSection } from "./toss/ScoreSection";
 import { FiguresSection } from "./toss/FiguresSection";
@@ -155,7 +155,7 @@ function TossPatentSummaryInner({
   const sections = useMemo(() => parseSections(content), [content]);
   // 스트리밍 중에는 매 토큰마다 재계산하지 않도록 완료 후에만 요약서 기반으로 추출
   const keywords = useMemo(
-    () => extractKeywordsFromPatent(patentData, 8, isStreaming ? undefined : content),
+    () => extractKeywordsFromPatent(patentData, 5, isStreaming ? undefined : content),
     [patentData, content, isStreaming],
   );
 
@@ -275,8 +275,8 @@ function TossPatentSummaryInner({
           {/* HERO */}
           <HeroSection patentData={patentData} title={title} patentNumber={patentNumber} govtPatent={govtPatent} />
 
-          {/* 핵심 요약 + 목차 — 보고서 첫머리 */}
-          <ReportOverview score={score} scoreSummary={scoreSummary} scoreLoading={scoreLoading} trl={trl} trlName={trlName} trlStage={trlStage} analysis={details?.analysis} sections={sections} toc={toc} isStreaming={!!isStreaming} />
+          {/* 목차 — 휴대폰·인쇄용 (핵심 요약 카드는 소유자 요청으로 두지 않는다) */}
+          <ReportToc toc={toc} isStreaming={!!isStreaming} hasSections={sections.length > 0} />
 
           {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
           <BasicInfoSection patentData={patentData} ownerChanged={ownerChanged} finalOwner={finalOwner} keywords={keywords} onKeywordClick={onKeywordClick} govtPatent={govtPatent} />

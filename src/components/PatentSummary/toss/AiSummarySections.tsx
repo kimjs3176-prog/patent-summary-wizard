@@ -89,40 +89,38 @@ export function AiSummarySections({ isStreaming, sections, annotate }: Props) {
       </section>
     );
   }
-  return (
-    <>
-      {sections.map((sec, idx) => {
-        const { kicker, heading } = sectionMeta(sec.title);
-        // 생성 중에는 문장이 계속 붙으므로 원래 문단대로 보여 주고, 끝나면 요지 + 3문장 문단으로 정리한다
-        const settled = !isStreaming || idx < sections.length - 1;
-        const { lead, body } = settled ? toReportParagraphs(sec.paragraphs) : { lead: "", body: sec.paragraphs };
-        return (
-          <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="report-section report-prose-section mb-8 scroll-mt-24">
-            <SectionTitle index={String(idx + 4).padStart(2, "0")} kicker={kicker}>{heading}</SectionTitle>
-            {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
-            {lead && <p className="report-lead">{renderInline(lead, `l${idx}`, annotate)}</p>}
-            <div className="report-body space-y-3.5">
-              {body.map((p, i) => (
-                <p key={i} className="text-[15.5px] leading-[1.8] text-[#333D4B]">{renderInline(p, `p${idx}-${i}`, annotate)}</p>
+  const renderSection = (sec: MdSection, idx: number) => {
+    const { kicker, heading } = sectionMeta(sec.title);
+    // 생성 중에는 문장이 계속 붙으므로 원래 문단대로 보여 주고, 끝나면 요지 + 3문장 문단으로 정리한다
+    const settled = !isStreaming || idx < sections.length - 1;
+    const { lead, body } = settled ? toReportParagraphs(sec.paragraphs) : { lead: "", body: sec.paragraphs };
+    return (
+      <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="report-section report-prose-section mb-8 scroll-mt-24">
+        <SectionTitle index={String(idx + 4).padStart(2, "0")} kicker={kicker}>{heading}</SectionTitle>
+        {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
+        {lead && <p className="report-lead">{renderInline(lead, `l${idx}`, annotate)}</p>}
+        <div className="report-body space-y-3">
+          {body.map((p, i) => (
+            <p key={i} className="text-[15px] leading-[1.75] text-[#333D4B]">{renderInline(p, `p${idx}-${i}`, annotate)}</p>
+          ))}
+        </div>
+        {/* 출처 (각주) — 시장동향 등 출처가 있는 섹션 */}
+        {sec.footnotes && sec.footnotes.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-[#E5E8EB]">
+            <p className="text-[12px] font-bold text-[#6B7684] mb-2">출처</p>
+            <ol className="space-y-1.5">
+              {sec.footnotes.map((fn) => (
+                <li key={fn.num} className="text-[12.5px] leading-[1.6] text-[#4E5968] flex gap-1.5">
+                  <span className="font-bold tabular-nums shrink-0" style={{ color: "#10B981" }}>{fn.num}.</span>
+                  <span>{fn.text}</span>
+                </li>
               ))}
-            </div>
-            {/* 출처 (각주) — 시장동향 등 출처가 있는 섹션 */}
-            {sec.footnotes && sec.footnotes.length > 0 && (
-              <div className="mt-5 pt-4 border-t border-[#E5E8EB]">
-                <p className="text-[12px] font-bold text-[#6B7684] mb-2">출처</p>
-                <ol className="space-y-1.5">
-                  {sec.footnotes.map((fn) => (
-                    <li key={fn.num} className="text-[12.5px] leading-[1.6] text-[#4E5968] flex gap-1.5">
-                      <span className="font-bold tabular-nums shrink-0" style={{ color: "#10B981" }}>{fn.num}.</span>
-                      <span>{fn.text}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-          </section>
-        );
-      })}
-    </>
-  );
+            </ol>
+          </div>
+        )}
+      </section>
+    );
+  };
+  // 본문은 접지 않고 절마다 한 줄씩 (소유자 요청: 나란히 두지 않는다)
+  return <>{sections.map((sec, idx) => renderSection(sec, idx))}</>;
 }
