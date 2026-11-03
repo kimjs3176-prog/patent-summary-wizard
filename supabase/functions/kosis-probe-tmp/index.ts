@@ -3,9 +3,11 @@ import { KOSIS_SERIES, fetchKosisRef } from "./kosis.ts";
 Deno.serve(async () => {
   const key = Deno.env.get("KOSIS_SERVICE_KEY");
   if (!key) return Response.json({ hasKey: false });
-  const out = await Promise.all(KOSIS_SERIES.map(async (s) => {
+  const out: string[] = [];
+  for (const s of KOSIS_SERIES) {
+    const t0 = Date.now();
     const r = await fetchKosisRef(s.label, s, key) as any;
-    return r ? `${s.label}|${r.base_year}|${r.base_value_eok}|${r.cagr}` : `${s.label}|FAIL`;
-  }));
+    out.push(r ? `${s.label}|${r.base_year}|${r.base_value_eok}|${r.cagr}|${Date.now() - t0}ms` : `${s.label}|FAIL|${Date.now() - t0}ms`);
+  }
   return Response.json(out);
 });
