@@ -136,7 +136,7 @@ const Index = () => {
     <>
       <Button variant="outline" size="sm" onClick={() => { updateUrl(); reset(); }} className={headerBtn} aria-label="새로운 검색">
         <Search className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">새로운 검색</span>
+        <span className="hidden sm:inline xl:hidden 2xl:inline">새로운 검색</span>
       </Button>
       <Button
         variant="outline"
@@ -147,7 +147,7 @@ const Index = () => {
         title="검색 기록 초기화"
       >
         <RotateCcw className="w-3.5 h-3.5" />
-        <span className="hidden xl:inline">초기화</span>
+        <span className="hidden lg:inline xl:hidden 2xl:inline">초기화</span>
       </Button>
     </>
   ) : undefined;

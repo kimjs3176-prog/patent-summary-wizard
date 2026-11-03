@@ -69,7 +69,7 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
       <div aria-hidden="true" className="absolute inset-0 overflow-hidden opacity-25 pointer-events-none motion-reduce:hidden">
         <AiHeroAnimation />
       </div>
-      <div className={`relative max-w-5xl mx-auto px-5 md:px-0 transition-[padding] duration-300 ${compact ? "py-4 md:py-5" : "py-7 md:py-9"}`}>
+      <div className={`relative max-w-[67rem] mx-auto px-5 md:px-6 transition-[padding] duration-300 ${compact ? "py-4 md:py-5" : "py-7 md:py-9"}`}>
         <h1 id="home-title" className={`font-extrabold leading-tight tracking-normal transition-[font-size] duration-300 ${compact ? "text-xl md:text-2xl" : "text-[30px] md:text-[44px]"}`}>
           Agri IP Summary <span className={`home-hero-muted font-semibold ${compact ? "text-sm md:text-base" : "text-lg md:text-2xl"}`}>(AIS)</span>
         </h1>
