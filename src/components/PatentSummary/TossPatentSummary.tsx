@@ -14,18 +14,10 @@ import { ImageLightbox } from "./ImageLightbox";
 import { useGovtPatent } from "./GovtPatentInfo";
 import { useRegisterOwner, isDifferentOwner } from "./useRegisterOwner";
 import { SummaryReadyProvider, useSummaryPending } from "./summaryReady";
-import { ACCENT_HEX, parseSections, formatAiModelLabel, sectionMeta } from "./toss/helpers";
+import { ACCENT_HEX, parseSections, formatAiModelLabel } from "./toss/helpers";
 import { ActionBar } from "./toss/ActionBar";
-import { HeroSection } from "./toss/HeroSection";
-import { ReportToc, type TocItem } from "./toss/ReportToc";
-import { BasicInfoSection } from "./toss/BasicInfoSection";
-import { ScoreSection } from "./toss/ScoreSection";
-import { FiguresSection } from "./toss/FiguresSection";
-import { AiSummarySections } from "./toss/AiSummarySections";
-import { AnalysisSection } from "./toss/AnalysisSection";
-import { RelatedSection } from "./toss/RelatedSection";
-import { RegulationSection } from "./toss/RegulationSection";
 import { ShareDialog } from "./toss/ShareDialog";
+import { DatasheetReport } from "./toss/DatasheetReport";
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
@@ -147,7 +139,6 @@ function TossPatentSummaryInner({
     !isStreaming && !!content && !scoreLoading && !ownerLoading && pendingSections === 0;
 
   const trl = details?.trl ?? null;
-  const trlColor = trl == null ? "#9CA3AF" : trl <= 3 ? "#EF4444" : trl <= 6 ? "#F59E0B" : ACCENT_HEX;
   const trlStage = trl == null ? "-" : trl <= 3 ? "기초연구" : trl <= 6 ? "개발/실증" : "상용화";
   const trlName = trl != null ? trlConfig.levels.find((l) => l.level === trl)?.label : null;
 
@@ -183,16 +174,6 @@ function TossPatentSummaryInner({
 
   const scoreSummary = score == null ? "분석 중" : score >= 80 ? "높은 편" : score >= 65 ? "보통 수준" : "낮은 편";
 
-  // 보고서 목차: 화면에 그려지는 절 순서 그대로
-  const toc: TocItem[] = useMemo(() => [
-    { id: "sec-basic", label: "기본 정보" },
-    { id: "sec-score", label: "사업화 점수·기술 성숙도" },
-    ...(drawings.length ? [{ id: "sec-figures", label: "특허 도면" }] : []),
-    ...sections.map((s, i) => ({ id: `sec-ai-${i}`, label: sectionMeta(s.title).kicker })),
-    ...(details?.analysis ? [{ id: "sec-analysis", label: "AI 종합 의견" }] : []),
-    { id: "sec-related", label: "관련 특허" },
-    { id: "sec-regulation", label: "예상 규제" },
-  ], [drawings.length, sections, details?.analysis]);
 
   // 공유 URL: 항상 published origin 사용 (수신자 접근성)
   const shareUrl = useMemo(() => {
@@ -272,32 +253,16 @@ function TossPatentSummaryInner({
           </span>
         </div>
         <div className="px-5 sm:px-7 pb-12">
-          {/* HERO */}
-          <HeroSection patentData={patentData} title={title} patentNumber={patentNumber} govtPatent={govtPatent} />
-
-          {/* 목차 — 휴대폰·인쇄용 (핵심 요약 카드는 소유자 요청으로 두지 않는다) */}
-          <ReportToc toc={toc} isStreaming={!!isStreaming} hasSections={sections.length > 0} />
-
-          {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
-          <BasicInfoSection patentData={patentData} ownerChanged={ownerChanged} finalOwner={finalOwner} keywords={keywords} onKeywordClick={onKeywordClick} govtPatent={govtPatent} />
-
-          {/* 종합점수 + 세부점수 + TRL 통합 카드 */}
-          <ScoreSection scoreLoading={scoreLoading} score={score} scoreSummary={scoreSummary} details={details} trlColor={trlColor} trl={trl} trlName={trlName} trlStage={trlStage} trlConfig={trlConfig} />
-
-          {/* 도면 */}
-          <FiguresSection drawings={drawings} figureItems={figureItems} setLightboxIndex={setLightboxIndex} />
-
-          {/* AI 요약 본문 */}
-          <AiSummarySections isStreaming={isStreaming} sections={sections} annotate={annotate} />
-
-          {/* AI 종합 의견 */}
-          <AnalysisSection details={details} />
-
-          {/* 관련 특허 — 기능·특징이 유사한 특허 */}
-          <RelatedSection patentData={patentData} onRelatedPatentClick={onRelatedPatentClick} />
-
-          {/* 사업화 예상 규제 — 요약서 하단으로 이동 */}
-          <RegulationSection patentData={patentData} isStreaming={isStreaming} patentNumber={patentNumber} />
+          {/* 데이터시트형 요약서(C안): 화면은 여백 주석 + 본문, 인쇄·PDF는 A4 두 쪽 */}
+          <DatasheetReport
+            patentData={patentData} patentNumber={patentNumber} title={title} govtPatent={govtPatent}
+            owner={ownerChanged && finalOwner ? finalOwner : null} keywords={keywords} onKeywordClick={onKeywordClick}
+            score={score} scoreSummary={scoreSummary} scoreLoading={scoreLoading} details={details}
+            trl={trl} trlName={trlName} trlStage={trlStage}
+            figureItems={figureItems} setLightboxIndex={setLightboxIndex}
+            sections={sections} isStreaming={!!isStreaming} annotate={annotate}
+            onRelatedPatentClick={onRelatedPatentClick}
+          />
 
           {/* 액션 버튼 */}
           {!isStreaming && content && (

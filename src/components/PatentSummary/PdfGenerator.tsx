@@ -3,6 +3,7 @@ import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
+import { fitDatasheet, unfitDatasheet } from "@/lib/datasheet";
 
 interface TextItem {
   text: string;
@@ -168,6 +169,8 @@ export async function downloadWebSummaryPdf(
   const safeNumber = patentNumber.replace(/[^0-9A-Za-z가-힣_-]/g, "_");
   const clone = element.cloneNode(true) as HTMLDivElement;
   clone.classList.add(PDF_CAPTURE_CLASS);
+  const isDatasheet = !!clone.querySelector(".ds-sheet");
+  if (isDatasheet) clone.classList.add("ais-ds-capture");
   clone.querySelectorAll<HTMLElement>(".print\\:hidden, [data-print-exclude='true']")
     .forEach((node) => node.remove());
   document.body.appendChild(clone);
@@ -183,6 +186,14 @@ export async function downloadWebSummaryPdf(
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
+
+    if (isDatasheet) {
+      fitDatasheet(clone);
+      if (!clone.querySelector(".ds-sheet.ds-free")) {
+        await saveDatasheetPdf(clone, html2canvas, jsPDF, patentNumber, safeNumber);
+        return true;
+      }
+    }
 
     normalizeCenteredBoxes(clone);
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -321,6 +332,53 @@ export async function downloadWebSummaryPdf(
   }
 }
 
+/**
+ * 데이터시트형 요약서 PDF: .ds-sheet 한 장을 A4 한 쪽(여백 10mm 안 190×277mm)에 그대로 놓는다.
+ * 글자는 이미지 위에 보이지 않는 글자층으로 겹쳐 PDF에서도 선택·복사할 수 있게 한다.
+ */
+async function saveDatasheetPdf(
+  clone: HTMLElement,
+  html2canvas: (el: HTMLElement, opts?: Record<string, unknown>) => Promise<HTMLCanvasElement>,
+  JsPDF: new (opts: Record<string, unknown>) => import("jspdf").jsPDF,
+  patentNumber: string,
+  safeNumber: string,
+) {
+  const pdf = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  let hasKoreanFont = false;
+  try {
+    addKoreanFontToDoc(pdf, await loadKoreanFont());
+    hasKoreanFont = true;
+  } catch (fontError) {
+    console.warn("Korean font unavailable for PDF text layer:", fontError);
+  }
+  const marginX = 10, marginY = 10.5, width = 190, height = 276;
+  const sheets = Array.from(clone.querySelectorAll<HTMLElement>(".ds-sheet"));
+  for (let i = 0; i < sheets.length; i++) {
+    const sheet = sheets[i];
+    normalizeCenteredBoxes(sheet);
+    const textItems = collectTextItems(sheet);
+    const cssWidth = sheet.offsetWidth || 1;
+    const canvas = await html2canvas(sheet, { scale: 2, useCORS: true, allowTaint: false, backgroundColor: "#ffffff", logging: false, imageTimeout: 8000 });
+    if (i > 0) pdf.addPage("a4", "portrait");
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", marginX, marginY, width, height, undefined, "FAST");
+    if (hasKoreanFont) {
+      const cssToMm = width / cssWidth;
+      pdf.setFont("NotoSansKR", "normal");
+      pdf.setTextColor(0, 0, 0);
+      textItems.forEach((item) => {
+        pdf.setFontSize(Math.max(4, item.fontSize * cssToMm * (72 / 25.4)));
+        try {
+          pdf.text(item.text, marginX + item.x * cssToMm, marginY + item.y * cssToMm, { renderingMode: "invisible", maxWidth: Math.max(1, item.width * cssToMm) * 1.6 });
+        } catch {
+          /* skip unrenderable runs */
+        }
+      });
+    }
+  }
+  pdf.setProperties({ title: `AIS 특허요약 ${patentNumber}`, subject: "Agri IP Summary AI 기술분석 요약서", creator: "Agri IP Summary (AIS)" });
+  pdf.save(`AIS_특허요약_${safeNumber || "report"}.pdf`);
+}
+
 /** Print the visible web report so the saved PDF matches the page. */
 export async function printWebSummary(
   element: HTMLDivElement | null,
@@ -335,6 +393,7 @@ export async function printWebSummary(
   const cleanup = () => {
     if (cleaned) return;
     cleaned = true;
+    unfitDatasheet(element);
     document.body.classList.remove(PRINTING_CLASS);
     element.classList.remove(PRINT_TARGET_CLASS);
     document.title = previousTitle;
@@ -352,6 +411,8 @@ export async function printWebSummary(
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
+    // 데이터시트형 요약서: 쪽마다 A4 한 장에 들어가도록 글자를 맞춘다
+    fitDatasheet(element);
     window.print();
     cleanup();
     return true;

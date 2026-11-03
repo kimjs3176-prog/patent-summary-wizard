@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import { splitBold, splitItalic } from "@/lib/summaryMarkup";
 import { parseSections } from "@/components/PatentSummary/toss/helpers";
-import { AiSummarySections } from "@/components/PatentSummary/toss/AiSummarySections";
+import { ProseSection } from "@/components/PatentSummary/toss/ProseSection";
 import { renderBold } from "@/components/PatentSummary/toss/RenderBold";
 
 // 실측 요약서(v19) 발췌: 프롬프트가 요구하는 "볼드 안 학명 이탤릭" 표기.
@@ -34,7 +34,7 @@ describe("볼드 안 학명 이탤릭", () => {
 
   it("요약서 화면에 '**' 기호가 남지 않는다", () => {
     const sections = [...parseSections(STRAIN), ...parseSections(RICE)];
-    const { container } = render(<AiSummarySections isStreaming={false} sections={sections} annotate={(t) => t} />);
+    const { container } = render(<>{sections.map((sec, i) => <ProseSection key={i} sec={sec} idx={i} settled annotate={(t) => t} />)}</>);
     expect(container.textContent).not.toContain("*");
     const strong = [...container.querySelectorAll("strong")].map((s) => s.textContent);
     expect(strong).toEqual([
