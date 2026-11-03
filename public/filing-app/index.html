@@ -785,6 +785,20 @@ table.cmp td.num { font-variant-numeric: tabular-nums; font-weight: 600; }
 @media (max-width: 820px) { .of-toc { top: 104px; } .of-sec { scroll-margin-top: 170px; } }
 .spec-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: -4px 0 10px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--sunk); font-size: .88rem; }
 .spec-nav > span { flex: 1 1 220px; } .spec-nav .ok-t { color: var(--moss); font-weight: 700; }
+.spec-nav:empty { display: none; }
+/* 빈칸 질문 카드: 〔입력 필요〕 칸을 쉬운 질문으로 하나씩 */
+.qa-card { display: grid; gap: 10px; margin: 0 0 14px; padding: 16px 18px; border: 1px solid color-mix(in oklab, var(--primary) 35%, var(--line)); border-radius: var(--r); background: var(--surface); }
+.qa-card:empty { display: none; }
+.qa-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; font-size: .86rem; }
+.qa-top b { font-size: .95rem; }
+.qa-left { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--primary); }
+.qa-q { margin: 0; font-size: 1.05rem; font-weight: 700; line-height: 1.5; }
+.qa-ctx { margin: 0; padding: 10px 12px; border-radius: var(--r-sm); background: var(--sunk); font-size: .84rem; line-height: 1.7; color: var(--muted); word-break: keep-all; }
+.qa-ctx mark { padding: 1px 6px; border-radius: 6px; background: var(--warn-soft); color: var(--fg); font-weight: 700; }
+.qa-card textarea { min-height: 76px; }
+.qa-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.qa-actions .linklike { margin-left: auto; }
+.qa-done { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: .9rem; }
 .ap-progress { display: grid; gap: 6px; margin: 4px 0 14px; font-size: .88rem; }
 .todo-box { border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--line)); border-radius: var(--r); padding: 16px 18px; background: var(--grad-soft), var(--surface); }
 .todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -4679,19 +4693,14 @@ AI_TASK_UI.fill = {
 // 명세서 쪽과 최종 점검 쪽에 함께 둔다
 function fillBox() {
   if (S.fillLast && S.spec?.text !== S.fillLast.after) S.fillLast = null; // 그 뒤 명세서가 바뀌었으면 되돌리기는 없앤다
-  const slots = S.spec ? fillSlots() : [], L = S.fillLast, facts = factGroups(slots), busy = aiState("fill").busy, mode = aiMode();
-  const todo = mode ? fillTodo().length : 0, tried = mode ? slots.filter(x => !x.fact && x.tried) : [], loose = slots.filter(x => x.fact && !FACT_GROUPS.some(([re]) => re.test(x.label)));
+  const slots = S.spec ? fillSlots() : [], L = S.fillLast, busy = aiState("fill").busy, mode = aiMode();
+  const todo = mode ? fillTodo().length : 0, tried = mode ? slots.filter(x => !x.fact && x.tried) : [];
   const last = (L && !busy ? `<p class="fill-done" role="status"><b>AI 채우기를 마쳤습니다 · 바로 넣은 곳 ${L.n}${L.held ? ` · 승인 대기 ${L.held}` : ""}${tried.length ? ` · AI가 비워 둔 칸 ${tried.length}` : ""}</b><br>채운 문장도 사실과 맞는지 꼭 읽어 보세요.${L.held ? " 승인 대기는 아래에서 읽고 넣거나 거부합니다." : ""}
     <button type="button" class="linklike" data-fill-undo>모두 되돌리기</button></p>${L.notes.length ? `<ul class="checks">${L.notes.map(t => `<li><span class="st warn">확인</span><span>${esc(t)}</span></li>`).join("")}</ul>` : ""}` : "") + heldHtml("fill");
   if (!slots.length) return last;
-  // 직접 채울 곳: 입력칸으로 가면 한꺼번에 채워지는 사실 묶음 + 명세서에서 바로 쓸 칸 (어느 묶음에도 없는 사실 칸, AI가 근거가 없어 비운 칸)
-  const own = [...loose, ...tried].sort((a, b) => a.at - b.at), ownN = slots.filter(x => x.fact).length + tried.length;
-  const chip = x => `<button type="button" class="chip need" data-need="${x.at}" title="명세서의 이 자리로 이동">${esc(x.label.slice(0, 36) || "입력 필요")}</button>`;
-  const factBox = facts.length || own.length ? `<div class="fact-box"><b>직접 채울 곳 ${ownN}곳</b> <span class="muted">— 실험값·기탁 정보처럼 사용자만 아는 내용이라 AI가 지어 쓰지 않는 칸입니다.</span>
-    ${facts.length ? `<ul class="fact-list">${facts.map(g => `<li><span><b>${g.t}</b><span class="muted"> · 명세서 ${g.n}곳</span></span><button type="button" class="btn ghost sm" data-fact-go="${g.go}">입력하러 가기</button></li>`).join("")}</ul>${facts.length && own.length ? `<p class="muted fact-sub">입력칸에 넣으면 명세서의 같은 자리가 함께 채워집니다. 아래 칸은 명세서에서 바로 고쳐 쓰세요.</p>` : ""}` : ""}
-    ${own.length ? `<div class="need-list">${own.slice(0, 12).map(chip).join("")}${own.length > 12 ? `<span class="muted">외 ${own.length - 12}곳</span>` : ""}</div>` : ""}
-    ${tried.length && !busy ? `<p class="hint fact-sub">AI가 근거를 찾지 못해 비워 둔 칸 ${tried.length}곳이 들어 있습니다. 아이디어·핵심 구성을 더 적었다면 <button type="button" class="linklike" data-fill-retry>AI에게 다시 맡기기</button></p>` : ""}</div>` : "";
-  if (!mode) return `${last}${factBox}` + (slots.length ? `<p class="hint">지금은 AI를 쓸 수 없습니다. 〔입력 필요〕 칸을 직접 채우거나 잠시 뒤 다시 열어 보세요.</p>` : "");
+  // 직접 채울 칸(사실 칸·AI가 비운 칸)은 명세서 위 빈칸 질문 카드가 하나씩 묻는다
+  const factBox = tried.length && !busy ? `<p class="hint">AI가 근거를 찾지 못해 비워 둔 칸 ${tried.length}곳은 위 질문으로 채우세요. 아이디어·핵심 구성을 더 적었다면 <button type="button" class="linklike" data-fill-retry>AI에게 다시 맡기기</button></p>` : "";
+  if (!mode) return `${last}${factBox}` + (slots.length ? `<p class="hint">지금은 AI를 쓸 수 없습니다. 위 질문에 답해 채우거나 잠시 뒤 다시 열어 보세요.</p>` : "");
   if (!todo && !busy) return `${last}${factBox}`;
   return `${last}<div class="fill-row"><span><b>AI로 채울 수 있는 곳 ${todo}곳</b><span class="muted"> · 한 번 누르면 ${todo > FILL_BATCH ? `${Math.ceil(todo / FILL_BATCH)}묶음으로 나눠 ` : ""}끝까지 채웁니다</span></span>
     <button type="button" class="btn sm" data-ai-run="fill" ${busy ? "disabled" : ""}>AI로 한꺼번에 채우기</button></div>${aiSlot("fill")}${factBox}`;
@@ -4717,11 +4726,79 @@ const FACT_GROUPS = [
   [/16S|분리·선발/, "균주 분리·동정 자료 (서열번호)", () => "draft:0:#ap-strainName"],
   [/출원번호/, "선출원·관련 출원의 번호", () => "draft:2:#ap-priNo"]
 ];
-function factGroups(slots) {
-  const out = [];
-  slots.filter(x => x.fact).forEach(x => { const g = FACT_GROUPS.find(([re]) => re.test(x.label)); if (!g) return; const o = out.find(y => y.t === g[1]); o ? o.n++ : out.push({ t: g[1], n: 1, go: g[2]() }); });
-  return out;
+/* ---------- 빈칸 질문 카드: 〔입력 필요〕 칸을 출원 지식 없이 답할 수 있는 질문으로 하나씩 묻고, 답을 명세서의 그 자리에 넣는다 ---------- */
+const jq = (x, t) => `‘${x}’${J(x, t).slice(x.length)}`;
+const QA_RULES = [
+  [/^(.+?)\s*단계에 쓰는 장비·재료/, x => [`‘${x}’ 단계는 어떻게 하나요?`, "무엇을 써서, 몇 도에서 얼마 동안(또는 어떤 비율로) 하는지 앞뒤 순서와 함께 적어 주세요."]],
+  [/^(.+?)의 구조, 다른 구성과의 연결 관계, 동작/, x => [`${jq(x, "은")} 어떻게 생겼고 어떻게 움직이나요?`, "모양·재질, 어느 부분과 이어지는지, 어떤 순서로 작동하는지 적어 주세요."]],
+  [/^(.+?)의 결합 관계와 기능/, x => [`${jq(x, "은")} 어느 부분과 이어져 무슨 일을 하나요?`, "‘상기 ○○와 연결되어 ○○를 조절하는’처럼 한 문장이면 돼요."]],
+  [/^(.+?)의 동작$/, x => [`${jq(x, "은")} 어떻게 작동하나요?`, "무엇을 받아서 어떤 순서로 처리하는지 적어 주세요."]],
+  [/^(.+?)의 정의, 얻는 방법/, x => [`${jq(x, "은")} 무엇이고 어떻게 얻나요?`, "무엇인지, 어떤 원료를 어떤 조건으로 만드는지, 얼마나 넣는지(비율) 적어 주세요."]],
+  [/^(.+?)의 정의와 역할/, x => [`${jq(x, "은")} 무엇이고 왜 넣나요?`, "무엇인지, 얼마나 넣는지(비율), 어떤 역할을 하는지 적어 주세요."]],
+  [/^(.+?)의 구체적인 물질명/, x => [`${jq(x, "으로")} 정확히 무엇을 쓰나요?`, "물질 이름이나 제품 이름을 적어 주세요."]],
+  [/^실제 값/, () => ["이 자리에 들어갈 실제 값은 얼마인가요?", "아래 문장을 읽고, 직접 재거나 써 본 값을 적어 주세요."]],
+  [/실험으로 확인한 범위|확인한 조건/, () => ["실험으로 확인한 범위는 어디까지인가요?", "효과가 나온 가장 낮은 값과 가장 높은 값을 적어 주세요."]],
+  [/종래 기술/, () => ["지금까지의 방법이나 제품은 무엇이 아쉬웠나요?", "비슷한 특허나 기존 제품의 한계를 구체적으로 적어 주세요."]],
+  [/대조군|선행문헌의 방법/, () => ["비교 대상은 어떻게 했나요?", "기존 방법을 쓴 경우나 아무것도 처리하지 않은 경우의 조건을 적어 주세요."]],
+  [/반복 수/, () => ["실험은 어떻게 했나요?", "재료 규격, 몇 번 반복했는지, 무엇으로 쟀는지 적어 주세요."]],
+  [/이어지는 단계/, () => ["그다음에는 무엇을 하나요?", "단계와 조건(온도·시간·비율)을 적어 주세요."]],
+  [/제조 단계|단계별 조건|방법의 단계|재료, 장비, 조건, 순서/, () => ["어떤 순서로 만드나요(하나요)?", "단계마다 온도·시간·비율을 함께 적어 주세요."]],
+  [/첫 실험/, () => ["효과를 보여 줄 실험을 하나 고른다면 무엇인가요?", "무엇과 비교해서 무엇을 잴지 적어 주세요."]],
+  [/해결하려는 문제/, () => ["어떤 문제를 풀려고 하나요?", "누가 어떤 불편을 겪는지, 왜 지금 필요한지 적어 주세요."]],
+  [/핵심 구성|구성 요소/, () => ["발명은 어떤 부분들로 이루어져 있나요?", "부분마다 이름과 하는 일을 적어 주세요."]],
+  [/^효과/, () => ["어떤 효과가 있나요?", "가능하면 숫자로(예: 수확량 15% 증가) 적어 주세요."]],
+  [/수탁번호|기탁기관/, () => ["균주를 맡긴 기관과 받은 번호(수탁번호)는 무엇인가요?", ""]],
+  [/학명/, () => ["균주의 학명은 무엇인가요?", ""]],
+  [/분양|입수/, () => ["균주를 어디에서 구했나요?", ""]],
+  [/16S|분리·선발/, () => ["균주를 어디에서 찾았고, 어떻게 같은 균인지 확인했나요?", ""]],
+  [/측정 항목·결과|측정 결과|효과와 그 수치|확인한 효과|^항목$/, () => ["실험으로 잰 결과는 어땠나요?", ""]],
+  [/출원번호/, () => ["관련된 출원의 번호는 무엇인가요?", ""]],
+  [/접수번호/, () => ["임시 명세서를 낸 출원서의 접수번호는 무엇인가요?", "특허로 접수증에 있는 번호예요."]],
+  [/영문 명칭/, () => ["발명의 영문 명칭은 무엇인가요?", ""]]
+];
+// 사실 칸 중 입력칸에서 넣어야 여러 자리가 함께 채워지는 것 (실제 값·확인한 범위는 그 자리에 바로 적는다)
+const QA_GO = [[/영문 명칭/, "draft:0:#eng0"], ...FACT_GROUPS.filter(([re]) => !re.test("실제 값") && !re.test("실험으로 확인한 범위")).map(([re, t, go]) => [re, go, t])];
+function qaOf(label) {
+  const ex = (label.match(/\((?:예시|참고):\s*(.+)\)\s*$/) || [])[1] || "", core = label.replace(/\s*\((?:예시|참고):.+\)\s*$/, "").replace(/\s*—.*$/, "").trim();
+  const r = QA_RULES.find(([re]) => re.test(core)), m = r ? core.match(r[0]) : null, [q, hint] = r ? r[1](m?.[1] ?? core) : [`${jq(core, "을")} 알려 주세요.`, ""];
+  const go = QA_GO.find(([re]) => re.test(label));
+  return { q, hint, ex, go: go ? (typeof go[1] === "function" ? go[1]() : go[1]) : null, label: core };
 }
+// 입력칸으로 가는 사실 칸은 명세서 여러 곳에 같은 값이 들어가므로 묶어서 한 번만 묻는다
+const qaKey = x => { const go = QA_GO.find(([re]) => re.test(x.label)); return go ? `go:${go[2] ?? go[1]}` : fillKey(S.spec?.text ?? "", x.at, x.label); };
+function qaCard() {
+  if (!S.spec) return "";
+  const slots = fillSlots(); if (!slots.length) return "";
+  S.qaSkip ??= new Set();
+  const cur = slots.find(x => !S.qaSkip.has(qaKey(x)));
+  const head = `<div class="qa-top"><span><b>빈칸 질문</b> <span class="muted">· 답하면 명세서의 그 자리에 들어가요${aiMode() && fillTodo().length ? ". 한꺼번에 하려면 아래 ‘AI로 한꺼번에 채우기’" : ""}</span></span><span class="qa-left">${slots.length}곳 남음</span></div>`;
+  if (!cur) return `${head}<div class="qa-done"><span>남은 ${slots.length}곳은 모두 건너뛰었어요. 잘 모르면 비워 두고 변리사 상담 때 물어봐도 돼요.</span><button type="button" class="btn ghost sm" data-qa-again>건너뛴 질문 다시 보기</button></div>`;
+  const Q = qaOf(cur.label), sent = s => esc(s.replace(/〔입력 필요[^〕]*〕/g, "＿＿").replace(/\s+/g, " ")), same = Q.go ? slots.filter(x => qaKey(x) === qaKey(cur)).length : 1;
+  const sec = (S.spec.text.slice(0, cur.at).match(/【([^】\d][^】]*)】(?![\s\S]*【[^】\d][^】]*】)/) || [])[1] ?? "";
+  const before = cur.before.split(/\n|(?<=다\.)\s/).pop().replace(/^【\d+】\s*/, "").slice(-140), after = cur.after.split(/\n|(?<=다\.)\s/)[0].slice(0, 120);
+  return `${head}
+    <p class="qa-q" id="qa-q">${esc(Q.q)}</p>
+    ${Q.go ? "" : `<p class="qa-ctx">${sec ? `<span>${esc(sec)} · </span>` : ""}${sent(before)}<mark>＿＿＿</mark>${sent(after)}</p>`}
+    ${Q.go ? `<div class="qa-actions"><button type="button" class="btn sm" data-fact-go="${Q.go}">입력하러 가기</button><span class="muted">입력칸에 한 번 넣으면 명세서 ${same}곳이 함께 채워져요.</span><button type="button" class="btn ghost sm" data-qa-skip="${cur.at}">건너뛰기</button></div>`
+    : `<textarea id="qa-answer" rows="3" aria-labelledby="qa-q" placeholder="${Q.ex ? `예: ${esc(Q.ex)}` : "여기에 적어 주세요"}">${esc(S.qaDraft?.at === cur.at ? S.qaDraft.v : "")}</textarea>${Q.hint ? `<span class="hint">${esc(Q.hint)}</span>` : ""}
+    <div class="qa-actions"><button type="button" class="btn sm" data-qa-put="${cur.at}">명세서에 넣기</button><button type="button" class="btn ghost sm" data-qa-skip="${cur.at}">모르겠어요 · 건너뛰기</button><button type="button" class="linklike" data-need="${cur.at}">명세서에서 이 자리 보기</button></div>`}`;
+}
+function qaPut(at) {
+  const ta = $("#qa-answer"), v = (ta?.value ?? "").replace(/[〔〕]/g, "").replace(/\s*\n\s*/g, " ").trim();
+  if (!v) { ta?.focus(); toast("답을 적어 주세요. 모르면 ‘건너뛰기’를 누르세요"); return; }
+  const t = S.spec.text, m = t.slice(at).match(/^〔입력 필요[^〕]*〕/); if (!m) { renderCheck(); return; }
+  S.spec.text = t.slice(0, at) + v + t.slice(at + m[0].length); S.spec.edited = true; S.fillLast = null; S.qaDraft = null; if (S.supAI) S.supAI.undo = null;
+  const sp = $("#spec-text"); if (sp) sp.value = S.spec.text;
+  document.activeElement?.blur(); renderCheck(); refreshFilingDocs(); scheduleSave();
+  toast("명세서에 넣었어요"); setTimeout(() => $("#qa-answer")?.focus({ preventScroll: true }));
+}
+document.addEventListener("click", e => {
+  const put = e.target.closest("[data-qa-put]"); if (put) { qaPut(+put.dataset.qaPut); return; }
+  const sk = e.target.closest("[data-qa-skip]"); if (sk) { const x = fillSlots().find(y => y.at === +sk.dataset.qaSkip); if (x) S.qaSkip.add(qaKey(x)); S.qaDraft = null; document.activeElement?.blur(); renderSpecNav(); setTimeout(() => ($("#qa-answer") ?? $("#qa-card [data-fact-go]"))?.focus({ preventScroll: true })); return; }
+  if (e.target.closest("[data-qa-again]")) { S.qaSkip = new Set(); renderSpecNav(); }
+});
+document.addEventListener("input", e => { if (e.target.id === "qa-answer") S.qaDraft = { at: +e.target.closest("#qa-card").querySelector("[data-qa-put]").dataset.qaPut, v: e.target.value }; });
+document.addEventListener("keydown", e => { if (e.target.id === "qa-answer" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); e.target.closest("#qa-card").querySelector("[data-qa-put]")?.click(); } });
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-fact-go]"); if (!b) return;
   const [st, pg, ...sel] = b.dataset.factGo.split(":"), q = sel.join(":");
@@ -4733,16 +4810,10 @@ document.addEventListener("click", e => {
 function renderSpecNav() {
   const box = $("#spec-nav"); if (!box) return;
   const n = specNeeds().length;
-  box.innerHTML = n ? `<span><b>〔입력 필요〕 ${n}곳</b> 남음 · 고른 칸에 바로 덮어써 넣으세요</span><button type="button" class="btn ghost sm" data-need-step="-1">앞 칸</button><button type="button" class="btn sm" data-need-step="1">다음 채울 곳</button>`
-    : `<span class="ok-t">채울 곳을 모두 채웠습니다 ✓</span><button type="button" class="btn ghost sm" data-sub="4">최종 점검으로</button>`;
+  box.innerHTML = n ? "" : `<span class="ok-t">채울 곳을 모두 채웠습니다 ✓</span><button type="button" class="btn ghost sm" data-sub="4">최종 점검으로</button>`;
+  const qa = $("#qa-card"); if (qa && document.activeElement?.id !== "qa-answer") qa.innerHTML = qaCard(); // 답을 적는 중에는 다시 그리지 않는다
   const fb = $("#fill-box"); if (fb) fb.innerHTML = fillBox();
   const ub = $("#unv-box"); if (ub) ub.innerHTML = unvBox();
-}
-function stepNeed(dir) {
-  const ta = $("#spec-text"), list = specNeeds().map(m => m.index); if (!ta || !list.length) return;
-  const at = dir > 0 ? ta.selectionEnd : ta.selectionStart;
-  const i = dir > 0 ? (list.find(x => x >= at) ?? list[0]) : ([...list].reverse().find(x => x < at - 1) ?? list.at(-1));
-  jumpToNeed(i);
 }
 // 출원서에서 꼭 채울 칸 (화면에 있는 것만)
 function apRequired() {
@@ -4897,10 +4968,11 @@ function viewDraft() {
     ${stale(0)}
     ${stale(1)}
     ${S.spec.truncated ? `<div class="alert warn" data-pg="1"><strong>명세서가 길어 끝부분이 잘렸습니다</strong><span>청구범위와 요약서를 확인하고 다시 작성하세요.</span></div>` : ""}
+    <div class="qa-card" id="qa-card" data-pg="1" role="group" aria-label="빈칸 질문"></div>
+    <div class="fill-box" id="fill-box" data-pg="1"></div>
     <div class="field" data-pg="1"><label for="spec-text">명세서 (${SPEC_SRC[S.spec.source] ?? "AI 작성본"} · 직접 고칠 수 있습니다)</label>
       <textarea id="spec-text" class="doc" spellcheck="false">${esc(S.spec.text)}</textarea></div>
     <div class="spec-nav" id="spec-nav" data-pg="1" role="group" aria-label="채울 곳 이동"></div>
-    <div class="fill-box" id="fill-box" data-pg="1"></div>
     <div id="unv-box" data-pg="1"></div>
     <div class="actions" data-pg="1">
       <button class="btn ghost" id="spec-save">임시저장</button>
@@ -6117,7 +6189,7 @@ const COACH = {
   "diag:result": { do: ["위험 높은 요건부터 보기", "‘고치러 가기’로 보완"], tip: "진단은 참고용이에요. 위험이 보여도 보완해서 출원할 수 있어요." },
   "diag:suggest": { do: ["거절 사례 보기", "필요한 제안만 넣기"], tip: "제안을 모두 받아들일 필요는 없어요." },
   "draft:0": { do: ["핵심 구성·효과 확인", "‘다음’으로 명세서 만들기"], tip: "잘 모르는 칸은 비워 두어도 돼요. 명세서에 빈칸으로 표시해 드려요." },
-  "draft:1": { do: ["〔입력 필요〕 빈칸 확인", "AI로 한꺼번에 채우기", "나만 아는 값 넣기"], tip: "AI가 채운 문장도 사실과 맞는지 한 번 읽어 보세요." },
+  "draft:1": { do: ["빈칸 질문에 답하기", "한꺼번에는 AI로 채우기"], tip: "모르는 질문은 건너뛰어도 돼요. AI가 채운 문장도 사실과 맞는지 한 번 읽어 보세요." },
   "draft:2": { do: ["출원인 이름·번호 넣기", "수수료 확인"], tip: "특허고객번호가 없으면 특허로(patent.go.kr)에서 먼저 무료로 신청하세요." },
   "draft:3": { do: ["‘아직’인 서류만 준비"], tip: "대부분은 앞 단계에서 자동으로 만들어져요." },
   "draft:4": { do: ["남은 일 위에서부터 끝내기", "제출용 파일 받기", "특허로에서 제출"], tip: "혼자 제출이 부담되면 5단계에서 무료 상담을 찾을 수 있어요." },
@@ -6310,7 +6382,6 @@ document.addEventListener("click", e => {
   if (e.target.id === "save-package") saveFilingZip();
   if (e.target.id === "save-txt") saveFile(specFileName("txt"), "text/plain;charset=utf-8", S.spec.text);
   const nd = e.target.closest("[data-need]"); if (nd) { jumpToNeed(+nd.dataset.need); return; }
-  const ns = e.target.closest("[data-need-step]"); if (ns) { if (S.sub !== 1) jumpToNeed(specNeeds()[0]?.index ?? 0); else stepNeed(+ns.dataset.needStep); return; }
   const ag = e.target.closest("[data-ap-go]"); if (ag) { const k = ag.dataset.apGo, go = () => { const el = $(`#ap-${k}`); el?.scrollIntoView({ block: "center" }); el?.focus({ preventScroll: true }); }; if (S.sub !== 2) { toPage("draft", 2, -1); requestAnimationFrame(go); } else go(); return; }
   const sc = e.target.closest("[data-scroll]"); if (sc) { openTo($(sc.dataset.scroll))?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
   if (e.target.closest("[data-ap-self]")) {
