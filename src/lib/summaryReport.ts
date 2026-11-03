@@ -10,14 +10,23 @@ export function splitSentences(text: string): string[] {
   if (!t) return [];
   const out: string[] = [];
   let depth = 0;
+  // 굵게(**…**) 안에서는 끊지 않는다: 끊으면 앞뒤 문장에 별표가 하나씩 남아 화면에 그대로 보인다.
+  // 별표 짝이 안 맞는 문단은(모델 실수) 굵게를 따지지 않는다 — 안 그러면 문단 끝까지 한 문장이 된다
+  const trackBold = ((t.match(/\*\*/g) || []).length % 2) === 0;
+  let bold = false;
   let start = 0;
   for (let i = 0; i < t.length; i++) {
     const c = t[i];
+    if (trackBold && c === "*" && t[i + 1] === "*") { bold = !bold; i++; continue; }
     if (c === "(" || c === "（") depth++;
     else if ((c === ")" || c === "）") && depth > 0) depth--;
-    else if (depth === 0 && /[.!?。]/.test(c) && (i + 1 >= t.length || /\s/.test(t[i + 1]))) {
-      // 끝에 붙은 각주 표시([^1])까지 같은 문장으로
+    else if (depth === 0 && /[.!?。]/.test(c)) {
+      // 굵게가 문장 끝에서 닫히는 경우("…한다.**")는 닫는 별표까지 같은 문장
       let end = i + 1;
+      if (bold && t.slice(end, end + 2) === "**") { end += 2; bold = false; }
+      else if (bold) continue;
+      if (end < t.length && !/\s/.test(t[end]) && !/^\[\^\d+\]/.test(t.slice(end))) continue;
+      // 끝에 붙은 각주 표시([^1])까지 같은 문장으로
       const fn = t.slice(end).match(/^(?:\[\^\d+\])+/);
       if (fn) end += fn[0].length;
       const s = t.slice(start, end).trim();

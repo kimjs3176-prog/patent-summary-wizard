@@ -17,8 +17,9 @@ export function splitBold(text: string): MarkupSegment[] {
   if (!text) return [];
   return text.split(BOLD_SPLIT_RE).filter(Boolean).map((part) => {
     const m = part.match(BOLD_RE);
-    return m ? { text: m[1], bold: true } : { text: part };
-  });
+    // 짝을 못 찾은 별표 두 개(모델 실수)는 화면·인쇄에 '**'로 보이지 않게 지운다
+    return m ? { text: m[1], bold: true } : { text: part.replace(/\*\*/g, "") };
+  }).filter((seg) => seg.text);
 }
 
 /** Split into italic (Latin names) / plain runs. */

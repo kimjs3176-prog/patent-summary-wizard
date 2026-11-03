@@ -1384,6 +1384,8 @@ time, .tabular-nums, [data-numeric] {
 /* AI가 굵게 표시한 중요 문구는 형광펜처럼 아래쪽을 칠해 본문에서 바로 보이게 (인쇄·PDF에도) */
 .report-prose-section strong,
 .report-analysis-panel strong,
+.ds-verdict strong,
+.ds-reg strong,
 .score-reason strong {
   color: hsl(var(--foreground));
   font-weight: 700;
@@ -1428,30 +1430,41 @@ time, .tabular-nums, [data-numeric] {
 }
 
 /* ============================================================
- * 데이터시트형 요약서 (C안)
- * 화면: 왼쪽 여백 주석(기본 정보·점수·규제·비슷한 특허) + 오른쪽 본문 한 단.
+ * 요약서 (1열 구성, 인쇄 시 A4 두 쪽)
+ * 머리(명칭·특허 기본정보·키워드) → 점수·TRL 띠 → 본문 절들을 위에서 아래로 한 줄로 놓는다.
  * 인쇄·PDF: .ds-sheet 두 장이 A4 두 쪽(여백 10mm 안 190×277mm). 글자는 em 단위라
  * lib/datasheet 의 fitDatasheet 가 --ds-scale 로 함께 줄인다. 그래도 넘치면 .ds-free 로 쪽을 늘린다.
+ * CI의 smoke 점검이 두 쪽을 지킨다.
  * ============================================================ */
 .ds { --ds-ink: #20262b; --ds-sub: #5d6670; --ds-rule: #d7dce0; --ds-accent: #136f55; --ds-note: #f4f6f3; --ds-cell: #ffffff; --ds-on: #c9e1d4; color: var(--ds-ink); }
 .ds-sheet { font-size: 15px; display: grid; grid-template-rows: auto 1fr auto; }
 .ds-sheet[data-sheet="2"] { grid-template-rows: 1fr auto; } /* 둘째 쪽은 머리 없이 본문·꼬리말 */
 .ds-sheet + .ds-sheet { margin-top: 8px; }
-.ds-head { display: grid; grid-template-columns: 13.5em minmax(0, 1fr); gap: 0 1.6em; padding: 1.6em 0 1em; margin-bottom: 1.4em; border-bottom: 1.5px solid var(--ds-ink); }
-.ds-doc { display: flex; flex-direction: column; align-items: flex-start; gap: .3em; font-size: .8em; line-height: 1.55; color: var(--ds-sub); }
-.ds-doc b { color: var(--ds-accent); }
-.ds-title { margin: 0 0 .45em; font-size: 1.65em; line-height: 1.36; font-weight: 700; text-wrap: balance; word-break: keep-all; letter-spacing: -0.01em; }
-.ds-body { min-height: 0; }
-.ds-row { display: grid; grid-template-columns: 13.5em minmax(0, 1fr); gap: 0 1.6em; margin-bottom: 1.3em; }
-.ds-main { min-width: 0; }
-.ds-note { align-self: start; display: flex; flex-direction: column; gap: .5em; padding: .9em; background: var(--ds-note); font-size: .8em; line-height: 1.55; color: var(--ds-sub); }
-.ds-note p { margin: 0; }
-.ds-note-t { font-size: 1em; font-weight: 700; color: var(--ds-ink); }
-.ds-facts { display: grid; gap: .25em; margin: 0; }
-.ds-facts > div { display: grid; grid-template-columns: 4.4em minmax(0, 1fr); gap: .4em; }
-.ds-facts dd { margin: 0; color: var(--ds-ink); word-break: keep-all; }
+/* 머리: 홈 첫 화면·기술소개 띠와 같은 짙은 초록 에디토리얼 띠 (문서 가장자리까지) */
+.ds-head { --hb: 1.25rem; margin: 0 calc(-1 * var(--hb)) 1.6em; padding: 1.7em var(--hb) 1.3em; background: hsl(var(--home-hero-surface)); color: hsl(var(--home-hero-foreground)); }
+@media (min-width: 640px) { .ds-head { --hb: 1.75rem; } }
+.ds-doc { display: flex; flex-wrap: wrap; align-items: center; gap: .4em .6em; margin-bottom: .7em; font-size: .8em; color: hsl(var(--home-hero-muted)); }
+.ds-doc > b { display: inline-flex; align-items: center; min-height: 24px; padding: .1em .65em; border-radius: 4px; background: hsl(var(--home-hero-accent)); color: hsl(var(--home-hero-surface)); font-weight: 700; }
+.ds-head .report-status { color: hsl(var(--home-hero-accent)); background: hsl(var(--home-hero-accent) / .12); border-color: hsl(var(--home-hero-accent) / .5); font-family: inherit; font-size: 1em; }
+.ds-govt { display: inline-flex; align-items: center; gap: .3em; min-height: 24px; padding: .15em .7em; border: 1px solid hsl(var(--home-hero-foreground) / .35); border-radius: 999px; color: hsl(var(--home-hero-foreground)); font-weight: 700; }
+.ds-title { margin: 0 0 .8em; font-size: 1.75em; line-height: 1.34; font-weight: 800; text-wrap: balance; word-break: keep-all; letter-spacing: -0.015em; color: hsl(var(--home-hero-foreground)); }
+.ds-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55em 1.4em; margin: 0 0 .9em; padding: .8em 0; border-top: 1px solid hsl(var(--home-hero-foreground) / .2); border-bottom: 1px solid hsl(var(--home-hero-foreground) / .2); font-size: .82em; line-height: 1.45; }
+.ds-meta > div { min-width: 0; }
+.ds-meta .ds-meta-wide { grid-column: span 2; }
+.ds-meta dt { color: hsl(var(--home-hero-muted)); font-size: .9em; }
+.ds-meta dd { margin: .1em 0 0; color: hsl(var(--home-hero-foreground)); font-weight: 600; word-break: keep-all; font-variant-numeric: tabular-nums; }
+.ds-kwrow { display: flex; flex-wrap: wrap; align-items: center; gap: .4em .8em; font-size: .82em; }
+.ds-kwrow > span { color: hsl(var(--home-hero-muted)); }
 .ds-kw { display: flex; flex-wrap: wrap; gap: .35em; }
 .ds-kw > button { font-size: 1em; padding: .2em .65em; }
+.ds-src { margin: .7em 0 0; font-size: .72em; color: hsl(var(--home-hero-muted)); }
+.ds-body { min-height: 0; }
+/* 점수·TRL 띠 */
+.ds-score { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: .6em 2em; margin-bottom: 1.6em; padding: .9em 1.1em; background: var(--ds-note); font-size: .82em; line-height: 1.55; color: var(--ds-sub); }
+.ds-score-main, .ds-score-trl { display: flex; flex-direction: column; gap: .45em; min-width: 0; }
+.ds-score p { margin: 0; }
+.ds-score .ds-why { grid-column: 1 / -1; }
+.ds-note-t { font-size: 1em; font-weight: 700; color: var(--ds-ink); }
 .ds-big { display: flex; align-items: baseline; gap: .4em; margin: 0; }
 .ds-big b { font-size: 2.6em; line-height: 1; color: var(--ds-accent); font-variant-numeric: tabular-nums; }
 .ds-s3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3em; margin: 0; text-align: center; }
@@ -1465,20 +1478,27 @@ time, .tabular-nums, [data-numeric] {
 .ds-wait { margin: 0; color: var(--ds-sub); }
 .ds-why summary { cursor: pointer; font-weight: 600; color: var(--ds-accent); padding: 3px 0; }
 .ds-why p { margin-top: .45em; }
-.ds-read p { margin: .25em 0 0; }
-.ds-reg { display: flex; flex-direction: column; gap: .45em; margin-top: .7em; }
-.ds-mini { list-style: none; margin: 0; padding: 0; }
-.ds-mini li { padding: .4em 0; border-top: 1px solid var(--ds-rule); }
+/* 시장 표 아래 읽는 법 한 줄 */
+.ds-read { display: flex; flex-wrap: wrap; gap: .3em 1.2em; margin: -.9em 0 1.5em; font-size: .76em; line-height: 1.5; color: var(--ds-sub); }
+/* 예상 규제·비슷한 특허: 본문 사이의 짧은 절, 두 칸 목록 */
+.ds-reg { display: flex; flex-direction: column; gap: .45em; font-size: .85em; line-height: 1.55; color: var(--ds-sub); }
+.ds-reg p { margin: 0; }
+.ds-mini { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.6em; }
+.ds-mini li { padding: .45em 0; border-top: 1px solid var(--ds-rule); }
 .ds-mini li b { display: block; color: var(--ds-ink); }
 .ds-link { display: inline-flex; align-items: center; gap: .2em; min-height: 24px; margin-left: .3em; font-weight: 600; color: var(--ds-accent); }
-/* 비슷한 특허 목록(RelatedPatentsCompact)을 여백 칸 글자 크기로 */
+/* 비슷한 특허 목록(RelatedPatentsCompact)을 요약서 글자 크기로, 두 칸으로 */
+.ds-related > ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.6em; font-size: .85em; }
+.ds-related > ul > li { border-top: 1px solid var(--ds-rule); }
 .ds-related ul li button { padding: .45em 0; }
 .ds-related ul li p { font-size: 1em; line-height: 1.45; }
 .ds-related ul li p + p { font-size: .9em; padding-left: 0; }
 .ds-related ul li p svg { display: none; }
-.ds-text { margin-bottom: 1.2em; }
-.ds-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2em .6em; margin: 0 0 .45em; font-size: 1.15em; font-weight: 700; color: var(--ds-ink); }
-.ds-h span { font-size: .68em; font-weight: 600; color: var(--ds-accent); }
+/* 본문 절 */
+/* 절 구분: 절마다 위쪽 굵은 선 → 작은 분야 이름 → 큰 질문 제목. 절 사이는 넉넉히 띄운다 */
+.ds-text, .ds-block { margin: 0 0 1.5em; padding-top: .75em; border-top: 2px solid var(--ds-ink); }
+.ds-h { display: flex; flex-direction: column; gap: .15em; margin: 0 0 .6em; font-size: 1.3em; line-height: 1.3; font-weight: 800; letter-spacing: -0.01em; color: var(--ds-ink); }
+.ds-h span { font-size: .58em; font-weight: 700; letter-spacing: .02em; color: var(--ds-accent); }
 .ds-text p { margin: 0 0 .55em; font-size: 1em; line-height: 1.72; color: #333D4B; word-break: keep-all; }
 .ds-text p.ds-lead { font-weight: 700; color: var(--ds-ink); }
 .ds-text .report-market { margin: .2em 0 .8em; }
@@ -1487,21 +1507,29 @@ time, .tabular-nums, [data-numeric] {
 .ds .report-market-table thead th { font-size: .92em; }
 .ds .report-market-table .yr { font-size: .85em; }
 .ds-foot-notes { margin: .3em 0 0; padding-left: 1.2em; font-size: .82em; color: var(--ds-sub); }
-.ds-fig { margin: 0 0 1.1em; }
+.ds-fig { margin: .2em 0 .9em; }
+/* 발명 요약 절: 왼쪽 본문 | 오른쪽 대표 도면 */
+.ds-split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 0 1.6em; align-items: start; }
+.ds-split-text { min-width: 0; }
+.ds-split-text > p:last-child { margin-bottom: 0; }
+.ds-split .ds-fig { margin: .25em 0 0; }
+.ds-split .ds-fig > button img { height: 17em; }
 .ds-fig > button { display: block; width: 100%; padding: .5em; background: #fff; border: 1px solid var(--ds-rule); cursor: zoom-in; }
 .ds-fig > button img { display: block; width: 100%; height: 15em; object-fit: contain; }
 .ds-fig figcaption { margin-top: .3em; font-size: .8em; color: var(--ds-sub); }
 .ds-thumbs { display: flex; gap: .4em; margin-top: .5em; overflow-x: auto; }
 .ds-thumbs button { flex: none; width: 4.6em; padding: .2em; background: #fff; border: 1px solid var(--ds-rule); cursor: zoom-in; }
 .ds-thumbs img { width: 100%; height: 3.4em; object-fit: contain; }
-.ds-verdict { margin-top: .4em; padding: .9em 1.1em; border: 1.5px solid var(--ds-accent); }
+.ds-verdict { margin-top: .2em; padding: .9em 1.1em; border: 1.5px solid var(--ds-accent); }
 .ds-verdict h2 { margin: 0 0 .3em; font-size: .95em; font-weight: 700; color: var(--ds-accent); }
 .ds-verdict p { margin: 0; font-weight: 500; line-height: 1.65; }
 .ds-pf { display: none; }
 @media (max-width: 639px) {
   .ds-sheet { font-size: 15px; }
-  .ds-head, .ds-row { grid-template-columns: minmax(0, 1fr); gap: .8em; }
-  .ds-row > div[aria-hidden="true"] { display: none; }
+  .ds-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ds-score, .ds-mini, .ds-related > ul, .ds-split { grid-template-columns: minmax(0, 1fr); }
+  .ds-split .ds-fig { margin-top: .6em; }
+  .ds-split .ds-fig > button img { height: 15em; }
 }
 /* 인쇄·PDF: A4 두 쪽 (몸통 글자 8.6pt × --ds-scale) */
 body.ais-printing .ais-print-target .ds-sheet,
@@ -1510,7 +1538,7 @@ body.ais-printing .ais-print-target .ds-sheet,
   font-size: calc(8.6pt * var(--ds-scale, 1));
 }
 body.ais-printing .ais-print-target .ds-head,
-.ais-ds-capture .ds-head { padding-top: 0; }
+.ais-ds-capture .ds-head { --hb: 1.2em; margin-inline: 0; padding-top: 1.2em; }
 body.ais-printing .ais-print-target .ds-body,
 .ais-ds-capture .ds-body { overflow: hidden; }
 body.ais-printing .ais-print-target .ds-pf,
@@ -1526,6 +1554,22 @@ body.ais-printing .ais-print-target > div:has(> .ds),
 body.ais-printing .ais-print-target:has(.ds),
 .ais-ds-capture { border: 0 !important; box-shadow: none !important; }
 .ais-pdf-capture.ais-ds-capture { width: 190mm !important; background: #fff !important; }
+/* PDF 다운로드(html2canvas)는 flex 가운데 정렬 알약 안의 글자를 아래로 밀어 그린다.
+   캡처본에서만 알약을 줄 안의 inline 상자로 바꾸고, 머리 맨 위 꼬리표는 테두리 없는 색 글자로 그린다. */
+.ais-ds-capture .ds-doc { display: block !important; line-height: 1.6 !important; }
+.ais-ds-capture .ds-doc > * { display: inline !important; min-height: 0 !important; margin-right: .9em; padding: 0 !important; border: 0 !important; background: none !important; color: hsl(var(--home-hero-accent)) !important; font-family: inherit !important; font-weight: 700; }
+.ais-ds-capture .ds-doc svg, .ais-ds-capture .ds-doc .report-status > span { display: none !important; }
+.ais-ds-capture .ds-kwrow { display: block !important; }
+.ais-ds-capture .ds-kwrow > span { margin-right: .6em; }
+.ais-ds-capture .ds-kw { display: inline !important; line-height: 2.1 !important; }
+.ais-ds-capture .ds-kw > button { display: inline !important; min-height: 0 !important; padding: .2em .6em !important; margin-right: .4em; line-height: inherit !important; }
+.ais-ds-capture .ds-big b { line-height: 1.5 !important; }
+.ais-ds-capture .ds-trl span { display: block; line-height: 1.2 !important; padding: .05em 0 .45em !important; }
+.ais-ds-capture .trust-badge { display: inline !important; min-height: 0 !important; padding: 0 !important; background: none !important; line-height: inherit !important; vertical-align: baseline !important; }
+.ais-ds-capture .trust-badge::before { content: "["; } .ais-ds-capture .trust-badge::after { content: "]"; }
+.ais-ds-capture .ds-pf { display: block !important; line-height: 1.4 !important; padding-bottom: 2.5mm !important; text-align: center; }
+.ais-ds-capture .ds-pf > span { display: inline-block; width: 33.33%; }
+.ais-ds-capture .ds-pf > span:first-child { text-align: left; } .ais-ds-capture .ds-pf > span:last-child { text-align: right; }
 @media print {
   /* 요약서 위 머리글 높이만큼 밀리지 않게, 조상의 position: relative를 풀어 쪽 맨 위에서 시작한다 */
   body.ais-printing *:has(.ais-print-target .ds) { position: static !important; }
@@ -1533,10 +1577,21 @@ body.ais-printing .ais-print-target:has(.ds),
   body.ais-printing:has(.ais-print-target .ds) :not(:has(.ais-print-target), .ais-print-target, .ais-print-target *) { display: none !important; }
   body.ais-printing .ais-print-target .ds-sheet { break-after: page; break-inside: avoid; }
   body.ais-printing .ais-print-target .ds-sheet:last-child { break-after: auto; }
-  body.ais-printing .ais-print-target .ds-fig > button img { height: 13em !important; max-height: none !important; width: 100% !important; }
+  body.ais-printing .ais-print-target .ds-fig > button img { height: 11em !important; max-height: none !important; width: 100% !important; }
 }
 body.ais-printing .ais-print-target .ds-fig > button img,
-.ais-ds-capture .ds-fig > button img { height: 13em; }
+.ais-ds-capture .ds-fig > button img { height: 11em; }
+/* 인쇄에서도 발명 요약은 본문 | 도면 2열. 도면 칸은 본문 높이만큼 쓸 수 있어 조금 더 크게 */
+@media print { body.ais-printing .ais-print-target .ds-split .ds-fig > button img { height: 14em !important; } }
+.ais-ds-capture .ds-split .ds-fig > button img { height: 14em; }
+/* 인쇄·PDF는 같은 구성을 촘촘하게: 절 간격·제목·도면·점수 띠를 줄여 글자를 덜 줄이게 한다 */
+body.ais-printing .ais-print-target .ds-text, body.ais-printing .ais-print-target .ds-block,
+.ais-ds-capture .ds-text, .ais-ds-capture .ds-block { margin-bottom: 1em; padding-top: .55em; }
+body.ais-printing .ais-print-target .ds-h, .ais-ds-capture .ds-h { font-size: 1.15em; margin-bottom: .4em; }
+body.ais-printing .ais-print-target .ds-head, .ais-ds-capture .ds-head { padding-bottom: 1em; margin-bottom: 1.1em; }
+body.ais-printing .ais-print-target .ds-title, .ais-ds-capture .ds-title { font-size: 1.55em; margin-bottom: .6em; }
+body.ais-printing .ais-print-target .ds-score, .ais-ds-capture .ds-score { margin-bottom: 1.1em; padding: .7em .9em; }
+body.ais-printing .ais-print-target .ds-text p, .ais-ds-capture .ds-text p { line-height: 1.62; margin-bottom: .45em; }
 
 /* 홈 물어보기(대화형 특허 상담) */
 .patent-chat-suggestion {

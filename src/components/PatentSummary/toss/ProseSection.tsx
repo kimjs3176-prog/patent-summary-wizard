@@ -2,6 +2,7 @@ import { sectionMeta, type MdSection } from "./helpers";
 import { splitBold, splitItalic } from "@/lib/summaryMarkup";
 import { parseMarketRows, splitTrustNotes, toReportParagraphs } from "@/lib/summaryReport";
 import { TrustBadge } from "./TrustBadge";
+import { renderBold } from "./RenderBold";
 
 
 type Annotate = (text: string) => React.ReactNode;
@@ -76,21 +77,32 @@ export function MarketTable({ paragraphs }: { paragraphs: string[] }) {
  * 요약서 본문 한 절 (데이터시트형 요약서의 오른쪽 본문 칸). 제목은 쉬운 질문 + 작은 분야 이름.
  * 생성 중에는 문장이 계속 붙으므로 원래 문단대로, 끝나면 요지(첫 문장) + 3문장 문단으로 정리한다.
  */
-export function ProseSection({ sec, idx, settled, annotate }: { sec: MdSection; idx: number; settled: boolean; annotate: Annotate }) {
+export function ProseSection({ sec, idx, settled, annotate, media }: { sec: MdSection; idx: number; settled: boolean; annotate: Annotate; media?: React.ReactNode }) {
   const { kicker, heading } = sectionMeta(sec.title);
   const { lead, body } = settled ? toReportParagraphs(sec.paragraphs) : { lead: "", body: sec.paragraphs };
-  return (
-    <section id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="ds-text report-prose-section scroll-mt-24">
-      <h2 className="ds-h">{heading}<span>{kicker}</span></h2>
-      {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
+  const prose = (
+    <>
       {lead && <p className="ds-lead">{renderInline(lead, `l${idx}`, annotate)}</p>}
       {body.map((p, i) => (
         <p key={i}>{renderInline(p, `p${idx}-${i}`, annotate)}</p>
       ))}
+    </>
+  );
+  return (
+    <section id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="ds-text report-prose-section scroll-mt-24">
+      <h2 className="ds-h"><span>{kicker}</span>{heading}</h2>
+      {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
+      {media ? (
+        // 도면이 붙는 절(발명 요약)만 2열: 왼쪽 본문, 오른쪽 도면 (좁은 화면은 본문 아래 도면)
+        <div className="ds-split">
+          <div className="ds-split-text">{prose}</div>
+          <div className="ds-split-media">{media}</div>
+        </div>
+      ) : prose}
       {sec.footnotes && sec.footnotes.length > 0 && (
         <ol className="ds-foot-notes">
           {sec.footnotes.map((fn) => (
-            <li key={fn.num}><b>{fn.num}.</b> {fn.text}</li>
+            <li key={fn.num}><b>{fn.num}.</b> {renderBold(fn.text)}</li>
           ))}
         </ol>
       )}

@@ -23,13 +23,13 @@ describe("볼드 안 학명 이탤릭", () => {
     ]);
   });
 
-  it("기존 표기(볼드·이탤릭 단독, 닫히지 않은 마커)는 그대로 처리한다", () => {
+  it("기존 표기(볼드·이탤릭 단독)는 그대로, 짝 없는 '**'는 지운다", () => {
     expect(splitBold("**국내 시장** 그리고 *Oryza sativa* 그리고 **수율**")).toEqual([
       { text: "국내 시장", bold: true },
       { text: " 그리고 *Oryza sativa* 그리고 " },
       { text: "수율", bold: true },
     ]);
-    expect(splitBold("닫히지 않은 **볼드")).toEqual([{ text: "닫히지 않은 **볼드" }]);
+    expect(splitBold("닫히지 않은 **볼드")).toEqual([{ text: "닫히지 않은 볼드" }]);
   });
 
   it("요약서 화면에 '**' 기호가 남지 않는다", () => {

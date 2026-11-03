@@ -17,6 +17,21 @@ describe("요약서 보고서 레이아웃 도우미", () => {
     expect(s[3]).toContain("USD 444.9억");
   });
 
+  it("굵게(하이라이트) 안의 마침표에서는 문장을 나누지 않는다", () => {
+    const s = splitSentences("**생산량이 1.5배 늘었다. 비용은 줄었다.** 다음 문장이다.");
+    expect(s).toEqual(["**생산량이 1.5배 늘었다. 비용은 줄었다.**", "다음 문장이다."]);
+    // 문장 끝에서 닫히는 굵게도 닫는 별표까지 한 문장
+    expect(splitSentences("앞 문장은 **핵심이다.** 뒤 문장이다.")).toEqual(["앞 문장은 **핵심이다.**", "뒤 문장이다."]);
+    // 별표 짝이 안 맞으면 굵게를 따지지 않고 평소처럼 나눈다
+    expect(splitSentences("**짝이 없다. 다음이다.")).toEqual(["**짝이 없다.", "다음이다."]);
+  });
+
+  it("요지·문단으로 나눠도 굵게 표시가 반으로 갈리지 않는다", () => {
+    const r = toReportParagraphs(["**식물 생장을 촉진한다. 수율도 오른다.** 둘째 문장이다. 셋째 문장이다."]);
+    expect(r.lead).toBe("**식물 생장을 촉진한다. 수율도 오른다.**");
+    for (const p of [r.lead, ...r.body]) expect((p.match(/\*\*/g) || []).length % 2).toBe(0);
+  });
+
   it("첫 문장을 요지로, 나머지를 3문장 단위 문단으로 묶는다", () => {
     const r = toReportParagraphs(["가는 1이다. 나는 2이다. 다는 3이다.", "라는 4이다. 마는 5이다."]);
     expect(r.lead).toBe("가는 1이다.");
