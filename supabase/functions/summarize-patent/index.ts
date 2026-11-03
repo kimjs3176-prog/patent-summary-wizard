@@ -12,71 +12,12 @@ import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.
 import { CASE_POLICY_VERSION } from "../_shared/analysisCasePolicy.ts";
 
 
-// Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
-// skip that provider for a short period so subsequent requests don't pay the failure latency.
-let geminiCooldownUntil = 0;
-const PROVIDER_COOLDOWN_MS = 90_000; // 90s
-function markCooldown(_provider: "gemini", ms = PROVIDER_COOLDOWN_MS) {
-  geminiCooldownUntil = Date.now() + ms;
-}
-const GEMINI_TIMEOUT_MS = 8_000;
-
-function withTimeout(parent: AbortSignal | undefined, ms: number): { signal: AbortSignal; cancel: () => void } {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  const onAbort = () => ctrl.abort();
-  if (parent) {
-    if (parent.aborted) ctrl.abort();
-    else parent.addEventListener("abort", onAbort, { once: true });
-  }
-  return {
-    signal: ctrl.signal,
-    cancel: () => {
-      clearTimeout(t);
-      if (parent) parent.removeEventListener("abort", onAbort);
-    },
-  };
-}
-
-// Try personal Gemini API first (if GEMINI_API_KEY set), fall back to Lovable AI Gateway.
-// Both endpoints are OpenAI-compatible.
+// AI calls go only through the Lovable AI Gateway (OpenAI-compatible).
 async function callAIChatCompletions(
   payload: Record<string, unknown> & { model: string },
   init: { signal?: AbortSignal } = {},
 ): Promise<Response> {
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (GEMINI_API_KEY && Date.now() >= geminiCooldownUntil) {
-    const t = withTimeout(init.signal, GEMINI_TIMEOUT_MS);
-    try {
-      const geminiModel = payload.model.replace(/^google\//, "");
-      const r = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        {
-          method: "POST",
-          signal: t.signal,
-          headers: {
-            Authorization: `Bearer ${GEMINI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...payload, model: geminiModel }),
-        },
-      );
-      if (r.ok) {
-        console.log("[AI] using personal Gemini API");
-        t.cancel();
-        return r;
-      }
-      const errText = await r.text().catch(() => "");
-      if (r.status >= 500 || r.status === 429) markCooldown("gemini");
-      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
-    } catch (e) {
-      markCooldown("gemini");
-      console.warn("[AI] personal Gemini error, falling back:", e);
-    } finally {
-      t.cancel();
-    }
-  }
   return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     signal: init.signal,
