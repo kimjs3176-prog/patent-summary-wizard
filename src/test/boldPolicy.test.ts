@@ -8,6 +8,8 @@ describe("요약서 중요 문구 볼드 규칙", () => {
     expect(BOLD_RULES).toContain("섹션마다 3~5곳");
     expect(BOLD_RULES).toContain("첫 문장(요지)");
     expect(BOLD_RULES).toContain("다 쓴 뒤 점검");
+    // 볼드가 요지 문장에만 몰리지 않게: 본문 문단마다 최소 1곳
+    expect(BOLD_RULES).toContain("본문 문단마다 최소 1곳");
   });
 
   it("관련시장 동향의 숫자 볼드는 풀고 시장명 볼드는 남긴다", () => {
