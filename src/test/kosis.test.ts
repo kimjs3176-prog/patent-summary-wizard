@@ -16,7 +16,7 @@ describe("국가통계 시장 표준값", () => {
   it("식품유형별 시장은 식품 생산실적의 국내판매액에 연결된다", () => {
     expect(findSeries("국내음료시장")).toMatchObject({ tblId: "DT_145003_A001", c1Name: "음료류", c2Name: "국내판매액" });
     expect(findSeries("국내장류시장")?.c1Name).toBe("장류");
-    expect(findSeries("국내육가공품시장")?.c1Name).toBe("식육가공품 및 포장육");
+    expect(findSeries("국내육가공품시장")).toBeNull(); // 식품 생산실적의 식육가공품은 축산물 가공업 실적이 빠져 시장 전체가 아니다
     expect(findSeries("국내농산가공식품시장")?.c1Name).toBe("농산가공식품류");
   });
   it("화장품·의료기기·건강기능식품 세부 원료 시장도 연결된다", () => {
