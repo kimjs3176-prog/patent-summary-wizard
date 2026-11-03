@@ -31,14 +31,23 @@ jobs:
 
       - run: npx tsc --noEmit -p tsconfig.app.json
 
-      # Lint is reported but not yet gating: the tree carries ~60 pre-existing errors.
-      # Flip continue-on-error to false once `npm run lint` is clean.
+      # App lint gates the build (Deno functions under supabase/functions are checked by the deno job instead).
       - run: npm run lint
-        continue-on-error: true
 
       - run: npm test
 
       - run: npm run build
+
+      # Smoke test: open the production build in a real browser (all outside requests blocked) on desktop and
+      # phone widths, and walk the filing helper (public/filing-app) through every step. Playwright is installed
+      # without touching the lockfiles.
+      - name: Browser smoke test
+        run: |
+          npm i --no-save --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+          npx vite preview --host 127.0.0.1 --port 4173 --strictPort &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+          node scripts/smoke.mjs http://127.0.0.1:4173
 
       # The committed .env must only ever hold the public (anon) Supabase key.
       - name: Check committed .env holds the anon key only

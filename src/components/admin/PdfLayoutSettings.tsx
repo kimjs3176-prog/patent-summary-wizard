@@ -1,3 +1,4 @@
+import type { AdminApiCall } from "@/lib/adminApi";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +68,7 @@ export const DEFAULT_PDF_CONFIG: PdfLayoutConfig = {
 };
 
 interface PdfLayoutSettingsProps {
-  apiCall: (action: string, data?: Record<string, unknown>) => Promise<any>;
+  apiCall: AdminApiCall;
   initialConfig?: PdfLayoutConfig;
 }
 

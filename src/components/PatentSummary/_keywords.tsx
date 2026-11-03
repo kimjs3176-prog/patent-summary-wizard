@@ -222,7 +222,7 @@ export function extractKeywordsFromPatent(
       "제조방법", "제조법", "제조", "조성물", "키트", "용도", "제형", "제제", "모듈",
     ]);
     const cleaned = title
-      .replace(/[\[\](){}<>"'`·,.\-—–:;?!]/g, " ")
+      .replace(/[[\](){}<>"'`·,.\-—–:;?!]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
     const tokens = cleaned.split(/\s+/).filter(t => /[가-힣A-Za-z]/.test(t));
@@ -286,7 +286,7 @@ export function extractKeywordsFromPatent(
         if (!title) return "";
         const STOP_LOCAL = new Set(["및","또는","이의","그","위한","사용","이용","포함","관한","본","발명","제공","구비","구성"]);
         const tokens = title
-          .replace(/[\[\](){}<>"'`·,.\-—–:;?!]/g, " ")
+          .replace(/[[\](){}<>"'`·,.\-—–:;?!]/g, " ")
           .split(/\s+/)
           .filter(Boolean);
         const SUFFIX = /(제조방법|제조법|조성물|키트|용도|방법|시스템|장치|모듈|제형|제제|마커)$/;

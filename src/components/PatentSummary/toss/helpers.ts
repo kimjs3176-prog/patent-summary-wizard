@@ -87,7 +87,7 @@ export function parseSections(md: string): MdSection[] {
     // 볼드 바깥의 단일 이탤릭 마커만 학명 판정으로 정리
     // (볼드 안쪽은 renderBold에서 처리)
     line = line.replace(/(^|[^*])\*([^*\n]{1,80})\*(?!\*)/g, (_full, pre: string, inner: string) => {
-      const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .\-]{1,60}$/.test(inner.trim());
+      const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .-]{1,60}$/.test(inner.trim());
       return pre + (looksLikeLatin ? `*${inner}*` : inner);
     });
     const h2 = line.match(/^##\s+(.+?)\s*$/);

@@ -69,13 +69,13 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
 
       try {
         let json = await callRecommend();
-        let list: AiRecommendedPatent[] = json.success ? (json.patents || []) : [];
+        const list: AiRecommendedPatent[] = json.success ? (json.patents || []) : [];
         let filtered = dedupe(list);
 
         if (filtered.length === 0) {
           const stop = new Set(["방법", "장치", "시스템", "기술", "이용", "위한", "관한", "관련", "포함", "제공", "그리고", "또는", "있는", "되는", "사용", "통해", "통한", "및"]);
           const tokens = (patentData.titleKo || patentData.title || "")
-            .replace(/[\[\](),.·\-/]/g, " ")
+            .replace(/[[\](),.·\-/]/g, " ")
             .split(/\s+/)
             .map((t) => t.trim())
             .filter((t) => t.length >= 2 && !stop.has(t));

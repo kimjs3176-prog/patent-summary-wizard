@@ -53,8 +53,8 @@ const Admin = () => {
       supabase.rpc("get_satisfaction_stats"),
       apiCall("satisfaction-comments", { limit: 30 }),
     ]);
-    setSatisfaction((stats as any) || []);
-    setSatComments(commentsRes?.success ? (commentsRes.comments as any) || [] : []);
+    setSatisfaction((stats as unknown as typeof satisfaction) || []);
+    setSatComments(commentsRes?.success ? (commentsRes.comments as typeof satComments) || [] : []);
   };
 
   const loadUsageStats = async () => {
@@ -133,57 +133,57 @@ const Admin = () => {
           try {
             const cats = JSON.parse(settingsResult.settings.tech_categories);
             if (Array.isArray(cats) && cats.length > 0) setCategoryOptions(cats);
-          } catch {}
+          } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.tech_videos) {
           try {
             const vids = JSON.parse(settingsResult.settings.tech_videos);
             if (Array.isArray(vids)) setTechVideos(vids);
-          } catch {}
+          } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         // Load summary customization settings
         if (settingsResult.settings?.summary_section_titles) {
-          try { setSummaryTitles(JSON.parse(settingsResult.settings.summary_section_titles)); } catch {}
+          try { setSummaryTitles(JSON.parse(settingsResult.settings.summary_section_titles)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_section_lengths) {
-          try { setSummarySectionLengths({ ...DEFAULT_SECTION_LENGTHS, ...JSON.parse(settingsResult.settings.summary_section_lengths) }); } catch {}
+          try { setSummarySectionLengths({ ...DEFAULT_SECTION_LENGTHS, ...JSON.parse(settingsResult.settings.summary_section_lengths) }); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_disclaimer) {
           setSummaryDisclaimer(settingsResult.settings.summary_disclaimer);
         }
         if (settingsResult.settings?.summary_visible_sections) {
-          try { setSummaryVisibleSections(JSON.parse(settingsResult.settings.summary_visible_sections)); } catch {}
+          try { setSummaryVisibleSections(JSON.parse(settingsResult.settings.summary_visible_sections)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_ai_prompt_extra) {
           setSummaryAiPromptExtra(settingsResult.settings.summary_ai_prompt_extra);
         }
         if (settingsResult.settings?.summary_card_icons) {
-          try { setSummaryCardIcons(JSON.parse(settingsResult.settings.summary_card_icons)); } catch {}
+          try { setSummaryCardIcons(JSON.parse(settingsResult.settings.summary_card_icons)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_info_labels) {
-          try { setSummaryInfoLabels(JSON.parse(settingsResult.settings.summary_info_labels)); } catch {}
+          try { setSummaryInfoLabels(JSON.parse(settingsResult.settings.summary_info_labels)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.homepage_visible_sections) {
-          try { setHomepageVisibleSections(JSON.parse(settingsResult.settings.homepage_visible_sections)); } catch {}
+          try { setHomepageVisibleSections(JSON.parse(settingsResult.settings.homepage_visible_sections)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_max_tokens) {
           const v = parseInt(settingsResult.settings.summary_max_tokens, 10);
           if (!isNaN(v)) setSummaryMaxTokens(v);
         }
         if (settingsResult.settings?.score_settings) {
-          try { setScoreConfig({ ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settingsResult.settings.score_settings) }); } catch {}
+          try { setScoreConfig({ ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settingsResult.settings.score_settings) }); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.trl_settings) {
           try {
             const saved = JSON.parse(settingsResult.settings.trl_settings);
             setTrlConfig({ ...DEFAULT_TRL_CONFIG, ...saved, levels: resolveTrlLevels(saved?.levels) });
-          } catch {}
+          } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.pdf_layout_config) {
-          try { setPdfLayoutConfig({ ...DEFAULT_PDF_CONFIG, ...JSON.parse(settingsResult.settings.pdf_layout_config) }); } catch {}
+          try { setPdfLayoutConfig({ ...DEFAULT_PDF_CONFIG, ...JSON.parse(settingsResult.settings.pdf_layout_config) }); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.print_sections) {
-          try { setPrintSections({ ...DEFAULT_PRINT_SECTIONS, ...JSON.parse(settingsResult.settings.print_sections) }); } catch {}
+          try { setPrintSections({ ...DEFAULT_PRINT_SECTIONS, ...JSON.parse(settingsResult.settings.print_sections) }); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
       }
     } else {

@@ -32,7 +32,7 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                 <div key={field.key}>
                   <label className="text-xs text-muted-foreground mb-1 block">{field.label}</label>
                   <Input
-                    type={(field as any).isSecret ? "password" : "text"}
+                    type={"isSecret" in field && field.isSecret ? "password" : "text"}
                     value={siteSettings[field.key] || ""}
                     onChange={e => setSiteSettings(s => ({ ...s, [field.key]: e.target.value }))}
                     placeholder={field.placeholder}
@@ -324,11 +324,11 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                         let videoCats: string[] = [];
                         try { videoCats = JSON.parse(siteSettings.video_categories || "[]"); } catch { videoCats = []; }
                         if (!Array.isArray(videoCats)) videoCats = [];
-                        const cur = (v as any).category || "";
+                        const cur = v.category || "";
                         return (
                           <select
                             value={cur}
-                            onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, category: e.target.value } as any : item))}
+                            onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, category: e.target.value } : item))}
                             className="mb-2 w-full h-9 rounded-md border border-input bg-background px-2 text-[12px]"
                           >
                             <option value="">카테고리 선택 안 함 (미분류)</option>
