@@ -1,13 +1,6 @@
 import type { PatentSummaryProps as BasePatentSummaryProps } from "../types";
 import type { CommercializationDetails } from "../commercialization";
-
-
-
-
-import { ExternalLink, FileText, Printer, RefreshCw, Share2, Heart, FileSignature } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { filingEnabled, filingFieldFromIpc, ideaKeywordsFromTitle, sendPatentToFiling } from "@/lib/filing";
+import { ExternalLink, FileText, Printer, RefreshCw, Share2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NATI_TRANSFER_URL } from "@/lib/services";
 import { toast } from "sonner";
@@ -16,22 +9,9 @@ import type { useFavoritePatents } from "@/hooks/useFavoritePatents";
 
 interface Props {
   isStreaming: boolean; content: string; patentData: BasePatentSummaryProps["patentData"]; handlePrint: () => Promise<void>; onRegenerate?: () => void; setShareOpen: (open: boolean) => void; favoritesEnabled: boolean; toggleFavorite: ReturnType<typeof useFavoritePatents>["toggleFavorite"]; patentNumber: string; score: number | null; details: CommercializationDetails | null; patentIsFavorite: boolean; featureFlags: NonNullable<BasePatentSummaryProps["featureFlags"]>; printRef: React.RefObject<HTMLDivElement>; allReady: boolean;
-  /** 요약서 키워드: 출원 준비를 시작할 때 아이디어 후보를 만들 키워드로 넘긴다 */
-  keywords?: string[];
 }
 
-export function ActionBar({ isStreaming, content, patentData, handlePrint, onRegenerate, setShareOpen, favoritesEnabled, toggleFavorite, patentNumber, score, details, patentIsFavorite, featureFlags, printRef, allReady, keywords = [] }: Props) {
-  const { settings } = useSiteSettings();
-  const navigate = useNavigate();
-  const applicationNo = patentData?.applicationNumber || "";
-  const toFiling = () => {
-    // 키워드는 특허 명칭의 원료·방식·용도를 먼저 쓰고, 뽑지 못하면 요약서 키워드
-    const title = patentData?.titleKo || patentData?.title || "", field = filingFieldFromIpc(patentData?.classifications);
-    const kw = ideaKeywordsFromTitle(title, field) || keywords.map((k) => k.trim()).filter(Boolean).slice(0, 3).join(", ");
-    const r = sendPatentToFiling(settings, applicationNo, title, { kw, field });
-    if (r.to) navigate(r.to);
-    else toast.success("출원지원의 비교 특허로 보냈습니다");
-  };
+export function ActionBar({ isStreaming, content, patentData, handlePrint, onRegenerate, setShareOpen, favoritesEnabled, toggleFavorite, patentNumber, score, details, patentIsFavorite, featureFlags, printRef, allReady }: Props) {
   return (
     <>
       {/* Shown from the start (print and regenerate wait for the text): appearing only after streaming pushed the whole report down (layout shift). */}
@@ -50,12 +30,6 @@ export function ActionBar({ isStreaming, content, patentData, handlePrint, onReg
                   <FileText className="w-3.5 h-3.5" />
                   특허상세
                 </a>
-              </Button>
-            )}
-            {filingEnabled(settings) && /^(10|20)\d{11}$/.test(applicationNo.replace(/[^0-9]/g, "")) && (
-              <Button variant="outline" size="sm" onClick={toFiling} title="이 특허를 비교 특허로 넣고, 요약서 키워드로 개량 아이디어 후보를 만들어 출원지원을 시작합니다" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
-                <FileSignature className="w-3.5 h-3.5" />
-                이 기술로 출원 준비
               </Button>
             )}
           </div>

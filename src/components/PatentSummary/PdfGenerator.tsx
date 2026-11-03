@@ -379,7 +379,26 @@ async function saveDatasheetPdf(
   pdf.save(`AIS_특허요약_${safeNumber || "report"}.pdf`);
 }
 
-/** Print the visible web report so the saved PDF matches the page. */
+/** 인쇄 상태로 바꾼다: 요약서만 남기고 A4 두 쪽에 맞춘다. 이미 인쇄 상태면 false. */
+export function enterSummaryPrint(element: HTMLElement | null): boolean {
+  if (!element || document.body.classList.contains(PRINTING_CLASS)) return false;
+  document.body.classList.add(PRINTING_CLASS);
+  element.classList.add(PRINT_TARGET_CLASS);
+  fitDatasheet(element);
+  return true;
+}
+
+export function leaveSummaryPrint(element: HTMLElement | null): void {
+  unfitDatasheet(element);
+  document.body.classList.remove(PRINTING_CLASS);
+  element?.classList.remove(PRINT_TARGET_CLASS);
+}
+
+/**
+ * Print the visible web report so the saved PDF matches the page.
+ * 휴대폰 Chrome 등은 window.print()가 인쇄 창을 띄운 채 바로 돌아오므로, 인쇄 상태는 afterprint(인쇄 창이 닫힘)에서만 푼다.
+ * 바로 풀면 화면 전체가 인쇄된다.
+ */
 export async function printWebSummary(
   element: HTMLDivElement | null,
   patentNumber: string,
@@ -388,20 +407,23 @@ export async function printWebSummary(
 
   const previousTitle = document.title;
   const safeNumber = patentNumber.replace(/[^0-9A-Za-z가-힣_-]/g, "_");
+  const printMedia = typeof window.matchMedia === "function" ? window.matchMedia("print") : null;
   let cleaned = false;
 
+  const onMediaChange = (e: MediaQueryListEvent) => { if (!e.matches) cleanup(); };
   const cleanup = () => {
     if (cleaned) return;
     cleaned = true;
-    unfitDatasheet(element);
-    document.body.classList.remove(PRINTING_CLASS);
-    element.classList.remove(PRINT_TARGET_CLASS);
+    leaveSummaryPrint(element);
     document.title = previousTitle;
     window.removeEventListener("afterprint", cleanup);
+    window.removeEventListener("pointerdown", cleanup, true);
+    window.removeEventListener("keydown", cleanup, true);
+    printMedia?.removeEventListener?.("change", onMediaChange);
   };
 
-  document.body.classList.add(PRINTING_CLASS);
-  element.classList.add(PRINT_TARGET_CLASS);
+  leaveSummaryPrint(element); // 남아 있던 인쇄 상태가 있으면 지우고 새로 맞춘다
+  enterSummaryPrint(element);
   document.title = `AIS_특허요약_${safeNumber || "report"}`;
   window.addEventListener("afterprint", cleanup, { once: true });
 
@@ -411,10 +433,16 @@ export async function printWebSummary(
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
-    // 데이터시트형 요약서: 쪽마다 A4 한 장에 들어가도록 글자를 맞춘다
+    // 글꼴·이미지가 들어온 뒤 다시 맞춘다
     fitDatasheet(element);
+    printMedia?.addEventListener?.("change", onMediaChange);
     window.print();
-    cleanup();
+    // afterprint를 보내지 않는 브라우저 대비: 인쇄 창이 닫힌 뒤 처음 누르거나 키를 치면 화면으로 돌아온다
+    setTimeout(() => {
+      if (cleaned) return;
+      window.addEventListener("pointerdown", cleanup, true);
+      window.addEventListener("keydown", cleanup, true);
+    }, 500);
     return true;
   } catch (error) {
     cleanup();

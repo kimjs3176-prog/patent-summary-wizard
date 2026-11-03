@@ -4,8 +4,6 @@
 //                 메시지 {type:"agri-ip:go", step, sub} 단계·쪽 이동 · {type:"agri-ip:move", dir} 이전/다음 · {type:"agri-ip:open", panel:"help"} 도움말
 //                      {type:"agri-ip:cite", no, title} (이미 열린 창에 비교 특허 추가)
 //   에이프 → AIS: {type:"agri-ip:state", …} 그릴 때마다 단계·쪽·이전/다음·D-day (이 페이지가 단계 바를 그린다) · {type:"agri-ip:ais", q} 'AIS로 분석' → AIS 가 직접 검색
-// 반대로 AIS 가 에이프 안(iframe)에 열렸을 때는(?from=agri-ip) 비교 특허를 부모 창으로 postMessage 한다.
-import { parsePatentTitle } from "@/lib/patentKeywords";
 
 // 기본은 이 사이트 안의 사본(public/filing-app, 이 저장소에서 직접 고친다). 바깥 서버를 쓰려면 관리자 설정 filing_url 에 https 주소
 export const FILING_DEFAULT_URL = "/filing-app/";
@@ -71,7 +69,7 @@ export function buildFilingSrc(settings: SettingsLike, opts: FilingSrcOptions = 
   const hashQ = new URLSearchParams();
   const cite = (opts.cite || "").replace(/[^0-9]/g, "");
   if (/^(10|20)\d{11}$/.test(cite)) {
-    // 키워드도 오면(요약 화면의 '이 기술로 출원 준비') 그 키워드로 새 아이디어 후보를 만들고 이 특허를 비교 특허로 넣는다
+    // 키워드도 오면 그 키워드로 새 아이디어 후보를 만들고 이 특허를 비교 특허로 넣는다
     page = opts.kw && opts.kw.trim() ? "idea" : "prior";
     hashQ.set("cite", cite);
     if (opts.title) hashQ.set("title", opts.title.slice(0, 200));
@@ -156,67 +154,4 @@ export function parseFilingMessage(ev: { origin: string; data: unknown }, expect
     };
   }
   return null;
-}
-
-/** AIS 가 에이프 안(iframe)에 열려 있는가 — 부모 창(referrer) 출처가 설정된 출원지원 주소와 같을 때만. 주소의 from=agri-ip 는 화면을 옮겨 다니면 사라지므로 보지 않는다 */
-export function embeddedInFiling(settings: SettingsLike, referrer: string = document.referrer): boolean {
-  if (typeof window === "undefined" || window.parent === window) return false;
-  try {
-    return new URL(referrer).origin === filingOrigin(settings);
-  } catch {
-    return false;
-  }
-}
-
-/** 특허분류(IPC)로 출원지원의 기술 분야를 고른다. 앞의 분류부터 보고, 맞는 것이 없으면 undefined (출원지원이 지금 분야를 쓴다) */
-const FIELD_BY_IPC: [RegExp, string][] = [
-  [/^(A01H|C12N 15|C12Q 1\/68)/, "variety"],
-  [/^(C12N|C12R|C05F|A01N 63)/, "ferment"],
-  [/^(A61K 36|A23L 33|A61P)/, "functional"],
-  [/^(A01G|A01B|A01C|A01D|A01K|G05B|G06)/, "smartfarm"],
-  [/^(B65D|B65B|A23B)/, "pack"],
-  [/^A23/, "food"],
-];
-export function filingFieldFromIpc(codes: string[] = []): string | undefined {
-  for (const c of codes) {
-    const s = String(c).toUpperCase().replace(/\s+/g, " ").replace(/^([A-H]\d{2}[A-Z])\s*(\d)/, "$1 $2").trim();
-    const hit = FIELD_BY_IPC.find(([re]) => re.test(s));
-    if (hit) return hit[1];
-  }
-  return undefined;
-}
-
-/**
- * 특허 명칭에서 출원지원 아이디어 키워드 세 개(원료·방식·용도)를 뽑는다. 출원지원의 분야별 명칭 틀이 이 순서를 쓴다
- * (기능성 소재만 원료·용도·원료 부위). 뽑지 못하면 빈 문자열 → 요약서 키워드를 쓴다.
- *   '미생물 발효 유채박을 유효성분으로 함유하는 식물 생장 촉진용 조성물' → '유채박, 미생물 발효, 식물 생장 촉진'
- *   '콩 들불병 진단용 조성물 및 이의 용도' → '콩, 들불병, 진단'
- */
-const DEFAULT_WAY: Record<string, string> = { food: "가공", ferment: "발효", smartfarm: "자동 제어", variety: "육종", pack: "포장", functional: "부산물" };
-export function ideaKeywordsFromTitle(title: string, field = ""): string {
-  const p = parsePatentTitle(title);
-  let a = p.subject || p.means, b = p.way, c = p.use;
-  if (!a && !c) {
-    if (p.useWords.length < 2) return "";
-    a = p.useWords[0]; c = p.useWords[p.useWords.length - 1]; b = p.useWords.slice(1, -1).join(" ");
-  }
-  if (!a || !c) return "";
-  const kws = field === "functional" ? [a, c, b || DEFAULT_WAY.functional] : [a, b || DEFAULT_WAY[field] || "가공", c];
-  return [...new Set(kws.map((k) => k.trim()).filter(Boolean))].join(", ");
-}
-
-/**
- * 요약 화면의 특허로 출원 준비를 시작한다: 에이프 안이면 부모 창에 비교 특허로 보내고, 아니면 /filing 주소를 돌려준다.
- * 키워드(kw)를 주면 출원지원이 그 키워드로 개량 아이디어 후보를 만들고 이 특허를 비교 특허로 넣는다.
- */
-export function sendPatentToFiling(settings: SettingsLike, no: string, title: string, idea: { kw?: string; field?: string } = {}): { sent: boolean; to?: string } {
-  const n = no.replace(/[^0-9]/g, "");
-  if (embeddedInFiling(settings)) {
-    window.parent.postMessage({ type: "agri-ip:cite", no: n, title }, filingOrigin(settings));
-    return { sent: true };
-  }
-  const q = new URLSearchParams({ cite: n, title: title.slice(0, 200) });
-  if (idea.kw?.trim()) q.set("kw", idea.kw.trim().slice(0, 200));
-  if (idea.field) q.set("field", idea.field);
-  return { sent: false, to: `/filing?${q.toString()}` };
 }
