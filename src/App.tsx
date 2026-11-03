@@ -9,7 +9,6 @@ const Compare = lazy(() => import("./pages/Compare"));
 const Insights = lazy(() => import("./pages/Insights"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
 const Batch = lazy(() => import("./pages/Batch"));
-const SummarySample = lazy(() => import("./pages/SummarySample"));
 const TechVideos = lazy(() => import("./pages/TechVideos"));
 const PotentialTech = lazy(() => import("./pages/PotentialTech"));
 const PatentFinder = lazy(() => import("./pages/PatentFinder"));
@@ -108,7 +107,6 @@ const App = () => {
                 <Route path="/export" element={<Navigate to="/batch?mode=criteria" replace />} />
                 <Route path="/finder" element={<PatentFinder />} />
                 <Route path="/filing" element={<Filing />} />
-                <Route path="/summary-sample" element={<SummarySample />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
                 <Route path="/potential" element={<PotentialTech />} />
                 <Route path="*" element={<NotFound />} />
