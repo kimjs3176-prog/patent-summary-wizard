@@ -10,7 +10,7 @@ Subdirectories have their own AGENTS.md (src/, supabase/functions/); read it bef
 - The service collects no personal information: no identity/contact forms and no server-side visitor records beyond aggregate counts. 기술이전 신청 links out to NATI.
 
 ## Lovable ↔ Claude co-editing
-- Lovable commits straight to main; Claude works on its own branch from the latest origin/main, opens small PRs, and merges only when the owner asks.
+- Lovable commits straight to main; Claude works on its own branch from the latest origin/main, opens small PRs, and merges each PR into main without asking once its CI checks pass, it has no merge conflict and no unresolved review comments (owner's standing instruction); a failing check gets fixed, never skipped.
 - Do not hand-edit Lovable-owned files: src/integrations/supabase/types.ts and client.ts, the committed .env, .lovable/. Schema changes go in a new supabase/migrations file (never edit an applied one).
 - GitHub changes go live only after Publish (src/, public/) and a deploy request in the Lovable chat for changed functions and new migrations. `node scripts/lovable-deploy-list.mjs <base> [head]` lists them (a function counts as changed when its files or any imported _shared module changed); CI writes the same list ("Lovable 배포 목록") and every PR body states it or says Publish alone is enough.
 - Prefer changes that need no function deploy: copy, layout, public/filing-app and admin-stored site settings ship without one.
