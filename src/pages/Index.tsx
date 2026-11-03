@@ -1,5 +1,4 @@
 import { RotateCcw, Search } from "lucide-react";
-import { filingEnabled } from "@/lib/filing";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
@@ -17,7 +16,6 @@ import { trackPatentSearch } from "@/hooks/useTrackSearch";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
 import { NoticeSection } from "@/components/NoticeSection";
-import { HomeServiceGrid } from "@/components/HomeServiceGrid";
 import { HomeSearchHero } from "@/components/HomeSearchHero";
 
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
@@ -160,18 +158,12 @@ const Index = () => {
         {!summary && !isLoading ? (
           <>
             <HomeSearchHero
-              showFiling={filingEnabled(settings)}
               onSubmit={handleSubmit}
               onKeywordSearch={handleKeywordSearch}
               isLoading={isLoading}
               description={settings.hero_description}
               placeholder={settings.search_placeholder}
             />
-
-            {/* 서비스 바로가기 — 검색 외 기능을 한 줄 설명과 함께 */}
-            <div className="max-w-5xl mx-auto mb-7 md:mb-9 animate-fade-up" style={{ animationDelay: "0.12s" }}>
-              <HomeServiceGrid />
-            </div>
 
             {/* 특허 인사이트 — 출원 동향 + 주요 키워드 */}
             <section className="max-w-5xl mx-auto mb-5 md:mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>

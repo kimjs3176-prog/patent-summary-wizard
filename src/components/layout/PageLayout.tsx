@@ -53,7 +53,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
 
       {/* Header — Toss-style clean */}
       <header className="w-full sticky top-0 z-50 backdrop-blur-3xl border-b border-border/30" style={{ background: 'hsl(var(--background) / 0.85)' }}>
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2 md:py-3.5 flex items-center justify-between gap-2">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2 md:py-3.5 flex flex-wrap xl:flex-nowrap items-center justify-between gap-x-2 gap-y-1">
           <Link
             to="/"
             onClick={() => {
@@ -73,7 +73,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               <p className="[font-family:'Plus_Jakarta_Sans','Noto_Sans_KR',-apple-system,system-ui,sans-serif] font-bold text-[13px] md:text-[15px] text-foreground tracking-tight leading-tight truncate max-w-[160px] sm:max-w-none">
                 {settings.header_title}
               </p>
-              <p className="text-[10px] md:text-[11px] text-muted-foreground hidden sm:block lg:hidden xl:block leading-tight tracking-wide">
+              <p className="text-[10px] md:text-[11px] text-muted-foreground hidden sm:block lg:hidden 2xl:block leading-tight tracking-wide">
                 {settings.header_subtitle}
               </p>
             </div>
