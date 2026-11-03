@@ -3,7 +3,7 @@
 Subdirectories have their own AGENTS.md (src/, supabase/functions/); read it before changing files there.
 
 - Keep technology classification in the shared primary-IPC classifier and version the statistics cache whenever mappings change, so frontend labels and server counts stay consistent.
-- Every service is named, described and grouped once in src/lib/services.ts; the shared header menu (SiteNav in PageLayout) and home 서비스 바로가기 cards read from it, so pages never add their own 홈으로/service buttons (headerRight is for page-specific actions only).
+- Every service is named, described and grouped once in src/lib/services.ts; the shared header menu (SiteNav in PageLayout: every service as a direct link, no 더보기, 홈 left to the logo; a second header row from lg to xl, the 메뉴 panel below lg) reads from it, so pages never add their own 홈으로/service buttons or service cards (owner removed the home 서비스 바로가기 cards and the hero 출원도우미 link as duplicates of the menu; headerRight is for page-specific actions only).
 - Delete server functions and UI modules once no screen calls them (verify by searching src), so unused public endpoints never stay deployed.
 - Toolchain is Vite 6, Vitest 4 and React Router 7 (via react-router-dom) to stay clear of known advisories; keep tsconfig lib at ES2020-safe APIs.
 - Secret-scan exceptions live in .gitleaks.toml as narrow patterns for verified public values only; keep bun.lock and package-lock.json on the same patched versions (regenerate package-lock.json with npm 11; npm 10 crashes on this tree).

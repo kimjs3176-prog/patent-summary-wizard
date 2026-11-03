@@ -2153,7 +2153,7 @@ function setModeFromHash() {
   // #prior?cite=10-2020-0123456&title=… : AIS 등에서 보낸 특허를 비교 특허로 가져온다
   const [path, qs] = location.hash.slice(1).split("?"), q = new URLSearchParams(qs || "");
   // #idea?kw=쌀겨, 발효&field=bio : 키워드로 새 시나리오 (AIS 검색 결과의 '이 키워드로 출원 준비' 등)
-  // 둘 다 오면(AIS 요약서의 '이 기술로 출원 준비') 키워드로 새로 시작한 뒤 그 특허를 비교 특허로 넣는다 (새로 시작하면 비교 특허 목록도 지워지므로 이 순서)
+  // 둘 다 오면 키워드로 새로 시작한 뒤 그 특허를 비교 특허로 넣는다 (새로 시작하면 비교 특허 목록도 지워지므로 이 순서)
   const cite = q.get("cite"), kw = q.get("kw"), title = q.get("title") || "";
   if (cite || kw) history.replaceState(null, "", `#${path}`);
   if (kw) { const f = FIELDS[q.get("field")] ? q.get("field") : S.idea.field; setTimeout(() => { startBizTech(f, kw); if (cite && importCite(cite, title)) { rerenderKeepScroll(); toast("요약서의 특허를 비교 특허로 넣고, 그 키워드로 개량 아이디어 후보를 만들었어요. 마음에 드는 후보를 고르세요"); } }); }

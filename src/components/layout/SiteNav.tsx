@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ChevronDown, Menu, Tablet, Type, X } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Menu, Tablet, Type, X } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { isServiceActive, SERVICE_GROUP_LABEL, visibleServices, type ServiceGroup, type ServiceItem } from "@/lib/services";
@@ -27,17 +26,16 @@ function useNavData() {
   return { services, pathname, countFor, favoriteCount: favorites.length };
 }
 
-/** Desktop header menu: main services as links, the rest under 더보기. Hidden below lg (the panel takes over). */
+/** Desktop header menu: every service as a direct link, no 더보기. 홈 is left out because the logo already goes home. From lg to xl it wraps to a second header row; below lg the panel takes over. */
 export function SiteNavLinks() {
   const { services, pathname, countFor } = useNavData();
-  const main = services.filter((s) => s.primary);
-  const more = services.filter((s) => !s.primary);
-  const moreActive = more.some((s) => isServiceActive(s, pathname));
-  const link = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 h-9 text-[13.5px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const links = services.filter((s) => s.key !== "home");
+  const link = "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 h-9 text-[13.5px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
-    <nav aria-label="주 메뉴" className="hidden lg:flex items-center gap-0.5 min-w-0">
-      {main.map((s) => {
+    <nav aria-label="주 메뉴" className="hidden lg:flex items-center gap-0.5 min-w-0 order-last w-full -mx-2.5 xl:order-none xl:w-auto xl:mx-0">
+      {links.map((s) => {
         const active = isServiceActive(s, pathname);
+        const count = countFor(s);
         return (
           <Link
             key={s.key}
@@ -47,31 +45,10 @@ export function SiteNavLinks() {
             className={cn(link, active ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
           >
             {s.label}
+            {count != null && <span className="text-primary text-xs font-semibold">{count}</span>}
           </Link>
         );
       })}
-      <DropdownMenu>
-        <DropdownMenuTrigger className={cn(link, moreActive ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-          더보기 <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-72 p-1.5">
-          {more.map((s) => {
-            const Icon = s.icon;
-            const count = countFor(s);
-            return (
-              <DropdownMenuItem key={s.key} asChild className="cursor-pointer rounded-lg p-2.5 items-start gap-3">
-                <Link to={s.to}>
-                  <span className="grid place-items-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0"><Icon className="w-4 h-4" /></span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-foreground">{s.title}{count != null && <span className="ml-1 text-primary">{count}</span>}</span>
-                    <span className="block text-xs text-muted-foreground leading-snug mt-0.5">{s.description}</span>
-                  </span>
-                </Link>
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
     </nav>
   );
 }

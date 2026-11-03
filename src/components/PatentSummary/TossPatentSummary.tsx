@@ -3,7 +3,7 @@ import { Share2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
 import { useTrlConfig, type CommercializationDetails } from "./commercialization";
-import { printWebSummary } from "./PdfGenerator";
+import { enterSummaryPrint, leaveSummaryPrint, printWebSummary } from "./PdfGenerator";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { safeFetch } from "@/lib/safeFetch";
@@ -204,6 +204,19 @@ function TossPatentSummaryInner({
     } catch { /* 클립보드가 막힌 브라우저: 공유 창의 주소를 직접 복사한다 */ }
   };
 
+  // 브라우저 메뉴의 인쇄(Ctrl+P)도 인쇄 버튼과 같이 요약서만 A4 두 쪽으로 찍는다
+  useEffect(() => {
+    let owned = false;
+    const before = () => { if (enterSummaryPrint(printRef.current)) owned = true; };
+    const after = () => { if (owned) leaveSummaryPrint(printRef.current); owned = false; };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
+
   const handlePrint = async () => {
     const opened = await printWebSummary(printRef.current, patentNumber);
     if (!opened) toast.error("인쇄 화면을 열지 못했습니다. 다시 시도해주세요.");
@@ -241,7 +254,7 @@ function TossPatentSummaryInner({
   return (
     <div className="text-[#191F28]" style={{ fontFamily: "'Pretendard','Inter',sans-serif" }}>
       {/* 액션바: 토스 스타일 미니멀, 기능은 모두 유지 */}
-          <ActionBar isStreaming={isStreaming} content={content} patentData={patentData} handlePrint={handlePrint} onRegenerate={onRegenerate} setShareOpen={setShareOpen} favoritesEnabled={favoritesEnabled} toggleFavorite={toggleFavorite} patentNumber={patentNumber} score={score} details={details} patentIsFavorite={patentIsFavorite} featureFlags={featureFlags} printRef={printRef} allReady={allReady} keywords={keywords.map((k) => k.word)} />
+          <ActionBar isStreaming={isStreaming} content={content} patentData={patentData} handlePrint={handlePrint} onRegenerate={onRegenerate} setShareOpen={setShareOpen} favoritesEnabled={favoritesEnabled} toggleFavorite={toggleFavorite} patentNumber={patentNumber} score={score} details={details} patentIsFavorite={patentIsFavorite} featureFlags={featureFlags} printRef={printRef} allReady={allReady} />
 
       <div ref={(node) => { aiBodyRef.current = node; printRef.current = node; }} data-toss-summary data-toss-surface className="bp-doc precision-report border border-border overflow-hidden max-w-[864px] mx-auto">
         <div className="bp-doc-head">
