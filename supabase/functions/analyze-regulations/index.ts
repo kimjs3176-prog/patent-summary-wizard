@@ -23,12 +23,11 @@ interface RegulationResult {
   summary: string;
 }
 
-async function callGemini(prompt: string): Promise<string> {
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+async function callAI(prompt: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
   const payload = {
-    model: "gemini-3.1-flash-lite",
+    model: "google/gemini-3.1-flash-lite",
     messages: [
       { role: "system", content: "You are a Korean regulatory expert. Reply strictly in JSON, no code fences." },
       { role: "user", content: prompt },
@@ -36,30 +35,10 @@ async function callGemini(prompt: string): Promise<string> {
     temperature: 0.3,
   };
 
-  if (GEMINI_API_KEY) {
-    try {
-      const r = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${GEMINI_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-      if (r.ok) {
-        const j = await r.json();
-        return j.choices?.[0]?.message?.content ?? "";
-      }
-      log("warn", "ai.gemini.failed", { fn: FN, status: r.status, fallback: "lovable" });
-    } catch (e) {
-      log("warn", "ai.gemini.error", { fn: FN, error: e, fallback: "lovable" });
-    }
-  }
-
   const r = await fetchAiWithRetry("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, model: "google/gemini-3.1-flash-lite" }),
+    body: JSON.stringify(payload),
   });
   const j = await r.json();
   return j.choices?.[0]?.message?.content ?? "";
@@ -156,7 +135,7 @@ JSON 형식:
 }`;
 
     const aiStartedAt = Date.now();
-    const aiRaw = await callGemini(prompt);
+    const aiRaw = await callAI(prompt);
     const parsedJson = extractJson(aiRaw);
     const parsed = parsedJson || { keywords: [], reasons: {}, summary: "" };
     const keywords: string[] = Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, 5) : [];

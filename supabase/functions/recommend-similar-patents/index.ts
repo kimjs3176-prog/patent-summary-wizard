@@ -8,69 +8,12 @@ import { log, withRequestLog, type RequestLogger } from "../_shared/log.ts";
 const FN = "recommend-similar-patents";
 
 
-// Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
-// skip that provider for a short period so subsequent requests don't pay the failure latency.
-let geminiCooldownUntil = 0;
-const PROVIDER_COOLDOWN_MS = 90_000; // 90s
-function markCooldown(_provider: "gemini", ms = PROVIDER_COOLDOWN_MS) {
-  geminiCooldownUntil = Date.now() + ms;
-}
-const GEMINI_TIMEOUT_MS = 8_000;
-
-function withTimeout(parent: AbortSignal | undefined, ms: number): { signal: AbortSignal; cancel: () => void } {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  const onAbort = () => ctrl.abort();
-  if (parent) {
-    if (parent.aborted) ctrl.abort();
-    else parent.addEventListener("abort", onAbort, { once: true });
-  }
-  return {
-    signal: ctrl.signal,
-    cancel: () => {
-      clearTimeout(t);
-      if (parent) parent.removeEventListener("abort", onAbort);
-    },
-  };
-}
-
+// AI calls go only through the Lovable AI Gateway (OpenAI-compatible).
 async function callAIChatCompletions(
   payload: Record<string, unknown> & { model: string },
   init: { signal?: AbortSignal } = {},
 ): Promise<Response> {
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (GEMINI_API_KEY && Date.now() >= geminiCooldownUntil) {
-    const t = withTimeout(init.signal, GEMINI_TIMEOUT_MS);
-    try {
-      const geminiModel = payload.model.replace(/^google\//, "");
-      const r = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        {
-          method: "POST",
-          signal: t.signal,
-          headers: {
-            Authorization: `Bearer ${GEMINI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...payload, model: geminiModel }),
-        },
-      );
-      if (r.ok) {
-        log("info", "ai.provider", { fn: FN, provider: "gemini" });
-        t.cancel();
-        return r;
-      }
-      const errText = await r.text().catch(() => "");
-      if (r.status >= 500 || r.status === 429) markCooldown("gemini");
-      log("warn", "ai.gemini.failed", { fn: FN, status: r.status, bodyBytes: errText.length, fallback: "lovable" });
-    } catch (e) {
-      markCooldown("gemini");
-      log("warn", "ai.gemini.error", { fn: FN, error: e, fallback: "lovable" });
-    } finally {
-      t.cancel();
-    }
-  }
   return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     signal: init.signal,
