@@ -1449,14 +1449,6 @@ time, .tabular-nums, [data-numeric] {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
-/* 요약서 본문 배치: 접지 않고, 넓은 화면(768px~)에서는 짧은 절 둘을 나란히 (시장 동향처럼 표가 있는 절은 한 줄 전체) */
-.report-pair > .report-section, .report-single > .report-section { padding-top: 2px; border-top: 0; }
-.report-pair > .report-section + .report-section { margin-top: 28px; padding-top: 28px; border-top: 1px solid hsl(var(--border)); }
-@media (min-width: 768px) {
-  .report-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 36px; }
-  .report-pair > .report-section + .report-section { margin-top: 0; padding-top: 2px; border-top: 0; }
-  .report-pair .report-lead { font-size: 15.5px; padding: 10px 14px; }
-}
 .report-analysis-panel {
   border: 1px solid hsl(var(--primary) / 0.2);
   border-radius: 8px;

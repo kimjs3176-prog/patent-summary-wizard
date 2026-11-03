@@ -98,7 +98,7 @@ export function RegulationAnalysis({ patentNumber, patentData, isStreaming }: Pr
             {result.laws.length === 0 ? (
               <p className="text-[13px] text-muted-foreground">추출된 관련 법령이 없습니다.</p>
             ) : (
-              <ul className="grid gap-2.5 sm:grid-cols-2">
+              <ul className="space-y-2.5">
                 {result.laws.map((law, i) => (
                   <li
                     key={i}

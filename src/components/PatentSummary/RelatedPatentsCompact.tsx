@@ -118,7 +118,7 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
   if (patents.length === 0) return null;
 
   return (
-    <ul className="grid sm:grid-cols-2 gap-x-4 divide-y divide-[#E5E8EB] sm:divide-y-0">
+    <ul className="divide-y divide-[#E5E8EB]">
       {patents.map((p, i) => {
         const score = p.similarityScore ?? 0;
         return (

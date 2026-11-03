@@ -95,7 +95,7 @@ export function AiSummarySections({ isStreaming, sections, annotate }: Props) {
     const settled = !isStreaming || idx < sections.length - 1;
     const { lead, body } = settled ? toReportParagraphs(sec.paragraphs) : { lead: "", body: sec.paragraphs };
     return (
-      <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="report-section report-prose-section scroll-mt-24">
+      <section key={idx} id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="report-section report-prose-section mb-8 scroll-mt-24">
         <SectionTitle index={String(idx + 4).padStart(2, "0")} kicker={kicker}>{heading}</SectionTitle>
         {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
         {lead && <p className="report-lead">{renderInline(lead, `l${idx}`, annotate)}</p>}
@@ -121,19 +121,6 @@ export function AiSummarySections({ isStreaming, sections, annotate }: Props) {
       </section>
     );
   };
-  // 본문은 접지 않고, 넓은 화면에서는 짧은 절 둘을 나란히 놓는다. 표가 있는 시장 동향과 짝이 남는 절은 한 줄을 다 쓴다
-  const groups: number[][] = [];
-  sections.forEach((sec, i) => {
-    const wide = sectionMeta(sec.title).kicker === "시장 동향";
-    const last = groups[groups.length - 1];
-    if (!wide && last && last.length === 1 && sectionMeta(sections[last[0]].title).kicker !== "시장 동향") last.push(i);
-    else groups.push([i]);
-  });
-  return (
-    <>
-      {groups.map((g) => g.length === 2
-        ? <div key={`pair-${g[0]}`} className="report-section report-pair mb-7">{g.map((i) => renderSection(sections[i], i))}</div>
-        : <div key={`one-${g[0]}`} className="report-section report-single mb-7">{renderSection(sections[g[0]], g[0])}</div>)}
-    </>
-  );
+  // 본문은 접지 않고 절마다 한 줄씩 (소유자 요청: 나란히 두지 않는다)
+  return <>{sections.map((sec, idx) => renderSection(sec, idx))}</>;
 }
