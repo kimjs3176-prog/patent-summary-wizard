@@ -233,6 +233,10 @@ textarea { min-height: 84px; resize: vertical; }
 .seg { display: flex; flex-wrap: wrap; gap: 6px; }
 .seg label { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: .86rem; font-weight: 500; cursor: pointer; }
 .seg input { margin: 0; accent-color: var(--primary); }
+.seg-desc label { align-items: flex-start; border-radius: 12px; padding: 9px 13px; }
+.seg-desc label > span { display: grid; gap: 1px; }
+.seg-desc input { margin-top: 3px; }
+.seg label small { display: block; font-size: .74rem; font-weight: 400; color: var(--muted); }
 .seg label:has(input:checked) { background: var(--moss-soft); border-color: var(--primary); color: var(--moss); font-weight: 700; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: inherit; font-size: .9rem; font-weight: 700; padding: 10px 18px; border-radius: var(--r-key); border: 1px solid color-mix(in oklab, var(--primary) 78%, var(--fg)); background: var(--primary); color: var(--on-primary); cursor: pointer; text-decoration: none; box-shadow: var(--key-light); min-height: 44px; transition: background .15s, border-color .15s, color .15s; }
@@ -1285,7 +1289,9 @@ const S = {
   practice: null,
   api: "off", draftApi: false, drafting: false, draftErr: "", spec: null, citeSel: null, kw: "", kwField: null, ipc: "", live: null, liveField: null, loading: false, err: ""
 };
-const STRAIN_OPTS = [["yes", "새 균주 · 기탁 완료"], ["no", "새 균주 · 아직 기탁 전"], ["known", "시판·공지 균주"]];
+// 특허분류(IPC) 앞 네 글자의 쉬운 분야 이름 (분야 좁히기 목록에 함께 보여 준다)
+const IPC_NAME = { A01B: "경운·농기계", A01C: "파종·시비 기계", A01D: "수확 기계", A01G: "원예·재배", A01H: "신품종·식물", A01K: "축산·양봉·수산", A01N: "농약·생장조절제", A01P: "생물 활성(농약 효과)", A23B: "식품 보존", A23C: "유제품", A23F: "커피·차", A23J: "단백질 식품", A23K: "사료", A23L: "식품·식료품", A23N: "농산물 처리 기계", A23P: "식품 성형·가공", A61K: "의약·기능성 소재", A61P: "약효(질병 대상)", B65B: "포장 방법", B65D: "포장 용기", C05B: "인산 비료", C05C: "질소 비료", C05F: "유기 비료", C05G: "비료 혼합물", C12G: "주류", C12J: "식초", C12N: "미생물·효소", C12P: "발효 생산", C12Q: "검출·측정(유전자)", C12R: "미생물 종류 표시", G01N: "분석·측정", G05B: "제어 시스템", G06Q: "경영·서비스 시스템", G06T: "영상 처리", H04L: "통신·네트워크" };
+const STRAIN_OPTS = [["yes", "새 균주 · 기탁 완료", "직접 찾은 미생물을 공인기관에 맡기고 번호를 받았어요"], ["no", "새 균주 · 아직 기탁 전", "직접 찾았지만 아직 공인기관에 맡기지 않았어요"], ["known", "시판·공지 균주", "사거나 분양받을 수 있는 미생물이에요"]];
 // 출원 전에 직접 답해야 하는 사실. 답하지 않으면 2단계로 넘어가지 않는다
 const FACTS = [["data", "실험 데이터"], ["sold", "판매 이력"], ["disclosed", "외부 공개 이력"]];
 // 사실 칸을 고를 때마다 ‘아직 고르지 않은 항목’ 안내를 고친다
@@ -1385,7 +1391,8 @@ function renderSteps() {
 }
 
 function seg(name, opts, val) {
-  return `<div class="seg" role="radiogroup">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${val === v ? "checked" : ""}>${l}</label>`).join("")}</div>`;
+  // opts: [값, 글, (쉬운 설명)] — 설명이 있으면 버튼 안 둘째 줄에 작게 적는다
+  return `<div class="seg${opts.some(o => o[2]) ? " seg-desc" : ""}" role="radiogroup">${opts.map(([v, l, d]) => `<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${val === v ? "checked" : ""}><span>${l}${d ? `<small>${d}</small>` : ""}</span></label>`).join("")}</div>`;
 }
 
 /* ---------- 출원지원 단계별 쪽 ---------- */
@@ -1430,12 +1437,12 @@ function ideaPickPage() {
   const i = S.idea, I = S.ideate, D = I.drafts;
   return `<form id="f-diag" class="pick-form">
       ${practiceNote()}
-      <p class="example-note">${D ? `키워드 ‘${esc(I.kw)}’${J(I.kw, "으로").slice(I.kw.length)} 만든 ${IDEATE_SRC[I.src] || "초안"}입니다. 후보를 고르면 아래 다듬기 칸이 바뀝니다.` : "예시 아이디어가 채워져 있습니다. 앞쪽에서 키워드로 초안을 받거나 아래 칸을 직접 고치세요."}</p>
+      ${aiMode() && I.src === "rule" ? "" : `<p class="example-note">${D ? `키워드 ‘${esc(I.kw)}’${J(I.kw, "으로").slice(I.kw.length)} 만든 ${IDEATE_SRC[I.src] || "초안"}입니다. 후보를 고르면 아래 다듬기 칸이 바뀝니다.` : "예시 아이디어가 채워져 있습니다. 앞쪽에서 키워드로 초안을 받거나 아래 칸을 직접 고치세요."}</p>`}
       ${factsProgress()}
       ${D ? aiSlot("ideate") : ""}
       <div class="grid2">
         ${D ? pickGroup("title", "발명의 명칭", D.titles) : ""}
-        <div class="field full"><label for="title">발명의 명칭 · 다듬기</label><input type="text" id="title" value="${esc(i.title)}"><span class="hint">‘~ 방법’으로 끝나면 방법 발명, ‘~ 장치·용기’면 장치·물품 발명, 그 밖에는 물건(조성물) 발명으로 보고 청구항을 짭니다.${i.field === "variety" ? " 새 품종 자체는 국립종자원 품종보호로 출원하고, 여기서는 육종 방법·판별 마커를 특허로 준비합니다." : ""}</span></div>
+        <div class="field full"><label for="title">발명의 명칭 · 다듬기</label><input type="text" id="title" value="${esc(i.title)}"><span class="hint">명칭 끝말로 서류 형식이 정해져요: ‘~방법’이면 방법, ‘~장치·용기’면 장치, 그 밖에는 물건(조성물).</span></div>
         ${D ? pickGroup("problem", "해결할 문제", D.problems) : ""}
         <div class="field full"><label for="problem">해결할 문제 · 다듬기</label><textarea id="problem">${esc(i.problem)}</textarea></div>
         ${D ? pickGroup("diff", "기존과 다른 점 (차별성)", D.diffs) : ""}
@@ -1443,12 +1450,12 @@ function ideaPickPage() {
         ${D ? chipGroup("parts", partsKey() === "steps" ? "방법 단계" : "핵심 구성", D[partsKey()]) + chipGroup("effects", "기대 효과", D.effects) : ""}
       </div>
       <fieldset class="facts" id="facts-box"><legend>출원 전에 확인할 사실 <span class="muted h-meta">모두 직접 골라 주세요</span></legend>
-        <p class="hint" style="margin-top:0">예시로 채우지 않았습니다. 이 답에 따라 공지예외주장, 실시예의 결과 표, 미생물 기탁 항목이 출원서와 명세서에 들어가므로 사실대로 고르세요.</p>
+        <p class="hint" style="margin-top:0">사실대로 골라 주세요. 답에 따라 서류에 들어가는 내용이 달라져요.</p>
         <div class="grid2">
-          <div class="field"><span class="label">효과를 보여줄 실험 데이터가 있나요?</span>${seg("data", [["yes", "있음 (실제로 잰 값)"], ["no", "없음"]], i.data)}</div>
-          <div class="field"><span class="label">제품을 판매한 적이 있나요?</span>${seg("sold", [["no", "아니요"], ["yes", "예"]], i.sold)}</div>
+          <div class="field"><span class="label">효과를 보여줄 실험 데이터가 있나요?</span>${seg("data", [["yes", "있음", "직접 시험해서 잰 숫자가 있어요"], ["no", "없음", "아직 재 보지 않았어요"]], i.data)}</div>
+          <div class="field"><span class="label">제품을 판매한 적이 있나요?</span>${seg("sold", [["no", "아니요"], ["yes", "예", "시제품을 팔았거나 납품한 적도 포함해요"]], i.sold)}</div>
           <div class="field"><span class="label">박람회·SNS·논문 등으로 외부에 공개했나요?</span>${seg("disclosed", [["no", "아니요"], ["yes", "예"]], i.disclosed)}</div>
-          ${i.field === "ferment" ? `<div class="field"><span class="label">발명에 쓰는 균주는 어떤 균주인가요?</span>${seg("strain", STRAIN_OPTS, S.strain)}<span class="hint">새로 분리·선발한 균주는 출원 전에 기탁해야 하고, 출원 뒤에는 보완할 수 없습니다. 누구나 쉽게 구할 수 있는 균주면 기탁 대신 입수 방법을 적습니다(특허법 시행령 제2·3조).</span></div>` : ""}
+          ${i.field === "ferment" ? `<div class="field"><span class="label">발명에 쓰는 균주는 어떤 균주인가요?</span>${seg("strain", STRAIN_OPTS, S.strain)}<span class="hint">직접 찾은 균주는 출원 전에 공인기관에 맡겨야(기탁) 해요. 출원한 뒤에는 보완할 수 없어요.</span></div>` : ""}
           <div class="field" ${i.disclosed === "yes" ? "" : "hidden"} id="disc-wrap-1"><label for="discDate">처음 공개한 날</label><input type="date" id="discDate" value="${esc(i.discDate)}" max="${iso(today)}"></div>
           <div class="field" ${i.disclosed === "yes" ? "" : "hidden"} id="disc-wrap-2"><label for="discWhere">공개한 곳</label><input type="text" id="discWhere" value="${esc(i.discWhere)}" placeholder="예: ○○ 농업기술박람회 부스 전시"></div>
         </div>
@@ -1473,10 +1480,10 @@ function priorResultsPage() {
   const moved = S.idea.fieldMoved ? `<div class="alert warn"><strong>분야와 아이디어가 맞지 않을 수 있습니다</strong><span>기술 분야를 ${esc(J(fieldName(S.idea.field), "으로"))} 바꿨지만 아이디어(${esc(S.idea.title)})는 그대로라, 검색 키워드가 새 분야 기본값으로 바뀌었습니다. <button type="button" class="linklike" data-to="idea:start">1단계에서 초안 다시 받기</button> 또는 아래 ‘검색 조건 바꾸기’에서 키워드를 고치세요.</span></div>` : "";
   const search = `<div class="grid2">
       <div class="field"><label for="kw">검색 키워드</label><textarea id="kw" rows="3">${esc(S.kw)}</textarea>
-        <span class="hint">한 줄에 하나씩 쓰세요. 적은 줄이 모두 들어간 초록을 찾고, 결과가 적으면 한 줄씩 뺀 검색을 더합니다. 같은 뜻의 다른 말은 쉼표로 이어 쓰면 함께 찾고, ‘식감 개선’처럼 띄어 쓴 말은 두 낱말이 모두 들어간 문헌을 찾습니다.</span></div>
+        <span class="hint">한 줄에 하나씩 적어요. 같은 뜻의 말은 쉼표로 이어 쓰면 함께 찾아요.</span></div>
       <div class="field"><label for="ipcSel">분야 좁히기 (선택)</label>
-        <select id="ipcSel"><option value="">제한 없음</option>${[...new Set([...(L?.ipcs ?? []).map(x => x.code), ...FIELDS[S.idea.field].ipc, ...(S.ipc ? [S.ipc] : [])])].map(c => `<option ${S.ipc === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
-        <span class="hint">특허분류(IPC)로 범위를 좁힙니다. 잘 모르면 그대로 두세요.</span>
+        <select id="ipcSel"><option value="">제한 없음</option>${[...new Set([...(L?.ipcs ?? []).map(x => x.code), ...FIELDS[S.idea.field].ipc, ...(S.ipc ? [S.ipc] : [])])].map(c => `<option value="${esc(c)}" ${S.ipc === c ? "selected" : ""}>${esc(c)}${IPC_NAME[c.slice(0, 4)] ? ` · ${IPC_NAME[c.slice(0, 4)]}` : ""}</option>`).join("")}</select>
+        <span class="hint">특허분류(IPC)로 범위를 좁혀요. 잘 모르면 ‘제한 없음’ 그대로 두세요.</span>
         <div class="actions" style="margin-top:8px"><button class="btn" id="explore" ${S.loading ? "disabled" : ""}>${S.loading ? "탐색 중…" : L ? "다시 탐색" : "KIPRIS에서 탐색"}</button></div></div>
     </div>`;
   return `${moved}${S.api === "mock" ? `<p class="example-note">서버가 모의 모드로 실행 중입니다. 결과는 [모의] 표시가 붙은 가짜 데이터이며, KIPRIS_API_KEY 를 설정하면 실제 데이터로 바뀝니다.</p>` : ""}
@@ -2010,6 +2017,8 @@ const LESSON = {
   "사유 확인 필요": "KIPRIS 통합행정정보에서 거절결정서 원문을 확인하세요."
 };
 
+// 보호받을 형태(청구 유형)를 처음 쓰는 사람이 고를 수 있게 한 줄로
+const TPL_DESC = { food: "식품·음료의 배합(재료와 비율)을 보호해요.", ferment: "균주·발효물·미생물 제제를 보호해요.", functional: "건강 효과가 있는 추출물·소재를 보호해요.", smartfarm: "센서·제어로 재배 환경을 다루는 장치·시스템을 보호해요.", device: "기계·용기·도구의 구조를 보호해요.", process: "만드는·처리하는·쓰는 방법(단계와 조건)을 보호해요.", variety: "품종을 가려내는 DNA 마커나 육종 재료를 보호해요." };
 const TPL = {
   food: { n: "식품 조성물", checks: ["배합비 범위의 상·하한 근거", "비교예(기존 제품 대비) 관능·보존성 데이터", "제조 공정의 온도·시간 조건"] },
   ferment: { n: "미생물·발효", checks: ["균주 국제기탁 및 기탁번호", "16S rRNA 등 균주 동정 자료(서열목록 ST.26 형식)", "발효 온도·시간·접종량 조건", "대조군 대비 효과 데이터와 반복 수"] },
@@ -3639,7 +3648,7 @@ const aiProgress = st => st.got ? `${st.got.toLocaleString("ko-KR")}자 받는 �
 const AI_TOOK = { ideate: "10초 안팎", discover: "10~20초", compare: "10~20초", whitespace: "10~20초", reject: "10~20초", draft: "20~50초", review: "10초 안팎", fill: "10~30초", supplement: "10~20초", globalbiz: "10~20초", insight: "10~20초" };
 // 시작 카드: [버튼 글, AI가 해 주는 일 한 줄]
 const AI_START = {
-  ideate: ["AI로 더 구체적인 후보 받기", "키워드로 명칭·문제·차별성·구성·효과 후보를 AI가 새로 써요"],
+  ideate: ["AI로 더 구체적인 후보 받기", "지금 후보는 문장 틀로 만든 예시예요. AI가 키워드로 더 구체적인 후보를 새로 써요"],
   discover: ["AI로 아이디어 후보 받기", "고른 유망기술로 출원할 만한 아이디어 후보를 만들어요"],
   compare: ["AI로 구성 비교하기", "비슷한 특허와 내 구성을 하나씩 맞대어 겹치는 곳과 다른 곳을 알려 줘요"],
   whitespace: ["AI로 공백 아이디어 받기", "고른 빈 칸 방향으로 아이디어를 넓힐 구성과 확인 실험을 제안해요"],
@@ -4844,11 +4853,11 @@ function viewDraft() {
     <div class="panel-head"><h2 id="h-draft">출원 서류 작성</h2>${resetBtn()}
       <p class="muted">명세서·출원서·첨부서류를 현행 서식으로 만들고 수수료를 계산합니다. 〔입력 필요〕를 채우고 최종 점검을 마치면 특허로(patent.go.kr)에서 제출합니다.${aiMode() ? " AI가 켜져 있어 기본 초안을 AI 작성본으로 자동으로 바꿉니다(직접 고친 명세서는 그대로 둡니다)." : ""}</p></div>
     ${aiSlot("draft")}
-    <div class="field" data-pg="0"><span class="label">주 청구 유형</span><div class="tpl seg">${Object.entries(TPL).map(([k, v]) => `<label><input type="radio" name="tpl" id="tpl-${k}" value="${k}" ${S.tpl === k ? "checked" : ""}>${v.n}</label>`).join("")}</div></div>
+    <div class="field" data-pg="0"><span class="label">보호받을 형태 <span class="muted h-meta">청구 유형 · 분야와 명칭으로 미리 골랐어요</span></span><div class="tpl seg">${Object.entries(TPL).map(([k, v]) => `<label><input type="radio" name="tpl" id="tpl-${k}" value="${k}" ${S.tpl === k ? "checked" : ""}>${v.n}</label>`).join("")}</div><span class="hint">${esc(TPL_DESC[S.tpl] ?? "")} 잘 모르면 그대로 두세요.</span></div>
     <div class="grid2" data-pg="0">
       <div class="field"><label for="parts">핵심 구성 (한 줄에 하나, 수치 범위 포함)</label><textarea id="parts" rows="4">${esc(S.parts)}</textarea></div>
       <div class="field"><label for="effect">효과 (측정값이 있으면 숫자로)</label><textarea id="effect" rows="4">${esc(S.effect)}</textarea>
-        ${S.idea.field === "ferment" ? `<span class="label" style="margin-top:6px">발명에 쓰는 균주</span>${seg("strain", STRAIN_OPTS, S.strain)}` : ""}</div>
+        ${S.idea.field === "ferment" ? `<p class="hint" style="margin-top:8px">균주: ${S.strain ? `<b>${STRAIN_OPTS.find(o => o[0] === S.strain)?.[1] ?? ""}</b> (1단계에서 답함)` : "1단계에서 아직 고르지 않았어요"} <button type="button" class="linklike" data-fact-go="idea:pick:input[name=strain]">${S.strain ? "바꾸기" : "고르러 가기"}</button></p>` : ""}</div>
     </div>
     <div class="grid2" data-pg="0">
       <div class="field"><label for="eng0">발명의 영문명칭</label><input type="text" id="eng0" data-ap="engTitle" value="${esc(S.app.engTitle)}" placeholder="예: COMPOSITION FOR PROMOTING PLANT GROWTH"><span class="hint">명세서의 【발명의 명칭】에 {영문 명칭}으로 들어갑니다.${hasTranslator() ? ` <button class="link" id="ai-translate">기기 안의 AI로 번역</button>` : ""}</span></div>
@@ -4964,6 +4973,8 @@ document.addEventListener("click", e => {
 const FEE = { app: 46000, appOtherSw: 56000, examBase: 166000, examPerClaim: 51000, priority: 18000, amend: 4000, basis: "「특허료 등의 징수규칙」 제2조 제1항(2026. 2. 27. 시행) 전자출원 기준" };
 // 감경률: 출원료·심사청구료·최초 3년분 등록료에 적용 (징수규칙 별표 5)
 // doc: 첨부하는 증명서류 이름 (징수규칙 제7조 제6항 제3호). 이미 낸 적이 있거나 행정정보 공동이용으로 확인되면 생략할 수 있다
+// 출원인 구분을 고를 때 보여 줄 쉬운 이름 (출원서·계산 근거에는 REDUCE 의 법령 이름을 쓴다)
+const REDUCE_EASY = { individual: "개인 — 발명한 본인이 출원", young: "개인 — 만 19~29세 또는 65세 이상인 본인", small: "중소기업", public: "공공연구기관 (대학·국공립 연구원 등)", tlo: "기술이전 전담조직 (대학·연구원 산하 법인)", local: "지방자치단체", joint: "중소기업과 다른 기업·기관의 공동연구", midsize: "중견기업", none: "감면 없음 (대기업 등)" };
 const REDUCE = {
   individual: { rate: 70, label: "개인(발명자와 출원인이 같은 경우)", corp: false, proof: false, person: true },
   young: { rate: 85, label: "개인 중 19세 이상 29세 이하 또는 65세 이상", corp: false, proof: false, person: true },
@@ -5285,7 +5296,7 @@ function claimChartText() {
 
 // 실험 결과 그래프 입력 (내용 확인 쪽). 칸마다 id를 붙여 다시 그려도 커서가 남게 한다
 function expEditor() {
-  if (S.idea.data !== "yes") return `<div class="field" data-pg="0"><span class="label">실험 결과 그래프 (도면)</span><p class="hint" style="margin:0">1단계 ‘출원 전에 확인할 사실’에서 실험 데이터가 <b>있음</b>이면, 실제로 잰 값을 넣어 실시예·비교예 비교 그래프를 흑백 도면으로 만들 수 있습니다. 측정하지 않은 값으로는 만들지 않습니다. <button type="button" class="linklike" data-to="idea:pick">사실 답하러 가기</button></p></div>`;
+  if (S.idea.data !== "yes") return `<div class="field" data-pg="0"><span class="label">실험 결과 그래프 (도면)</span><p class="hint" style="margin:0">1단계에서 실험 데이터 ‘있음’을 고르면, 실제로 잰 값으로 실시예·비교예 비교 그래프(흑백 도면)를 만들 수 있어요. <button type="button" class="linklike" data-to="idea:pick">사실 답하러 가기</button></p></div>`;
   const gs = S.expFigs ??= [], nums = figList().filter(f => f.src === "graph");
   let gi2 = 0;
   return `<div class="field exp-ed" data-pg="0"><span class="label">실험 결과 그래프 (도면) <span class="muted h-meta">실제로 잰 값만 넣으세요. 표 1과 실험예 문장, 도면 설명이 이 값으로 채워집니다</span></span>
@@ -5661,7 +5672,7 @@ function filingPages() {
     <p class="muted" style="font-size:.9rem">아래 정보를 넣으면 출원서가 완성됩니다. 특허로 서식작성기의 같은 이름 항목에 옮겨 적거나, 변리사에게 그대로 전달하세요.</p>
     <div class="ap-progress" id="ap-progress" role="status"></div>
     <div class="grid2">
-      <div class="field"><label for="ap-type">출원인 구분 (감면)</label><select id="ap-type" data-ap="type">${Object.entries(REDUCE).map(([k, r]) => `<option value="${k}" ${a.type === k ? "selected" : ""}>${r.label}${r.rate ? ` · ${r.rate}% 감면` : ""}</option>`).join("")}</select>
+      <div class="field"><label for="ap-type">누가 출원하나요? <span class="muted h-meta">수수료 감면</span></label><select id="ap-type" data-ap="type">${Object.entries(REDUCE).map(([k, r]) => `<option value="${k}" ${a.type === k ? "selected" : ""}>${REDUCE_EASY[k] ?? r.label}${r.rate ? ` · ${r.rate}% 감면` : ""}</option>`).join("")}</select>
         <span class="hint">${REDUCE[a.type].person ? (reduceOk() ? "개인 감면은 발명자와 출원인이 같을 때만 되며, 출원료 감면은 한 해 20건까지입니다(징수규칙 별표 5)." : "<b>출원인이 발명자 목록에 없어 감면을 넣지 않았습니다.</b> 개인 감면은 발명자와 출원인이 같을 때만 됩니다(징수규칙 별표 5 비고 2). 출원인이 발명자라면 발명자란에도 같은 이름으로 적으세요.") : REDUCE[a.type].proof ? `${REDUCE[a.type].doc}를 첨부합니다. 이미 낸 적이 있거나 행정정보 공동이용으로 확인되면 생략할 수 있습니다.` : ""}</span></div>
       ${apField("name", REDUCE[a.type].corp ? "출원인 명칭(법인명)" : "출원인 성명", "특허고객번호 부여 신청 때 적은 국문 이름과 같게 적습니다.")}
       ${apField("code", "출원인 특허고객번호", "예: 4-2026-012345-6. 없으면 특허로에서 먼저 부여신청하세요.")}
