@@ -99,7 +99,8 @@ function TossPatentSummaryInner({
             // 현재 서버는 patent_data_cache / patent_ai_cache 저장본만 쓰고 아래 두 필드는 무시한다.
             // 재배포 전의 이전 함수가 이 필드를 요구하므로 배포 순서와 무관하게 동작하도록 함께 보낸다.
             body: JSON.stringify({ patentNumber, patentData, summaryContent: content, analysisMode: "detailed" }),
-            timeoutMs: 90000,
+            // 서버가 잘린 응답을 한 번 더 시도하므로(최대 약 130초) 그보다 길게 기다린다.
+            timeoutMs: 140000,
             retries: 1,
             signal: controller.signal,
           }
