@@ -786,6 +786,7 @@ table.cmp td.num { font-variant-numeric: tabular-nums; font-weight: 600; }
 .spec-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: -4px 0 10px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--sunk); font-size: .88rem; }
 .spec-nav > span { flex: 1 1 220px; } .spec-nav .ok-t { color: var(--moss); font-weight: 700; }
 .spec-nav:empty { display: none; }
+.photo-prev { display: block; max-width: 100%; max-height: 420px; margin: 8px 0; border: 1px solid var(--line); border-radius: var(--r-sm); background: #fff; }
 /* 빈칸 질문 카드: 〔입력 필요〕 칸을 쉬운 질문으로 하나씩 */
 .qa-card { display: grid; gap: 10px; margin: 0 0 14px; padding: 16px 18px; border: 1px solid color-mix(in oklab, var(--primary) 35%, var(--line)); border-radius: var(--r); background: var(--surface); }
 .qa-card:empty { display: none; }
@@ -3206,7 +3207,7 @@ function buildSpecTemplate() {
     P.push(`【${String(++pn).padStart(4, "0")}】`);
     const fig = figModel(), flowOf = isProcess ? subject : `${subject}의 제조방법`, figs = figList();
     if (!figs.length) P.push(`【도 1】 ${NEED(isDevice ? "도 1이 나타내는 장치 구성(예시: 전체 구성도)" : "도 1이 나타내는 내용(예시: 실시예와 비교예의 결과 그래프)")}`);
-    figs.forEach(fg => P.push(`【도 ${fg.n}】 ${fg.src === "auto" ? (fig.type === "flow" ? `도 ${fg.n}${figJ(fg.n)} 본 발명의 일 실시예에 따른 ${J(flowOf, "을")} 나타낸 흐름도이다.` : `도 ${fg.n}${figJ(fg.n)} 본 발명의 일 실시예에 따른 ${subject}의 구성을 나타낸 블록도이다.`) : graphSentences(fg.g, fg.n).desc}`));
+    figs.forEach(fg => P.push(`【도 ${fg.n}】 ${fg.src === "auto" ? (fig.type === "flow" ? `도 ${fg.n}${figJ(fg.n)} 본 발명의 일 실시예에 따른 ${J(flowOf, "을")} 나타낸 흐름도이다.` : `도 ${fg.n}${figJ(fg.n)} 본 발명의 일 실시예에 따른 ${subject}의 구성을 나타낸 블록도이다.`) : fg.src === "photo" ? `도 ${fg.n}${figJ(fg.n)} 본 발명의 일 실시예에 따른 ${J(fg.p.name, "을")} 나타낸 도면이다.` : graphSentences(fg.g, fg.n).desc}`));
   }
   head("【발명을 실시하기 위한 구체적인 내용】");
   para("이하, 본 발명을 상세히 설명한다. 다만, 이는 예시로서 제시되는 것으로, 이에 의해 본 발명이 제한되지는 않으며 본 발명은 후술할 청구범위의 범주에 의해 정의될 뿐이다.");
@@ -4957,7 +4958,7 @@ function viewDraft() {
     </div>
     <div class="grid2" data-pg="0">
       <div class="field"><label for="eng0">발명의 영문명칭</label><input type="text" id="eng0" data-ap="engTitle" value="${esc(S.app.engTitle)}" placeholder="예: COMPOSITION FOR PROMOTING PLANT GROWTH"><span class="hint">명세서의 【발명의 명칭】에 {영문 명칭}으로 들어갑니다.${hasTranslator() ? ` <button class="link" id="ai-translate">기기 안의 AI로 번역</button>` : ""}</span></div>
-      <div class="field"><span class="label">도면을 함께 내나요?</span>${seg("hasDrawings", [["no", "도면 없음"], ["yes", "도면 있음"]], S.hasDrawings)}${figHint()}<span class="hint">도면이 있으면 【도면의 간단한 설명】과 【대표도】가 들어갑니다.</span></div>
+      <div class="field"><span class="label">도면을 함께 내나요?</span>${seg("hasDrawings", [["no", "도면 없음"], ["yes", "도면 있음"]], S.hasDrawings)}${figHint()}<span class="hint">도면이 있으면 【도면의 간단한 설명】과 【대표도】가 들어갑니다. 시제품 사진이 있으면 첨부서류 쪽에서 선 도면으로 바꿔 넣을 수 있어요.</span></div>
     </div>
     ${expEditor()}
     ${S.idea.field === "ferment" && S.strain ? `<div class="grid2" data-pg="0"><div class="field"><label for="ap-strainName">균주의 학명</label><input type="text" id="ap-strainName" data-ap="strainName" value="${esc(S.app.strainName)}" placeholder="예: Bacillus velezensis"><span class="hint">명세서에서 미생물을 적을 때 학명과 ${S.strain === "known" ? "입수 방법" : "수탁번호"}${S.strain === "known" ? "을" : "를"} 함께 적습니다. 출원 뒤에 수탁번호를 새로 넣으면 신규사항 추가가 됩니다.</span></div>
@@ -5505,6 +5506,79 @@ function figCanvas(m) {
 // JPG로 만들고 해상도를 300dpi로 적는다(JFIF 머리). 같은 그림은 다시 그리지 않는다
 // 캔버스 → JPG(300dpi 표시). 같은 그림은 다시 그리지 않는다
 const FIGC = new Map();
+/* ---------- 사진으로 도면: 시제품·장치 사진을 흑백 선 그림으로 바꿔 도 n 으로 넣는다. 사진은 이 기기 브라우저 안에서만 처리하고 서버로 보내지 않는다 ---------- */
+const PHOTO_MAX = 4, PHOTO_LV = { simple: .06, normal: .1, detail: .16 }, PHOTO = { img: null, lv: "normal", name: "", canvas: null };
+// 회색조 → 두 번 흐리게(잡티 제거) → 소벨 경계 세기 → 세기가 센 위쪽 일부만 검은 선으로, 둘레에 흰 여백
+function photoLines(img, lv = "normal") {
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, sc = Math.min(1, 1400 / Math.max(iw, ih));
+  const W = Math.max(8, Math.round(iw * sc)), H = Math.max(8, Math.round(ih * sc));
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H); x.drawImage(img, 0, 0, W, H);
+  const d = x.getImageData(0, 0, W, H).data, N = W * H; let g = new Float32Array(N);
+  for (let i = 0; i < N; i++) g[i] = .299 * d[i * 4] + .587 * d[i * 4 + 1] + .114 * d[i * 4 + 2];
+  const blur = a => { const o = new Float32Array(N); for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) { let s = 0, k = 0; for (let dy = -1; dy <= 1; dy++) { const y2 = yy + dy; if (y2 < 0 || y2 >= H) continue; for (let dx = -1; dx <= 1; dx++) { const x2 = xx + dx; if (x2 < 0 || x2 >= W) continue; s += a[y2 * W + x2]; k++; } } o[yy * W + xx] = s / k; } return o; };
+  g = blur(blur(g));
+  const mag = new Float32Array(N); let top = 0;
+  for (let yy = 1; yy < H - 1; yy++) for (let xx = 1; xx < W - 1; xx++) {
+    const i = yy * W + xx, a = g[i - W - 1], b = g[i - W], cc = g[i - W + 1], l = g[i - 1], r = g[i + 1], e = g[i + W - 1], f = g[i + W], h = g[i + W + 1];
+    const gx = cc + 2 * r + h - a - 2 * l - e, gy = e + 2 * f + h - a - 2 * b - cc, m = Math.hypot(gx, gy); mag[i] = m; if (m > top) top = m;
+  }
+  const B = 1024, hist = new Uint32Array(B); for (let i = 0; i < N; i++) hist[Math.min(B - 1, Math.floor(mag[i] / (top || 1) * (B - 1)))]++;
+  let acc = 0, cut = B - 1; const want = N * (PHOTO_LV[lv] ?? .1); while (cut > 0 && acc + hist[cut] < want) acc += hist[cut--];
+  const t = Math.max(cut / (B - 1) * top, top * .04), M = Math.round(Math.max(W, H) * .05);
+  const out = document.createElement("canvas"); out.width = W + 2 * M; out.height = H + 2 * M;
+  const ox = out.getContext("2d"); ox.fillStyle = "#fff"; ox.fillRect(0, 0, out.width, out.height);
+  const od = ox.getImageData(M, M, W, H), p = od.data;
+  for (let i = 0; i < N; i++) { const v = mag[i] > t ? 0 : 255; p[i * 4] = p[i * 4 + 1] = p[i * 4 + 2] = v; p[i * 4 + 3] = 255; }
+  ox.putImageData(od, M, M);
+  return out;
+}
+function photoCard() {
+  const list = S.photoFigs ?? [], full = list.length >= PHOTO_MAX;
+  const head = `<h4>사진으로 도면 만들기 <span class="muted h-meta">시제품·장치 사진을 흑백 선 그림으로 바꿔요 · 사진은 이 기기 안에서만 처리돼요</span></h4>`;
+  if (!PHOTO.canvas) return `<div class="doc-card" id="photo-card">${head}
+    <p class="hint">배경이 단순한 곳에서 물건 전체가 보이게 찍으면 선이 깔끔해요. 도면은 ${PHOTO_MAX}장까지 넣을 수 있어요.</p>
+    <div class="actions">${full ? `<span class="muted">사진 도면은 ${PHOTO_MAX}장까지예요. 하나를 빼고 다시 넣으세요.</span>` : `<label class="btn" for="photo-in" tabindex="0" role="button" data-key-click>사진 고르기</label><input type="file" id="photo-in" accept="image/*" hidden>`}</div></div>`;
+  return `<div class="doc-card" id="photo-card">${head}
+    <img class="photo-prev" src="${PHOTO.canvas.toDataURL("image/png")}" alt="사진을 선으로 옮긴 미리보기">
+    <div class="field"><span class="label">선의 양</span>${seg("photo-lv", [["simple", "단순하게"], ["normal", "보통"], ["detail", "자세히"]], PHOTO.lv, { label: "선의 양" })}</div>
+    <div class="field"><label for="photo-name">이 도면이 보여 주는 것</label><input type="text" id="photo-name" value="${esc(PHOTO.name)}" placeholder="예: 포장 용기의 전체 모습"><span class="hint">명세서 【도면의 간단한 설명】에 ‘…을 나타낸 도면이다’로 들어갑니다.</span></div>
+    <div class="actions"><button type="button" class="btn" data-photo-add>도면으로 넣기</button><button type="button" class="btn ghost" data-photo-cancel>취소</button></div></div>`;
+}
+// 저장해 둔 사진 도면(PNG)을 다시 그림으로 만든다 (불러오기·새로고침 뒤)
+function photoHydrate() {
+  const todo = (S.photoFigs ?? []).filter(p => !FIGC.has(`photo:${p.id}`)); if (!todo.length) return;
+  let left = todo.length;
+  todo.forEach(p => { const im = new Image(); im.onload = im.onerror = () => {
+    if (im.naturalWidth) { const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext("2d").drawImage(im, 0, 0); FIGC.set(`photo:${p.id}`, jpegOf(c)); }
+    if (!--left) rerenderKeepScroll();
+  }; im.src = p.png; });
+}
+document.addEventListener("change", e => {
+  if (e.target.id === "photo-in" && e.target.files?.[0]) {
+    const file = e.target.files[0]; e.target.value = "";
+    if (!/^image\//.test(file.type)) { toast("사진 파일(JPG·PNG 등)을 골라 주세요"); return; }
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { PHOTO.img = im; PHOTO.lv = "normal"; PHOTO.name = PHOTO.name || "시제품의 전체 모습"; PHOTO.canvas = photoLines(im, PHOTO.lv); URL.revokeObjectURL(url); rerenderKeepScroll(); requestAnimationFrame(() => $("#photo-card")?.scrollIntoView({ block: "center" })); };
+    im.onerror = () => { URL.revokeObjectURL(url); toast("이 사진을 열 수 없습니다. 다른 형식(JPG·PNG)으로 골라 주세요"); };
+    im.src = url;
+  }
+  if (e.target.name === "photo-lv" && PHOTO.img) { PHOTO.lv = e.target.value; PHOTO.canvas = photoLines(PHOTO.img, PHOTO.lv); const pv = $(".photo-prev"); if (pv) pv.src = PHOTO.canvas.toDataURL("image/png"); }
+});
+document.addEventListener("input", e => { if (e.target.id === "photo-name") PHOTO.name = e.target.value; });
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-photo-cancel]")) { Object.assign(PHOTO, { img: null, canvas: null }); rerenderKeepScroll(); return; }
+  if (e.target.closest("[data-photo-add]") && PHOTO.canvas) {
+    const name = (PHOTO.name || "").trim() || "시제품의 전체 모습", id = `p${Date.now().toString(36)}`;
+    S.photoFigs = [...(S.photoFigs ?? []), { id, name, png: PHOTO.canvas.toDataURL("image/png") }].slice(0, PHOTO_MAX);
+    FIGC.set(`photo:${id}`, jpegOf(PHOTO.canvas)); Object.assign(PHOTO, { img: null, canvas: null, name: "" });
+    if (S.hasDrawings !== "yes") S.hasDrawings = "yes";
+    invalidateSpec(); scheduleSave(); rerenderKeepScroll();
+    const f = figList().find(x => x.src === "photo" && x.p.id === id); toast(`도 ${f?.n ?? ""}로 넣었어요. 명세서의 도면 설명에도 들어갑니다`); return;
+  }
+  const del = e.target.closest("[data-photo-del]");
+  if (del) { if (!confirm("이 사진 도면을 뺍니다. 계속할까요?")) return; S.photoFigs = (S.photoFigs ?? []).filter(p => p.id !== del.dataset.photoDel); FIGC.delete(`photo:${del.dataset.photoDel}`); invalidateSpec(); scheduleSave(); rerenderKeepScroll(); }
+});
 function jpegOf(c) {
   const url = c.toDataURL("image/jpeg", .92), bin = atob(url.split(",")[1]), bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -5516,11 +5590,12 @@ function figList() {
   const out = [], auto = figModel();
   if (auto) out.push({ src: "auto", m: auto, label: auto.name });
   if (S.hasDrawings === "yes") expGraphs().forEach(g => out.push({ src: "graph", g, label: `${g.metric} 그래프` }));
+  if (S.hasDrawings === "yes") (S.photoFigs ?? []).forEach(p => { if (FIGC.has(`photo:${p.id}`)) out.push({ src: "photo", p, label: p.name }); });
   return out.map((f, i) => {
-    const n = i + 1, key = JSON.stringify(f.src === "auto" ? f.m : f.g);
+    const n = i + 1, key = f.src === "photo" ? `photo:${f.p.id}` : JSON.stringify(f.src === "auto" ? f.m : f.g);
     if (!FIGC.has(key)) FIGC.set(key, jpegOf(f.src === "auto" ? figCanvas(f.m) : graphCanvas(f.g)));
     const safe = f.label.replace(/[\\/:*?"<>|\s]+/g, "_");
-    return { ...f, n, img: FIGC.get(key), file: `도면_도${n}_${safe}.jpg`, tifFile: `도면_도${n}_${safe}.tif`, ascii: `agri-ip_figure${n}_${f.src === "auto" ? (f.m.type === "flow" ? "flowchart" : "block-diagram") : "graph"}` };
+    return { ...f, n, img: FIGC.get(key), file: `도면_도${n}_${safe}.jpg`, tifFile: `도면_도${n}_${safe}.tif`, ascii: `agri-ip_figure${n}_${f.src === "auto" ? (f.m.type === "flow" ? "flowchart" : "block-diagram") : f.src === "photo" ? "photo-drawing" : "graph"}` };
   });
 }
 // 예전 이름 그대로: 자동 도 1
@@ -5748,7 +5823,7 @@ function saveFilingZip() {
 }
 function saveDocx(name, text, layout = FORM_LAYOUT) { saveFile(name, DOCX_MIME, docxFor(text, layout)); }
 // 묶음 안내에 덧붙이는 줄: 자동 도면, 청구항 대비표
-const extraGuide = () => [...figList().map(f => `\r\n· ${f.tifFile}: ${f.src === "auto" ? `자동으로 그린 도 ${f.n}(${f.m.name})` : `실험 결과 그래프 도 ${f.n}(${f.g.metric})`}, 흑백 TIFF 300dpi. 명세서작성기 도면란에는 이 파일을 넣으세요. 넣기 전에 내용이 맞는지 확인하세요. 같은 그림의 JPG(${f.file})는 보기·공유용이며 명세서 Word에도 들어 있습니다.`),
+const extraGuide = () => [...figList().map(f => `\r\n· ${f.tifFile}: ${f.src === "auto" ? `자동으로 그린 도 ${f.n}(${f.m.name})` : f.src === "photo" ? `사진으로 만든 도 ${f.n}(${f.p.name})` : `실험 결과 그래프 도 ${f.n}(${f.g.metric})`}, 흑백 TIFF 300dpi. 명세서작성기 도면란에는 이 파일을 넣으세요. 넣기 전에 내용이 맞는지 확인하세요. 같은 그림의 JPG(${f.file})는 보기·공유용이며 명세서 Word에도 들어 있습니다.`),
   claimChart() && "\r\n· 참고_청구항_대비표.docx: 청구항 1의 구성과 인용 문헌을 맞대어 본 표(요약 기준 참고용). 지식재산처에 내지 않으며, 변리사 상담이나 우선심사 검토에 씁니다."].filter(Boolean).join("");
 
 function apField(key, label, hint = "", type = "text") {
@@ -5812,10 +5887,11 @@ function filingPages() {
 
   <div class="sub" data-pg="3">
     <h3>첨부서류</h3>
-    ${figList().map(f => `<div class="doc-card fig-card"><h4>도면 · 도 ${f.n} (${f.src === "auto" ? `자동으로 그린 ${f.m.name}` : `실험 결과 그래프 · ${esc(f.g.metric)}`}) <span class="muted h-meta">흑백 TIFF·JPG 300dpi, 명세서 Word에도 들어갑니다</span></h4>
-      <img class="fig-prev" src="${f.img.url}" alt="도 ${f.n} ${f.src === "auto" ? `${f.m.name}: ${esc(f.m.items.map(x => `${x.no} ${x.label}`).join(", "))}` : `그래프: ${esc(f.g.rows.map(r => `${r.name} ${r.vals.join(", ")}`).join(" / "))}`}">
-      <p class="hint">${f.src === "auto" ? `핵심 구성(방법이면 단계)으로 그렸습니다. 번호는 명세서의 ${f.m.type === "flow" ? "단계 번호(S110…)" : "부호(100…)"}와 같습니다.` : "내용 확인 쪽에 넣은 측정값으로 그렸습니다. 막대는 무늬, 꺾은선은 선 모양과 표식으로 구분하고, 표준편차가 있으면 오차 막대를 그립니다."} 입력을 고치면 다시 그립니다.</p>
-      <div class="actions"><button type="button" class="btn" data-fig-save="tif:${f.n}">도 ${f.n} 흑백 TIFF 받기 (제출용)</button><button type="button" class="btn ghost" data-fig-save="jpg:${f.n}">JPG 받기</button></div></div>`).join("")}
+    ${figList().map(f => `<div class="doc-card fig-card"><h4>도면 · 도 ${f.n} (${f.src === "auto" ? `자동으로 그린 ${f.m.name}` : f.src === "photo" ? `사진으로 만든 도면 · ${esc(f.p.name)}` : `실험 결과 그래프 · ${esc(f.g.metric)}`}) <span class="muted h-meta">흑백 TIFF·JPG 300dpi, 명세서 Word에도 들어갑니다</span></h4>
+      <img class="fig-prev" src="${f.img.url}" alt="도 ${f.n} ${f.src === "auto" ? `${f.m.name}: ${esc(f.m.items.map(x => `${x.no} ${x.label}`).join(", "))}` : f.src === "photo" ? `사진을 선으로 옮긴 ${esc(f.p.name)}` : `그래프: ${esc(f.g.rows.map(r => `${r.name} ${r.vals.join(", ")}`).join(" / "))}`}">
+      <p class="hint">${f.src === "photo" ? "사진의 윤곽을 선으로 옮겼습니다. 부호(100, 200…)와 지시선은 명세서작성기의 도면 편집이나 그림판에서 넣으세요. 배경이 복잡하면 다시 찍거나 ‘단순하게’로 바꿔 보세요." : f.src === "auto" ? `핵심 구성(방법이면 단계)으로 그렸습니다. 번호는 명세서의 ${f.m.type === "flow" ? "단계 번호(S110…)" : "부호(100…)"}와 같습니다.` : "내용 확인 쪽에 넣은 측정값으로 그렸습니다. 막대는 무늬, 꺾은선은 선 모양과 표식으로 구분하고, 표준편차가 있으면 오차 막대를 그립니다."} 입력을 고치면 다시 그립니다.</p>
+      <div class="actions"><button type="button" class="btn" data-fig-save="tif:${f.n}">도 ${f.n} 흑백 TIFF 받기 (제출용)</button><button type="button" class="btn ghost" data-fig-save="jpg:${f.n}">JPG 받기</button>${f.src === "photo" ? `<button type="button" class="btn ghost" data-photo-del="${f.p.id}">이 도면 빼기</button>` : ""}</div></div>`).join("")}
+    ${photoCard()}
     ${disc ? `<div class="doc-card">
       <h4>공지예외적용대상 증명서류 <span class="muted h-meta">${discWithFiling() ? "출원서에 첨부" : "출원일부터 30일 이내 서류제출서(별지 제13호서식)로 제출"}</span></h4>
       <div class="grid2">
@@ -6603,7 +6679,7 @@ document.addEventListener("click", e => { if (e.target.closest("[data-restart]")
 
 /* ---------- 작업 저장: 이 기기의 브라우저(localStorage)에만 자동 저장한다. 서버로 보내지 않는다 ---------- */
 const SAVE_KEY = "agri-ip:work:v1";
-const SAVE_FIELDS = ["filed", "supportFit", "step", "sub", "idea", "tpl", "tplAuto", "parts", "effect", "strain", "userType", "region", "fileDate", "hasDrawings", "app", "spec", "kw", "kwField", "ipc", "live", "liveField", "refined", "refinedSel", "axesCustom", "aiGap", "cmpAI", "rejAI", "revAI", "supAI", "expFigs", "aiChanges", "aiFeedback", "fillTried", "watch", "practice"];
+const SAVE_FIELDS = ["filed", "supportFit", "step", "sub", "idea", "tpl", "tplAuto", "parts", "effect", "strain", "userType", "region", "fileDate", "hasDrawings", "app", "spec", "kw", "kwField", "ipc", "live", "liveField", "refined", "refinedSel", "axesCustom", "aiGap", "cmpAI", "rejAI", "revAI", "supAI", "expFigs", "photoFigs", "aiChanges", "aiFeedback", "fillTried", "watch", "practice"];
 const AI_KEEP = ["draft", "ideate", "compare", "whitespace", "reject", "review"];
 const SAVE_SETS = ["done", "gapSel", "citeSel"];
 const SAVE = { at: null, restored: null, t: 0, off: false };
@@ -6643,6 +6719,9 @@ function restoreWork(o) {
   }
   if (o.ins && typeof o.ins.q === "string" && o.ins.q) { Object.assign(G.ins, { kw: o.ins.q, q: o.ins.q, type: BIZ_TYPES.some(([k]) => k === o.ins.type) ? o.ins.type : guessType(o.ins.q), news: null, ai: o.ins.ai && typeof o.ins.ai === "object" && o.ins.ai.summary ? o.ins.ai : null, src: o.ins.src || "" });
   }
+  // 사진 도면: 형식이 맞는 것만 (흑백 PNG), 그림은 비동기로 다시 만든다
+  S.photoFigs = Array.isArray(o.photoFigs) ? o.photoFigs.filter(x => x && typeof x.id === "string" && typeof x.name === "string" && /^data:image\/png;base64,/.test(x.png ?? "")).slice(0, PHOTO_MAX) : [];
+  setTimeout(photoHydrate);
   // 광고 문서를 거르기 전에 저장한 검색 결과는 버리고 다시 찾는다
   if (S.live && S.live.similar?.low == null) { S.live = null; S.citeSel = null; }
   return true;
