@@ -81,10 +81,11 @@ export const SummaryQuickNav = ({ deps, className = "" }: Props) => {
               <button
                 type="button"
                 onClick={() => go(it.id)}
-                className={`w-full text-left rounded-[10px] px-2.5 py-2 text-[12.5px] leading-snug transition-colors border-l-2 ${
+                aria-current={on ? "location" : undefined}
+                className={`w-full text-left rounded-[10px] px-2.5 py-2 text-[12.5px] leading-snug transition-colors ${
                   on
-                    ? "border-primary bg-primary/5 font-bold text-[#191F28]"
-                    : "border-transparent text-[#6B7684] hover:bg-[#F9FAFB]"
+                    ? "bg-primary/10 font-bold text-[#191F28]"
+                    : "text-[#6B7684] hover:bg-[#F9FAFB]"
                 }`}
               >
                 {it.label}
