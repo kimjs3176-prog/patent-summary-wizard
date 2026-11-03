@@ -6,6 +6,7 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { loadServerPatentData, loadServerSummary } from "../_shared/patentSource.ts";
 import { buildScoringSummary, describeTrlFromStage, reconcileTrl, type TrlBand } from "./trlConsistency.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
+import { isTokenLimitFinish, parseScoreJson } from "./scoreJson.ts";
 
 // 점수 산정 규칙 버전. 새로 쓰거나 갱신하는 patent_score_cache 행에 기록한다(기존 행은 다시 계산하지 않는다).
 // s2: TRL 단계를 문장 순서가 아닌 현재 도달 단계로 판정, 상용화전망 섹션은 잘리지 않게 유지.
@@ -761,69 +762,67 @@ JSON형식:
       Math.round(baseMaxTokens * lengthMultiplier),
     );
 
-    const aiController = new AbortController();
-    const aiTimer = setTimeout(() => aiController.abort(), 60000);
-    let response: Response;
-    try {
-      response = await callAIChatCompletions(
-        {
-          model: scoreModel,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: patentContext },
-          ],
-          temperature: 0,
-          top_p: 0.1,
-          seed: 42,
-          max_tokens: scoreMaxTokens,
-          response_format: { type: "json_object" },
-        },
-        { signal: aiController.signal },
-      );
-    } finally {
-      clearTimeout(aiTimer);
-    }
+    // 잘리거나 형식이 깨진 응답·시간초과는 출력 한도를 늘려 한 번 더 시도한다(전체 대기 약 130초 이내).
+    const scoreStartedAt = Date.now();
+    const SCORE_BUDGET_MS = 130_000;
+    let scores: any = null;
+    for (let attempt = 1; attempt <= 2 && !scores; attempt++) {
+      const remaining = SCORE_BUDGET_MS - (Date.now() - scoreStartedAt);
+      if (attempt > 1 && remaining < 20_000) break;
+      const maxTokens = attempt === 1 ? scoreMaxTokens : Math.min(12000, scoreMaxTokens * 2);
+      const aiController = new AbortController();
+      const aiTimer = setTimeout(() => aiController.abort(), Math.min(60_000, remaining));
+      let response: Response;
+      try {
+        response = await callAIChatCompletions(
+          {
+            model: scoreModel,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: patentContext },
+            ],
+            temperature: 0,
+            top_p: 0.1,
+            seed: 42,
+            max_tokens: maxTokens,
+            response_format: { type: "json_object" },
+          },
+          { signal: aiController.signal },
+        );
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError" && attempt === 1) {
+          console.warn(`[AI] score call timed out for ${trimmedPatent} (attempt ${attempt}) — retrying`);
+          continue;
+        }
+        throw e;
+      } finally {
+        clearTimeout(aiTimer);
+      }
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ success: false, error: "서비스 크레딧이 부족합니다." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("AI gateway error:", response.status, text);
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: "서비스 크레딧이 부족합니다." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw new Error("AI 서비스 오류");
+      }
+
+      const result = await response.json();
+      const finishReason = result.choices?.[0]?.finish_reason || result.choices?.[0]?.finishReason || result.candidates?.[0]?.finishReason;
+      const content = result.choices?.[0]?.message?.content;
+      scores = parseScoreJson(content);
+      if (!scores) {
+        console.error(
+          `[AI] unparseable score output for ${trimmedPatent} (attempt ${attempt}, finishReason=${finishReason}, max_tokens=${maxTokens}, truncated=${isTokenLimitFinish(finishReason)}, len=${typeof content === "string" ? content.length : 0}) head=${String(content ?? "").slice(0, 300)} tail=${String(content ?? "").slice(-200)}`,
         );
       }
-      throw new Error("AI 서비스 오류");
     }
-
-    const result = await response.json();
-    const finishReason = result.choices?.[0]?.finish_reason || result.choices?.[0]?.finishReason || result.candidates?.[0]?.finishReason;
-    const tokenLimitHit = typeof finishReason === "string" && /length|max_tokens|max_output_tokens/i.test(finishReason);
-    if (tokenLimitHit) {
-      console.warn(`[AI] output may be truncated for ${trimmedPatent}: finishReason=${finishReason}, max_tokens=${scoreMaxTokens}`);
-    }
-    const content = result.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("AI 응답이 비어있습니다.");
-    }
-
-    // 견고한 JSON 파싱: response_format이 무시될 수 있으므로 폴백 포함
-    let scores: any;
-    try {
-      scores = JSON.parse(content);
-    } catch {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error("AI 응답 파싱 실패, raw content:", content.substring(0, 500));
-        throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
-      }
-      try {
-        scores = JSON.parse(jsonMatch[0]);
-      } catch (e) {
-        console.error("JSON.parse 실패, raw:", jsonMatch[0].substring(0, 500));
-        throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
-      }
+    if (!scores) {
+      throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
     }
 
     // ▼ 점수 JSON 검증: 숫자가 아니거나 범위를 벗어난 값은 저장하지 않고 실패 처리한다(영구 캐시 오염 방지).
