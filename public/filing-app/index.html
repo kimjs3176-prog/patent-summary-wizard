@@ -676,20 +676,15 @@ html { scroll-padding-top: 120px; scroll-padding-bottom: 96px; touch-action: man
 .checks li.dim { opacity: .6; }
 .fill-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 14px; border-radius: 12px; background: var(--moss-soft); font-size: .88rem; }
 .fill-done { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--ok-soft); font-size: .88rem; }
-/* AI 안내줄 (시작 시점·진행·완료) */
-.ai-banner { display: flex; align-items: center; gap: 10px 12px; margin: 4px 0 14px; padding: 10px 14px; border-radius: 12px; font-size: .9rem; border: 1px solid var(--line); background: var(--surface); }
-.ai-banner p { margin: 0; }
-.ai-banner > div { flex: 1; display: grid; gap: 2px; }
-.ai-banner.busy { border-color: color-mix(in oklab, var(--primary) 45%, var(--line)); background: color-mix(in oklab, var(--primary) 8%, var(--surface)); }
-.ai-banner.pending { background: color-mix(in oklab, var(--primary) 5%, var(--surface)); }
-.ai-banner.idle { background: var(--sunk); font-size: .86rem; }
-.ai-banner .ai-done { color: var(--ok); font-weight: 700; margin-left: 4px; }
-.ai-banner .ai-err { color: var(--bad); font-weight: 700; margin-left: 4px; }
-.ai-banner.flash { animation: aiFlash .9s ease 2; }
+/* AI 시작 카드 (누를 때만 작동) · 진행 표시 */
+.ai-start { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; margin: 10px 0; padding: 12px 14px; border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--line)); border-radius: 12px; background: color-mix(in oklab, var(--primary) 5%, var(--surface)); font-size: .9rem; }
+.ai-start > div { flex: 1 1 260px; display: grid; gap: 2px; }
+.ai-start .muted { font-size: .8rem; }
+.ai-status.flash { animation: aiFlash .9s ease 2; }
 @keyframes aiFlash { 50% { box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 35%, transparent); } }
 .ai-spin { flex: none; display: inline-block; width: 16px; height: 16px; border-radius: 50%; border: 2px solid color-mix(in oklab, var(--primary) 30%, transparent); border-top-color: var(--primary); animation: aiSpin .8s linear infinite; vertical-align: -3px; margin-right: 6px; }
 @keyframes aiSpin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .ai-spin, .ai-banner.flash { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ai-spin, .ai-status.flash { animation: none; } }
 .btn.ai-locked { opacity: .75; cursor: progress; }
 /* AI가 입력 없이 쓴 수치 */
 .unv-box { margin: 10px 0; padding: 12px 14px; border: 1px solid var(--warn); border-radius: 12px; background: var(--warn-soft); font-size: .88rem; }
@@ -704,7 +699,6 @@ html { scroll-padding-top: 120px; scroll-padding-bottom: 96px; touch-action: man
 .do-strip .n { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--on-primary); font-size: .74rem; font-weight: 700; }
 .do-tip { margin: 2px 0 0; font-size: .86rem; color: var(--muted); }
 @media (max-width: 560px) { .do-strip { flex-direction: column; align-items: stretch; gap: 4px; } .do-strip li + li::before { content: none; } }
-.ai-chip { display: inline-block; margin-right: 6px; padding: 0 7px; border-radius: 6px; background: var(--primary); color: var(--on-primary); font-size: .72rem; font-weight: 700; vertical-align: 1px; }
 /* 쪽 끝 이동 (AIS 안) · 단계의 남은 일 */
 .page-end { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
 @media (max-width: 560px) { .page-end .btn { width: 100%; justify-content: center; } }
@@ -811,6 +805,7 @@ details.passed { margin: 6px 0 10px; } details.passed > summary { cursor: pointe
 @media (max-width: 520px) { .s5-items li { grid-template-columns: minmax(0, 1fr) 52px; } .s5-items li .muted { grid-column: 1 / -1; grid-row: 2; } }
 .ai-status { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 10px 0; padding: 9px 14px; border-radius: 999px; font-size: .84rem; background: var(--moss-soft); color: var(--moss); width: fit-content; max-width: 100%; }
 .ai-status.err { background: var(--bad-soft); color: var(--bad); border-radius: var(--r-sm); }
+.ai-status.busy { border-radius: var(--r-sm); }
 .ai-status i { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); animation: ai-pulse 1.2s ease-in-out infinite; }
 @keyframes ai-pulse { 50% { opacity: .25; transform: scale(.7); } }
 @media (prefers-reduced-motion: reduce) { .ai-status i { animation: none; } }
@@ -3638,44 +3633,36 @@ async function translateTitle() {
 
 const aiProgress = st => st.got ? `${st.got.toLocaleString("ko-KR")}자 받는 중` : "생각하는 중";
 
-/* ---------- AI 자동 실행: 따로 AI 칸을 두지 않고, 서버 AI가 켜져 있으면 화면에 보이는 자리(data-ai-slot)의 작업을 알아서 돌린다 ---------- */
-// 입력이 바뀌면 잠깐 기다렸다가(입력 중에는 미룸) 한 번만 실행한다. 같은 입력은 다시 돌리지 않고, 실패하면 '다시 시도'를 보여 준다
-const AI_WAIT = { draft: 1200, globalbiz: 1500, insight: 400, whitespace: 1500, discover: 2000, reject: 1200, review: 4000 };
-// 쪽 위 안내줄: 이 쪽의 AI 작업이 언제 시작하는지(when)와 보통 걸리는 시간(took)
-const AI_WHEN = {
-  ideate: ["‘초안 제안 받기’를 누르면 AI가 후보를 더 구체적으로 다듬어요", "10초 안팎"],
-  discover: ["유망기술을 고르면 AI가 아이디어 후보를 만들어요", "10~20초"],
-  compare: ["비슷한 특허를 찾으면 AI가 바로 내 구성과 비교해요", "10~20초"],
-  whitespace: ["공백 칸을 고르면 AI가 그 방향의 아이디어를 제안해요", "10~20초"],
-  reject: ["이 쪽에서 AI가 거절이유를 예상해요", "10~20초"],
-  draft: ["‘명세서’ 쪽에 들어오면 AI가 기본 초안을 AI 작성본으로 바꿔 써요", "20~50초"],
-  review: ["명세서가 바뀌면 AI가 다시 검토해요", "10초 안팎"],
-  fill: ["‘AI로 한꺼번에 채우기’를 누를 때만 시작해요", "10~30초"],
-  supplement: ["‘AI로 보완 제안 받기’를 누를 때만 시작해요", "10~20초"]
+/* ---------- AI는 사용자가 눌러야 시작한다: 쪽에 들어오거나 입력을 바꿔도 저절로 돌지 않는다 ----------
+   AI 자리(data-ai-slot)에는 '무엇을 해 주는지·보통 걸리는 시간'을 적은 시작 카드를 두고, 누르면 그 작업만 돈다.
+   결과를 받은 뒤 입력이 바뀌면 '입력이 바뀌었어요 · 다시 받기'로 알린다 */
+const AI_TOOK = { ideate: "10초 안팎", discover: "10~20초", compare: "10~20초", whitespace: "10~20초", reject: "10~20초", draft: "20~50초", review: "10초 안팎", fill: "10~30초", supplement: "10~20초", globalbiz: "10~20초", insight: "10~20초" };
+// 시작 카드: [버튼 글, AI가 해 주는 일 한 줄]
+const AI_START = {
+  ideate: ["AI로 더 구체적인 후보 받기", "키워드로 명칭·문제·차별성·구성·효과 후보를 AI가 새로 써요"],
+  discover: ["AI로 아이디어 후보 받기", "고른 유망기술로 출원할 만한 아이디어 후보를 만들어요"],
+  compare: ["AI로 구성 비교하기", "비슷한 특허와 내 구성을 하나씩 맞대어 겹치는 곳과 다른 곳을 알려 줘요"],
+  whitespace: ["AI로 공백 아이디어 받기", "고른 빈 칸 방향으로 아이디어를 넓힐 구성과 확인 실험을 제안해요"],
+  reject: ["AI로 거절이유 예상하기", "심사관이 지적할 만한 거절이유와 대비책을 예상해요"],
+  draft: ["AI로 명세서 다시 쓰기", "지금 기본 초안을 AI가 더 구체적인 명세서로 바꿔 써요"],
+  review: ["AI로 명세서 검토 받기", "심사관 눈으로 명세서의 약점과 고칠 문장을 찾아요"]
 };
 const aiLabel = t => t === "draft" ? "명세서 작성" : AI_TASK_UI[t]?.label ?? "분석";
-// 지금 쪽에 보이는 AI 작업 (명세서 작성은 '명세서' 쪽부터)
-const aiTasksHere = () => [...new Set([...document.querySelectorAll("#main [data-ai-slot]")].filter(slotShown).map(el => el.dataset.aiSlot))].filter(t => t !== "draft" || S.sub >= 1);
-// 지금 쪽에서 돌거나 곧 시작할 AI 작업 → 끝날 때까지 다음 쪽으로 못 간다 (앞 단계에서 미리 돌리는 작업은 막지 않는다)
-const aiBlockingHere = () => aiMode() ? aiTasksHere().filter(t => aiState(t).busy || aiState(t).pending) : [];
-function aiBanner() {
-  if (!aiMode() || S.mode !== "apply") return "";
-  const here = aiTasksHere(), busy = here.filter(t => aiState(t).busy), pend = here.filter(t => !aiState(t).busy && aiState(t).pending);
-  if (busy.length) {
-    const t = busy[0], st = aiState(t);
-    return `<div class="ai-banner busy" role="status"><i class="ai-spin" aria-hidden="true"></i><div><p><b>AI가 ${busy.map(aiLabel).join("·")} 중입니다</b> · <span class="ai-elapsed" data-task="${t}">${aiElapsed(st)}</span> 지남 <span class="muted">(보통 ${AI_WHEN[t]?.[1] ?? "10~20초"})</span></p>
-      <p class="muted">끝나면 결과가 이 쪽에 자동으로 들어갑니다. 분석이 끝날 때까지 다음 쪽으로 넘어갈 수 없어요.</p></div><button type="button" class="btn ghost sm" data-ai-stop="${t}">멈추기</button></div>`;
-  }
-  if (pend.length) return `<div class="ai-banner pending" role="status"><i class="ai-spin" aria-hidden="true"></i><p><b>곧 AI가 ${J(pend.map(aiLabel).join("·"), "을")} 시작합니다.</b> <span class="muted">입력을 멈추면 바로 시작해요.</span></p></div>`;
-  if (S.step === "draft" && S.sub === 0) return `<div class="ai-banner idle"><p><span class="ai-chip">AI</span> 다음 쪽 ‘명세서’로 넘어가면 AI가 명세서를 써요 <span class="muted">(보통 ${AI_WHEN.draft[1]})</span></p></div>`;
-  const shown = here.filter(t => AI_WHEN[t]);
-  if (!shown.length) return "";
-  const done = shown.filter(t => aiState(t).okSig && aiState(t).okSig === aiSig(t)), err = shown.filter(t => aiState(t).err);
-  return `<div class="ai-banner idle"><p><span class="ai-chip">AI</span> ${shown.map(t => `${AI_WHEN[t][0]} <span class="muted">(보통 ${AI_WHEN[t][1]})</span>`).join(" · ")}${done.length ? ` <span class="ai-done">✓ ${done.map(aiLabel).join("·")} 완료</span>` : ""}${err.length ? ` <span class="ai-err">${J(err.map(aiLabel).join("·"), "을")} 하지 못했어요 — 아래 ‘다시 시도’를 누르세요</span>` : ""}</p></div>`;
+// 지금 쪽에 보이는 AI 작업
+const aiTasksHere = () => [...new Set([...document.querySelectorAll("#main [data-ai-slot]")].filter(slotShown).map(el => el.dataset.aiSlot))];
+// 지금 쪽에서 돌고 있는 AI 작업 → 끝날 때까지 다음 쪽으로 못 간다
+const aiBlockingHere = () => aiMode() ? aiTasksHere().filter(t => aiState(t).busy) : [];
+function aiStartCard(task) {
+  const ui = AI_TASK_UI[task];
+  if (task !== "draft" && (!ui || ui.manual)) return ""; // 빈칸 채우기·보완 제안은 제 버튼이 있다
+  if (task === "draft" && !(S.step === "draft" && S.sub === 1)) return ""; // 명세서 다시 쓰기는 '명세서' 쪽에서만
+  const sig = aiSig(task); if (!sig) return "";
+  const st = aiState(task); if (st.okSig === sig) return "";
+  const again = !!st.okSig, [btn, what] = AI_START[task] ?? [ui.title || `AI로 ${ui.label} 받기`, ui.desc || `${ui.label}을(를) AI가 해 드려요`];
+  return `<div class="ai-start"><div><b>${again ? "입력이 바뀌었어요. " : ""}${what}</b><span class="muted">보통 ${AI_TOOK[task] ?? "10~20초"} · 누를 때만 AI가 작동해요</span></div><button type="button" class="btn sm" data-ai-run="${task}">${again ? "AI로 다시 받기" : btn}</button></div>`;
 }
-// 안내줄과 '다음' 버튼 잠금을 함께 고친다 (AI 상태가 바뀔 때마다)
+// '다음' 버튼 잠금을 고친다 (AI 상태가 바뀔 때마다)
 function refreshAiLock() {
-  const box = $("#ai-banner"); if (box) box.innerHTML = aiBanner();
   const lock = aiBlockingHere().length > 0;
   document.querySelectorAll('[data-nav="next"]').forEach(b => {
     b.dataset.label ??= b.innerHTML;
@@ -3691,17 +3678,17 @@ function aiGuard(toStep = S.step, toSub = S.sub + 1) {
   const b = fwd ? aiBlockingHere() : [];
   if (!b.length) return false;
   toast(`AI가 ${b.map(aiLabel).join("·")} 중입니다. 끝나면 넘어갈 수 있어요`);
-  const box = $("#ai-banner .ai-banner"); if (box) { box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash"); box.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+  const box = [...document.querySelectorAll("#main .ai-status.busy")].find(el => el.offsetParent); if (box) { box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash"); box.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
   return true;
 }
 const aiSlot = task => aiMode() ? `<div class="ai-slot" data-ai-slot="${task}">${aiStatus(task)}</div>` : "";
 function aiStatus(task) {
   const st = aiState(task), label = task === "draft" ? "명세서를 쓰는" : `${AI_TASK_UI[task].label}하는`;
   if (!st.busy && !navigator.onLine) return `<p class="ai-status" role="status">인터넷 연결이 끊겨 AI를 잠시 멈췄습니다. 다시 연결되면 자동으로 이어 합니다.</p>`;
-  if (st.busy) return `<p class="ai-status busy" role="status"><i aria-hidden="true"></i>AI가 ${label} 중입니다 · <span class="ai-elapsed" data-task="${task}">${aiElapsed(st)}</span> · <span class="ai-progress" data-task="${task}">${aiProgress(st)}</span>${st.stage ? ` · ${esc(st.stage)}` : ""}${st.note ? ` · ${esc(st.note)}` : ""} <button type="button" class="linklike" data-ai-stop="${task}">멈추기</button></p>`;
+  if (st.busy) return `<p class="ai-status busy" role="status"><i aria-hidden="true"></i><span><b>AI가 ${label} 중입니다</b> · <span class="ai-elapsed" data-task="${task}">${aiElapsed(st)}</span> 지남 (보통 ${AI_TOOK[task] ?? "10~20초"})${st.stage ? ` · ${esc(st.stage)}` : ""}${st.note ? ` · ${esc(st.note)}` : ""} · 끝날 때까지 다음 쪽으로 넘어갈 수 없어요</span> <button type="button" class="linklike" data-ai-stop="${task}">멈추기</button></p>`;
   if (st.err) return `<p class="ai-status err" role="alert">AI가 하지 못했습니다: ${esc(st.err)} <button type="button" class="linklike" data-ai-run="${task}">다시 시도</button></p>`;
   if (task === "draft" && S.spec?.source === "ai" && !S.spec.edited && /lite/.test(S.spec.model || "")) return `<p class="ai-status" role="status">좋은 모델들이 붐벼 가벼운 모델(${esc(S.spec.model)})로 썼습니다. 내용이 짧을 수 있습니다. <button type="button" class="linklike" data-ai-run="draft">더 좋은 모델로 다시 쓰기</button></p>`;
-  return "";
+  return aiStartCard(task);
 }
 // 실행 시작·끝: 멈추기 신호, 전체 시간 제한(분), 경과 시간
 function aiStart(st, sig, minutes) {
@@ -3724,20 +3711,7 @@ const runAi = task => task === "draft" ? runAiDraft() : runAiTask(task);
 const slotShown = el => !!el && !el.closest("[hidden]") && el.parentElement?.getClientRects().length > 0;
 // 돌릴 작업: 지금 쪽에 자리가 보이는 작업 + 곧 볼 결과를 미리 돌리는 작업(early: 유사 특허 목록에서 심층 비교, 유망기술 지도에서 아이디어)
 const aiWanted = task => task === "draft" && S.step === "draft" && S.sub < 1 ? false : slotShown(document.querySelector(`[data-ai-slot="${task}"]`)) || !!AI_TASK_UI[task]?.early?.();
-function aiAutoRun() {
-  if (!aiMode() || !navigator.onLine) return;
-  const tasks = new Set([...document.querySelectorAll("[data-ai-slot]")].map(el => el.dataset.aiSlot));
-  Object.keys(AI_TASK_UI).forEach(t => { if (AI_TASK_UI[t].early?.()) tasks.add(t); });
-  tasks.forEach(task => {
-    const st = aiState(task);
-    if (st.busy || AI_TASK_UI[task]?.manual || !aiWanted(task)) return;
-    const sig = aiSig(task);
-    if (!sig || sig === st.sig) return;
-    clearTimeout(st.t); st.pending = true;
-    st.t = setTimeout(() => { st.pending = false; if (!st.busy && aiMode() && aiWanted(task) && aiSig(task) === sig) runAi(task); else refreshAiLock(); }, AI_WAIT[task] ?? 600);
-  });
-  refreshAiLock();
-}
+function aiAutoRun() { refreshAiLock(); } // AI는 시작 카드나 버튼을 눌렀을 때만 돈다 (예전 자동 실행 자리)
 // AI 결과가 들어오면 다시 그리되, 스크롤과 입력 중인 칸(커서 위치)은 그대로 둔다
 function softRender() {
   const a = document.activeElement, id = a?.id, pos = id && "selectionStart" in a ? [a.selectionStart, a.selectionEnd] : null;
@@ -3880,7 +3854,7 @@ async function runAiTask(task) {
 
 // 3단계 요건·거절 위험 쪽의 AI 거절이유 예상 (diagResultPage)
 AI_TASK_UI.reject = {
-  label: "거절이유 예상", ready: () => !!S.idea.title.trim(), early: () => S.mode === "apply" && S.step === "prior" && !!liveData(), // 선행기술 결과를 보는 동안 미리
+  label: "거절이유 예상", ready: () => !!S.idea.title.trim(),
   input: () => {
     const i = S.idea, L = liveData();
     return { idea: { title: i.title, field: fieldName(i.field), kind: KIND_NAME[claimKinds().main], problem: i.problem, diff: i.diff, effect: S.effect, parts: S.parts.split("\n").map(x => x.trim()).filter(Boolean) },
@@ -4164,7 +4138,6 @@ function templateIdeas(D) {
 }
 AI_TASK_UI.discover = {
   label: "아이디어 제안", title: "AI 아이디어 제안", ready: () => !!S.disc.data && S.disc.sel.size > 0,
-  early: () => S.mode === "apply" && S.step === "discover" && S.sub >= 1, // 지도에서 고르는 동안 미리
   desc: "고른 유망기술과 보유 자원을 바탕으로 출원할 만한 발명 아이디어 3~4개를 제안합니다. 데이터에 없는 수치나 문헌은 지어내지 않도록 지시합니다.",
   input: () => { const D = S.disc, ops = opportunities(D.data).filter(o => D.sel.has(o.name)); return { field: D.data.name, themes: ops.map(o => { const k = krState(D.field).data, x = k?.subs.find(y => y.name === o.name); return { name: o.name, growth: o.growth, krShare: o.kr, avgKr: o.avgKr, krRecent: x ? (k.yearsOk ? x.recent : x.total) : null, krChange: x?.change ?? null }; }), keywords: D.data.keywords.map(k => k.term), resources: D.resources, goal: D.goal, sample: D.data.mode === "sample" }; },
   apply: (r, src) => { if (!Array.isArray(r?.ideas) || !r.ideas.length) throw new Error("제안된 아이디어가 없습니다."); S.disc.ideas = r.ideas; S.disc.source = src; }
@@ -4289,7 +4262,6 @@ const MK = { full: ["●", "포함"], part: ["◐", "일부"], none: ["○", "�
 const VERDICT = { diff: ["차별점 후보", "ok"], common: ["흔한 구성", "warn"], some: ["일부 겹침", ""] };
 AI_TASK_UI.compare = {
   label: "심층 비교", title: "AI 심층 비교", ready: () => !!liveData()?.similar?.items?.length,
-  early: () => S.mode === "apply" && S.step === "prior", // 유사 특허 목록을 보는 동안 미리
   desc: "가장 비슷한 특허들의 요약을 읽고 구성마다 공통점·차이점, 신규성·진보성 위험, 차별화 방향을 정리합니다. 요약에 없는 내용은 추측하지 않도록 지시합니다.",
   input: () => { const L = liveData(), M = compareModel(L); return { idea: { title: S.idea.title, problem: S.idea.problem, diff: S.idea.diff, parts: M.comps }, patents: M.pats.map(p => ({ no: p.applicationNumber, title: p.title, abstract: p.abstract, status: p.status, applicant: p.applicant, sim: p.sim })), sample: L.mode === "mock" }; },
   apply: (r, src) => { if (!r?.summary) throw new Error("비교 결과가 비어 있습니다."); S.cmpAI = { ...r, source: src }; }
@@ -6125,12 +6097,11 @@ function doStripHtml() {
   const pg = pagesFor(S.step)?.[S.sub]?.[0], c = COACH[`${S.step}:${pg}`]; if (!c) return "";
   return `<ol class="do-strip" aria-label="이 쪽에서 할 일">${c.do.map((t, i) => `<li><span class="n" aria-hidden="true">${i + 1}</span><span>${esc(t)}</span></li>`).join("")}</ol>${c.tip ? `<p class="do-tip">${esc(c.tip)}</p>` : ""}`;
 }
-// 쪽 머리 정리: 할 일 줄이 있는 쪽은 긴 설명 문단을 빼고 제목 아래에 할 일 줄을 둔다. AI 안내줄은 머리 바로 아래 한 줄
+// 쪽 머리 정리: 할 일 줄이 있는 쪽은 긴 설명 문단을 빼고 제목 아래에 할 일 줄을 둔다
 function placeHeader() {
   const head = $("#main .panel-head"); if (!head) return;
   const strip = doStripHtml();
   if (strip) { head.querySelector(":scope > p.muted")?.remove(); head.querySelector("h2")?.insertAdjacentHTML("afterend", strip); }
-  head.insertAdjacentHTML("afterend", `<div id="ai-banner" aria-live="polite"></div>`);
 }
 
 /* ---------- 어려운 용어: 화면에 처음 나오는 전문용어에 밑줄을 긋고, 누르거나 올려 두면 쉬운 뜻을 보여 준다 ---------- */
