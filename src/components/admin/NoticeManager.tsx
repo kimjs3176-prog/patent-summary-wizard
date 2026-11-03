@@ -1,3 +1,4 @@
+import type { AdminApiCall } from "@/lib/adminApi";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ interface Notice {
 }
 
 interface NoticeManagerProps {
-  apiCall: (action: string, data?: Record<string, unknown>) => Promise<any>;
+  apiCall: AdminApiCall;
 }
 
 const EMPTY_FORM = {
@@ -47,7 +48,7 @@ export function NoticeManager({ apiCall }: NoticeManagerProps) {
   const loadNotices = async () => {
     setIsLoading(true);
     const result = await apiCall("list-notices");
-    if (result.success) setNotices(result.notices || []);
+    if (result.success) setNotices((result.notices as typeof notices) || []);
     setIsLoading(false);
   };
 
@@ -58,7 +59,7 @@ export function NoticeManager({ apiCall }: NoticeManagerProps) {
     setIsLoading(true);
     const action = editingId ? "update-notice" : "create-notice";
     const payload = editingId ? { ...form, id: editingId } : form;
-    const result = await apiCall(action, payload as any);
+    const result = await apiCall(action, { ...payload });
     if (result.success) {
       toast.success(editingId ? "수정 완료" : "등록 완료");
       setShowForm(false);

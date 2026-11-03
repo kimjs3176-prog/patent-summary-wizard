@@ -1,3 +1,4 @@
+import type { AdminApiCall } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +22,7 @@ interface AdminContentPanelProps {
   setForm: Dispatch<SetStateAction<{ patent_number: string; title: string; description: string; recommendation_reason: string; category: string; transfer_status: string; contact_info: string; thumbnail_url: string; display_order: number; is_active: boolean; }>>;
   isFetchingPatent: boolean;
   categoryOptions: string[];
-  apiCall: (action: string, data?: Record<string, unknown>) => Promise<any>;
+  apiCall: AdminApiCall;
   handleFetchPatentInfo: () => Promise<void>;
   handleSave: () => Promise<void>;
   handleEdit: (patent: FeaturedPatent) => void;

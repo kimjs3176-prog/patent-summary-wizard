@@ -220,7 +220,7 @@ function TossPatentSummaryInner({
       setCopied(true);
       toast.success("링크가 복사되었습니다");
       setTimeout(() => setCopied(false), 1800);
-    } catch {}
+    } catch { /* 클립보드가 막힌 브라우저: 공유 창의 주소를 직접 복사한다 */ }
   };
 
   const handlePrint = async () => {

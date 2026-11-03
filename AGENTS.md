@@ -7,10 +7,12 @@ Subdirectories have their own AGENTS.md (src/, supabase/functions/); read it bef
 - Delete server functions and UI modules once no screen calls them (verify by searching src), so unused public endpoints never stay deployed.
 - Toolchain is Vite 6, Vitest 4 and React Router 7 (via react-router-dom) to stay clear of known advisories; keep tsconfig lib at ES2020-safe APIs.
 - Secret-scan exceptions live in .gitleaks.toml as narrow patterns for verified public values only; keep bun.lock and package-lock.json on the same patched versions (regenerate package-lock.json with npm 11; npm 10 crashes on this tree).
+- CI gates on app lint (`eslint .`; supabase/functions is excluded because the deno job checks it) and on `scripts/smoke.mjs`, which opens the vite preview build in Chromium with outside requests blocked (every route at 1280/390px, no page errors or horizontal overflow) and walks public/filing-app's practice flow to the submission zip; update it when routes or that flow change.
 - The service collects no personal information: no identity/contact forms and no server-side visitor records beyond aggregate counts. 기술이전 신청 links out to NATI.
 
 ## Lovable ↔ Claude co-editing
 - Lovable commits straight to main; Claude works on its own branch from the latest origin/main, opens small PRs, and merges each PR into main without asking once its CI checks pass, it has no merge conflict and no unresolved review comments (owner's standing instruction); a failing check gets fixed, never skipped.
 - Do not hand-edit Lovable-owned files: src/integrations/supabase/types.ts and client.ts, the committed .env, .lovable/. Schema changes go in a new supabase/migrations file (never edit an applied one).
 - GitHub changes go live only after Publish (src/, public/) and a deploy request in the Lovable chat for changed functions and new migrations. `node scripts/lovable-deploy-list.mjs <base> [head]` lists them (a function counts as changed when its files or any imported _shared module changed); CI writes the same list ("Lovable 배포 목록") and every PR body states it or says Publish alone is enough.
+- Supabase and the KOSIS API are connected through Lovable (owner, 2026-11): secrets such as KOSIS_SERVICE_KEY and LOVABLE_API_KEY live in Lovable's Supabase settings, so never ask for, add or commit keys. A market labelled (AI 추정치) means summarize-patent/kosis.ts has no series for it (only a few 건강기능식품·쌀가공·떡 series today), not a missing key.
 - Prefer changes that need no function deploy: copy, layout, public/filing-app and admin-stored site settings ship without one.
