@@ -1158,7 +1158,7 @@ time, .tabular-nums, [data-numeric] {
 .trend-row { transition: background-color 0.15s ease, border-color 0.15s ease; }
 .trend-row:hover { background: hsl(var(--muted) / 0.55); }
 .trend-row:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 1px; }
-.trend-insight { background: hsl(var(--primary) / 0.06); border-left: 3px solid hsl(var(--primary) / 0.5); }
+.trend-insight { background: hsl(var(--primary) / 0.06); border-radius: 8px; }
 .trend-bar-prev { background: hsl(var(--muted-foreground) / 0.35); }
 .home-insight-bar { background: hsl(var(--primary) / 0.3); }
 .blueprint-hero { isolation: isolate; }
@@ -1366,17 +1366,14 @@ time, .tabular-nums, [data-numeric] {
 }
 .report-prose-section > .report-body {
   max-width: 760px;
-  padding-left: 18px;
-  border-left: 2px solid hsl(var(--border));
 }
 /* 보고서형 본문: 섹션 요지(첫 문장) */
 .report-lead {
   max-width: 760px;
   margin: 0 0 14px;
   padding: 12px 16px;
-  border-left: 3px solid hsl(var(--primary));
-  border-radius: 0 6px 6px 0;
-  background: hsl(var(--primary) / 0.05);
+  border-radius: 8px;
+  background: hsl(var(--primary) / 0.06);
   font-size: 16.5px;
   line-height: 1.75;
   font-weight: 600;
@@ -1442,8 +1439,7 @@ time, .tabular-nums, [data-numeric] {
 }
 .report-analysis-panel {
   border: 1px solid hsl(var(--primary) / 0.2);
-  border-left: 3px solid hsl(var(--primary));
-  border-radius: 0 6px 6px 0;
+  border-radius: 8px;
   background: hsl(var(--primary) / 0.055);
 }
 .precision-report #sec-regulation > section {
@@ -1459,9 +1455,6 @@ time, .tabular-nums, [data-numeric] {
   }
   .report-section + .report-section {
     padding-top: 22px;
-  }
-  .report-prose-section > .report-body {
-    padding-left: 14px;
   }
   .report-overview { padding: 14px 12px; }
   .report-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

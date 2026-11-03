@@ -190,7 +190,13 @@ body.ais .foot { display: none; }
 .page { display: grid; gap: 18px; min-width: 0; }
 .idea-start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: 22px; align-items: start; }
 .idea-kw { display: grid; gap: 14px; min-width: 0; }
-.branch-card { display: grid; gap: 8px; padding: 18px 20px; border-radius: var(--r-sm); background: var(--moss-soft); border: 1px dashed color-mix(in oklab, var(--primary) 45%, transparent); }
+.branch-card { display: grid; align-content: start; gap: 8px; }
+.branch-label { font-size: .8rem; font-weight: 700; color: var(--muted); }
+.branch-opt { display: grid; gap: 2px; width: 100%; padding: 14px 16px; text-align: left; font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: border-color .15s, background .15s; }
+.branch-opt b { font-size: .95rem; }
+.branch-opt span { font-size: .84rem; color: var(--muted); }
+.branch-opt:hover { border-color: var(--primary); background: color-mix(in oklab, var(--primary) 5%, var(--surface)); }
+.branch-opt:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .branch-card h3 { font-size: 1.04rem; }
 .practice-note { margin: 0 0 12px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--warn-soft); font-size: .88rem; }
 .branch-card .muted { font-size: .86rem; }
@@ -245,17 +251,13 @@ textarea { min-height: 84px; resize: vertical; }
 :is(.cards, .mk-cards, .disc-fields) > * { flex: 1 1 max(min(100%, var(--min)), calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols))); min-width: 0; }
 :is(.cards, .mk-cards):has(> :nth-child(4):last-child) { --cols: 2; }
 /* 특허 요건 진단: 요약 막대 + 고칠 요건 목록 */
-.req-lead { margin: 0; font-size: .95rem; }
-.req-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 12px 14px; border-radius: 12px; background: var(--sunk); }
-.req-bar { display: flex; flex: 1 1 220px; height: 10px; border-radius: 99px; overflow: hidden; gap: 2px; background: var(--line); }
-.req-bar i { display: block; min-width: 6px; }
-.req-bar .bad { background: var(--bad); } .req-bar .warn { background: var(--warn); } .req-bar .ok { background: var(--ok); } .req-bar .na { background: var(--muted); opacity: .5; }
+.req-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .req-count { margin: 0; padding: 0; list-style: none; display: flex; gap: 14px; font-size: .84rem; color: var(--muted); }
 .req-count b { margin-right: 4px; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
 .req-count .bad b { color: var(--bad); } .req-count .warn b { color: var(--warn); } .req-count .ok b { color: var(--ok); }
 .req-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-.req { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 6px 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); border-left-width: 4px; background: var(--surface); }
-.req.bad { border-left-color: var(--bad); } .req.warn { border-left-color: var(--warn); }
+.req { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 6px 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
+.req.bad { border-color: color-mix(in oklab, var(--bad) 35%, var(--line)); }
 .req-badge { padding: 2px 8px; border-radius: 99px; font-size: .74rem; font-weight: 700; white-space: nowrap; }
 .req.bad .req-badge { background: var(--bad-soft); color: var(--bad); } .req.warn .req-badge { background: var(--warn-soft); color: var(--warn); }
 .req-body { display: grid; gap: 2px; min-width: 0; }
@@ -419,7 +421,7 @@ table.biz-reg { min-width: 680px; font-size: .86rem; }
 .share-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto 76px; gap: 10px; align-items: center; }
 .share-list b, .share-list .muted { font-variant-numeric: tabular-nums; text-align: right; }
 .insights { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.insights li { display: grid; gap: 2px; padding-left: 12px; border-left: 3px solid var(--primary); font-size: .88rem; }
+.insights li { display: grid; gap: 2px; padding: 8px 12px; border-radius: var(--r-sm); background: var(--sunk); font-size: .88rem; }
 .insights b { font-size: .8rem; color: var(--muted); font-weight: 600; }
 .heat { display: grid; grid-template-columns: minmax(110px, 1.4fr) repeat(var(--cols), minmax(0, 1fr)); gap: 2px; font-size: .82rem; }
 .heat-h { text-align: center; color: var(--muted); font-size: .78rem; padding: 4px 0; }
@@ -457,7 +459,7 @@ table.biz-reg { min-width: 680px; font-size: .86rem; }
 .mk-ready li { display: inline-flex; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: .74rem; background: var(--sunk); }
 .mk-ready li.ok { background: var(--ok-soft); color: var(--ok); } .mk-ready li.need { background: var(--warn-soft); color: var(--warn); }
 .now-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: now; }
-.now-list li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 14px; padding: 12px 14px; border: 1px solid var(--line); border-left: 3px solid var(--primary); border-radius: var(--r-sm); }
+.now-list li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); }
 .now-list li::before { counter-increment: now; content: counter(now); grid-row: 1 / span 2; align-self: start; font-family: var(--f-head); font-weight: 700; color: var(--moss); font-size: .9rem; }
 .now-list li { grid-template-columns: 18px 96px minmax(0, 1fr); } .now-when { font-size: .8rem; color: var(--muted); padding-top: 2px; }
 .now-list b { font-size: .95rem; } .now-list p { margin: 2px 0 4px; font-size: .86rem; color: var(--fg); }
@@ -487,7 +489,7 @@ table.biz-reg { min-width: 680px; font-size: .86rem; }
 .ins-ev { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: .88rem; } .ins-ev li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; } .ins-ev li > span:last-child:first-child { grid-column: 1 / -1; }
 .ev-tag { font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap; margin-top: 2px; background: var(--sunk); color: var(--muted); }
 .ev-news { background: var(--moss-soft); color: var(--moss); } .ev-trade { background: var(--ok-soft); color: var(--ok); } .ev-stat { background: var(--moss-soft); color: var(--moss); }
-.ins-or > div { padding: 12px 14px; border-radius: var(--r-sm); border-left: 3px solid var(--ok); background: var(--ok-soft); } .ins-or .ins-rk { border-left-color: var(--warn); background: var(--warn-soft); }
+.ins-or > div { padding: 12px 14px; border-radius: var(--r-sm); background: var(--ok-soft); } .ins-or .ins-rk { background: var(--warn-soft); }
 .ins-or .biz-sub { margin-top: 0; }
 .ins-steps { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 0; counter-reset: none; }
 .ins-steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; padding: 8px 0; position: relative; font-size: .92rem; }
@@ -499,7 +501,7 @@ table.biz-reg { min-width: 680px; font-size: .86rem; }
 .ins-form .g-select { margin: 0; }
 .of-wrap .of-toc { margin-top: 0; } .biz-toc2 { margin-bottom: 4px; }
 @media (max-width: 720px) { .ins-grid, .ins-regions { grid-template-columns: minmax(0, 1fr); } .ins-form { flex-wrap: wrap; } }
-.fact-box { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: var(--r-sm); font-size: .88rem; }
+.fact-box { margin-top: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); font-size: .88rem; }
 .fact-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
 .fact-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
 .ct-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 10px; }
@@ -616,8 +618,10 @@ details.tv[open] summary { margin-bottom: 8px; }
 .rev-fix ins { text-decoration: none; font-weight: 600; }
 .rev-list .btn { margin-top: 4px; }
 .fill-box:empty { display: none; }
-.done-meter { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; margin: 2px 0 10px; font-size: .88rem; }
-.done-meter i { height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--primary) var(--p), var(--line) var(--p)); }
+/* 완성도: 늘어지는 막대 대신 작은 원 */
+.done-ring { flex: none; display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(closest-side, var(--surface) 78%, transparent 80% 100%), conic-gradient(var(--primary) var(--p), var(--line) 0); text-align: center; line-height: 1.05; }
+.done-ring b { font-size: .92rem; font-variant-numeric: tabular-nums; }
+.done-ring small { display: block; font-size: .62rem; color: var(--muted); }
 .exp-ed { display: grid; gap: 10px; }
 .exp-g { border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px 14px; display: grid; gap: 10px; min-width: 0; }
 .exp-g legend { font-weight: 700; padding: 0 6px; }
@@ -693,24 +697,19 @@ html { scroll-padding-top: 120px; scroll-padding-bottom: 96px; touch-action: man
 .unv-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .unv-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .unv-list .muted { font-size: .8rem; }
+/* 쪽 머리 할 일 줄 */
+.do-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; margin: 6px 0 0; padding: 0; list-style: none; }
+.do-strip li { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 6px; border-radius: 999px; background: var(--sunk); font-size: .88rem; font-weight: 600; color: var(--fg); }
+.do-strip li + li::before { content: "›"; margin: 0 6px 0 -2px; color: var(--muted); font-weight: 400; }
+.do-strip .n { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: var(--on-primary); font-size: .74rem; font-weight: 700; }
+.do-tip { margin: 2px 0 0; font-size: .86rem; color: var(--muted); }
+@media (max-width: 560px) { .do-strip { flex-direction: column; align-items: stretch; gap: 4px; } .do-strip li + li::before { content: none; } }
+.ai-chip { display: inline-block; margin-right: 6px; padding: 0 7px; border-radius: 6px; background: var(--primary); color: var(--on-primary); font-size: .72rem; font-weight: 700; vertical-align: 1px; }
 /* 쪽 끝 이동 (AIS 안) · 단계의 남은 일 */
-.page-end { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
-.page-end-btns { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.page-end-todo { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--warn-soft); font-size: .86rem; }
+.page-end { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
+@media (max-width: 560px) { .page-end .btn { width: 100%; justify-content: center; } }
 .steps .left-n { display: inline-grid; place-items: center; width: 100%; height: 100%; font-size: .78rem; color: var(--warn); }
 /* 쉬운 안내 · 용어 풀이 */
-.coach { margin: 4px 0 18px; padding: 12px 16px; border-radius: 14px; border: 1px solid color-mix(in oklab, var(--primary) 22%, var(--line)); background: color-mix(in oklab, var(--primary) 6%, var(--surface)); font-size: .92rem; }
-.coach > summary { cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; list-style: none; }
-.coach > summary::-webkit-details-marker { display: none; }
-.coach > summary::after { content: "접기"; margin-left: auto; font-size: .78rem; font-weight: 500; color: var(--muted); }
-.coach:not([open]) > summary::after { content: "펼치기"; }
-.coach-ico { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: var(--on-primary); font-size: .8rem; }
-.coach-do { margin: 10px 0 0; padding-left: 1.3em; display: grid; gap: 4px; line-height: 1.6; }
-.coach-tip { margin: 8px 0 0; color: var(--muted); font-size: .86rem; }
-.coach-foot { margin: 6px 0 0; color: var(--muted); font-size: .78rem; }
-.coach-flow { margin: 10px 0 4px; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
-.coach-flow li { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: .84rem; }
-.coach-flow span { color: var(--muted); font-size: .8rem; }
 .term { text-decoration: underline dotted color-mix(in oklab, var(--primary) 70%, transparent); text-underline-offset: 3px; text-decoration-thickness: 1.5px; cursor: help; border-radius: 3px; }
 .term:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 #term-pop { position: fixed; z-index: 60; padding: 10px 12px; border-radius: 10px; background: var(--fg); color: var(--surface); font-size: .84rem; line-height: 1.55; box-shadow: 0 6px 24px oklch(18% 0.006 60 / 0.25); pointer-events: none; }
@@ -777,7 +776,6 @@ table.cmp td.num { font-variant-numeric: tabular-nums; font-weight: 600; }
 .spec-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: -4px 0 10px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--sunk); font-size: .88rem; }
 .spec-nav > span { flex: 1 1 220px; } .spec-nav .ok-t { color: var(--moss); font-weight: 700; }
 .ap-progress { display: grid; gap: 6px; margin: 4px 0 14px; font-size: .88rem; }
-.ap-bar { height: 8px; border-radius: 999px; background: var(--sunk); overflow: hidden; } .ap-bar i { display: block; height: 100%; background: var(--primary); border-radius: inherit; transition: width .2s; }
 .todo-box { border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--line)); border-radius: var(--r); padding: 16px 18px; background: var(--grad-soft), var(--surface); }
 .todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .todo li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: .9rem; }
@@ -885,7 +883,7 @@ table.heat td { padding: 3px; border-bottom: 0; }
 .legend .ramp { width: 120px; height: 10px; border-radius: 999px; background: linear-gradient(90deg, color-mix(in oklab, var(--moss) 6%, var(--surface)), var(--moss)); }
 .legend .sw { width: 14px; height: 14px; border-radius: 4px; border: 2px solid var(--barley); }
 .hbars { display: grid; gap: 8px; }
-.hbar { display: grid; grid-template-columns: minmax(120px, 210px) minmax(0, 1fr) 44px; align-items: center; gap: 10px; font-size: .86rem; }
+.hbar { display: grid; grid-template-columns: minmax(120px, 220px) 140px 44px; justify-content: start; align-items: center; gap: 10px; font-size: .86rem; } /* 막대는 짧게 고정 (화면 폭만큼 늘이지 않음) */
 .hbar .track { height: 12px; border-radius: 999px; background: var(--sunk); overflow: hidden; }
 .hbar .track i { display: block; height: 100%; border-radius: 999px; background: var(--grad-accent); }
 .hbar .val { text-align: right; font-family: var(--f-mono); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -1015,8 +1013,7 @@ body.app .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
   .proc li:not(:last-child)::after { top: 30px; bottom: 0; left: 13px; right: auto; width: 2px; height: auto; }
 }
 @media (max-width: 520px) {
-  .hbar { grid-template-columns: minmax(0, 1fr) 44px; }
-  .hbar .track { grid-column: 1 / -1; grid-row: 2; }
+  .hbar { grid-template-columns: minmax(0, 1fr) 96px 40px; }
   .tl li { grid-template-columns: 18px minmax(0, 1fr); }
   .tl .date { grid-column: 2; text-align: left; order: -1; }
   .tl .dot { grid-row: 1 / span 2; grid-column: 1; }
@@ -1420,20 +1417,17 @@ function ideaStartPage() {
       <div class="grid2">
         <div class="field"><label for="field">기술 분야</label><select id="field">${Object.entries(FIELDS).map(([k, f]) => `<option value="${k}" ${!i.fieldCustom && i.field === k ? "selected" : ""}>${f.name}</option>`).join("")}<option value="__custom" ${i.fieldCustom != null ? "selected" : ""}>직접 입력…</option></select>
           ${i.fieldCustom != null ? `<input type="text" id="field-custom" value="${esc(i.fieldCustom)}" placeholder="예: 수산 양식, 축산 사료, 곤충 단백" aria-label="기술 분야 직접 입력" style="margin-top:6px"><span class="hint">초안 틀은 가장 가까운 분야(${esc(FIELDS[i.field].name)})를 바탕으로 만듭니다.</span>` : ""}</div>
-        <div class="field"><label for="idea-kw">핵심 키워드 (쉼표로 구분)</label><input type="text" id="idea-kw" value="${esc(I.kw)}" placeholder="예: 쌀겨, 발효, 생장 촉진"><span class="hint">원료·방법·효과 순서로 2~5개 적으면 초안이 더 자연스럽습니다. 다 적고 Enter를 눌러도 됩니다.</span></div>
+        <div class="field"><label for="idea-kw">핵심 키워드 (쉼표로 구분)</label><input type="text" id="idea-kw" value="${esc(I.kw)}" placeholder="예: 쌀겨, 발효, 생장 촉진"><span class="hint">원료·방법·효과 순서로 2~5개 적으면 좋아요. Enter로도 제안받을 수 있어요.</span></div>
       </div>
       <div class="rec-list" ${i.fieldCustom != null ? "hidden" : ""}><span class="label" style="width:100%">추천 키워드 · 눌러서 추가</span>${B.sugg.filter(k => !have.includes(k)).map(k => `<button type="button" class="chip" data-add-kw="${esc(k)}">+ ${esc(k)}</button>`).join("")}</div>
       <div class="actions"><button class="btn" id="ideate-run">초안 제안 받기</button></div>
-      <p class="hint">${aiMode() ? "기본 초안을 바로 보여 드리고, AI가 더 구체적인 후보로 바꿉니다." : "기본 초안을 바로 보여 드립니다. 지금은 AI를 쓸 수 없어 문장 틀로 만든 후보입니다."}</p>
-      <p class="hint">${SAVE.restored ? `지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔습니다. ` : ""}입력한 내용은 이 기기의 브라우저에 자동 저장됩니다. 파일로 내보내기와 기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있습니다.</p>
+${aiMode() ? "" : `      <p class="hint">지금은 AI를 쓸 수 없어 문장 틀로 만든 후보를 보여 드려요.</p>
+`}      ${SAVE.restored ? `<p class="hint">지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔어요.</p>` : ""}${EMBED ? "" : `<p class="hint">입력한 내용은 이 기기의 브라우저에 자동 저장돼요. 내보내기·기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있어요.</p>`}
     </div>
-    <aside class="branch-card" aria-labelledby="h-branch">
-      <span class="eyebrow">아이디어가 아직 없다면</span>
-      <h3 id="h-branch">AI 유망기술 발굴</h3>
-      <p class="muted">세계 출원은 빠르게 늘지만 한국 출원은 적은 기술을 지도로 보여 주고, 고른 기술로 아이디어 후보를 만들어 드립니다.</p>
-      <button type="button" class="btn ghost" data-to="discover:0">유망기술 찾아보기</button>
-      <p class="muted">처음이라 감이 안 온다면 가상 출원인의 모의 시나리오로 1~5단계를 끝까지 연습해 보세요.</p>
-      <button type="button" class="btn ghost" data-practice>연습용 예시로 해보기</button>
+    <aside class="branch-card" aria-label="다른 방법으로 시작">
+      <span class="branch-label">다른 방법으로 시작</span>
+      <button type="button" class="branch-opt" data-to="discover:0"><b>아이디어가 아직 없어요</b><span>유망기술 지도에서 골라 시작</span></button>
+      <button type="button" class="branch-opt" data-practice><b>처음이라 연습해 볼래요</b><span>가상 예시로 1~5단계 따라가기</span></button>
     </aside>
   </div>`;
 }
@@ -1609,7 +1603,6 @@ function reqBoard(cards) {
   const n = c => cards.filter(x => x.c === c).length, todo = sorted.filter(x => x.c === "bad" || x.c === "warn"), fine = sorted.filter(x => x.c === "ok" || x.c === "na");
   const seg = c => n(c) ? `<i class="${c}" style="flex:${n(c)}" title="${RISK_WORD[c]} ${n(c)}개"></i>` : "";
   return `<div class="req-sum">
-      <div class="req-bar" role="img" aria-label="요건 ${cards.length}개 중 위험 높음 ${n("bad")}개, 확인 필요 ${n("warn")}개, 양호 ${n("ok") + n("na")}개">${seg("bad")}${seg("warn")}${seg("ok")}${seg("na")}</div>
       <ul class="req-count">${["bad", "warn", "ok"].map(c => `<li class="${c}"><b>${n(c) + (c === "ok" ? n("na") : 0)}</b>${RISK_WORD[c]}</li>`).join("")}</ul>
     </div>
     ${todo.length ? `<ol class="req-list" aria-label="고칠 요건 (심각한 것부터)">${todo.map(l => `<li class="req ${l.c}">
@@ -1620,10 +1613,9 @@ function reqBoard(cards) {
     ${fine.length ? `<details class="req-fine"><summary>문제없는 요건 ${fine.length}개 · ${fine.map(l => l.k).join(", ")}</summary><ul>${fine.map(l => `<li><b>${l.k}</b> ${l.v.join(" ")}</li>`).join("")}</ul></details>` : ""}`;
 }
 function diagResultPage() {
-  const i = S.idea, k = claimKinds(), { r, cards } = requirementCards(), bad = cards.filter(c => c.c === "bad").length, warn = cards.filter(c => c.c === "warn").length;
+  const i = S.idea, k = claimKinds(), { r, cards } = requirementCards();
   return `<div class="result" aria-live="polite">
       <div class="sub-head"><h3>특허 요건과 거절 위험<span class="muted h-meta">${esc(fieldName(i.field))}</span></h3><span class="g-tag">청구 유형 ${KIND_NAME[k.main]}${k.all.length > 1 ? ` + ${k.all.slice(1).map(x => KIND_NAME[x]).join(", ")}` : ""}</span></div>
-      <p class="req-lead">${bad ? `특허가 되려면 <b>먼저 고칠 요건이 ${bad}개</b> 있습니다.` : warn ? "큰 위험은 없고, <b>확인할 요건</b>만 남았습니다." : "<b>점검한 요건이 모두 양호</b>합니다."} 위에서부터 하나씩 고치면 됩니다.</p>
       ${reqBoard(cards)}
       ${r.alerts.map(a => `<div class="alert ${a.c === "warn" ? "warn" : ""}"><strong>${a.h}</strong><span>${a.b}</span></div>`).join("")}
       ${discTimeline()}
@@ -2232,11 +2224,9 @@ function pageBar() {
 
 // AIS 안(임베드)에서는 아래 쪽 이동 막대가 없으므로, 쪽 끝에 이전·다음과 이 단계의 남은 일을 둔다
 function pageEndNav() {
-  const { prev, next } = navLabels(), todo = stepTodoSafe(BRANCH[S.step] || S.step).filter(t => t.sub === S.sub);
-  if (!prev && !next) return "";
-  return `<nav class="page-end" aria-label="쪽 이동">
-    ${todo.length ? `<p class="page-end-todo"><b>이 쪽에 남은 일</b> ${todo.map(t => esc(t.t)).join(" · ")} <span class="muted">— 나중에 해도 넘어갈 수 있어요.</span></p>` : ""}
-    <div class="page-end-btns">${prev ? `<button type="button" class="btn ghost" data-nav="prev">← ${esc(prev)}</button>` : "<span></span>"}${next ? `<button type="button" class="btn" data-nav="next">다음: ${esc(next)} →</button>` : ""}</div></nav>`;
+  const { next } = navLabels();
+  if (!next) return "";
+  return `<nav class="page-end" aria-label="다음 쪽으로"><button type="button" class="btn" data-nav="next">다음: ${esc(next)} →</button></nav>`;
 }
 function toPage(step, sub = 0, dir = 1) {
   S.dir = dir;
@@ -3657,7 +3647,7 @@ const AI_WHEN = {
   discover: ["유망기술을 고르면 AI가 아이디어 후보를 만들어요", "10~20초"],
   compare: ["비슷한 특허를 찾으면 AI가 바로 내 구성과 비교해요", "10~20초"],
   whitespace: ["공백 칸을 고르면 AI가 그 방향의 아이디어를 제안해요", "10~20초"],
-  reject: ["이 쪽(또는 앞 단계에서 비슷한 특허를 찾은 뒤)에 AI가 거절이유를 예상해요", "10~20초"],
+  reject: ["이 쪽에서 AI가 거절이유를 예상해요", "10~20초"],
   draft: ["‘명세서’ 쪽에 들어오면 AI가 기본 초안을 AI 작성본으로 바꿔 써요", "20~50초"],
   review: ["명세서가 바뀌면 AI가 다시 검토해요", "10초 안팎"],
   fill: ["‘AI로 한꺼번에 채우기’를 누를 때만 시작해요", "10~30초"],
@@ -3677,11 +3667,11 @@ function aiBanner() {
       <p class="muted">끝나면 결과가 이 쪽에 자동으로 들어갑니다. 분석이 끝날 때까지 다음 쪽으로 넘어갈 수 없어요.</p></div><button type="button" class="btn ghost sm" data-ai-stop="${t}">멈추기</button></div>`;
   }
   if (pend.length) return `<div class="ai-banner pending" role="status"><i class="ai-spin" aria-hidden="true"></i><p><b>곧 AI가 ${J(pend.map(aiLabel).join("·"), "을")} 시작합니다.</b> <span class="muted">입력을 멈추면 바로 시작해요.</span></p></div>`;
-  if (S.step === "draft" && S.sub === 0) return `<div class="ai-banner idle"><p><b>AI 안내</b> 다음 쪽 ‘명세서’로 넘어가면 AI가 명세서를 써요 <span class="muted">(보통 ${AI_WHEN.draft[1]})</span>. 그 전에 이 쪽의 핵심 구성·효과를 먼저 확인하세요.</p></div>`;
+  if (S.step === "draft" && S.sub === 0) return `<div class="ai-banner idle"><p><span class="ai-chip">AI</span> 다음 쪽 ‘명세서’로 넘어가면 AI가 명세서를 써요 <span class="muted">(보통 ${AI_WHEN.draft[1]})</span></p></div>`;
   const shown = here.filter(t => AI_WHEN[t]);
   if (!shown.length) return "";
   const done = shown.filter(t => aiState(t).okSig && aiState(t).okSig === aiSig(t)), err = shown.filter(t => aiState(t).err);
-  return `<div class="ai-banner idle"><p><b>AI 안내</b> ${shown.map(t => `${AI_WHEN[t][0]} <span class="muted">(보통 ${AI_WHEN[t][1]})</span>`).join(" · ")}${done.length ? ` <span class="ai-done">✓ ${done.map(aiLabel).join("·")} 완료</span>` : ""}${err.length ? ` <span class="ai-err">${J(err.map(aiLabel).join("·"), "을")} 하지 못했어요 — 아래 ‘다시 시도’를 누르세요</span>` : ""}</p></div>`;
+  return `<div class="ai-banner idle"><p><span class="ai-chip">AI</span> ${shown.map(t => `${AI_WHEN[t][0]} <span class="muted">(보통 ${AI_WHEN[t][1]})</span>`).join(" · ")}${done.length ? ` <span class="ai-done">✓ ${done.map(aiLabel).join("·")} 완료</span>` : ""}${err.length ? ` <span class="ai-err">${J(err.map(aiLabel).join("·"), "을")} 하지 못했어요 — 아래 ‘다시 시도’를 누르세요</span>` : ""}</p></div>`;
 }
 // 안내줄과 '다음' 버튼 잠금을 함께 고친다 (AI 상태가 바뀔 때마다)
 function refreshAiLock() {
@@ -4761,8 +4751,7 @@ function apRequired() {
 function renderApProgress() {
   const box = $("#ap-progress"); if (!box) return;
   const r = apRequired(), done = r.filter(x => x.ok).length, left = r.filter(x => !x.ok);
-  box.innerHTML = `<div class="ap-bar" aria-hidden="true"><i style="width:${Math.round(done / r.length * 100)}%"></i></div>
-    <span><b>꼭 채울 칸 ${done} / ${r.length}</b>${left.length ? ` · 남은 칸: ${left.map(x => `<button type="button" class="linklike" data-ap-go="${x.k}">${x.t}</button>`).join(", ")}` : " · 모두 채웠습니다 ✓"}</span>`;
+  box.innerHTML = `<span><b>꼭 채울 칸 ${done} / ${r.length}</b>${left.length ? ` · 남은 칸: ${left.map(x => `<button type="button" class="linklike" data-ap-go="${x.k}">${x.t}</button>`).join(", ")}` : " · 모두 채웠습니다 ✓"}</span>`;
 }
 // 최종 점검 맨 위: 출원까지 남은 일을 한곳에
 function renderTodo() {
@@ -4772,16 +4761,14 @@ function renderTodo() {
   const unv = unvLive().length, all = needs + warn + attLeft.length + ap.length + unv;
   const chk = checkSpec(S.spec.text), apAll = apRequired();
   const score = Math.round(40 * Math.max(0, 1 - needs / 30) + 25 * chk.filter(r => r.ok).length / chk.length + 20 * (apAll.length - ap.length) / apAll.length + 15 * (atts.length - attLeft.length) / atts.length);
-  box.innerHTML = `<div class="sub-head"><h3>출원까지 남은 일</h3><span class="mono">${all ? `${all}가지` : "모두 끝"}</span></div>
-    <div class="done-meter" role="img" aria-label="출원 서류 완성도 ${score}%"><span>출원 서류 완성도 <b>${score}%</b></span><i style="--p:${score}%"></i></div>
+  box.innerHTML = `<div class="sub-head"><h3>출원까지 남은 일 <span class="muted h-meta">${all ? `${all}가지` : "모두 끝"}</span></h3><span class="done-ring" style="--p:${score}%" role="img" aria-label="출원 서류 완성도 ${score}%"><span><b>${score}%</b><small>완성도</small></span></span></div>
     <ul class="todo">
-      ${item(needs, "명세서의 〔입력 필요〕 칸", `<button type="button" class="btn sm" data-need-step="1">첫 칸으로</button>`)}
+      ${item(needs, "명세서의 〔입력 필요〕 칸", `<button type="button" class="btn sm" data-to="draft:1">빈칸 채우러 가기</button>`)}
       ${unv ? item(unv, "AI가 입력 없이 쓴 수치 (사실인지 확인)", `<button type="button" class="btn ghost sm" data-unv-go="${unvLive()[0].k}">확인하러</button>`) : ""}
       ${item(ap.length, `출원서의 꼭 채울 칸${ap.length ? ` (${ap.map(x => x.t).join(", ")})` : ""}`, `<button type="button" class="btn ghost sm" data-ap-go="${ap[0]?.k ?? ""}">출원서로</button>`)}
       ${item(warn, "출원 전 점검에서 확인할 항목", `<button type="button" class="btn ghost sm" data-scroll="#spec-check">점검 보기</button>`)}
       ${item(attLeft.length, `준비할 서류${attLeft.length ? ` (${attLeft.map(x => x.name).join(", ")})` : ""}`, `<button type="button" class="btn ghost sm" data-scroll="#ready-list">서류 보기</button>`)}
     </ul>
-    ${needs ? `<div class="fill-box">${fillBox()}</div>` : ""}
     ${all ? "" : `<p class="hint">이제 아래 ‘제출용 파일 한 번에 받기’로 묶음을 받아 특허로에서 제출하세요.</p>`}`;
 }
 
@@ -4924,7 +4911,6 @@ function viewDraft() {
     <div class="folds" data-pg="4">
       <span class="label">점검과 분석 · 눌러서 펼치기</span>
       ${fold("check", "출원 전 점검", `<span id="check-meta"></span>`, `<div class="nohead" id="spec-check"></div>`)}
-      ${fold("need", "채워야 할 곳", `<span id="need-meta"></span>`, `<div id="need-list"></div>`)}
       ${fold("claims", "청구항 구조", `<span id="claims-meta"></span>`, `<div class="nohead" id="claim-tree"></div>`)}
       ${claimChartHtml()}
       ${fold("s5", "SMART5 관점 사전 평가", `<span id="s5-meta"></span>`, `<div class="s5 nohead" id="smart5"></div>`)}
@@ -5774,7 +5760,7 @@ function filingPages() {
   </div>
 
   <div class="sub" data-pg="4">
-    <div class="sub-head"><h3>제출용 파일</h3><span class="mono">서류 ${ready} / ${atts.length} 준비</span></div>
+    <div class="sub-head"><h3>제출용 파일</h3></div>
     <div class="actions">
       <button class="btn" id="save-package">제출용 파일 한 번에 받기 (.zip)</button>
       <button class="btn ghost" data-save-doc>명세서만 Word(.docx)</button>
@@ -6112,41 +6098,40 @@ function viewAis() {
     <p class="ais-note">기술분석은 Agri IP Summary(AIS) 서비스입니다. 화면이 보이지 않으면 <a href="${TECH_URL}" target="_blank" rel="noopener">새 창으로 열기</a></p>
   </section>`;
 }
-/* ---------- 쉬운 안내: 출원을 처음 하는 사람에게 쪽마다 '지금 할 일'을 쉬운 말로 알려 준다 (접으면 이 기기에 기억) ---------- */
-// do: 할 일(차례대로), tip: 몰라도 되는 것·안심할 점. 쪽 열쇠는 pagesFor 의 쪽 이름(서류 작성·유망기술은 쪽 번호)
+/* ---------- 쪽 머리의 할 일 줄: 처음 쓰는 사람에게 이 쪽에서 할 일을 순서대로 짧게 (설명 문단 대신) ---------- */
+// do: 차례대로 할 일(짧은 동사구), tip: 한 줄 도움말. 쪽 열쇠는 pagesFor 의 쪽 이름(서류 작성·유망기술은 쪽 번호)
 const COACH = {
-  "idea:start": { do: ["현장에서 떠올린 아이디어를 키워드 2~5개로 적어요. (예: 쌀겨, 발효, 비료)", "‘초안 제안 받기’를 누르면 특허 서류에 쓰는 말로 다듬은 후보가 나와요."], tip: "아이디어가 막연해도 괜찮아요. 오른쪽 ‘연습용 예시로 해보기’로 끝까지 한 번 따라가 보면 흐름이 잡혀요." },
-  "idea:pick": { do: ["후보 가운데 내 아이디어와 가장 가까운 것을 하나씩 고르고, 아래 칸에서 내 말로 고쳐요.", "맨 아래 ‘출원 전에 확인할 사실’ 질문은 꼭 사실대로 골라요."], tip: "온도·시간·비율 같은 숫자를 실제 값으로 적을수록 특허 받을 가능성이 높아져요." },
-  "prior:results": { do: ["내 아이디어와 비슷한 특허가 이미 있는지 특허 정보(KIPRIS)에서 자동으로 찾아요.", "정말 비슷한 특허만 골라 두면 명세서의 ‘기존 기술’ 칸에 들어가요."], tip: "비슷한 특허가 있어도 괜찮아요. 내 것만의 다른 점을 분명히 하면 출원할 수 있어요." },
-  "prior:sample": { do: ["내 아이디어와 비슷한 특허가 이미 있는지 살펴봐요.", "정말 비슷한 특허만 골라 두면 명세서의 ‘기존 기술’ 칸에 들어가요."], tip: "비슷한 특허가 있어도 괜찮아요. 내 것만의 다른 점을 분명히 하면 출원할 수 있어요." },
-  "prior:compare": { do: ["비슷한 특허와 내 아이디어의 구성을 한 줄씩 비교해요.", "비슷한 특허에 없는, 내 것에만 있는 구성이 특허의 핵심이 돼요."], tip: "표가 어렵다면 ‘다음’을 눌러 넘어가도 돼요. 비교 결과는 진단에 자동으로 쓰여요." },
-  "prior:gap": { do: ["아직 출원이 적은 기술 조합(빈자리)을 표로 보여 줘요.", "내 아이디어를 빈자리 쪽으로 조금 바꾸면 등록 가능성이 높아질 수 있어요."], tip: "참고용이에요. 그냥 다음 단계로 넘어가도 돼요." },
-  "diag:result": { do: ["특허가 되기 위한 조건(새로운가·쉽게 떠올릴 수 없나·산업에 쓸 수 있나)을 점검했어요.", "‘위험 높음’이나 ‘확인 필요’ 항목의 설명대로 아이디어를 고치면 돼요."], tip: "진단은 참고용이에요. 위험이 보여도 보완해서 출원할 수 있어요." },
-  "diag:suggest": { do: ["비슷한 출원이 거절된 이유와 피하는 방법을 알려 드려요.", "마음에 드는 제안만 눌러서 아이디어에 넣어요."], tip: "제안을 모두 받아들일 필요는 없어요." },
-  "draft:0": { do: ["앞에서 정리한 내용으로 특허 서류(명세서) 초안을 만들어요.", "핵심 구성과 효과를 확인하고 아래 ‘다음’을 누르면 명세서 초안이 만들어져요."], tip: "잘 모르는 칸은 비워 두어도 돼요. 다음 쪽에서 빈칸으로 표시해 드려요." },
-  "draft:1": { do: ["명세서 초안이 완성됐어요. 〔입력 필요〕로 표시된 빈칸만 채우면 돼요.", "‘AI로 한꺼번에 채우기’를 한 번 누르면 문장으로 쓸 수 있는 빈칸은 AI가 끝까지 채워요.", "실험값처럼 나만 아는 사실은 ‘직접 채울 곳’에서 넣어요."], tip: "AI가 채운 문장도 사실과 맞는지 한 번 읽어 보세요. 마음에 들지 않으면 ‘모두 되돌리기’로 되돌릴 수 있어요." },
-  "draft:2": { do: ["지식재산처에 내는 신청서(출원서)에 출원인 이름과 번호를 넣어요.", "특허고객번호가 없으면 특허로(patent.go.kr)에서 먼저 무료로 신청해요."], tip: "수수료와 감면(개인 70% 등)은 자동으로 계산돼요." },
-  "draft:3": { do: ["출원 때 함께 낼 서류를 확인해요.", "‘아직’으로 남은 서류만 준비하면 돼요."], tip: "대부분은 앞 단계에서 자동으로 만들어져요." },
-  "draft:4": { do: ["출원까지 남은 일을 한곳에 모았어요. 위에서부터 하나씩 끝내요.", "다 되면 ‘제출용 파일 한 번에 받기’로 받아 특허로에서 제출해요."], tip: "혼자 제출하기 부담되면 5단계에서 비용 지원과 변리사·무료 상담을 찾을 수 있어요." },
-  "manage:support": { do: ["출원 비용을 지원하는 사업과 상담할 변리사를 찾아요.", "진단 결과를 보내 상담을 받아 보세요."], tip: "공익변리사 특허상담센터(pcc.or.kr)에서도 무료로 상담받을 수 있어요." },
-  "manage:deadline": { do: ["출원일을 넣으면 꼭 지켜야 할 날짜를 계산해 드려요.", "‘달력에 넣기’로 휴대폰 달력에 알림을 걸어 두세요."], tip: "기한을 놓치면 권리를 잃을 수 있으니 달력에 꼭 넣어 두세요." },
-  "manage:overseas": { do: ["해외에서도 권리가 필요하면 한국 출원일부터 1년 안에 해외 출원을 해야 해요.", "진출하고 싶은 나라를 골라 일정과 비용을 확인해요."], tip: "해외 계획이 없으면 넘어가도 돼요." },
-  "discover:0": { do: ["관심 있는 농식품 분야를 골라요.", "세계에서는 늘지만 한국에서는 아직 출원이 적은 기술을 찾아 드려요."], tip: "아이디어가 이미 있다면 1단계 ‘아이디어’로 바로 가도 돼요." },
-  "discover:1": { do: ["지도에서 눈에 띄는 기술을 하나 골라요."], tip: "점이 위쪽·오른쪽일수록 세계에서 빠르게 느는 기술이에요." },
-  "discover:2": { do: ["고른 기술로 만든 아이디어 후보를 보고 마음에 드는 것을 골라요.", "고르면 1단계 아이디어로 이어져요."], tip: "후보는 출발점이에요. 내 현장 경험을 더해 고치면 돼요." }
+  "idea:start": { do: ["키워드 2~5개 적기", "‘초안 제안 받기’ 누르기", "후보 고르고 다듬기"], tip: "아이디어가 막연하면 ‘처음이라 연습해 볼래요’로 흐름부터 익혀 보세요." },
+  "idea:pick": { do: ["마음에 드는 후보 고르기", "내 말로 다듬기", "출원 전 사실 답하기"], tip: "온도·시간·비율을 실제 값으로 적을수록 특허 받을 가능성이 높아져요." },
+  "prior:results": { do: ["비슷한 특허 확인", "정말 비슷한 것만 고르기"], tip: "비슷한 특허가 있어도 다른 점을 분명히 하면 출원할 수 있어요." },
+  "prior:sample": { do: ["비슷한 특허 확인", "정말 비슷한 것만 고르기"], tip: "비슷한 특허가 있어도 다른 점을 분명히 하면 출원할 수 있어요." },
+  "prior:compare": { do: ["겹치는 구성 확인", "내 것에만 있는 구성 찾기"], tip: "내 것에만 있는 구성이 특허의 핵심이 돼요." },
+  "prior:gap": { do: ["출원이 적은 칸 보기", "넓힐 방향 고르기 (선택)"], tip: "참고용이에요. 고르지 않고 넘어가도 돼요." },
+  "diag:result": { do: ["위험 높은 요건부터 보기", "‘고치러 가기’로 보완"], tip: "진단은 참고용이에요. 위험이 보여도 보완해서 출원할 수 있어요." },
+  "diag:suggest": { do: ["거절 사례 보기", "필요한 제안만 넣기"], tip: "제안을 모두 받아들일 필요는 없어요." },
+  "draft:0": { do: ["핵심 구성·효과 확인", "‘다음’으로 명세서 만들기"], tip: "잘 모르는 칸은 비워 두어도 돼요. 명세서에 빈칸으로 표시해 드려요." },
+  "draft:1": { do: ["〔입력 필요〕 빈칸 확인", "AI로 한꺼번에 채우기", "나만 아는 값 넣기"], tip: "AI가 채운 문장도 사실과 맞는지 한 번 읽어 보세요." },
+  "draft:2": { do: ["출원인 이름·번호 넣기", "수수료 확인"], tip: "특허고객번호가 없으면 특허로(patent.go.kr)에서 먼저 무료로 신청하세요." },
+  "draft:3": { do: ["‘아직’인 서류만 준비"], tip: "대부분은 앞 단계에서 자동으로 만들어져요." },
+  "draft:4": { do: ["남은 일 위에서부터 끝내기", "제출용 파일 받기", "특허로에서 제출"], tip: "혼자 제출이 부담되면 5단계에서 무료 상담을 찾을 수 있어요." },
+  "manage:support": { do: ["비용 지원사업 찾기", "변리사·무료 상담 찾기"], tip: "공익변리사 특허상담센터(pcc.or.kr)에서도 무료로 상담받을 수 있어요." },
+  "manage:deadline": { do: ["출원일 넣기", "‘달력에 넣기’로 알림 받기"], tip: "기한을 놓치면 권리를 잃을 수 있어요." },
+  "manage:overseas": { do: ["진출할 나라 고르기", "일정·비용 확인"], tip: "해외 출원은 한국 출원일부터 1년 안에 해야 해요. 계획이 없으면 넘어가세요." },
+  "discover:0": { do: ["관심 분야 고르기", "유망기술 찾기"], tip: "아이디어가 이미 있다면 1단계 ‘아이디어’로 바로 가도 돼요." },
+  "discover:1": { do: ["지도에서 기술 하나 고르기"], tip: "점이 위쪽·오른쪽일수록 세계에서 빠르게 느는 기술이에요." },
+  "discover:2": { do: ["아이디어 후보 고르기", "1단계에서 다듬기"], tip: "후보는 출발점이에요. 현장 경험을 더해 고치면 돼요." }
 };
-// 처음 화면에만: 출원이 어떻게 진행되는지 한눈에
-const COACH_FLOW = `<ol class="coach-flow">${STEPS.map((x, i) => `<li><b>${i + 1}. ${x.t}</b><span>${x.d}</span></li>`).join("")}</ol>`;
-const COACH_KEY = "agri-ip:coach-closed";
-const coachClosed = () => { try { return localStorage.getItem(COACH_KEY) === "1"; } catch { return false; } };
-function coachHtml() {
+function doStripHtml() {
   const pg = pagesFor(S.step)?.[S.sub]?.[0], c = COACH[`${S.step}:${pg}`]; if (!c) return "";
-  const first = S.step === "idea" && pg === "start";
-  return `<details class="coach" ${coachClosed() ? "" : "open"} data-coach><summary><span class="coach-ico" aria-hidden="true">?</span>${first ? "출원이 처음이세요? 이렇게 진행돼요" : "이 쪽에서 할 일"}</summary>
-    ${first ? COACH_FLOW : ""}<ol class="coach-do">${c.do.map(t => `<li>${esc(t)}</li>`).join("")}</ol>${c.tip ? `<p class="coach-tip">${esc(c.tip)}</p>` : ""}
-    <p class="coach-foot">밑줄 친 낱말은 누르면 뜻이 나와요.</p></details>`;
+  return `<ol class="do-strip" aria-label="이 쪽에서 할 일">${c.do.map((t, i) => `<li><span class="n" aria-hidden="true">${i + 1}</span><span>${esc(t)}</span></li>`).join("")}</ol>${c.tip ? `<p class="do-tip">${esc(c.tip)}</p>` : ""}`;
 }
-document.addEventListener("toggle", e => { if (e.target.matches?.("[data-coach]")) try { localStorage.setItem(COACH_KEY, e.target.open ? "0" : "1"); } catch {} }, true);
+// 쪽 머리 정리: 할 일 줄이 있는 쪽은 긴 설명 문단을 빼고 제목 아래에 할 일 줄을 둔다. AI 안내줄은 머리 바로 아래 한 줄
+function placeHeader() {
+  const head = $("#main .panel-head"); if (!head) return;
+  const strip = doStripHtml();
+  if (strip) { head.querySelector(":scope > p.muted")?.remove(); head.querySelector("h2")?.insertAdjacentHTML("afterend", strip); }
+  head.insertAdjacentHTML("afterend", `<div id="ai-banner" aria-live="polite"></div>`);
+}
 
 /* ---------- 어려운 용어: 화면에 처음 나오는 전문용어에 밑줄을 긋고, 누르거나 올려 두면 쉬운 뜻을 보여 준다 ---------- */
 const TERMS = [
@@ -6260,7 +6245,7 @@ function renderView() {
   S.sub = Math.min(S.sub || 0, Math.max(0, subs.length - 1));
   const legacy = VIEWS[S.step];
   $("#main").innerHTML = legacy ? legacy() : viewStep(S.step);
-  termPop(null); $("#main .panel-head")?.insertAdjacentHTML("afterend", `<div id="ai-banner" aria-live="polite"></div>${coachHtml()}`); glossify();
+  termPop(null); placeHeader(); glossify();
   $("#rail-subs").innerHTML = subNav(); $("#rail-card").innerHTML = railCardHtml();
   if (legacy) $("#main").querySelectorAll("[data-pg]").forEach(el => { el.hidden = subs.length > 1 && +el.dataset.pg !== S.sub; });
   const panel = $("#main .panel");
