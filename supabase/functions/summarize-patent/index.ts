@@ -8,7 +8,7 @@ import { claimToRef, currentSeoulYear, extractGlobalClaims, extractMarketClaims,
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
 import { stripUnsupportedEffectFigures } from "./summaryGrounding.ts";
-import { BOLD_RULES, tidyBold } from "./boldPolicy.ts";
+import { BOLD_RULES, countBoldBySection, tidyBold } from "./boldPolicy.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
 import { CASE_POLICY_VERSION } from "../_shared/analysisCasePolicy.ts";
 
@@ -407,7 +407,7 @@ serve(async (req) => {
     // v20: 시장 수치 신뢰 수준(공식·승인 표준값만 출처, 검증 전 값은 (AI 추정치)) + 기준연도를 올해(한국 시간)로 계산
     // v21: 원문 근거 규칙(원문에 없는 효과 수치·시험·실증 서술 금지, 직접 시장 우선, 예시 수치 제거) + 서버 원문으로 프롬프트 구성
     // v22: 비전문가도 읽기 쉬운 서술(쉬운 말·짧은 문장·용어 풀이·분류 코드 대신 분야명) — 원문의 사실·수치·성분은 그대로
-    const promptVersion = `v23-${CASE_POLICY_VERSION}`;
+    const promptVersion = `v24-${CASE_POLICY_VERSION}`;
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -699,6 +699,8 @@ ${BOLD_RULES}
             .replace(/농업기술\s*실용화\s*재단|농식품\s*실용화\s*재단/g, "한국농업기술진흥원");
           // 볼드 규칙 안전장치: 시장 숫자·문장 통째 볼드와 짝 없는 별표를 정리한다 (시장 수치 보정보다 먼저)
           fullContent = tidyBold(fullContent);
+          // 볼드가 규칙대로 나뉘었는지 함수 로그에서 볼 수 있게 (섹션별 개수)
+          console.log(`[BOLD] ${trimmedPatent} ${JSON.stringify(countBoldBySection(fullContent))}`);
           const beforeMarketFallback = fullContent;
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
           const usedMarketFallback = fullContent !== beforeMarketFallback;

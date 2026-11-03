@@ -271,7 +271,7 @@ function TossPatentSummaryInner({
 
           {/* 액션 버튼 */}
           {!isStreaming && content && (
-            <section className="mb-2 print:hidden">
+            <section className="mt-8 sm:mt-10 mb-2 print:hidden">
               <button
                 onClick={() => setShareOpen(true)}
                 className="w-full h-14 rounded-[16px] text-[16px] font-bold text-white transition-all hover:opacity-90 active:scale-[0.99] flex items-center justify-center gap-2"
