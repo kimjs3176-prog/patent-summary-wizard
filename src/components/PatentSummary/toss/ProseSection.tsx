@@ -77,12 +77,13 @@ export function MarketTable({ paragraphs }: { paragraphs: string[] }) {
  * 요약서 본문 한 절 (데이터시트형 요약서의 오른쪽 본문 칸). 제목은 쉬운 질문 + 작은 분야 이름.
  * 생성 중에는 문장이 계속 붙으므로 원래 문단대로, 끝나면 요지(첫 문장) + 3문장 문단으로 정리한다.
  */
-export function ProseSection({ sec, idx, settled, annotate }: { sec: MdSection; idx: number; settled: boolean; annotate: Annotate }) {
+export function ProseSection({ sec, idx, settled, annotate, media }: { sec: MdSection; idx: number; settled: boolean; annotate: Annotate; media?: React.ReactNode }) {
   const { kicker, heading } = sectionMeta(sec.title);
   const { lead, body } = settled ? toReportParagraphs(sec.paragraphs) : { lead: "", body: sec.paragraphs };
   return (
     <section id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="ds-text report-prose-section scroll-mt-24">
-      <h2 className="ds-h">{heading}<span>{kicker}</span></h2>
+      <h2 className="ds-h"><span>{kicker}</span>{heading}</h2>
+      {media}
       {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
       {lead && <p className="ds-lead">{renderInline(lead, `l${idx}`, annotate)}</p>}
       {body.map((p, i) => (
