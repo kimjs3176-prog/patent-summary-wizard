@@ -85,8 +85,17 @@ export async function fetchKosisRef(key: string, s: KosisSeries, serviceKey: str
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8000);
   try {
-    const res = await fetch(url, { signal: ctrl.signal });
-    if (!res.ok) return null;
+    let res = await fetch(url, { signal: ctrl.signal });
+    // 공공데이터포털은 초당 요청 수를 제한한다(429). 잠시 쉬고 한 번만 다시 묻는다.
+    if (res.status === 429) {
+      await res.body?.cancel();
+      await new Promise((r) => setTimeout(r, 1500));
+      res = await fetch(url, { signal: ctrl.signal });
+    }
+    if (!res.ok) {
+      console.error(`[KOSIS] ${s.tblId} HTTP ${res.status}`);
+      return null;
+    }
     const json = await res.json();
     const raw = json?.response?.body?.items?.item;
     const items: any[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
