@@ -8,6 +8,7 @@ import { claimToRef, currentSeoulYear, extractGlobalClaims, extractMarketClaims,
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
 import { stripUnsupportedEffectFigures } from "./summaryGrounding.ts";
+import { BOLD_RULES, tidyBold } from "./boldPolicy.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
 import { CASE_POLICY_VERSION } from "../_shared/analysisCasePolicy.ts";
 
@@ -406,7 +407,7 @@ serve(async (req) => {
     // v20: 시장 수치 신뢰 수준(공식·승인 표준값만 출처, 검증 전 값은 (AI 추정치)) + 기준연도를 올해(한국 시간)로 계산
     // v21: 원문 근거 규칙(원문에 없는 효과 수치·시험·실증 서술 금지, 직접 시장 우선, 예시 수치 제거) + 서버 원문으로 프롬프트 구성
     // v22: 비전문가도 읽기 쉬운 서술(쉬운 말·짧은 문장·용어 풀이·분류 코드 대신 분야명) — 원문의 사실·수치·성분은 그대로
-    const promptVersion = `v22-${CASE_POLICY_VERSION}`;
+    const promptVersion = `v23-${CASE_POLICY_VERSION}`;
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -541,15 +542,7 @@ serve(async (req) => {
 - 법령·제도·기관명은 실제로 존재가 확실한 명칭만 쓴다(예: 농약관리법, 사료관리법, 종자산업법). 확실하지 않으면 "관련 인증 제도"처럼 일반 명칭으로 쓴다.
 - 농업인·기업 실무자도 읽을 수 있도록 핵심 전문용어(예: 여교배, SNP, 내생균)는 처음 나올 때 짧은 풀이를 덧붙인다.
 
-[중요도 볼드 규칙 — 반드시 준수]
-- 본문에서 문장 중 "중요도가 높은 핵심 문구"에만 마크다운 볼드(**...**)를 씌운다. 각 섹션당 2~5개소가 적정하며, 한 섹션에서 전체 글자의 30%를 넘기지 않는다.
-- 볼드 대상: 핵심 기술수단·차별점, 정량 수치(시장규모·CAGR·성능개선치), 고유명사(균주·품종·기관·보고서), 상용화 단계·수요처·수익모델.
-- 볼드 대상이 아닌 것: 접속사·조사·일반 서술어·수식어만 있는 구절, "매우 중요한", "다양한 산업" 같은 모호한 표현.
-- 의미가 하나로 묶이는 문구는 띄어쓰기·조사가 있어도 하나의 볼드 범위로 묶는다. 예) **국내 프로바이오틱스 시장 규모**, **Lactobacillus plantarum 균주의 위산 내성**(예시의 시장명·균주명을 다른 특허에 옮겨 쓰지 않는다). 절대 "**국내** **프로바이오틱스** **시장**"처럼 조각내지 않는다.
-- 각 볼드 범위는 그 자체만 떼어 읽어도 문장 의미가 유지되는 명사구/수치구여야 한다. 술어(~한다, ~된다)나 조사만으로 끝나는 조각은 볼드 금지.
-- 학명의 이탤릭 *..* 표기와 볼드는 병행 가능하다: **\`*Lactobacillus plantarum*\` 균주**. 볼드 안에 이탤릭을 그대로 유지한다.
-- 볼드 마커는 반드시 한 문장 안에서 열고 닫는다. 문단·문장 경계를 넘지 않는다.
-- 학명(라틴어 속명·종명)은 이탤릭 *..* 사용. 속명 첫글자 대문자, 종소명 소문자. 조사·구두점·괄호는 이탤릭 바깥. 예: *Lactobacillus plantarum*은 / *Oryza sativa*(벼). 학명이 없는 특허에서는 이탤릭 별표를 사용하지 않는다(볼드 **...**는 사용 가능).
+${BOLD_RULES}
 
 [섹션 지침]
 ## 기술분야 — 이 기술이 어떤 분야의 무엇에 관한 것인지, 어떤 산업과 현장에서 쓰이는지를 쉬운 말로 서술(분류 코드는 쓰지 않고 분야 이름으로).
@@ -704,6 +697,8 @@ serve(async (req) => {
           // 기관명 정규화: 구 명칭(농업기술실용화재단 등)을 현행 명칭으로 교정
           fullContent = fullContent
             .replace(/농업기술\s*실용화\s*재단|농식품\s*실용화\s*재단/g, "한국농업기술진흥원");
+          // 볼드 규칙 안전장치: 시장 숫자·문장 통째 볼드와 짝 없는 별표를 정리한다 (시장 수치 보정보다 먼저)
+          fullContent = tidyBold(fullContent);
           const beforeMarketFallback = fullContent;
           fullContent = ensureMarketFigures(fullContent, pd as PatentData);
           const usedMarketFallback = fullContent !== beforeMarketFallback;
