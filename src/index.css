@@ -1430,30 +1430,39 @@ time, .tabular-nums, [data-numeric] {
 }
 
 /* ============================================================
- * 데이터시트형 요약서 (C안)
- * 화면: 왼쪽 여백 주석(기본 정보·점수·규제·비슷한 특허) + 오른쪽 본문 한 단.
+ * 요약서 (1열 구성, 인쇄 시 A4 두 쪽)
+ * 머리(명칭·특허 기본정보·키워드) → 점수·TRL 띠 → 본문 절들을 위에서 아래로 한 줄로 놓는다.
  * 인쇄·PDF: .ds-sheet 두 장이 A4 두 쪽(여백 10mm 안 190×277mm). 글자는 em 단위라
  * lib/datasheet 의 fitDatasheet 가 --ds-scale 로 함께 줄인다. 그래도 넘치면 .ds-free 로 쪽을 늘린다.
+ * CI의 smoke 점검이 두 쪽을 지킨다.
  * ============================================================ */
 .ds { --ds-ink: #20262b; --ds-sub: #5d6670; --ds-rule: #d7dce0; --ds-accent: #136f55; --ds-note: #f4f6f3; --ds-cell: #ffffff; --ds-on: #c9e1d4; color: var(--ds-ink); }
 .ds-sheet { font-size: 15px; display: grid; grid-template-rows: auto 1fr auto; }
 .ds-sheet[data-sheet="2"] { grid-template-rows: 1fr auto; } /* 둘째 쪽은 머리 없이 본문·꼬리말 */
 .ds-sheet + .ds-sheet { margin-top: 8px; }
-.ds-head { display: grid; grid-template-columns: 13.5em minmax(0, 1fr); gap: 0 1.6em; padding: 1.6em 0 1em; margin-bottom: 1.4em; border-bottom: 1.5px solid var(--ds-ink); }
-.ds-doc { display: flex; flex-direction: column; align-items: flex-start; gap: .3em; font-size: .8em; line-height: 1.55; color: var(--ds-sub); }
-.ds-doc b { color: var(--ds-accent); }
-.ds-title { margin: 0 0 .45em; font-size: 1.65em; line-height: 1.36; font-weight: 700; text-wrap: balance; word-break: keep-all; letter-spacing: -0.01em; }
-.ds-body { min-height: 0; }
-.ds-row { display: grid; grid-template-columns: 13.5em minmax(0, 1fr); gap: 0 1.6em; margin-bottom: 1.3em; }
-.ds-main { min-width: 0; }
-.ds-note { align-self: start; display: flex; flex-direction: column; gap: .5em; padding: .9em; background: var(--ds-note); font-size: .8em; line-height: 1.55; color: var(--ds-sub); }
-.ds-note p { margin: 0; }
-.ds-note-t { font-size: 1em; font-weight: 700; color: var(--ds-ink); }
-.ds-facts { display: grid; gap: .25em; margin: 0; }
-.ds-facts > div { display: grid; grid-template-columns: 4.4em minmax(0, 1fr); gap: .4em; }
-.ds-facts dd { margin: 0; color: var(--ds-ink); word-break: keep-all; }
+/* 머리 */
+.ds-head { padding: 1.6em 0 1em; margin-bottom: 1.2em; border-bottom: 1.5px solid var(--ds-ink); }
+.ds-doc { display: flex; flex-wrap: wrap; align-items: center; gap: .4em .6em; margin-bottom: .55em; font-size: .8em; color: var(--ds-sub); }
+.ds-doc > b { color: var(--ds-accent); }
+.ds-govt { display: inline-flex; align-items: center; gap: .3em; min-height: 24px; padding: .15em .7em; border: 1px solid #0B7A5540; border-radius: 999px; background: #E7F7F0; color: #0B7A55; font-weight: 700; }
+.ds-title { margin: 0 0 .7em; font-size: 1.65em; line-height: 1.36; font-weight: 700; text-wrap: balance; word-break: keep-all; letter-spacing: -0.01em; }
+.ds-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5em 1.4em; margin: 0 0 .8em; padding: .75em 0; border-top: 1px solid var(--ds-rule); border-bottom: 1px solid var(--ds-rule); font-size: .82em; line-height: 1.45; }
+.ds-meta > div { min-width: 0; }
+.ds-meta .ds-meta-wide { grid-column: span 2; }
+.ds-meta dt { color: var(--ds-sub); font-size: .9em; }
+.ds-meta dd { margin: .1em 0 0; color: var(--ds-ink); font-weight: 600; word-break: keep-all; font-variant-numeric: tabular-nums; }
+.ds-kwrow { display: flex; flex-wrap: wrap; align-items: center; gap: .4em .8em; font-size: .82em; }
+.ds-kwrow > span { color: var(--ds-sub); }
 .ds-kw { display: flex; flex-wrap: wrap; gap: .35em; }
 .ds-kw > button { font-size: 1em; padding: .2em .65em; }
+.ds-src { margin: .6em 0 0; font-size: .72em; color: var(--ds-sub); }
+.ds-body { min-height: 0; }
+/* 점수·TRL 띠 */
+.ds-score { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: .6em 2em; margin-bottom: 1.3em; padding: .9em 1.1em; background: var(--ds-note); font-size: .82em; line-height: 1.55; color: var(--ds-sub); }
+.ds-score-main, .ds-score-trl { display: flex; flex-direction: column; gap: .45em; min-width: 0; }
+.ds-score p { margin: 0; }
+.ds-score .ds-why { grid-column: 1 / -1; }
+.ds-note-t { font-size: 1em; font-weight: 700; color: var(--ds-ink); }
 .ds-big { display: flex; align-items: baseline; gap: .4em; margin: 0; }
 .ds-big b { font-size: 2.6em; line-height: 1; color: var(--ds-accent); font-variant-numeric: tabular-nums; }
 .ds-s3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3em; margin: 0; text-align: center; }
@@ -1467,17 +1476,24 @@ time, .tabular-nums, [data-numeric] {
 .ds-wait { margin: 0; color: var(--ds-sub); }
 .ds-why summary { cursor: pointer; font-weight: 600; color: var(--ds-accent); padding: 3px 0; }
 .ds-why p { margin-top: .45em; }
-.ds-read p { margin: .25em 0 0; }
-.ds-reg { display: flex; flex-direction: column; gap: .45em; margin-top: .7em; }
-.ds-mini { list-style: none; margin: 0; padding: 0; }
-.ds-mini li { padding: .4em 0; border-top: 1px solid var(--ds-rule); }
+/* 시장 표 아래 읽는 법 한 줄 */
+.ds-read { display: flex; flex-wrap: wrap; gap: .3em 1.2em; margin: -.6em 0 1.2em; font-size: .76em; line-height: 1.5; color: var(--ds-sub); }
+/* 예상 규제·비슷한 특허: 본문 사이의 짧은 절, 두 칸 목록 */
+.ds-block { margin-bottom: 1.2em; }
+.ds-reg { display: flex; flex-direction: column; gap: .45em; font-size: .85em; line-height: 1.55; color: var(--ds-sub); }
+.ds-reg p { margin: 0; }
+.ds-mini { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.6em; }
+.ds-mini li { padding: .45em 0; border-top: 1px solid var(--ds-rule); }
 .ds-mini li b { display: block; color: var(--ds-ink); }
 .ds-link { display: inline-flex; align-items: center; gap: .2em; min-height: 24px; margin-left: .3em; font-weight: 600; color: var(--ds-accent); }
-/* 비슷한 특허 목록(RelatedPatentsCompact)을 여백 칸 글자 크기로 */
+/* 비슷한 특허 목록(RelatedPatentsCompact)을 요약서 글자 크기로, 두 칸으로 */
+.ds-related > ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.6em; font-size: .85em; }
+.ds-related > ul > li { border-top: 1px solid var(--ds-rule); }
 .ds-related ul li button { padding: .45em 0; }
 .ds-related ul li p { font-size: 1em; line-height: 1.45; }
 .ds-related ul li p + p { font-size: .9em; padding-left: 0; }
 .ds-related ul li p svg { display: none; }
+/* 본문 절 */
 .ds-text { margin-bottom: 1.2em; }
 .ds-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2em .6em; margin: 0 0 .45em; font-size: 1.15em; font-weight: 700; color: var(--ds-ink); }
 .ds-h span { font-size: .68em; font-weight: 600; color: var(--ds-accent); }
@@ -1502,8 +1518,8 @@ time, .tabular-nums, [data-numeric] {
 .ds-pf { display: none; }
 @media (max-width: 639px) {
   .ds-sheet { font-size: 15px; }
-  .ds-head, .ds-row { grid-template-columns: minmax(0, 1fr); gap: .8em; }
-  .ds-row > div[aria-hidden="true"] { display: none; }
+  .ds-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ds-score, .ds-mini, .ds-related > ul { grid-template-columns: minmax(0, 1fr); }
 }
 /* 인쇄·PDF: A4 두 쪽 (몸통 글자 8.6pt × --ds-scale) */
 body.ais-printing .ais-print-target .ds-sheet,

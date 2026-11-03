@@ -68,7 +68,6 @@ export function RegulationAnalysis({ patentNumber, patentData, isStreaming, vari
   if (variant === "note") {
     return (
       <div className="ds-reg">
-        <b className="ds-note-t">예상 규제</b>
         {loading && <p className="ds-wait"><Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" />관련 법령을 찾는 중…</p>}
         {!loading && error && <p className="ds-wait">규제 정보를 불러오지 못했습니다.</p>}
         {!loading && !error && result && (result.laws.length === 0

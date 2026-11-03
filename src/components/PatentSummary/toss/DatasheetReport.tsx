@@ -1,15 +1,13 @@
 import type { PatentSummaryProps as BasePatentSummaryProps } from "../types";
 import type { CommercializationDetails } from "../commercialization";
 import type { GovtPatentData } from "../GovtPatentInfo";
-import { GovtPatentBadges } from "../GovtPatentInfo";
 import { RegulationAnalysis } from "../RegulationAnalysis";
 import { RelatedPatentsCompact } from "../RelatedPatentsCompact";
 import type { KwItem } from "../_keywords";
 import { datasheetSlots } from "@/lib/datasheet";
 import { formatPatentNumber, sectionMeta, type MdSection } from "./helpers";
-import { PatentStatusBadge } from "./PatentStatusBadge";
 import { ProseSection } from "./ProseSection";
-import { FactsNote, MarketReadNote, ScoreNote } from "./DatasheetNotes";
+import { MarketReadNote, ReportHead, ScoreStrip } from "./DatasheetNotes";
 import { renderBold } from "./RenderBold";
 import { Loader2 } from "lucide-react";
 
@@ -26,8 +24,10 @@ interface Props {
 }
 
 /**
- * 데이터시트형 요약서(C안). 화면에서는 왼쪽 여백 칸에 기본 정보·점수·규제·비슷한 특허를 주석처럼 두고
- * 오른쪽에 본문을 한 단으로 둔다. 인쇄·PDF에서는 .ds-sheet 두 장이 A4 두 쪽이 된다(lib/datasheet 의 fitDatasheet).
+ * 요약서(1열 구성). 위에서 아래로 한 줄로 읽는다.
+ *   1쪽: 머리(명칭·특허 기본정보·키워드) → 사업화 점수·TRL 띠 → 기술 분야 → 대표 도면 → 발명 요약 → 농산업 활용
+ *   2쪽: 시장 동향(표·읽는 법) → 상용화 전망 → 예상 규제 → 비슷한 특허 → 종합 의견
+ * 인쇄·PDF에서는 .ds-sheet 두 장이 A4 두 쪽이 된다(lib/datasheet 의 fitDatasheet, CI의 smoke 점검).
  */
 export function DatasheetReport(p: Props) {
   const { patentData, sections, isStreaming, annotate } = p;
@@ -40,85 +40,60 @@ export function DatasheetReport(p: Props) {
   return (
     <div className="ds">
       <section className="ds-sheet" data-sheet="1">
-        <header className="ds-head">
-          <div className="ds-doc">
-            <b>AI 특허 기술 분석</b>
-            <span>{kind === "application" ? "출원" : "등록"} {formatPatentNumber(p.patentNumber, kind)}</span>
-            <PatentStatusBadge data={patentData} />
-          </div>
-          <div className="min-w-0">
-            <h1 className="ds-title">{p.title}</h1>
-            <GovtPatentBadges data={p.govtPatent} />
-          </div>
-        </header>
+        <ReportHead patentData={patentData} title={p.title} govt={p.govtPatent} owner={p.owner} keywords={p.keywords} onKeywordClick={p.onKeywordClick} />
         <div className="ds-body">
-          <div className="ds-row">
-            <FactsNote patentData={patentData} owner={p.owner} keywords={p.keywords} onKeywordClick={p.onKeywordClick} />
-            <div className="ds-main">
-              {isStreaming && sections.length === 0
-                ? <p className="ds-wait"><Loader2 className="w-4 h-4 animate-spin inline mr-1.5" />AI가 요약서를 작성하고 있습니다…</p>
-                : at("tech")}
-            </div>
-          </div>
-          <div className="ds-row">
-            <ScoreNote score={p.score} scoreSummary={p.scoreSummary} scoreLoading={p.scoreLoading} details={p.details} trl={p.trl} trlName={p.trlName} trlStage={p.trlStage} />
-            <div className="ds-main">
-              {fig && (
-                <figure id="sec-figures" data-summary-section data-summary-label="특허 도면" className="ds-fig scroll-mt-24">
-                  <button type="button" onClick={() => p.setLightboxIndex(0)} title="누르면 크게 봅니다">
-                    <img src={fig.src} alt={`${fig.caption.replace(/[【】]/g, "")} 이미지`} decoding="async"
-                      onError={(e) => { (e.currentTarget.closest("figure") as HTMLElement).style.display = "none"; }} />
-                  </button>
-                  <figcaption>{fig.caption.replace(/[【】]/g, "")}{p.figureItems.length > 1 ? ` · 도면 ${p.figureItems.length}장` : ""}</figcaption>
-                  {p.figureItems.length > 1 && (
-                    <div className="ds-thumbs print:hidden">
-                      {p.figureItems.slice(1).map((f, i) => (
-                        <button key={f.src} type="button" onClick={() => p.setLightboxIndex(i + 1)} title={f.caption}>
-                          <img src={f.src} alt={f.caption} loading="lazy" decoding="async" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </figure>
+          <ScoreStrip score={p.score} scoreSummary={p.scoreSummary} scoreLoading={p.scoreLoading} details={p.details} trl={p.trl} trlName={p.trlName} trlStage={p.trlStage} />
+          {isStreaming && sections.length === 0
+            ? <p className="ds-wait"><Loader2 className="w-4 h-4 animate-spin inline mr-1.5" />AI가 요약서를 작성하고 있습니다…</p>
+            : at("tech")}
+          {fig && (
+            <figure id="sec-figures" data-summary-section data-summary-label="특허 도면" className="ds-fig scroll-mt-24">
+              <button type="button" onClick={() => p.setLightboxIndex(0)} title="누르면 크게 봅니다">
+                <img src={fig.src} alt={`${fig.caption.replace(/[【】]/g, "")} 이미지`} decoding="async"
+                  onError={(e) => { (e.currentTarget.closest("figure") as HTMLElement).style.display = "none"; }} />
+              </button>
+              <figcaption>{fig.caption.replace(/[【】]/g, "")}{p.figureItems.length > 1 ? ` (도면 ${p.figureItems.length}장)` : ""}</figcaption>
+              {p.figureItems.length > 1 && (
+                <div className="ds-thumbs print:hidden">
+                  {p.figureItems.slice(1).map((f, i) => (
+                    <button key={f.src} type="button" onClick={() => p.setLightboxIndex(i + 1)} title={f.caption}>
+                      <img src={f.src} alt={f.caption} loading="lazy" decoding="async" />
+                    </button>
+                  ))}
+                </div>
               )}
-              {at("invention")}
-            </div>
-          </div>
-          {slots.use.length > 0 && (
-            <div className="ds-row">
-              <div aria-hidden="true" />
-              <div className="ds-main">{at("use")}</div>
-            </div>
+            </figure>
           )}
+          {at("invention")}
+          {at("use")}
         </div>
         <footer className="ds-pf"><span>Agri IP Summary · {formatPatentNumber(p.patentNumber, kind)}</span><span>기술</span><span>1 / 2</span></footer>
       </section>
 
       <section className="ds-sheet" data-sheet="2">
         <div className="ds-body">
-          <div className="ds-row">
-            <section id="sec-regulation" data-summary-section data-summary-label="예상 규제" className="ds-note scroll-mt-24">
-              <MarketReadNote />
-              {patentData && !isStreaming && <RegulationAnalysis patentNumber={p.patentNumber} patentData={patentData} isStreaming={isStreaming} variant="note" />}
+          {at("market")}
+          {slots.market.length > 0 && <MarketReadNote />}
+          {at("biz")}
+          {at("extra")}
+          {patentData && !isStreaming && (
+            <section id="sec-regulation" data-summary-section data-summary-label="예상 규제" className="ds-block scroll-mt-24">
+              <h2 className="ds-h">예상 규제<span>관련 법령</span></h2>
+              <RegulationAnalysis patentNumber={p.patentNumber} patentData={patentData} isStreaming={isStreaming} variant="note" />
             </section>
-            <div className="ds-main">{at("market")}</div>
-          </div>
-          <div className="ds-row">
-            <section id="sec-related" data-summary-section data-summary-label="관련 특허" className="ds-note ds-related scroll-mt-24">
-              <b className="ds-note-t">기능이 비슷한 특허</b>
-              {patentData && <RelatedPatentsCompact patentData={patentData} onPatentClick={p.onRelatedPatentClick} />}
+          )}
+          {patentData && (
+            <section id="sec-related" data-summary-section data-summary-label="관련 특허" className="ds-block ds-related scroll-mt-24">
+              <h2 className="ds-h">기능이 비슷한 특허<span>참고</span></h2>
+              <RelatedPatentsCompact patentData={patentData} onPatentClick={p.onRelatedPatentClick} />
             </section>
-            <div className="ds-main">
-              {at("biz")}
-              {at("extra")}
-              {p.details?.analysis && (
-                <section id="sec-analysis" data-summary-section data-summary-label="AI 종합 의견" className="ds-verdict scroll-mt-24">
-                  <h2>종합 의견</h2>
-                  <p>{renderBold(p.details.analysis)}</p>
-                </section>
-              )}
-            </div>
-          </div>
+          )}
+          {p.details?.analysis && (
+            <section id="sec-analysis" data-summary-section data-summary-label="AI 종합 의견" className="ds-verdict scroll-mt-24">
+              <h2>종합 의견</h2>
+              <p>{renderBold(p.details.analysis)}</p>
+            </section>
+          )}
         </div>
         <footer className="ds-pf"><span>Agri IP Summary · {formatPatentNumber(p.patentNumber, kind)}</span><span>시장·사업화</span><span>2 / 2</span></footer>
       </section>
