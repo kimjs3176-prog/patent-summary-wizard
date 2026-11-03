@@ -603,16 +603,15 @@ const Batch = () => {
 
   return (
     <PageLayout>
-      <div className={`${wide ? "max-w-[1500px]" : "max-w-6xl"} mx-auto px-4 py-8 space-y-6 transition-all`}>
-        <header className="space-y-2">
-          <div className="font-mono text-[11px] tracking-[0.2em] text-primary uppercase">§ Batch Lookup &amp; Export</div>
+      <main className={`${wide ? "max-w-[1500px]" : "max-w-6xl"} mx-auto px-4 py-8 space-y-6 transition-[max-width]`}>
+        <div className="space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Layers className="w-6 h-6 text-primary" /> 일괄조회·목록 다운로드
           </h1>
           <p className="text-sm text-muted-foreground">
             특허번호를 여러 건 붙여 넣거나 기관·기간 같은 조건을 정해 목록을 한 번에 불러오고, 엑셀 또는 CSV로 내려받습니다. (출처: KIPRIS)
           </p>
-        </header>
+        </div>
 
         {/* 모드 전환 */}
         <div className="grid gap-2 sm:grid-cols-2" role="tablist" aria-label="조회 방식">
@@ -906,7 +905,7 @@ const Batch = () => {
             )}
           </>
         )}
-      </div>
+      </main>
     </PageLayout>
   );
 };

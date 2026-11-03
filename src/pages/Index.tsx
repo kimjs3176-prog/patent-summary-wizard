@@ -268,7 +268,7 @@ const Index = () => {
                 onScoreReady={handleScoreReady}
                 onRegenerate={async () => {
                   if (!currentPatent) return;
-                  toast.info("요약서를 새로 생성합니다...");
+                  toast.info("요약서를 새로 생성합니다…");
                   const result = await generateSummary(currentPatent, { forceRegenerate: true });
                   if (result && result.patentData) {
                     addToHistory({

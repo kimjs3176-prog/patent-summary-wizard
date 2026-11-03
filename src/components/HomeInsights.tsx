@@ -40,7 +40,7 @@ function useFieldSearch() {
 
 /** Yearly filing trend as a line chart with labelled points. */
 function TrendLine({ rows, highlight }: { rows: { year: number; count: number }[]; highlight: number }) {
-  const W = 240, H = 96, px = 14, top = 18, bottom = 18;
+  const W = 240, H = 104, px = 16, top = 20, bottom = 20;
   const max = Math.max(1, ...rows.map((r) => r.count));
   const min = Math.min(...rows.map((r) => r.count), max);
   const span = Math.max(1, max - min);
@@ -58,8 +58,8 @@ function TrendLine({ rows, highlight }: { rows: { year: number; count: number }[
       {pts.map((p) => (
         <g key={p.year}>
           <circle cx={p.x} cy={p.y} r={p.year === highlight ? 4 : 2.5} fill={p.year === highlight ? "hsl(var(--primary))" : "hsl(var(--card))"} stroke="hsl(var(--primary))" strokeWidth={1.5} />
-          <text x={p.x} y={p.y - 7} textAnchor="middle" fontSize="9" className="fill-muted-foreground tabular-nums">{p.count}</text>
-          <text x={p.x} y={H - 4} textAnchor="middle" fontSize="9" className="fill-muted-foreground tabular-nums">{String(p.year).slice(2)}년</text>
+          <text x={p.x} y={p.y - 7} textAnchor="middle" fontSize="11" className="fill-muted-foreground tabular-nums">{p.count}</text>
+          <text x={p.x} y={H - 4} textAnchor="middle" fontSize="11" className="fill-muted-foreground tabular-nums">{String(p.year).slice(2)}년</text>
         </g>
       ))}
     </svg>

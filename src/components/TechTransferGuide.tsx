@@ -41,9 +41,9 @@ export function TechTransferGuide() {
 
       <p className="mt-6 text-[12px] text-muted-foreground">
         자세한 내용은{" "}
-        <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline font-medium">NATI</a>
+        <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-6 text-primary underline-offset-2 hover:underline font-medium">NATI</a>
         {"와 "}
-        <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline font-medium">KIPRIS</a>
+        <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-6 text-primary underline-offset-2 hover:underline font-medium">KIPRIS</a>
         를 참고하세요.
       </p>
     </section>

@@ -397,7 +397,7 @@ export default function PatentFinder() {
             <div className="flex gap-2 pt-1">
               <Button type="submit" disabled={loading} className="flex-1 h-11 rounded-xl gap-1.5 text-sm font-semibold btn-press">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                {loading ? "찾는 중..." : "맞춤 특허 추천받기"}
+                {loading ? "찾는 중…" : "맞춤 특허 추천받기"}
               </Button>
               <Button type="button" variant="outline" onClick={reset} disabled={loading} className="h-11 rounded-xl px-3" aria-label="입력 초기화" title="입력 초기화">
                 <RotateCcw className="w-4 h-4" />

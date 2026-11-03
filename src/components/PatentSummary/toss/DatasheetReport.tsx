@@ -97,17 +97,17 @@ export function DatasheetReport(p: Props) {
       <section className="ds-sheet" data-sheet="2">
         <div className="ds-body">
           <div className="ds-row">
-            <aside id="sec-regulation" data-summary-section data-summary-label="예상 규제" className="ds-note scroll-mt-24">
+            <section id="sec-regulation" data-summary-section data-summary-label="예상 규제" className="ds-note scroll-mt-24">
               <MarketReadNote />
               {patentData && !isStreaming && <RegulationAnalysis patentNumber={p.patentNumber} patentData={patentData} isStreaming={isStreaming} variant="note" />}
-            </aside>
+            </section>
             <div className="ds-main">{at("market")}</div>
           </div>
           <div className="ds-row">
-            <aside id="sec-related" data-summary-section data-summary-label="관련 특허" className="ds-note ds-related scroll-mt-24">
+            <section id="sec-related" data-summary-section data-summary-label="관련 특허" className="ds-note ds-related scroll-mt-24">
               <b className="ds-note-t">기능이 비슷한 특허</b>
               {patentData && <RelatedPatentsCompact patentData={patentData} onPatentClick={p.onRelatedPatentClick} />}
-            </aside>
+            </section>
             <div className="ds-main">
               {at("biz")}
               {at("extra")}

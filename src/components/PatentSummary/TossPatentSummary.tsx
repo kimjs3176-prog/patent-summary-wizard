@@ -257,14 +257,6 @@ function TossPatentSummaryInner({
           <ActionBar isStreaming={isStreaming} content={content} patentData={patentData} handlePrint={handlePrint} onRegenerate={onRegenerate} setShareOpen={setShareOpen} favoritesEnabled={favoritesEnabled} toggleFavorite={toggleFavorite} patentNumber={patentNumber} score={score} details={details} patentIsFavorite={patentIsFavorite} featureFlags={featureFlags} printRef={printRef} allReady={allReady} />
 
       <div ref={(node) => { aiBodyRef.current = node; printRef.current = node; }} data-toss-summary data-toss-surface className="bp-doc precision-report border border-border overflow-hidden max-w-[864px] mx-auto">
-        <div className="bp-doc-head">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#6B7684]">
-            AI TECH ANALYSIS REPORT
-          </span>
-          <span className="font-mono text-[10px] tabular-nums tracking-[0.12em] text-[#6B7684]">
-            DOC · {patentNumber}
-          </span>
-        </div>
         <div className="px-5 sm:px-7 pb-12">
           {/* 데이터시트형 요약서(C안): 화면은 여백 주석 + 본문, 인쇄·PDF는 A4 두 쪽 */}
           <DatasheetReport

@@ -145,7 +145,7 @@ export function NoticeManager({ apiCall }: NoticeManagerProps) {
       )}
 
       {isLoading && notices.length === 0 ? (
-        <div className="text-center py-8 text-xs text-muted-foreground">로딩중...</div>
+        <div className="text-center py-8 text-xs text-muted-foreground">로딩중…</div>
       ) : notices.length === 0 ? (
         <div className="text-center py-8 text-xs text-muted-foreground">등록된 공지사항이 없습니다.</div>
       ) : (

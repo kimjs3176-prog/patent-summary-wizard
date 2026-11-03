@@ -43,7 +43,7 @@ time, .tabular-nums, [data-numeric] {
     --popover-foreground: 222 47% 11%;
 
     /* Green accent system */
-    --primary: 158 68% 30%;
+    --primary: 158 68% 27%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
@@ -1230,15 +1230,6 @@ time, .tabular-nums, [data-numeric] {
   border-radius: 8px;
   background-color: hsl(var(--card));
 }
-.bp-doc-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 20px;
-  border-bottom: 1px solid hsl(var(--foreground) / 0.12);
-  background: hsl(var(--foreground));
-}
 .bp-kicker {
   display: inline-flex;
   align-items: center;
@@ -1267,9 +1258,6 @@ time, .tabular-nums, [data-numeric] {
 /* Precision technical report — one hierarchy across a long summary. */
 .precision-report {
   box-shadow: 0 18px 50px hsl(var(--foreground) / 0.1);
-}
-.precision-report .bp-doc-head span {
-  color: hsl(var(--background) / 0.58);
 }
 .report-hero {
   color: hsl(var(--background));
@@ -1306,7 +1294,7 @@ time, .tabular-nums, [data-numeric] {
   color: hsl(var(--background) / 0.62);
   background: hsl(var(--background) / 0.06);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -1470,19 +1458,19 @@ time, .tabular-nums, [data-numeric] {
 .ds-s3 > div { padding: .35em 0; background: var(--ds-cell); }
 .ds-s3 dd { margin: 0; font-size: 1.25em; font-weight: 700; color: var(--ds-ink); font-variant-numeric: tabular-nums; }
 .ds-trl { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: .15em; }
-.ds-trl span { padding: .15em 0; font-size: .85em; text-align: center; background: var(--ds-cell); color: var(--ds-sub); }
+.ds-trl span { padding: .15em 0; font-size: 1em; text-align: center; background: var(--ds-cell); color: var(--ds-sub); }
 .ds-trl span.on { background: var(--ds-on); color: var(--ds-ink); }
 .ds-trl span.cur { background: var(--ds-accent); color: #fff; font-weight: 700; }
 .ds-sub { margin: 0; font-size: .92em; color: var(--ds-sub); }
 .ds-wait { margin: 0; color: var(--ds-sub); }
-.ds-why summary { cursor: pointer; font-weight: 600; color: var(--ds-accent); }
+.ds-why summary { cursor: pointer; font-weight: 600; color: var(--ds-accent); padding: 3px 0; }
 .ds-why p { margin-top: .45em; }
 .ds-read p { margin: .25em 0 0; }
 .ds-reg { display: flex; flex-direction: column; gap: .45em; margin-top: .7em; }
 .ds-mini { list-style: none; margin: 0; padding: 0; }
 .ds-mini li { padding: .4em 0; border-top: 1px solid var(--ds-rule); }
 .ds-mini li b { display: block; color: var(--ds-ink); }
-.ds-link { display: inline-block; margin-left: .3em; font-weight: 600; color: var(--ds-accent); }
+.ds-link { display: inline-flex; align-items: center; gap: .2em; min-height: 24px; margin-left: .3em; font-weight: 600; color: var(--ds-accent); }
 /* 비슷한 특허 목록(RelatedPatentsCompact)을 여백 칸 글자 크기로 */
 .ds-related ul li button { padding: .45em 0; }
 .ds-related ul li p { font-size: 1em; line-height: 1.45; }
@@ -1531,9 +1519,7 @@ body.ais-printing .ais-print-target .ds-sheet.ds-free,
 .ais-ds-capture .ds-sheet.ds-free { height: auto; overflow: visible; }
 body.ais-printing .ais-print-target .ds-free .ds-body,
 .ais-ds-capture .ds-free .ds-body { overflow: visible; }
-body.ais-printing .ais-print-target .bp-doc-head,
 body.ais-printing .ais-print-target .ds ~ *,
-.ais-ds-capture .bp-doc-head,
 .ais-ds-capture .ds ~ * { display: none !important; }
 body.ais-printing .ais-print-target > div:has(> .ds),
 .ais-ds-capture > div:has(> .ds) { padding: 0 !important; }
@@ -1565,3 +1551,6 @@ body.ais-printing .ais-print-target .ds-fig > button img,
 .patent-chat-composer [data-slot="input-group"] { border-radius: 0.75rem; }
 /* The scroll library reserves a scrollbar gutter on both edges; keep it on the scrollbar side only. */
 .patent-chat-log > div { scrollbar-gutter: stable !important; }
+
+/* 동영상도 키보드로 갔을 때 초점 테두리가 보이게 (브라우저 기본 컨트롤만으로는 표시가 없다) */
+video:focus, video:focus-within { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }

@@ -48,7 +48,8 @@ export function MarketTable({ paragraphs }: { paragraphs: string[] }) {
   if (!rows.length) return null;
   return (
     <figure className="report-market">
-      <div className="report-table-wrap">
+      {/* 좁은 화면에서 가로로 넘기는 표: 키보드로도 들어가 넘길 수 있게 */}
+      <div className="report-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0} role="region" aria-label="시장 규모 표">
         <table className="report-market-table">
           <caption className="sr-only">관련 시장 규모 요약</caption>
           <thead>

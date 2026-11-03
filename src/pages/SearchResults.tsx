@@ -221,13 +221,13 @@ export default function SearchResults() {
                 <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
                   '{keyword}'
                 </h2>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
                   <Sparkles className="w-3 h-3" />
                   검색 결과
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {isLoading ? "AI가 검색어를 분석하고 특허를 찾고 있습니다..." : `총 ${totalCount}건의 특허 발견 · ${results.length}건 표시`}
+                {isLoading ? "AI가 검색어를 분석하고 특허를 찾고 있습니다…" : `총 ${totalCount}건의 특허 발견 · ${results.length}건 표시`}
               </p>
               {!isLoading && extractedKeywords.length > 0 && (
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
@@ -357,7 +357,7 @@ export default function SearchResults() {
                       )}
                       {patent.snippet && (
                         <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                          {patent.snippet}
+                          {patent.snippet.replace(/\.{3}$/, "…")}
                         </p>
                       )}
                     </div>
@@ -503,7 +503,7 @@ export default function SearchResults() {
             <div className="flex flex-wrap justify-center gap-2 mb-6 min-h-9 max-w-xl mx-auto">
               {suggestLoading && (
                 <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" /> 추천 검색어를 찾는 중...
+                  <Loader2 className="w-4 h-4 animate-spin" /> 추천 검색어를 찾는 중…
                 </span>
               )}
               {!suggestLoading &&

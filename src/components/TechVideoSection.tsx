@@ -58,7 +58,7 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
           </Link>
           <Link
             to="/tech-videos"
-            className="home-hero-muted text-[13px] font-medium rounded underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
+            className="home-hero-muted inline-flex items-center min-h-8 px-1 text-[13px] font-medium rounded underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
           >
             전체 보기
           </Link>
