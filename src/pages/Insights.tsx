@@ -141,7 +141,7 @@ export default function Insights() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={data.yearly} margin={{ top: 16, right: 4, left: -22, bottom: 0 }}>
                         <XAxis dataKey="year" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                         <Tooltip
                           cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
                           contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, fontSize: 12 }}

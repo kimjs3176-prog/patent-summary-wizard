@@ -106,7 +106,7 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
     return (
       <div className="flex items-center gap-2 py-3 text-[13px] text-[#6B7684]">
         <Loader2 className="w-4 h-4 animate-spin" />
-        <span>기능·특징이 유사한 특허를 찾는 중...</span>
+        <span>기능·특징이 유사한 특허를 찾는 중…</span>
       </div>
     );
   }
@@ -132,7 +132,7 @@ export function RelatedPatentsCompact({ patentData, onPatentClick }: Props) {
                   <Link2 className="w-3.5 h-3.5 shrink-0 mt-[3px] text-[#6B7684] group-hover:text-[#10B981]" />
                   <span className="min-w-0 break-keep">{p.title}</span>
                 </p>
-                <p className="text-[11.5px] text-[#6B7684] tabular-nums mt-0.5 pl-5">
+                <p className="text-xs text-[#4E5968] tabular-nums mt-0.5 pl-5">
                   {p.patentId}{p.assignee ? ` · ${truncate(p.assignee, 24)}` : ""}
                 </p>
               </div>

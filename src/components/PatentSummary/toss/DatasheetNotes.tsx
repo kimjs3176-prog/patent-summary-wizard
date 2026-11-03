@@ -21,7 +21,7 @@ export function FactsNote({ patentData, owner, keywords, onKeywordClick }: { pat
   ];
   const ipc = (patentData.classifications ?? []).flatMap((c) => c.split("|")).map((c) => c.trim()).filter(Boolean).slice(0, 4);
   return (
-    <aside id="sec-basic" data-summary-section data-summary-label="기본 정보" className="ds-note scroll-mt-24">
+    <section id="sec-basic" data-summary-section data-summary-label="기본 정보" className="ds-note scroll-mt-24">
       <b className="ds-note-t">기본 정보</b>
       <dl className="ds-facts">
         {rows.filter(([, v]) => v).map(([k, v]) => (<div key={k}><dt>{k}</dt><dd>{v}</dd></div>))}
@@ -37,7 +37,7 @@ export function FactsNote({ patentData, owner, keywords, onKeywordClick }: { pat
           </div>
         </>
       )}
-    </aside>
+    </section>
   );
 }
 
@@ -46,7 +46,7 @@ export function ScoreNote({ score, scoreSummary, scoreLoading, details, trl, trl
   score: number | null; scoreSummary: string; scoreLoading: boolean; details: CommercializationDetails | null; trl: number | null; trlName: string | null | undefined; trlStage: string;
 }) {
   return (
-    <aside id="sec-score" data-summary-section data-summary-label="사업화 점수" className="ds-note scroll-mt-24">
+    <section id="sec-score" data-summary-section data-summary-label="사업화 점수" className="ds-note scroll-mt-24">
       <b className="ds-note-t">사업화 점수</b>
       {score == null ? (
         <p className="ds-wait">{scoreLoading ? <><Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1" />분석 중…</> : "점수 없음"}</p>
@@ -80,7 +80,7 @@ export function ScoreNote({ score, scoreSummary, scoreLoading, details, trl, trl
           ))}
         </details>
       )}
-    </aside>
+    </section>
   );
 }
 

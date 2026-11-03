@@ -39,7 +39,7 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
   const active = hover || rating;
 
   return (
-    <aside className={`w-[240px] rounded-[20px] border border-[#F2F4F6] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${className}`}>
+    <section aria-label="만족도 조사" className={`w-[240px] rounded-[20px] border border-[#F2F4F6] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${className}`}>
       {done ? (
         <div className="text-center py-6">
           <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
@@ -83,10 +83,10 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
             disabled={sending}
             className="mt-2 w-full h-9 rounded-[12px] bg-primary text-primary-foreground text-[12px] font-semibold inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
-            <Send className="w-3.5 h-3.5" /> {sending ? "제출 중..." : "만족도 제출"}
+            <Send className="w-3.5 h-3.5" /> {sending ? "제출 중…" : "만족도 제출"}
           </button>
         </>
       )}
-    </aside>
+    </section>
   );
 };

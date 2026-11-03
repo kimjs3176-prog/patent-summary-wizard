@@ -90,7 +90,7 @@ export function AdminSystemPanel({ cacheCounts, cacheItems, cacheLoading, cacheP
 
                     {cacheItems.length === 0 ? (
                       <div className="text-center py-12 text-muted-foreground text-sm">
-                        {cacheLoading ? "로딩 중..." : "캐시된 데이터가 없습니다."}
+                        {cacheLoading ? "로딩 중…" : "캐시된 데이터가 없습니다."}
                       </div>
                     ) : (
                       <div className="space-y-1">

@@ -82,7 +82,7 @@ export function usePatentSummary() {
 
     // Step 1: Fetch patent data from KIPRIS
     try {
-      toast.info("KIPRIS에서 특허 정보를 조회 중...");
+      toast.info("KIPRIS에서 특허 정보를 조회 중…");
 
       const fetchResponse = await safeFetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-patent`,
@@ -169,9 +169,9 @@ export function usePatentSummary() {
       if (!isCurrent()) return null;
       try {
         if (attempt === 1) {
-          toast.info("AI 요약서를 생성 중...");
+          toast.info("AI 요약서를 생성 중…");
         } else {
-          toast.info(`재시도 중... (${attempt - 1}/${MAX_ATTEMPTS - 1})`);
+          toast.info(`재시도 중… (${attempt - 1}/${MAX_ATTEMPTS - 1})`);
         }
 
         // Reset partial buffer for clean re-stream
@@ -279,7 +279,7 @@ export function usePatentSummary() {
         // Exponential backoff: 1.5s, 4s (+ small jitter)
         const delayMs = [1500, 4000][attempt - 1] ?? 4000;
         const jitter = Math.floor(Math.random() * 400);
-        toast.warning(`요약 생성 실패. ${Math.round((delayMs + jitter) / 1000)}초 후 자동 재시도합니다...`);
+        toast.warning(`요약 생성 실패. ${Math.round((delayMs + jitter) / 1000)}초 후 자동 재시도합니다…`);
         await new Promise((r) => setTimeout(r, delayMs + jitter));
       }
     }

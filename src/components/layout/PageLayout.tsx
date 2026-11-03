@@ -52,6 +52,13 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
       </div>
 
       {/* Header — Toss-style clean */}
+      {/* 키보드 사용자가 머리글 메뉴(7개)를 건너뛰고 바로 본문으로 가는 링크. Tab을 누르면 나타난다 */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        본문 바로가기
+      </a>
       <header className="w-full sticky top-0 z-50 backdrop-blur-3xl border-b border-border/30" style={{ background: 'hsl(var(--background) / 0.85)' }}>
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2 md:py-3.5 flex flex-wrap xl:flex-nowrap items-center justify-between gap-x-2 gap-y-1">
           <Link
@@ -121,7 +128,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
       </header>
 
       {/* min-h-screen keeps the footer below the fold while page data loads, so it never jumps (layout shift) */}
-      <div className="min-h-screen" style={{ paddingBottom: kioskEnabled ? "340px" : undefined }}>
+      <div id="main-content" tabIndex={-1} className="min-h-screen scroll-mt-20 focus:outline-none" style={{ paddingBottom: kioskEnabled ? "340px" : undefined }}>
         {children}
       </div>
 
@@ -136,15 +143,15 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               <span className="text-xs md:text-sm font-semibold text-foreground tracking-tight">{settings.header_title}</span>
             </div>
           )}
-          <p className="text-[11px] md:text-xs text-muted-foreground leading-relaxed">{settings.footer_line1}</p>
-          <p className="text-[11px] md:text-xs text-muted-foreground mt-1">{settings.footer_line2}</p>
-          <p className="text-[11px] md:text-xs text-muted-foreground mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground transition-colors">kimjs1408@koat.or.kr</a></p>
-          <p className="text-[10.5px] md:text-[11px] text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground leading-relaxed">{settings.footer_line1}</p>
+          <p className="text-xs text-muted-foreground mt-1">{settings.footer_line2}</p>
+          <p className="text-xs text-muted-foreground mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="inline-flex items-center min-h-6 underline hover:text-foreground transition-colors">kimjs1408@koat.or.kr</a></p>
+          <p className="text-xs text-muted-foreground mt-1">
             화면이 이전 버전으로 보이나요?{" "}
             <button
               type="button"
               onClick={forceRefresh}
-              className="underline hover:text-foreground transition-colors font-medium"
+              className="inline-flex items-center min-h-6 underline hover:text-foreground transition-colors font-medium"
             >
               캐시 초기화 후 새로고침
             </button>

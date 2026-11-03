@@ -103,13 +103,13 @@ const Filing = () => {
   if (!enabled) {
     return (
       <PageLayout headerRight={headerRight} showFooterLogo={false}>
-        <div className="container mx-auto px-4 py-16 max-w-xl text-center">
+        <main className="container mx-auto px-4 py-16 max-w-xl text-center">
           <div className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: "var(--gradient-accent)" }}>
             <FileSignature className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-xl font-bold text-foreground mb-2">출원지원은 지금 꺼져 있습니다</h1>
           <p className="text-sm text-muted-foreground">관리자 페이지의 기능 설정에서 ‘출원지원’을 켜면 이 메뉴가 열립니다.</p>
-        </div>
+        </main>
       </PageLayout>
     );
   }
@@ -126,7 +126,7 @@ const Filing = () => {
 
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
-      <section aria-labelledby="filing-title" className="relative z-10">
+      <main aria-labelledby="filing-title" className="relative z-10">
         <h1 id="filing-title" className="sr-only">출원지원</h1>
         {/* 단계 바 — AIS 디자인. 누르면 iframe 안 에이프가 그 단계로 간다 */}
         <div className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 md:pt-3">
@@ -138,7 +138,7 @@ const Filing = () => {
                 </div>
                 <div className="leading-tight">
                   <p className="text-[13px] font-bold text-foreground">출원지원</p>
-                  <p className="text-[10.5px] text-muted-foreground truncate max-w-[160px]" title={state?.title || undefined}>{state?.title || "아이디어부터 해외 출원까지"}</p>
+                  <p className="text-[11px] text-muted-foreground truncate max-w-[160px]" title={state?.title || undefined}>{state?.title || "아이디어부터 해외 출원까지"}</p>
                 </div>
               </div>
               <ol className="flex items-center gap-1 md:gap-1.5 overflow-x-auto min-w-0 flex-1 py-0.5" aria-label="출원 준비 단계">
@@ -274,9 +274,9 @@ const Filing = () => {
         />
         <p className="container mx-auto px-4 py-2.5 text-[11px] md:text-xs text-muted-foreground">
           작성 내용은 이 브라우저에 저장됩니다{state?.api ? ` · ${state.api}` : ""}. 특허 가능성 판단과 명세서 초안은 AI가 만든 참고 자료이며 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. 화면이 보이지 않으면{" "}
-          <a href={standalone} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground/70">새 창으로 열기</a>를 누르세요.
+          <a href={standalone} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-6 underline hover:text-foreground/70">새 창으로 열기</a>를 누르세요.
         </p>
-      </section>
+      </main>
     </PageLayout>
   );
 };

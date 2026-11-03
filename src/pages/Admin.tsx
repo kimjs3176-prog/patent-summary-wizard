@@ -412,7 +412,7 @@ const Admin = () => {
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             />
             <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-              {isLoading ? "확인 중..." : "로그인"}
+              {isLoading ? "확인 중…" : "로그인"}
             </Button>
           </div>
         </Card>

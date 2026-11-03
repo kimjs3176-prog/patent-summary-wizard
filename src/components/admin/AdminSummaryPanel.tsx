@@ -155,7 +155,7 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                 <Input
                   value={summaryDisclaimer}
                   onChange={e => setSummaryDisclaimer(e.target.value)}
-                  placeholder="※ 본 분석은..."
+                  placeholder="※ 본 분석은…"
                 />
               </div>
 

@@ -2,7 +2,8 @@ import type { PatentSummaryProps as BasePatentSummaryProps } from "../types";
 import { Lightbulb, FileText, TrendingUp, Leaf, Rocket } from "lucide-react";
 import { normalizeCommercializationProse } from "@/lib/summaryProse";
 
-export const ACCENT_HEX = "#10B981";
+// 흰 글자를 올려도 대비 5.5:1 (WCAG AA). 예전 #10B981은 2.5:1이었다
+export const ACCENT_HEX = "#047857";
 
 type PatentStatusTone = "registered" | "published" | "pending" | "inactive" | "unknown";
 
