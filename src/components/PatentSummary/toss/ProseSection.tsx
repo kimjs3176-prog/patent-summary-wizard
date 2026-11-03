@@ -80,15 +80,25 @@ export function MarketTable({ paragraphs }: { paragraphs: string[] }) {
 export function ProseSection({ sec, idx, settled, annotate, media }: { sec: MdSection; idx: number; settled: boolean; annotate: Annotate; media?: React.ReactNode }) {
   const { kicker, heading } = sectionMeta(sec.title);
   const { lead, body } = settled ? toReportParagraphs(sec.paragraphs) : { lead: "", body: sec.paragraphs };
-  return (
-    <section id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="ds-text report-prose-section scroll-mt-24">
-      <h2 className="ds-h"><span>{kicker}</span>{heading}</h2>
-      {media}
-      {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
+  const prose = (
+    <>
       {lead && <p className="ds-lead">{renderInline(lead, `l${idx}`, annotate)}</p>}
       {body.map((p, i) => (
         <p key={i}>{renderInline(p, `p${idx}-${i}`, annotate)}</p>
       ))}
+    </>
+  );
+  return (
+    <section id={`sec-ai-${idx}`} data-summary-section data-summary-label={heading} className="ds-text report-prose-section scroll-mt-24">
+      <h2 className="ds-h"><span>{kicker}</span>{heading}</h2>
+      {settled && kicker === "시장 동향" && <MarketTable paragraphs={sec.paragraphs} />}
+      {media ? (
+        // 도면이 붙는 절(발명 요약)만 2열: 왼쪽 본문, 오른쪽 도면 (좁은 화면은 본문 아래 도면)
+        <div className="ds-split">
+          <div className="ds-split-text">{prose}</div>
+          <div className="ds-split-media">{media}</div>
+        </div>
+      ) : prose}
       {sec.footnotes && sec.footnotes.length > 0 && (
         <ol className="ds-foot-notes">
           {sec.footnotes.map((fn) => (
