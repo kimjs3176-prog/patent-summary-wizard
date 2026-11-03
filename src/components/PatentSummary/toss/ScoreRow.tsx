@@ -1,7 +1,7 @@
 import { renderBold } from "./RenderBold";
 
 export function ScoreRow({ label, value, color, reason }: { label: string; value: number; color: string; reason?: string }) {
-  // 가로 배치: 좌측 라운드 스퀘어 점수 타일 + 우측 라벨/근거
+  // 가로 배치: 좌측 라운드 스퀘어 점수 타일 + 우측 라벨/근거 (점수는 타일 숫자로만 — 카드 폭만큼 늘어지는 막대는 두지 않는다)
   const border = `${color}26`; // ~15% opacity
   return (
     <div
@@ -17,15 +17,9 @@ export function ScoreRow({ label, value, color, reason }: { label: string; value
         </span>
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-1.5 mb-1.5">
+        <div className="flex items-baseline gap-1.5 mb-2">
           <p className="text-[14px] sm:text-[15px] font-bold text-[#191F28] leading-none">{label}</p>
           <span className="text-[11px] text-[#6B7684] font-semibold">/ 100</span>
-        </div>
-        <div className="h-[6px] rounded-full bg-[#F1F3F5] overflow-hidden mb-2.5">
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{ width: `${value}%`, background: color }}
-          />
         </div>
         {reason && (
           <p className="text-[12.5px] sm:text-[13px] leading-[1.75] text-[#4E5968]">

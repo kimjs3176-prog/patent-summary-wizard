@@ -1418,6 +1418,8 @@ time, .tabular-nums, [data-numeric] {
 .report-toc a { display: inline-flex; align-items: baseline; gap: 5px; font-size: 13px; color: #333D4B; text-decoration: none; }
 .report-toc a:hover { color: hsl(var(--primary)); text-decoration: underline; }
 .report-toc .n { font-family: ui-monospace, monospace; font-size: 11px; color: #6B7684; }
+/* 넓은 화면에서는 왼쪽 '섹션 바로가기'가 같은 목차를 보여 주므로 본문 목차는 숨긴다 (휴대폰·인쇄에서는 보인다) */
+@media screen and (min-width: 1024px) { body:not(.ais-printing) .report-toc { display: none; } }
 /* 시장 요약표 · 근거 배지 */
 .report-table-wrap { overflow-x: auto; border: 1px solid hsl(var(--border)); border-radius: 6px; }
 .report-market-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13.5px; }
