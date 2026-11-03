@@ -3664,7 +3664,7 @@ async function translateTitle() {
     if ((await Translator.availability(opts)) === "unavailable") throw new Error("이 브라우저에서는 한국어→영어 번역 모델을 쓸 수 없습니다");
     toast("기기 안의 번역 모델을 준비하는 중…");
     const en = await (await Translator.create(opts)).translate(S.idea.title);
-    S.app.engTitle = en.replace(/[.\s]+$/, "").toUpperCase(); render();
+    setEngTitle(en.replace(/[.\s]+$/, "").toUpperCase()); render();
     toast("영문 명칭을 넣었습니다. 기술 용어가 맞는지 확인하세요");
   } catch (e) { toast(e.message || "번역하지 못했습니다"); }
 }
@@ -3674,7 +3674,7 @@ const aiProgress = st => st.got ? `${st.got.toLocaleString("ko-KR")}자 받는 �
 /* ---------- AI는 사용자가 눌러야 시작한다: 쪽에 들어오거나 입력을 바꿔도 저절로 돌지 않는다 ----------
    AI 자리(data-ai-slot)에는 '무엇을 해 주는지·보통 걸리는 시간'을 적은 시작 카드를 두고, 누르면 그 작업만 돈다.
    결과를 받은 뒤 입력이 바뀌면 '입력이 바뀌었어요 · 다시 받기'로 알린다 */
-const AI_TOOK = { ideate: "10초 안팎", discover: "10~20초", compare: "10~20초", whitespace: "10~20초", reject: "10~20초", draft: "20~50초", review: "10초 안팎", fill: "10~30초", supplement: "10~20초", globalbiz: "10~20초", insight: "10~20초" };
+const AI_TOOK = { ideate: "10초 안팎", discover: "10~20초", compare: "10~20초", whitespace: "10~20초", reject: "10~20초", draft: "20~50초", engname: "5~10초", review: "10초 안팎", fill: "10~30초", supplement: "10~20초", globalbiz: "10~20초", insight: "10~20초" };
 // 시작 카드: [버튼 글, AI가 해 주는 일 한 줄]
 const AI_START = {
   ideate: ["AI로 더 구체적인 후보 받기", "지금 후보는 문장 틀로 만든 예시예요. AI가 키워드로 더 구체적인 후보를 새로 써요"],
@@ -3876,7 +3876,7 @@ async function runAiTask(task) {
   try {
    // 칸이 많은 작업(빈칸 채우기)은 반영한 뒤 남은 것을 이어서 보낸다 (ui.more · ui.rounds)
    for (let round = 1; ; round++) {
-    const r = await fetch("/api/ai", { method: "POST", signal: st.ctrl.signal, headers: { "content-type": "application/json" }, body: JSON.stringify({ task, input: aiTaskInput(task) }) });
+    const r = await fetch("/api/ai", { method: "POST", signal: st.ctrl.signal, headers: { "content-type": "application/json" }, body: JSON.stringify({ task: ui.server ?? task, input: aiTaskInput(task) }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || `서버 오류 (${r.status})`);
     const result = j.result;
@@ -3890,6 +3890,35 @@ async function runAiTask(task) {
   finally { ui.end?.(); aiEnd(st); softRender(); }
 }
 
+/* ---------- 영문 명칭 제안: 사용자가 누르면 서버 AI(빈칸 작성 작업에 '영문 명칭' 칸 하나만)로 국문 명칭을 영어 특허 명칭으로 옮긴다 ---------- */
+AI_TASK_UI.engname = {
+  label: "영문 명칭 제안", server: "fill", manual: true, ready: () => !!S.idea.title.trim(), begin: () => setTimeout(rerenderKeepScroll), // 만드는 중 표시
+  input: () => { const i = S.idea; return { idea: { title: i.title, field: fieldName(i.field), kind: KIND_NAME[claimKinds().main], problem: i.problem, diff: i.diff, effect: S.effect, parts: S.parts.split("\n").map(x => x.trim()).filter(Boolean) },
+    prior: [], slots: [{ id: "0", label: "영문 명칭", section: "발명의 명칭", before: `【발명의 명칭】 ${i.title}{`, after: "}" }], engTitle: "" }; },
+  apply: r => {
+    const en = String((r?.fills ?? []).find(f => String(f.id).replace(/^#/, "") === "0")?.text ?? "").replace(/[{}〔〕]/g, "").replace(/[.\s]+$/, "").replace(/\s+/g, " ").trim().toUpperCase();
+    if (!/^[A-Z0-9][A-Z0-9 ,.;:()'&\-]{5,}$/.test(en)) throw new Error("영문 명칭을 받지 못했습니다. 다시 눌러 주세요.");
+    S.engSuggest = { title: S.idea.title, en };
+    if (!S.app.engTitle.trim()) setEngTitle(en);
+  },
+  applied: () => S.app.engTitle === S.engSuggest?.en ? "영문 명칭을 넣었어요. 기술 용어가 맞는지 확인하세요" : "영문 명칭 제안을 받았어요. 맞으면 ‘넣기’를 누르세요"
+};
+// 영문 명칭을 바꾸면 이미 만든 명세서의 {영문 명칭}도 바꾼다 (입력칸을 직접 고칠 때와 같게)
+function setEngTitle(en) {
+  S.app.engTitle = en;
+  if (S.spec) { if (S.spec.source === "template" && !S.spec.edited) S.spec = newTemplateSpec(); else syncSpecIds(); }
+  refreshFilingDocs(); scheduleSave();
+}
+function engHelp() {
+  const st = aiState("engname"), sg = S.engSuggest?.title === S.idea.title ? S.engSuggest.en : "";
+  if (st.busy) return `<span class="hint">AI가 영문 명칭을 만드는 중… <button type="button" class="linklike" data-ai-stop="engname">멈추기</button></span>`;
+  const use = sg && sg !== S.app.engTitle.trim() ? `<span class="hint">AI 제안: <b>${esc(sg)}</b> <button type="button" class="linklike" data-eng-use>이걸로 넣기</button></span>` : "";
+  const err = st.err ? `<span class="hint warn-t">${esc(st.err)}</span>` : "";
+  const btn = aiMode() && S.idea.title.trim() ? `<span class="hint"><button type="button" class="linklike" data-ai-run="engname">${S.app.engTitle.trim() ? "AI로 다른 영문 명칭 받기" : "AI로 영문 명칭 받기"}</button> · 누를 때만 AI가 작동해요 (보통 5~10초)</span>`
+    : hasTranslator() && S.idea.title.trim() ? `<span class="hint"><button type="button" class="linklike" id="ai-translate">기기 안의 번역으로 영문 명칭 받기</button></span>` : "";
+  return use + err + btn;
+}
+document.addEventListener("click", e => { if (e.target.closest("[data-eng-use]") && S.engSuggest) { setEngTitle(S.engSuggest.en); rerenderKeepScroll(); toast("영문 명칭을 넣었어요"); } });
 // 3단계 요건·거절 위험 쪽의 AI 거절이유 예상 (diagResultPage)
 AI_TASK_UI.reject = {
   label: "거절이유 예상", ready: () => !!S.idea.title.trim(),
@@ -4957,7 +4986,7 @@ function viewDraft() {
         ${S.idea.field === "ferment" ? `<p class="hint" style="margin-top:8px">균주: ${S.strain ? `<b>${STRAIN_OPTS.find(o => o[0] === S.strain)?.[1] ?? ""}</b> (1단계에서 답함)` : "1단계에서 아직 고르지 않았어요"} <button type="button" class="linklike" data-fact-go="idea:pick:input[name=strain]">${S.strain ? "바꾸기" : "고르러 가기"}</button></p>` : ""}</div>
     </div>
     <div class="grid2" data-pg="0">
-      <div class="field"><label for="eng0">발명의 영문명칭</label><input type="text" id="eng0" data-ap="engTitle" value="${esc(S.app.engTitle)}" placeholder="예: COMPOSITION FOR PROMOTING PLANT GROWTH"><span class="hint">명세서의 【발명의 명칭】에 {영문 명칭}으로 들어갑니다.${hasTranslator() ? ` <button class="link" id="ai-translate">기기 안의 AI로 번역</button>` : ""}</span></div>
+      <div class="field"><label for="eng0">발명의 영문명칭</label><input type="text" id="eng0" data-ap="engTitle" value="${esc(S.app.engTitle)}" placeholder="예: COMPOSITION FOR PROMOTING PLANT GROWTH"><span class="hint">명세서의 【발명의 명칭】에 {영문 명칭}으로 들어갑니다.</span>${engHelp()}</div>
       <div class="field"><span class="label">도면을 함께 내나요?</span>${seg("hasDrawings", [["no", "도면 없음"], ["yes", "도면 있음"]], S.hasDrawings)}${figHint()}<span class="hint">도면이 있으면 【도면의 간단한 설명】과 【대표도】가 들어갑니다. 시제품 사진이 있으면 첨부서류 쪽에서 선 도면으로 바꿔 넣을 수 있어요.</span></div>
     </div>
     ${expEditor()}
@@ -5826,10 +5855,10 @@ function saveDocx(name, text, layout = FORM_LAYOUT) { saveFile(name, DOCX_MIME, 
 const extraGuide = () => [...figList().map(f => `\r\n· ${f.tifFile}: ${f.src === "auto" ? `자동으로 그린 도 ${f.n}(${f.m.name})` : f.src === "photo" ? `사진으로 만든 도 ${f.n}(${f.p.name})` : `실험 결과 그래프 도 ${f.n}(${f.g.metric})`}, 흑백 TIFF 300dpi. 명세서작성기 도면란에는 이 파일을 넣으세요. 넣기 전에 내용이 맞는지 확인하세요. 같은 그림의 JPG(${f.file})는 보기·공유용이며 명세서 Word에도 들어 있습니다.`),
   claimChart() && "\r\n· 참고_청구항_대비표.docx: 청구항 1의 구성과 인용 문헌을 맞대어 본 표(요약 기준 참고용). 지식재산처에 내지 않으며, 변리사 상담이나 우선심사 검토에 씁니다."].filter(Boolean).join("");
 
-function apField(key, label, hint = "", type = "text") {
+function apField(key, label, hint = "", type = "text", extra = "") {
   return `<div class="field"><label for="ap-${key}">${label}</label>${type === "textarea"
     ? `<textarea id="ap-${key}" data-ap="${key}" rows="3">${esc(S.app[key])}</textarea>`
-    : `<input type="${type}" id="ap-${key}" data-ap="${key}" value="${esc(S.app[key])}">`}${hint ? `<span class="hint">${hint}</span>` : ""}</div>`;
+    : `<input type="${type}" id="ap-${key}" data-ap="${key}" value="${esc(S.app[key])}">`}${hint ? `<span class="hint">${hint}</span>` : ""}${extra}</div>`;
 }
 function apSeg(key, label, opts, hint = "") {
   return `<div class="field"><span class="label">${label}</span><div class="seg" role="radiogroup">${opts.map(([v, l]) => `<label><input type="radio" name="ap-${key}" data-ap="${key}" value="${v}" ${S.app[key] === v ? "checked" : ""}>${l}</label>`).join("")}</div>${hint ? `<span class="hint">${hint}</span>` : ""}</div>`;
@@ -5848,7 +5877,7 @@ function filingPages() {
         <span class="hint">${REDUCE[a.type].person ? (reduceOk() ? "개인 감면은 발명자와 출원인이 같을 때만 되며, 출원료 감면은 한 해 20건까지입니다(징수규칙 별표 5)." : "<b>출원인이 발명자 목록에 없어 감면을 넣지 않았습니다.</b> 개인 감면은 발명자와 출원인이 같을 때만 됩니다(징수규칙 별표 5 비고 2). 출원인이 발명자라면 발명자란에도 같은 이름으로 적으세요.") : REDUCE[a.type].proof ? `${REDUCE[a.type].doc}를 첨부합니다. 이미 낸 적이 있거나 행정정보 공동이용으로 확인되면 생략할 수 있습니다.` : ""}</span></div>
       ${apField("name", REDUCE[a.type].corp ? "출원인 명칭(법인명)" : "출원인 성명", "특허고객번호 부여 신청 때 적은 국문 이름과 같게 적습니다.")}
       ${apField("code", "출원인 특허고객번호", "예: 4-2026-012345-6. 없으면 특허로에서 먼저 부여신청하세요.")}
-      ${apField("engTitle", "발명의 영문명칭", "명세서의 {영문 명칭}에도 같이 들어갑니다.")}
+      ${apField("engTitle", "발명의 영문명칭", "명세서의 {영문 명칭}에도 같이 들어갑니다.", "text", engHelp())}
       ${apField("inventors", "발명자 (한 줄에 한 명: 성명, 특허고객번호)", `출원인과 발명자가 같아도 발명자란에 다시 적습니다.${REDUCE[a.type].corp ? "" : ` <button type="button" class="linklike" data-ap-self>출원인을 발명자로 넣기</button>`}`, "textarea")}
       ${disc ? `<div class="field"><label for="ap-discForm">공개형태</label><select id="ap-discForm" data-ap="discForm">${DISC_FORMS.map(x => `<option ${a.discForm === x ? "selected" : ""}>${x}</option>`).join("")}</select><span class="hint">‘아이디어 진단’에서 입력한 공개일 ${dotDate(S.idea.discDate)}이 함께 들어갑니다.</span></div>
         ${apSeg("discProof", "공지예외 증명서류 제출 시점", [["with", "출원과 함께"], ["later", "출원 후 30일 이내"]])}` : ""}
