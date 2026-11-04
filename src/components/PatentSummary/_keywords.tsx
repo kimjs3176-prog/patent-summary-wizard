@@ -1,5 +1,5 @@
 import React from "react";
-import { parsePatentTitle } from "@/lib/patentKeywords";
+import { parsePatentTitle, cleanPhrase } from "@/lib/patentKeywords";
 
 export type KeywordCategory = "function" | "industry" | "material" | "product" | "tech" | "general";
 
@@ -54,17 +54,19 @@ export function extractKeywordsFromPatent(
   const p = parsePatentTitle(title);
   const specific: KwItem[] = [];
   const add = (word: string, cat: KeywordCategory) => {
-    const w = word.trim();
+    const w = cleanPhrase(word); // '라이스 볼의'처럼 조사가 붙은 꼴은 키워드로 내보내지 않는다
     if (!w || w.length > 20 || specific.some((k) => k.word === w)) return; // 콩·쌀·김처럼 한 글자 원료도 있다
     specific.push({ word: w, cat });
   };
   if (p.subject) add(p.subject, "material");
   if (p.useWords.length >= 2) { add(p.useWords[0], "material"); add(p.useWords.slice(1).join(" "), "function"); }
   if (p.use) add(p.use, "function");
+  if (p.product) add(p.product, "product");
   if (p.means) add(p.means, "tech");
   else if (p.way) add(p.way, "tech");
   if (specific.length < 2) return base.slice(0, max);
   for (const cat of ["product", "industry"] as KeywordCategory[]) {
+    if (specific.some((s) => s.cat === cat)) continue; // 명칭에서 이미 찾은 제품이 있으면 분류 규칙 제품은 덧붙이지 않는다
     const k = base.find((x) => x.cat === cat && !specific.some((s) => s.word === x.word));
     if (k) specific.push(k);
   }
