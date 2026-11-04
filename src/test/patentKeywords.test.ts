@@ -29,4 +29,12 @@ describe("요약서 관련 키워드", () => {
   it("명칭에서 뽑지 못하면 분류 규칙 결과", () => {
     expect(words("스마트 온실", ["A01G 9/24"]).length).toBeGreaterThan(0);
   });
+  it("'라이스 볼의 제조방법': 조사가 붙은 꼴 대신 낱말 '라이스 볼'을 제품으로", () => {
+    expect(parsePatentTitle("쌀 단백질을 함유하는 라이스 볼의 제조방법")).toMatchObject({ subject: "단백질", product: "라이스 볼", use: "" });
+    const kw = words("쌀 단백질을 함유하는 라이스 볼의 제조방법", ["A23L 7/157", "A23L 17/00"], "쌀 단백질을 첨가해 식감을 개선한 라이스 볼을 제조한다. ".repeat(4));
+    expect(kw).toContain("라이스 볼");
+    expect(kw).not.toContain("라이스 볼의");
+    expect(kw).not.toContain("장치·시스템");
+    expect(kw.every((w) => !/(의|을|를)$/.test(w))).toBe(true);
+  });
 });

@@ -31,7 +31,7 @@ const GENERIC_TAIL = /^(추출물|발효물|분말|농축액|혼합물|배양액
  */
 export function stripParticle(token: string): string {
   const t = token.trim();
-  const m = t.match(/^(.+?)(에서|으로|의|를|을|에|와|과)$/u);
+  const m = t.match(/^(.+?)(에서|으로|의|를|을|에)$/u);
   if (!m) return t;
   const [, stem, josa] = m;
   if (josa === "의" || josa === "를" || josa === "에서" || josa === "으로") return stem;
