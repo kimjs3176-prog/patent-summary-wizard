@@ -150,14 +150,16 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
               <li className="inline-flex items-center gap-1.5"><ListFilter className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />문장으로 쓰면 꼭 맞는 것만 골라요</li>
               <li className="inline-flex items-center gap-1.5"><MessagesSquare className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />물어보면 AI가 대화로 답해요</li>
             </ul>
-            {/* 무상기술이전 sits on its own row at the foot of the hero, below the search box (owner). */}
+            {/* 무상기술이전 and, to its right, 식품기술이전 협의체 sit on their own row at the foot of the hero (owner); one column on phones. */}
+            {ctas.length > 0 && (
+            <div className="mt-5 grid max-w-4xl gap-2.5 sm:grid-cols-2">
             {ctas.map((s) => {
               const Icon = s.icon;
               return (
-                <div key={s.key} className="mt-5">
                   <Link
+                    key={s.key}
                     to={s.to}
-                    className="home-hero-cta group flex w-full max-w-2xl items-center gap-3 rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
+                    className="home-hero-cta group flex w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
                   >
                     <span className="home-hero-cta-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" aria-hidden="true">
                       <Icon className="h-4 w-4" />
@@ -168,9 +170,10 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
                     </span>
                     <ArrowRight className="home-hero-accent h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
                   </Link>
-                </div>
               );
             })}
+            </div>
+            )}
           </>
         )}
       </div>

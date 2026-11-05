@@ -10,7 +10,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const BASE = (process.argv[2] || "http://127.0.0.1:4173").replace(/\/$/, "");
-const ROUTES = ["/", "/finder", "/potential", "/filing", "/insights", "/batch", "/compare", "/tech-videos", "/search?keyword=%EB%B0%9C%ED%9A%A8", "/no-such-page"];
+const ROUTES = ["/", "/finder", "/potential", "/consortium", "/consortium?org=%ED%95%9C%EA%B5%AD%EC%8B%9D%ED%92%88%EC%97%B0%EA%B5%AC%EC%9B%90", "/filing", "/insights", "/batch", "/compare", "/tech-videos", "/search?keyword=%EB%B0%9C%ED%9A%A8", "/no-such-page"];
 const WIDTHS = [1280, 390];
 const fails = [];
 const fail = (where, msg) => { fails.push(`${where}: ${msg}`); console.log(`  ✗ ${msg}`); };

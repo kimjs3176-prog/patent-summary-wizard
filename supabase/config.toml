@@ -34,3 +34,6 @@ verify_jwt = false
 
 [functions.filing-api]
 verify_jwt = false
+
+[functions.consortium-patents]
+verify_jwt = false
