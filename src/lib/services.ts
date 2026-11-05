@@ -51,6 +51,19 @@ export function headerBadgeServices(settings: SettingsLike): ServiceItem[] {
   return visibleServices(settings).filter((s) => s.key !== "home" && s.key !== "filing");
 }
 
+/**
+ * Services given their own entry at the bottom of the home hero (owner: 무상기술이전).
+ * Kept here so the hero and the header menu never disagree about what the site offers.
+ */
+export function heroCtaServiceKeys(): ServiceKey[] {
+  return ["potential"];
+}
+
+export function heroCtaServices(settings: SettingsLike): ServiceItem[] {
+  const keys = heroCtaServiceKeys();
+  return visibleServices(settings).filter((s) => keys.includes(s.key));
+}
+
 /** The home entry also covers search results, which are reached from its search box. */
 export function isServiceActive(item: ServiceItem, pathname: string): boolean {
   if (item.to === "/") return pathname === "/" || pathname === "/search";
