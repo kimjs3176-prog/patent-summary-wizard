@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Agri IP Summary (atipsum) brand film</title>
+<meta name="viewport" content="width=1920, height=1080">
+<link rel="stylesheet" href="./runtime/fonts.css">
+<style>
+@font-face { font-family: "Noto Sans KR"; src: url("../../public/fonts/NotoSansKR-VF.ttf") format("truetype"); font-weight: 100 900; font-display: block; }
+/* ACCENT = green = "the AI has read it". It appears on the scan line, the reading result, the score and the ending, nowhere else. */
+:root {
+  --night: hsl(222 47% 7%);
+  --paper: hsl(60 5% 96%);
+  --ink: hsl(222 47% 11%);
+  --ink-soft: hsl(222 14% 42%);
+  --accent: hsl(158 64% 40%);
+  --accent-deep: hsl(158 68% 30%);
+  --font: "Noto Sans KR", "Inter", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+#main { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--night); color: var(--ink); font-family: var(--font); font-weight: 500; }
+.scene { position: absolute; inset: 0; overflow: hidden; }
+.fill { position: absolute; inset: 0; }
+.abs { position: absolute; white-space: pre; }
+.paper { background:
+  radial-gradient(1300px 760px at 88% -6%, hsl(158 64% 40% / .20), transparent 70%),
+  radial-gradient(1000px 700px at -4% 104%, hsl(184 48% 44% / .16), transparent 70%),
+  radial-gradient(rgba(15,23,42,.07) 1.2px, transparent 1.8px) 0 0 / 30px 30px,
+  hsl(60 12% 95%); }
+
+/* S1 - the wall */
+#s1 { background: var(--night); }
+#wall { position: absolute; left: -240px; top: -140px; width: 2400px; font-size: 31px; line-height: 50px; color: rgba(176,194,222,.34); text-align: justify; word-break: keep-all; font-weight: 400; }
+#wall b { font-weight: 500; color: rgba(214,226,246,.5); }
+#vig { background: radial-gradient(900px 520px at 50% 50%, rgba(7,11,20,.92), rgba(7,11,20,.55) 55%, rgba(7,11,20,0) 100%); }
+#glow1 { background: radial-gradient(800px 420px at 50% 112%, hsl(158 64% 40% / .30), transparent 70%); }
+#headline { left: 0; width: 1920px; top: 408px; text-align: center; font-size: 168px; line-height: 210px; font-weight: 800; color: #F4F7FB; letter-spacing: -0.045em; }
+#scan { left: 0; top: 0; width: 1920px; height: 220px; background: linear-gradient(180deg, transparent 0%, hsl(158 64% 40% / .0) 20%, hsl(158 64% 40% / .22) 82%, hsl(158 80% 62% / .9) 98%, #d6fff0 100%); }
+
+/* S2 - the search */
+#pill { position: absolute; left: 310px; top: 398px; width: 1300px; height: 168px; border-radius: 84px; background: #fff; box-shadow: 0 0 0 2px rgba(15,23,42,.07), 0 50px 110px -20px rgba(15,23,42,.28), 0 18px 40px rgba(15,23,42,.08); }
+#mag { position: absolute; left: 60px; top: 52px; width: 64px; height: 64px; }
+#ph, #q { position: absolute; left: 172px; top: 42px; font-size: 62px; line-height: 84px; white-space: pre; }
+#ph { color: rgba(15,23,42,.34); font-weight: 400; }
+#q { color: var(--ink); font-weight: 600; }
+#caret { position: absolute; left: 172px; top: 50px; width: 5px; height: 68px; background: var(--accent); border-radius: 3px; }
+#btn { position: absolute; left: 1032px; top: 24px; width: 236px; height: 120px; border-radius: 60px; background: linear-gradient(135deg, hsl(158 64% 40%), hsl(172 56% 42%)); color: #fff; font-size: 52px; line-height: 120px; text-align: center; font-weight: 700; box-shadow: 0 14px 30px -8px hsl(158 64% 30% / .55); }
+#cursor { position: absolute; left: 0; top: 0; width: 64px; height: 64px; z-index: 5; filter: drop-shadow(0 6px 8px rgba(0,0,0,.28)); }
+
+/* S3/S4 - the document */
+#sheet { position: absolute; left: 210px; top: 40px; width: 1500px; height: 2060px; border-radius: 56px; background: #fff; box-shadow: 0 0 0 2px rgba(15,23,42,.06), 0 70px 130px -30px rgba(15,23,42,.30); overflow: hidden; }
+#sheet::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px; background: linear-gradient(90deg, hsl(158 64% 40%), hsl(184 48% 44%)); }
+#title { left: 210px; width: 1500px; top: 150px; text-align: center; font-size: 98px; line-height: 124px; font-weight: 800; letter-spacing: -0.04em; color: var(--ink); }
+.chip { position: absolute; left: 370px; width: 238px; height: 74px; border-radius: 37px; background: hsl(158 64% 40% / .13); color: var(--accent-deep); font-size: 36px; line-height: 74px; text-align: center; font-weight: 700; }
+.line { left: 650px; font-size: 50px; line-height: 74px; font-weight: 500; color: var(--ink); letter-spacing: -0.03em; }
+#h4 { left: 210px; width: 1500px; top: calc(1080px + 118px); text-align: center; font-size: 72px; line-height: 92px; font-weight: 800; letter-spacing: -0.04em; color: var(--ink); }
+#ringbox { position: absolute; left: 380px; top: calc(1080px + 330px); width: 460px; height: 460px; }
+#ringtxt { position: absolute; left: 0; top: 150px; width: 460px; text-align: center; font-size: 170px; line-height: 170px; font-weight: 800; letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.metric { position: absolute; left: 980px; width: 600px; }
+.metric .lab { position: absolute; left: 0; top: 0; font-size: 40px; line-height: 52px; font-weight: 600; color: var(--ink-soft); white-space: pre; }
+.metric .val { position: absolute; right: 0; top: 0; font-size: 44px; line-height: 52px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; white-space: pre; }
+.metric .trk { position: absolute; left: 0; top: 66px; width: 600px; height: 16px; border-radius: 8px; background: rgba(15,23,42,.08); }
+.metric .bar { position: absolute; left: 0; top: 66px; height: 16px; width: 0; border-radius: 8px; background: linear-gradient(90deg, hsl(158 64% 40%), hsl(172 56% 46%)); }
+.trl { position: absolute; top: calc(1080px + 700px); width: 52px; height: 52px; border-radius: 14px; background: rgba(15,23,42,.08); }
+.trl i { position: absolute; inset: 0; border-radius: 14px; background: linear-gradient(135deg, hsl(158 64% 40%), hsl(172 56% 42%)); }
+#trlLab { left: 980px; top: calc(1080px + 780px); font-size: 44px; line-height: 56px; font-weight: 700; color: var(--ink); }
+#trlSub { left: 980px; top: calc(1080px + 840px); font-size: 34px; line-height: 44px; font-weight: 500; color: var(--ink-soft); }
+
+/* S5 - the ending */
+#s5 { background: linear-gradient(135deg, hsl(158 64% 40%) 0%, hsl(172 56% 42%) 50%, hsl(184 48% 44%) 100%); }
+#glow5 { background: radial-gradient(760px 520px at 50% 44%, rgba(255,255,255,.22), transparent 70%); }
+#mark { position: absolute; left: 836px; top: 262px; width: 248px; height: 248px; border-radius: 70px; background: linear-gradient(160deg, rgba(255,255,255,.30), rgba(255,255,255,.10)); box-shadow: inset 0 0 0 3px rgba(255,255,255,.45), 0 40px 80px -20px rgba(6,60,42,.5); }
+#mark svg { position: absolute; left: 62px; top: 62px; width: 124px; height: 124px; }
+#word { left: 0; width: 1920px; top: 572px; text-align: center; font-family: "Inter", "Noto Sans KR", sans-serif; font-size: 112px; line-height: 136px; font-weight: 700; letter-spacing: -0.035em; color: #fff; }
+#tag { left: 0; width: 1920px; top: 744px; text-align: center; font-size: 42px; line-height: 60px; font-weight: 500; color: rgba(255,255,255,.88); letter-spacing: -0.02em; }
+</style>
+</head>
+<body>
+<div id="main">
+
+  <!-- ============ S1 HOOK  f0-96 : the wall of claim text, one question ============ -->
+  <section id="s1" class="scene">
+    <div id="wallcam" class="fill"><div id="wall"></div></div>
+    <div id="glow1" class="fill"></div>
+    <div id="vig" class="fill"></div>
+    <div id="scan" class="abs"></div>
+    <div id="headline" class="abs">이 특허, 사업이 될까?</div>
+  </section>
+
+  <!-- ============ S2 TURN  f96-166 : one plain sentence goes into the search ============ -->
+  <section id="s2" class="scene paper">
+    <div id="dive2" class="fill"><div id="snap2" class="fill">
+      <div id="pill">
+        <svg id="mag" viewBox="0 0 64 64" fill="none" stroke="hsl(158 64% 40%)" stroke-width="6" stroke-linecap="round"><circle cx="27" cy="27" r="18"/><path d="M41 41 L57 57"/></svg>
+        <div id="ph">아이템 (예: 저당 딸기잼)</div>
+        <div id="q">저당 딸기잼 제조방법</div>
+        <div id="caret"></div>
+        <div id="btn">분석</div>
+      </div>
+      <svg id="cursor" viewBox="0 0 64 64"><path d="M2 2 L2 44 L14 33 L22 52 L31 48 L23 30 L40 30 Z" fill="#111" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>
+    </div></div>
+  </section>
+
+  <!-- ============ S3+S4 PROOF  f166-370 : the same document reads, scrolls, scores ============ -->
+  <section id="s3" class="scene paper">
+    <div id="dive3" class="fill"><div id="snap3" class="fill"><div id="docCam" class="fill">
+      <div id="sheet"></div>
+      <div id="title" class="abs">저당 딸기잼 제조방법</div>
+      <div id="c1" class="chip" style="top:372px">쉬운 요약</div>
+      <div id="l1" class="abs line" style="top:372px">덜 달게 졸여도 색과 맛이 그대로인 딸기잼</div>
+      <div id="c2" class="chip" style="top:540px">해결한 문제</div>
+      <div id="l2" class="abs line" style="top:540px">설탕을 줄이면 묽어지고 쉽게 상하던 문제</div>
+      <div id="c3" class="chip" style="top:708px">활용 분야</div>
+      <div id="l3" class="abs line" style="top:708px">가공식품 · 카페 · 간편식 소스</div>
+
+      <div id="h4" class="abs">사업화 가능성 평가</div>
+      <div id="ringbox">
+        <svg width="460" height="460" viewBox="0 0 460 460" style="position:absolute;left:0;top:0">
+          <circle cx="230" cy="230" r="208" fill="none" stroke="rgba(15,23,42,.08)" stroke-width="44"/>
+          <circle id="arc" cx="230" cy="230" r="208" fill="none" stroke="hsl(158 64% 40%)" stroke-width="44" stroke-linecap="butt" stroke-dasharray="1307" stroke-dashoffset="1307" transform="rotate(-90 230 230)"/>
+        </svg>
+        <div id="ringtxt" class="abs">0</div>
+      </div>
+      <div id="m1" class="metric" style="top:calc(1080px + 330px)"><div class="lab">기술성</div><div id="v1" class="val">0</div><div class="trk"></div><div id="b1" class="bar"></div></div>
+      <div id="m2" class="metric" style="top:calc(1080px + 450px)"><div class="lab">시장성</div><div id="v2" class="val">0</div><div class="trk"></div><div id="b2" class="bar"></div></div>
+      <div id="m3" class="metric" style="top:calc(1080px + 570px)"><div class="lab">사업성</div><div id="v3" class="val">0</div><div class="trk"></div><div id="b3" class="bar"></div></div>
+      <div id="trls"></div>
+      <div id="trlLab" class="abs">기술성숙도 TRL 6 / 9</div>
+    </div></div></div>
+  </section>
+
+  <!-- ============ S5 CTA  f370-480 : the name arrives ============ -->
+  <section id="s5" class="scene">
+    <div id="glow5" class="fill"></div>
+    <div id="lockup" class="fill">
+      <div id="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></div>
+      <div id="word" class="abs">Agri IP Summary</div>
+      <div id="tag" class="abs">농식품 특허를 AI가 분석·요약합니다</div>
+    </div>
+  </section>
+
+</div>
+
+<script src="./runtime/vendor/gsap.min.js"></script>
+<script src="./runtime/motion.js"></script>
+<script>
+/* Every frame is a pure function of t: only Motion calls author time. The DOM below is built once, deterministically (no Math.random / Date). */
+(function build() {
+  // S1 wall: illustrative claim-style Korean text, assembled from fixed phrases.
+  const A = ['딸기 과육을 파쇄하는 제1단계', '상기 파쇄물에 올리고당과 펙틴을 혼합하는 제2단계', '혼합물을 가열 농축하여 겔화시키는 제3단계', '냉각 후 용기에 충진하고 밀봉하는 제4단계'];
+  const R = ['50 내지 70 중량%', '5 내지 12 중량%', '0.5 내지 1.2 중량%', '70 내지 85℃에서 20 내지 40분간', 'pH 3.0 내지 3.6', '당도 35 내지 45 브릭스'];
+  let s = '';
+  for (let i = 0; i < 26; i++) {
+    s += '<b>【청구항 ' + (i + 1) + '】</b> ' + A[i % 4] + '; 여기서 ' + R[i % 6] + '로 조절되며, 상기 ' + A[(i + 2) % 4] + '와 ' + R[(i + 3) % 6] + '의 조건을 만족하는 것을 특징으로 하는 제조방법. 상기 청구항 ' + (i + 1) + '에 있어서 상기 혼합물은 ' + R[(i + 1) % 6] + '의 범위에서 유지되고 ' + R[(i + 4) % 6] + '를 더 포함하는 저당 딸기잼. ';
+  }
+  document.getElementById('wall').innerHTML = s;
+  // TRL ladder: 9 blocks, 6 lit.
+  let h = '';
+  for (let i = 0; i < 9; i++) h += '<div id="trl' + i + '" class="trl" style="left:' + (980 + i * 62) + 'px">' + (i < 6 ? '<i id="trlf' + i + '"></i>' : '') + '</div>';
+  document.getElementById('trls').innerHTML = h;
+})();
+
+const M = Motion.film({ fps: 30, duration: 16, width: 1920, height: 1080, clock: 'smooth' });
+
+/* ---------- S1 HOOK (0-96) ---------- */
+M.drift('#wallcam', { prop: 'scale', from: 1.0, to: 1.14, start: 0, end: 96 });
+M.drift('#wall', { prop: 'y', from: 0, to: -150, start: 0, end: 96 });
+M.words('#headline', { at: 5, mech: 'rise', dist: 90, gaps: [5, 4, 7], smear: true, accent: { color: 'hsl(158 70% 52%)', word: -1, frames: 26 } });
+M.kf('#headline', 'scale', [[5, 1], [60, 1.035], [96, 1.12, 'gentleIn']]);
+M.kf('#scan', 'y', [[0, -240], [58, -240], [96, 1240, 'gentleIn']]);
+M.cut(96, { hide: ['#s1'], show: ['#s2'] });
+
+/* ---------- S2 TURN (96-166) ---------- */
+M.snap('#snap2', { at: 96, from: { scale: 1.32 }, to: { scale: 1 }, tail: 14, origin: '960px 540px' });
+M.hide('#ph', 108);
+M.type('#q', { at: 108, style: 'compose', seed: 4, caret: '#caret', caretGap: 8, accentNewest: { color: 'hsl(158 64% 40%)', frames: 2 } });
+M.cursor('#cursor', { keys: [[96, 2080, 1180, 3.2, -26], [132, 1478, 520, 1, 0]], ease: 'glide' });
+M.press('#cursor', '#btn', { at: 142, frames: 3, lag: 1 });
+M.dive('#dive2', { at: 150, frames: 9, perStep: 1.5, origin: [1500, 482] });
+M.cut(158, { hide: ['#s2'], show: ['#s3'] });
+
+/* ---------- S3 reading (158-262) ---------- */
+M.snap('#snap3', { at: 158, from: { scale: 2.1 }, to: { scale: 1 }, tail: 14, origin: '960px 540px' });
+M.words('#title', { at: 162, mech: 'rise', dist: 70, gaps: [5, 4, 5], smear: true });
+M.enter('#c1', { at: 184, frames: 10, from: { x: -40, opacity: 0 } });
+M.words('#l1', { at: 188, mech: 'rise', dist: 40, gaps: [4, 3, 4, 4, 5], frames: 11 });
+M.enter('#c2', { at: 212, frames: 10, from: { x: -40, opacity: 0 } });
+M.words('#l2', { at: 216, mech: 'rise', dist: 40, gaps: [4, 3, 4, 4, 5], frames: 11 });
+M.enter('#c3', { at: 240, frames: 10, from: { x: -40, opacity: 0 } });
+M.words('#l3', { at: 244, mech: 'rise', dist: 40, gaps: [4, 3, 4, 4], frames: 11 });
+M.drift('#sheet', { prop: 'scale', from: 1, to: 1.012, start: 158, end: 270 });
+
+/* ---------- S4 scoring (page scrolls up on a whip: 268-282) ---------- */
+M.camera('#docCam', [[0, { y: 0 }], [268, { y: 0 }], [282, { y: -1080 }, 'whip']], { origin: '960px 540px' });
+M.words('#h4', { at: 284, mech: 'rise', dist: 50, gaps: [5, 4, 5], frames: 11 });
+M.kf('#arc', 'strokeDashoffset', [[286, 1307], [318, 1307 * (1 - 0.78), 'softLand']]);
+M.count('#ringtxt', { at: 286, from: 0, to: 78, frames: 32, round: true, seed: 3 });
+M.kf('#b1', 'width', [[298, 0], [322, 492, 'softLand']], { fmt: v => v + 'px' });
+M.count('#v1', { at: 298, from: 0, to: 82, frames: 24, round: true, seed: 1 });
+M.kf('#b2', 'width', [[306, 0], [330, 444, 'softLand']], { fmt: v => v + 'px' });
+M.count('#v2', { at: 306, from: 0, to: 74, frames: 24, round: true, seed: 2 });
+M.kf('#b3', 'width', [[314, 0], [338, 456, 'softLand']], { fmt: v => v + 'px' });
+M.count('#v3', { at: 314, from: 0, to: 76, frames: 24, round: true, seed: 5 });
+for (let i = 0; i < 6; i++) M.enter('#trlf' + i, { at: 318 + i * 3, frames: 8, from: { scale: 0.3, opacity: 0 } });
+M.enter('#trlLab', { at: 338, frames: 10, from: { y: 22, opacity: 0 } });
+M.drift('#ringbox', { prop: 'scale', from: 1, to: 1.06, start: 286, end: 372 });
+M.drift('#pill', { prop: 'scale', from: 1, to: 1.025, start: 108, end: 150 });
+M.dive('#dive3', { at: 362, frames: 9, perStep: 1.5, origin: [610, 352] });
+M.cut(370, { hide: ['#s3'], show: ['#s5'] });
+
+/* ---------- S5 CTA (370-480) ---------- */
+M.enter('#mark', { at: 370, frames: 20, ease: 'snapSettle', from: { scale: 3.4, blur: 14, opacity: 1 } });
+M.words('#word', { at: 392, mech: 'rise', dist: 60, gaps: [7], frames: 13, smear: true });
+M.enter('#tag', { at: 412, frames: 14, from: { y: 26, opacity: 0 } });
+M.kf('#lockup', 'scale', [[396, 1], [454, 0.945], [480, 0.5, 'accelExit']]);
+M.kf('#lockup', 'y', [[454, 0], [480, -120, 'accelExit']]);
+M.kf('#glow5', 'x', [[370, -420], [480, 420]]);
+
+window.__ready = Motion.loaded().then(() => { if (/selftest/.test(location.search)) Motion.selfTest(M, { samples: 24 }); });
+</script>
+</body>
+</html>

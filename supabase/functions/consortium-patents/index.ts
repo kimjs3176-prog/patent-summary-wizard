@@ -101,12 +101,16 @@ Deno.serve(async (req) => {
     const key = await resolveKiprisKey();
     if (!key) throw new Error("KIPRIS_API_KEY is not configured");
 
-    const cache = await readCache();
-    const hit = cache[org.name];
-    let codes = hit && Date.now() - Date.parse(hit.at) < CACHE_DAYS * 86400000 ? hit.codes.filter((c) => CODE_RE.test(c)) : [];
+    // owner 가 확인한 번호가 있으면 그것만 쓴다 (이름 검색·캐시를 거치지 않음)
+    let codes = (org.codes ?? []).filter((c) => CODE_RE.test(c));
+    if (!codes.length) {
+      const hit = (await readCache())[org.name];
+      if (hit && Date.now() - Date.parse(hit.at) < CACHE_DAYS * 86400000) codes = hit.codes.filter((c) => CODE_RE.test(c));
+    }
     if (!codes.length) {
       codes = await resolveCodes(key, orgNames(org));
       if (codes.length) {
+        const cache = await readCache();
         cache[org.name] = { codes, at: new Date().toISOString() };
         await writeCache(cache);
       }

@@ -2,10 +2,12 @@
  * 식품기술이전 협의체 기관 목록 (owner, 2026-11). 화면 목록 src/lib/consortium.ts 와 같은 이름·순서를 쓴다
  * (src/test/consortium.test.ts 가 두 목록이 같은지 본다).
  * name: 화면에 보이는 이름, aliases: KIPRIS 출원인명으로 찾을 때 함께 볼 옛 이름·공식 표기.
+ * codes: owner 가 KIPRIS 에서 확인한 특허고객번호. 있으면 이름으로 찾지 않고 이 번호만 쓴다.
  */
 export interface ConsortiumOrg {
   name: string;
   aliases?: string[];
+  codes?: string[];
 }
 
 export const CONSORTIUM_ORGS: ConsortiumOrg[] = [
@@ -38,18 +40,16 @@ export const CONSORTIUM_ORGS: ConsortiumOrg[] = [
   { name: "한국발명진흥회" },
   { name: "서울여자대학교 산학협력단" },
   { name: "국립생태원" },
-  { name: "㈜명지대학교 기술지주회사" },
-  { name: "명지대학교 산학협력단" },
+  { name: "명지대학교 산학협력단", codes: ["220050139720"] },
   { name: "단국대학교 산학협력단" },
   { name: "대구한의대학교 산학협력단" },
   { name: "동아대학교 산학협력단" },
-  { name: "부산대학교 기술지주주식회사" },
+  { name: "부산대학교 산학협력단", codes: ["220040044843"] },
   { name: "서울과학기술대학교 산학협력단", aliases: ["서울과학기술대 산학협력단"] },
-  { name: "세계김치연구소" },
   { name: "순천향대학교 산학협력단" },
   { name: "숙명여자대학교 산학협력단" },
   { name: "아주대학교 산학협력단" },
-  { name: "연세대학교 기술지주회사" },
+  { name: "연세대학교기술지주 주식회사", codes: ["120110324773"] },
   { name: "연세대학교 미래캠퍼스 산학협력단", aliases: ["연세대학교 미래산학협력단", "연세대학교 원주산학협력단"] },
   { name: "영남대학교 산학협력단" },
   { name: "우석대학교 산학협력단" },
