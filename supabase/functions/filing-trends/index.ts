@@ -1,4 +1,5 @@
-import { generateChatCompletion, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.10";
+import { generateChatCompletion, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.11";
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
@@ -17,7 +18,7 @@ async function fetchFilings(key: string, start: string, end: string): Promise<Ra
     const items: RawFiling[] = [];
     let total = Infinity;
     for (let page = 1; (page - 1) * 500 < total; page++) {
-      const url = new URL("http://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
+      const url = new URL("https://plus.kipris.or.kr/kipo-api/kipi/patUtiModInfoSearchSevice/getAdvancedSearch");
       for (const [name, value] of Object.entries({ ServiceKey: key, applicant, applicationDate: `${start}~${end}`, patent: "true", utility: "true", pageNo: String(page), numOfRows: "500", sortSpec: "AD", descSort: "true" })) url.searchParams.set(name, value);
       const xml = await kiprisFetchText(url.toString(), { retries: 2, timeoutMs: 20000 });
       const count = xmlTag(xml, "totalCount");
@@ -60,7 +61,7 @@ async function summarize(report: TrendReport): Promise<string[]> {
     기관별: report.institutes.map((i) => ({ 기관: i.label, 기준연도: i.latest, 전년: i.previous })),
   };
   try {
-    const res = await generateChatCompletion({
+    const res: any = await (generateChatCompletion as any)({
       model: "google/gemini-3.8-flash",
       response_format: { type: "json_object" },
       messages: [

@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, FileText, ArrowRight, Sparkles, History, TrendingUp, X } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, useId } from "react";
+import { Search, FileText, ArrowRight, Sparkles, History, TrendingUp, X, MessagesSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { safeFetch } from "@/lib/safeFetch";
 import { parseIpNumber, parseIpNumberList, isBatchNumberInput, IP_KIND_LABEL } from "@/lib/ipNumber";
+import { classifyQuery, INTENT_HINT } from "@/lib/queryIntent";
+import { SUGGESTED_QUESTIONS } from "@/lib/patentChat";
+import { nextActiveIndex, clampActiveIndex } from "@/lib/listboxNavigation";
 
 interface PatentInputProps {
   onSubmit: (patentNumber: string) => void;
@@ -15,9 +18,13 @@ interface PatentInputProps {
   helperTexts?: string[];
   skipKeywordFetch?: boolean;
   suggestions?: string[];
+  /** When set, questions ("요새 좋은 기술 있을까?") go to the conversational assistant instead of search. */
+  onQuestion?: (question: string) => void;
 }
 
 const RECENT_KEYWORDS_KEY = "recent-keyword-searches";
+
+type SuggestionKind = "recent" | "patent" | "question" | "suggestion";
 const DEFAULT_SUGGESTIONS = [
   "스마트팜", "기능성 식품", "친환경 농약", "발효", "병해충 방제",
   "종자 육종", "바이오 소재", "수처리", "온실 재배", "농기계",
@@ -44,6 +51,12 @@ const PLACEHOLDER_NL_SAMPLES = [
   "예) '기후변화 대응 벼 품종' 한 줄로 관련 특허를 찾아드려요",
 ];
 
+const PLACEHOLDER_QUESTION_SAMPLES = [
+  "예) '요새 활용하면 좋은 기술 있을까?' 처럼 물어보면 대화로 답해 드려요",
+  "예) '기술이전은 어떻게 받나요?' 같은 질문도 바로 답해 드려요",
+  "예) '최근 출원이 늘어난 분야는 어디야?' 처럼 편하게 물어보세요",
+];
+
 // Topic pool — combined into rotating "예) A, B, C" hints
 const PLACEHOLDER_TOPIC_POOL = [
   "기능성 발효 음료", "항산화 추출물", "프로바이오틱스", "유산균 발효",
@@ -68,7 +81,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function generatePlaceholderExamples(count = 8): string[] {
+function generatePlaceholderExamples(count = 8, withQuestion = false): string[] {
   const intro = PLACEHOLDER_INTROS[Math.floor(Math.random() * PLACEHOLDER_INTROS.length)];
   const numberHint = PLACEHOLDER_NUMBER_SAMPLES[Math.floor(Math.random() * PLACEHOLDER_NUMBER_SAMPLES.length)];
   const nlHint = PLACEHOLDER_NL_SAMPLES[Math.floor(Math.random() * PLACEHOLDER_NL_SAMPLES.length)];
@@ -80,11 +93,16 @@ function generatePlaceholderExamples(count = 8): string[] {
     topicHints.push(`예) ${topics[i]}, ${topics[i + 1]}, ${topics[i + 2]}`);
   }
 
+  if (withQuestion) {
+    const questionHint = PLACEHOLDER_QUESTION_SAMPLES[Math.floor(Math.random() * PLACEHOLDER_QUESTION_SAMPLES.length)];
+    const rest = shuffle(topicHints).slice(0, Math.max(0, count - 4));
+    return [intro, questionHint, numberHint, nlHint, ...rest];
+  }
   const rest = shuffle(topicHints).slice(0, Math.max(0, count - 3));
   return [intro, numberHint, nlHint, ...rest];
 }
 
-export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, skipKeywordFetch, suggestions }: PatentInputProps) {
+export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder, helperText, helperTexts, skipKeywordFetch, suggestions, onQuestion }: PatentInputProps) {
   const [inputValue, setInputValue] = useState("");
   const navigate = useNavigate();
   const [isSearchingKeyword, setIsSearchingKeyword] = useState(false);
@@ -92,12 +110,20 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
   const [recentPatents, setRecentPatents] = useState<{ patentNumber: string; title?: string }[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  // Combobox state: which suggestion the arrow keys point at (-1 = none) and whether Esc closed the list.
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [dismissed, setDismissed] = useState(false);
+  const baseId = useId();
+  const listboxId = `${baseId}-listbox`;
+  const hintId = `${baseId}-hint`;
+  const optionId = (i: number) => `${baseId}-opt-${i}`;
   // Regenerate randomized placeholder examples on mount and every 60s
-  const [placeholderExamples, setPlaceholderExamples] = useState<string[]>(() => generatePlaceholderExamples(8));
+  const [placeholderExamples, setPlaceholderExamples] = useState<string[]>(() => generatePlaceholderExamples(8, !!onQuestion));
+  const withQuestion = !!onQuestion;
   useEffect(() => {
-    const id = window.setInterval(() => setPlaceholderExamples(generatePlaceholderExamples(8)), 60_000);
+    const id = window.setInterval(() => setPlaceholderExamples(generatePlaceholderExamples(8, withQuestion)), 60_000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [withQuestion]);
 
   // Load recent searches from localStorage
   const loadRecents = () => {
@@ -145,8 +171,8 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
     } catch { /* ignore */ }
   };
 
-  const removeRecentKeyword = (kw: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const removeRecentKeyword = (kw: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       const cur = JSON.parse(localStorage.getItem(RECENT_KEYWORDS_KEY) || "[]");
       const arr = Array.isArray(cur) ? cur : [];
@@ -179,11 +205,36 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
     ).slice(0, 3);
   }, [inputValue, recentPatents]);
 
-  const showDropdown = isFocused && (filteredRecents.length > 0 || filteredSuggestions.length > 0 || filteredRecentPatents.length > 0);
+  const exampleQuestions = onQuestion && !inputValue.trim() ? SUGGESTED_QUESTIONS.slice(0, 3) : [];
+  // Flat option list in on-screen order, so arrow keys walk the dropdown top to bottom.
+  const options: { kind: SuggestionKind; value: string }[] = [
+    ...filteredRecents.map((value) => ({ kind: "recent" as const, value })),
+    ...filteredRecentPatents.map((p) => ({ kind: "patent" as const, value: p.patentNumber })),
+    ...exampleQuestions.map((value) => ({ kind: "question" as const, value })),
+    ...filteredSuggestions.map((value) => ({ kind: "suggestion" as const, value })),
+  ];
+  const patentsStart = filteredRecents.length;
+  const questionsStart = patentsStart + filteredRecentPatents.length;
+  const suggestionsStart = questionsStart + exampleQuestions.length;
+  const showDropdown = isFocused && !dismissed && options.length > 0;
+  const activeOption = showDropdown && activeIndex >= 0 ? options[activeIndex] : undefined;
+  const intent = onQuestion ? classifyQuery(inputValue) : "empty";
+  const isQuestion = intent === "question";
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
+    setActiveIndex(-1);
+    setDismissed(false);
   };
+
+  // Keep the highlighted option valid after the list shrinks, and visible inside the scroll area.
+  useEffect(() => {
+    setActiveIndex((i) => clampActiveIndex(i, options.length));
+  }, [options.length]);
+  useEffect(() => {
+    if (!showDropdown || activeIndex < 0) return;
+    document.getElementById(`${baseId}-opt-${activeIndex}`)?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex, showDropdown, baseId]);
 
   /** 번호 형태로 인식되면(지원 여부와 무관) true */
   const isPatentNumber = (value: string): boolean => parseIpNumber(value) !== null;
@@ -197,6 +248,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
       const list = parseIpNumberList(value);
       const numbers = [...list.supported, ...list.unsupported].map((ip) => ip.normalized).join(",");
       navigate(`/batch?numbers=${encodeURIComponent(numbers)}`);
+      return;
+    }
+    if (onQuestion && classifyQuery(value) === "question") {
+      setIsFocused(false);
+      onQuestion(value);
+      setInputValue("");
       return;
     }
     const ip = parseIpNumber(value);
@@ -265,7 +322,38 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
   const submitKeyword = (kw: string) => {
     setInputValue(kw);
     setIsFocused(false);
+    setActiveIndex(-1);
     routeQuery(kw);
+  };
+
+  /** Combobox keys: ↑/↓ move through suggestions, Enter picks one, Esc closes the list, Delete removes a recent keyword. */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return; // 한글 조합 중 키 입력은 IME에 맡긴다
+    const key = e.key;
+    if (key === "ArrowDown" || key === "ArrowUp") {
+      if (options.length === 0) return;
+      e.preventDefault();
+      const from = showDropdown ? activeIndex : -1;
+      setIsFocused(true);
+      setDismissed(false);
+      setActiveIndex(nextActiveIndex(from, key, options.length));
+      return;
+    }
+    if (key === "Enter" && activeOption) {
+      e.preventDefault();
+      submitKeyword(activeOption.value);
+      return;
+    }
+    if (key === "Escape" && showDropdown) {
+      e.preventDefault();
+      setDismissed(true);
+      setActiveIndex(-1);
+      return;
+    }
+    if (key === "Delete" && activeOption?.kind === "recent") {
+      e.preventDefault();
+      removeRecentKeyword(activeOption.value);
+    }
   };
 
   const isProcessing = isLoading || isSearchingKeyword;
@@ -303,13 +391,25 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             }}
             disabled={isProcessing}
             placeholder={isFocused ? (placeholder || "해결하고 싶은 문제, 관심 키워드 또는 특허번호를 입력하세요") : ""}
-            onFocus={() => { setIsFocused(true); }}
-            onBlur={() => { setIsFocused(false); }}
+            onFocus={() => { setIsFocused(true); setDismissed(false); }}
+            onBlur={() => { setIsFocused(false); setActiveIndex(-1); }}
+            onKeyDown={handleKeyDown}
+            role="combobox"
+            aria-label={onQuestion ? "특허번호, 키워드, 문장 또는 질문으로 검색" : "특허번호, 키워드 또는 문장으로 검색"}
+            aria-describedby={hintId}
+            aria-autocomplete="list"
+            aria-expanded={showDropdown}
+            aria-controls={showDropdown ? listboxId : undefined}
+            aria-activedescendant={activeOption ? optionId(activeIndex) : undefined}
           />
+          <span id={hintId} className="sr-only">
+            위아래 화살표로 추천 검색어와 최근 기록을 고르고 Enter로 검색합니다. 최근 검색어는 Delete 키로 지울 수 있습니다.
+          </span>
           <div className="absolute top-0 right-1.5 md:right-2.5 h-14 flex items-center">
             <button
               type="submit"
               disabled={!inputValue.trim() || isProcessing}
+              aria-label={isProcessing ? (isSearchingKeyword ? "검색 중" : "분석 중") : isQuestion ? "물어보기" : inputValue.trim() && !isPatentNumber(inputValue.trim()) ? "AI 검색" : "분석"}
               className="h-10 md:h-11 px-3.5 md:px-5 text-sm font-semibold rounded-xl transition-all duration-400 disabled:opacity-25 disabled:cursor-not-allowed flex items-center gap-1.5 md:gap-2 btn-press"
               style={{
                 background: inputValue.trim() && !isProcessing ? 'var(--gradient-accent)' : 'hsl(var(--muted))',
@@ -324,7 +424,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
                 </>
               ) : (
                 <>
-                  {inputValue.trim() && !isPatentNumber(inputValue.trim()) ? (
+                  {isQuestion ? (
+                    <>
+                      <MessagesSquare className="w-4 h-4" />
+                      <span className="hidden sm:inline">물어보기</span>
+                    </>
+                  ) : inputValue.trim() && !isPatentNumber(inputValue.trim()) ? (
                     <>
                       <Sparkles className="w-4 h-4" />
                       <span className="hidden sm:inline">AI 검색</span>
@@ -346,69 +451,120 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
               style={{ boxShadow: 'var(--shadow-glow)' }}
               onMouseDown={(e) => e.preventDefault()}
             >
-              <div className="max-h-[min(360px,42vh)] overflow-y-auto overscroll-contain py-1.5">
+              {/* Options are not tab stops: focus stays in the input and aria-activedescendant names the active one. */}
+              <div id={listboxId} role="listbox" aria-label="검색 제안" className="max-h-[min(360px,42vh)] overflow-y-auto overscroll-contain py-1.5">
                 {filteredRecents.length > 0 && (
-                  <div className="px-1.5 pb-1">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                  <div role="group" aria-label="최근 검색어" className="px-1.5 pb-1">
+                    <div aria-hidden="true" className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
                       <History className="w-3 h-3" /> 최근 검색어
                     </div>
-                    {filteredRecents.map((kw) => (
-                      <button
-                        key={`r-${kw}`}
-                        type="button"
-                        onClick={() => submitKeyword(kw)}
-                        className="group/item w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-sm text-foreground hover:bg-muted/60 transition-colors"
-                      >
-                        <span className="flex items-center gap-2 truncate">
-                          <Search className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
-                          <span className="truncate">{kw}</span>
-                        </span>
-                        <span
-                          role="button"
-                          aria-label="삭제"
-                          onClick={(e) => removeRecentKeyword(kw, e)}
-                          className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
-                        >
-                          <X className="w-3 h-3" />
-                        </span>
-                      </button>
-                    ))}
+                    {filteredRecents.map((kw, i) => {
+                      const active = activeIndex === i;
+                      return (
+                        // The delete control sits beside the option, never inside it; keyboard users press Delete instead.
+                        <div key={`r-${kw}`} className="group/item relative">
+                          <button
+                            id={optionId(i)}
+                            type="button"
+                            role="option"
+                            aria-selected={active}
+                            tabIndex={-1}
+                            onClick={() => submitKeyword(kw)}
+                            className={`w-full flex items-center gap-2 pl-2.5 pr-9 py-1.5 rounded-lg text-sm text-foreground text-left group-hover/item:bg-muted/60 transition-colors ${active ? "bg-muted ring-1 ring-inset ring-primary/30" : ""}`}
+                          >
+                            <Search className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0" />
+                            <span className="truncate">{kw}</span>
+                          </button>
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            aria-hidden="true"
+                            title={`'${kw}' 최근 검색어 삭제`}
+                            onClick={(e) => removeRecentKeyword(kw, e)}
+                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 group-hover/item:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all ${active ? "opacity-100" : "opacity-0"}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 {filteredRecentPatents.length > 0 && (
-                  <div className="px-1.5 pb-1 border-t border-border/30 pt-1.5">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                  <div role="group" aria-label="최근 본 특허" className="px-1.5 pb-1 border-t border-border/30 pt-1.5">
+                    <div aria-hidden="true" className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
                       <FileText className="w-3 h-3" /> 최근 본 특허
                     </div>
-                    {filteredRecentPatents.map((p) => (
-                      <button
-                        key={`p-${p.patentNumber}`}
-                        type="button"
-                        onClick={() => submitKeyword(p.patentNumber)}
-                        className="w-full flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-sm hover:bg-muted/60 transition-colors text-left"
-                      >
-                        <span className="truncate flex-1 text-foreground">{p.title || p.patentNumber}</span>
-                        <span className="text-[11px] text-muted-foreground font-mono flex-shrink-0">{p.patentNumber}</span>
-                      </button>
-                    ))}
+                    {filteredRecentPatents.map((p, j) => {
+                      const i = patentsStart + j;
+                      const active = activeIndex === i;
+                      return (
+                        <button
+                          key={`p-${p.patentNumber}`}
+                          id={optionId(i)}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          tabIndex={-1}
+                          onClick={() => submitKeyword(p.patentNumber)}
+                          className={`w-full flex items-center gap-3 px-2.5 py-1.5 rounded-lg text-sm hover:bg-muted/60 transition-colors text-left ${active ? "bg-muted ring-1 ring-inset ring-primary/30" : ""}`}
+                        >
+                          <span className="truncate flex-1 text-foreground">{p.title || p.patentNumber}</span>
+                          <span className="text-[11px] text-muted-foreground font-mono flex-shrink-0">{p.patentNumber}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {exampleQuestions.length > 0 && (
+                  <div role="group" aria-label="이렇게 물어볼 수도 있어요" className="px-1.5 pb-1 border-t border-border/30 pt-1.5 first:border-t-0 first:pt-0">
+                    <div aria-hidden="true" className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground">
+                      <MessagesSquare className="w-3 h-3" /> 이렇게 물어볼 수도 있어요
+                    </div>
+                    {exampleQuestions.map((q, j) => {
+                      const i = questionsStart + j;
+                      const active = activeIndex === i;
+                      return (
+                        <button
+                          key={`q-${q}`}
+                          id={optionId(i)}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          tabIndex={-1}
+                          onClick={() => submitKeyword(q)}
+                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-foreground hover:bg-muted/60 transition-colors text-left ${active ? "bg-muted ring-1 ring-inset ring-primary/30" : ""}`}
+                        >
+                          <span className="truncate">{q}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 {filteredSuggestions.length > 0 && (
-                  <div className="px-1.5 pb-1 border-t border-border/30 pt-1.5">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                  <div role="group" aria-label="추천 키워드" className="px-1.5 pb-1 border-t border-border/30 pt-1.5">
+                    <div aria-hidden="true" className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
                       <TrendingUp className="w-3 h-3" /> 추천 키워드
                     </div>
                     <div className="flex flex-wrap gap-1.5 px-2 py-1">
-                      {filteredSuggestions.map((kw) => (
-                        <button
-                          key={`s-${kw}`}
-                          type="button"
-                          onClick={() => submitKeyword(kw)}
-                          className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium bg-muted/60 text-foreground/80 hover:bg-primary/10 hover:text-primary border border-border/40 hover:border-primary/30 transition-colors"
-                        >
-                          {kw}
-                        </button>
-                      ))}
+                      {filteredSuggestions.map((kw, j) => {
+                        const i = suggestionsStart + j;
+                        const active = activeIndex === i;
+                        return (
+                          <button
+                            key={`s-${kw}`}
+                            id={optionId(i)}
+                            type="button"
+                            role="option"
+                            aria-selected={active}
+                            tabIndex={-1}
+                            onClick={() => submitKeyword(kw)}
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium border hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors ${active ? "bg-primary/10 text-primary border-primary/30" : "bg-muted/60 text-foreground/80 border-border/40"}`}
+                          >
+                            {kw}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -416,7 +572,12 @@ export function PatentInput({ onSubmit, isLoading, onKeywordSearch, placeholder,
             </div>
           )}
         </div>
-        
+        {onQuestion && intent !== "empty" && !showDropdown && (
+          <p aria-live="polite" className="search-intent-hint flex items-center gap-1.5 px-2 text-xs text-muted-foreground">
+            <span className="search-intent-chip rounded-md px-1.5 py-0.5 font-semibold">{INTENT_HINT[intent].label}</span>
+            <span className="truncate">{INTENT_HINT[intent].detail}</span>
+          </p>
+        )}
       </form>
     </div>
   );
@@ -466,11 +627,12 @@ function ScrollingPlaceholder({ texts }: { texts: string[] }) {
   return (
     <div
       ref={containerRef}
+      aria-hidden="true"
       className="absolute top-0 left-11 md:left-13 right-16 sm:right-36 h-14 flex items-center overflow-hidden pointer-events-none z-[5]"
     >
       <span
         ref={textRef}
-        className={`text-sm sm:text-[15px] text-muted-foreground/40 whitespace-nowrap transition-all duration-300 ease-out ${shouldScroll ? 'animate-marquee-placeholder' : ''}`}
+        className={`text-sm sm:text-[15px] text-muted-foreground whitespace-nowrap transition-all duration-300 ease-out ${shouldScroll ? 'animate-marquee-placeholder' : ''}`}
         style={{
           opacity: phase === "in" ? 1 : 0,
           transform: phase === "in" ? "translateY(0)" : "translateY(-4px)",

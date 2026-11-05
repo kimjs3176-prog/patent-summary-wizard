@@ -66,7 +66,7 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
         <div className="ml-auto inline-flex items-center gap-0.5 rounded-full border border-border/50 bg-secondary/40 p-0.5">
           <button
             onClick={() => setMode("all")}
-            className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold transition-colors ${
+            className={`min-h-7 px-2.5 rounded-full text-xs font-bold transition-colors ${
               effectiveMode === "all"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -77,7 +77,7 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
           <button
             onClick={() => setMode("month")}
             disabled={monthly.length === 0}
-            className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold transition-colors disabled:opacity-40 ${
+            className={`min-h-7 px-2.5 rounded-full text-xs font-bold transition-colors disabled:opacity-40 ${
               effectiveMode === "month"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -92,7 +92,7 @@ export function PopularSearches({ onPatentSelect }: PopularSearchesProps) {
           <PopularSearchItem key={item.patent_number} item={item} idx={idx} onSelect={onPatentSelect} />
         )}
         {popular.length === 0 && (
-          <p className="text-[11.5px] text-muted-foreground/70 px-2 py-3">이번 달 검색 데이터가 아직 없습니다.</p>
+          <p className="text-[11.5px] text-muted-foreground px-2 py-3">이번 달 검색 데이터가 아직 없습니다.</p>
         )}
       </div>
     </div>
@@ -118,7 +118,7 @@ function PopularSearchItem({ item, idx, onSelect }: { item: PopularSearch; idx: 
           {title}
         </span>
       </div>
-      <span className="text-[11px] text-muted-foreground/60 flex-shrink-0 tabular-nums">{item.search_count}회</span>
+      <span className="text-[11px] text-muted-foreground flex-shrink-0 tabular-nums">{item.search_count}회</span>
     </button>
   );
 }

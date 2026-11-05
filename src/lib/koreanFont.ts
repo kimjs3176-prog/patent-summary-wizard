@@ -1,45 +1,35 @@
-// This file provides Korean font support for jsPDF.
-// IMPORTANT: For reliability, we ship a font file in /public/fonts and fetch it locally first.
+import type { jsPDF } from "jspdf";
 
-const FONT_URLS = [
-  // Local (bundled) font (preferred)
-  "/fonts/NotoSansKR-VF.ttf",
-  // Fallbacks (may change/404 over time)
-  "https://cdn.jsdelivr.net/gh/nicemoon-developer/jspdf-korean-font@main/malgun.ttf",
-  "https://raw.githubusercontent.com/nicemoon-developer/jspdf-korean-font/main/malgun.ttf",
-];
+// Korean font support for jsPDF.
+// Only the font bundled in /public/fonts (Noto Sans KR, SIL OFL) is used: no third-party
+// font hosts, so the PDF never depends on (or leaks requests to) an external repository.
 
-export async function loadKoreanFont(): Promise<string> {
-  let lastError: Error | null = null;
-  
-  for (const fontUrl of FONT_URLS) {
-    try {
-      console.log('Attempting to load font from:', fontUrl);
-      const response = await fetch(fontUrl);
-      
-      if (!response.ok) {
-        throw new Error(`Font fetch failed: ${response.status}`);
-      }
-      
-      const arrayBuffer = await response.arrayBuffer();
-      
-      if (arrayBuffer.byteLength < 1000) {
-        throw new Error('Font file too small, likely invalid');
-      }
-      
-      // Use a more robust base64 encoding method
-      const base64 = await arrayBufferToBase64Async(arrayBuffer);
-      console.log('Korean font loaded successfully from:', fontUrl, 'Size:', arrayBuffer.byteLength);
-      return base64;
-    } catch (error) {
-      console.warn('Failed to load font from:', fontUrl, error);
-      lastError = error as Error;
-      continue;
-    }
+const FONT_URL = "/fonts/NotoSansKR-VF.ttf";
+
+// The font is ~10 MB; fetch and base64-encode it once per page session.
+let fontPromise: Promise<string> | null = null;
+
+async function fetchKoreanFont(): Promise<string> {
+  const response = await fetch(FONT_URL);
+  if (!response.ok) {
+    throw new Error(`Font fetch failed: ${response.status}`);
   }
-  
-  console.error('All font sources failed');
-  throw lastError || new Error('Failed to load Korean font from all sources');
+  const arrayBuffer = await response.arrayBuffer();
+  if (arrayBuffer.byteLength < 1000) {
+    throw new Error("Font file too small, likely invalid");
+  }
+  return arrayBufferToBase64Async(arrayBuffer);
+}
+
+export function loadKoreanFont(): Promise<string> {
+  if (!fontPromise) {
+    fontPromise = fetchKoreanFont().catch((error) => {
+      // Allow a later click to retry after a transient failure.
+      fontPromise = null;
+      throw error;
+    });
+  }
+  return fontPromise;
 }
 
 // Async version for better handling of large fonts
@@ -71,7 +61,7 @@ async function arrayBufferToBase64Async(buffer: ArrayBuffer): Promise<string> {
   });
 }
 
-export function addKoreanFontToDoc(doc: any, fontBase64: string): void {
+export function addKoreanFontToDoc(doc: jsPDF, fontBase64: string): void {
   try {
     // Register font with medium weight for better readability
     doc.addFileToVFS('NotoSansKR-Medium.ttf', fontBase64);
@@ -91,7 +81,6 @@ export function addKoreanFontToDoc(doc: any, fontBase64: string): void {
       doc.setFont('NotoSansKR', 'normal');
     }
 
-    console.log('Korean font added to PDF document');
   } catch (error) {
     console.error('Failed to add font to PDF:', error);
     throw error;

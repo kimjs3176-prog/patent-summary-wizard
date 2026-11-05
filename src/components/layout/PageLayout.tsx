@@ -2,11 +2,11 @@ import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { FileText, Tablet, Type } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useKioskMode } from "@/hooks/useKioskMode";
 import { useFontScale } from "@/hooks/useFontScale";
 import { KioskKeyboard } from "@/components/KioskKeyboard";
 import { VisitorCounter } from "@/components/VisitorCounter";
+import { SiteNavLinks, SiteNavPanel } from "@/components/layout/SiteNav";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -37,16 +37,10 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-2xl animate-pulse bg-muted" />
-          <Skeleton className="h-3 w-28 rounded-full" />
-        </div>
-      </div>
-    );
-  }
+  // First visit only (returning visitors have the settings snapshot): an empty full-height block until the
+  // settings arrive. It must stay empty — the old centred spinner's nodes were reused for the page and moved
+  // (layout shift) — and rendering the whole page at once with defaults instead doubled main-thread blocking time.
+  if (isLoading) return <div className="min-h-screen bg-background" aria-busy="true" />;
 
   return (
     <div className="min-h-screen bg-background relative overflow-x-clip">
@@ -58,8 +52,15 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
       </div>
 
       {/* Header — Toss-style clean */}
+      {/* 키보드 사용자가 머리글 메뉴(7개)를 건너뛰고 바로 본문으로 가는 링크. Tab을 누르면 나타난다 */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        본문 바로가기
+      </a>
       <header className="w-full sticky top-0 z-50 backdrop-blur-3xl border-b border-border/30" style={{ background: 'hsl(var(--background) / 0.85)' }}>
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2 md:py-3.5 flex items-center justify-between gap-2">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2 md:py-3.5 flex flex-wrap xl:flex-nowrap items-center justify-between gap-x-2 gap-y-1">
           <Link
             to="/"
             onClick={() => {
@@ -75,49 +76,59 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               <FileText className="w-3 h-3 md:w-4 md:h-4 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-bold text-[13px] md:text-[15px] text-foreground tracking-tight leading-tight truncate max-w-[160px] sm:max-w-none">
+              {/* Not a heading: each page owns its single <h1>. The font matches the heading base style it used to inherit. */}
+              <p className="[font-family:'Plus_Jakarta_Sans','Noto_Sans_KR',-apple-system,system-ui,sans-serif] font-bold text-[13px] md:text-[15px] text-foreground tracking-tight leading-tight truncate max-w-[160px] sm:max-w-none">
                 {settings.header_title}
-              </h1>
-              <p className="text-[10px] md:text-[11px] text-muted-foreground/60 hidden sm:block leading-tight tracking-wide">
+              </p>
+              <p className="text-[10px] md:text-[11px] text-muted-foreground hidden sm:block lg:hidden 2xl:block leading-tight tracking-wide">
                 {settings.header_subtitle}
               </p>
             </div>
           </Link>
+          <SiteNavLinks />
           <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+            {/* Display settings stay in the header from sm up; on phones they live in the menu panel. */}
             <button
               type="button"
               onClick={cycleFontScale}
               title={`글자 크기: ${fontScaleLabel} (클릭하여 변경)`}
               aria-label={`글자 크기 ${fontScaleLabel}, 클릭하여 변경`}
-              className={`inline-flex items-center gap-1.5 rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-3 font-medium border transition-all ${
+              className={`hidden sm:inline-flex items-center justify-center rounded-full h-8 md:h-9 w-8 md:w-9 border transition-all ${
                 scale > 1
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-card text-foreground border-border/60 hover:bg-accent/30"
+                  : "bg-card text-foreground border-border/60 hover:bg-muted"
               }`}
             >
-              <Type className="w-3 h-3 md:w-3.5 md:h-3.5" />
-              <span className="hidden sm:inline">{fontScaleLabel}</span>
+              <Type className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={toggleKiosk}
               aria-pressed={kioskEnabled}
+              aria-label="태블릿 모드 (터치 키보드)"
               title={kioskEnabled ? "태블릿 모드 끄기" : "태블릿 모드 켜기 (터치 키보드)"}
-              className={`inline-flex items-center gap-1.5 rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-3 font-medium border transition-all ${
+              className={`hidden sm:inline-flex items-center justify-center rounded-full h-8 md:h-9 w-8 md:w-9 border transition-all ${
                 kioskEnabled
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-card text-foreground border-border/60 hover:bg-accent/30"
+                  : "bg-card text-foreground border-border/60 hover:bg-muted"
               }`}
             >
-              <Tablet className="w-3 h-3 md:w-3.5 md:h-3.5" />
-              <span className="hidden sm:inline">태블릿</span>
+              <Tablet className="w-3.5 h-3.5" />
             </button>
             {headerRight}
+            <SiteNavPanel
+              fontScaleLabel={fontScaleLabel}
+              fontScaled={scale > 1}
+              onCycleFont={cycleFontScale}
+              kioskEnabled={kioskEnabled}
+              onToggleKiosk={toggleKiosk}
+            />
           </div>
         </div>
       </header>
 
-      <div style={{ paddingBottom: kioskEnabled ? "340px" : undefined }}>
+      {/* min-h-screen keeps the footer below the fold while page data loads, so it never jumps (layout shift) */}
+      <div id="main-content" tabIndex={-1} className="min-h-screen scroll-mt-20 focus:outline-none" style={{ paddingBottom: kioskEnabled ? "340px" : undefined }}>
         {children}
       </div>
 
@@ -132,15 +143,15 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
               <span className="text-xs md:text-sm font-semibold text-foreground tracking-tight">{settings.header_title}</span>
             </div>
           )}
-          <p className="text-[11px] md:text-xs text-muted-foreground/50 leading-relaxed">{settings.footer_line1}</p>
-          <p className="text-[11px] md:text-xs text-muted-foreground/50 mt-1">{settings.footer_line2}</p>
-          <p className="text-[11px] md:text-xs text-muted-foreground/60 mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="underline hover:text-foreground/70 transition-colors">kimjs1408@koat.or.kr</a></p>
-          <p className="text-[10.5px] md:text-[11px] text-muted-foreground/50 mt-2">
+          <p className="text-xs text-muted-foreground leading-relaxed">{settings.footer_line1}</p>
+          <p className="text-xs text-muted-foreground mt-1">{settings.footer_line2}</p>
+          <p className="text-xs text-muted-foreground mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="inline-flex items-center min-h-6 underline hover:text-foreground transition-colors">kimjs1408@koat.or.kr</a></p>
+          <p className="text-xs text-muted-foreground mt-1">
             화면이 이전 버전으로 보이나요?{" "}
             <button
               type="button"
               onClick={forceRefresh}
-              className="underline hover:text-foreground/70 transition-colors font-medium"
+              className="inline-flex items-center min-h-6 underline hover:text-foreground transition-colors font-medium"
             >
               캐시 초기화 후 새로고침
             </button>

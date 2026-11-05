@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local secrets and generated artifacts (the committed .env holds only public client settings)
+.env.local
+.env.*.local
+coverage
+supabase/.temp
+*.tsbuildinfo

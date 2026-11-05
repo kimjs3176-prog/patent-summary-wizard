@@ -73,7 +73,7 @@ const getLoadedBuild = (): string | null => {
   if (!jsM && !cssM && !sha) return null;
   return `${sha || "-"}::${jsM?.[1] || "-"}|${cssM?.[1] || "-"}`;
 };
-(window as any).__APP_BUILD__ = (window as any).__APP_BUILD__ || getLoadedBuild();
+window.__APP_BUILD__ = window.__APP_BUILD__ || getLoadedBuild();
 
 // ----- Idle / busy detection -----
 // We want to avoid yanking the page out from under the user (esp. while a
@@ -87,9 +87,9 @@ const markInteraction = () => { lastInteraction = Date.now(); };
 
 const isAppBusy = (): boolean => {
   // Explicit busy flag (set by analysis hooks).
-  if ((window as any).__APP_BUSY__ === true) return true;
+  if (window.__APP_BUSY__ === true) return true;
   // Any in-flight network request to our edge functions = treat as busy.
-  if ((window as any).__APP_INFLIGHT__ > 0) return true;
+  if (window.__APP_INFLIGHT__ > 0) return true;
   // User actively interacting in the last 30s.
   if (Date.now() - lastInteraction < 30 * 1000) return true;
   // Visible streaming/loading UI present (defensive selectors).
@@ -270,14 +270,14 @@ const checkForUpdate = async () => {
       return;
     }
     consecutiveCheckFailures = 0;
-    const current = (window as any).__APP_BUILD__;
+    const current = window.__APP_BUILD__;
     if (!current) {
-      (window as any).__APP_BUILD__ = latest;
+      window.__APP_BUILD__ = latest;
       return;
     }
     if (current !== latest) {
       console.info(`[update] new build detected: ${current} → ${latest}`);
-      (window as any).__APP_BUILD__ = latest;
+      window.__APP_BUILD__ = latest;
       // SW가 있으면 업데이트 강제 → controllerchange가 hardReload 트리거.
       if ("serviceWorker" in navigator) {
         try {
@@ -335,10 +335,21 @@ window.addEventListener("error", (e) => {
   }
 });
 window.addEventListener("unhandledrejection", (e) => {
-  const reason: any = e?.reason;
-  const msg = typeof reason === "string" ? reason : reason?.message || "";
+  const reason: unknown = e?.reason;
+  const msg = typeof reason === "string" ? reason : (reason as { message?: string } | null)?.message || "";
   if (looksLikeChunkLoadError(msg)) {
     console.warn("[update] chunk load rejection — forcing version check");
     checkForUpdate();
   }
 });
+
+declare global {
+  interface Window {
+    /** 지금 불러온 빌드 표시 (커밋·파일 이름). 새 빌드를 알아채는 데 쓴다 */
+    __APP_BUILD__?: string | null;
+    /** 분석 중이면 true: 새 빌드가 있어도 화면을 새로 고치지 않는다 */
+    __APP_BUSY__?: boolean;
+    /** 진행 중인 서버 함수 요청 수 */
+    __APP_INFLIGHT__?: number;
+  }
+}

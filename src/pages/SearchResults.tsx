@@ -1,27 +1,51 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User } from "lucide-react";
+import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User, FileSignature, Info } from "lucide-react";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { filingEnabled } from "@/lib/filing";
+import { parseIpNumber } from "@/lib/ipNumber";
 import { Button } from "@/components/ui/button";
-import { KeywordSearchResult } from "@/components/PatentSummary/types";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { PatentInput } from "@/components/PatentInput";
+import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { safeFetch } from "@/lib/safeFetch";
-import { FieldTrendPanel } from "@/components/FieldTrendPanel";
+// Charts (recharts) are only needed for field searches; keep them out of every /search visit.
+const FieldTrendPanel = lazy(() => import("@/components/FieldTrendPanel").then((m) => ({ default: m.FieldTrendPanel })));
+import { SearchFilterBar } from "@/components/search/SearchFilterBar";
+import { FavoriteToggle } from "@/components/search/FavoriteToggle";
+import { useCardFavorites } from "@/components/search/useCardFavorites";
+import {
+  applySearchFilters, EMPTY_SEARCH_FILTERS, parseFilterParams, writeFilterParams,
+  type SearchFilterState, type SearchResultRow,
+} from "@/components/search/searchFilters";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const ITEMS_PER_PAGE = 12;
 
 export default function SearchResults() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const keyword = searchParams.get("keyword") || "";
+  // 에이프(출원지원)가 여는 /search?q=출원번호|키워드&from=agri-ip : 번호면 요약으로, 아니면 키워드 검색으로
+  const rawQ = (searchParams.get("q") || "").trim();
+  const keyword = searchParams.get("keyword") || (rawQ && !parseIpNumber(rawQ) ? rawQ : "");
+  const { settings } = useSiteSettings();
+  useDocumentTitle(keyword ? `'${keyword}' 검색 결과` : searchParams.get("field") ? `'${searchParams.get("field")}' 분야 특허` : "검색 결과");
+  useEffect(() => {
+    if (rawQ && parseIpNumber(rawQ)) navigate(`/?patent=${encodeURIComponent(rawQ)}${searchParams.get("from") === "agri-ip" ? "&from=agri-ip" : ""}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawQ]);
   const fieldName = searchParams.get("field") || "";
   const fieldId = searchParams.get("fieldId") || "";
-  const [results, setResults] = useState<KeywordSearchResult[]>([]);
+  const [results, setResults] = useState<SearchResultRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [extractedKeywords, setExtractedKeywords] = useState<string[]>([]);
   const [aiIntent, setAiIntent] = useState("");
+  // Sentence searches: how many retrieved patents the strict concept filter dropped (server-reported).
+  const [droppedByRelevance, setDroppedByRelevance] = useState(0);
+  const filters = useMemo(() => parseFilterParams(searchParams), [searchParams]);
+  const filtered = useMemo(() => applySearchFilters(results, filters), [results, filters]);
+  const favorites = useCardFavorites();
 
   const [searchError, setSearchError] = useState("");
   const [retryNonce, setRetryNonce] = useState(0);
@@ -64,6 +88,7 @@ export default function SearchResults() {
     setSuggestions([]);
     setCorrected("");
     setResults([]);
+    setDroppedByRelevance(0);
     const doSearch = async () => {
       setIsLoading(true);
       try {
@@ -87,6 +112,11 @@ export default function SearchResults() {
           setTotalCount(result.totalCount || result.patents.length);
           setExtractedKeywords(result.extractedKeywords || []);
           setAiIntent(result.intent || "");
+          setDroppedByRelevance(
+            result.isNaturalLanguage && typeof result.droppedByRelevance === "number" && result.droppedByRelevance > 0
+              ? Math.round(result.droppedByRelevance)
+              : 0,
+          );
           if (result.patents.length === 0) fetchSuggestions(keyword, isCancelled);
         } else {
           setSearchError(
@@ -109,8 +139,14 @@ export default function SearchResults() {
 
   const searchFor = (kw: string) => navigate(`/search?keyword=${encodeURIComponent(kw)}`);
 
-  const totalPages = Math.ceil(results.length / ITEMS_PER_PAGE);
-  const paginatedResults = results.slice(
+  // Filters live in the URL (replace, so the back button still leaves the page) and restart paging.
+  const updateFilters = (next: SearchFilterState) => {
+    setCurrentPage(1);
+    setSearchParams(writeFilterParams(searchParams, next), { replace: true });
+  };
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginatedResults = filtered.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -128,12 +164,16 @@ export default function SearchResults() {
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(url)}`;
 
   const headerRight = (
-    <Link to="/">
-      <Button variant="outline" size="sm" className="rounded-full text-xs h-8 px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
-        <ArrowLeft className="w-3.5 h-3.5" />
-        메인으로
+    <>
+    {filingEnabled(settings) && keyword && (
+      <Button asChild variant="outline" size="sm" className="rounded-full text-xs h-8 px-3 sm:px-4 gap-2 font-medium border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all">
+        <Link to={`/filing?kw=${encodeURIComponent(keyword)}`} aria-label="이 키워드로 출원 준비" title="이 키워드로 출원지원에서 아이디어·명칭 초안을 시작합니다">
+          <FileSignature className="w-3.5 h-3.5" />
+          <span className="hidden xl:inline">이 키워드로 출원 준비</span>
+        </Link>
       </Button>
-    </Link>
+    )}
+    </>
   );
 
   const getPageNumbers = () => {
@@ -151,17 +191,25 @@ export default function SearchResults() {
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
       <main className="container mx-auto px-4 md:px-6 py-10 md:py-14 relative z-10">
+        <h1 className="sr-only">{keyword ? `'${keyword}' 검색 결과` : "특허 검색 결과"}</h1>
         {/* Persistent sticky search bar */}
-        <div className="sticky top-2 z-30 mb-6">
-          <div className="max-w-3xl mx-auto rounded-2xl bg-background/85 backdrop-blur-md p-1.5">
-            <PatentInput
-              onSubmit={(patentNumber) => navigate(`/?patent=${encodeURIComponent(patentNumber)}`)}
-              isLoading={isLoading}
-              onKeywordSearch={(_r, kw) => navigate(`/search?keyword=${encodeURIComponent(kw)}`)}
-              skipKeywordFetch
-            />
-          </div>
-        </div>
+        {/* Same classification as home: questions open the assistant here, keywords/sentences search. */}
+        <SmartSearchBox
+          onSubmit={(patentNumber) => navigate(`/?patent=${encodeURIComponent(patentNumber)}`)}
+          isLoading={isLoading}
+          onKeywordSearch={(_r, kw) => navigate(`/search?keyword=${encodeURIComponent(kw)}`)}
+          skipKeywordFetch
+          frame={(content, chatOpen) => (
+            // The conversation is tall, so it scrolls with the page instead of sticking over the results.
+            <div className={chatOpen ? "relative z-30 mb-6" : "sticky top-2 z-30 mb-6"}>
+              <div className={`max-w-3xl mx-auto rounded-2xl p-1.5 ${chatOpen ? "border bg-card shadow-[var(--shadow-card)]" : "bg-background/85 backdrop-blur-md"}`}>
+                {content}
+              </div>
+            </div>
+          )}
+          resumeClassName="text-primary mt-0"
+          resumeRowClassName="max-w-2xl mx-auto -mt-4 mb-6 px-2"
+        />
         {/* Search header */}
         <div className="max-w-3xl mx-auto mb-10">
           <div className="flex items-center gap-4 mb-1">
@@ -173,17 +221,17 @@ export default function SearchResults() {
                 <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
                   '{keyword}'
                 </h2>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
                   <Sparkles className="w-3 h-3" />
                   검색 결과
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {isLoading ? "AI가 검색어를 분석하고 특허를 찾고 있습니다..." : `총 ${totalCount}건의 특허 발견 · ${results.length}건 표시`}
+                {isLoading ? "AI가 검색어를 분석하고 특허를 찾고 있습니다…" : `총 ${totalCount}건의 특허 발견 · ${results.length}건 표시`}
               </p>
               {!isLoading && extractedKeywords.length > 0 && (
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <span className="text-xs text-muted-foreground/70">AI 추출 키워드:</span>
+                  <span className="text-xs text-muted-foreground">AI 추출 키워드:</span>
                   {extractedKeywords.map((kw, i) => (
                     <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/15">
                       {kw}
@@ -195,10 +243,34 @@ export default function SearchResults() {
           </div>
         </div>
 
-        {fieldName && !isLoading && results.length > 0 && <FieldTrendPanel fieldName={fieldName} results={results} />}
+        {fieldName && !isLoading && results.length > 0 && (
+          <Suspense fallback={null}>
+            <FieldTrendPanel fieldName={fieldName} results={results} />
+          </Suspense>
+        )}
         <div id="field-patents" className="scroll-mt-24" />
 
+        {!isLoading && droppedByRelevance > 0 && results.length > 0 && (
+          <p className="max-w-5xl mx-auto mb-3 flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+            <span>문장 검색은 핵심 개념이 제목에 함께 나오는 특허만 보여 드려요. 관련성이 약한 {droppedByRelevance}건은 제외했습니다.</span>
+          </p>
+        )}
 
+        {!isLoading && results.length > 0 && (
+          <SearchFilterBar results={results} state={filters} onChange={updateFilters} filteredCount={filtered.length} />
+        )}
+
+        {/* Filters exclude everything */}
+        {!isLoading && results.length > 0 && filtered.length === 0 && (
+          <div className="max-w-5xl mx-auto text-center py-14 rounded-2xl border border-dashed border-border bg-card/60">
+            <p className="text-foreground font-semibold mb-1">필터 조건에 맞는 특허가 없습니다</p>
+            <p className="text-sm text-muted-foreground mb-4">연도·기관·등록 여부 조건을 넓혀 보세요.</p>
+            <Button variant="outline" onClick={() => updateFilters(EMPTY_SEARCH_FILTERS)} className="rounded-full px-5">
+              필터 초기화
+            </Button>
+          </div>
+        )}
 
         {/* Loading */}
         {isLoading && (
@@ -218,10 +290,10 @@ export default function SearchResults() {
           <>
             <div className="max-w-5xl mx-auto grid gap-3 sm:grid-cols-1 md:grid-cols-2">
               {paginatedResults.map((patent, idx) => (
+                <div key={patent.patentId} className="relative h-full">
                 <button
-                  key={patent.patentId}
                   onClick={() => handlePatentClick(patent.patentId)}
-                  className="w-full h-full p-5 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left group flex flex-col"
+                  className={`w-full h-full p-5 ${favorites.enabled ? "pr-14" : ""} rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 text-left group flex flex-col`}
                   style={{ boxShadow: 'var(--shadow-xs)' }}
                 >
                   <div className="flex gap-4 flex-1">
@@ -241,6 +313,10 @@ export default function SearchResults() {
                         <img
                           src={proxyUrl(patent.thumbnail)}
                           alt=""
+                          width={64}
+                          height={64}
+                          loading="lazy"
+                          decoding="async"
                           className="w-16 h-16 object-contain rounded-xl bg-secondary/50 border border-border/30"
                           onError={(e) => {
                             (e.currentTarget.parentElement as HTMLElement).style.display = "none";
@@ -274,24 +350,43 @@ export default function SearchResults() {
                           <span className="truncate" title={patent.inventors}>
                             대표 발명자: <span className="font-medium text-foreground/80">{patent.inventors.split(/[|,;]/)[0].trim()}</span>
                             {patent.inventors.split(/[|,;]/).length > 1 && (
-                              <span className="text-muted-foreground/70"> 외 {patent.inventors.split(/[|,;]/).length - 1}명</span>
+                              <span className="text-muted-foreground"> 외 {patent.inventors.split(/[|,;]/).length - 1}명</span>
                             )}
                           </span>
                         </div>
                       )}
                       {patent.snippet && (
                         <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-                          {patent.snippet}
+                          {patent.snippet.replace(/\.{3}$/, "…")}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-end">
-                    <span className="text-xs text-primary font-semibold opacity-60 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    <span className="text-xs text-primary font-semibold whitespace-nowrap">
                       AI 요약 보기 →
                     </span>
                   </div>
                 </button>
+                {favorites.enabled && (
+                  <FavoriteToggle
+                    className="absolute top-3.5 right-3.5"
+                    active={favorites.isFavorite(patent.patentId)}
+                    title={patent.titleKo || patent.title}
+                    onToggle={() => favorites.toggle({
+                      patentNumber: patent.patentId,
+                      title: patent.title,
+                      titleKo: patent.titleKo,
+                      assignee: patent.assignee || patent.applicant || patent.organizationName,
+                      applicationNumber: patent.applicationNumber,
+                      registrationNumber: patent.registrationNumber,
+                      applicationDate: patent.applicationDate,
+                      publicationDate: patent.publicationDate,
+                      representativeImage: patent.thumbnail,
+                    })}
+                  />
+                )}
+                </div>
               ))}
             </div>
 
@@ -303,6 +398,7 @@ export default function SearchResults() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
+                  aria-label="이전 페이지"
                   className="h-9 w-9 p-0 rounded-xl border-border/60"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -330,6 +426,7 @@ export default function SearchResults() {
                     variant={page === currentPage ? "default" : "outline"}
                     size="sm"
                     onClick={() => handlePageChange(page)}
+                    aria-current={page === currentPage ? "page" : undefined}
                     className={`h-9 w-9 p-0 rounded-xl text-xs font-semibold ${
                       page === currentPage ? "" : "border-border/60"
                     }`}
@@ -360,6 +457,7 @@ export default function SearchResults() {
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
+                  aria-label="다음 페이지"
                   className="h-9 w-9 p-0 rounded-xl border-border/60"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -369,7 +467,7 @@ export default function SearchResults() {
 
             {/* Page info */}
             <p className="text-center text-xs text-muted-foreground mt-3">
-              {results.length}건 중 {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, results.length)}건 표시
+              {filtered.length}건 중 {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}건 표시
             </p>
           </>
         )}
@@ -405,7 +503,7 @@ export default function SearchResults() {
             <div className="flex flex-wrap justify-center gap-2 mb-6 min-h-9 max-w-xl mx-auto">
               {suggestLoading && (
                 <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" /> 추천 검색어를 찾는 중...
+                  <Loader2 className="w-4 h-4 animate-spin" /> 추천 검색어를 찾는 중…
                 </span>
               )}
               {!suggestLoading &&
@@ -419,12 +517,12 @@ export default function SearchResults() {
                   </button>
                 ))}
             </div>
-            <Link to="/">
-              <Button variant="outline" className="rounded-full px-6 gap-2 border-border/60 hover:border-primary/40">
+            <Button asChild variant="outline" className="rounded-full px-6 gap-2 border-border/60 hover:border-primary/40">
+              <Link to="/">
                 <ArrowLeft className="w-3.5 h-3.5" />
                 메인으로 돌아가기
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         )}
       </main>

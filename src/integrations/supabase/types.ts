@@ -128,6 +128,9 @@ export type Database = {
           label: string
           market_key: string
           source: string | null
+          source_url: string | null
+          status: string
+          verified_at: string | null
         }
         Insert: {
           base_value_eok: number
@@ -137,6 +140,9 @@ export type Database = {
           label: string
           market_key: string
           source?: string | null
+          source_url?: string | null
+          status?: string
+          verified_at?: string | null
         }
         Update: {
           base_value_eok?: number
@@ -146,6 +152,9 @@ export type Database = {
           label?: string
           market_key?: string
           source?: string | null
+          source_url?: string | null
+          status?: string
+          verified_at?: string | null
         }
         Relationships: []
       }
@@ -327,6 +336,7 @@ export type Database = {
           market_reason: string | null
           market_score: number
           patent_number: string
+          score_version: string | null
           technology_reason: string | null
           technology_score: number
           total_score: number
@@ -342,6 +352,7 @@ export type Database = {
           market_reason?: string | null
           market_score: number
           patent_number: string
+          score_version?: string | null
           technology_reason?: string | null
           technology_score: number
           total_score: number
@@ -357,6 +368,7 @@ export type Database = {
           market_reason?: string | null
           market_score?: number
           patent_number?: string
+          score_version?: string | null
           technology_reason?: string | null
           technology_score?: number
           total_score?: number
@@ -562,6 +574,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_cached_scores: {
+        Args: { p_numbers: string[] }
+        Returns: {
+          patent_number: string
+          total_score: number
+          trl: number
+        }[]
+      }
       get_monthly_popular_searches: {
         Args: { p_limit?: number }
         Returns: {
@@ -594,6 +614,15 @@ export type Database = {
         }[]
       }
       increment_daily_visit: { Args: never; Returns: undefined }
+      peek_rate_limit: {
+        Args: {
+          _bucket: string
+          _identifier: string
+          _limit: number
+          _window_seconds: number
+        }
+        Returns: boolean
+      }
       submit_satisfaction: {
         Args: { p_comment?: string; p_patent_number?: string; p_rating: number }
         Returns: undefined

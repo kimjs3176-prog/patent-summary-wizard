@@ -1,28 +1,21 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, BarChart3, FileText, Info, Layers, RefreshCw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, BarChart3, Building2, CalendarRange, FileText, Info, Layers, RefreshCw, Sparkles, TrendingUp } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TECHNOLOGY_FIELDS } from "../../supabase/functions/_shared/technologyFields";
 import { trendHeadline, useFilingTrends } from "@/hooks/useFilingTrends";
+import { Growth } from "@/components/insights/Growth";
+import { InstituteRanking } from "@/components/insights/InstituteRanking";
+import { InsightsDownload } from "@/components/insights/InsightsDownload";
+import { MonthlyTrendChart } from "@/components/insights/MonthlyTrendChart";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 
 const FIELD_META = Object.fromEntries(TECHNOLOGY_FIELDS.map((f) => [f.id, f])) as Record<string, typeof TECHNOLOGY_FIELDS[number]>;
 const fmtDate = (d: string) => `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6, 8)}`;
-const pct = (n: number | null) => (n === null ? "—" : `${n > 0 ? "+" : ""}${n}%`);
-
-function Growth({ value, className = "" }: { value: number | null; className?: string }) {
-  if (value === null) return <span className={`text-muted-foreground ${className}`}>—</span>;
-  const up = value >= 0;
-  const Icon = up ? TrendingUp : TrendingDown;
-  return (
-    <span className={`inline-flex items-center gap-0.5 font-semibold tabular-nums ${up ? "trend-up" : "trend-down"} ${className}`}>
-      <Icon className="w-3.5 h-3.5" />{pct(value)}
-    </span>
-  );
-}
 
 function Sparkline({ values, tone }: { values: number[]; tone: string }) {
   const max = Math.max(1, ...values);
@@ -60,6 +53,7 @@ function Card({ title, icon: Icon, action, children, className = "" }: { title: 
 }
 
 export default function Insights() {
+  useDocumentTitle("특허 인사이트");
   const navigate = useNavigate();
   const { data, isPending, isError, error, refetch, isFetching } = useFilingTrends();
   const [sort, setSort] = useState<"count" | "growth">("count");
@@ -74,16 +68,9 @@ export default function Insights() {
 
   const maxShare = Math.max(1, ...fieldRows.map((f) => f.share));
 
-  const headerRight = (
-    <Link to="/">
-      <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1 md:gap-2 btn-press font-medium">
-        <ArrowLeft className="w-3 h-3 md:w-3.5 md:h-3.5" /><span className="hidden sm:inline">홈으로</span>
-      </Button>
-    </Link>
-  );
 
   return (
-    <PageLayout headerRight={headerRight}>
+    <PageLayout>
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
         <section className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-7">
           <div className="max-w-6xl mx-auto px-5 md:px-6 py-6 md:py-8">
@@ -91,11 +78,10 @@ export default function Insights() {
             <p className="home-hero-muted mt-2 text-sm md:text-base max-w-2xl leading-relaxed">
               농업 국가연구기관 6곳의 최근 특허·실용신안 출원을 기술 분야와 기관별로 정리했어요.
             </p>
-            {data && (
-              <p className="home-hero-muted mt-3 text-xs">
-                {fmtDate(data.start)}~{fmtDate(data.end)} 공개 출원 {data.total.toLocaleString()}건을 모았어요. {new Date(data.updatedAt).toLocaleDateString("ko-KR")}에 갱신했어요.
-              </p>
-            )}
+            {/* The line keeps its height before the data arrives so the content below does not jump (layout shift). */}
+            <p className="home-hero-muted mt-3 text-xs min-h-4">
+              {data ? <>{fmtDate(data.start)}~{fmtDate(data.end)} 공개 출원 {data.total.toLocaleString()}건을 모았어요. {new Date(data.updatedAt).toLocaleDateString("ko-KR")}에 갱신했어요.</> : "\u00a0"}
+            </p>
           </div>
         </section>
 
@@ -120,6 +106,11 @@ export default function Insights() {
 
           {data && view && (
             <>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">공개가 끝난 <span className="font-semibold text-foreground">{view.y}년</span>을 기준으로 비교해요.</p>
+                <div className="ml-auto"><InsightsDownload data={data} /></div>
+              </div>
+
               {/* KPI */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Kpi icon={FileText} label={`${view.y}년 출원`} value={view.latest?.count ?? 0} unit="건" sub={<>전년 대비 <Growth value={view.growth} /></>} />
@@ -143,14 +134,14 @@ export default function Insights() {
                 </Card>
               )}
 
-              <div>
+              <div className="grid lg:grid-cols-2 gap-4 md:gap-5">
                 {/* Yearly */}
                 <Card title="연도별 출원 추이" icon={BarChart3}>
                   <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={data.yearly} margin={{ top: 16, right: 4, left: -22, bottom: 0 }}>
                         <XAxis dataKey="year" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                         <Tooltip
                           cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
                           contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, fontSize: 12 }}
@@ -183,6 +174,10 @@ export default function Insights() {
                   </p>
                 </Card>
 
+                {/* Monthly */}
+                <Card title="월별 출원 추이" icon={CalendarRange} action={<span className="text-[11px] text-muted-foreground">최근 {data.monthly.length}개월</span>}>
+                  <MonthlyTrendChart data={data} />
+                </Card>
               </div>
 
               {/* Fields */}
@@ -233,6 +228,11 @@ export default function Insights() {
                   })}
                 </ul>
                 <p className="mt-2 text-[11px] text-muted-foreground">전년 출원이 5건 미만인 분야는 증감률을 표시하지 않아요. 분야를 누르면 관련 특허를 볼 수 있어요.</p>
+              </Card>
+
+              {/* Institutes */}
+              <Card title="기관별 출원" icon={Building2} action={<span className="text-[11px] text-muted-foreground">누적 많은 순</span>}>
+                <InstituteRanking data={data} />
               </Card>
 
               {/* Recent */}

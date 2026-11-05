@@ -2,9 +2,8 @@ import { useState, type RefObject } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { loadKoreanFont, addKoreanFontToDoc } from "@/lib/koreanFont";
+import { fitDatasheet, unfitDatasheet } from "@/lib/datasheet";
 
 interface TextItem {
   text: string;
@@ -170,16 +169,31 @@ export async function downloadWebSummaryPdf(
   const safeNumber = patentNumber.replace(/[^0-9A-Za-z가-힣_-]/g, "_");
   const clone = element.cloneNode(true) as HTMLDivElement;
   clone.classList.add(PDF_CAPTURE_CLASS);
+  const isDatasheet = !!clone.querySelector(".ds-sheet");
+  if (isDatasheet) clone.classList.add("ais-ds-capture");
   clone.querySelectorAll<HTMLElement>(".print\\:hidden, [data-print-exclude='true']")
     .forEach((node) => node.remove());
   document.body.appendChild(clone);
 
   try {
+    // Loaded on click so summary views don't download the PDF libraries up front.
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
     if (document.fonts?.ready) await document.fonts.ready;
     await waitForImages(clone);
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
+
+    if (isDatasheet) {
+      fitDatasheet(clone);
+      if (!clone.querySelector(".ds-sheet.ds-free")) {
+        await saveDatasheetPdf(clone, html2canvas, jsPDF, patentNumber, safeNumber);
+        return true;
+      }
+    }
 
     normalizeCenteredBoxes(clone);
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -318,7 +332,73 @@ export async function downloadWebSummaryPdf(
   }
 }
 
-/** Print the visible web report so the saved PDF matches the page. */
+/**
+ * 데이터시트형 요약서 PDF: .ds-sheet 한 장을 A4 한 쪽(여백 10mm 안 190×277mm)에 그대로 놓는다.
+ * 글자는 이미지 위에 보이지 않는 글자층으로 겹쳐 PDF에서도 선택·복사할 수 있게 한다.
+ */
+async function saveDatasheetPdf(
+  clone: HTMLElement,
+  html2canvas: (el: HTMLElement, opts?: Record<string, unknown>) => Promise<HTMLCanvasElement>,
+  JsPDF: new (opts: Record<string, unknown>) => import("jspdf").jsPDF,
+  patentNumber: string,
+  safeNumber: string,
+) {
+  const pdf = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  let hasKoreanFont = false;
+  try {
+    addKoreanFontToDoc(pdf, await loadKoreanFont());
+    hasKoreanFont = true;
+  } catch (fontError) {
+    console.warn("Korean font unavailable for PDF text layer:", fontError);
+  }
+  const marginX = 10, marginY = 10.5, width = 190, height = 276;
+  const sheets = Array.from(clone.querySelectorAll<HTMLElement>(".ds-sheet"));
+  for (let i = 0; i < sheets.length; i++) {
+    const sheet = sheets[i];
+    normalizeCenteredBoxes(sheet);
+    const textItems = collectTextItems(sheet);
+    const cssWidth = sheet.offsetWidth || 1;
+    const canvas = await html2canvas(sheet, { scale: 2, useCORS: true, allowTaint: false, backgroundColor: "#ffffff", logging: false, imageTimeout: 8000 });
+    if (i > 0) pdf.addPage("a4", "portrait");
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", marginX, marginY, width, height, undefined, "FAST");
+    if (hasKoreanFont) {
+      const cssToMm = width / cssWidth;
+      pdf.setFont("NotoSansKR", "normal");
+      pdf.setTextColor(0, 0, 0);
+      textItems.forEach((item) => {
+        pdf.setFontSize(Math.max(4, item.fontSize * cssToMm * (72 / 25.4)));
+        try {
+          pdf.text(item.text, marginX + item.x * cssToMm, marginY + item.y * cssToMm, { renderingMode: "invisible", maxWidth: Math.max(1, item.width * cssToMm) * 1.6 });
+        } catch {
+          /* skip unrenderable runs */
+        }
+      });
+    }
+  }
+  pdf.setProperties({ title: `AIS 특허요약 ${patentNumber}`, subject: "Agri IP Summary AI 기술분석 요약서", creator: "Agri IP Summary (AIS)" });
+  pdf.save(`AIS_특허요약_${safeNumber || "report"}.pdf`);
+}
+
+/** 인쇄 상태로 바꾼다: 요약서만 남기고 A4 두 쪽에 맞춘다. 이미 인쇄 상태면 false. */
+export function enterSummaryPrint(element: HTMLElement | null): boolean {
+  if (!element || document.body.classList.contains(PRINTING_CLASS)) return false;
+  document.body.classList.add(PRINTING_CLASS);
+  element.classList.add(PRINT_TARGET_CLASS);
+  fitDatasheet(element);
+  return true;
+}
+
+export function leaveSummaryPrint(element: HTMLElement | null): void {
+  unfitDatasheet(element);
+  document.body.classList.remove(PRINTING_CLASS);
+  element?.classList.remove(PRINT_TARGET_CLASS);
+}
+
+/**
+ * Print the visible web report so the saved PDF matches the page.
+ * 휴대폰 Chrome 등은 window.print()가 인쇄 창을 띄운 채 바로 돌아오므로, 인쇄 상태는 afterprint(인쇄 창이 닫힘)에서만 푼다.
+ * 바로 풀면 화면 전체가 인쇄된다.
+ */
 export async function printWebSummary(
   element: HTMLDivElement | null,
   patentNumber: string,
@@ -327,19 +407,23 @@ export async function printWebSummary(
 
   const previousTitle = document.title;
   const safeNumber = patentNumber.replace(/[^0-9A-Za-z가-힣_-]/g, "_");
+  const printMedia = typeof window.matchMedia === "function" ? window.matchMedia("print") : null;
   let cleaned = false;
 
+  const onMediaChange = (e: MediaQueryListEvent) => { if (!e.matches) cleanup(); };
   const cleanup = () => {
     if (cleaned) return;
     cleaned = true;
-    document.body.classList.remove(PRINTING_CLASS);
-    element.classList.remove(PRINT_TARGET_CLASS);
+    leaveSummaryPrint(element);
     document.title = previousTitle;
     window.removeEventListener("afterprint", cleanup);
+    window.removeEventListener("pointerdown", cleanup, true);
+    window.removeEventListener("keydown", cleanup, true);
+    printMedia?.removeEventListener?.("change", onMediaChange);
   };
 
-  document.body.classList.add(PRINTING_CLASS);
-  element.classList.add(PRINT_TARGET_CLASS);
+  leaveSummaryPrint(element); // 남아 있던 인쇄 상태가 있으면 지우고 새로 맞춘다
+  enterSummaryPrint(element);
   document.title = `AIS_특허요약_${safeNumber || "report"}`;
   window.addEventListener("afterprint", cleanup, { once: true });
 
@@ -349,8 +433,16 @@ export async function printWebSummary(
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
+    // 글꼴·이미지가 들어온 뒤 다시 맞춘다
+    fitDatasheet(element);
+    printMedia?.addEventListener?.("change", onMediaChange);
     window.print();
-    cleanup();
+    // afterprint를 보내지 않는 브라우저 대비: 인쇄 창이 닫힌 뒤 처음 누르거나 키를 치면 화면으로 돌아온다
+    setTimeout(() => {
+      if (cleaned) return;
+      window.addEventListener("pointerdown", cleanup, true);
+      window.addEventListener("keydown", cleanup, true);
+    }, 500);
     return true;
   } catch (error) {
     cleanup();

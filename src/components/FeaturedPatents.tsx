@@ -65,7 +65,7 @@ export function FeaturedPatents({ onPatentSelect, sectionTitle, sectionSubtitle 
       <section className="max-w-5xl mx-auto mt-10 md:mt-16">
         <div className="flex items-center justify-center gap-3 py-10">
           <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-          <span className="text-sm text-muted-foreground">이달의 특허 로딩 중...</span>
+          <span className="text-sm text-muted-foreground">이달의 특허 로딩 중…</span>
         </div>
       </section>
     );

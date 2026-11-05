@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Trash2, Loader2, Database, RefreshCw, KeyRound, BarChart3 } from "lucide-react";
+import { Trash2, Loader2, Database, RefreshCw, KeyRound, BarChart3, Flame } from "lucide-react";
+import { SummaryWarmupPanel } from "@/components/admin/SummaryWarmupPanel";
 import { StatsDashboard } from "@/components/admin/StatsDashboard";
 import type { UsageStats, VisitorStats } from "@/components/admin/adminTypes";
 import { type CacheItem, type CacheCounts } from './adminPageConstants';
@@ -89,7 +90,7 @@ export function AdminSystemPanel({ cacheCounts, cacheItems, cacheLoading, cacheP
 
                     {cacheItems.length === 0 ? (
                       <div className="text-center py-12 text-muted-foreground text-sm">
-                        {cacheLoading ? "로딩 중..." : "캐시된 데이터가 없습니다."}
+                        {cacheLoading ? "로딩 중…" : "캐시된 데이터가 없습니다."}
                       </div>
                     ) : (
                       <div className="space-y-1">
@@ -127,6 +128,15 @@ export function AdminSystemPanel({ cacheCounts, cacheItems, cacheLoading, cacheP
                       캐시 삭제 시 해당 특허의 AI 요약과 사업화 점수 캐시도 함께 삭제됩니다.
                     </p>
                   </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="warmup" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-sm font-semibold gap-2">
+                  <span className="flex items-center gap-2"><Flame className="w-4 h-4 text-primary" /> 인기 특허 요약서 미리 만들기</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <SummaryWarmupPanel />
                 </AccordionContent>
               </AccordionItem>
 

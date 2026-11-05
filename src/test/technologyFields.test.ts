@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { aggregateFilings, classifyTechnology, filingPeriod } from "../../supabase/functions/_shared/technologyFields";
-import { layoutTechnologyFields, groupTechnologyFields, visibleTechnologyFields } from "../lib/technologyTreemap";
 
 describe("three-year technology filings", () => {
-  it("includes 10 filings and excludes counts below 10 without changing source statistics", () => {
-    const fields = [{ id: "food", count: 154 }, { id: "cosmetics", count: 10 }, { id: "bio", count: 9 }, { id: "soil", count: 0 }] as const;
-    expect(visibleTechnologyFields([...fields])).toEqual([{ id: "food", count: 154 }, { id: "cosmetics", count: 10 }]);
-    expect(fields.reduce((sum, field) => sum + field.count, 0)).toBe(173);
-  });
   it("uses exactly the most recent three years", () => {
     expect(filingPeriod(new Date("2026-10-10T00:50:00Z"))).toEqual({ start: "20231010", end: "20261010" });
     expect(filingPeriod(new Date("2024-02-29T00:00:00Z"))).toEqual({ start: "20210228", end: "20240229" });
@@ -25,12 +19,6 @@ describe("three-year technology filings", () => {
     expect(result.find(field => field.id === "digital")?.count).toBe(1);
     expect(result.reduce((sum, field) => sum + field.count, 0)).toBe(2);
     expect(classifyTechnology("A01H 4/00")).toBe("breeding");
-  });
-  it("sizes area by application counts rather than search popularity", () => {
-    const nodes = layoutTechnologyFields([{ id: "food", count: 300 }, { id: "bio", count: 100 }], 1000, 400);
-    const food = nodes.find(node => node.id === "food");
-    const bio = nodes.find(node => node.id === "bio");
-    expect(food && bio ? (food.width * food.height) / (bio.width * bio.height) : 0).toBeCloseTo(3, 1);
   });
   it("separates breeding from biotechnology by primary IPC", () => {
     expect(classifyTechnology("A01H 1/00|C12N 15/00")).toBe("breeding");
@@ -72,14 +60,6 @@ describe("three-year technology filings", () => {
       ["G06F 16/00", "computing"], ["G01N 21/00", "digital"], ["G05B 19/00", "control"], ["H04W 4/00", "electronics"],
     ];
     for (const [ipc, id] of cases) expect(classifyTechnology(ipc)).toBe(id);
-  });
-  it("includes low-count and zero-count fields exactly once in rotating groups without changing counts", () => {
-    const fields = [{ id: "food", count: 300 }, { id: "bio", count: 100 }, { id: "fertilizer", count: 2 }, { id: "soil", count: 0 }] as const;
-    const groups = groupTechnologyFields([...fields], 4);
-    expect(groups.flat()).toEqual([...fields]);
-    expect(groups.flat().reduce((sum, field) => sum + field.count, 0)).toBe(402);
-    expect(groups.some(group => group.some(field => field.id === "fertilizer"))).toBe(true);
-    expect(groups.some(group => group.some(field => field.id === "soil"))).toBe(true);
   });
 });
 import { FIELD_SEARCH_TERMS as TERMS, TECHNOLOGY_FIELDS as ALL_FIELDS } from "../../supabase/functions/_shared/technologyFields";

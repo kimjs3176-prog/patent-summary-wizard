@@ -4,7 +4,7 @@ const steps = [
   { num: 1, title: "이전 기술 탐색", desc: "KIPRIS·NATI에서 관심 기술을 검색합니다." },
   { num: 2, title: "신청서 제출", desc: "NATI에서 신청서 작성 후 서류를 첨부합니다." },
   { num: 3, title: "검토 및 접수", desc: "보완 사항 발생 시 개별 통보 후 재접수합니다." },
-  { num: 4, title: "신청서 결재", desc: "발명자·기관·특허청의 이전 사항을 검토합니다." },
+  { num: 4, title: "신청서 결재", desc: "발명자·기관·지식재산처의 이전 사항을 검토합니다." },
   { num: 5, title: "계약 체결", desc: "기술이전 승인 및 전자계약을 체결합니다." },
   { num: 6, title: "정산 · 납부", desc: "계약 종료 후 기술료를 정산·납부합니다." },
 ];
@@ -41,9 +41,9 @@ export function TechTransferGuide() {
 
       <p className="mt-6 text-[12px] text-muted-foreground">
         자세한 내용은{" "}
-        <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline font-medium">NATI</a>
+        <a href="https://www.nati.or.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-6 text-primary underline-offset-2 hover:underline font-medium">NATI</a>
         {"와 "}
-        <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline font-medium">KIPRIS</a>
+        <a href="https://www.kipris.or.kr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-6 text-primary underline-offset-2 hover:underline font-medium">KIPRIS</a>
         를 참고하세요.
       </p>
     </section>

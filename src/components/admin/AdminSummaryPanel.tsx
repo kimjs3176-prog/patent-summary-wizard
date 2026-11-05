@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TabsContent } from "@/components/ui/tabs";
 import { Plus, Trash2, Save, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
 import { ScoreTrlSettings, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
+import { MarketReferencePanel, type MarketRefApiCall } from "@/components/admin/MarketReferencePanel";
 import type { Dispatch, SetStateAction } from "react";
 
 interface AdminSummaryPanelProps {
@@ -32,9 +33,11 @@ interface AdminSummaryPanelProps {
   trlConfig: TrlConfig;
   setTrlConfig: Dispatch<SetStateAction<TrlConfig>>;
   handleSaveSummarySettings: () => Promise<void>;
+  /** 관리자 API 호출(있으면 시장 표준값 검토 패널을 함께 보여준다) */
+  apiCall?: MarketRefApiCall;
 }
 
-export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySectionLengths, setSummarySectionLengths, summaryDisclaimer, setSummaryDisclaimer, summaryVisibleSections, setSummaryVisibleSections, summaryAiPromptExtra, setSummaryAiPromptExtra, summaryCardIcons, setSummaryCardIcons, summaryInfoLabels, setSummaryInfoLabels, isSavingSummarySettings, newSectionKey, setNewSectionKey, summaryMaxTokens, setSummaryMaxTokens, scoreConfig, setScoreConfig, trlConfig, setTrlConfig, handleSaveSummarySettings }: AdminSummaryPanelProps) {
+export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySectionLengths, setSummarySectionLengths, summaryDisclaimer, setSummaryDisclaimer, summaryVisibleSections, setSummaryVisibleSections, summaryAiPromptExtra, setSummaryAiPromptExtra, summaryCardIcons, setSummaryCardIcons, summaryInfoLabels, setSummaryInfoLabels, isSavingSummarySettings, newSectionKey, setNewSectionKey, summaryMaxTokens, setSummaryMaxTokens, scoreConfig, setScoreConfig, trlConfig, setTrlConfig, handleSaveSummarySettings, apiCall }: AdminSummaryPanelProps) {
   return (
           <TabsContent value="summary">
             <div className="space-y-6">
@@ -152,7 +155,7 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                 <Input
                   value={summaryDisclaimer}
                   onChange={e => setSummaryDisclaimer(e.target.value)}
-                  placeholder="※ 본 분석은..."
+                  placeholder="※ 본 분석은…"
                 />
               </div>
 
@@ -163,7 +166,6 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                   {[
                     { key: "commercialization", label: "기술분석 점수", desc: "종합 점수 + TRL 통합 카드 (기술성·시장성·사업성)" },
                     { key: "claims", label: "청구항", desc: "특허 청구항 접기/펼치기 섹션" },
-                    { key: "competitorComparison", label: "경쟁 특허 비교", desc: "유사 특허와의 비교 분석 표" },
                     { key: "familyTree", label: "패밀리 트리", desc: "동일 출원인의 관련 특허 네트워크" },
                   ].map(item => {
                     const isOn = summaryVisibleSections[item.key] !== false;
@@ -309,6 +311,12 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                 {isSavingSummarySettings ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
                 요약서 설정 저장
               </Button>
+
+              {apiCall && (
+                <div className="pt-4 border-t border-border/50">
+                  <MarketReferencePanel apiCall={apiCall} />
+                </div>
+              )}
             </div>
           </TabsContent>
   );

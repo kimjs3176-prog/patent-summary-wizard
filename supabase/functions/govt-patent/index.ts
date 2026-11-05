@@ -2,7 +2,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 
 // KIPRIS Plus 국유특허 기본조회
-const ENDPOINT = 'http://plus.kipris.or.kr/openapi/rest/GovernmentownershipPatentService/governmentownershipPatentInfo';
+const ENDPOINT = 'https://plus.kipris.or.kr/openapi/rest/GovernmentownershipPatentService/governmentownershipPatentInfo';
 
 /** 등록번호를 13자리(10 + 7자리 + 0000) 형식으로 정규화 */
 function normalizeRgstNo(input: string): string | null {

@@ -32,7 +32,7 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                 <div key={field.key}>
                   <label className="text-xs text-muted-foreground mb-1 block">{field.label}</label>
                   <Input
-                    type={(field as any).isSecret ? "password" : "text"}
+                    type={"isSecret" in field && field.isSecret ? "password" : "text"}
                     value={siteSettings[field.key] || ""}
                     onChange={e => setSiteSettings(s => ({ ...s, [field.key]: e.target.value }))}
                     placeholder={field.placeholder}
@@ -78,7 +78,7 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                     { key: "feature_favorites", label: "관심 특허(즐겨찾기)", desc: "요약 화면의 '담기' 버튼 및 비교 페이지" },
                     { key: "feature_search_history", label: "최근 검색 기록", desc: "메인 화면의 검색 기록 카드 노출" },
                     { key: "feature_glossary", label: "용어집 자동 주석", desc: "AI 요약 본문의 학술 용어 툴팁 자동 표시" },
-                    { key: "feature_competitor_analysis", label: "경쟁 특허 비교 분석", desc: "요약 하단의 유사 특허 비교 표 노출" },
+                    { key: "feature_filing", label: "출원지원", desc: "메인 상단의 ‘출원지원’ 메뉴와 요약·검색 화면의 ‘출원지원으로’ 버튼 (아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리·해외 출원 5단계)" },
                   ].map(feat => {
                     const isOn = siteSettings[feat.key] !== "false";
                     return (
@@ -324,11 +324,11 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                         let videoCats: string[] = [];
                         try { videoCats = JSON.parse(siteSettings.video_categories || "[]"); } catch { videoCats = []; }
                         if (!Array.isArray(videoCats)) videoCats = [];
-                        const cur = (v as any).category || "";
+                        const cur = v.category || "";
                         return (
                           <select
                             value={cur}
-                            onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, category: e.target.value } as any : item))}
+                            onChange={e => setTechVideos(prev => prev.map((item, i) => i === idx ? { ...item, category: e.target.value } : item))}
                             className="mb-2 w-full h-9 rounded-md border border-input bg-background px-2 text-[12px]"
                           >
                             <option value="">카테고리 선택 안 함 (미분류)</option>

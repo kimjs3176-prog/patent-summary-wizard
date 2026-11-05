@@ -1,10 +1,13 @@
-import { lazy, Suspense, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Compass, MessagesSquare, Search, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Compass, FileSignature, ListFilter, MessagesSquare, Search, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
-import { PatentInput } from "@/components/PatentInput";
+import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { heroCtaServices, visibleServices } from "@/lib/services";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import type { KeywordSearchResult } from "@/components/PatentSummary/types";
 
 interface HomeSearchHeroProps {
@@ -15,10 +18,7 @@ interface HomeSearchHeroProps {
   placeholder: string;
 }
 
-type Mode = "search" | "finder" | "chat";
-
-// Loaded only when the 물어보기 tab is opened so the home page stays light.
-const PatentChat = lazy(() => import("@/components/PatentChat"));
+type Mode = "search" | "finder";
 
 function FinderQuickForm() {
   const navigate = useNavigate();
@@ -49,24 +49,47 @@ function FinderQuickForm() {
 
 export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, description, placeholder }: HomeSearchHeroProps) {
   const [mode, setMode] = useState<Mode>("search");
+  const { settings } = useSiteSettings();
+  // 출원도우미's badge lives here next to the 나만의 특허찾기 tab (owner); it still follows the feature_filing setting.
+  const filing = visibleServices(settings).find((s) => s.key === "filing");
+  // 무상기술이전 gets its own entry at the bottom of the hero (owner); it follows the same visible list as the menu.
+  const ctas = heroCtaServices(settings);
+  // While the patent assistant is open the hero becomes a compact chat stage: the intro copy folds away
+  // and the conversation is sized to the viewport, so the composer never drops below the fold.
+  const [chatOpen, setChatOpen] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const handleChatOpenChange = useCallback((open: boolean) => setChatOpen(open), []);
+  // The search box unmounts when the finder tab is chosen, so only treat the chat as open on the search tab.
+  const compact = chatOpen && mode === "search";
+  useEffect(() => {
+    if (!compact) return;
+    const el = sectionRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 64; // keep clear of the sticky header
+    if (Math.abs(window.scrollY - top) > 8) window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }, [compact]);
   const tabs: { key: Mode; label: string; icon: typeof Search }[] = [
-    { key: "search", label: "특허검색", icon: Search },
+    { key: "search", label: "통합검색", icon: Search },
     { key: "finder", label: "나만의 특허찾기", icon: Compass },
-    { key: "chat", label: "물어보기", icon: MessagesSquare },
   ];
   return (
-    <section className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-6" aria-labelledby="home-title">
+    <section ref={sectionRef} data-chat-open={compact || undefined} className="home-search-hero relative -mx-3 sm:-mx-4 md:-mx-6 mb-5 md:mb-6" aria-labelledby="home-title">
       <div aria-hidden="true" className="absolute inset-0 overflow-hidden opacity-25 pointer-events-none motion-reduce:hidden">
         <AiHeroAnimation />
       </div>
-      <div className="relative max-w-5xl mx-auto px-5 md:px-0 py-7 md:py-9">
-        <h1 id="home-title" className="text-[30px] md:text-[44px] font-extrabold leading-tight tracking-normal">
-          Agri IP Summary <span className="home-hero-muted text-lg md:text-2xl font-semibold">(AIS)</span>
+      <div className={`relative max-w-[67rem] mx-auto px-5 md:px-6 transition-[padding] duration-300 ${compact ? "py-4 md:py-5" : "py-7 md:py-9"}`}>
+        <h1 id="home-title" className={`font-extrabold leading-tight tracking-normal transition-[font-size] duration-300 ${compact ? "text-xl md:text-2xl" : "text-[30px] md:text-[44px]"}`}>
+          Agri IP Summary <span className={`home-hero-muted font-semibold ${compact ? "text-sm md:text-base" : "text-lg md:text-2xl"}`}>(AIS)</span>
         </h1>
-        <p className="home-hero-accent mt-2 text-sm md:text-base font-medium">농업기술 특허를 한눈에, AI로 쉽게</p>
-        <p className="home-hero-muted mt-2 text-sm leading-relaxed max-w-2xl">{description}</p>
+        {!compact && (
+          <>
+            <p className="home-hero-accent mt-2 text-sm md:text-base font-medium">농업기술 특허를 한눈에, AI로 쉽게</p>
+            <p className="home-hero-muted mt-2 text-sm leading-relaxed max-w-2xl">{description}</p>
+          </>
+        )}
 
-        <div role="tablist" aria-label="검색 방식" className="home-mode-tabs mt-5 md:mt-6 inline-flex rounded-full p-1 gap-1">
+        <div className={`flex flex-wrap items-center gap-2 ${compact ? "mt-3" : "mt-5 md:mt-6"}`}>
+        <div role="tablist" aria-label="검색 방식" className="home-mode-tabs inline-flex rounded-full p-1 gap-1">
           {tabs.map((t) => {
             const active = mode === t.key;
             const Icon = t.icon;
@@ -85,23 +108,74 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
             );
           })}
         </div>
+        {filing && (
+          <Link
+            to={filing.to}
+            title={filing.description}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm font-bold bg-primary text-primary-foreground shadow-[var(--shadow-card)] hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          >
+            <FileSignature className="w-3.5 h-3.5" aria-hidden="true" />
+            {filing.label}
+          </Link>
+        )}
+        </div>
 
-        <div className="home-search-surface relative mt-3 max-w-2xl rounded-xl bg-card p-1.5 text-card-foreground">
-          {mode === "search" && (
-            <PatentInput onSubmit={onSubmit} isLoading={isLoading} onKeywordSearch={onKeywordSearch} placeholder={placeholder} />
-          )}
-          {mode === "finder" && <FinderQuickForm />}
-          {mode === "chat" && (
-            <Suspense fallback={<p className="px-3 py-6 text-sm text-muted-foreground">상담 창을 여는 중…</p>}>
-              <PatentChat onOpenPatent={onSubmit} />
-            </Suspense>
-          )}
-        </div>
-        <div className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
-          <span>농업분야 국가연구기관 보유 특허</span>
-          <span>KIPRIS 실시간 연동</span>
-          <span>Gemini AI 분석</span>
-        </div>
+        {/* The search box classifies each entry itself; questions open the conversation in place. */}
+        {mode === "search" ? (
+          <SmartSearchBox
+            onSubmit={onSubmit}
+            onKeywordSearch={onKeywordSearch}
+            isLoading={isLoading}
+            placeholder={placeholder}
+            // The results page runs the search itself; fetching here too doubled the AI call and the wait.
+            skipKeywordFetch
+            onChatOpenChange={handleChatOpenChange}
+            resumeClassName="home-hero-accent"
+            frame={(content, chatOpen) => (
+              // The conversation needs room: widen the card to the hero's content width while it is open
+              // so the dark band does not stretch around a narrow, tall box.
+              <div className={`home-search-surface relative mt-3 rounded-xl bg-card p-1.5 text-card-foreground transition-[max-width] duration-300 ${chatOpen ? "max-w-4xl" : "max-w-2xl"}`}>{content}</div>
+            )}
+          />
+        ) : (
+          <div className="home-search-surface relative mt-3 max-w-2xl rounded-xl bg-card p-1.5 text-card-foreground">
+            <FinderQuickForm />
+          </div>
+        )}
+        {!compact && (
+          <>
+            {/* How the one search box treats each kind of entry (see queryIntent), so visitors know they can just ask. */}
+            <ul aria-label="검색창 사용법" className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs md:text-[13px]">
+              <li className="inline-flex items-center gap-1.5"><Search className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />단어를 넣으면 넓게 찾아요</li>
+              <li className="inline-flex items-center gap-1.5"><ListFilter className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />문장으로 쓰면 꼭 맞는 것만 골라요</li>
+              <li className="inline-flex items-center gap-1.5"><MessagesSquare className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />물어보면 AI가 대화로 답해요</li>
+            </ul>
+            {/* 무상기술이전 and, to its right, 식품기술이전 협의체 sit on their own row at the foot of the hero (owner); one column on phones. */}
+            {ctas.length > 0 && (
+            <div className="mt-5 grid max-w-4xl gap-2.5 sm:grid-cols-2">
+            {ctas.map((s) => {
+              const Icon = s.icon;
+              return (
+                  <Link
+                    key={s.key}
+                    to={s.to}
+                    className="home-hero-cta group flex w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
+                  >
+                    <span className="home-hero-cta-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" aria-hidden="true">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1 text-left">
+                      <span className="block text-sm font-bold leading-tight">{s.title}</span>
+                      <span className="home-hero-muted block text-xs leading-snug">{s.description}</span>
+                    </span>
+                    <ArrowRight className="home-hero-accent h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+                  </Link>
+              );
+            })}
+            </div>
+            )}
+          </>
+        )}
       </div>
     </section>
   );

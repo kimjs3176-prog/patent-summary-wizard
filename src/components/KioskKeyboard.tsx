@@ -167,10 +167,12 @@ export function KioskKeyboard() {
 
   if (!enabled || !target) return null;
 
-  const renderKey = (label: string, onClick: () => void, opts?: { flex?: number; variant?: "default" | "alt"; wide?: boolean }) => (
+  // `id` is a stable React key (the base key, not the shifted label), so keys are reused instead of remounted on every render.
+  const renderKey = (id: string, label: string, onClick: () => void, opts?: { flex?: number; variant?: "default" | "alt"; wide?: boolean; ariaLabel?: string }) => (
     <button
-      key={label + Math.random()}
+      key={id}
       type="button"
+      aria-label={opts?.ariaLabel}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`h-12 md:h-14 rounded-xl font-medium text-base md:text-lg select-none transition-all active:scale-95 ${
@@ -189,6 +191,8 @@ export function KioskKeyboard() {
   return (
     <div
       data-kiosk-keyboard
+      role="group"
+      aria-label="화면 키보드"
       className="fixed bottom-0 left-0 right-0 z-[100] border-t border-border bg-background/95 backdrop-blur-xl shadow-2xl animate-fade-up"
       onMouseDown={(e) => e.preventDefault()}
     >
@@ -201,6 +205,8 @@ export function KioskKeyboard() {
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => { setLayout(l); composingRef.current = []; }}
+                aria-pressed={layout === l}
+                aria-label={l === "ko" ? "한글 자판" : l === "en" ? "ABC 영문 자판" : "123 숫자·기호 자판"}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${layout === l ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
               >
                 {l === "ko" ? "한글" : l === "en" ? "ABC" : "123"}
@@ -228,8 +234,9 @@ export function KioskKeyboard() {
                   className={`h-12 md:h-14 rounded-xl font-medium text-sm transition-all active:scale-95 ${shift ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}
                   style={{ flex: 1.5 }}
                   aria-label="쉬프트"
+                  aria-pressed={shift}
                 >
-                  <ChevronUp className="w-4 h-4 mx-auto" />
+                  <ChevronUp className="w-4 h-4 mx-auto" aria-hidden="true" />
                 </button>
               )}
               {layout === "en" && idx === 2 && (
@@ -239,15 +246,17 @@ export function KioskKeyboard() {
                   onClick={() => setShift((s) => !s)}
                   className={`h-12 md:h-14 rounded-xl font-medium text-sm transition-all active:scale-95 ${shift ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}
                   style={{ flex: 1.5 }}
+                  aria-label="쉬프트(대문자)"
+                  aria-pressed={shift}
                 >
-                  <ChevronUp className="w-4 h-4 mx-auto" />
+                  <ChevronUp className="w-4 h-4 mx-auto" aria-hidden="true" />
                 </button>
               )}
               {row.map((k) => {
                 let label = k;
                 if (layout === "ko" && shift && KO_SHIFT[k]) label = KO_SHIFT[k];
                 if (layout === "en" && shift) label = k.toUpperCase();
-                return renderKey(label, () => {
+                return renderKey(`${layout}-${idx}-${k}`, label, () => {
                   if (layout === "ko") pressJamo(label);
                   else pressNonJamo(label);
                   if (shift && layout === "en") setShift(false);
@@ -262,14 +271,14 @@ export function KioskKeyboard() {
                   style={{ flex: 1.5 }}
                   aria-label="지우기"
                 >
-                  <Delete className="w-5 h-5 mx-auto" />
+                  <Delete className="w-5 h-5 mx-auto" aria-hidden="true" />
                 </button>
               )}
             </div>
           ))}
           <div className="flex gap-1 md:gap-1.5">
-            {renderKey("-", () => pressNonJamo("-"), { variant: "alt", flex: 1 })}
-            {renderKey("space", () => pressNonJamo(" "), { variant: "alt", flex: 5 })}
+            {renderKey("dash", "-", () => pressNonJamo("-"), { variant: "alt", flex: 1, ariaLabel: "하이픈" })}
+            {renderKey("space", "space", () => pressNonJamo(" "), { variant: "alt", flex: 5, ariaLabel: "띄어쓰기" })}
             {layout === "num" && (
               <button
                 type="button"
@@ -277,18 +286,20 @@ export function KioskKeyboard() {
                 onClick={pressBackspace}
                 className="h-12 md:h-14 rounded-xl font-medium bg-muted text-foreground transition-all active:scale-95"
                 style={{ flex: 1.5 }}
+                aria-label="지우기"
               >
-                <Delete className="w-5 h-5 mx-auto" />
+                <Delete className="w-5 h-5 mx-auto" aria-hidden="true" />
               </button>
             )}
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={pressEnter}
+              aria-label="입력(엔터)"
               className="h-12 md:h-14 rounded-xl font-semibold bg-primary text-primary-foreground transition-all active:scale-95 flex items-center justify-center gap-1"
               style={{ flex: 1.8 }}
             >
-              <CornerDownLeft className="w-4 h-4" />
+              <CornerDownLeft className="w-4 h-4" aria-hidden="true" />
               <span className="text-sm">입력</span>
             </button>
           </div>

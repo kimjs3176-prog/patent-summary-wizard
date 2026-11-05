@@ -2,10 +2,10 @@
 // Answers only from retrieved, applicant-scoped patents (search-patents), the
 // filing-trend snapshot, stored TRL values and the fixed tech-transfer guide.
 // Commercialization scores are intentionally not shown here — users see them in the patent summary.
-import { z } from "npm:zod@3.23.8";
+import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   generateChatCompletion, streamChatCompletion, GatewayError, PaymentRequiredError, RateLimitError,
-} from "npm:@lovable.dev/ai-gateway@0.1.10";
+} from "npm:@lovable.dev/ai-gateway@0.1.11";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
@@ -14,6 +14,9 @@ import {
   buildCards, digitsOf, MAX_HISTORY, MAX_MESSAGE_CHARS, normalizeRoute, pickTrendField, TRANSFER_GUIDE, trendFacts,
   type ChatRoute, type ChatTool, type PatentCard, type PatentHit, type ScoreRow, type TrendSnapshotLike,
 } from "./chatPolicy.ts";
+
+// Same site_settings entry that filing-trends writes; keep the two in sync.
+const CACHE_KEY = "filing_trends_v1";
 
 const BodySchema = z.object({
   messages: z.array(z.object({
@@ -42,7 +45,7 @@ function parseJson(content: unknown): Record<string, unknown> | null {
 async function route(history: ChatMessage[], question: string): Promise<ChatRoute> {
   const context = history.slice(-4).map((m) => `${m.role === "user" ? "사용자" : "상담"}: ${m.content.slice(0, 300)}`).join("\n");
   try {
-    const res = await generateChatCompletion({
+    const res = await (generateChatCompletion as any)({
       model: "google/gemini-3.1-flash-lite",
       response_format: { type: "json_object" },
       messages: [
@@ -77,7 +80,7 @@ ${question}
 }
 
 async function loadTrends(): Promise<(TrendSnapshotLike & { updatedAt?: string }) | null> {
-  const { data } = await supabaseAdmin().from("site_settings").select("value").eq("key", "filing_trends_v1").maybeSingle();
+  const { data } = await supabaseAdmin().from("site_settings").select("value").eq("key", CACHE_KEY).maybeSingle();
   try {
     if (data?.value) return JSON.parse(data.value);
   } catch { /* fall through to live call */ }
@@ -228,7 +231,7 @@ Deno.serve(async (req) => {
           ? `\n\n[자료]\n${JSON.stringify(facts)}`
           : "\n\n[자료]\n(이번 질문에는 새로 조회한 자료가 없습니다. 이전 대화에 나온 내용만 근거로 답하고, 없으면 무엇을 찾아볼지 되물어 주세요. 이번 답변 아래에는 카드가 없으니 카드 안내는 하지 마세요.)";
 
-        const aiStream = await streamChatCompletion({
+        const aiStream = await (streamChatCompletion as any)({
           model: "google/gemini-3.8-flash",
           messages: [
             { role: "system", content: ANSWER_RULES },

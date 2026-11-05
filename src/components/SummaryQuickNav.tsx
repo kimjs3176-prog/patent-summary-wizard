@@ -70,7 +70,7 @@ export const SummaryQuickNav = ({ deps, className = "" }: Props) => {
 
   return (
     <nav className={`w-[196px] rounded-[20px] border border-[#F2F4F6] bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${className}`}>
-      <p className="flex items-center gap-1.5 px-1 pb-2 text-[11px] font-bold text-[#8B95A1]">
+      <p className="flex items-center gap-1.5 px-1 pb-2 text-[11px] font-bold text-[#6B7684]">
         <List className="w-3.5 h-3.5" /> 섹션 바로가기
       </p>
       <ul className="space-y-0.5 max-h-[60vh] overflow-y-auto">
@@ -81,10 +81,11 @@ export const SummaryQuickNav = ({ deps, className = "" }: Props) => {
               <button
                 type="button"
                 onClick={() => go(it.id)}
-                className={`w-full text-left rounded-[10px] px-2.5 py-2 text-[12.5px] leading-snug transition-colors border-l-2 ${
+                aria-current={on ? "location" : undefined}
+                className={`w-full text-left rounded-[10px] px-2.5 py-2 text-[12.5px] leading-snug transition-colors ${
                   on
-                    ? "border-primary bg-primary/5 font-bold text-[#191F28]"
-                    : "border-transparent text-[#6B7684] hover:bg-[#F9FAFB]"
+                    ? "bg-primary/10 font-bold text-[#191F28]"
+                    : "text-[#6B7684] hover:bg-[#F9FAFB]"
                 }`}
               >
                 {it.label}

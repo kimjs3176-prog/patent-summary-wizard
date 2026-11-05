@@ -2,7 +2,8 @@ import type { PatentSummaryProps as BasePatentSummaryProps } from "../types";
 import { Lightbulb, FileText, TrendingUp, Leaf, Rocket } from "lucide-react";
 import { normalizeCommercializationProse } from "@/lib/summaryProse";
 
-export const ACCENT_HEX = "#10B981";
+// 흰 글자를 올려도 대비 5.5:1 (WCAG AA). 예전 #10B981은 2.5:1이었다
+export const ACCENT_HEX = "#047857";
 
 type PatentStatusTone = "registered" | "published" | "pending" | "inactive" | "unknown";
 
@@ -87,7 +88,7 @@ export function parseSections(md: string): MdSection[] {
     // 볼드 바깥의 단일 이탤릭 마커만 학명 판정으로 정리
     // (볼드 안쪽은 renderBold에서 처리)
     line = line.replace(/(^|[^*])\*([^*\n]{1,80})\*(?!\*)/g, (_full, pre: string, inner: string) => {
-      const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .\-]{1,60}$/.test(inner.trim());
+      const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .-]{1,60}$/.test(inner.trim());
       return pre + (looksLikeLatin ? `*${inner}*` : inner);
     });
     const h2 = line.match(/^##\s+(.+?)\s*$/);

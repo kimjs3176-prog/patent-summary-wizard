@@ -1,8 +1,9 @@
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
+import { withRequestLog, type RequestLogger } from "../_shared/log.ts";
 
 // Suggests alternative agricultural-patent search terms when a search returns nothing.
-Deno.serve(async (req) => {
+Deno.serve(withRequestLog("suggest-keywords", async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const limited = await enforceRateLimit(req, { bucket: "suggest-keywords", limit: 30, windowSeconds: 300 });
@@ -14,8 +15,12 @@ Deno.serve(async (req) => {
     if (!keyword) return jsonResponse({ success: false, error: "검색어가 필요합니다." }, 400);
 
     const key = Deno.env.get("LOVABLE_API_KEY");
-    if (!key) return jsonResponse({ success: false, error: "AI 설정 오류" }, 500);
+    if (!key) {
+      logger.error("config.missing", { setting: "LOVABLE_API_KEY" });
+      return jsonResponse({ success: false, error: "AI 설정 오류" }, 500);
+    }
 
+    const aiStartedAt = Date.now();
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -33,6 +38,7 @@ Deno.serve(async (req) => {
     });
 
     if (!r.ok) {
+      logger.warn("ai.failed", { status: r.status, durationMs: Date.now() - aiStartedAt });
       const status = r.status === 429 || r.status === 402 || r.status === 403 ? r.status : 502;
       return jsonResponse({ success: false, error: "추천 검색어를 불러오지 못했습니다." }, status);
     }
@@ -54,9 +60,10 @@ Deno.serve(async (req) => {
       if (suggestions.length >= 6) break;
     }
 
+    logger.info("suggest.done", { aiMs: Date.now() - aiStartedAt, keywordLength: keyword.length, suggestions: suggestions.length });
     return jsonResponse({ success: true, corrected: corrected && corrected !== keyword ? corrected : "", suggestions });
   } catch (e) {
-    console.error("suggest-keywords error", e);
+    logger.error("request.error", { error: e });
     return jsonResponse({ success: false, error: "추천 검색어를 불러오지 못했습니다." }, 500);
   }
-});
+}));

@@ -1,3 +1,4 @@
+import type { AdminApiCall } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
 import { TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -10,7 +11,7 @@ interface AdminOutputPanelProps {
   setPrintSections: Dispatch<SetStateAction<Record<string, boolean>>>;
   isSavingPrintSettings: boolean;
   pdfLayoutConfig: PdfLayoutConfig;
-  apiCall: (action: string, data?: Record<string, unknown>) => Promise<any>;
+  apiCall: AdminApiCall;
   handleSavePrintSettings: () => Promise<void>;
 }
 

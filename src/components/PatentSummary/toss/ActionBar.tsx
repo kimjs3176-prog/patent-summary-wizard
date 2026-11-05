@@ -1,11 +1,8 @@
 import type { PatentSummaryProps as BasePatentSummaryProps } from "../types";
-import type { CommercializationDetails } from "../TechnologyCommercializationScore";
-
-
-
-
+import type { CommercializationDetails } from "../commercialization";
 import { ExternalLink, FileText, Printer, RefreshCw, Share2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NATI_TRANSFER_URL } from "@/lib/services";
 import { toast } from "sonner";
 import { PdfGenerator } from "../PdfGenerator";
 import type { useFavoritePatents } from "@/hooks/useFavoritePatents";
@@ -17,32 +14,34 @@ interface Props {
 export function ActionBar({ isStreaming, content, patentData, handlePrint, onRegenerate, setShareOpen, favoritesEnabled, toggleFavorite, patentNumber, score, details, patentIsFavorite, featureFlags, printRef, allReady }: Props) {
   return (
     <>
-      {!isStreaming && content && (
+      {/* Shown from the start (print and regenerate wait for the text): appearing only after streaming pushed the whole report down (layout shift). */}
+      {(isStreaming || content) && (
         <div className="flex items-center justify-between flex-wrap gap-2 mb-6 print:hidden">
           <div className="flex items-center gap-1.5">
-            <a href="https://www.nati.or.kr/login.do?selPrgId=xfr_apply" target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full bg-[#191F28] text-white hover:bg-[#333D4B] font-semibold shadow-sm">
+            <Button asChild size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full bg-[#191F28] text-white hover:bg-[#333D4B] font-semibold shadow-sm">
+              <a href={NATI_TRANSFER_URL} target="_blank" rel="noopener noreferrer" title="NATI(농업기술실용화 정보)에서 기술이전을 신청합니다">
                 <ExternalLink className="w-3.5 h-3.5" />
                 기술이전 신청
-              </Button>
-            </a>
+              </a>
+            </Button>
             {patentData?.applicationNumber && (
-              <a href={`https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
+              <Button asChild variant="outline" size="sm" className="gap-1.5 text-[12.5px] h-9 rounded-full font-medium border-[#E5E8EB] text-[#4E5968]">
+                <a href={`https://www.kipris.or.kr/khome/detail/newWindow.do?right=kpat&applno=${patentData.applicationNumber}`} target="_blank" rel="noopener noreferrer">
                   <FileText className="w-3.5 h-3.5" />
                   특허상세
-                </Button>
-              </a>
+                </a>
+              </Button>
             )}
           </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={handlePrint} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
+          <div className="flex flex-wrap items-center justify-end gap-1">
+            <Button variant="ghost" size="sm" onClick={handlePrint} disabled={isStreaming} className="gap-1 text-[12px] h-9 px-2.5 rounded-full text-[#4E5968]">
               <Printer className="w-3.5 h-3.5" /> 인쇄
             </Button>
             {onRegenerate && (
               <Button
                 variant="ghost"
                 size="sm"
+                disabled={isStreaming}
                 onClick={() => {
                   if (window.confirm("기존 요약서 캐시를 삭제하고 새로 생성합니다. 진행할까요?")) {
                     onRegenerate();

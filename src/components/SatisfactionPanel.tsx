@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Star, Send, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
   const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
+  const commentId = useId();
 
   useEffect(() => {
     setRating(0); setComment(""); setDone(false);
@@ -38,25 +39,26 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
   const active = hover || rating;
 
   return (
-    <aside className={`w-[240px] rounded-[20px] border border-[#F2F4F6] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${className}`}>
+    <section aria-label="만족도 조사" className={`w-[240px] rounded-[20px] border border-[#F2F4F6] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${className}`}>
       {done ? (
         <div className="text-center py-6">
           <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
             <Check className="w-5 h-5" />
           </div>
           <p className="text-[13px] font-bold text-[#191F28]">응답이 등록되었습니다</p>
-          <p className="text-[12px] text-[#8B95A1] mt-1">더 나은 분석으로 보답하겠습니다.</p>
+          <p className="text-[12px] text-[#6B7684] mt-1">더 나은 분석으로 보답하겠습니다.</p>
         </div>
       ) : (
         <>
           <p className="text-[13px] font-bold text-[#191F28]">이 분석이 도움이 되셨나요?</p>
-          <p className="text-[11px] text-[#8B95A1] mt-1 mb-3">만족도를 남겨주시면 서비스 개선에 반영합니다.</p>
+          <p className="text-[11px] text-[#6B7684] mt-1 mb-3">만족도를 남겨주시면 서비스 개선에 반영합니다.</p>
           <div className="flex items-center gap-1 mb-1.5" onMouseLeave={() => setHover(0)}>
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 type="button"
                 aria-label={`${n}점`}
+                aria-pressed={rating === n}
                 onMouseEnter={() => setHover(n)}
                 onClick={() => setRating(n)}
                 className="p-0.5 transition-transform hover:scale-110"
@@ -65,8 +67,10 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
               </button>
             ))}
           </div>
-          <p className="text-[11px] font-medium text-[#8B95A1] h-4 mb-2">{active ? LABELS[active - 1] : ""}</p>
+          <p className="text-[11px] font-medium text-[#6B7684] h-4 mb-2">{active ? LABELS[active - 1] : ""}</p>
+          <label htmlFor={commentId} className="sr-only">개선 의견 (선택, 500자 이내)</label>
           <textarea
+            id={commentId}
             value={comment}
             onChange={(e) => setComment(e.target.value.slice(0, 500))}
             rows={3}
@@ -79,10 +83,10 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
             disabled={sending}
             className="mt-2 w-full h-9 rounded-[12px] bg-primary text-primary-foreground text-[12px] font-semibold inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
-            <Send className="w-3.5 h-3.5" /> {sending ? "제출 중..." : "만족도 제출"}
+            <Send className="w-3.5 h-3.5" /> {sending ? "제출 중…" : "만족도 제출"}
           </button>
         </>
       )}
-    </aside>
+    </section>
   );
 };

@@ -1,0 +1,157 @@
+// 출원지원(에이프 Agri-IP) 연결 — 관리자 설정 feature_filing 으로 켜고 끄는 옵션 기능.
+// AIS 는 에이프를 /filing 페이지의 iframe 으로 열고(임베드 모드), 두 창은 postMessage 로만 주고받는다.
+//   AIS → 에이프: 주소 {filing_url}?embed=ais&skin=ais&theme=light&accent=hsl(…)#단계[?cite=출원번호&title=…|?kw=키워드&field=분야]
+//                 메시지 {type:"agri-ip:go", step, sub} 단계·쪽 이동 · {type:"agri-ip:move", dir} 이전/다음 · {type:"agri-ip:open", panel:"help"} 도움말
+//                      {type:"agri-ip:cite", no, title} (이미 열린 창에 비교 특허 추가)
+//   에이프 → AIS: {type:"agri-ip:state", …} 그릴 때마다 단계·쪽·이전/다음·D-day (이 페이지가 단계 바를 그린다) · {type:"agri-ip:ais", q} 'AIS로 분석' → AIS 가 직접 검색
+
+// 기본은 이 사이트 안의 사본(public/filing-app, 이 저장소에서 직접 고친다). 바깥 서버를 쓰려면 관리자 설정 filing_url 에 https 주소
+export const FILING_DEFAULT_URL = "/filing-app/";
+
+export type SettingsLike = Record<string, string | undefined>;
+
+export function filingEnabled(settings: SettingsLike): boolean {
+  return settings.feature_filing !== "false";
+}
+
+/** 관리자가 적은 주소를 정리한다: 이 사이트 안의 경로(/…/)나 https 주소만, 그 밖에는 기본 주소. */
+export function filingBaseUrl(settings: SettingsLike): string {
+  const raw = (settings.filing_url || "").trim();
+  if (!raw) return FILING_DEFAULT_URL;
+  if (/^\/[A-Za-z0-9_\-./]*$/.test(raw) && !raw.startsWith("//")) return raw.replace(/\/?$/, "/");
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:" && u.hostname !== "localhost" && u.hostname !== "127.0.0.1") return FILING_DEFAULT_URL;
+    u.search = "";
+    u.hash = "";
+    return u.toString().endsWith("/") ? u.toString() : `${u.toString()}/`;
+  } catch {
+    return FILING_DEFAULT_URL;
+  }
+}
+
+/** iframe(출원지원)의 출처 — 같은 사이트 경로면 이 사이트 */
+export function filingOrigin(settings: SettingsLike, here: string = typeof window !== "undefined" ? window.location.origin : "https://atipsum.lovable.app"): string {
+  const base = filingBaseUrl(settings);
+  return base.startsWith("/") ? here : new URL(base).origin;
+}
+
+/** 에이프 단계 이름 (주소 #… 에 들어가는 값). 모르는 값은 1단계로. */
+export const FILING_PAGES = ["idea", "prior", "diag", "draft", "manage", "global"] as const;
+export type FilingPage = (typeof FILING_PAGES)[number];
+
+export function normalizeFilingPage(raw: string | null | undefined): string {
+  const v = (raw || "").replace(/^#/, "").trim();
+  if (!v) return "idea";
+  const [step, sub] = v.split("/");
+  if (!(FILING_PAGES as readonly string[]).includes(step)) return "idea";
+  return sub && /^[a-z]+$/.test(sub) ? `${step}/${sub}` : step;
+}
+
+export interface FilingSrcOptions {
+  page?: string | null;
+  /** 비교 특허로 넣을 출원번호 (13자리, 하이픈 유무 무관) */
+  cite?: string | null;
+  title?: string | null;
+  /** 키워드로 새 시나리오 시작 */
+  kw?: string | null;
+  field?: string | null;
+  theme?: "light" | "dark";
+  /** 에이프의 강조색을 이 사이트 --primary 로: "hsl(158 68% 30%)" 또는 "#rrggbb" */
+  accent?: string;
+}
+
+export function buildFilingSrc(settings: SettingsLike, opts: FilingSrcOptions = {}): string {
+  const base = filingBaseUrl(settings);
+  const q = new URLSearchParams({ embed: "ais", skin: "ais", theme: opts.theme || "light" });
+  if (opts.accent && /^(hsl\(\d{1,3}(\.\d+)? \d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%\)|#[0-9a-fA-F]{6})$/.test(opts.accent)) q.set("accent", opts.accent);
+  let page = normalizeFilingPage(opts.page);
+  const hashQ = new URLSearchParams();
+  const cite = (opts.cite || "").replace(/[^0-9]/g, "");
+  if (/^(10|20)\d{11}$/.test(cite)) {
+    // 키워드도 오면 그 키워드로 새 아이디어 후보를 만들고 이 특허를 비교 특허로 넣는다
+    page = opts.kw && opts.kw.trim() ? "idea" : "prior";
+    hashQ.set("cite", cite);
+    if (opts.title) hashQ.set("title", opts.title.slice(0, 200));
+    if (page === "idea") {
+      hashQ.set("kw", opts.kw!.trim().slice(0, 200));
+      if (opts.field && /^[a-z]+$/.test(opts.field)) hashQ.set("field", opts.field);
+    }
+  } else if (opts.kw && opts.kw.trim()) {
+    page = "idea";
+    hashQ.set("kw", opts.kw.trim().slice(0, 200));
+    if (opts.field && /^[a-z]+$/.test(opts.field)) hashQ.set("field", opts.field);
+  }
+  const hs = hashQ.toString();
+  return `${base}?${q.toString()}#${page}${hs ? `?${hs}` : ""}`;
+}
+
+/** 새 창으로 여는 주소 (iframe 이 막혔을 때의 대안) */
+export function buildFilingStandaloneUrl(settings: SettingsLike, opts: FilingSrcOptions = {}): string {
+  return buildFilingSrc(settings, opts).replace(/\?embed=ais[^#]*/, "");
+}
+
+export interface FilingTodo {
+  t: string;
+  step: string;
+  sub: number;
+}
+export interface FilingState {
+  mode: "apply" | "global";
+  step: string;
+  sub: number;
+  branch: string | null;
+  /** done 은 들렀고 남은 일이 없을 때만. todo 는 그 단계에 아직 남은 꼭 할 일(누르면 sub 쪽으로 간다) */
+  steps: { id: string; t: string; s: string; done: boolean; cur: boolean; visited: boolean; todo: FilingTodo[] }[];
+  subs: string[];
+  prev: string;
+  next: string;
+  title: string;
+  dday: { label: string; text: string; warn: boolean } | null;
+  api: string;
+  /** 지금 쪽에서 돌고 있는 AI 작업 이름(없으면 빈 값). 도는 동안 '다음'을 잠근다 */
+  aiBusy: string;
+  /** 출원지원 전용 빌드(이 사이트 안의 사본): 해외동향 탭이 없다 */
+  filingOnly: boolean;
+}
+export type FilingMessage = { type: "agri-ip:state"; state: FilingState } | { type: "agri-ip:ais"; q: string };
+
+const str = (v: unknown, max = 200) => (typeof v === "string" ? v.slice(0, max) : "");
+
+/** iframe(에이프)에서 온 메시지인지 확인하고 형식을 맞춘다 (출처가 다르거나 모르는 형식이면 null). 문자열은 길이를 자르고 그대로 쓰지 않는다. */
+export function parseFilingMessage(ev: { origin: string; data: unknown }, expectedOrigin: string): FilingMessage | null {
+  if (ev.origin !== expectedOrigin || !ev.data || typeof ev.data !== "object") return null;
+  const d = ev.data as Record<string, unknown>;
+  if (d.type === "agri-ip:ais" && typeof d.q === "string") return { type: "agri-ip:ais", q: d.q.slice(0, 200) };
+  if (d.type === "agri-ip:state" && Array.isArray(d.steps)) {
+    const steps = (d.steps as unknown[]).slice(0, 8).map((x) => {
+      const o = (x && typeof x === "object" ? x : {}) as Record<string, unknown>;
+      const todo = (Array.isArray(o.todo) ? (o.todo as unknown[]) : []).slice(0, 4).map((y) => {
+        const q = (y && typeof y === "object" ? y : {}) as Record<string, unknown>;
+        return { t: str(q.t, 60), step: str(q.step, 20), sub: Math.max(0, Math.min(20, Number(q.sub) || 0)) };
+      }).filter((y) => y.t && /^[a-z]+$/.test(y.step));
+      return { id: str(o.id, 20), t: str(o.t, 40), s: str(o.s, 60), done: o.done === true, cur: o.cur === true, visited: o.visited === true, todo };
+    }).filter((x) => /^[a-z]+$/.test(x.id) && x.t);
+    if (!steps.length) return null;
+    const dd = d.dday && typeof d.dday === "object" ? (d.dday as Record<string, unknown>) : null;
+    return {
+      type: "agri-ip:state",
+      state: {
+        mode: d.mode === "global" ? "global" : "apply",
+        step: /^[a-z]+$/.test(str(d.step, 20)) ? str(d.step, 20) : "idea",
+        sub: Math.max(0, Math.min(20, Number(d.sub) || 0)),
+        branch: /^[a-z]+$/.test(str(d.branch, 20)) ? str(d.branch, 20) : null,
+        steps,
+        subs: Array.isArray(d.subs) ? (d.subs as unknown[]).slice(0, 12).map((x) => str(x, 40)).filter(Boolean) : [],
+        prev: str(d.prev, 60),
+        next: str(d.next, 60),
+        title: str(d.title, 120),
+        dday: dd && typeof dd.text === "string" ? { label: str(dd.label, 40), text: str(dd.text, 20), warn: dd.warn === true } : null,
+        api: str(d.api, 40),
+        aiBusy: str(d.aiBusy, 60),
+        filingOnly: d.filingOnly === true,
+      },
+    };
+  }
+  return null;
+}

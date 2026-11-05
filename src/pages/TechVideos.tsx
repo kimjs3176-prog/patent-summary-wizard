@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Play, Video, ArrowLeft } from "lucide-react";
+import { Play, Video } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { supabase } from "@/integrations/supabase/client";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 interface TechVideo {
   title: string;
@@ -19,8 +18,11 @@ function getYouTubeId(url: string): string | null {
 }
 
 function isStorageUrl(url: string) { return url.startsWith("storage://"); }
+// Direct video files (e.g. Cloudflare R2 public URLs) play inline like uploaded ones.
+function isDirectVideoUrl(url: string) { return /^https:\/\/[^\s]+\.(mp4|webm|m4v|mov)(\?.*)?$/i.test(url); }
 
 const TechVideos = () => {
+  useDocumentTitle("온라인 기술 홍보관");
   const { settings } = useSiteSettings();
 
   const videos = useMemo<TechVideo[]>(() => {
@@ -67,20 +69,12 @@ const TechVideos = () => {
     return () => { cancelled = true; };
   }, [videos]);
 
-  const headerRight = (
-    <Link to="/">
-      <Button variant="outline" size="sm" className="rounded-full text-[11px] md:text-xs h-7 md:h-8 px-2.5 md:px-4 glossy-card gap-1.5 btn-press font-medium">
-        <ArrowLeft className="w-3 h-3 md:w-3.5 md:h-3.5" />
-        <span className="hidden sm:inline">홈으로</span>
-      </Button>
-    </Link>
-  );
 
   // Show all videos; pad to at least 9 slots for a complete 3x3 visual when fewer exist
   const slots = Array.from({ length: Math.max(9, filteredVideos.length) }, (_, i) => filteredVideos[i] || null);
 
   return (
-    <PageLayout headerRight={headerRight}>
+    <PageLayout>
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-10 relative z-10">
         <section className="max-w-6xl mx-auto mb-6 md:mb-10 animate-fade-down">
           <div className="flex items-center gap-2.5 mb-2">
@@ -142,14 +136,14 @@ const TechVideos = () => {
                       key={`empty-${idx}`}
                       className="aspect-video rounded-2xl border border-dashed border-border/40 bg-secondary/20 flex items-center justify-center"
                     >
-                      <span className="text-[11px] text-muted-foreground/50">등록 예정</span>
+                      <span className="text-[11px] text-muted-foreground">등록 예정</span>
                     </div>
                   );
                 }
                 const videoId = getYouTubeId(video.url);
                 const thumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
-                const storage = isStorageUrl(video.url);
-                const playSrc = storage ? resolved[video.url] : video.url;
+                const storage = isStorageUrl(video.url) || isDirectVideoUrl(video.url);
+                const playSrc = isStorageUrl(video.url) ? resolved[video.url] : video.url;
                 return (
                   <div
                     key={idx}
@@ -170,7 +164,7 @@ const TechVideos = () => {
                             className="w-full h-full object-contain bg-black"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground/50 text-[11px]">불러오는 중…</div>
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[11px]">불러오는 중…</div>
                         )
                       ) : thumbnail ? (
                         <a href={video.url} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative">

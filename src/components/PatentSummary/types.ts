@@ -33,7 +33,15 @@ export interface RelatedPatent {
 
 export interface FeatureFlags {
   pdfEnabled: boolean;
-  pptEnabled: boolean;
+}
+
+/** Generation metadata streamed by summarize-patent (see src/lib/summaryStream.ts). */
+export interface SummaryGenerationMeta {
+  model?: string;
+  cached?: boolean;
+  generatedAt?: string;
+  promptVersion?: string;
+  marketFallback?: boolean;
 }
 
 export interface PatentSummaryProps {
@@ -45,6 +53,7 @@ export interface PatentSummaryProps {
   onRelatedPatentClick?: (patentNumber: string) => void;
   onScoreReady?: (score: number) => void;
   featureFlags?: FeatureFlags;
+  summaryMeta?: SummaryGenerationMeta | null;
 }
 
 export interface PatentIndices {

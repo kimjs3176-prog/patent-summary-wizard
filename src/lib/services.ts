@@ -1,0 +1,77 @@
+import { BarChart3, Compass, FileSignature, Gift, Handshake, Heart, Home, Layers, PlayCircle, type LucideIcon } from "lucide-react";
+import { filingEnabled, type SettingsLike } from "@/lib/filing";
+
+/**
+ * One list of everything the site offers. The header menu and the mobile menu panel both read from here,
+ * so a service is named and described the same way everywhere. The home page has no service cards (owner).
+ */
+export type ServiceKey = "home" | "finder" | "filing" | "potential" | "consortium" | "insights" | "batch" | "favorites" | "videos";
+export type ServiceGroup = "find" | "prepare" | "mine";
+
+export interface ServiceItem {
+  key: ServiceKey;
+  to: string;
+  /** Short label for the header menu. */
+  label: string;
+  /** Full name for cards and the menu panel. */
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  group: ServiceGroup;
+}
+
+export const SERVICE_GROUP_LABEL: Record<ServiceGroup, string> = {
+  find: "특허 찾기",
+  prepare: "준비와 분석",
+  mine: "내 목록과 자료",
+};
+
+export const SERVICES: ServiceItem[] = [
+  { key: "home", to: "/", label: "홈", title: "통합검색", description: "키워드, 문장, 질문 모두 검색창 하나로 찾아요", icon: Home, group: "find" },
+  { key: "finder", to: "/finder", label: "나만의 특허찾기", title: "나만의 특허찾기", description: "업종과 아이템을 알려 주면 맞는 특허를 추천해요", icon: Compass, group: "find" },
+  { key: "potential", to: "/potential", label: "무상기술이전", title: "무상기술이전", description: "무상으로 이전받을 수 있는 특허를 모아 봤어요", icon: Gift, group: "find" },
+  { key: "consortium", to: "/consortium", label: "식품기술이전 협의체", title: "식품기술이전 협의체", description: "협의체 53개 기관의 특허를 기관별로 찾아봐요", icon: Handshake, group: "find" },
+  { key: "filing", to: "/filing", label: "출원도우미", title: "출원도우미", description: "아이디어부터 명세서 초안까지 단계별로 도와요", icon: FileSignature, group: "prepare" },
+  { key: "insights", to: "/insights", label: "인사이트", title: "특허 인사이트", description: "연도별, 분야별 출원 동향을 한눈에 봐요", icon: BarChart3, group: "prepare" },
+  { key: "batch", to: "/batch", label: "일괄조회", title: "일괄조회·다운로드", description: "여러 특허를 한 번에 조회하고 엑셀로 받아요", icon: Layers, group: "prepare" },
+  { key: "favorites", to: "/compare", label: "관심특허", title: "관심특허", description: "담아 둔 특허를 모아 보고 나란히 비교해요", icon: Heart, group: "mine" },
+  { key: "videos", to: "/tech-videos", label: "기술소개영상", title: "기술소개영상", description: "농식품 주요 기술을 영상으로 살펴봐요", icon: PlayCircle, group: "mine" },
+];
+
+/** Services this site currently offers: 출원도우미 follows the feature_filing setting like its other entry points. */
+export function visibleServices(settings: SettingsLike): ServiceItem[] {
+  const filing = filingEnabled(settings);
+  return SERVICES.filter((s) => s.key !== "filing" || filing);
+}
+
+/**
+ * Desktop header badges: every visible service except 홈 (the logo already goes home), 출원도우미 and 기술소개영상.
+ * The owner moved the 출원도우미 badge next to 나만의 특허찾기 in the home hero and took 기술소개영상 out of the bar
+ * (the home page's 영상 section already links to it); the mobile menu panel keeps every service.
+ */
+export function headerBadgeServices(settings: SettingsLike): ServiceItem[] {
+  const hidden = new Set<ServiceKey>(["home", "filing", "videos"]);
+  return visibleServices(settings).filter((s) => !hidden.has(s.key));
+}
+
+/**
+ * Services given their own entry at the bottom of the home hero (owner: 무상기술이전, with 식품기술이전 협의체 to its right).
+ * Kept here so the hero and the header menu never disagree about what the site offers.
+ */
+export function heroCtaServiceKeys(): ServiceKey[] {
+  return ["potential", "consortium"];
+}
+
+export function heroCtaServices(settings: SettingsLike): ServiceItem[] {
+  const keys = heroCtaServiceKeys();
+  return visibleServices(settings).filter((s) => keys.includes(s.key));
+}
+
+/** The home entry also covers search results, which are reached from its search box. */
+export function isServiceActive(item: ServiceItem, pathname: string): boolean {
+  if (item.to === "/") return pathname === "/" || pathname === "/search";
+  return pathname === item.to || pathname.startsWith(`${item.to}/`);
+}
+
+/** 기술이전 신청은 NATI(농업기술실용화 정보)로 보낸다. 이 사이트는 신청서를 받지 않는다 (개인정보 미수집). */
+export const NATI_TRANSFER_URL = "https://www.nati.or.kr/login.do?selPrgId=xfr_apply";

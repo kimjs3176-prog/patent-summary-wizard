@@ -16,10 +16,12 @@ import { AdminHomepagePanel } from '@/components/admin/AdminHomepagePanel';
 import { AdminSummaryPanel } from '@/components/admin/AdminSummaryPanel';
 import { AdminOutputPanel } from '@/components/admin/AdminOutputPanel';
 import { AdminSystemPanel } from '@/components/admin/AdminSystemPanel';
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 
 
 const Admin = () => {
+  useDocumentTitle("관리자");
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [patents, setPatents] = useState<FeaturedPatent[]>([]);
@@ -47,12 +49,12 @@ const Admin = () => {
   const [satComments, setSatComments] = useState<{ rating: number; comment: string; patent_number: string | null; created_at: string }[]>([]);
 
   const loadSatisfaction = async () => {
-    const [{ data: stats }, { data: comments }] = await Promise.all([
+    const [{ data: stats }, commentsRes] = await Promise.all([
       supabase.rpc("get_satisfaction_stats"),
-      supabase.rpc("get_satisfaction_comments", { p_limit: 30 }),
+      apiCall("satisfaction-comments", { limit: 30 }),
     ]);
-    setSatisfaction((stats as any) || []);
-    setSatComments((comments as any) || []);
+    setSatisfaction((stats as unknown as typeof satisfaction) || []);
+    setSatComments(commentsRes?.success ? (commentsRes.comments as typeof satComments) || [] : []);
   };
 
   const loadUsageStats = async () => {
@@ -131,57 +133,57 @@ const Admin = () => {
           try {
             const cats = JSON.parse(settingsResult.settings.tech_categories);
             if (Array.isArray(cats) && cats.length > 0) setCategoryOptions(cats);
-          } catch {}
+          } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.tech_videos) {
           try {
             const vids = JSON.parse(settingsResult.settings.tech_videos);
             if (Array.isArray(vids)) setTechVideos(vids);
-          } catch {}
+          } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         // Load summary customization settings
         if (settingsResult.settings?.summary_section_titles) {
-          try { setSummaryTitles(JSON.parse(settingsResult.settings.summary_section_titles)); } catch {}
+          try { setSummaryTitles(JSON.parse(settingsResult.settings.summary_section_titles)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_section_lengths) {
-          try { setSummarySectionLengths({ ...DEFAULT_SECTION_LENGTHS, ...JSON.parse(settingsResult.settings.summary_section_lengths) }); } catch {}
+          try { setSummarySectionLengths({ ...DEFAULT_SECTION_LENGTHS, ...JSON.parse(settingsResult.settings.summary_section_lengths) }); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_disclaimer) {
           setSummaryDisclaimer(settingsResult.settings.summary_disclaimer);
         }
         if (settingsResult.settings?.summary_visible_sections) {
-          try { setSummaryVisibleSections(JSON.parse(settingsResult.settings.summary_visible_sections)); } catch {}
+          try { setSummaryVisibleSections(JSON.parse(settingsResult.settings.summary_visible_sections)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_ai_prompt_extra) {
           setSummaryAiPromptExtra(settingsResult.settings.summary_ai_prompt_extra);
         }
         if (settingsResult.settings?.summary_card_icons) {
-          try { setSummaryCardIcons(JSON.parse(settingsResult.settings.summary_card_icons)); } catch {}
+          try { setSummaryCardIcons(JSON.parse(settingsResult.settings.summary_card_icons)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_info_labels) {
-          try { setSummaryInfoLabels(JSON.parse(settingsResult.settings.summary_info_labels)); } catch {}
+          try { setSummaryInfoLabels(JSON.parse(settingsResult.settings.summary_info_labels)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.homepage_visible_sections) {
-          try { setHomepageVisibleSections(JSON.parse(settingsResult.settings.homepage_visible_sections)); } catch {}
+          try { setHomepageVisibleSections(JSON.parse(settingsResult.settings.homepage_visible_sections)); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.summary_max_tokens) {
           const v = parseInt(settingsResult.settings.summary_max_tokens, 10);
           if (!isNaN(v)) setSummaryMaxTokens(v);
         }
         if (settingsResult.settings?.score_settings) {
-          try { setScoreConfig({ ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settingsResult.settings.score_settings) }); } catch {}
+          try { setScoreConfig({ ...DEFAULT_SCORE_CONFIG, ...JSON.parse(settingsResult.settings.score_settings) }); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.trl_settings) {
           try {
             const saved = JSON.parse(settingsResult.settings.trl_settings);
             setTrlConfig({ ...DEFAULT_TRL_CONFIG, ...saved, levels: resolveTrlLevels(saved?.levels) });
-          } catch {}
+          } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.pdf_layout_config) {
-          try { setPdfLayoutConfig({ ...DEFAULT_PDF_CONFIG, ...JSON.parse(settingsResult.settings.pdf_layout_config) }); } catch {}
+          try { setPdfLayoutConfig({ ...DEFAULT_PDF_CONFIG, ...JSON.parse(settingsResult.settings.pdf_layout_config) }); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
         if (settingsResult.settings?.print_sections) {
-          try { setPrintSections({ ...DEFAULT_PRINT_SECTIONS, ...JSON.parse(settingsResult.settings.print_sections) }); } catch {}
+          try { setPrintSections({ ...DEFAULT_PRINT_SECTIONS, ...JSON.parse(settingsResult.settings.print_sections) }); } catch { /* 저장된 설정값이 깨졌으면 기본값을 쓴다 */ }
         }
       }
     } else {
@@ -410,7 +412,7 @@ const Admin = () => {
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             />
             <Button onClick={handleLogin} disabled={isLoading} className="w-full">
-              {isLoading ? "확인 중..." : "로그인"}
+              {isLoading ? "확인 중…" : "로그인"}
             </Button>
           </div>
         </Card>
@@ -460,7 +462,7 @@ const Admin = () => {
           <AdminHomepagePanel siteSettings={siteSettings} setSiteSettings={setSiteSettings} isSavingSettings={isSavingSettings} categoryOptions={categoryOptions} setCategoryOptions={setCategoryOptions} techVideos={techVideos} setTechVideos={setTechVideos} dragVideoIdx={dragVideoIdx} setDragVideoIdx={setDragVideoIdx} homepageVisibleSections={homepageVisibleSections} setHomepageVisibleSections={setHomepageVisibleSections} handleSaveSettings={handleSaveSettings} />
 
           {/* ===== Summary Customization Tab ===== */}
-          <AdminSummaryPanel summaryTitles={summaryTitles} setSummaryTitles={setSummaryTitles} summarySectionLengths={summarySectionLengths} setSummarySectionLengths={setSummarySectionLengths} summaryDisclaimer={summaryDisclaimer} setSummaryDisclaimer={setSummaryDisclaimer} summaryVisibleSections={summaryVisibleSections} setSummaryVisibleSections={setSummaryVisibleSections} summaryAiPromptExtra={summaryAiPromptExtra} setSummaryAiPromptExtra={setSummaryAiPromptExtra} summaryCardIcons={summaryCardIcons} setSummaryCardIcons={setSummaryCardIcons} summaryInfoLabels={summaryInfoLabels} setSummaryInfoLabels={setSummaryInfoLabels} isSavingSummarySettings={isSavingSummarySettings} newSectionKey={newSectionKey} setNewSectionKey={setNewSectionKey} summaryMaxTokens={summaryMaxTokens} setSummaryMaxTokens={setSummaryMaxTokens} scoreConfig={scoreConfig} setScoreConfig={setScoreConfig} trlConfig={trlConfig} setTrlConfig={setTrlConfig} handleSaveSummarySettings={handleSaveSummarySettings} />
+          <AdminSummaryPanel summaryTitles={summaryTitles} setSummaryTitles={setSummaryTitles} summarySectionLengths={summarySectionLengths} setSummarySectionLengths={setSummarySectionLengths} summaryDisclaimer={summaryDisclaimer} setSummaryDisclaimer={setSummaryDisclaimer} summaryVisibleSections={summaryVisibleSections} setSummaryVisibleSections={setSummaryVisibleSections} summaryAiPromptExtra={summaryAiPromptExtra} setSummaryAiPromptExtra={setSummaryAiPromptExtra} summaryCardIcons={summaryCardIcons} setSummaryCardIcons={setSummaryCardIcons} summaryInfoLabels={summaryInfoLabels} setSummaryInfoLabels={setSummaryInfoLabels} isSavingSummarySettings={isSavingSummarySettings} newSectionKey={newSectionKey} setNewSectionKey={setNewSectionKey} summaryMaxTokens={summaryMaxTokens} setSummaryMaxTokens={setSummaryMaxTokens} scoreConfig={scoreConfig} setScoreConfig={setScoreConfig} trlConfig={trlConfig} setTrlConfig={setTrlConfig} handleSaveSummarySettings={handleSaveSummarySettings} apiCall={apiCall} />
 
           {/* ===== Output Tab (Print + PDF) ===== */}
           <AdminOutputPanel printSections={printSections} setPrintSections={setPrintSections} isSavingPrintSettings={isSavingPrintSettings} pdfLayoutConfig={pdfLayoutConfig} apiCall={apiCall} handleSavePrintSettings={handleSavePrintSettings} />

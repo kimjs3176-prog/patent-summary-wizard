@@ -1,24 +1,24 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 const Admin = lazy(() => import("./pages/Admin"));
 const Compare = lazy(() => import("./pages/Compare"));
 const Insights = lazy(() => import("./pages/Insights"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
 const Batch = lazy(() => import("./pages/Batch"));
-const SummarySample = lazy(() => import("./pages/SummarySample"));
 const TechVideos = lazy(() => import("./pages/TechVideos"));
 const PotentialTech = lazy(() => import("./pages/PotentialTech"));
-const PatentExport = lazy(() => import("./pages/PatentExport"));
+const FoodConsortium = lazy(() => import("./pages/FoodConsortium"));
 const PatentFinder = lazy(() => import("./pages/PatentFinder"));
+const Filing = lazy(() => import("./pages/Filing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 import { SplashScreen } from "./components/SplashScreen";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { supabase } from "./integrations/supabase/client";
+import { CanonicalUrl } from "@/components/CanonicalUrl";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,8 +77,12 @@ const App = () => {
 
   useEffect(() => {
     if (isAdminRoute) return;
-    if (sessionStorage.getItem("visit-tracked") === "1") return;
-    sessionStorage.setItem("visit-tracked", "1");
+    try {
+      if (sessionStorage.getItem("visit-tracked") === "1") return;
+      sessionStorage.setItem("visit-tracked", "1");
+    } catch {
+      // storage blocked (private mode / quota): count the visit anyway, once per load
+    }
     void supabase.rpc("increment_daily_visit").then(() => {}, () => {});
   }, [isAdminRoute]);
 
@@ -86,11 +90,11 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
           <Sonner />
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
           <BrowserRouter>
             <ScrollToTop />
+            <CanonicalUrl />
             <ErrorBoundary>
               <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
               <Routes>
@@ -100,11 +104,13 @@ const App = () => {
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/batch" element={<Batch />} />
-                <Route path="/export" element={<PatentExport />} />
+                {/* 예전 목록 다운로드 주소 → 통합된 일괄조회·목록 다운로드(조건 모드) */}
+                <Route path="/export" element={<Navigate to="/batch?mode=criteria" replace />} />
                 <Route path="/finder" element={<PatentFinder />} />
-                <Route path="/summary-sample" element={<SummarySample />} />
+                <Route path="/filing" element={<Filing />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
                 <Route path="/potential" element={<PotentialTech />} />
+                <Route path="/consortium" element={<FoodConsortium />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>

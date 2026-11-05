@@ -40,7 +40,7 @@ function useFieldSearch() {
 
 /** Yearly filing trend as a line chart with labelled points. */
 function TrendLine({ rows, highlight }: { rows: { year: number; count: number }[]; highlight: number }) {
-  const W = 240, H = 96, px = 14, top = 18, bottom = 18;
+  const W = 240, H = 104, px = 16, top = 20, bottom = 20;
   const max = Math.max(1, ...rows.map((r) => r.count));
   const min = Math.min(...rows.map((r) => r.count), max);
   const span = Math.max(1, max - min);
@@ -58,8 +58,8 @@ function TrendLine({ rows, highlight }: { rows: { year: number; count: number }[
       {pts.map((p) => (
         <g key={p.year}>
           <circle cx={p.x} cy={p.y} r={p.year === highlight ? 4 : 2.5} fill={p.year === highlight ? "hsl(var(--primary))" : "hsl(var(--card))"} stroke="hsl(var(--primary))" strokeWidth={1.5} />
-          <text x={p.x} y={p.y - 7} textAnchor="middle" fontSize="9" className="fill-muted-foreground tabular-nums">{p.count}</text>
-          <text x={p.x} y={H - 4} textAnchor="middle" fontSize="9" className="fill-muted-foreground tabular-nums">{String(p.year).slice(2)}년</text>
+          <text x={p.x} y={p.y - 7} textAnchor="middle" fontSize="11" className="fill-muted-foreground tabular-nums">{p.count}</text>
+          <text x={p.x} y={H - 4} textAnchor="middle" fontSize="11" className="fill-muted-foreground tabular-nums">{String(p.year).slice(2)}년</text>
         </g>
       ))}
     </svg>
@@ -72,7 +72,7 @@ function TrendSummary({ data }: { data: TrendSnapshot }) {
   const max = Math.max(1, ...h.complete.map((r) => r.count));
   return (
     <div className="trend-card rounded-2xl border border-border/60 bg-card p-4 md:p-5 flex flex-col">
-      <p className="text-xs font-medium text-muted-foreground">{h.y}년 출원 <span className="text-muted-foreground/70">(공개 완료 기준)</span></p>
+      <p className="text-xs font-medium text-muted-foreground">{h.y}년 출원 <span className="text-muted-foreground">(공개 완료 기준)</span></p>
       <div className="mt-1 flex items-baseline gap-2">
         <span className="text-[32px] font-bold leading-none tabular-nums text-foreground">{h.latest?.count ?? 0}<span className="ml-0.5 text-sm font-medium text-muted-foreground">건</span></span>
         <span className="text-xs text-muted-foreground">전년 대비 <Delta value={h.growth} /></span>
@@ -130,7 +130,6 @@ function FieldRanking({ data }: { data: TrendSnapshot }) {
           return (
             <li key={f.id} className={`border-b border-border/50 ${i >= MOBILE_LIMIT && !expanded ? "hidden md:block" : ""}`}>
               <button type="button" onClick={() => openField(f.id)}
-                aria-label={`${meta?.label ?? f.id} ${h.y}년 ${f.latest}건, 관련 특허 검색`}
                 title={`${meta?.label} ${years[0]}~${h.y}년 추이`}
                 className="trend-row group w-full grid grid-cols-[18px_minmax(0,1fr)_48px_auto_56px_14px] items-center gap-2 rounded-lg px-1.5 py-1.5 text-left">
                 <span className="text-xs font-bold tabular-nums text-muted-foreground">{i + 1}</span>
@@ -144,6 +143,8 @@ function FieldRanking({ data }: { data: TrendSnapshot }) {
                 <span className="text-right text-sm font-bold tabular-nums text-foreground">{f.latest}<span className="text-[11px] font-normal text-muted-foreground">건</span></span>
                 <span className="text-right text-xs"><Delta value={f.growth} /></span>
                 <ChevronRight className="w-3.5 h-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                {/* The visible row text is the accessible name; this only adds what the row does. */}
+                <span className="sr-only">{h.y}년 출원, 관련 특허 검색</span>
               </button>
             </li>
           );

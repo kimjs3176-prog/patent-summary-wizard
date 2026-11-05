@@ -6,7 +6,7 @@ const EVENT = "kiosk-mode-change";
 export function useKioskMode() {
   const [enabled, setEnabled] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    return localStorage.getItem(STORAGE_KEY) === "true";
+    try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; }
   });
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export function useKioskMode() {
 
   const toggle = () => {
     const next = !enabled;
-    localStorage.setItem(STORAGE_KEY, String(next));
+    try { localStorage.setItem(STORAGE_KEY, String(next)); } catch { /* storage blocked: keep in memory */ }
     window.dispatchEvent(new CustomEvent(EVENT, { detail: next }));
     setEnabled(next);
   };

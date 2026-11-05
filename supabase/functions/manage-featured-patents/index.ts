@@ -1,27 +1,76 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { enforceRateLimit, peekRateLimit, recordRateLimitHit } from "../_shared/rateLimit.ts";
+import { isSecretSettingKey } from "../_shared/kipris.ts";
 
+// ---------- 관리자 비밀번호 저장/검증 ----------
+// 저장 형식: "pbkdf2$<iterations>$<salt b64>$<hash b64>". 예전 행(솔트 없는 SHA-256 hex)은
+// 로그인 성공 시 새 형식으로 자동 승격한다.
+const PBKDF2_ITERATIONS = 120_000;
+const MIN_PASSWORD_LENGTH = 12;
+const ADMIN_FAIL_BUCKET = { bucket: "admin-auth-fail", limit: 5, windowSeconds: 900 };
+const ADMIN_CALL_BUCKET = { bucket: "admin-auth", limit: 120, windowSeconds: 300 };
+
+const b64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
+const unb64 = (s: string): Uint8Array<ArrayBuffer> => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+const legacySha256Hex = async (password: string) => {
+  const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
+  return Array.from(new Uint8Array(hashBuffer)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+};
+
+const pbkdf2 = async (password: string, salt: Uint8Array<ArrayBuffer>, iterations: number) => {
+  const keyMaterial = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, keyMaterial, 256);
+  return new Uint8Array(bits);
+};
 
 const hashPassword = async (password: string) => {
-  const encoded = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await pbkdf2(password, salt, PBKDF2_ITERATIONS);
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${b64(salt)}$${b64(hash)}`;
 };
+
+/** 길이가 같은 두 문자열을 상수 시간에 비교한다. */
+const timingSafeEqual = (a: string, b: string) => {
+  const ea = new TextEncoder().encode(a);
+  const eb = new TextEncoder().encode(b);
+  let diff = ea.length ^ eb.length;
+  for (let i = 0; i < Math.max(ea.length, eb.length); i++) diff |= (ea[i] ?? 0) ^ (eb[i] ?? 0);
+  return diff === 0;
+};
+
+const verifyPassword = async (password: string, stored: string): Promise<{ ok: boolean; needsUpgrade: boolean }> => {
+  if (stored.startsWith("pbkdf2$")) {
+    const [, iterStr, saltB64, hashB64] = stored.split("$");
+    const iterations = parseInt(iterStr, 10);
+    if (!Number.isFinite(iterations) || iterations < 1000 || !saltB64 || !hashB64) return { ok: false, needsUpgrade: false };
+    const hash = await pbkdf2(password, unb64(saltB64), iterations);
+    return { ok: timingSafeEqual(b64(hash), hashB64), needsUpgrade: false };
+  }
+  const legacy = await legacySha256Hex(password);
+  return { ok: timingSafeEqual(legacy, stored), needsUpgrade: true };
+};
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // 전체 호출량 상한 + 인증 실패 누적 상한(실패 5회/15분이면 비밀번호 검증 전에 차단)
+  const limited = (await enforceRateLimit(req, ADMIN_CALL_BUCKET)) ?? (await peekRateLimit(req, ADMIN_FAIL_BUCKET));
+  if (limited) return limited;
+
   try {
     const supabase = supabaseAdmin();
 
-    const body = await req.json();
-    const { action, password, data } = body;
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") return json({ success: false, error: "잘못된 요청입니다." }, 400);
+    const { action, password, data } = body as { action?: unknown; password?: unknown; data?: any };
 
     // Verify admin password (DB override 우선, 없으면 환경변수 사용)
     const adminPassword = Deno.env.get("ADMIN_PASSWORD");
@@ -32,21 +81,35 @@ serve(async (req) => {
       .maybeSingle();
 
     const submittedPassword = typeof password === "string" ? password : "";
-    const submittedHash = submittedPassword ? await hashPassword(submittedPassword) : "";
-
-    const isAuthorized = adminCredential?.password_hash
-      ? submittedHash === adminCredential.password_hash
-      : !!adminPassword && submittedPassword === adminPassword;
-
-    if (!isAuthorized) {
-      return new Response(
-        JSON.stringify({ success: false, error: "인증 실패" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let isAuthorized = false;
+    let upgradeLegacyHash = false;
+    if (submittedPassword) {
+      if (adminCredential?.password_hash) {
+        const verdict = await verifyPassword(submittedPassword, adminCredential.password_hash);
+        isAuthorized = verdict.ok;
+        upgradeLegacyHash = verdict.ok && verdict.needsUpgrade;
+      } else if (adminPassword) {
+        isAuthorized = timingSafeEqual(submittedPassword, adminPassword);
+      }
     }
 
-    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats", "visitor-stats", "list-notices", "create-notice", "update-notice", "delete-notice"];
-    if (!action || !validActions.includes(action)) {
+    if (!isAuthorized) {
+      await recordRateLimitHit(req, ADMIN_FAIL_BUCKET);
+      return json({ success: false, error: "인증 실패" }, 401);
+    }
+
+    if (upgradeLegacyHash) {
+      try {
+        await supabase
+          .from("admin_credentials")
+          .upsert({ id: 1, password_hash: await hashPassword(submittedPassword), updated_at: new Date().toISOString() }, { onConflict: "id" });
+      } catch (e) {
+        console.warn("legacy admin hash upgrade failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    const validActions = ["list", "create", "update", "delete", "fetch-patent-info", "list-settings", "update-settings", "list-cache", "delete-cache", "delete-all-cache", "change-password", "usage-stats", "visitor-stats", "satisfaction-comments", "list-notices", "create-notice", "update-notice", "delete-notice", "list-market-refs", "update-market-ref"];
+    if (typeof action !== "string" || !validActions.includes(action)) {
       return new Response(
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -60,7 +123,8 @@ serve(async (req) => {
         .select("*");
       if (error) throw error;
       const map: Record<string, string> = {};
-      for (const s of settings || []) map[s.key] = s.value || "";
+      // 비밀값 키는 관리자 화면에도 내려보내지 않는다(함수 시크릿으로만 관리).
+      for (const s of settings || []) if (!isSecretSettingKey(s.key)) map[s.key] = s.value || "";
       return new Response(
         JSON.stringify({ success: true, settings: map }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -76,6 +140,9 @@ serve(async (req) => {
       }
       for (const [key, value] of Object.entries(data)) {
         if (typeof key !== "string" || key.length > 100) continue;
+        if (isSecretSettingKey(key)) {
+          return json({ success: false, error: `${key} 는 사이트 설정에 저장할 수 없습니다. 함수 시크릿(KIPRIS_API_KEY)으로 설정해 주세요.` }, 400);
+        }
         const val = typeof value === "string" ? value.slice(0, 2000) : "";
         await supabase
           .from("site_settings")
@@ -97,11 +164,16 @@ serve(async (req) => {
       }
 
       // Call fetch-patent edge function internally
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
       const fetchRes = await fetch(`${supabaseUrl}/functions/v1/fetch-patent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${supabaseKey}`,
+          // 내부 호출도 원래 요청자의 IP 기준으로 요청 제한을 받도록 전달
+          "x-forwarded-for": req.headers.get("x-forwarded-for") ?? "",
+          "cf-connecting-ip": req.headers.get("cf-connecting-ip") ?? "",
         },
         body: JSON.stringify({ patentNumber: data.patent_number }),
       });
@@ -201,11 +273,8 @@ serve(async (req) => {
     if (action === "change-password") {
       const newPassword = typeof data?.new_password === "string" ? data.new_password.trim() : "";
 
-      if (newPassword.length < 4 || newPassword.length > 100) {
-        return new Response(
-          JSON.stringify({ success: false, error: "비밀번호는 4~100자여야 합니다." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (newPassword.length < MIN_PASSWORD_LENGTH || newPassword.length > 100) {
+        return json({ success: false, error: `비밀번호는 ${MIN_PASSWORD_LENGTH}~100자여야 합니다.` }, 400);
       }
 
       const password_hash = await hashPassword(newPassword);
@@ -489,14 +558,34 @@ serve(async (req) => {
       );
     }
 
+    // ========== Satisfaction comments (admin only; the RPC is no longer callable by anon) ==========
+    if (action === "satisfaction-comments") {
+      const limit = Math.min(100, Math.max(1, Number(data?.limit) || 30));
+      const { data: comments, error } = await supabase.rpc("get_satisfaction_comments", { p_limit: limit });
+      if (error) throw error;
+      return json({ success: true, comments: comments ?? [] });
+    }
+
+    // ========== Notices ==========
+    const noticeInput = () => {
+      if (!data || typeof data !== "object") return null;
+      const title = typeof data.title === "string" ? data.title.trim().slice(0, 200) : "";
+      if (!title) return null;
+      const content = typeof data.content === "string" ? data.content.slice(0, 5000) : "";
+      const order = Number(data.display_order);
+      return {
+        title,
+        content: content || null,
+        is_active: data.is_active !== false,
+        is_pinned: data.is_pinned === true,
+        display_order: Number.isFinite(order) ? Math.max(0, Math.min(9999, Math.round(order))) : 0,
+      };
+    };
+
     if (action === "create-notice") {
-      const { error } = await supabase.from("notices").insert({
-        title: data.title,
-        content: data.content || null,
-        is_active: data.is_active ?? true,
-        is_pinned: data.is_pinned ?? false,
-        display_order: data.display_order ?? 0,
-      });
+      const input = noticeInput();
+      if (!input) return json({ success: false, error: "공지 제목이 필요합니다." }, 400);
+      const { error } = await supabase.from("notices").insert(input);
       if (error) throw error;
       return new Response(
         JSON.stringify({ success: true }),
@@ -505,16 +594,11 @@ serve(async (req) => {
     }
 
     if (action === "update-notice") {
+      const input = noticeInput();
+      if (!input || !data?.id) return json({ success: false, error: "공지 ID와 제목이 필요합니다." }, 400);
       const { error } = await supabase
         .from("notices")
-        .update({
-          title: data.title,
-          content: data.content || null,
-          is_active: data.is_active ?? true,
-          is_pinned: data.is_pinned ?? false,
-          display_order: data.display_order ?? 0,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ ...input, updated_at: new Date().toISOString() })
         .eq("id", data.id);
       if (error) throw error;
       return new Response(
@@ -524,12 +608,94 @@ serve(async (req) => {
     }
 
     if (action === "delete-notice") {
+      if (!data?.id) return json({ success: false, error: "공지 ID가 필요합니다." }, 400);
       const { error } = await supabase.from("notices").delete().eq("id", data.id);
       if (error) throw error;
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ========== 시장 표준값(market_reference) 검토 ==========
+    if (action === "list-market-refs") {
+      const MARKET_REF_STATUSES = ["official", "approved", "ai_pending"];
+      const page = typeof data?.page === "number" && data.page >= 0 ? Math.floor(data.page) : 0;
+      const pageSize = 30;
+      const status = typeof data?.status === "string" && MARKET_REF_STATUSES.includes(data.status) ? data.status : null;
+      const query = typeof data?.query === "string" ? data.query.replace(/[%_,().*\\]/g, "").trim().slice(0, 40) : "";
+      let q = supabase
+        .from("market_reference")
+        .select("market_key, label, base_year, base_value_eok, cagr, source, source_url, status, verified_at, created_at", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      if (status) q = q.eq("status", status);
+      if (query) q = q.or(`label.ilike.%${query}%,market_key.ilike.%${query.replace(/\s+/g, "")}%`);
+      const { data: refs, count, error } = await q;
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      for (const st of MARKET_REF_STATUSES) {
+        const { count: c } = await supabase.from("market_reference").select("market_key", { count: "exact", head: true }).eq("status", st);
+        counts[st] = c || 0;
+      }
+      return json({ success: true, items: refs || [], total: count || 0, counts, page, pageSize });
+    }
+
+    if (action === "update-market-ref") {
+      const key = typeof data?.market_key === "string" ? data.market_key.trim() : "";
+      if (!key || key.length > 100) return json({ success: false, error: "시장 키가 필요합니다." }, 400);
+      const { data: current, error: readError } = await supabase.from("market_reference").select("status, source").eq("market_key", key).maybeSingle();
+      if (readError) throw readError;
+      if (!current) return json({ success: false, error: "해당 시장 표준값이 없습니다." }, 404);
+      // 공식 통계값은 KOSIS에서 30일마다 다시 받아오므로 화면에서 고치지 않는다.
+      if (current.status === "official") return json({ success: false, error: "공식 통계(KOSIS) 값은 자동 갱신되어 수정할 수 없습니다." }, 400);
+
+      const status = data?.status === "approved" || data?.status === "ai_pending" ? data.status : null;
+      if (!status) return json({ success: false, error: "상태는 approved 또는 ai_pending만 지정할 수 있습니다." }, 400);
+      const patch: Record<string, unknown> = { status };
+      if (data.source !== undefined) {
+        const source = typeof data.source === "string" ? data.source.replace(/\s+/g, " ").trim().slice(0, 200) : "";
+        patch.source = source || null;
+      }
+      if (data.source_url !== undefined) {
+        const url = typeof data.source_url === "string" ? data.source_url.trim() : "";
+        if (url) {
+          let ok = false;
+          try { ok = new URL(url).protocol === "https:"; } catch { ok = false; }
+          if (!ok || url.length > 500) return json({ success: false, error: "출처 URL은 https 주소만 입력할 수 있습니다." }, 400);
+        }
+        patch.source_url = url || null;
+      }
+      if (data.label !== undefined) {
+        const label = typeof data.label === "string" ? data.label.replace(/\s+/g, " ").trim().slice(0, 60) : "";
+        if (!label) return json({ success: false, error: "시장명이 비어 있습니다." }, 400);
+        patch.label = label;
+      }
+      const thisYear = Number(new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", year: "numeric" }).format(new Date()));
+      if (data.base_year !== undefined) {
+        const y = Number(data.base_year);
+        if (!Number.isInteger(y) || y < 2000 || y > thisYear) return json({ success: false, error: `기준연도는 2000~${thisYear} 사이여야 합니다.` }, 400);
+        patch.base_year = y;
+      }
+      if (data.base_value_eok !== undefined) {
+        const v = Number(data.base_value_eok);
+        if (!Number.isFinite(v) || v <= 0 || v > 10_000_000) return json({ success: false, error: "기준값이 올바르지 않습니다." }, 400);
+        patch.base_value_eok = v;
+      }
+      if (data.cagr !== undefined) {
+        const c = Number(data.cagr);
+        if (!Number.isFinite(c) || c < -20 || c > 50) return json({ success: false, error: "CAGR은 -20~50% 사이여야 합니다." }, 400);
+        patch.cagr = c;
+      }
+      if (status === "approved") {
+        const source = patch.source !== undefined ? patch.source : current.source;
+        // 출처가 없으면 승인하지 않는다(요약서에 출처를 지어내지 않기 위해).
+        if (!source || source === "USD") return json({ success: false, error: "승인하려면 확인한 출처(기관명·보고서명)를 입력해야 합니다." }, 400);
+      }
+      patch.verified_at = status === "approved" ? new Date().toISOString() : null;
+      const { error } = await supabase.from("market_reference").update(patch).eq("market_key", key);
+      if (error) throw error;
+      return json({ success: true });
     }
 
     return new Response(

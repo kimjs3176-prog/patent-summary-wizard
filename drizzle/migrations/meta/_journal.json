@@ -15,6 +15,27 @@
       "when": 1792226546501,
       "tag": "0001_validated_patent_evidence_cases",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793525593964,
+      "tag": "0002_restrict_public_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793525599492,
+      "tag": "0003_market_reference_trust",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793525603234,
+      "tag": "0004_cached_score_lookup",
+      "breakpoints": true
     }
   ]
 }

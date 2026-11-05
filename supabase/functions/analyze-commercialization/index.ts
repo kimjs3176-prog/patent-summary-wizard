@@ -3,73 +3,22 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { reconcileTrl } from "./trlConsistency.ts";
+import { loadServerPatentData, loadServerSummary } from "../_shared/patentSource.ts";
+import { buildScoringSummary, describeTrlFromStage, reconcileTrl, type TrlBand } from "./trlConsistency.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
+import { isTokenLimitFinish, parseScoreJson } from "./scoreJson.ts";
+
+// 점수 산정 규칙 버전. 새로 쓰거나 갱신하는 patent_score_cache 행에 기록한다(기존 행은 다시 계산하지 않는다).
+// s2: TRL 단계를 문장 순서가 아닌 현재 도달 단계로 판정, 상용화전망 섹션은 잘리지 않게 유지.
+const SCORE_VERSION = "s2-2026-11";
 
 
-// Module-level cooldown: after upstream 5xx / overload from personal Gemini or Groq,
-// skip that provider for a short period so subsequent requests don't pay the failure latency.
-let geminiCooldownUntil = 0;
-const PROVIDER_COOLDOWN_MS = 90_000; // 90s
-function markCooldown(_provider: "gemini", ms = PROVIDER_COOLDOWN_MS) {
-  geminiCooldownUntil = Date.now() + ms;
-}
-const GEMINI_TIMEOUT_MS = 8_000;
-
-function withTimeout(parent: AbortSignal | undefined, ms: number): { signal: AbortSignal; cancel: () => void } {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  const onAbort = () => ctrl.abort();
-  if (parent) {
-    if (parent.aborted) ctrl.abort();
-    else parent.addEventListener("abort", onAbort, { once: true });
-  }
-  return {
-    signal: ctrl.signal,
-    cancel: () => {
-      clearTimeout(t);
-      if (parent) parent.removeEventListener("abort", onAbort);
-    },
-  };
-}
-
+// AI calls go only through the Lovable AI Gateway (OpenAI-compatible).
 async function callAIChatCompletions(
   payload: Record<string, unknown> & { model: string },
   init: { signal?: AbortSignal } = {},
 ): Promise<Response> {
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (GEMINI_API_KEY && Date.now() >= geminiCooldownUntil) {
-    const t = withTimeout(init.signal, GEMINI_TIMEOUT_MS);
-    try {
-      const geminiModel = payload.model.replace(/^google\//, "");
-      const r = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        {
-          method: "POST",
-          signal: t.signal,
-          headers: {
-            Authorization: `Bearer ${GEMINI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...payload, model: geminiModel }),
-        },
-      );
-      if (r.ok) {
-        console.log("[AI] using personal Gemini API");
-        t.cancel();
-        return r;
-      }
-      const errText = await r.text().catch(() => "");
-      if (r.status >= 500 || r.status === 429) markCooldown("gemini");
-      console.warn(`[AI] personal Gemini failed ${r.status}: ${errText.slice(0, 200)} — falling back to Lovable AI`);
-    } catch (e) {
-      markCooldown("gemini");
-      console.warn("[AI] personal Gemini error, falling back:", e);
-    } finally {
-      t.cancel();
-    }
-  }
   return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     signal: init.signal,
@@ -191,6 +140,11 @@ function makeTrlFallback(trl: number): string {
   return `본 기술이 동일 형태로 시판·유통되는 근거가 확인돼 상용화 완료 단계인 TRL 9로 판단된다.`;
 }
 
+/** 요약서 서술 단계로 TRL을 맞췄으면 그 단계를 근거로 밝히고, 단계를 모르면 기존 고정 문구를 쓴다. */
+function trlReasonFor(trl: number, stage: TrlBand | null | undefined): string {
+  return stage ? describeTrlFromStage(trl, stage) : makeTrlFallback(trl);
+}
+
 // technology/market/business 평가 코멘트에서 TRL 관련 문구를 제거한다.
 // (TRL은 별도의 trlReason 필드에서만 노출되어야 함)
 function stripTrlMentions(text: string): string {
@@ -287,7 +241,7 @@ function normalizeAnalysis(value: unknown, fallback: string): string {
 const getSupabaseClient = supabaseAdmin;
 
 // ===== V-RAY(로열티공제법) 기반 사업성 보정 =====
-// src/lib/valuation.ts 의 간이 기술가치평가 모델과 동일한 인자(성숙도/사업화 소요기간,
+// 간이 기술가치평가(V-RAY) 모델의 인자(성숙도/사업화 소요기간,
 // 권리 유효성, 법적 잔존권리기간, 권리 적용 폭)를 사용해 결정론적 '사업화 실행성 지수'를
 // 산출하고, AI 체크리스트 점수와 가중 결합한다.
 function stageFromTrl(trl: number): { name: string; lead: number; immaturePremium: number } {
@@ -359,9 +313,9 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { patentNumber, patentData, summaryContent } = body;
+    const { patentNumber, patentData: clientPatentData, summaryContent: clientSummaryContent } = body;
 
-    if (!patentNumber || typeof patentNumber !== "string" || !patentData) {
+    if (!patentNumber || typeof patentNumber !== "string") {
       return new Response(
         JSON.stringify({ error: "특허 정보가 필요합니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -373,6 +327,20 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "유효하지 않은 특허 번호 형식입니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 원문과 요약서는 서버 캐시에서만 읽는다. 요청 본문의 patentData/summaryContent 는 공유 점수 캐시와
+    // TRL 을 누구나 바꿀 수 있게 하므로 무시한다(클라이언트 호환을 위해 필드 자체는 받아들인다).
+    if (clientPatentData || clientSummaryContent) console.log(`[score] client patentData/summaryContent ignored for ${trimmedPatent}; using server source`);
+    const [patentData, summaryContent] = await Promise.all([
+      loadServerPatentData(req, trimmedPatent),
+      loadServerSummary(trimmedPatent),
+    ]);
+    if (!patentData) {
+      return new Response(
+        JSON.stringify({ success: false, error: "특허 원문 데이터를 가져오지 못해 점수를 분석할 수 없습니다. 잠시 후 다시 시도해 주세요." }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -415,15 +383,16 @@ serve(async (req) => {
             trl: cached.trl ?? 5,
           };
         } else {
-        // 캐시된 TRL도 이번 요약서 서술과 어긋나면 보정 후 캐시 갱신
-        const cachedSummary = typeof summaryContent === "string" ? summaryContent : "";
-        const rc = reconcileTrl(cached.trl ?? 5, cachedSummary);
-        if (rc.changed) {
+        // 캐시된 TRL도 서버에 저장된 요약서 서술과 어긋나면 보정 후 캐시 갱신 (요약이 아직 없으면 건너뜀)
+        const rc = summaryContent ? reconcileTrl(cached.trl ?? 5, summaryContent) : null;
+        if (rc && rc.changed) {
           console.log(`[TRL-CONSISTENCY][cache] ${trimmedPatent} trl ${cached.trl} -> ${rc.trl} (stage=${rc.band?.label})`);
           cached.trl = rc.trl;
-          cached.trl_reason = makeTrlFallback(rc.trl);
+          cached.trl_reason = trlReasonFor(rc.trl, rc.band);
           try {
-            await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason }).eq("patent_number", cached.patent_number);
+            const { error: trlError } = await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason, score_version: SCORE_VERSION }).eq("patent_number", cached.patent_number);
+            if (trlError) await supabase.from("patent_score_cache").update({ trl: rc.trl, trl_reason: cached.trl_reason }).eq("patent_number", cached.patent_number);
+            else cached.score_version = SCORE_VERSION;
           } catch (_) { /* ignore */ }
         }
         await recordAnalysisCase(caseContext, trimmedPatent, "commercialization", cachedAnalysis, cached.trl, true);
@@ -441,6 +410,7 @@ serve(async (req) => {
               technologyReason: cachedTechnologyReason,
               marketReason: cachedMarketReason,
               businessReason: cachedBusinessReason,
+              scoreVersion: cached.score_version ?? null,
             },
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -461,9 +431,8 @@ serve(async (req) => {
     }
 
     const data = patentData as PatentData;
-    const summaryText = typeof summaryContent === "string"
-      ? summaryContent.replace(/\s+/g, " ").trim().slice(0, 3500)
-      : "";
+    // 3,500자로 줄이되 상용화전망 섹션(TRL·사업성 근거)은 통째로 남긴다.
+    const summaryText = buildScoringSummary(summaryContent, 3500);
 
 
 
@@ -736,79 +705,103 @@ JSON형식:
       Math.round(baseMaxTokens * lengthMultiplier),
     );
 
-    const aiController = new AbortController();
-    const aiTimer = setTimeout(() => aiController.abort(), 60000);
-    let response: Response;
-    try {
-      response = await callAIChatCompletions(
-        {
-          model: scoreModel,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: patentContext },
-          ],
-          temperature: 0,
-          top_p: 0.1,
-          seed: 42,
-          max_tokens: scoreMaxTokens,
-          response_format: { type: "json_object" },
-        },
-        { signal: aiController.signal },
-      );
-    } finally {
-      clearTimeout(aiTimer);
-    }
+    // 잘리거나 형식이 깨진 응답·시간초과는 출력 한도를 늘려 한 번 더 시도한다(전체 대기 약 130초 이내).
+    const scoreStartedAt = Date.now();
+    const SCORE_BUDGET_MS = 130_000;
+    let scores: any = null;
+    for (let attempt = 1; attempt <= 2 && !scores; attempt++) {
+      const remaining = SCORE_BUDGET_MS - (Date.now() - scoreStartedAt);
+      if (attempt > 1 && remaining < 20_000) break;
+      const maxTokens = attempt === 1 ? scoreMaxTokens : Math.min(12000, scoreMaxTokens * 2);
+      const aiController = new AbortController();
+      const aiTimer = setTimeout(() => aiController.abort(), Math.min(60_000, remaining));
+      let response: Response;
+      try {
+        response = await callAIChatCompletions(
+          {
+            model: scoreModel,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: patentContext },
+            ],
+            temperature: 0,
+            top_p: 0.1,
+            seed: 42,
+            max_tokens: maxTokens,
+            response_format: { type: "json_object" },
+          },
+          { signal: aiController.signal },
+        );
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError" && attempt === 1) {
+          console.warn(`[AI] score call timed out for ${trimmedPatent} (attempt ${attempt}) — retrying`);
+          continue;
+        }
+        throw e;
+      } finally {
+        clearTimeout(aiTimer);
+      }
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("AI gateway error:", response.status, text);
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ success: false, error: "서비스 크레딧이 부족합니다." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("AI gateway error:", response.status, text);
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ success: false, error: "서비스 크레딧이 부족합니다." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw new Error("AI 서비스 오류");
+      }
+
+      const result = await response.json();
+      const finishReason = result.choices?.[0]?.finish_reason || result.choices?.[0]?.finishReason || result.candidates?.[0]?.finishReason;
+      const content = result.choices?.[0]?.message?.content;
+      scores = parseScoreJson(content);
+      if (!scores) {
+        console.error(
+          `[AI] unparseable score output for ${trimmedPatent} (attempt ${attempt}, finishReason=${finishReason}, max_tokens=${maxTokens}, truncated=${isTokenLimitFinish(finishReason)}, len=${typeof content === "string" ? content.length : 0}) head=${String(content ?? "").slice(0, 300)} tail=${String(content ?? "").slice(-200)}`,
         );
       }
-      throw new Error("AI 서비스 오류");
+    }
+    if (!scores) {
+      throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
     }
 
-    const result = await response.json();
-    const finishReason = result.choices?.[0]?.finish_reason || result.choices?.[0]?.finishReason || result.candidates?.[0]?.finishReason;
-    const tokenLimitHit = typeof finishReason === "string" && /length|max_tokens|max_output_tokens/i.test(finishReason);
-    if (tokenLimitHit) {
-      console.warn(`[AI] output may be truncated for ${trimmedPatent}: finishReason=${finishReason}, max_tokens=${scoreMaxTokens}`);
+    // ▼ 점수 JSON 검증: 숫자가 아니거나 범위를 벗어난 값은 저장하지 않고 실패 처리한다(영구 캐시 오염 방지).
+    const toScore = (v: unknown): number | null => {
+      const n = typeof v === "string" ? parseFloat(v.replace(/[^0-9.-]/g, "")) : typeof v === "number" ? v : NaN;
+      return Number.isFinite(n) ? Math.round(n) : null;
+    };
+    const normalizedScores = {
+      technologyScore: toScore(scores?.technologyScore),
+      marketScore: toScore(scores?.marketScore),
+      businessScore: toScore(scores?.businessScore),
+    };
+    const invalidScoreFields = Object.entries(normalizedScores)
+      .filter(([, v]) => v === null || v < 1 || v > 100)
+      .map(([k]) => k);
+    if (invalidScoreFields.length > 0) {
+      console.error(`[SCORE] invalid fields for ${trimmedPatent}: ${invalidScoreFields.join(",")} raw=${JSON.stringify(scores).slice(0, 300)}`);
+      throw new Error("점수 분석 결과가 올바르지 않습니다. 잠시 후 다시 시도해 주세요.");
     }
-    const content = result.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("AI 응답이 비어있습니다.");
-    }
-
-    // 견고한 JSON 파싱: response_format이 무시될 수 있으므로 폴백 포함
-    let scores: any;
-    try {
-      scores = JSON.parse(content);
-    } catch {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error("AI 응답 파싱 실패, raw content:", content.substring(0, 500));
-        throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
-      }
-      try {
-        scores = JSON.parse(jsonMatch[0]);
-      } catch (e) {
-        console.error("JSON.parse 실패, raw:", jsonMatch[0].substring(0, 500));
-        throw new Error("점수 분석 결과를 파싱할 수 없습니다.");
-      }
+    Object.assign(scores, normalizedScores);
+    const trlParsed = toScore(scores?.trl);
+    scores.trl = trlParsed != null ? Math.max(1, Math.min(9, trlParsed)) : 5;
+    for (const key of ["technologyReason", "marketReason", "businessReason", "analysis", "trlReason"]) {
+      if (typeof scores[key] !== "string") scores[key] = scores[key] == null ? "" : String(scores[key]);
     }
 
     // ▼ TRL ↔ 요약서 기술완성도 서술 정합성 보정 (V-RAY 계산 전에 적용)
     let trlReasonNeedsRewrite = false;
+    let trlStage: TrlBand | null = null;
     {
       const r = reconcileTrl(Number(scores.trl) || 5, summaryText);
       if (r.changed) {
         console.log(`[TRL-CONSISTENCY] ${trimmedPatent} trl ${scores.trl} -> ${r.trl} (summary stage=${r.band?.label})`);
         scores.trl = r.trl;
         trlReasonNeedsRewrite = true;
+        trlStage = r.band;
       }
     }
 
@@ -907,7 +900,7 @@ JSON형식:
     scores.marketReason = normalizeReason(scores.marketReason, marketFallback);
     scores.businessReason = normalizeReason(scores.businessReason, businessFallback);
     scores.trlReason = trlReasonNeedsRewrite
-      ? makeTrlFallback(normalizedTrl)
+      ? trlReasonFor(normalizedTrl, trlStage)
       : ensureCompleteSentence(scores.trlReason, makeTrlFallback(normalizedTrl));
     // trlReason 안의 TRL 숫자가 최종 TRL과 다르면 근거문을 재작성
     {
@@ -932,10 +925,10 @@ JSON형식:
       scores.technologyScore = lockedScores.technologyScore;
       scores.marketScore = lockedScores.marketScore;
       scores.businessScore = lockedScores.businessScore;
-      const r = reconcileTrl(lockedScores.trl, summaryText);
+      const r = summaryText ? reconcileTrl(lockedScores.trl, summaryText) : { trl: lockedScores.trl, changed: false, band: null };
       scores.trl = r.trl;
       if (r.changed || !new RegExp(`TRL\\s*${r.trl}(?!\\d)`).test(scores.trlReason || "")) {
-        scores.trlReason = makeTrlFallback(r.trl);
+        scores.trlReason = trlReasonFor(r.trl, r.band);
       }
     }
 
@@ -947,7 +940,7 @@ JSON형식:
       if (trimmedPatent !== digitsKey) {
         await supabase.from("patent_score_cache").delete().eq("patent_number", trimmedPatent);
       }
-      await supabase.from("patent_score_cache").upsert({
+      const row = {
         patent_number: digitsKey,
         total_score: scores.totalScore,
         technology_score: scores.technologyScore,
@@ -959,7 +952,14 @@ JSON형식:
         technology_reason: scores.technologyReason || "",
         market_reason: scores.marketReason || "",
         business_reason: scores.businessReason || "",
-      }, { onConflict: "patent_number" });
+        score_version: SCORE_VERSION,
+      };
+      const { error: saveError } = await supabase.from("patent_score_cache").upsert(row, { onConflict: "patent_number" });
+      if (saveError) {
+        // score_version 칼럼 마이그레이션 전이면 버전 없이 저장해 점수 캐시가 비지 않게 한다.
+        const { score_version: _omit, ...legacyRow } = row;
+        await supabase.from("patent_score_cache").upsert(legacyRow, { onConflict: "patent_number" });
+      }
       console.log(`[CACHE SAVED] score for ${trimmedPatent}`);
     } catch (saveErr) {
       console.error("Cache save error:", saveErr);
@@ -979,6 +979,7 @@ JSON형식:
           technologyReason: scores.technologyReason || "",
           marketReason: scores.marketReason || "",
           businessReason: scores.businessReason || "",
+          scoreVersion: SCORE_VERSION,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

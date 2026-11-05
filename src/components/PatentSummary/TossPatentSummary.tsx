@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { Share2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { PatentSummaryProps as BasePatentSummaryProps } from "./types";
-import { useTrlConfig, type CommercializationDetails } from "./TechnologyCommercializationScore";
-import { TechValuation } from "./TechValuation";
-import { printWebSummary } from "./PdfGenerator";
+import { useTrlConfig, type CommercializationDetails } from "./commercialization";
+import { enterSummaryPrint, leaveSummaryPrint, printWebSummary } from "./PdfGenerator";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { safeFetch } from "@/lib/safeFetch";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { extractKeywordsFromPatent } from "./_keywords";
@@ -16,20 +16,21 @@ import { useRegisterOwner, isDifferentOwner } from "./useRegisterOwner";
 import { SummaryReadyProvider, useSummaryPending } from "./summaryReady";
 import { ACCENT_HEX, parseSections, formatAiModelLabel } from "./toss/helpers";
 import { ActionBar } from "./toss/ActionBar";
-import { HeroSection } from "./toss/HeroSection";
-import { BasicInfoSection } from "./toss/BasicInfoSection";
-import { ScoreSection } from "./toss/ScoreSection";
-import { FiguresSection } from "./toss/FiguresSection";
-import { AiSummarySections } from "./toss/AiSummarySections";
-import { AnalysisSection } from "./toss/AnalysisSection";
-import { RelatedSection } from "./toss/RelatedSection";
-import { RegulationSection } from "./toss/RegulationSection";
 import { ShareDialog } from "./toss/ShareDialog";
+import { DatasheetReport } from "./toss/DatasheetReport";
 
 interface TossPatentSummaryProps extends BasePatentSummaryProps {
   onKeywordClick?: (keyword: string) => void;
   onScoreReady?: (score: number) => void;
   onRegenerate?: () => void;
+}
+
+function formatGeneratedAt(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return iso;
+  }
 }
 
 function TossPatentSummaryInner({
@@ -42,11 +43,12 @@ function TossPatentSummaryInner({
   onKeywordClick,
   onScoreReady,
   onRegenerate,
-  featureFlags = { pdfEnabled: true, pptEnabled: true },
+  featureFlags = { pdfEnabled: true },
+  summaryMeta = null,
 }: TossPatentSummaryProps) {
   const { settings } = useSiteSettings();
   const trlConfig = useTrlConfig();
-  const { isFavorite, toggleFavorite } = useFavoritePatents();
+  const { isFavorite, toggleFavorite, favorites, updateFavorite } = useFavoritePatents();
   const patentIsFavorite = patentNumber ? isFavorite(patentNumber) : false;
 
   const [score, setScore] = useState<number | null>(null);
@@ -60,7 +62,6 @@ function TossPatentSummaryInner({
   const qrRef = useRef<HTMLDivElement>(null);
 
   const favoritesEnabled = settings.feature_favorites !== "false";
-  const competitorAnalysisEnabled = settings.feature_competitor_analysis !== "false";
   const glossaryEnabled = settings.feature_glossary !== "false";
   const autoGlossary = useAutoGlossary(
     patentNumber,
@@ -71,13 +72,15 @@ function TossPatentSummaryInner({
   );
   const annotate = (text: string) => (glossaryEnabled ? annotateWithGlossary(text, autoGlossary) : text);
 
-  // 사업화 점수 호출
+  // 사업화 점수 호출 — 특허가 바뀌면 이전 요청의 늦은 응답은 버린다.
   useEffect(() => {
+    if (!patentData || !patentNumber || isStreaming) return;
+    let cancelled = false;
+    const controller = new AbortController();
     const run = async () => {
-      if (!patentData || !patentNumber || isStreaming) return;
       setScoreLoading(true);
       try {
-        const res = await fetch(
+        const res = await safeFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-commercialization`,
           {
             method: "POST",
@@ -85,24 +88,44 @@ function TossPatentSummaryInner({
               "Content-Type": "application/json",
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
+            // 현재 서버는 patent_data_cache / patent_ai_cache 저장본만 쓰고 아래 두 필드는 무시한다.
+            // 재배포 전의 이전 함수가 이 필드를 요구하므로 배포 순서와 무관하게 동작하도록 함께 보낸다.
             body: JSON.stringify({ patentNumber, patentData, summaryContent: content, analysisMode: "detailed" }),
+            // 서버가 잘린 응답을 한 번 더 시도하므로(최대 약 130초) 그보다 길게 기다린다.
+            timeoutMs: 140000,
+            retries: 1,
+            signal: controller.signal,
           }
         );
         const json = await res.json();
+        if (cancelled) return;
         if (json.success) {
           setScore(json.score);
           setDetails(json.details);
           onScoreReady?.(json.score);
         }
       } catch (e) {
-        console.error("Commercialization analysis error:", e);
+        if (!cancelled) console.error("Commercialization analysis error:", e);
       } finally {
-        setScoreLoading(false);
+        if (!cancelled) setScoreLoading(false);
       }
     };
     run();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patentData, patentNumber, isStreaming, content]);
+
+  // "담기"를 분석 완료 전에 눌렀으면 점수·TRL이 비어 저장된다. 점수가 도착하면 저장본을 채운다.
+  useEffect(() => {
+    if (!patentNumber || score == null || !details) return;
+    const stored = favorites.find((f) => f.patentNumber === patentNumber);
+    if (stored && (stored.commercializationScore == null || !stored.commercializationDetails)) {
+      updateFavorite(patentNumber, { commercializationScore: score, commercializationDetails: details });
+    }
+  }, [favorites, patentNumber, score, details, updateFavorite]);
 
   const registrationNumberForLookup =
     patentData?.registrationNumber || (patentData && patentData.searchType !== 'application' ? patentNumber : undefined);
@@ -116,7 +139,6 @@ function TossPatentSummaryInner({
     !isStreaming && !!content && !scoreLoading && !ownerLoading && pendingSections === 0;
 
   const trl = details?.trl ?? null;
-  const trlColor = trl == null ? "#9CA3AF" : trl <= 3 ? "#EF4444" : trl <= 6 ? "#F59E0B" : ACCENT_HEX;
   const trlStage = trl == null ? "-" : trl <= 3 ? "기초연구" : trl <= 6 ? "개발/실증" : "상용화";
   const trlName = trl != null ? trlConfig.levels.find((l) => l.level === trl)?.label : null;
 
@@ -124,7 +146,7 @@ function TossPatentSummaryInner({
   const sections = useMemo(() => parseSections(content), [content]);
   // 스트리밍 중에는 매 토큰마다 재계산하지 않도록 완료 후에만 요약서 기반으로 추출
   const keywords = useMemo(
-    () => extractKeywordsFromPatent(patentData, 8, isStreaming ? undefined : content),
+    () => extractKeywordsFromPatent(patentData, 5, isStreaming ? undefined : content),
     [patentData, content, isStreaming],
   );
 
@@ -152,6 +174,7 @@ function TossPatentSummaryInner({
 
   const scoreSummary = score == null ? "분석 중" : score >= 80 ? "높은 편" : score >= 65 ? "보통 수준" : "낮은 편";
 
+
   // 공유 URL: 항상 published origin 사용 (수신자 접근성)
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -178,8 +201,21 @@ function TossPatentSummaryInner({
       setCopied(true);
       toast.success("링크가 복사되었습니다");
       setTimeout(() => setCopied(false), 1800);
-    } catch {}
+    } catch { /* 클립보드가 막힌 브라우저: 공유 창의 주소를 직접 복사한다 */ }
   };
+
+  // 브라우저 메뉴의 인쇄(Ctrl+P)도 인쇄 버튼과 같이 요약서만 A4 두 쪽으로 찍는다
+  useEffect(() => {
+    let owned = false;
+    const before = () => { if (enterSummaryPrint(printRef.current)) owned = true; };
+    const after = () => { if (owned) leaveSummaryPrint(printRef.current); owned = false; };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
 
   const handlePrint = async () => {
     const opened = await printWebSummary(printRef.current, patentNumber);
@@ -221,49 +257,21 @@ function TossPatentSummaryInner({
           <ActionBar isStreaming={isStreaming} content={content} patentData={patentData} handlePrint={handlePrint} onRegenerate={onRegenerate} setShareOpen={setShareOpen} favoritesEnabled={favoritesEnabled} toggleFavorite={toggleFavorite} patentNumber={patentNumber} score={score} details={details} patentIsFavorite={patentIsFavorite} featureFlags={featureFlags} printRef={printRef} allReady={allReady} />
 
       <div ref={(node) => { aiBodyRef.current = node; printRef.current = node; }} data-toss-summary data-toss-surface className="bp-doc precision-report border border-border overflow-hidden max-w-[864px] mx-auto">
-        <div className="bp-doc-head">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#8B95A1]">
-            AI TECH ANALYSIS REPORT
-          </span>
-          <span className="font-mono text-[10px] tabular-nums tracking-[0.12em] text-[#8B95A1]">
-            DOC · {patentNumber}
-          </span>
-        </div>
         <div className="px-5 sm:px-7 pb-12">
-          {/* HERO */}
-          <HeroSection patentData={patentData} title={title} patentNumber={patentNumber} govtPatent={govtPatent} />
-
-          {/* 한눈에 보는 기본 정보 — 최상단(타이틀 바로 아래) */}
-          <BasicInfoSection patentData={patentData} ownerChanged={ownerChanged} finalOwner={finalOwner} keywords={keywords} onKeywordClick={onKeywordClick} govtPatent={govtPatent} />
-
-          {/* 종합점수 + 세부점수 + TRL 통합 카드 */}
-          <ScoreSection scoreLoading={scoreLoading} score={score} scoreSummary={scoreSummary} details={details} trlColor={trlColor} trl={trl} trlName={trlName} trlStage={trlStage} trlConfig={trlConfig} />
-
-          {/* 도면 */}
-          <FiguresSection drawings={drawings} figureItems={figureItems} setLightboxIndex={setLightboxIndex} />
-
-          {/* AI 요약 본문 */}
-          <AiSummarySections isStreaming={isStreaming} sections={sections} annotate={annotate} />
-
-          {/* AI 종합 의견 */}
-          <AnalysisSection details={details} />
-
-          {/* 관련 특허 — 기능·특징이 유사한 특허 */}
-          <RelatedSection patentData={patentData} onRelatedPatentClick={onRelatedPatentClick} />
-
-          {/* 사업화 예상 규제 — 요약서 하단으로 이동 */}
-          <RegulationSection patentData={patentData} isStreaming={isStreaming} patentNumber={patentNumber} />
-
-          {/* 기술가치 간이평가 (임시 숨김) */}
-          {false && patentData && !isStreaming && (
-            <section id="sec-valuation" data-summary-section data-summary-label="가치평가" className="mb-10 scroll-mt-24">
-              <TechValuation patentData={patentData} score={score} details={details} />
-            </section>
-          )}
+          {/* 데이터시트형 요약서(C안): 화면은 여백 주석 + 본문, 인쇄·PDF는 A4 두 쪽 */}
+          <DatasheetReport
+            patentData={patentData} patentNumber={patentNumber} title={title} govtPatent={govtPatent}
+            owner={ownerChanged && finalOwner ? finalOwner : null} keywords={keywords} onKeywordClick={onKeywordClick}
+            score={score} scoreSummary={scoreSummary} scoreLoading={scoreLoading} details={details}
+            trl={trl} trlName={trlName} trlStage={trlStage}
+            figureItems={figureItems} setLightboxIndex={setLightboxIndex}
+            sections={sections} isStreaming={!!isStreaming} annotate={annotate}
+            onRelatedPatentClick={onRelatedPatentClick}
+          />
 
           {/* 액션 버튼 */}
           {!isStreaming && content && (
-            <section className="mb-2 print:hidden">
+            <section className="mt-8 sm:mt-10 mb-2 print:hidden">
               <button
                 onClick={() => setShareOpen(true)}
                 className="w-full h-14 rounded-[16px] text-[16px] font-bold text-white transition-all hover:opacity-90 active:scale-[0.99] flex items-center justify-center gap-2"
@@ -275,19 +283,31 @@ function TossPatentSummaryInner({
             </section>
           )}
 
-          {/* 분석 모델 표기 */}
+          {/* 분석 모델·생성 정보 표기 — 서버가 보낸 실제 값을 우선 사용한다 */}
           {!isStreaming && content && (
-            <section className="mt-6 mb-2">
-              <div className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#8B95A1]">
+            <section className="mt-6 mb-2 space-y-1.5">
+              <div className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#6B7684]">
                 <Sparkles className="w-3 h-3" style={{ color: ACCENT_HEX }} />
                 <span>
-                  본 분석은 <span className="font-semibold text-[#4E5968]">{formatAiModelLabel(settings.ai_model)}</span> 모델로 생성되었습니다
+                  본 분석은 <span className="font-semibold text-[#4E5968]">{formatAiModelLabel(summaryMeta?.model || settings.ai_model)}</span> 모델로 생성되었습니다
                 </span>
               </div>
+              {(summaryMeta?.generatedAt || summaryMeta?.cached != null) && (
+                <p className="text-center text-[11px] text-[#6B7684] tabular-nums">
+                  {summaryMeta?.generatedAt ? `생성 ${formatGeneratedAt(summaryMeta.generatedAt)}` : "생성 시각 미상"}
+                  {summaryMeta?.cached ? " · 저장된 요약서" : " · 이번에 새로 생성"}
+                  {summaryMeta?.promptVersion ? ` · 분석 기준 ${summaryMeta.promptVersion}` : ""}
+                </p>
+              )}
+              {summaryMeta?.marketFallback && (
+                <p className="text-center text-[11px] leading-relaxed text-[#B45309]">
+                  ※ 관련시장 동향의 수치는 이 특허에 맞는 통계를 확인하지 못해 농식품 분야 표준 참고값을 사용했습니다.
+                </p>
+              )}
             </section>
           )}
 
-          <p className="text-[12px] text-[#8B95A1] text-center leading-relaxed mt-8">
+          <p className="text-[12px] text-[#6B7684] text-center leading-relaxed mt-8">
             ※ 본 분석은 특허명세서를 바탕으로 실시하여<br />실제 연구 및 개발 단계와는 상이할 수 있습니다.
           </p>
         </div>
