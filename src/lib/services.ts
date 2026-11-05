@@ -1,11 +1,11 @@
-import { BarChart3, Compass, FileSignature, Gift, Heart, Home, Layers, PlayCircle, type LucideIcon } from "lucide-react";
+import { BarChart3, Compass, FileSignature, Gift, Handshake, Heart, Home, Layers, PlayCircle, type LucideIcon } from "lucide-react";
 import { filingEnabled, type SettingsLike } from "@/lib/filing";
 
 /**
  * One list of everything the site offers. The header menu and the mobile menu panel both read from here,
  * so a service is named and described the same way everywhere. The home page has no service cards (owner).
  */
-export type ServiceKey = "home" | "finder" | "filing" | "potential" | "insights" | "batch" | "favorites" | "videos";
+export type ServiceKey = "home" | "finder" | "filing" | "potential" | "consortium" | "insights" | "batch" | "favorites" | "videos";
 export type ServiceGroup = "find" | "prepare" | "mine";
 
 export interface ServiceItem {
@@ -30,6 +30,7 @@ export const SERVICES: ServiceItem[] = [
   { key: "home", to: "/", label: "홈", title: "통합검색", description: "키워드, 문장, 질문 모두 검색창 하나로 찾아요", icon: Home, group: "find" },
   { key: "finder", to: "/finder", label: "나만의 특허찾기", title: "나만의 특허찾기", description: "업종과 아이템을 알려 주면 맞는 특허를 추천해요", icon: Compass, group: "find" },
   { key: "potential", to: "/potential", label: "무상기술이전", title: "무상기술이전", description: "무상으로 이전받을 수 있는 특허를 모아 봤어요", icon: Gift, group: "find" },
+  { key: "consortium", to: "/consortium", label: "식품기술이전 협의체", title: "식품기술이전 협의체", description: "협의체 53개 기관의 특허를 기관별로 찾아봐요", icon: Handshake, group: "find" },
   { key: "filing", to: "/filing", label: "출원도우미", title: "출원도우미", description: "아이디어부터 명세서 초안까지 단계별로 도와요", icon: FileSignature, group: "prepare" },
   { key: "insights", to: "/insights", label: "인사이트", title: "특허 인사이트", description: "연도별, 분야별 출원 동향을 한눈에 봐요", icon: BarChart3, group: "prepare" },
   { key: "batch", to: "/batch", label: "일괄조회", title: "일괄조회·다운로드", description: "여러 특허를 한 번에 조회하고 엑셀로 받아요", icon: Layers, group: "prepare" },
@@ -54,11 +55,11 @@ export function headerBadgeServices(settings: SettingsLike): ServiceItem[] {
 }
 
 /**
- * Services given their own entry at the bottom of the home hero (owner: 무상기술이전).
+ * Services given their own entry at the bottom of the home hero (owner: 무상기술이전, with 식품기술이전 협의체 to its right).
  * Kept here so the hero and the header menu never disagree about what the site offers.
  */
 export function heroCtaServiceKeys(): ServiceKey[] {
-  return ["potential"];
+  return ["potential", "consortium"];
 }
 
 export function heroCtaServices(settings: SettingsLike): ServiceItem[] {

@@ -22,11 +22,11 @@ describe("service menu", () => {
     expect(visibleServices({}).map((s) => s.key)).toContain("videos");
   });
 
-  it("gives 무상기술이전 its own entry at the bottom of the home hero (owner)", () => {
-    expect(heroCtaServices({}).map((s) => s.key)).toEqual(["potential"]);
+  it("gives 무상기술이전 and, to its right, 식품기술이전 협의체 their own entries at the bottom of the home hero (owner)", () => {
+    expect(heroCtaServices({}).map((s) => s.key)).toEqual(["potential", "consortium"]);
     // The hero entry reads the same visible list as the menu, so it can never point at a hidden service.
     expect(heroCtaServices({ feature_filing: "false" })).toEqual(
-      visibleServices({ feature_filing: "false" }).filter((s) => s.key === "potential"),
+      visibleServices({ feature_filing: "false" }).filter((s) => s.key === "potential" || s.key === "consortium"),
     );
   });
 

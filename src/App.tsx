@@ -11,6 +11,7 @@ const SearchResults = lazy(() => import("./pages/SearchResults"));
 const Batch = lazy(() => import("./pages/Batch"));
 const TechVideos = lazy(() => import("./pages/TechVideos"));
 const PotentialTech = lazy(() => import("./pages/PotentialTech"));
+const FoodConsortium = lazy(() => import("./pages/FoodConsortium"));
 const PatentFinder = lazy(() => import("./pages/PatentFinder"));
 const Filing = lazy(() => import("./pages/Filing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -109,6 +110,7 @@ const App = () => {
                 <Route path="/filing" element={<Filing />} />
                 <Route path="/tech-videos" element={<TechVideos />} />
                 <Route path="/potential" element={<PotentialTech />} />
+                <Route path="/consortium" element={<FoodConsortium />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>

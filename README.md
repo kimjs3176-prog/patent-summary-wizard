@@ -15,6 +15,7 @@
 | AI 특허 요약서 | `/?patent=번호` | 특허번호 하나로 A4 2쪽 요약서를 만듭니다(아래 '요약서' 참고). |
 | 나만의 특허찾기 | `/finder` | 업종과 아이템을 넣으면 검색된 후보 안에서 맞는 특허를 골라 추천합니다. |
 | 무상기술이전 | `/potential` | 무상으로 이전받을 수 있는 특허 목록을 모아 보여 줍니다. |
+| 식품기술이전 협의체 | `/consortium` | 협의체 53개 기관(대학 산학협력단·연구기관·기술지주회사)을 골라 그 기관이 가진 특허를 봅니다. 기관마다 출원인명으로 특허고객번호를 찾아 그 번호로만 목록을 받으므로 이름이 비슷한 다른 기관의 특허가 섞이지 않습니다. |
 | 출원도우미 | `/filing` | 아이디어 → 선행기술 조사 → 요건 진단 → 명세서 초안 → 제출·관리 5단계로 출원 준비를 돕고, 제출용 묶음 파일을 만듭니다. 1단계는 분야·핵심 낱말·해결할 문제·실험 데이터·판매·공개 이력을 하나씩 묻는 대화로 시작하고, 후보 문장은 문장 틀로 만듭니다(AI는 버튼을 누를 때만). 각 쪽의 절차는 ‘다음’을 누를 때마다 하나씩 열립니다. |
 | 인사이트 | `/insights` | 연도별·기술분야별 출원 동향과 주요 키워드를 보여 줍니다. |
 | 일괄조회 | `/batch` | 여러 특허를 한 번에 조회하고 엑셀로 내려받습니다. |
@@ -61,6 +62,7 @@
 | `analyze-commercialization`, `analyze-regulations`, `recommend-similar-patents`, `extract-glossary` | 점수·TRL, 예상 규제, 비슷한 특허, 용어 풀이 |
 | `patent-chat`, `find-my-patents`, `suggest-keywords` | 특허 상담, 나만의 특허찾기, 대체 검색어 |
 | `filing-api`, `filing-trends` | 출원도우미 서버, 출원 동향 통계 |
+| `consortium-patents` | 식품기술이전 협의체 기관별 특허(출원인명 → 특허고객번호, 찾은 번호는 90일 저장) |
 | `export-patents`, `manage-featured-patents`, `sync-r2-videos` | 엑셀 내보내기, 추천 특허 관리, 영상 목록 동기화 |
 
 출원도우미 화면 본문은 이 저장소의 `public/filing-app/index.html`이고, `/filing` 페이지가 iframe으로 넣어 단계 탭·이동·도움말을 그립니다. 서버 모듈은 `supabase/functions/filing-api/lib/`에서 직접 고칩니다.
