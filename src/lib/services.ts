@@ -44,11 +44,13 @@ export function visibleServices(settings: SettingsLike): ServiceItem[] {
 }
 
 /**
- * Desktop header badges: every visible service except 홈 (the logo already goes home) and 출원도우미.
- * The owner moved the 출원도우미 badge next to 나만의 특허찾기 in the home hero; the mobile menu panel keeps every service.
+ * Desktop header badges: every visible service except 홈 (the logo already goes home), 출원도우미 and 기술소개영상.
+ * The owner moved the 출원도우미 badge next to 나만의 특허찾기 in the home hero and took 기술소개영상 out of the bar
+ * (the home page's 영상 section already links to it); the mobile menu panel keeps every service.
  */
 export function headerBadgeServices(settings: SettingsLike): ServiceItem[] {
-  return visibleServices(settings).filter((s) => s.key !== "home" && s.key !== "filing");
+  const hidden = new Set<ServiceKey>(["home", "filing", "videos"]);
+  return visibleServices(settings).filter((s) => !hidden.has(s.key));
 }
 
 /**
