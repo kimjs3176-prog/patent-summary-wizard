@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isServiceActive, headerBadgeServices, SERVICES, visibleServices } from "@/lib/services";
+import { heroCtaServices, isServiceActive, headerBadgeServices, SERVICES, visibleServices } from "@/lib/services";
 
 const byKey = (k: string) => SERVICES.find((s) => s.key === k)!;
 
