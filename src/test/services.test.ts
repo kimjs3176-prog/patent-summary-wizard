@@ -16,6 +16,14 @@ describe("service menu", () => {
     expect(visibleServices({}).map((s) => s.key)).toContain("filing");
   });
 
+  it("gives 무상기술이전 its own entry at the bottom of the home hero (owner)", () => {
+    expect(heroCtaServices({}).map((s) => s.key)).toEqual(["potential"]);
+    // The hero entry reads the same visible list as the menu, so it can never point at a hidden service.
+    expect(heroCtaServices({ feature_filing: "false" })).toEqual(
+      visibleServices({ feature_filing: "false" }).filter((s) => s.key === "potential"),
+    );
+  });
+
   it("marks 홈 active on the home page and on search results", () => {
     expect(isServiceActive(byKey("home"), "/")).toBe(true);
     expect(isServiceActive(byKey("home"), "/search")).toBe(true);
