@@ -1104,7 +1104,6 @@ time, .tabular-nums, [data-numeric] {
 }
 .home-mode-tab-active:hover { color: hsl(var(--primary)); }
 /* 무상기술이전 entry pinned to the bottom of the home hero (owner) */
-.home-hero-split { border-top: 1px solid hsl(var(--home-hero-foreground) / 0.12); }
 .home-hero-cta {
   background: hsl(var(--home-hero-foreground) / 0.06);
   border: 1px solid hsl(var(--home-hero-foreground) / 0.12);

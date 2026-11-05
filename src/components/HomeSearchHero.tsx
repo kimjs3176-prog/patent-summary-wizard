@@ -154,7 +154,7 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
             {ctas.map((s) => {
               const Icon = s.icon;
               return (
-                <div key={s.key} className="home-hero-split mt-5 pt-4">
+                <div key={s.key} className="mt-5">
                   <Link
                     to={s.to}
                     className="home-hero-cta group inline-flex max-w-full items-center gap-3 rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
