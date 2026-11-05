@@ -157,12 +157,12 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
                 <div key={s.key} className="mt-5">
                   <Link
                     to={s.to}
-                    className="home-hero-cta group inline-flex max-w-full items-center gap-3 rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
+                    className="home-hero-cta group flex w-full max-w-2xl items-center gap-3 rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
                   >
                     <span className="home-hero-cta-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" aria-hidden="true">
                       <Icon className="h-4 w-4" />
                     </span>
-                    <span className="min-w-0 text-left">
+                    <span className="min-w-0 flex-1 text-left">
                       <span className="block text-sm font-bold leading-tight">{s.title}</span>
                       <span className="home-hero-muted block text-xs leading-snug">{s.description}</span>
                     </span>
