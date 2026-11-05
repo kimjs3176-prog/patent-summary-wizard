@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Compass, ListFilter, MessagesSquare, Search, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Compass, FileSignature, ListFilter, MessagesSquare, Search, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { visibleServices } from "@/lib/services";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import type { KeywordSearchResult } from "@/components/PatentSummary/types";
 
 interface HomeSearchHeroProps {
@@ -46,6 +49,9 @@ function FinderQuickForm() {
 
 export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, description, placeholder }: HomeSearchHeroProps) {
   const [mode, setMode] = useState<Mode>("search");
+  const { settings } = useSiteSettings();
+  // 출원도우미's badge lives here next to the 나만의 특허찾기 tab (owner); it still follows the feature_filing setting.
+  const filing = visibleServices(settings).find((s) => s.key === "filing");
   // While the patent assistant is open the hero becomes a compact chat stage: the intro copy folds away
   // and the conversation is sized to the viewport, so the composer never drops below the fold.
   const [chatOpen, setChatOpen] = useState(false);
@@ -100,6 +106,16 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
             );
           })}
         </div>
+        {filing && (
+          <Link
+            to={filing.to}
+            title={filing.description}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm font-bold bg-primary text-primary-foreground shadow-[var(--shadow-card)] hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          >
+            <FileSignature className="w-3.5 h-3.5" aria-hidden="true" />
+            {filing.label}
+          </Link>
+        )}
         </div>
 
         {/* The search box classifies each entry itself; questions open the conversation in place. */}

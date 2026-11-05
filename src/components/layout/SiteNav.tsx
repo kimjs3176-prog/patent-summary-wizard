@@ -4,7 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Menu, Tablet, Type, X } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
-import { isServiceActive, SERVICE_GROUP_LABEL, visibleServices, type ServiceGroup, type ServiceItem } from "@/lib/services";
+import { isServiceActive, SERVICE_GROUP_LABEL, visibleServices, headerBadgeServices, type ServiceGroup, type ServiceItem } from "@/lib/services";
 import { cn } from "@/lib/utils";
 
 interface SiteNavProps {
@@ -31,8 +31,10 @@ function useNavData() {
  * 홈 is left out because the logo already goes home. From lg to xl it wraps to a second header row; below lg the panel takes over.
  */
 export function SiteNavLinks() {
-  const { services, pathname, countFor } = useNavData();
-  const links = services.filter((s) => s.key !== "home");
+  const { settings } = useSiteSettings();
+  const { pathname, countFor } = useNavData();
+  // Desktop badges come from the shared list; 출원도우미's badge lives next to 나만의 특허찾기 in the home hero.
+  const links = headerBadgeServices(settings);
   const badge = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border h-8 px-3 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1";
   return (
     <nav aria-label="주 메뉴" className="hidden lg:flex items-center gap-1.5 min-w-0 order-last w-full pb-1 xl:pb-0 xl:order-none xl:w-auto">

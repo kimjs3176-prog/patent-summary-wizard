@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { isServiceActive, SERVICES, visibleServices } from "@/lib/services";
+import { isServiceActive, headerBadgeServices, SERVICES, visibleServices } from "@/lib/services";
 
 const byKey = (k: string) => SERVICES.find((s) => s.key === k)!;
 
 describe("service menu", () => {
   it("hides 출원도우미 when the feature_filing setting is off", () => {
     expect(visibleServices({ feature_filing: "false" }).map((s) => s.key)).not.toContain("filing");
+    expect(visibleServices({}).map((s) => s.key)).toContain("filing");
+  });
+
+  it("leaves 출원도우미 out of the desktop header badges (owner: its badge lives in the home hero)", () => {
+    expect(headerBadgeServices({}).map((s) => s.key)).not.toContain("filing");
+    expect(headerBadgeServices({}).map((s) => s.key)).not.toContain("home");
+    // The badge only moved: the full visible list (mobile menu panel) still offers it.
     expect(visibleServices({}).map((s) => s.key)).toContain("filing");
   });
 
