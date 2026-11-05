@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { Compass, FileSignature, ListFilter, MessagesSquare, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Compass, FileSignature, Gift, ListFilter, MessagesSquare, Search, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { visibleServices } from "@/lib/services";
+import { heroCtaServices, visibleServices } from "@/lib/services";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import type { KeywordSearchResult } from "@/components/PatentSummary/types";
 
@@ -52,6 +52,8 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
   const { settings } = useSiteSettings();
   // 출원도우미's badge lives here next to the 나만의 특허찾기 tab (owner); it still follows the feature_filing setting.
   const filing = visibleServices(settings).find((s) => s.key === "filing");
+  // 무상기술이전 gets its own entry at the bottom of the hero (owner); it follows the same visible list as the menu.
+  const ctas = heroCtaServices(settings);
   // While the patent assistant is open the hero becomes a compact chat stage: the intro copy folds away
   // and the conversation is sized to the viewport, so the composer never drops below the fold.
   const [chatOpen, setChatOpen] = useState(false);
