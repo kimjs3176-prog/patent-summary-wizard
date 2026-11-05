@@ -4,7 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Menu, Tablet, Type, X } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
-import { isServiceActive, SERVICE_GROUP_LABEL, visibleServices, type ServiceGroup, type ServiceItem } from "@/lib/services";
+import { isServiceActive, SERVICE_GROUP_LABEL, visibleServices, headerBadgeServices, type ServiceGroup, type ServiceItem } from "@/lib/services";
 import { cn } from "@/lib/utils";
 
 interface SiteNavProps {
