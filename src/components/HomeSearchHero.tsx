@@ -49,6 +49,9 @@ function FinderQuickForm() {
 
 export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, description, placeholder }: HomeSearchHeroProps) {
   const [mode, setMode] = useState<Mode>("search");
+  const { settings } = useSiteSettings();
+  // 출원도우미's badge lives here next to the 나만의 특허찾기 tab (owner); it still follows the feature_filing setting.
+  const filing = visibleServices(settings).find((s) => s.key === "filing");
   // While the patent assistant is open the hero becomes a compact chat stage: the intro copy folds away
   // and the conversation is sized to the viewport, so the composer never drops below the fold.
   const [chatOpen, setChatOpen] = useState(false);
