@@ -106,6 +106,16 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
             );
           })}
         </div>
+        {filing && (
+          <Link
+            to={filing.to}
+            title={filing.description}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm font-bold bg-primary text-primary-foreground shadow-[var(--shadow-card)] hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          >
+            <FileSignature className="w-3.5 h-3.5" aria-hidden="true" />
+            {filing.label}
+          </Link>
+        )}
         </div>
 
         {/* The search box classifies each entry itself; questions open the conversation in place. */}
