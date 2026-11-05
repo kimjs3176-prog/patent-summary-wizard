@@ -143,12 +143,35 @@ export function HomeSearchHero({ onSubmit, onKeywordSearch, isLoading, descripti
           </div>
         )}
         {!compact && (
-          // How the one search box treats each kind of entry (see queryIntent), so visitors know they can just ask.
-          <ul aria-label="검색창 사용법" className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs md:text-[13px]">
-            <li className="inline-flex items-center gap-1.5"><Search className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />단어를 넣으면 넓게 찾아요</li>
-            <li className="inline-flex items-center gap-1.5"><ListFilter className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />문장으로 쓰면 꼭 맞는 것만 골라요</li>
-            <li className="inline-flex items-center gap-1.5"><MessagesSquare className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />물어보면 AI가 대화로 답해요</li>
-          </ul>
+          <>
+            {/* How the one search box treats each kind of entry (see queryIntent), so visitors know they can just ask. */}
+            <ul aria-label="검색창 사용법" className="home-hero-muted mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs md:text-[13px]">
+              <li className="inline-flex items-center gap-1.5"><Search className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />단어를 넣으면 넓게 찾아요</li>
+              <li className="inline-flex items-center gap-1.5"><ListFilter className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />문장으로 쓰면 꼭 맞는 것만 골라요</li>
+              <li className="inline-flex items-center gap-1.5"><MessagesSquare className="w-3.5 h-3.5 home-hero-accent" aria-hidden="true" />물어보면 AI가 대화로 답해요</li>
+            </ul>
+            {/* 무상기술이전 sits on its own row at the foot of the hero, below the search box (owner). */}
+            {ctas.map((s) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.key} className="home-hero-split mt-5 pt-4">
+                  <Link
+                    to={s.to}
+                    className="home-hero-cta group inline-flex max-w-full items-center gap-3 rounded-xl px-3 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--home-hero-accent))]"
+                  >
+                    <span className="home-hero-cta-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" aria-hidden="true">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 text-left">
+                      <span className="block text-sm font-bold leading-tight">{s.title}</span>
+                      <span className="home-hero-muted block text-xs leading-snug">{s.description}</span>
+                    </span>
+                    <ArrowRight className="home-hero-accent h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+                  </Link>
+                </div>
+              );
+            })}
+          </>
         )}
       </div>
     </section>
