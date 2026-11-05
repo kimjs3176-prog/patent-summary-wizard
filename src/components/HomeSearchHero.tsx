@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Compass, ListFilter, MessagesSquare, Search, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Compass, FileSignature, ListFilter, MessagesSquare, Search, Sparkles } from "lucide-react";
 import { AiHeroAnimation } from "@/components/AiHeroAnimation";
 import { SmartSearchBox } from "@/components/SmartSearchBox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { visibleServices } from "@/lib/services";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import type { KeywordSearchResult } from "@/components/PatentSummary/types";
 
 interface HomeSearchHeroProps {
