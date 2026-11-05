@@ -3,6 +3,7 @@
 // - 바깥 요청(Supabase·KIPRIS·영상 등)은 막는다: 서버 상태와 상관없이 같은 결과가 나오고, 서버가 안 될 때도 화면이 깨지지 않는지 본다.
 // - 화면마다: 페이지 오류(잡히지 않은 예외)가 없고, 제목(h1)이 보이고, 가로로 넘치지 않는지 (데스크톱·휴대폰 폭).
 // - 출원도우미(public/filing-app): 연습 시나리오로 1~5단계의 모든 쪽을 돌고, 기본 명세서·빈칸 질문·제출용 묶음 파일을 만든다.
+// - 출원도우미 1단계: 사전 질문(대화)에 화면에서 차례로 답하고, 초안 고르기 쪽의 절차를 하나씩 연 뒤 2단계로 넘어간다.
 // - 요약서(데이터시트형): scripts/fixtures 의 저장된 서버 응답으로 띄워, 인쇄와 PDF 다운로드가 정확히 A4 두 쪽인지 본다.
 import { createRequire } from "node:module";
 
@@ -78,6 +79,47 @@ for (const width of WIDTHS) {
     const size = path ? (await import("node:fs")).statSync(path).size : 0;
     if (size < 10000) fail(where, `제출용 묶음 파일이 너무 작음 (${size}B)`);
     console.log(`  제출용 묶음 ${dl.suggestedFilename()} ${size}B`);
+  } catch (e) {
+    fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
+  }
+  for (const e of p.errors) fail(where, `페이지 오류: ${e}`);
+  await p.context().close();
+}
+
+// 출원도우미 1단계: 사전 질문에 화면에서 차례로 답하고(질문은 하나씩 열린다), 초안 고르기 쪽의 절차를 하나씩 연 뒤 2단계로 넘어간다
+{
+  const where = "출원도우미 사전 질문";
+  console.log(where);
+  const p = await page(390);
+  try {
+    await p.goto(`${BASE}/filing-app/index.html#idea`, { waitUntil: "load" });
+    await p.waitForFunction(() => typeof chatCur === "function" && document.querySelector("#f-chat"));
+    const pick = (name, value) => p.locator(`label:has(input[name="${name}"][value="${value}"])`).click();
+    await pick("field", "food");
+    await p.locator("#idea-kw").fill("쌀겨, 발효, 저염");
+    await p.locator("#ideate-run").click();
+    await pick("pick-problem", "1");
+    await p.locator('[data-chat-ok="problem"]').click();
+    await pick("data", "yes");
+    await pick("sold", "no");
+    await pick("disclosed", "no");
+    const left = await p.evaluate(() => chatCur()?.id ?? "");
+    if (left) fail(where, `질문이 남음: ${left}`);
+    const bubbles = await p.locator(".chat-a").count();
+    if (bubbles < 5) fail(where, `답 말풍선이 ${bubbles}개뿐`);
+    await p.locator("#pagebar [data-nav=next]").click();
+    let opened = 0;
+    for (; opened < 6; opened++) {
+      const go = p.locator(".sw-cut:not([hidden]) [data-sw-go]");
+      if (!(await go.count())) break;
+      await go.first().click();
+    }
+    const st = await p.evaluate(() => ({ pg: pagesFor(S.step)[S.sub]?.[0], diff: !!document.querySelector("#diff")?.getClientRects().length, chips: document.querySelectorAll("[data-pick-set]").length }));
+    if (st.pg !== "pick" || !st.diff || !st.chips || opened < 2) fail(where, `초안 고르기 절차가 다 열리지 않음 (${JSON.stringify(st)}, 연 절차 ${opened}개)`);
+    await p.locator("#pagebar [data-nav=next]").click();
+    const step = await p.evaluate(() => S.step);
+    if (step !== "prior") fail(where, `2단계로 넘어가지 않음 (${step})`);
+    console.log(`  답 ${bubbles}개 · 연 절차 ${opened}개 · ${step}`);
   } catch (e) {
     fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
   }

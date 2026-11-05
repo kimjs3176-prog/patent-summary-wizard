@@ -20,7 +20,7 @@ const STEP_ICONS = { idea: Lightbulb, prior: Search, diag: Stethoscope, draft: F
 // 에이프가 첫 상태를 보내기 전에 보여 줄 기본 단계 (에이프 STEPS 와 같은 순서)
 const step0 = { done: false, cur: false, visited: false, todo: [] };
 const DEFAULT_STEPS: FilingState["steps"] = [
-  { ...step0, id: "idea", t: "아이디어", s: "키워드로 초안", cur: true },
+  { ...step0, id: "idea", t: "아이디어", s: "질문에 답하기", cur: true },
   { ...step0, id: "prior", t: "선행기술 조사", s: "유사 특허·공백" },
   { ...step0, id: "diag", t: "진단·보완", s: "특허성·거절 위험" },
   { ...step0, id: "draft", t: "서류 작성", s: "명세서·출원서" },

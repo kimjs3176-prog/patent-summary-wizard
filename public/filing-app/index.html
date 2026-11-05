@@ -189,7 +189,32 @@ body.ais .foot { display: none; }
 .sub { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 22px; }
 .page { display: grid; gap: 18px; min-width: 0; }
 .idea-start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: 22px; align-items: start; }
-.idea-kw { display: grid; gap: 14px; min-width: 0; }
+/* 사전 질문(대화): 질문은 왼쪽 말풍선, 답은 오른쪽 말풍선. 지금 답할 질문만 입력칸을 연다 */
+.chat { display: grid; gap: 16px; min-width: 0; }
+.chat-lead { margin: 0; font-size: .88rem; color: var(--muted); }
+.chat-row { display: grid; gap: 10px; min-width: 0; }
+.chat-q { display: flex; gap: 10px; align-items: flex-start; max-width: 64ch; }
+.chat-n { flex: none; display: grid; place-items: center; width: 28px; height: 28px; margin-top: 4px; border-radius: 50%; background: var(--sunk); color: var(--moss); font: 700 .82rem/1 var(--f-head); }
+.chat-row.open .chat-n, .chat-end .chat-n { background: var(--primary); color: var(--on-primary); }
+.chat-q p { margin: 0; min-width: 0; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; }
+.chat-q b { display: block; font-size: .98rem; }
+.chat-q small { display: block; margin-top: 2px; color: var(--muted); font-size: .84rem; line-height: 1.5; }
+.chat-row.open .chat-q p { border-color: color-mix(in oklab, var(--primary) 45%, var(--line)); }
+.chat-a { justify-self: end; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px 12px; max-width: min(64ch, 88%); padding: 9px 14px; background: var(--moss-soft); border-radius: 14px 4px 14px 14px; font-size: .92rem; line-height: 1.5; }
+.chat-a span { min-width: 0; overflow-wrap: anywhere; }
+.chat-a .linklike { font-size: .84rem; }
+.chat-in { display: grid; gap: 10px; min-width: 0; margin-left: 38px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.chat-in .field { margin: 0; }
+.chat-line { display: flex; gap: 8px; min-width: 0; }
+.chat-line input { flex: 1; min-width: 0; }
+.chat-line .btn { flex: none; }
+@media (max-width: 560px) { .chat-in { margin-left: 0; } .chat-line { flex-wrap: wrap; } .chat-line .btn { width: 100%; } }
+/* 한 쪽 안의 절차: 다음에 열 절차의 버튼만 보인다 */
+.sw-cut { grid-column: 1 / -1; display: flex; padding-top: 4px; }
+.sw-cut .btn { color: var(--moss); border-color: color-mix(in oklab, var(--primary) 50%, var(--line)); }
+.sw-in { animation: sw-in .28s ease-out; }
+@keyframes sw-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sw-in { animation: none; } }
 .branch-card { display: grid; align-content: start; gap: 8px; }
 .branch-label { font-size: .8rem; font-weight: 700; color: var(--muted); }
 .branch-opt { display: grid; gap: 2px; width: 100%; padding: 14px 16px; text-align: left; font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer; transition: border-color .15s, background .15s; }
@@ -202,8 +227,6 @@ body.ais .foot { display: none; }
 .branch-card .muted { font-size: .86rem; }
 .branch-card .btn { justify-self: start; }
 .pick-form { display: grid; gap: 18px; }
-fieldset.facts { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 18px 16px; margin: 0; min-width: 0; }
-fieldset.facts legend { padding: 0 6px; font-weight: 700; font-size: .9rem; }
 .search-box { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 14px 16px; }
 .search-box summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; cursor: pointer; list-style: none; font-size: .88rem; }
 .search-box summary::-webkit-details-marker { display: none; }
@@ -769,8 +792,6 @@ table.cmp td.num { font-variant-numeric: tabular-nums; font-weight: 600; }
 
 /* ---------- 내 AI로 작성 ---------- */
 .ai-slot:empty { display: none; }
-.facts-prog { margin: 0 0 12px; padding: 10px 14px; border-radius: var(--r-sm); background: var(--warn-soft); font-size: .88rem; }
-.facts-prog.done { background: var(--moss-soft); color: var(--moss); }
 .prior-sum { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 12px 0; padding: 14px 16px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); }
 .prior-sum > div { display: grid; gap: 3px; flex: 1 1 320px; } .prior-sum b { font-size: 1rem; }
 .prior-sum.risk-hi { border-color: color-mix(in oklab, var(--bad) 45%, var(--line)); background: var(--bad-soft); }
@@ -1263,7 +1284,7 @@ const fieldName = f => (f === S.idea.field && S.idea.fieldCustom?.trim()) || FIE
 
 // 출원지원 5단계: 아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리
 const STEPS = [
-  { id: "idea", t: "아이디어", s: "키워드로 초안", d: "키워드로 초안을 받아 골라요" },
+  { id: "idea", t: "아이디어", s: "질문에 답하기", d: "질문에 답하고 초안을 골라요" },
   { id: "prior", t: "선행기술 조사", s: "유사 특허·공백", d: "비슷한 특허와 공백 영역을 찾아요" },
   { id: "diag", t: "진단·보완", s: "특허성·거절 위험", d: "특허성과 거절 위험을 점검해요" },
   { id: "draft", t: "서류 작성", s: "명세서·출원서", d: "명세서·출원서를 만들어요" },
@@ -1318,22 +1339,9 @@ const S = {
 // 특허분류(IPC) 앞 네 글자의 쉬운 분야 이름 (분야 좁히기 목록에 함께 보여 준다)
 const IPC_NAME = { A01B: "경운·농기계", A01C: "파종·시비 기계", A01D: "수확 기계", A01G: "원예·재배", A01H: "신품종·식물", A01K: "축산·양봉·수산", A01N: "농약·생장조절제", A01P: "생물 활성(농약 효과)", A23B: "식품 보존", A23C: "유제품", A23F: "커피·차", A23J: "단백질 식품", A23K: "사료", A23L: "식품·식료품", A23N: "농산물 처리 기계", A23P: "식품 성형·가공", A61K: "의약·기능성 소재", A61P: "약효(질병 대상)", B65B: "포장 방법", B65D: "포장 용기", C05B: "인산 비료", C05C: "질소 비료", C05F: "유기 비료", C05G: "비료 혼합물", C12G: "주류", C12J: "식초", C12N: "미생물·효소", C12P: "발효 생산", C12Q: "검출·측정(유전자)", C12R: "미생물 종류 표시", G01N: "분석·측정", G05B: "제어 시스템", G06Q: "경영·서비스 시스템", G06T: "영상 처리", H04L: "통신·네트워크" };
 const FIELD_EASY = { food: "가공식품·음료의 재료 배합이나 만드는 법", ferment: "균주·발효물·미생물 비료·농약", functional: "몸에 좋은 추출물·건강 소재", smartfarm: "센서·제어 장치, 농기계", variety: "새 품종, 품종을 가려내는 DNA 마커", pack: "포장재·저장 방법·유통 기술" };
-const fieldPick = () => $('input[name="field"]:checked')?.value;
 const STRAIN_OPTS = [["yes", "새 균주 · 기탁 완료", "직접 찾은 미생물을 공인기관에 맡기고 번호를 받았어요"], ["no", "새 균주 · 아직 기탁 전", "직접 찾았지만 아직 공인기관에 맡기지 않았어요"], ["known", "시판·공지 균주", "사거나 분양받을 수 있는 미생물이에요"]];
 // 출원 전에 직접 답해야 하는 사실. 답하지 않으면 2단계로 넘어가지 않는다
 const FACTS = [["data", "실험 데이터"], ["sold", "판매 이력"], ["disclosed", "외부 공개 이력"]];
-// 사실 칸을 고를 때마다 ‘아직 고르지 않은 항목’ 안내를 고친다
-function refreshFactsErr() {
-  const pg = $("#facts-prog"); if (pg) pg.outerHTML = factsProgress();
-  const box = $("#facts-err"); if (!box || box.hidden) return;
-  const miss = missingFacts(); S.factsErr = miss.length > 0;
-  box.hidden = !S.factsErr; box.querySelector("span").textContent = miss.join(", ");
-}
-// 초안 고르기 쪽 위: 아래 사실 질문을 몇 개 골랐는지
-function factsProgress() {
-  const total = FACTS.length + (S.idea.field === "ferment" ? 1 : 0) + (S.idea.disclosed === "yes" ? 1 : 0), left = missingFacts().length;
-  return `<p class="facts-prog ${left ? "" : "done"}" id="facts-prog">${left ? `<b>출원 전에 확인할 사실 ${total - left}/${total}</b> 골랐어요 · 남은 것: ${esc(missingFacts().join(", "))} <button type="button" class="linklike" data-scroll="#facts-box">아래 질문으로</button>` : "<b>사실 질문을 모두 골랐어요 ✓</b> 아래 ‘다음’ 버튼을 누르면 비슷한 특허를 찾습니다."}</p>`;
-}
 function missingFacts() {
   const i = S.idea, out = FACTS.filter(([k]) => !i[k]).map(([, l]) => l);
   if (i.disclosed === "yes" && !i.discDate) out.push("처음 공개한 날");
@@ -1423,10 +1431,39 @@ function seg(name, opts, val, { attr = "", label = "" } = {}) {
   return `<div class="seg${opts.some(o => o[2]) ? " seg-desc" : ""}" role="radiogroup"${label ? ` aria-label="${esc(label)}"` : ""}>${opts.map(([v, l, d, b]) => `<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}" ${attr} ${val === v ? "checked" : ""}><span><span class="seg-t">${l}${b ? `<em class="seg-b${b === "추천" ? " rec" : ""}">${b}</em>` : ""}</span>${d ? `<small>${d}</small>` : ""}</span></label>`).join("")}</div>`;
 }
 
+/* ---------- 한 쪽 안의 절차를 하나씩 연다 ---------- */
+// 쪽 템플릿의 cut(이름) 사이 묶음은 앞 묶음 끝의 ‘다음: 이름’(또는 아래 ‘다음’)을 눌러야 보인다. 이미 마친 단계는 모두 펼친다
+S.reveal = {};
+const cut = (label, pg) => `<div class="sw-cut" data-sw="${esc(label)}"${pg == null ? "" : ` data-pg="${pg}"`}><button type="button" class="btn ghost sw-go" data-sw-go>다음: ${esc(label)}</button></div>`;
+const swKey = () => `${S.step}:${pagesFor(S.step)[S.sub]?.[0] ?? S.sub}`;
+const swCuts = () => [...($("#main")?.querySelectorAll(".sw-cut") ?? [])].filter(c => !c.dataset.pg || +c.dataset.pg === S.sub);
+const swOpened = n => S.done.has(S.step) ? n : Math.min(n, S.reveal[swKey()] ?? 0);
+// 아직 열지 않은 다음 절차의 이름 (없으면 "")
+const swNext = () => { const c = swCuts(); return c[swOpened(c.length)]?.dataset.sw ?? ""; };
+function applyReveal() {
+  const cuts = swCuts(), open = swOpened(cuts.length), other = el => !!VIEWS[S.step] && el.dataset.pg != null && +el.dataset.pg !== S.sub;
+  cuts.forEach((c, n) => {
+    c.hidden = n !== open; // 다음에 열 절차의 버튼만 보인다
+    for (let el = c.nextElementSibling; el && !el.classList.contains("sw-cut"); el = el.nextElementSibling) el.hidden = other(el) || n >= open;
+  });
+}
+function swOpen() {
+  const cuts = swCuts(), n = swOpened(cuts.length); if (n >= cuts.length) return;
+  S.reveal[swKey()] = n + 1; applyReveal(); scheduleSave();
+  $("#pagebar").innerHTML = pageBar(); $("#main .page-end")?.remove(); if (EMBED) $("#main .panel")?.insertAdjacentHTML("beforeend", pageEndNav()); sendEmbedState();
+  const first = cuts[n].nextElementSibling;
+  if (first) { first.classList.add("sw-in"); first.scrollIntoView({ block: "nearest", behavior: "smooth" }); first.querySelector("input:not([type=hidden]), textarea, button, a")?.focus({ preventScroll: true }); }
+}
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-sw-go]")) { swOpen(); return; }
+  const ok = e.target.closest("[data-chat-ok]"); if (ok) { const id = ok.dataset.chatOk; id === "field" ? chatFieldDone() : chatDone(id); return; }
+  const ed = e.target.closest("[data-chat-edit]"); if (ed) { S.chat.edit = ed.dataset.chatEdit; rerenderKeepScroll(); requestAnimationFrame(() => $(".chat-row.open")?.scrollIntoView({ block: "nearest", behavior: "smooth" })); }
+});
+
 /* ---------- 출원지원 단계별 쪽 ---------- */
 // 각 단계는 쪽(page) 목록을 갖고, 지금 쪽만 그린다. 출원 서류 작성·유망기술 발굴은 쪽을 한꺼번에 그리고 숨긴다(VIEWS, data-pg)
 const STEP_HEAD = {
-  idea: ["출원할 아이디어를 정해요", "키워드만 적으면 발명의 명칭·해결할 문제·차별성 초안을 제안합니다. 마음에 드는 것을 고르고 다듬으면 다음 단계에서 비슷한 특허를 찾아 드립니다."],
+  idea: ["출원할 아이디어를 정해요", "출원 전에 꼭 확인할 질문에 하나씩 답하면, 답한 낱말로 발명의 명칭·차별성 후보를 문장 틀로 만들어 드립니다. 후보를 고르고 다듬으면 다음 단계에서 비슷한 특허를 찾습니다."],
   prior: ["비슷한 특허와 공백 영역을 살펴요", "KIPRIS에서 비슷한 국내 특허·실용신안을 찾아 내 구성과 하나씩 비교하고, 출원이 적은 공백 영역을 찾습니다."],
   diag: ["특허가 될지 진단하고 보완해요", "공개 이력·차별성·선행기술로 특허 요건을 점검하고, 비슷한 출원이 거절된 이유를 피해 아이디어를 보강합니다."],
   manage: ["제출하고 기한까지 관리해요", "비용 지원과 변리사를 찾고, 출원 후 기한과 해외 출원 일정을 챙깁니다."]
@@ -1439,20 +1476,74 @@ function viewStep(id) {
   </section>`;
 }
 
-// 1. 아이디어: 키워드 → 초안 고르기
+// 1. 아이디어: 사전 질문(대화) → 초안 고르기
+// 질문은 하나씩 연다. 답한 질문은 말풍선으로 남고 ‘고치기’로 다시 연다. 후보 문장은 문장 틀(규칙)로 만들고, AI는 다음 쪽에서 버튼을 누를 때만 쓴다
+const CHAT_Q = [
+  { id: "field", q: "어떤 분야의 기술인가요?", hint: "가장 가까운 것 하나를 고르세요.",
+    ok: () => S.idea.fieldCustom == null || !!S.idea.fieldCustom.trim(),
+    a: () => S.idea.fieldCustom != null ? `${S.idea.fieldCustom} (${fieldName(S.idea.field)} 틀로 작성)` : fieldName(S.idea.field), body: chatField },
+  { id: "kw", q: "무엇을 써서, 어떻게 만들거나 쓰나요?", hint: "원료·방법·효과를 낱말 2~5개로 적어 주세요. 이 낱말로 명칭과 문제 후보를 만들어요.",
+    ok: () => kwList(S.ideate.kw).length > 0, a: () => kwList(S.ideate.kw).join(", "), body: chatKw },
+  { id: "problem", q: "이 기술로 어떤 문제를 해결하나요?", hint: "낱말로 만든 후보에서 고른 뒤, 내 말로 고쳐 쓰면 명세서에 그대로 들어가요.",
+    ok: () => !!S.idea.problem.trim(), a: () => S.idea.problem, body: chatProblem },
+  { id: "data", q: "효과를 보여 줄 실험 데이터가 있나요?", hint: "사실대로 골라 주세요. 답에 따라 명세서의 실시예와 진단이 달라져요.",
+    ok: () => !!S.idea.data, a: () => ({ yes: "있어요", no: "아직 없어요" })[S.idea.data],
+    body: () => seg("data", [["yes", "있음", "직접 시험해서 잰 숫자가 있어요"], ["no", "없음", "아직 재 보지 않았어요"]], S.idea.data, { label: "실험 데이터" }) },
+  { id: "hist", q: "제품을 팔았거나 외부에 공개한 적이 있나요?", hint: "박람회 전시·SNS 게시·논문 발표도 공개예요. 답에 따라 출원 기한이 달라져요.",
+    ok: () => !!S.idea.sold && !!S.idea.disclosed && (S.idea.disclosed !== "yes" || !!S.idea.discDate),
+    a: () => `판매 ${S.idea.sold === "yes" ? "있음" : "없음"} · 외부 공개 ${S.idea.disclosed === "yes" ? `있음 (${S.idea.discDate}${S.idea.discWhere ? `, ${S.idea.discWhere}` : ""})` : "없음"}`, body: chatHist },
+  { id: "strain", when: () => S.idea.field === "ferment", q: "발명에 쓰는 균주는 어떤 균주인가요?", hint: "직접 찾은 균주는 출원 전에 공인기관에 맡겨야(기탁) 해요. 출원한 뒤에는 보완할 수 없어요.",
+    ok: () => !!S.strain, a: () => STRAIN_OPTS.find(o => o[0] === S.strain)?.[1] ?? "", body: () => seg("strain", STRAIN_OPTS, S.strain, { label: "균주 종류" }) }
+];
+S.chat = { done: [], edit: "" };
+const chatQs = () => CHAT_Q.filter(q => !q.when || q.when());
+// 지금 답할 질문: 아직 답하지 않았거나, 답했지만 내용이 비어 버린 첫 질문
+const chatCur = () => chatQs().find(q => !S.chat.done.includes(q.id) || !q.ok());
+const chatAll = () => CHAT_Q.map(q => q.id);
+function chatField() {
+  const i = S.idea, custom = i.fieldCustom != null;
+  return `${seg("field", [...Object.entries(FIELDS).map(([k, f]) => [k, f.name, FIELD_EASY[k]]), ["__custom", "직접 입력", "수산·축산처럼 목록에 없을 때"]], custom ? "__custom" : S.chat.done.includes("field") ? i.field : "", { label: "기술 분야" })}
+    ${custom ? `<div class="chat-line"><input type="text" id="field-custom" value="${esc(i.fieldCustom)}" placeholder="예: 수산 양식, 축산 사료, 곤충 단백" aria-label="기술 분야 직접 입력"><button type="button" class="btn sm" data-chat-ok="field">답하기</button></div>
+    <span class="hint">후보 문장은 가장 가까운 분야(${esc(fieldName(i.field))})의 틀로 만듭니다.</span>` : ""}`;
+}
+function chatKw() {
+  const I = S.ideate, B = IDEA_BANK[S.idea.field] || IDEA_BANK.food, have = kwList(I.kw);
+  return `<div class="chat-line"><input type="text" id="idea-kw" value="${esc(I.kw)}" placeholder="예: 쌀겨, 발효, 생장 촉진" aria-label="핵심 낱말 (쉼표로 구분)"><button type="button" class="btn sm" id="ideate-run">이 낱말로 답하기</button></div>
+    ${S.idea.fieldCustom != null ? "" : `<div class="rec-list"><span class="label" style="width:100%">자주 쓰는 낱말 · 눌러서 넣기</span>${B.sugg.filter(k => !have.includes(k)).map(k => `<button type="button" class="chip" data-add-kw="${esc(k)}">+ ${esc(k)}</button>`).join("")}</div>`}`;
+}
+function chatProblem() {
+  const D = S.ideate.drafts;
+  return `${D ? pickGroup("problem", "해결할 문제 후보", D.problems) : ""}
+    <div class="field"><label for="problem">내 말로 고쳐 쓰기</label><textarea id="problem" rows="3">${esc(S.idea.problem)}</textarea></div>
+    <div class="actions"><button type="button" class="btn sm" data-chat-ok="problem">이 문제로 답하기</button></div>`;
+}
+function chatHist() {
+  const i = S.idea, yes = i.disclosed === "yes";
+  return `<div class="grid2">
+      <div class="field q"><span class="label">판매 (시제품 판매·납품 포함)</span>${seg("sold", [["yes", "있음", "팔았거나 납품한 적이 있어요"], ["no", "없음", "아직 팔거나 납품한 적이 없어요"]], i.sold, { label: "판매 이력" })}</div>
+      <div class="field q"><span class="label">외부 공개 (전시·게시·발표)</span>${seg("disclosed", [["yes", "있음", "남이 본 적이 있어요"], ["no", "없음", "가족·동료 말고는 보여 준 적 없어요"]], i.disclosed, { label: "외부 공개 이력" })}</div>
+      ${yes ? `<div class="field"><label for="discDate">처음 공개한 날</label><input type="date" id="discDate" value="${esc(i.discDate)}" max="${iso(today)}"></div>
+      <div class="field"><label for="discWhere">공개한 곳 <span class="muted h-meta">선택</span></label><input type="text" id="discWhere" value="${esc(i.discWhere)}" placeholder="예: ○○ 농업기술박람회 부스 전시"></div>` : ""}
+    </div>
+    ${yes ? `<div class="actions"><button type="button" class="btn sm" data-chat-ok="hist">답하기</button></div>` : ""}`;
+}
 function ideaStartPage() {
-  const i = S.idea, I = S.ideate, B = IDEA_BANK[i.field] || IDEA_BANK.food, have = kwList(I.kw);
+  const qs = chatQs(), cur = chatCur(), edit = qs.find(q => q.id === S.chat.edit), open = edit || cur;
+  const last = Math.max(cur ? qs.indexOf(cur) : qs.length - 1, edit ? qs.indexOf(edit) : -1);
+  const rows = qs.slice(0, last + 1).map((q, n) => {
+    const isOpen = q === open, answered = S.chat.done.includes(q.id) && q.ok();
+    return `<div class="chat-row${isOpen ? " open" : ""}" data-chat="${q.id}">
+      <div class="chat-q"><span class="chat-n" aria-hidden="true">${n + 1}</span><p><b>${q.q}</b><small>${q.hint}</small></p></div>
+      ${isOpen ? `<div class="chat-in">${q.body()}</div>` : answered ? `<div class="chat-a"><span>${esc(q.a())}</span><button type="button" class="linklike" data-chat-edit="${q.id}">고치기</button></div>` : ""}
+    </div>`;
+  }).join("");
   return `<div class="idea-start">
-    <div class="idea-kw">
-      <div class="grid2">
-        <div class="field full"><span class="label">기술 분야 <span class="muted h-meta">가장 가까운 것 하나</span></span>${seg("field", [...Object.entries(FIELDS).map(([k, f]) => [k, f.name, FIELD_EASY[k]]), ["__custom", "직접 입력", "수산·축산처럼 목록에 없을 때"]], i.fieldCustom != null ? "__custom" : i.field, { label: "기술 분야" })}
-          ${i.fieldCustom != null ? `<input type="text" id="field-custom" value="${esc(i.fieldCustom)}" placeholder="예: 수산 양식, 축산 사료, 곤충 단백" aria-label="기술 분야 직접 입력" style="margin-top:6px"><span class="hint">초안 틀은 가장 가까운 분야(${esc(FIELDS[i.field].name)})를 바탕으로 만듭니다.</span>` : ""}</div>
-        <div class="field full"><label for="idea-kw">핵심 키워드 (쉼표로 구분)</label><input type="text" id="idea-kw" value="${esc(I.kw)}" placeholder="예: 쌀겨, 발효, 생장 촉진"><span class="hint">원료·방법·효과 순서로 2~5개 적으면 좋아요. Enter로도 제안받을 수 있어요.</span></div>
-      </div>
-      <div class="rec-list" ${i.fieldCustom != null ? "hidden" : ""}><span class="label" style="width:100%">추천 키워드 · 눌러서 추가</span>${B.sugg.filter(k => !have.includes(k)).map(k => `<button type="button" class="chip" data-add-kw="${esc(k)}">+ ${esc(k)}</button>`).join("")}</div>
-      <div class="actions"><button class="btn" id="ideate-run">초안 제안 받기</button></div>
-${aiMode() ? "" : `      <p class="hint">지금은 AI를 쓸 수 없어 문장 틀로 만든 후보를 보여 드려요.</p>
-`}      ${SAVE.restored ? `<p class="hint">지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔어요.</p>` : ""}${EMBED ? "" : `<p class="hint">입력한 내용은 이 기기의 브라우저에 자동 저장돼요. 내보내기·기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있어요.</p>`}
+    <div class="chat" id="f-chat" aria-live="polite">
+      ${practiceNote()}
+      <p class="chat-lead">답한 질문 <b>${qs.filter(q => S.chat.done.includes(q.id) && q.ok()).length} / ${qs.length}</b></p>
+      ${rows}
+      ${cur ? "" : `<div class="chat-q chat-end"><span class="chat-n" aria-hidden="true">✓</span><p><b>답을 모두 받았어요.</b><small>다음 쪽에서 낱말로 만든 명칭·차별성 후보를 고르고 다듬어요.</small></p></div>`}
+      ${SAVE.restored ? `<p class="hint">지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔어요.</p>` : ""}${EMBED ? "" : `<p class="hint">입력한 내용은 이 기기의 브라우저에 자동 저장돼요. 내보내기·기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있어요.</p>`}
     </div>
     <aside class="branch-card" aria-label="다른 방법으로 시작">
       <span class="branch-label">다른 방법으로 시작</span>
@@ -1462,34 +1553,28 @@ ${aiMode() ? "" : `      <p class="hint">지금은 AI를 쓸 수 없어 문장 �
     </aside>
   </div>`;
 }
+// 질문 하나에 답했다: 다음 질문을 열고 그 자리로 데려간다
+function chatDone(id) {
+  const q = CHAT_Q.find(x => x.id === id);
+  if (q && !q.ok()) { toast(id === "hist" ? "처음 공개한 날을 넣어 주세요" : "답을 넣어 주세요"); return; }
+  if (!S.chat.done.includes(id)) S.chat.done = [...S.chat.done, id];
+  S.chat.edit = ""; invalidateSpec(); renderSide(); rerenderKeepScroll();
+  requestAnimationFrame(() => { const row = $(".chat-row.open") || $(".chat-end"); row?.scrollIntoView({ block: "nearest", behavior: "smooth" }); row?.querySelector("input:not([type=radio]), textarea")?.focus({ preventScroll: true }); });
+}
 function ideaPickPage() {
   const i = S.idea, I = S.ideate, D = I.drafts;
   return `<form id="f-diag" class="pick-form">
       ${practiceNote()}
-      ${aiMode() && I.src === "rule" ? "" : `<p class="example-note">${D ? `키워드 ‘${esc(I.kw)}’${J(I.kw, "으로").slice(I.kw.length)} 만든 ${IDEATE_SRC[I.src] || "초안"}입니다. 후보를 고르면 아래 다듬기 칸이 바뀝니다.` : "예시 아이디어가 채워져 있습니다. 앞쪽에서 키워드로 초안을 받거나 아래 칸을 직접 고치세요."}</p>`}
-      ${factsProgress()}
+      ${aiMode() && I.src === "rule" ? "" : `<p class="example-note">${D ? `낱말 ‘${esc(I.kw)}’${J(I.kw, "으로").slice(I.kw.length)} 만든 ${IDEATE_SRC[I.src] || "초안"}입니다. 후보를 고르면 아래 다듬기 칸이 바뀝니다.` : "1쪽 질문에서 낱말에 답하면 후보가 생겨요. 아래 칸을 직접 고쳐도 됩니다."}</p>`}
       ${D ? aiSlot("ideate") : ""}
       <div class="grid2">
         ${D ? pickGroup("title", "발명의 명칭", D.titles) : ""}
         <div class="field full"><label for="title">발명의 명칭 · 다듬기</label><input type="text" id="title" value="${esc(i.title)}"><span class="hint">명칭 끝말로 서류 형식이 정해져요: ‘~방법’이면 방법, ‘~장치·용기’면 장치, 그 밖에는 물건(조성물).</span></div>
-        ${D ? pickGroup("problem", "해결할 문제", D.problems) : ""}
-        <div class="field full"><label for="problem">해결할 문제 · 다듬기</label><textarea id="problem">${esc(i.problem)}</textarea></div>
+        ${cut("기존과 다른 점 고르기")}
         ${D ? pickGroup("diff", "기존과 다른 점 (차별성)", D.diffs) : ""}
         <div class="field full"><label for="diff">기존과 다른 점 · 다듬기</label><textarea id="diff">${esc(i.diff)}</textarea><span class="hint">온도·시간·배합비 같은 조건과 측정한 효과를 숫자로 고치면 진단과 명세서가 정확해집니다.</span></div>
-        ${D ? chipGroup("parts", partsKey() === "steps" ? "방법 단계" : "핵심 구성", D[partsKey()]) + chipGroup("effects", "기대 효과", D.effects) : ""}
+        ${D ? cut(`${partsKey() === "steps" ? "방법 단계" : "핵심 구성"}·기대 효과 고르기`) + chipGroup("parts", partsKey() === "steps" ? "방법 단계" : "핵심 구성", D[partsKey()]) + chipGroup("effects", "기대 효과", D.effects) : ""}
       </div>
-      <fieldset class="facts" id="facts-box"><legend>출원 전에 확인할 사실 <span class="muted h-meta">모두 직접 골라 주세요</span></legend>
-        <p class="hint" style="margin-top:0">사실대로 골라 주세요. 답에 따라 서류에 들어가는 내용이 달라져요.</p>
-        <div class="grid2">
-          <div class="field q"><span class="label">효과를 보여줄 실험 데이터가 있나요?</span>${seg("data", [["yes", "있음", "직접 시험해서 잰 숫자가 있어요"], ["no", "없음", "아직 재 보지 않았어요"]], i.data, { label: "실험 데이터" })}</div>
-          <div class="field q"><span class="label">제품을 판매한 적이 있나요?</span>${seg("sold", [["yes", "예", "시제품을 팔았거나 납품한 적도 포함해요"], ["no", "아니요", "아직 팔거나 납품한 적이 없어요"]], i.sold, { label: "판매 이력" })}</div>
-          <div class="field q"><span class="label">박람회·SNS·논문 등으로 외부에 공개했나요?</span>${seg("disclosed", [["yes", "예", "전시·게시·발표로 남이 본 적이 있어요"], ["no", "아니요", "가족·동료 말고는 보여 준 적 없어요"]], i.disclosed, { label: "외부 공개 이력" })}</div>
-          ${i.field === "ferment" ? `<div class="field q full"><span class="label">발명에 쓰는 균주는 어떤 균주인가요?</span>${seg("strain", STRAIN_OPTS, S.strain, { label: "균주 종류" })}<span class="hint">직접 찾은 균주는 출원 전에 공인기관에 맡겨야(기탁) 해요. 출원한 뒤에는 보완할 수 없어요.</span></div>` : ""}
-          <div class="field" ${i.disclosed === "yes" ? "" : "hidden"} id="disc-wrap-1"><label for="discDate">처음 공개한 날</label><input type="date" id="discDate" value="${esc(i.discDate)}" max="${iso(today)}"></div>
-          <div class="field" ${i.disclosed === "yes" ? "" : "hidden"} id="disc-wrap-2"><label for="discWhere">공개한 곳</label><input type="text" id="discWhere" value="${esc(i.discWhere)}" placeholder="예: ○○ 농업기술박람회 부스 전시"></div>
-        </div>
-        <div class="alert warn" id="facts-err" ${S.factsErr ? "" : "hidden"} role="alert"><strong>아직 고르지 않은 항목이 있습니다</strong><span>${esc(missingFacts().join(", "))}</span></div>
-      </fieldset>
     </form>`;
 }
 
@@ -1506,7 +1591,6 @@ function priorSummary(L) {
 function priorResultsPage() {
   if (S.kwField !== S.idea.field) { S.kw = KW[S.idea.field]; S.kwField = S.idea.field; S.ipc = ""; }
   const L = liveData(), shares = L?.shares ?? [], freq = L?.frequent ?? [];
-  const moved = S.idea.fieldMoved ? `<div class="alert warn"><strong>분야와 아이디어가 맞지 않을 수 있습니다</strong><span>기술 분야를 ${esc(J(fieldName(S.idea.field), "으로"))} 바꿨지만 아이디어(${esc(S.idea.title)})는 그대로라, 검색 키워드가 새 분야 기본값으로 바뀌었습니다. <button type="button" class="linklike" data-to="idea:start">1단계에서 초안 다시 받기</button> 또는 아래 ‘검색 조건 바꾸기’에서 키워드를 고치세요.</span></div>` : "";
   const search = `<div class="grid2">
       <div class="field"><label for="kw">검색 키워드</label><textarea id="kw" rows="3">${esc(S.kw)}</textarea>
         <span class="hint">한 줄에 하나씩 적어요. 같은 뜻의 말은 쉼표로 이어 쓰면 함께 찾아요.</span></div>
@@ -1515,7 +1599,7 @@ function priorResultsPage() {
         <span class="hint">특허분류(IPC)로 범위를 좁혀요. 잘 모르면 ‘제한 없음’ 그대로 두세요.</span>
         <div class="actions" style="margin-top:8px"><button class="btn" id="explore" ${S.loading ? "disabled" : ""}>${S.loading ? "탐색 중…" : L ? "다시 탐색" : "KIPRIS에서 탐색"}</button></div></div>
     </div>`;
-  return `${moved}${S.api === "mock" ? `<p class="example-note">서버가 모의 모드로 실행 중입니다. 결과는 [모의] 표시가 붙은 가짜 데이터이며, KIPRIS_API_KEY 를 설정하면 실제 데이터로 바뀝니다.</p>` : ""}
+  return `${S.api === "mock" ? `<p class="example-note">서버가 모의 모드로 실행 중입니다. 결과는 [모의] 표시가 붙은 가짜 데이터이며, KIPRIS_API_KEY 를 설정하면 실제 데이터로 바뀝니다.</p>` : ""}
     ${L && !S.loading ? `<details class="search-box"><summary><b>검색 조건</b><span class="mono">${esc(L.query)}</span><span class="sb-edit">바꾸기</span></summary>${search}</details>` : `<div class="search-box open">${search}</div>`}
     ${S.err ? `<div class="alert"><strong>탐색하지 못했습니다</strong><span>${esc(S.err)}</span></div>` : ""}
     ${S.loading || !L ? `<div class="field" aria-live="polite"><span class="label">${S.loading ? "탐색 중입니다. 공백 맵은 칸마다 건수를 세므로 30초 정도 걸릴 수 있어요." : "아이디어 키워드로 이렇게 찾아 드려요"}</span>
@@ -1574,6 +1658,7 @@ function priorSamplePage() {
       <tbody>${list.map(p => `<tr><td class="mono">${p.no}</td><td>${p.t}</td>
         <td><div class="sim"><span class="mono">${p.sim}%</span><div class="bar"><i class="${p.sim >= 70 ? "hi" : ""}" style="width:${p.sim}%"></i></div></div></td>
         <td>${p.diff}</td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${cut("차별화 포인트 보기")}
     <div class="alert warn"><strong>차별화 포인트 제안</strong><span>유사도가 가장 높은 문헌과 겹치지 않도록 청구항에 <b>구체적인 조건</b>(공정 온도·시간, 배합비, 구조·치수)과 <b>측정된 효과</b>를 넣으세요. 효과를 비교한 데이터가 진보성 주장의 근거가 됩니다.</span></div>
     <div class="actions"><a class="btn ghost" href="https://www.kipris.or.kr" target="_blank" rel="noopener">KIPRIS에서 직접 검색</a></div>`;
 }
@@ -1609,6 +1694,7 @@ function gapPage() {
           style="background:color-mix(in oklab, var(--moss) ${pct}%, var(--surface));color:${dark ? "var(--surface)" : "var(--fg)"}">${v.toLocaleString()}${gap ? "<small>공백</small>" : ""}</button></td>`; }).join("")}</tr>`).join("")}</tbody>
     </table></div>
     ${L ? `<p class="hint">출원 건수 차이가 커서 색 농도는 로그 척도로 표시합니다.</p>` : ""}
+    ${cut("공백 기회 보기")}
     ${gapExtras(g, threshold)}
     <p class="gap-picked">${S.gapSel?.size ? `<b>고른 공백 칸 ${S.gapSel.size}개</b> · 진단·보완의 보완 제안에 후보로 들어갑니다. <button type="button" class="linklike" id="gap-clear">모두 지우기</button>` : "고른 공백 칸이 없습니다. 위 기회 순위나 표의 칸을 눌러 고르면 보완 제안에 후보로 들어갑니다(고르지 않아도 됩니다)."}</p>`;
 }
@@ -1627,8 +1713,8 @@ function requirementCards() {
 }
 const RISK_WORD = { bad: "위험 높음", warn: "확인 필요", ok: "양호", na: "해당 없음" };
 // 요건마다 고칠 자리 (쪽:쪽 이름:입력칸). data-fact-go 로 그 칸까지 데려간다
-const REQ_FIX = { "신규성": "idea:pick:input[name=disclosed]", "진보성": "idea:pick:#diff", "기재불비": "draft:0:#parts", "실험 데이터": "idea:pick:input[name=data]",
-  "실시가능요건": "idea:pick:input[name=strain]", "선행기술": "prior:compare:main", "발명 성립성": "draft:0:#parts" };
+const REQ_FIX = { "신규성": "idea:start:input[name=disclosed]", "진보성": "idea:pick:#diff", "기재불비": "draft:0:#parts", "실험 데이터": "idea:start:input[name=data]",
+  "실시가능요건": "idea:start:input[name=strain]", "선행기술": "prior:compare:main", "발명 성립성": "draft:0:#parts" };
 function reqBoard(cards) {
   const order = { bad: 0, warn: 1, na: 2, ok: 3 }, sorted = [...cards].sort((a, b) => order[a.c] - order[b.c]);
   const n = c => cards.filter(x => x.c === c).length, todo = sorted.filter(x => x.c === "bad" || x.c === "warn"), fine = sorted.filter(x => x.c === "ok" || x.c === "na");
@@ -1649,9 +1735,11 @@ function diagResultPage() {
       <div class="sub-head"><h3>특허 요건과 거절 위험<span class="muted h-meta">${esc(fieldName(i.field))}</span></h3><span class="g-tag">청구 유형 ${KIND_NAME[k.main]}${k.all.length > 1 ? ` + ${k.all.slice(1).map(x => KIND_NAME[x]).join(", ")}` : ""}</span></div>
       ${reqBoard(cards)}
       ${r.alerts.map(a => `<div class="alert ${a.c === "warn" ? "warn" : ""}"><strong>${a.h}</strong><span>${a.b}</span></div>`).join("")}
+      ${cut("공개 이력과 거절 위험 보기")}
       ${discTimeline()}
       ${aiSlot("reject")}${rejectAiHtml()}
       ${rejectionHtml()}
+      ${cut("추천 보호 수단 보기")}
       <div class="recommend"><span class="label">추천 보호 수단</span><div class="rec-list">${r.rec.map(([n, p]) => `<span class="chip ${p ? "primary" : ""}">${n}</span>`).join("")}</div>
         ${i.field === "variety" ? "" : `<p class="hint">제품 이름·로고는 특허가 아니라 상표로 따로 출원합니다. 특허 진단과 선행기술 비교에는 상표를 넣지 않습니다.</p>`}</div>
     </div>`;
@@ -1716,6 +1804,7 @@ function suggestPage() {
         <ul>${parts.map(p => `<li>${esc(p)}</li>`).join("")}${R.parts.map(p => `<li class="added">+ ${esc(p)} <span class="muted">(후보)</span></li>`).join("")}</ul>
         ${R.sel.length ? `<p class="muted" style="font-size:.84rem">명칭은 바꾸지 않습니다. 후보는 실험으로 효과를 확인하기 전까지 청구항에 넣지 않고 명세서 검토 메모에 남깁니다.</p>` : `<p class="muted" style="font-size:.84rem">선행기술 조사의 공백 맵에서 칸을 골라 확장 방향을 추가하세요. <button type="button" class="linklike" data-to="prior:gap">공백 맵으로</button></p>`}</div>
     </div>
+    ${cut("권장 청구항 구조 보기")}
     <span class="label">권장 청구항 구조 · ${KIND_NAME[k.main]} 발명</span>
     <ul class="claimtree">
       <li><span class="lv">독립항</span><span>${esc(indep)}</span></li>
@@ -1725,6 +1814,7 @@ function suggestPage() {
         : `<li><span class="lv">독립항</span><span>${k.main === "device" ? "이 장치를 쓰는 제어·사용 방법" : "이 조성물의 제조방법"} — 단계와 조건으로 별도 독립항</span></li>`}
       ${R.sel.length && k.main !== "device" ? `<li><span class="lv">용도</span><span>${esc(R.sel.map(s => s.use).join(", "))} — 효능 데이터가 있으면 ‘…용 ${k.main === "method" ? "제품" : "조성물"}’처럼 물건 청구항으로 (사람을 치료하는 방법은 특허 대상이 아님)</span></li>` : ""}
     </ul>
+    ${cut("출원 전 추가할 실험 보기")}
     <span class="label">출원 전 추가하면 좋은 실험</span>
     <ul class="checks">${R.exps.map(e => `<li><span class="st warn">추가</span><span>${esc(e)}</span></li>`).join("")}</ul>
     <div class="actions"><button class="btn" id="apply-refine" ${R.sel.length ? "" : "disabled"}>보완 후보를 명세서 검토 메모에 넣기</button></div>
@@ -1743,6 +1833,7 @@ function supportPage() {
       <div class="field"><label for="region">지역</label><select id="region">${["서울", "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"].map(r => `<option ${S.region === r ? "selected" : ""}>${r}</option>`).join("")}</select></div>
     </div>
     <div class="field"><span class="label">지금 신청할 수 있는 특허·지식재산 공고 <span class="kr-badge">기업마당</span></span>${n}</div>` : "")(noticesHtml("ip", () => S.mode === "apply" && S.step === "manage"))}
+    ${cut("변리사 찾기")}
     ${agentsHtml || `<div class="field"><span class="label">${esc(fieldName(S.idea.field))} 분야 변리사 (예시)</span>
       <div class="cards">${(atts.length ? atts : ATTORNEYS.slice(0, 2)).map(a => `<article class="card"><div class="attorney"><span class="avatar" aria-hidden="true">${a.i}</span><div><h3>${a.n}</h3><span class="org">${a.tag}</span></div></div>
         <button class="btn sm ghost" data-consult="${a.n}">진단 리포트 보내고 상담 요청</button></article>`).join("")}</div></div>`}`;
@@ -1798,6 +1889,7 @@ function deadlinePage() {
   return `${fileDateField()}
     <div class="grid2"><div class="field"><label class="ai-key-keep"><input type="checkbox" id="filed-done" ${f.done ? "checked" : ""}><span>이미 출원했어요 <span class="muted h-meta">출원일을 실제 날짜로 고치고 출원번호를 적어 두세요</span></span></label>
       ${f.done ? `<input type="text" id="filed-no" value="${esc(f.no || "")}" placeholder="출원번호 예: 10-2026-0123456" aria-label="출원번호" style="margin-top:6px">` : ""}</div></div>
+    ${cut("다음 기한과 일정 보기")}
     ${next ? `<div class="next-due ${left <= 30 ? "urgent" : ""}"><span class="eyebrow">다음 기한</span><b>${left === 0 ? "D-day" : `D-${left}`} · ${next.t}</b><span class="muted">${fmt(next.d)} · ${next.s}</span>
       <div class="actions"><button class="btn sm" data-ics>달력에 넣기 (.ics)</button><button class="btn ghost sm" id="due-copy">기한 목록 복사</button></div></div>` : ""}
     ${warns.map(w => `<div class="alert"><strong>${w.h}</strong><span>${w.b}</span></div>`).join("")}
@@ -1806,6 +1898,7 @@ function deadlinePage() {
     <ol class="tl">${items.map((x, i) => { const left = daysBetween(today, x.d), past = left < 0, urgent = !past && left <= 90;
       return `<li><span class="date">${fmt(x.d)}</span><span class="dot ${past ? "past" : urgent ? "urgent" : ""}" aria-hidden="true"></span>
         <div class="what"><span class="dday ${urgent ? "urgent" : ""}">${past ? `${-left}일 지남` : left === 0 ? "D-day" : `D-${left}`}</span><h3><b class="num">${i + 1}</b> ${x.t}</h3><p class="muted" style="font-size:.86rem">${x.s}</p></div></li>`; }).join("")}</ol>
+    ${cut("등록 이후 할 일 보기")}
     <div class="alert warn"><strong>등록 이후</strong><span>특허가 등록되면 기술이전·사업화 지원으로 연결해 드립니다. 등록료는 해마다 납부해야 권리가 유지됩니다.</span></div>
     <div class="actions"><button class="btn" data-ics>기한을 달력에 넣기 (.ics)</button></div>
     <p class="hint">달력 파일을 열면 휴대폰·PC 달력(구글·아이폰·아웃룩)에 기한이 들어가고, 기한 30일 전과 7일 전에 알림이 옵니다. 출원일이 바뀌면 다시 받아 넣으세요.</p>`;
@@ -2214,7 +2307,7 @@ const LQ = { "신규성": "세상에 처음 나온 기술인가요?", "선행기
 // 단계 안의 쪽. 출원 서류 작성·유망기술 발굴은 쪽을 한꺼번에 그리고 숨긴다(SUBS, data-pg). 나머지는 pagesFor 의 쪽 이름으로 그린다
 const SUBS = { discover: ["관심 분야", "유망기술 지도", "AI 아이디어"], draft: ["내용 확인", "명세서", "출원서", "첨부서류", "최종 점검"] };
 function pagesFor(id) {
-  if (id === "idea") return [["start", "키워드"], ["pick", "초안 고르기"]];
+  if (id === "idea") return [["start", "사전 질문"], ["pick", "초안 고르기"]];
   if (id === "prior") return S.api === "off" ? [["sample", "유사 특허"], ["gap", "공백 맵"]] : [["results", "유사 특허"], ["compare", "구성 비교"], ["gap", "공백 맵"]];
   if (id === "diag") return [["result", "특허 요건·거절 위험"], ["suggest", "보완 제안"]];
   if (id === "manage") return [["support", "지원사업·변리사"], ["deadline", "기한 관리"], ["overseas", "해외 출원"]];
@@ -2246,7 +2339,7 @@ function subNav() {
 function navLabels() {
   const br = BRANCH[S.step], i = stepIdx(), subs = subsFor(S.step), n = Math.max(1, subs.length);
   return { prev: S.sub > 0 ? subs[S.sub - 1] : br ? `${J(STEPS[i].t, "으로")} 돌아가기` : STEPS[i - 1] ? `${i}단계 ${STEPS[i - 1].t}` : "",
-    next: S.sub < n - 1 ? subs[S.sub + 1] : br ? "" : STEPS[i + 1] ? `${i + 2}단계 ${STEPS[i + 1].t}` : "" };
+    next: swNext() || (S.sub < n - 1 ? subs[S.sub + 1] : br ? "" : STEPS[i + 1] ? `${i + 2}단계 ${STEPS[i + 1].t}` : "") };
 }
 function pageBar() {
   const br = BRANCH[S.step], i = stepIdx(), subs = subsFor(S.step), { prev: prevLabel, next: nextLabel } = navLabels();
@@ -2261,7 +2354,7 @@ function pageBar() {
 // AIS 안(임베드)에서는 아래 쪽 이동 막대가 없으므로, 쪽 끝에 이전·다음과 이 단계의 남은 일을 둔다
 function pageEndNav() {
   const { next } = navLabels();
-  if (!next) return "";
+  if (!next || swNext()) return ""; // 열지 않은 절차가 있으면 그 자리의 ‘다음’ 버튼이 같은 일을 한다
   return `<nav class="page-end" aria-label="다음 쪽으로"><button type="button" class="btn" data-nav="next">다음: ${esc(next)} →</button></nav>`;
 }
 function toPage(step, sub = 0, dir = 1) {
@@ -2276,8 +2369,12 @@ function toPage(step, sub = 0, dir = 1) {
 function nextPage() {
   const subs = subsFor(S.step), i = stepIdx();
   if (aiGuard()) return;
-  // 초안 고르기 쪽은 ‘확인할 사실’을 다 골라야 넘어간다 (제출 처리와 같은 점검)
-  if (S.step === "idea" && pagesFor("idea")[S.sub]?.[0] === "pick" && $("#f-diag")) return $("#f-diag").requestSubmit();
+  // 이 쪽에 아직 열지 않은 절차가 있으면 그것부터 연다
+  if (swNext()) return swOpen();
+  // 사전 질문은 다 답해야 넘어가고, 초안 고르기 쪽은 ‘확인할 사실’을 다시 점검한다 (제출 처리와 같은 점검)
+  const ik = S.step === "idea" && pagesFor("idea")[S.sub]?.[0];
+  if (ik === "start" && chatCur()) { const q = chatCur(); toast(`‘${q.q}’에 먼저 답해 주세요`); S.chat.edit = ""; rerenderKeepScroll(); requestAnimationFrame(() => $(".chat-row.open")?.scrollIntoView({ block: "center", behavior: "smooth" })); return; }
+  if (ik === "pick" && $("#f-diag")) return $("#f-diag").requestSubmit();
   if (S.sub < subs.length - 1) return toPage(S.step, S.sub + 1, 1);
   if (BRANCH[S.step]) return;
   if (STEPS[i + 1]) toPage(STEPS[i + 1].id, 0, 1);
@@ -2825,6 +2922,7 @@ function startBizTech(field, kw) {
   if (!resetWork(busy && `출원지원에 작성 중인 ‘${S.idea.title}’의 입력과 결과를 지우고 이 관심 기술로 새로 시작합니다. 계속할까요?`)) return;
   Object.assign(B, keep, { type: null, newTech: null }); // 이 화면에서 고른 시장·목표는 그대로
   Object.assign(S.idea, { fieldCustom: null }); ideateFrom(field, kw);
+  S.chat = { done: ["field", "kw", "problem"], edit: "" };
   S.step = "idea"; S.sub = 1; // 출원지원으로 넘어가면 명칭 후보 고르기부터
   S.mode = "apply"; location.hash = "idea"; saveWork(); render();
   toast("관심 기술로 새로 시작했습니다. 1단계에서 명칭 후보를 고르고 다듬을 수 있어요");
@@ -4145,17 +4243,26 @@ AI_TASK_UI.ideate = {
 };
 // 지금 고른 구성·단계 칩으로 만든 핵심 구성 (사용자가 고쳤는지 볼 때)
 const ideaPartsText = () => { const I = S.ideate, D = I.drafts, key = partsKey(); return D ? [...I.parts].sort((a, b) => a - b).map(n => D[key]?.[n]).filter(Boolean).join("\n") : S.parts; };
+// 사전 질문의 낱말에 답했다: 문장 틀로 후보를 만들고 ‘해결할 문제’ 질문을 연다
 function runIdeate() {
-  const kw = $("#idea-kw")?.value ?? S.ideate.kw, sel = fieldPick(), f = !sel ? S.idea.field : sel === "__custom" ? guessField(S.idea.fieldCustom || "") : sel;
-  if (ideateFrom(f, kw)) toPage("idea", 1, 1);
+  const kw = $("#idea-kw")?.value ?? S.ideate.kw;
+  if (!ideateFrom(S.idea.field, kw)) return;
+  S.chat.done = S.chat.done.filter(x => x !== "problem"); chatDone("kw");
+}
+// 분야에 답했다(바꿨다): 이미 낱말로 후보를 만들었으면 새 분야 틀로 다시 만들고 문제를 다시 묻는다
+function chatFieldDone() {
+  if (S.ideate.drafts && S.ideate.f && S.ideate.f !== S.idea.field && kwList(S.ideate.kw).length) {
+    ideateFrom(S.idea.field, S.ideate.kw); S.chat.done = S.chat.done.filter(x => x !== "problem"); toast("분야를 바꿔 명칭·문제 후보를 다시 만들었어요");
+  }
+  chatDone("field");
 }
 // 분야·키워드로 기본 초안 후보를 만들고 첫 후보를 아이디어에 넣는다 (1단계와 해외동향의 '관심 기술로 새로 시작'이 함께 쓴다)
 function ideateFrom(f, kw) {
   const kws = kwList(kw);
   if (!kws.length) { toast("키워드를 하나 이상 적어 주세요"); return false; }
-  S.ideate.kw = kw; S.idea.field = f;
+  S.ideate.kw = kw; S.ideate.f = f; S.idea.field = f;
   setDrafts(ruleDrafts(f, kws), "rule");
-  S.kw = kws.slice(0, 3).join("\n"); S.kwField = f; S.ipc = ""; S.live = null; S.gapSel = null; S.idea.fieldMoved = false;
+  S.kw = kws.slice(0, 3).join("\n"); S.kwField = f; S.ipc = ""; S.live = null; S.gapSel = null;
   S.tpl = tplFor(f);
   aiState("ideate").sig = ""; // 같은 키워드로 다시 받아도 AI가 다시 제안하게
   return true;
@@ -4235,7 +4342,8 @@ function useDiscIdea(c) {
   S.ideate.kw = kwList(kws.join(",")).join(", ");
   const alt = ruleDrafts(f, kwList(S.ideate.kw));
   setDrafts({ titles: [c.title, ...alt.titles.slice(0, 2)], problems: [c.problem, ...alt.problems.slice(0, 2)], diffs: [c.solution, ...alt.diffs.slice(0, 2)], parts: [...(c.parts || []), ...alt.parts].slice(0, 6), effects: alt.effects }, "discover");
-  S.done.add("discover"); toPage("idea", 1, 1); toast("아이디어를 초안 고르기로 옮겼습니다");
+  S.chat = { done: ["field", "kw", "problem"], edit: "" };
+  S.done.add("discover"); toPage("idea", 1, 1); toast("아이디어를 초안 고르기로 옮겼습니다. 사실 질문은 1쪽에서 답해 주세요");
 }
 
 function viewDiscover() {
@@ -4753,7 +4861,7 @@ document.addEventListener("click", e => {
 const FACT_GROUPS = [
   [/실험으로 확인한 범위|확인한 조건/, "구성의 수치 범위 (‘(예: …)’ 예시를 실험으로 확인한 범위로)", () => "draft:0:#parts"],
   [/실제 값/, "기존과 다른 점의 실제 조건·결과 (‘(예: …)’를 실제 값으로)", () => "idea:pick:#diff"],
-  [/측정 항목·결과|측정 결과|효과와 그 수치|확인한 효과|^항목$/, "실험 결과 (측정 항목과 실시예·비교예 값)", () => S.idea.data === "yes" ? "draft:0:.exp-ed" : "idea:pick:input[name=data][value=yes]"],
+  [/측정 항목·결과|측정 결과|효과와 그 수치|확인한 효과|^항목$/, "실험 결과 (측정 항목과 실시예·비교예 값)", () => S.idea.data === "yes" ? "draft:0:.exp-ed" : "idea:start:input[name=data][value=yes]"],
   [/분양|입수 방법|입수처/, "공지 균주의 입수처 (분양 기관·번호 또는 제품명)", () => "draft:0:#ap-strainSource"],
   [/수탁번호|기탁기관/, "기탁기관과 수탁번호", () => "draft:2:#ap-depNo"],
   [/학명/, "균주의 학명", () => "draft:0:#ap-strainName"],
@@ -4836,9 +4944,10 @@ document.addEventListener("keydown", e => { if (e.target.id === "qa-answer" && e
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-fact-go]"); if (!b) return;
   const [st, pg, ...sel] = b.dataset.factGo.split(":"), q = sel.join(":");
+  if (st === "idea" && pg === "start") { const n = q.match(/name=(\w+)|#(\w+)/), id = { data: "data", sold: "hist", disclosed: "hist", discDate: "hist", discWhere: "hist", strain: "strain", problem: "problem" }[n?.[1] || n?.[2]]; if (id) S.chat.edit = id; }
   goPage(st, /^\d+$/.test(pg) ? +pg : pg);
   // 쪽 전환이 끝나야 칸이 생기므로 몇 번 다시 찾는다
-  const find = n => { const el = document.querySelector(q); if (!el) { if (n < 6) setTimeout(() => find(n + 1), 250); return; } el.scrollIntoView({ block: "center" }); (el.matches("input, textarea") ? el : el.querySelector("input, textarea"))?.focus({ preventScroll: true }); };
+  const find = n => { const el = document.querySelector(q); if (!el) { if (n < 6) setTimeout(() => find(n + 1), 250); return; } if (el.closest("[hidden]")) { S.reveal[swKey()] = 99; applyReveal(); } el.scrollIntoView({ block: "center" }); (el.matches("input, textarea") ? el : el.querySelector("input, textarea"))?.focus({ preventScroll: true }); };
   setTimeout(() => find(0), 300);
 });
 function renderSpecNav() {
@@ -4986,8 +5095,9 @@ function viewDraft() {
     <div class="grid2" data-pg="0">
       <div class="field"><label for="parts">핵심 구성 (한 줄에 하나, 수치 범위 포함)</label><textarea id="parts" rows="4">${esc(S.parts)}</textarea></div>
       <div class="field"><label for="effect">효과 (측정값이 있으면 숫자로)</label><textarea id="effect" rows="4">${esc(S.effect)}</textarea>
-        ${S.idea.field === "ferment" ? `<p class="hint" style="margin-top:8px">균주: ${S.strain ? `<b>${STRAIN_OPTS.find(o => o[0] === S.strain)?.[1] ?? ""}</b> (1단계에서 답함)` : "1단계에서 아직 고르지 않았어요"} <button type="button" class="linklike" data-fact-go="idea:pick:input[name=strain]">${S.strain ? "바꾸기" : "고르러 가기"}</button></p>` : ""}</div>
+        ${S.idea.field === "ferment" ? `<p class="hint" style="margin-top:8px">균주: ${S.strain ? `<b>${STRAIN_OPTS.find(o => o[0] === S.strain)?.[1] ?? ""}</b> (1단계에서 답함)` : "1단계에서 아직 고르지 않았어요"} <button type="button" class="linklike" data-fact-go="idea:start:input[name=strain]">${S.strain ? "바꾸기" : "고르러 가기"}</button></p>` : ""}</div>
     </div>
+    ${cut("영문 명칭·도면·실험 결과 정하기", 0)}
     <div class="grid2" data-pg="0">
       <div class="field"><label for="eng0">발명의 영문명칭</label><input type="text" id="eng0" data-ap="engTitle" value="${esc(S.app.engTitle)}" placeholder="예: COMPOSITION FOR PROMOTING PLANT GROWTH"><span class="hint">명세서의 【발명의 명칭】에 {영문 명칭}으로 들어갑니다.</span>${engHelp()}</div>
       <div class="field"><span class="label">도면을 함께 내나요?</span>${seg("hasDrawings", [["no", "도면 없음"], ["yes", "도면 있음"]], S.hasDrawings)}${figHint()}<span class="hint">도면이 있으면 【도면의 간단한 설명】과 【대표도】가 들어갑니다. 시제품 사진이 있으면 첨부서류 쪽에서 선 도면으로 바꿔 넣을 수 있어요.</span></div>
@@ -6032,12 +6142,9 @@ if (EMBED) {
 function stepTodo(id) {
   const i = S.idea, out = [], add = (t, pg) => out.push({ t, step: id, sub: typeof pg === "number" ? pg : pageIndex(id, pg) });
   if (id === "idea") {
-    if (!i.title.trim()) add("아이디어(발명의 명칭) 정하기", "start");
-    else {
-      if (!i.problem.trim()) add("해결할 문제 적기", "pick");
-      if (!i.diff.trim()) add("기존과 다른 점 적기", "pick");
-      const m = missingFacts(); if (m.length) add(`출원 전에 확인할 사실 ${m.length}개 고르기`, "pick");
-    }
+    const q = chatCur(); if (q) add(`사전 질문 ‘${q.q}’에 답하기`, "start");
+    if (!i.title.trim()) add("발명의 명칭 정하기", "pick");
+    if (!i.diff.trim()) add("기존과 다른 점 적기", "pick");
   } else if (id === "prior") { if (S.api !== "off" && i.title.trim() && !liveData()) add("비슷한 특허 찾기", "results"); }
   else if (id === "draft") {
     if (!S.spec) add("명세서 초안 만들기", 0);
@@ -6290,8 +6397,8 @@ function viewAis() {
 /* ---------- 쪽 머리의 할 일 줄: 처음 쓰는 사람에게 이 쪽에서 할 일을 순서대로 짧게 (설명 문단 대신) ---------- */
 // do: 차례대로 할 일(짧은 동사구), tip: 한 줄 도움말. 쪽 열쇠는 pagesFor 의 쪽 이름(서류 작성·유망기술은 쪽 번호)
 const COACH = {
-  "idea:start": { do: ["키워드 2~5개 적기", "‘초안 제안 받기’ 누르기", "후보 고르고 다듬기"], tip: "아이디어가 막연하면 ‘처음이라 연습해 볼래요’로 흐름부터 익혀 보세요." },
-  "idea:pick": { do: ["마음에 드는 후보 고르기", "내 말로 다듬기", "출원 전 사실 답하기"], tip: "온도·시간·비율을 실제 값으로 적을수록 특허 받을 가능성이 높아져요." },
+  "idea:start": { do: ["분야 고르기", "핵심 낱말과 해결할 문제 답하기", "실험 데이터·판매·공개 이력 답하기"], tip: "질문은 하나씩 열려요. 답한 것은 ‘고치기’로 언제든 바꿀 수 있어요. 막연하면 ‘처음이라 연습해 볼래요’로 흐름부터 익혀 보세요." },
+  "idea:pick": { do: ["명칭 후보 고르고 다듬기", "기존과 다른 점 고르기", "핵심 구성·효과 고르기"], tip: "온도·시간·비율을 실제 값으로 적을수록 특허 받을 가능성이 높아져요." },
   "prior:results": { do: ["비슷한 특허 확인", "정말 비슷한 것만 고르기"], tip: "비슷한 특허가 있어도 다른 점을 분명히 하면 출원할 수 있어요." },
   "prior:sample": { do: ["비슷한 특허 확인", "정말 비슷한 것만 고르기"], tip: "비슷한 특허가 있어도 다른 점을 분명히 하면 출원할 수 있어요." },
   "prior:compare": { do: ["겹치는 구성 확인", "내 것에만 있는 구성 찾기"], tip: "내 것에만 있는 구성이 특허의 핵심이 돼요." },
@@ -6436,6 +6543,7 @@ function renderView() {
   termPop(null); placeHeader(); glossify();
   $("#rail-subs").innerHTML = subNav(); $("#rail-card").innerHTML = railCardHtml();
   if (legacy) $("#main").querySelectorAll("[data-pg]").forEach(el => { el.hidden = subs.length > 1 && +el.dataset.pg !== S.sub; });
+  applyReveal();
   const panel = $("#main .panel");
   if (panel && S.dir) { panel.classList.add(S.dir < 0 ? "in-back" : "in-fwd"); S.dir = 0; }
   $("#pagebar").innerHTML = pageBar();
@@ -6444,8 +6552,6 @@ function renderView() {
   renderSide();
   if (S.step === "draft") renderCheck();
   if (S.step === "discover") drawDiscoverChart();
-  // 선행기술 조사에 들어오면 아이디어 키워드로 바로 찾는다
-  if (S.step === "prior" && S.api !== "off" && S.idea.title.trim() && !liveData() && !S.loading && !S.err) setTimeout(runExplore); // 아이디어가 없으면 기다린다
   scheduleSave();
 }
 function go(id) { toPage(id, 0, stepIdx(id) < stepIdx() ? -1 : 1); }
@@ -6535,26 +6641,21 @@ document.addEventListener("submit", e => {
   const before = JSON.stringify([S.idea, S.strain]);
   readDiag();
   if (before !== JSON.stringify([S.idea, S.strain])) invalidateSpec();
-  const miss = missingFacts(), box = $("#facts-err");
-  S.factsErr = miss.length > 0;
-  if (S.factsErr) {
-    if (box) { box.hidden = false; box.querySelector("span").textContent = miss.join(", "); box.scrollIntoView({ block: "center", behavior: "smooth" }); }
-    toast(miss.length > 1 ? `${miss[0]} 외 ${miss.length - 1}개 항목을 골라 주세요` : `${J(miss[0], "을")} 골라 주세요`); return;
+  const miss = missingFacts();
+  if (miss.length) { // 사실 질문은 1쪽 대화에 있다
+    toast(miss.length > 1 ? `${miss[0]} 외 ${miss.length - 1}개 질문에 답해 주세요` : `${J(miss[0], "을")} 골라 주세요`);
+    S.chat.edit = ""; goPage("idea", "start"); return;
   }
   S.done.add("idea");
   if (S.tplAuto !== false) S.tpl = tplFor();
   goPage("prior", 0);
 });
 
+// 초안 고르기 쪽의 다듬기 칸 (사실 답은 1쪽 대화에서 고를 때마다 저장된다)
 function readDiag() {
   const i = S.idea;
-  i.title = $("#title").value.trim() || "이름 없는 발명";
-  const fp = fieldPick(); if (fp && fp !== "__custom") i.field = fp; i.problem = $("#problem").value; i.diff = $("#diff").value;
-  i.disclosed = $('input[name="disclosed"]:checked')?.value || "";
-  i.data = $('input[name="data"]:checked')?.value || "";
-  i.sold = $('input[name="sold"]:checked')?.value || "";
-  if (i.field === "ferment") S.strain = $('input[name="strain"]:checked')?.value || S.strain;
-  i.discDate = $("#discDate").value; i.discWhere = $("#discWhere").value;
+  i.title = ($("#title")?.value ?? i.title).trim() || "이름 없는 발명";
+  i.diff = $("#diff")?.value ?? i.diff;
 }
 
 document.addEventListener("keydown", e => {
@@ -6568,7 +6669,7 @@ document.addEventListener("keydown", e => {
   }
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
-// 키워드 칸에서 Enter: 초안 받기
+// 낱말 칸에서 Enter: 답하기 (후보를 만든다)
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "idea-kw" && !e.isComposing) { e.preventDefault(); runIdeate(); } });
 // 키 입력 칸에서 Enter: 키 확인
 
@@ -6602,7 +6703,7 @@ document.addEventListener("input", e => {
   if (t.id === "idea-kw") S.ideate.kw = t.value;
   if (t.id === "field-custom") { S.idea.fieldCustom = t.value; const g = guessField(t.value); if (g !== S.idea.field) { S.idea.field = g; S.kwField = null; S.gapSel = null; S.citeSel = null; } invalidateSpec(); }
   // 다듬기 칸은 입력하는 대로 저장한다 (다른 후보를 고를 때 화면이 다시 그려져도 남도록)
-  if (["title", "problem", "diff", "discWhere"].includes(t.id) && t.closest("#f-diag")) { S.idea[t.id] = t.value; invalidateSpec(); }
+  if (["title", "problem", "diff", "discWhere"].includes(t.id) && t.closest("#f-diag, #f-chat")) { S.idea[t.id] = t.value; invalidateSpec(); }
   if (t.id === "parts" || t.id === "effect") S[t.id] = t.value;
   if (t.id === "cmp-parts") S.parts = t.value;
 });
@@ -6614,11 +6715,16 @@ document.addEventListener("input", e => {
 
 document.addEventListener("change", e => {
   const t = e.target;
-  if (t.name === "disclosed") { $("#disc-wrap-1").hidden = $("#disc-wrap-2").hidden = t.value !== "yes"; }
-  if (["data", "sold", "disclosed"].includes(t.name) && t.closest("#f-diag")) { S.idea[t.name] = t.value; invalidateSpec(); renderSide(); refreshFactsErr(); }
-  if (t.id === "discDate" && t.closest("#f-diag")) { S.idea.discDate = t.value; invalidateSpec(); renderSide(); refreshFactsErr(); }
+  // 사전 질문: 고르면 바로 다음 질문으로 (공개했다면 날짜를 넣고 ‘답하기’)
+  if (["data", "sold", "disclosed"].includes(t.name) && t.closest("#f-chat")) {
+    S.idea[t.name] = t.value; if (t.name === "disclosed" && t.value === "no") Object.assign(S.idea, { discDate: "", discWhere: "" });
+    if (t.name === "data") return chatDone("data");
+    if (S.idea.sold && S.idea.disclosed === "no") return chatDone("hist");
+    invalidateSpec(); renderSide(); rerenderKeepScroll(); if (S.idea.disclosed === "yes") setTimeout(() => $("#discDate")?.focus({ preventScroll: true })); return;
+  }
+  if (t.id === "discDate" && t.closest("#f-chat")) { S.idea.discDate = t.value; invalidateSpec(); renderSide(); }
   if (t.name === "tpl") { S.parts = $("#parts").value; S.effect = $("#effect").value; S.tpl = t.value; S.tplAuto = false; invalidateSpec(); render(); }
-  if (t.name === "strain") { S.strain = t.value; invalidateSpec(); if (t.closest("#f-diag")) { refreshFactsErr(); return; } rerenderKeepScroll(); }
+  if (t.name === "strain") { S.strain = t.value; invalidateSpec(); if (t.closest("#f-chat")) return chatDone("strain"); rerenderKeepScroll(); }
   if (t.name === "hasDrawings") { S.hasDrawings = t.value; invalidateSpec(); render(); }
   if (t.id === "auto-fig") { S.app.autoFig = t.checked ? "yes" : "no"; invalidateSpec(); render(); }
   if (t.dataset?.cite != null) { S.citeSel ??= new Set(citedPrior().map(p => p.applicationNumber)); t.checked ? S.citeSel.add(t.dataset.cite) : S.citeSel.delete(t.dataset.cite); invalidateSpec(); rerenderKeepScroll(); return; }
@@ -6634,13 +6740,14 @@ document.addEventListener("change", e => {
   if (t.id === "biz-new-field" && G.biz.newTech) { G.biz.newTech.field = t.value; G.biz.newTech.kw = IDEA_BANK[t.value]?.d.join(", ") ?? ""; rerenderKeepScroll(); return; }
   if (t.name === "biz-goal") { G.biz.goal = t.value; scheduleSave(); rerenderKeepScroll(); return; }
   if (t.dataset?.bizDone != null) { const k = +t.dataset.bizDone; t.checked ? G.biz.done.add(k) : G.biz.done.delete(k); scheduleSave(); rerenderKeepScroll(); return; }
-  if (t.name?.startsWith("pick-")) { S.ideate.pick[t.name.slice(5)] = +t.value; applyPicks(t.name.slice(5)); rerenderKeepScroll(); return; }
+  if (t.name?.startsWith("pick-")) { S.ideate.pick[t.name.slice(5)] = +t.value; applyPicks(t.name.slice(5)); rerenderKeepScroll(); if (t.name === "pick-problem") setTimeout(() => $("#problem")?.focus({ preventScroll: true })); return; }
   if (t.dataset?.pickSet) { const set = S.ideate[t.dataset.pickSet], k = +t.value; t.checked ? set.add(k) : set.delete(k); syncParts(); rerenderKeepScroll(); return; }
   // 명칭을 고쳐 방법↔물건이 바뀌면 구성 후보(단계/구성)와 청구 유형을 다시 맞춘다
   if (t.id === "title" && t.closest("#f-diag")) { const k = S.ideate.partsKey; syncParts(); if (S.tplAuto !== false) S.tpl = tplFor(); if (S.ideate.drafts && k !== S.ideate.partsKey) deferRender(); return; }
-  if (t.name === "field" && t.closest(".idea-start")) { const c = t.value === "__custom"; S.idea.fieldCustom = c ? "" : null; S.idea.field = c ? "food" : t.value; S.ideate.kw = ""; S.kwField = null;
-    if (S.ideate.drafts) { S.idea.fieldMoved = true; toast("분야를 바꿨습니다. 새 키워드로 ‘초안 제안 받기’를 눌러 아이디어도 다시 정하세요"); }
-    if (S.tplAuto) S.tpl = tplFor(); if (c) setTimeout(() => $("#field-custom")?.focus()); S.gapSel = null; S.citeSel = null; invalidateSpec(); render(); return; }
+  if (t.name === "field" && t.closest("#f-chat")) { const c = t.value === "__custom"; S.idea.fieldCustom = c ? "" : null; S.idea.field = c ? "food" : t.value; S.kwField = null;
+    if (S.tplAuto) S.tpl = tplFor(); S.gapSel = null; S.citeSel = null; invalidateSpec();
+    if (c) { rerenderKeepScroll(); setTimeout(() => $("#field-custom")?.focus()); return; }
+    chatFieldDone(); return; }
   if (t.id === "field-custom") { deferRender(); return; } // 가까운 분야 안내를 고친다
   if (t.name === "disc-field") { S.disc.field = t.value; S.disc.data = null; S.disc.ideas = null; render(); }
   if (t.name === "disc-goal") S.disc.goal = t.value;
@@ -6676,7 +6783,7 @@ function startPractice(seed = Math.floor(Math.random() * 1e6) + 1) {
   if (!resetWork(S.done.size > 0 && "지금 작성 중인 내용을 지우고 연습용 예시 시나리오로 처음부터 채웁니다. 계속할까요?")) return;
   const sc = practiceScenario(seed);
   Object.assign(S.idea, { field: sc.field, fieldCustom: null }); S.ideate.kw = sc.kw;
-  goPage("idea", 0); runIdeate(); // 화면의 분야·키워드 칸이 시나리오 값으로 바뀐 뒤 초안을 만든다
+  goPage("idea", 0); ideateFrom(sc.field, sc.kw); S.chat = { done: chatAll(), edit: "" }; // 사전 질문을 시나리오 답으로 모두 채운다
   S.ideate.pick.title = sc.titleIdx; applyPicks("title");
   const { strain, ...facts } = sc.facts;
   Object.assign(S.idea, facts, sc.disc ? { discDate: sc.disc.date, discWhere: sc.disc.where } : {});
@@ -6711,7 +6818,7 @@ document.addEventListener("click", e => { if (e.target.closest("[data-restart]")
 
 /* ---------- 작업 저장: 이 기기의 브라우저(localStorage)에만 자동 저장한다. 서버로 보내지 않는다 ---------- */
 const SAVE_KEY = "agri-ip:work:v1";
-const SAVE_FIELDS = ["filed", "supportFit", "step", "sub", "idea", "tpl", "tplAuto", "parts", "effect", "strain", "userType", "region", "fileDate", "hasDrawings", "app", "spec", "kw", "kwField", "ipc", "live", "liveField", "refined", "refinedSel", "axesCustom", "aiGap", "cmpAI", "rejAI", "revAI", "supAI", "expFigs", "photoFigs", "aiChanges", "aiFeedback", "fillTried", "watch", "practice"];
+const SAVE_FIELDS = ["filed", "supportFit", "step", "sub", "idea", "tpl", "tplAuto", "parts", "effect", "strain", "userType", "region", "fileDate", "hasDrawings", "app", "spec", "kw", "kwField", "ipc", "live", "liveField", "refined", "refinedSel", "axesCustom", "aiGap", "cmpAI", "rejAI", "revAI", "supAI", "expFigs", "photoFigs", "aiChanges", "aiFeedback", "fillTried", "watch", "practice", "chat", "reveal"];
 const AI_KEEP = ["draft", "ideate", "compare", "whitespace", "reject", "review"];
 const SAVE_SETS = ["done", "gapSel", "citeSel"];
 const SAVE = { at: null, restored: null, t: 0, off: false };
@@ -6725,7 +6832,7 @@ function snapshot(withLive = true) {
   o.pg = pagesFor(S.step)?.[S.sub]?.[0];
   o.biz = { markets: [...G.biz.markets], fileOff: [...G.biz.fileOff], goal: G.biz.goal, type: G.biz.type, done: [...G.biz.done] };
   if (G.ins.q) o.ins = { q: G.ins.q, type: G.ins.type, ai: G.ins.ai, src: G.ins.src }; // 쪽 번호 대신 쪽 이름도 남긴다 (단계의 쪽 구성이 바뀌어도 같은 쪽으로)
-  const I = S.ideate; o.ideate = { kw: I.kw, drafts: I.drafts, src: I.src, pick: I.pick, partsKey: I.partsKey, parts: [...I.parts], effects: [...I.effects] };
+  const I = S.ideate; o.ideate = { kw: I.kw, f: I.f, drafts: I.drafts, src: I.src, pick: I.pick, partsKey: I.partsKey, parts: [...I.parts], effects: [...I.effects] };
   return o;
 }
 function restoreWork(o) {
@@ -6754,6 +6861,9 @@ function restoreWork(o) {
   // 사진 도면: 형식이 맞는 것만 (흑백 PNG), 그림은 비동기로 다시 만든다
   S.photoFigs = Array.isArray(o.photoFigs) ? o.photoFigs.filter(x => x && typeof x.id === "string" && typeof x.name === "string" && /^data:image\/png;base64,/.test(x.png ?? "")).slice(0, PHOTO_MAX) : [];
   setTimeout(photoHydrate);
+  // 사전 질문(대화) 전에 저장한 작업은 이미 답한 것으로 본다
+  S.chat = { done: Array.isArray(o.chat?.done) ? o.chat.done.filter(x => typeof x === "string") : S.ideate.drafts || S.done.size ? chatAll() : [], edit: "" };
+  S.reveal = o.reveal && typeof o.reveal === "object" ? Object.fromEntries(Object.entries(o.reveal).filter(([, v]) => Number.isInteger(v))) : {};
   // 광고 문서를 거르기 전에 저장한 검색 결과는 버리고 다시 찾는다
   if (S.live && S.live.similar?.low == null) { S.live = null; S.citeSel = null; }
   return true;
