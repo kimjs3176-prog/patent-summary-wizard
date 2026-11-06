@@ -91,3 +91,26 @@ DROP POLICY IF EXISTS "Anyone can read active featured patents" ON public.featur
 CREATE POLICY "Anyone can read active featured patents" ON public.featured_patents FOR SELECT USING (is_active);
 DROP POLICY IF EXISTS "Anyone can read active notices" ON public.notices;
 CREATE POLICY "Anyone can read active notices" ON public.notices FOR SELECT USING (is_active);
+
+-- 6) 기술소개 영상(tech-videos 버킷): 공개 읽기만 남긴다.
+--    올리기·지우기는 관리자 함수(manage-featured-patents)가 비밀번호를 확인한 뒤 서비스 롤로 하고,
+--    업로드는 그 함수가 내준 한 번 쓰는 서명 주소로만 한다. 그래서 익명 쓰기 정책은 이름과 상관없이 지운다
+--    (이 버킷을 가리키는 쓰기 정책, 그리고 버킷 조건 없이 모든 버킷에 쓰기를 여는 정책).
+DROP POLICY IF EXISTS "Public insert tech-videos" ON storage.objects;
+DROP POLICY IF EXISTS "Public update tech-videos" ON storage.objects;
+DROP POLICY IF EXISTS "Public delete tech-videos" ON storage.objects;
+DO $$
+DECLARE p record;
+BEGIN
+  FOR p IN
+    SELECT policyname FROM pg_policies
+     WHERE schemaname = 'storage' AND tablename = 'objects'
+       AND cmd IN ('INSERT', 'UPDATE', 'DELETE', 'ALL')
+       AND (
+         (coalesce(qual, '') || coalesce(with_check, '')) LIKE '%tech-videos%'
+         OR ((coalesce(qual, '') || coalesce(with_check, '')) NOT LIKE '%bucket_id%' AND roles && ARRAY['anon', 'public']::name[])
+       )
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON storage.objects', p.policyname);
+  END LOOP;
+END $$;
