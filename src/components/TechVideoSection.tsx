@@ -65,7 +65,8 @@ export function TechVideoSection({ videos }: TechVideoSectionProps) {
         </div>
         <p className="home-hero-muted text-[13px] ml-[42px]">농식품 분야 주요 기술을 영상으로 소개합니다. 전체 영상은 온라인 기술 홍보관에서 볼 수 있어요.</p>
       </div>
-      <div className="relative max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      {/* 휴대폰·태블릿(lg 미만)은 미리보기 2개만, 넓은 화면은 3개 (owner) */}
+      <div className="relative max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 max-lg:[&>*:nth-child(n+3)]:hidden">
         {preview.map((video, idx) => {
           const videoId = getYouTubeId(video.url);
           const thumbnail = videoId
