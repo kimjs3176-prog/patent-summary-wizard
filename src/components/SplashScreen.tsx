@@ -1,30 +1,51 @@
-import { useEffect, useState, useRef } from "react";
-import { FileText } from "lucide-react";
+import { useEffect, useState, useRef, type CSSProperties } from "react";
 
 interface SplashScreenProps {
   onComplete: () => void;
 }
 
-type Phase = "enter" | "logo" | "text" | "exit";
-
-// Timing (ms). The splash leaves after MIN_VISIBLE once fonts are ready,
+// Timing (ms). The intro leaves after MIN_VISIBLE once fonts are ready,
 // but never later than MAX_VISIBLE so a slow network can't trap the visitor.
-const MIN_VISIBLE = 1900;
-const MAX_VISIBLE = 3000;
-const EXIT_FADE = 600;
+// The CSS timeline (sheet drawing → scan → insights → readout) finishes at about 2.3 s.
+const MIN_VISIBLE = 2500;
+const MAX_VISIBLE = 3500;
+const EXIT_MS = 720;
 const REDUCED_VISIBLE = 450;
+const REDUCED_EXIT_MS = 250;
+
+const WORDMARK = "Agri IP Summary";
+const STEPS = ["특허 불러오기", "AI 기술 분석", "요약서 작성"];
+// Insight tags that "come out" of the datasheet once the scan has read it.
+const INSIGHTS: { label: string; className: string }[] = [
+  { label: "TRL 7 · 상용화", className: "splash-tag-a" },
+  { label: "시장 규모 ↗", className: "splash-tag-b" },
+  { label: "핵심 키워드 3", className: "splash-tag-c" },
+];
+// Datasheet line art: [x, y, length, weight]. Stroke order is top to bottom, like a page being written.
+const SHEET_LINES: [number, number, number, number][] = [
+  [22, 44, 52, 5],
+  [22, 62, 76, 2.5],
+  [22, 72, 64, 2.5],
+  [22, 82, 72, 2.5],
+  [22, 92, 46, 2.5],
+];
+const SHEET_BARS: [number, number][] = [
+  [24, 16],
+  [40, 26],
+  [56, 20],
+];
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-/** Release the page under the splash: entrance animations start and scrolling unlocks. */
+/** Release the page under the intro: entrance animations start and scrolling unlocks. */
 const releasePage = () => {
   document.documentElement.removeAttribute("data-splash");
 };
 
 export function SplashScreen({ onComplete }: SplashScreenProps) {
   const reduced = useRef(prefersReducedMotion()).current;
-  const [phase, setPhase] = useState<Phase>(reduced ? "text" : "enter");
+  const [exiting, setExiting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const completeRef = useRef(onComplete);
   completeRef.current = onComplete;
@@ -40,26 +61,24 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     };
   }, []);
 
-  // Phase timeline — runs once, independent of parent re-renders.
+  // Exit timeline — runs once, independent of parent re-renders. The entrance is pure CSS.
   useEffect(() => {
     const timers: number[] = [];
-    let cancelled = false;
+    let done = false;
     const at = (ms: number, fn: () => void) => timers.push(window.setTimeout(fn, ms));
     const start = performance.now();
 
     const exit = () => {
-      if (cancelled) return;
-      cancelled = true;
-      setPhase("exit");
+      if (done) return;
+      done = true;
+      setExiting(true);
       releasePage();
-      at(reduced ? 250 : EXIT_FADE, () => completeRef.current());
+      at(reduced ? REDUCED_EXIT_MS : EXIT_MS, () => completeRef.current());
     };
 
     if (reduced) {
       at(REDUCED_VISIBLE, exit);
     } else {
-      at(120, () => setPhase("logo"));
-      at(600, () => setPhase("text"));
       const fontsReady: Promise<unknown> = document.fonts?.ready ?? Promise.resolve();
       fontsReady.then(() => {
         const wait = Math.max(0, MIN_VISIBLE - (performance.now() - start));
@@ -67,10 +86,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       }, () => at(MIN_VISIBLE, exit));
       at(MAX_VISIBLE, exit);
     }
-    return () => { cancelled = true; timers.forEach(clearTimeout); };
+    return () => { done = true; timers.forEach(clearTimeout); };
   }, [reduced]);
 
-  // Particle network canvas (skipped for reduced motion).
+  // Constellation canvas: accent-coloured nodes drifting over the blueprint grid (skipped for reduced motion).
   useEffect(() => {
     if (reduced) return;
     const canvas = canvasRef.current;
@@ -94,50 +113,53 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     resize();
     window.addEventListener("resize", resize);
 
-    const count = w < 640 ? 24 : 40;
-    const particles = Array.from({ length: count }, () => ({
+    const count = w < 640 ? 18 : 34;
+    const nodes = Array.from({ length: count }, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.4,
-      vy: (Math.random() - 0.5) * 0.4,
-      r: 1.5 + Math.random() * 2,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: 1.2 + Math.random() * 1.8,
       phase: Math.random() * Math.PI * 2,
     }));
+    const MAX_DIST = 150;
+    // --home-hero-accent (158 62% 72%) in rgb
+    const ACCENT = "152,228,196";
 
     let t = 0;
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
       t += 0.006;
 
-      for (const p of particles) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > w) p.vx *= -1;
-        if (p.y < 0 || p.y > h) p.vy *= -1;
+      for (const n of nodes) {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > w) n.vx *= -1;
+        if (n.y < 0 || n.y > h) n.vy *= -1;
       }
 
       ctx.lineWidth = 0.8;
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
           const d2 = dx * dx + dy * dy;
-          if (d2 < 19600) {
-            const alpha = (1 - Math.sqrt(d2) / 140) * 0.15;
-            ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+          if (d2 < MAX_DIST * MAX_DIST) {
+            const alpha = (1 - Math.sqrt(d2) / MAX_DIST) * 0.16;
+            ctx.strokeStyle = `rgba(${ACCENT},${alpha})`;
             ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
             ctx.stroke();
           }
         }
       }
 
-      for (const p of particles) {
-        const pulse = 0.6 + 0.4 * Math.sin(t * 2 + p.phase);
-        ctx.fillStyle = `rgba(255,255,255,${0.25 * pulse})`;
+      for (const n of nodes) {
+        const pulse = 0.6 + 0.4 * Math.sin(t * 2 + n.phase);
+        ctx.fillStyle = `rgba(${ACCENT},${0.35 * pulse})`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * pulse, 0, Math.PI * 2);
+        ctx.arc(n.x, n.y, n.r * pulse, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -151,89 +173,109 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     };
   }, [reduced]);
 
-  const entered = phase !== "enter";
-  const textVisible = phase === "text" || phase === "exit";
-  const exiting = phase === "exit";
-  const ease = "cubic-bezier(0.16,1,0.3,1)";
-  const anim = (value: string) => (reduced ? "none" : value);
+  const sheetArt = (
+    <>
+      <path d="M10 4H86L112 30V146H10Z" pathLength={1} className="splash-draw" style={{ "--d": "0.05s" } as CSSProperties} />
+      <path d="M86 4V30H112" pathLength={1} className="splash-draw" style={{ "--d": "0.4s" } as CSSProperties} />
+      {SHEET_LINES.map(([x, y, len, weight], i) => (
+        <line
+          key={`l${i}`}
+          x1={x} y1={y} x2={x + len} y2={y}
+          pathLength={1}
+          strokeWidth={weight}
+          className="splash-draw"
+          style={{ "--d": `${0.3 + i * 0.09}s` } as CSSProperties}
+        />
+      ))}
+      {SHEET_BARS.map(([x, height], i) => (
+        <rect
+          key={`b${i}`}
+          x={x} y={134 - height} width={10} height={height} rx={1.5}
+          pathLength={1}
+          className="splash-draw"
+          style={{ "--d": `${0.72 + i * 0.08}s` } as CSSProperties}
+        />
+      ))}
+      <circle cx={92} cy={118} r={13} pathLength={1} className="splash-draw" style={{ "--d": "0.9s" } as CSSProperties} />
+      <path d="M85.5 118.5L90 123L99 113.5" pathLength={1} strokeWidth={2.4} className="splash-draw" style={{ "--d": "1.05s" } as CSSProperties} />
+    </>
+  );
 
   return (
     <div
       role="status"
       aria-label="Agri IP Summary 불러오는 중"
-      className="splash-screen fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
+      data-exiting={exiting ? "" : undefined}
+      className={`splash-screen fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden${reduced ? " splash-reduced" : ""}`}
       style={{
-        transition: `opacity ${reduced ? 250 : EXIT_FADE}ms cubic-bezier(0.4,0,0.2,1)`,
-        opacity: exiting ? 0 : 1,
+        transition: reduced
+          ? `opacity ${REDUCED_EXIT_MS}ms ease-out`
+          : `transform ${EXIT_MS}ms cubic-bezier(0.76,0,0.24,1), opacity ${EXIT_MS}ms ease-in`,
+        transform: exiting && !reduced ? "translateY(-100%)" : "translateY(0)",
+        opacity: exiting && reduced ? 0 : 1,
         pointerEvents: exiting ? "none" : "auto",
       }}
     >
+      <div aria-hidden="true" className="splash-grid absolute inset-0" />
       {!reduced && (
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ opacity: 0.6 }} aria-hidden="true" />
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" aria-hidden="true" />
       )}
+      <div aria-hidden="true" className="splash-glow absolute left-1/2 top-1/2 pointer-events-none" />
+      <div aria-hidden="true" className="splash-sweep" />
+      <span aria-hidden="true" className="bp-mark bp-mark-tl" />
+      <span aria-hidden="true" className="bp-mark bp-mark-tr" />
+      <span aria-hidden="true" className="bp-mark bp-mark-bl" />
+      <span aria-hidden="true" className="bp-mark bp-mark-br" />
 
-      <div aria-hidden="true" className="splash-glow absolute top-1/2 left-1/2 w-[60vw] h-[60vw] max-w-[500px] max-h-[500px] rounded-full pointer-events-none" />
-
-      <div className="flex flex-col items-center relative z-10">
-        <div className="relative">
-          <div
-            className="splash-ring absolute inset-0 rounded-3xl"
-            style={{
-              transition: anim(`transform 0.8s ${ease}, opacity 0.8s ${ease}`),
-              transform: entered ? "scale(1)" : "scale(0.5)",
-              opacity: entered ? 1 : 0,
-            }}
-          />
-          <div
-            className="splash-logo w-20 h-20 md:w-24 md:h-24 rounded-3xl flex items-center justify-center relative"
-            style={{
-              transition: anim(`transform 0.8s ${ease}, opacity 0.8s ${ease}`),
-              transform: entered ? "translateY(0) scale(1)" : "translateY(30px) scale(0.6)",
-              opacity: entered ? 1 : 0,
-            }}
-          >
-            <FileText
-              className="w-9 h-9 md:w-11 md:h-11 text-primary-foreground"
-              style={{
-                transition: anim(`transform 0.6s ${ease} 0.2s`),
-                transform: entered ? "scale(1) rotate(0deg)" : "scale(0.5) rotate(-15deg)",
-              }}
-            />
-          </div>
+      <div className="splash-stage relative z-10 flex flex-col items-center px-6">
+        {/* The datasheet draws itself, a scan beam reads it, and the insights come out. */}
+        <div aria-hidden="true" className="splash-sheet-wrap relative">
+          <svg viewBox="0 0 120 150" className="splash-sheet" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <defs>
+              <clipPath id="splash-reveal-clip">
+                <rect className="splash-reveal" x={0} y={0} width={120} height={150} />
+              </clipPath>
+              <linearGradient id="splash-beam" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="hsl(158 62% 72%)" stopOpacity="0" />
+                <stop offset="0.55" stopColor="hsl(158 62% 72%)" stopOpacity="0.85" />
+                <stop offset="1" stopColor="hsl(158 62% 72%)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <g className="splash-ink" stroke="hsl(150 25% 97% / 0.55)" strokeWidth={1.5}>{sheetArt}</g>
+            <g className="splash-ink splash-ink-accent" stroke="hsl(158 62% 72%)" strokeWidth={1.5} clipPath="url(#splash-reveal-clip)">{sheetArt}</g>
+            <rect className="splash-beam" x={2} y={-14} width={116} height={28} fill="url(#splash-beam)" />
+          </svg>
+          {INSIGHTS.map((tag) => (
+            <span key={tag.label} className={`splash-tag ${tag.className}`}>
+              <i />
+              {tag.label}
+            </span>
+          ))}
         </div>
 
-        <p
-          className="text-primary-foreground text-lg md:text-2xl font-bold tracking-tight mt-6"
-          style={{
-            transition: anim(`opacity 0.7s ${ease}, transform 0.7s ${ease}`),
-            opacity: textVisible ? 0.95 : 0,
-            transform: textVisible ? "translateY(0)" : "translateY(12px)",
-          }}
-        >
-          Agri IP Summary (AIS)
+        <p className="splash-wordmark mt-7 text-[26px] sm:text-[34px] md:text-[40px]">
+          {WORDMARK.split("").map((ch, i) => (
+            <span key={i} className="splash-letter" style={{ "--i": i } as CSSProperties}>
+              {ch === " " ? " " : ch}
+            </span>
+          ))}
         </p>
 
-        <div
-          className="mt-3 flex items-center gap-2"
-          style={{
-            transition: anim(`opacity 0.6s ${ease} 0.15s, transform 0.6s ${ease} 0.15s`),
-            opacity: textVisible ? 0.7 : 0,
-            transform: textVisible ? "translateY(0)" : "translateY(8px)",
-          }}
-        >
-          <div className="w-6 h-px bg-primary-foreground/40" />
-          <span className="text-primary-foreground/80 text-[11px] md:text-xs font-medium tracking-widest">
-            농식품분야 특허 AI 기술분석
-          </span>
-          <div className="w-6 h-px bg-primary-foreground/40" />
-        </div>
+        <p className="splash-kicker mt-3">
+          <span className="splash-kicker-text">AIS · 농식품 특허 AI 기술분석</span>
+          <span className="splash-caret" aria-hidden="true" />
+        </p>
 
-        <div
-          className="mt-8 w-32 h-[3px] rounded-full overflow-hidden bg-primary-foreground/15"
-          style={{ transition: anim("opacity 0.5s ease 0.3s"), opacity: textVisible ? 1 : 0 }}
-        >
-          <div className="splash-progress h-full rounded-full bg-primary-foreground/60" />
-        </div>
+        <ol className="splash-steps mt-9" aria-hidden="true">
+          {STEPS.map((label, i) => (
+            <li key={label} className="splash-step" style={{ "--i": i } as CSSProperties}>
+              <span className="splash-step-no">0{i + 1}</span>
+              <span className="splash-step-dot" />
+              <span className="splash-step-label">{label}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="splash-progress mt-3" aria-hidden="true"><i /></div>
       </div>
     </div>
   );
