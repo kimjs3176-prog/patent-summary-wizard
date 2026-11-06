@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, type KeyboardEvent } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Layers, Download, ExternalLink, Loader2, AlertTriangle, CheckCircle2, FileText, X, Search, Hash, SlidersHorizontal,
@@ -6,6 +6,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/DateField";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { parseIpNumberList, IP_KIND_LABEL, IpNumberInfo } from "@/lib/ipNumber";
 import { safeFetch } from "@/lib/safeFetch";
@@ -252,76 +253,6 @@ const IP_TYPES = [
   { v: "design", l: "디자인" },
   { v: "trademark", l: "상표" },
 ];
-
-const SEG_MAX = [4, 2, 2];
-
-/** YYYY-MM-DD segmented date input — 자릿수가 채워지면 다음 칸으로 커서가 자동 이동 */
-function SegmentedDate({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  const [seg, setSeg] = useState<[string, string, string]>(m ? [m[1], m[2], m[3]] : ["", "", ""]);
-  const refs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const setSegAt = (i: number, raw: string) => {
-    let d = raw.replace(/\D/g, "").slice(0, SEG_MAX[i]);
-    let advance = d.length === SEG_MAX[i];
-    // 월 2~9 → "0x", 일 4~9 → "0x" 로 채우고 즉시 다음 칸으로
-    if ((i === 1 || i === 2) && d.length === 1 && Number(d) >= (i === 1 ? 2 : 4)) {
-      d = `0${d}`;
-      advance = true;
-    }
-    // 13월, 32일 등 불가능한 값은 마지막 입력을 무시하고 다음 칸으로 넘어가지 않음
-    if (d.length === SEG_MAX[i] && ((i === 1 && Number(d) > 12) || (i === 2 && Number(d) > 31))) {
-      d = d.slice(0, -1);
-      advance = false;
-    }
-    const next = [...seg];
-    next[i] = d;
-    setSeg(next as [string, string, string]);
-    if (next.every((s, j) => s.length === SEG_MAX[j])) {
-      onChange(`${next[0]}-${next[1]}-${next[2]}`);
-    } else if (value !== "") {
-      onChange("");
-    }
-    if (advance && i < 2) refs.current[i + 1]?.focus();
-  };
-
-  const onKey = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && seg[i] === "" && i > 0) {
-      e.preventDefault();
-      const prev = [...seg];
-      prev[i - 1] = prev[i - 1].slice(0, -1);
-      setSeg(prev as [string, string, string]);
-      if (value !== "") onChange("");
-      refs.current[i - 1]?.focus();
-    }
-  };
-
-  const cls = (w: string) => `${w} px-1 text-center tabular-nums`;
-  return (
-    <div className="flex items-center gap-1 min-w-0">
-      <Input
-        ref={(el) => (refs.current[0] = el)}
-        inputMode="numeric" placeholder="YYYY" maxLength={4}
-        className={cls("w-16 shrink-0")} value={seg[0]}
-        onChange={(e) => setSegAt(0, e.target.value)} onKeyDown={(e) => onKey(0, e)}
-      />
-      <span className="text-muted-foreground">-</span>
-      <Input
-        ref={(el) => (refs.current[1] = el)}
-        inputMode="numeric" placeholder="MM" maxLength={2}
-        className={cls("w-11 shrink-0")} value={seg[1]}
-        onChange={(e) => setSegAt(1, e.target.value)} onKeyDown={(e) => onKey(1, e)}
-      />
-      <span className="text-muted-foreground">-</span>
-      <Input
-        ref={(el) => (refs.current[2] = el)}
-        inputMode="numeric" placeholder="DD" maxLength={2}
-        className={cls("w-11 shrink-0")} value={seg[2]}
-        onChange={(e) => setSegAt(2, e.target.value)} onKeyDown={(e) => onKey(2, e)}
-      />
-    </div>
-  );
-}
 
 function criteriaToExport(items: Item[], trademarks: TmItem[], ipType: string): ExportRow[] {
   const patentRows: ExportRow[] = items.map((i, idx) => {
@@ -784,63 +715,62 @@ const Batch = () => {
         {mode === "criteria" && (
           <>
             <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-5">
-              <div className="space-y-2">
-                <div className="text-sm font-semibold">발명기관</div>
-                <div className="flex flex-wrap gap-2">
+              {/* 조건마다 한 줄: 왼쪽 이름, 오른쪽 고르는 칸 (휴대폰은 위아래로) */}
+              <dl className="grid gap-x-6 gap-y-4 md:grid-cols-[6.5rem_minmax(0,1fr)] md:items-center">
+                <dt className="text-sm font-semibold">발명기관</dt>
+                <dd className="flex flex-wrap gap-2">
                   {ORGS.map((o) => (
-                    <button key={o} onClick={() => toggleOrg(o)} className={chip(orgs.includes(o))}>
+                    <button key={o} type="button" aria-pressed={orgs.includes(o)} onClick={() => toggleOrg(o)} className={chip(orgs.includes(o))}>
                       {o}
                     </button>
                   ))}
-                </div>
-              </div>
+                </dd>
 
-              <div className="space-y-2">
-                <div className="text-sm font-semibold">권리 종류</div>
-                <div className="flex flex-wrap gap-2">
+                <dt className="text-sm font-semibold">권리 종류</dt>
+                <dd className="flex flex-wrap gap-2">
                   {IP_TYPES.map((t) => (
-                    <button key={t.v} onClick={() => setIpType(t.v)} className={chip(ipType === t.v)}>
+                    <button key={t.v} type="button" aria-pressed={ipType === t.v} onClick={() => setIpType(t.v)} className={chip(ipType === t.v)}>
                       {t.l}
                     </button>
                   ))}
-                </div>
-              </div>
+                </dd>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="space-y-2 min-w-0">
-                  <div className="text-sm font-semibold">출원 기간</div>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                    <SegmentedDate value={from} onChange={setFrom} />
-                    <span className="text-muted-foreground shrink-0">~</span>
-                    <SegmentedDate value={to} onChange={setTo} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold">발명자</div>
-                  <Input value={inventor} onChange={(e) => setInventor(e.target.value)} placeholder="예: 홍길동 (비우면 전체)" maxLength={50} />
-                </div>
+                <dt className="text-sm font-semibold">등록상태</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {STATUSES.map((s) => (
+                    <button key={s.v} type="button" aria-pressed={status === s.v} onClick={() => setStatus(s.v)} className={chip(status === s.v)}>
+                      {s.l}
+                    </button>
+                  ))}
+                </dd>
+
+                <dt className="text-sm font-semibold">출원 기간</dt>
+                <dd className="grid w-full max-w-[24rem] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                  <DateField value={from} onChange={setFrom} label="출원 기간 시작일" max={to || undefined} />
+                  <span className="text-muted-foreground" aria-hidden="true">~</span>
+                  <DateField value={to} onChange={setTo} label="출원 기간 종료일" min={from || undefined} align="end" />
+                </dd>
+
+                <dt className="text-sm font-semibold"><label htmlFor="batch-inventor">발명자</label></dt>
+                <dd className="max-w-md">
+                  <Input id="batch-inventor" value={inventor} onChange={(e) => setInventor(e.target.value)} placeholder="예: 홍길동 (비우면 전체)" maxLength={50} />
+                </dd>
+
                 {(ipType === "design" || ipType === "trademark") && (
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold">{ipType === "design" ? "디자인 물품명 (필수)" : "상표명 (필수)"}</div>
-                    <Input
-                      value={tmKeyword}
-                      onChange={(e) => setTmKeyword(e.target.value)}
-                      placeholder={ipType === "design" ? "예: 포장용기" : "예: 설향"}
-                      maxLength={50}
-                    />
-                  </div>
+                  <>
+                    <dt className="text-sm font-semibold"><label htmlFor="batch-tm">{ipType === "design" ? "디자인 물품명" : "상표명"} <span className="text-xs font-normal text-muted-foreground">필수</span></label></dt>
+                    <dd className="max-w-md">
+                      <Input
+                        id="batch-tm"
+                        value={tmKeyword}
+                        onChange={(e) => setTmKeyword(e.target.value)}
+                        placeholder={ipType === "design" ? "예: 포장용기" : "예: 설향"}
+                        maxLength={50}
+                      />
+                    </dd>
+                  </>
                 )}
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold">등록상태</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {STATUSES.map((s) => (
-                      <button key={s.v} onClick={() => setStatus(s.v)} className={chip(status === s.v, "sm")}>
-                        {s.l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              </dl>
 
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {running ? (

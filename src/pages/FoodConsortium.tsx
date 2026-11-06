@@ -9,15 +9,18 @@ import { FavoriteToggle } from "@/components/search/FavoriteToggle";
 import { useCardFavorites } from "@/components/search/useCardFavorites";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
-  CONSORTIUM_KIND_LABEL,
   CONSORTIUM_ORGS,
+  consortiumInitial,
   consortiumKind,
+  consortiumShortName,
+  sortedConsortiumOrgs,
   type ConsortiumKind,
   type ConsortiumPatent,
   type ConsortiumResult,
 } from "@/lib/consortium";
 
-const KINDS: ConsortiumKind[] = ["univ", "inst", "holding"];
+const KIND_TABS: ["all" | ConsortiumKind, string][] = [["all", "전체"], ["univ", "대학"], ["inst", "연구기관"], ["holding", "기술지주"]];
+const KIND_TAG: Record<ConsortiumKind, string> = { univ: "대학", inst: "연구기관", holding: "기술지주" };
 
 const statusClass = (s: string) =>
   /등록/.test(s) ? "bg-primary/12 text-primary border-primary/25" : "bg-muted text-muted-foreground border-border";
@@ -34,17 +37,31 @@ const FoodConsortium = () => {
   const [params, setParams] = useSearchParams();
   const org = CONSORTIUM_ORGS.includes(params.get("org") ?? "") ? (params.get("org") as string) : "";
   const [query, setQuery] = useState("");
+  const [kind, setKind] = useState<"all" | ConsortiumKind>("all");
   const [result, setResult] = useState<ConsortiumResult | null>(null);
   const [items, setItems] = useState<ConsortiumPatent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const resultsRef = useRef<HTMLElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  // 주소(?org=)로 들어왔을 때 고른 기관이 목록 안에서 보이도록 목록만 스크롤한다 (페이지는 그대로)
+  useEffect(() => {
+    const box = listRef.current, on = box?.querySelector<HTMLElement>("button[aria-pressed='true']");
+    if (box && on) box.scrollTop = on.offsetTop - box.clientHeight / 2 + on.offsetHeight / 2;
+  }, [org]);
 
+  // 가나다순으로 놓고 초성(ㄱ·ㄴ…)으로 묶는다
   const groups = useMemo(() => {
     const q = query.replace(/\s/g, "");
-    const shown = CONSORTIUM_ORGS.filter((n) => !q || n.replace(/\s/g, "").includes(q));
-    return KINDS.map((k) => ({ kind: k, names: shown.filter((n) => consortiumKind(n) === k) })).filter((g) => g.names.length);
-  }, [query]);
+    const shown = sortedConsortiumOrgs().filter((n) => (kind === "all" || consortiumKind(n) === kind) && (!q || n.replace(/\s/g, "").includes(q)));
+    const out: { initial: string; names: string[] }[] = [];
+    for (const n of shown) {
+      const i = consortiumInitial(n);
+      if (out.at(-1)?.initial === i) out.at(-1)!.names.push(n);
+      else out.push({ initial: i, names: [n] });
+    }
+    return out;
+  }, [query, kind]);
 
   const load = async (name: string, page: number) => {
     setLoading(true);
@@ -72,13 +89,13 @@ const FoodConsortium = () => {
   const pick = (name: string) => {
     setParams(name === org ? {} : { org: name }, { replace: true });
     // 휴대폰에서는 기관 목록이 길어 결과가 화면 밖에 생기므로 결과 머리로 데려간다
-    if (name !== org && window.innerWidth < 768) requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    if (name !== org && window.innerWidth < 1024) requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   return (
     <PageLayout>
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-10">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <header className="mb-6 md:mb-8">
             <h1 className="flex items-center gap-2 text-2xl md:text-3xl font-black tracking-tight">
               <Handshake className="w-6 h-6 md:w-7 md:h-7 text-primary shrink-0" aria-hidden="true" />
@@ -89,41 +106,59 @@ const FoodConsortium = () => {
             </p>
           </header>
 
-          <section aria-label="기관 고르기" className="rounded-2xl border border-border/50 bg-card p-4 md:p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="기관 이름 찾기 (예: 전북대, 김치)" aria-label="기관 이름 찾기" className="pl-9" />
+          <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+          {/* 왼쪽: 기관 고르기 (가나다순·초성 묶음). 큰 화면에서는 따라 내려오고 목록만 스크롤된다 */}
+          <section aria-label="기관 고르기" className="rounded-2xl border border-border/50 bg-card lg:sticky lg:top-20 flex flex-col overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="p-3 border-b border-border/50 grid gap-2.5">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="기관 이름 찾기 (예: 전북대)" aria-label="기관 이름 찾기" className="pl-9 h-9" />
+              </div>
+              <div role="radiogroup" aria-label="기관 종류" className="grid grid-cols-4 gap-1 rounded-lg bg-muted/60 p-1">
+                {KIND_TABS.map(([k, label]) => {
+                  const n = k === "all" ? CONSORTIUM_ORGS.length : CONSORTIUM_ORGS.filter((x) => consortiumKind(x) === k).length;
+                  return (
+                    <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)}
+                      className={`rounded-md px-1 py-1.5 text-[12px] font-semibold leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${kind === k ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                      {label}<span className="block text-[11px] font-normal tabular-nums opacity-80">{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="mt-4 grid gap-4">
+            <div ref={listRef} className="relative max-h-[52vh] lg:max-h-[calc(100vh-15rem)] overflow-y-auto overscroll-contain p-1.5">
               {groups.map((g) => (
-                <div key={g.kind}>
-                  <h2 className="text-xs font-semibold text-muted-foreground">{CONSORTIUM_KIND_LABEL[g.kind]} <span className="font-mono">{g.names.length}</span></h2>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {g.names.map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        aria-pressed={n === org}
-                        title={n}
-                        onClick={() => pick(n)}
-                        className={`px-3 py-1.5 rounded-full text-[12px] md:text-[13px] font-semibold border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                          n === org ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground/80 border-border/70 hover:border-primary/50"
-                        }`}
-                      >
-                        {/* 묶음 이름이 '대학 산학협력단'이므로 칩에는 대학 이름만 */}
-                        {g.kind === "univ" ? n.replace(/\s*산학협력단$/, "") : n}
-                      </button>
-                    ))}
-                  </div>
+                <div key={g.initial} className="mb-1 last:mb-0">
+                  <h2 className="sticky top-0 z-[1] bg-card/95 px-2.5 pt-2 pb-1 text-[11px] font-bold text-primary">{g.initial}</h2>
+                  <ul>
+                    {g.names.map((n) => {
+                      const on = n === org;
+                      return (
+                        <li key={n}>
+                          <button type="button" aria-pressed={on} title={n} onClick={() => pick(n)}
+                            className={`w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? "bg-primary text-primary-foreground font-semibold" : "text-foreground/85 hover:bg-muted/60"}`}>
+                            <span className="min-w-0 truncate">{consortiumShortName(n)}</span>
+                            {kind === "all" && consortiumKind(n) !== "univ" && (
+                              <span className={`shrink-0 text-[11px] ${on ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{KIND_TAG[consortiumKind(n)]}</span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               ))}
-              {groups.length === 0 && <p className="text-sm text-muted-foreground">‘{query}’이 들어간 기관이 없습니다.</p>}
+              {groups.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">‘{query}’이 들어간 기관이 없습니다.</p>}
             </div>
           </section>
 
-          <section ref={resultsRef} aria-live="polite" className="mt-6 min-h-[12rem] scroll-mt-20">
+          <section ref={resultsRef} aria-live="polite" className="min-w-0 min-h-[12rem] scroll-mt-20">
             {!org ? (
-              <p className="py-12 text-center text-sm text-muted-foreground">위에서 기관을 고르면 그 기관이 가진 특허가 여기에 나옵니다.</p>
+              <div className="rounded-2xl border border-dashed border-border px-6 py-14 text-center">
+                <Handshake className="mx-auto w-8 h-8 text-primary/70" aria-hidden="true" />
+                <p className="mt-3 text-sm font-semibold">기관을 고르면 그 기관이 가진 특허가 여기에 나옵니다.</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">대학 {CONSORTIUM_ORGS.filter((x) => consortiumKind(x) === "univ").length}곳 · 연구기관·공공기관 {CONSORTIUM_ORGS.filter((x) => consortiumKind(x) === "inst").length}곳 · 기술지주회사 {CONSORTIUM_ORGS.filter((x) => consortiumKind(x) === "holding").length}곳</p>
+              </div>
             ) : (
               <>
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
@@ -193,6 +228,7 @@ const FoodConsortium = () => {
               </>
             )}
           </section>
+          </div>
         </div>
       </main>
     </PageLayout>

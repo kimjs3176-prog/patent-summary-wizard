@@ -1,5 +1,5 @@
 import { RotateCcw, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
 import { usePatentSummary } from "@/hooks/usePatentSummary";
@@ -41,6 +41,7 @@ const SummaryPlaceholder = () => (
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     isLoading, isFetching, summary, currentPatent, patentData,
     relatedPatents, analysisStep, generateSummary,
@@ -112,6 +113,15 @@ const Index = () => {
     const patentParam = params.get("patent");
     if (patentParam) handleSubmitInternal(patentParam);
   }, []);
+
+  // 머리의 로고(홈 링크)를 누르면 요약서를 닫고 처음 화면으로. 요약서 주소(?patent=)는 history.replaceState 로만
+  // 바꾸므로 라우터가 '/'로 다시 이동해도 화면이 그대로였다: 새 이동(key)이 오고 주소에 patent 가 없으면 닫는다
+  const lastLocationKey = useRef(location.key);
+  useEffect(() => {
+    if (lastLocationKey.current === location.key) return;
+    lastLocationKey.current = location.key;
+    if (!new URLSearchParams(location.search).get("patent") && (summary || isLoading || currentPatent)) reset();
+  }, [location.key, location.search, summary, isLoading, currentPatent, reset]);
 
   const handleSubmit = async (patentNumber: string) => {
     await handleSubmitInternal(patentNumber);

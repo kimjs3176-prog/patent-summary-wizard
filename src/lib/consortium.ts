@@ -57,13 +57,29 @@ export const CONSORTIUM_ORGS: string[] = [
 ];
 
 export type ConsortiumKind = "univ" | "inst" | "holding";
-export const CONSORTIUM_KIND_LABEL: Record<ConsortiumKind, string> = { univ: "대학 산학협력단", inst: "연구기관·공공기관", holding: "기술지주회사" };
 
 export function consortiumKind(name: string): ConsortiumKind {
   if (/기술지주/.test(name)) return "holding";
   if (/대학/.test(name)) return "univ";
   return "inst";
 }
+
+/** 목록에 보일 짧은 이름: 대학은 '산학협력단'을 떼고 대학 이름만 (묶음·태그가 '대학'을 알려 준다) */
+export const consortiumShortName = (name: string) => name.replace(/\s*산학협력단$/, "").replace(/산학협력단$/, "");
+
+/** 가나다 정렬 기준: 앞의 '(재)'·'국립'은 빼고 본다 (국립목포대학교는 ㅁ, (재)금산인삼약초산업진흥원은 ㄱ) */
+export const consortiumSortKey = (name: string) => consortiumShortName(name).replace(/^\(재\)\s*/, "").replace(/^국립\s*(?=\S{2})/, "");
+
+const CHO = ["ㄱ", "ㄱ", "ㄴ", "ㄷ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅂ", "ㅅ", "ㅅ", "ㅇ", "ㅈ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+/** 정렬 기준 첫 글자의 초성 (된소리는 예사소리로 묶는다) */
+export function consortiumInitial(name: string): string {
+  const c = consortiumSortKey(name).charCodeAt(0);
+  return c >= 0xac00 && c <= 0xd7a3 ? CHO[Math.floor((c - 0xac00) / 588)] : "#";
+}
+
+/** 가나다순으로 정렬한 기관 목록 */
+export const sortedConsortiumOrgs = (names: string[] = CONSORTIUM_ORGS) =>
+  [...names].sort((a, b) => consortiumSortKey(a).localeCompare(consortiumSortKey(b), "ko"));
 
 export interface ConsortiumPatent {
   applicationNumber: string;
