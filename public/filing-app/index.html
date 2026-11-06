@@ -318,6 +318,8 @@ textarea { min-height: 84px; resize: vertical; }
 .req-badge { padding: 2px 8px; border-radius: 99px; font-size: .74rem; font-weight: 700; white-space: nowrap; }
 .req.bad .req-badge { background: var(--bad-soft); color: var(--bad); } .req.warn .req-badge { background: var(--warn-soft); color: var(--warn); }
 .req-body { display: grid; gap: 2px; min-width: 0; }
+.req-edit { grid-column: 1 / -1; display: grid; gap: 10px; margin-top: 6px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.req-edit .field { margin: 0; }
 .req-name { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
 .req-name .muted { font-size: .8rem; }
 .req-why { margin: 0; font-size: .88rem; line-height: 1.6; }
@@ -1717,6 +1719,7 @@ function priorResultsPage() {
   return `${S.api === "mock" ? `<p class="example-note">서버가 모의 모드로 실행 중입니다. 결과는 [모의] 표시가 붙은 가짜 데이터이며, KIPRIS_API_KEY 를 설정하면 실제 데이터로 바뀝니다.</p>` : ""}
     ${L && !S.loading ? `<details class="search-box"><summary><b>검색 조건</b><span class="mono">${esc(L.query)}</span><span class="sb-edit">바꾸기</span></summary>${search}</details>` : `<div class="search-box open">${search}</div>`}
     ${S.err ? `<div class="alert"><strong>탐색하지 못했습니다</strong><span>${esc(S.err)}</span></div>` : ""}
+    ${L && S.kwChanged && !S.loading ? `<div class="alert warn"><strong>명칭이 바뀌어 검색어를 새로 맞췄어요</strong><span>새 검색어 ‘${esc(kwList(S.kw.replace(/\n/g, ",")).join(", "))}’로 다시 찾아야 아래 목록과 공백 맵이 새 명칭에 맞게 바뀌어요. <button type="button" class="btn sm" data-reexplore>새 검색어로 다시 찾기</button></span></div>` : ""}
     ${S.loading || !L ? `<div class="field" aria-live="polite"><span class="label">${S.loading ? "탐색 중입니다. 공백 맵은 칸마다 건수를 세므로 30초 정도 걸릴 수 있어요." : "아이디어 키워드로 이렇게 찾아 드려요"}</span>
     ${proc([
       { t: "유사 특허 검색", d: "초록에서 핵심 단어 검색" },
@@ -1758,7 +1761,12 @@ const dropNote = L => { const s = L.similar, out = [];
   if (s.ads) out.push(`특허와 관계없는 광고 문서(상표 등록 대행 광고 등) ${s.ads}건`);
   if (s.low) out.push(`유사도 ${s.minSim ?? 5}% 미만 문헌 ${s.low}건`);
   return out.length ? ` ${out.join("과 ")}은 목록·구성 비교·명세서 인용에서 뺐습니다.` : ""; };
-const notSearched = () => `<p class="muted">아직 탐색하지 않았습니다. 유사 특허 쪽에서 ‘KIPRIS에서 탐색’을 눌러 주세요.</p><div class="actions"><button type="button" class="btn" data-to="prior:results">유사 특허로</button></div>`;
+const notSearched = () => `<p class="muted">아직 비슷한 특허를 찾지 않았어요. 여기서 바로 찾을 수 있어요 (30초 안팎).</p><div class="actions"><button type="button" class="btn" data-explore-here ${S.loading ? "disabled" : ""}>${S.loading ? "찾는 중…" : "지금 비슷한 특허 찾기"}</button></div>`;
+document.addEventListener("click", e => {
+  if (!e.target.closest("[data-explore-here], [data-reexplore]")) return;
+  if (S.kwField !== S.idea.field) { S.kw = S.kwAuto = kwFromTitle(S.idea.title) || KW[S.idea.field]; S.kwField = S.idea.field; S.ipc = ""; }
+  runExplore();
+});
 function priorComparePage() {
   const L = liveData();
   return L ? viewCompare(L) : notSearched();
@@ -1793,17 +1801,21 @@ function refineNote() {
 }
 // 처음 쓰는 사람도 고를 수 있게: 맨 위에는 넓혀 볼 만한 방향 몇 개만 체크 타일로 두고, 칸마다 건수를 적은 전체 표·축 바꾸기는 접어 둔다
 S.gapOpen = false;
+function gapDirTiles(g, threshold) {
+  const ops = gapOpportunities(g, threshold).slice(0, 4); if (!ops.length) return "";
+  if (!S.gapSel) S.gapSel = new Set();
+  return `<div class="seg seg-desc seg-multi gap-dirs" role="group" aria-label="넓혀 볼 방향">${ops.map(o => `<label><input type="checkbox" name="gap-dir" value="${o.key}" ${S.gapSel.has(o.key) ? "checked" : ""}><span><span class="seg-t">${esc(o.row)} × ${esc(o.col)}</span><small>이 조합은 ${o.v.toLocaleString()}건뿐 · ‘${esc(o.row)}’ 출원 ${o.R.toLocaleString()}건, ‘${esc(o.col)}’ 출원 ${o.C.toLocaleString()}건</small></span></label>`).join("")}</div>`;
+}
 function gapPage() {
   const guard = refineGuard("공백 맵"); if (guard) return guard;
   const f = S.idea.field, L = liveData(), g = currentGap(), threshold = L?.gap ? L.gap.threshold : 3;
   if (!S.gapSel) S.gapSel = new Set();
-  const max = Math.max(1, ...g.m.flat().filter(Number.isFinite)), ops = gapOpportunities(g, threshold).slice(0, 4);
+  const max = Math.max(1, ...g.m.flat().filter(Number.isFinite));
   const aiCells = Object.entries(S.aiGap).filter(([k]) => { const [r, c] = k.split("×"); return g.rows.includes(r) && g.cols.includes(c); });
   return `${refineNote()}
     <div class="sub-head"><h3>넓혀 볼 만한 방향<span class="muted h-meta">${esc(fieldName(f))} · 고르지 않아도 됩니다</span></h3></div>
     <p class="muted" style="font-size:.86rem">비슷한 기술은 많이 출원됐지만 이 조합으로는 아직 적은 곳이에요. 내 아이디어를 이쪽으로도 넓혀 볼 생각이 있을 때만 체크하세요. 체크한 방향은 3단계 ‘보완 제안’에 후보로 들어가요.</p>
-    ${ops.length ? `<div class="seg seg-desc seg-multi gap-dirs" role="group" aria-label="넓혀 볼 방향">${ops.map(o => `<label><input type="checkbox" name="gap-dir" value="${o.key}" ${S.gapSel.has(o.key) ? "checked" : ""}><span><span class="seg-t">${esc(o.row)} × ${esc(o.col)}</span><small>이 조합은 ${o.v.toLocaleString()}건뿐 · ‘${esc(o.row)}’ 출원 ${o.R.toLocaleString()}건, ‘${esc(o.col)}’ 출원 ${o.C.toLocaleString()}건</small></span></label>`).join("")}</div>`
-      : `<p class="muted">출원이 적은 조합(${threshold}건 이하)이 없습니다. 아래 전체 표에서 축을 바꿔 볼 수 있어요.</p>`}
+    ${gapDirTiles(g, threshold) || `<p class="muted">출원이 적은 조합(${threshold}건 이하)이 없습니다. 아래 전체 표에서 축을 바꿔 볼 수 있어요.</p>`}
     <p class="gap-picked">${S.gapSel.size ? `<b>고른 방향 ${S.gapSel.size}개</b> · 3단계 보완 제안에 후보로 들어가요. <button type="button" class="linklike" id="gap-clear">모두 지우기</button>` : "고른 방향이 없어요. 그대로 ‘다음’을 눌러도 됩니다."}</p>
     <details class="gap-more" ${S.gapOpen ? "open" : ""}><summary>공백 맵 전체 표 보기 · 기술 요소 ${g.rows.length}개 × 효과·용도 ${g.cols.length}개 칸의 출원 건수</summary>
       <div class="sub-head"><h3>특허 공백 맵 · ${esc(fieldName(f))}</h3>
@@ -1845,9 +1857,37 @@ function requirementCards() {
   return { r, cards: [...map.values()] };
 }
 const RISK_WORD = { bad: "위험 높음", warn: "확인 필요", ok: "양호", na: "해당 없음" };
-// 요건마다 고칠 자리 (쪽:쪽 이름:입력칸). data-fact-go 로 그 칸까지 데려간다
-const REQ_FIX = { "신규성": "idea:start:input[name=disclosed]", "진보성": "idea:pick:#diff", "기재불비": "draft:0:#parts", "실험 데이터": "idea:start:input[name=data]",
-  "실시가능요건": "idea:start:input[name=strain]", "선행기술": "prior:compare:main", "발명 성립성": "draft:0:#parts" };
+// 요건마다 그 판단에 쓰인 입력을 진단 쪽에서 바로 고친다 (다른 쪽으로 보내지 않는다). 고치고 ‘다시 진단’을 누르면 결과가 바로 바뀐다
+const rqText = (id, label, v, hint, rows = 3) => `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" rows="${rows}">${esc(v)}</textarea><span class="hint">${hint}</span></div>`;
+const rqData = () => `<div class="field"><span class="label">효과를 직접 재 본 값이 있나요?</span>${seg("rq-data", [["yes", "있음", "재 본 숫자가 있어요"], ["no", "없음", "아직 재 보지 않았어요"]], S.idea.data, { label: "실험 데이터" })}</div>`;
+const REQ_EDIT = {
+  "진보성": () => rqText("rq-diff", "기존과 다른 점", S.idea.diff, "조건(온도·시간·양)과 결과를 숫자로 적어요. 예: 천공 직경 0.3 mm로 보관 7일 뒤 중량 감소율이 기존 6.8%에서 2.1%로 줄었다")
+    + rqText("rq-effect", "효과 (기존과 비교한 숫자)", S.effect, "예: 보관 7일 후 중량 감소율 2.1% (대조군 6.8%)", 2) + (S.idea.data === "yes" ? "" : rqData()),
+  "선행기술": () => rqText("rq-diff", "기존과 다른 점 (비슷한 특허에 없는 것)", S.idea.diff, "비슷한 특허에 없는 구성이나 조건을 앞에 적어요."),
+  "기재불비": () => rqText("rq-parts", "핵심 구성 (한 줄에 하나)", S.parts, "구성마다 확인한 범위를 적어요. 예: 직경 0.2~0.5 mm 미세 천공부", 4),
+  "발명 성립성": () => rqText("rq-parts", "핵심 구성 (한 줄에 하나)", S.parts, "센서·제어부처럼 기계와 이어지는 부분을 한 줄씩 넣어요. 예: 토양 수분을 재는 센서", 4),
+  "실험 데이터": rqData,
+  "신규성": () => `<div class="field"><span class="label">제품을 외부에 공개한 적이 있나요? (전시·SNS·발표·판매)</span>${seg("rq-disclosed", [["yes", "있음", "남이 본 적이 있어요"], ["no", "없음", "보여 준 적 없어요"]], S.idea.disclosed, { label: "외부 공개" })}</div>
+    <div class="field"><label for="rq-discDate">처음 공개한 날 <span class="muted h-meta">공개했다면</span></label><input type="date" id="rq-discDate" value="${esc(S.idea.discDate)}" max="${iso(today)}"></div>`,
+  "실시가능요건": () => `<div class="field"><span class="label">발명에 쓰는 균주는 어떤 균주인가요?</span>${seg("rq-strain", STRAIN_OPTS, S.strain, { label: "균주 종류" })}</div>`
+};
+const reqLevel = k => requirementCards().cards.find(c => c.k === k)?.c ?? "ok";
+document.addEventListener("click", e => {
+  const o = e.target.closest("[data-rq-open]");
+  if (o) { S.rqOpen = S.rqOpen === o.dataset.rqOpen ? "" : o.dataset.rqOpen; rerenderKeepScroll(); setTimeout(() => $(".req-edit textarea, .req-edit input:not([type=radio])")?.focus({ preventScroll: true })); return; }
+  const a = e.target.closest("[data-rq-apply]"); if (!a) return;
+  const k = a.dataset.rqApply, box = a.closest(".req-edit"), before = reqLevel(k), v = id => box.querySelector(`#${id}`)?.value, r = n => box.querySelector(`input[name="${n}"]:checked`)?.value;
+  if (v("rq-diff") != null) S.idea.diff = v("rq-diff");
+  if (v("rq-effect") != null) S.effect = v("rq-effect");
+  if (v("rq-parts") != null) S.parts = v("rq-parts");
+  if (r("rq-data")) S.idea.data = r("rq-data");
+  if (r("rq-disclosed")) S.idea.disclosed = r("rq-disclosed");
+  if (v("rq-discDate") != null) S.idea.discDate = v("rq-discDate");
+  if (r("rq-strain")) S.strain = r("rq-strain");
+  S.rqOpen = ""; invalidateSpec(); scheduleSave(); renderSide(); rerenderKeepScroll();
+  const after = reqLevel(k);
+  toast(after === before ? `다시 진단했어요. ${k}: 아직 ${RISK_WORD[after]}` : `다시 진단했어요. ${k}: ${RISK_WORD[before]} → ${RISK_WORD[after]}`);
+});
 function reqBoard(cards) {
   const order = { bad: 0, warn: 1, na: 2, ok: 3 }, sorted = [...cards].sort((a, b) => order[a.c] - order[b.c]);
   const n = c => cards.filter(x => x.c === c).length, todo = sorted.filter(x => x.c === "bad" || x.c === "warn"), fine = sorted.filter(x => x.c === "ok" || x.c === "na");
@@ -1858,7 +1898,8 @@ function reqBoard(cards) {
     ${todo.length ? `<ol class="req-list" aria-label="고칠 요건 (심각한 것부터)">${todo.map(l => `<li class="req ${l.c}">
         <span class="req-badge">${RISK_WORD[l.c]}</span>
         <div class="req-body"><p class="req-name"><b>${l.k}</b>${LQ[l.k] ? `<span class="muted">${LQ[l.k]}</span>` : ""}</p><p class="req-why">${l.v.join(" ")}</p></div>
-        ${REQ_FIX[l.k] ? `<button type="button" class="btn ghost sm" data-fact-go="${REQ_FIX[l.k]}">고치러 가기</button>` : ""}</li>`).join("")}</ol>`
+        ${REQ_EDIT[l.k] ? `<button type="button" class="btn ghost sm" data-rq-open="${l.k}" aria-expanded="${S.rqOpen === l.k}">${S.rqOpen === l.k ? "닫기" : "여기서 고치기"}</button>` : ""}
+        ${REQ_EDIT[l.k] && S.rqOpen === l.k ? `<div class="req-edit">${REQ_EDIT[l.k]()}<div class="actions"><button type="button" class="btn sm" data-rq-apply="${l.k}">고치고 다시 진단</button></div></div>` : ""}</li>`).join("")}</ol>`
       : `<p class="req-allok">모든 요건이 양호합니다. 그래도 진단은 참고용이니 변리사 검토를 받아 보세요.</p>`}
     ${fine.length ? `<details class="req-fine"><summary>문제없는 요건 ${fine.length}개 · ${fine.map(l => l.k).join(", ")}</summary><ul>${fine.map(l => `<li><b>${l.k}</b> ${l.v.join(" ")}</li>`).join("")}</ul></details>` : ""}`;
 }
@@ -1925,7 +1966,7 @@ function suggestPage() {
         <ul>${parts.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>
       <div class="after"><span class="eyebrow">보완 후보 · 데이터를 확보하면 종속항으로</span><strong>${esc(S.idea.title)}</strong>
         <ul>${parts.map(p => `<li>${esc(p)}</li>`).join("")}${R.parts.map(p => `<li class="added">+ ${esc(p)} <span class="muted">(후보)</span></li>`).join("")}</ul>
-        ${R.sel.length ? `<p class="muted" style="font-size:.84rem">명칭은 바꾸지 않습니다. 후보는 실험으로 효과를 확인하기 전까지 청구항에 넣지 않고 명세서 검토 메모에 남깁니다.</p>` : `<p class="muted" style="font-size:.84rem">선행기술 조사의 공백 맵에서 칸을 골라 확장 방향을 추가하세요. <button type="button" class="linklike" data-to="prior:gap">공백 맵으로</button></p>`}</div>
+        ${R.sel.length ? `<p class="muted" style="font-size:.84rem">명칭은 바꾸지 않습니다. 후보는 실험으로 효과를 확인하기 전까지 청구항에 넣지 않고 명세서 검토 메모에 남깁니다.</p>` : `<p class="muted" style="font-size:.84rem">아래 ‘넓혀 볼 방향’에서 고르면 후보가 여기에 들어가요.</p>`}</div>
     </div>
     ${cut("권장 청구항 구조 보기")}
     <span class="label">권장 청구항 구조 · ${KIND_NAME[k.main]} 발명</span>
@@ -1941,7 +1982,7 @@ function suggestPage() {
     <span class="label">출원 전 추가하면 좋은 실험</span>
     <ul class="checks">${R.exps.map(e => `<li><span class="st warn">추가</span><span>${esc(e)}</span></li>`).join("")}</ul>
     <div class="actions"><button class="btn" id="apply-refine" ${R.sel.length ? "" : "disabled"}>보완 후보를 명세서 검토 메모에 넣기</button></div>
-    ${R.sel.length ? "" : `<p class="hint">넣을 보완 후보가 없어 ‘명세서 검토 메모에 넣기’ 버튼은 꺼져 있습니다. <button type="button" class="linklike" data-to="prior:gap">공백 맵에서 칸을 고르면</button> 켜지고, 고르지 않고 바로 명세서 작성으로 가도 됩니다.</p>`}`;
+    ${R.sel.length ? "" : `<div class="field"><span class="label">넓혀 볼 방향 · 여기서 고르면 위 버튼이 켜져요 (안 골라도 돼요)</span>${gapDirTiles(g, L?.gap ? L.gap.threshold : 3)}</div>`}`;
 }
 
 // 5. 제출·관리: 지원사업·변리사 → 기한 관리
@@ -2099,7 +2140,7 @@ async function checkApi() {
 
 async function runExplore() {
   const f = S.idea.field, axes = baseAxes(f), gen = S.gen = (S.gen || 0) + 1; // 나중에 시작한 검색이 있으면 이 결과는 버린다
-  S.loading = true; S.err = ""; render();
+  S.loading = true; S.err = ""; S.kwChanged = false; render();
   try {
     const r = await fetch("/api/explore", {
       method: "POST",
@@ -2212,19 +2253,26 @@ GAP.pack = {
 function riskCheck() {
   const i = S.idea, parts = S.parts.split("\n").filter(s => s.trim()), out = [];
   const hasNum = /\d/.test(i.diff), hasData = i.data === "yes";
-  out.push(hasNum && hasData
-    ? { k: "진보성 부족", c: "warn", v: "수치 효과가 있지만, 가장 가까운 선행기술과 직접 비교한 비교예가 필요합니다." }
+  const compared = /대조|비교|기존|대비|→|보다/.test(`${i.diff} ${S.effect}`) && /\d/.test(S.effect + i.diff);
+  out.push(hasNum && hasData && compared
+    ? { k: "진보성 부족", c: "ok", v: "기존과 비교한 수치 효과가 있어 진보성을 설명하기 좋습니다." }
+    : hasNum && hasData
+    ? { k: "진보성 부족", c: "warn", v: "수치 효과가 있지만, 기존 기술과 비교한 값(대조군·비교예)이 필요합니다. ‘기존 6.8% → 2.1%’처럼 적어 주세요." }
     : { k: "진보성 부족", c: "bad", v: "기존 기술보다 나은 효과를 숫자로 보여줄 데이터가 부족합니다." });
   const real = p => /\d/.test(p.replace(/\(\s*예(?:시)?\s*[:：][^)]*\)/g, "")), numbered = parts.filter(real).length, onlyEx = parts.filter(p => !real(p) && /\d/.test(p)).length;
   out.push(!parts.length ? { k: "기재불비", c: "warn", v: "핵심 구성을 아직 적지 않았습니다. 구성마다 수치 범위(예: 5 내지 20 중량%)를 함께 적어 주세요." }
     : numbered === parts.length ? { k: "기재불비", c: "ok", v: "핵심 구성마다 수치 범위가 적혀 있습니다." }
+    : numbered && claimKinds().main === "device" ? { k: "기재불비", c: "ok", v: `핵심 구성 ${parts.length}개 중 ${numbered}개에 수치 범위가 있습니다. 숫자가 없는 구성은 도면과 구조 설명으로 뒷받침하세요.` }
+    : numbered ? { k: "기재불비", c: "warn", v: `핵심 구성 ${parts.length}개 중 ${parts.length - numbered}개에 실제 수치 범위가 없습니다${onlyEx ? `(${onlyEx}개는 ‘예:’ 예시 값만 있음)` : ""}. 확인한 범위를 적어 주세요.` }
     : { k: "기재불비", c: "bad", v: `핵심 구성 ${parts.length}개 중 ${parts.length - numbered}개에 실제 수치 범위가 없습니다${onlyEx ? `(${onlyEx}개는 ‘예:’ 예시 값만 있음)` : ""}. ‘적정량’·‘유효량’ 대신 확인한 범위를 적으세요.` });
   if (i.field === "ferment") out.push(S.strain === "yes" ? { k: "실시가능요건", c: "ok", v: "새 균주를 기탁했습니다. 명세서에 학명, 기탁기관, 수탁번호를 함께 적으세요." }
     : S.strain === "known" ? { k: "실시가능요건", c: "ok", v: "시판·공지 균주는 기탁하지 않아도 됩니다. 대신 입수 방법(분양 기관과 번호)을 명세서에 적으세요." }
     : S.strain === "no" ? { k: "실시가능요건", c: "bad", v: "새 균주를 기탁하지 않고 출원하면 재현할 수 없다는 이유로 거절되고, 출원 뒤에는 보완할 수 없습니다. 출원 전에 기탁하세요." }
     : { k: "실시가능요건", c: "warn", v: "균주 종류를 아직 고르지 않았습니다. 새 균주라면 출원 전에 기탁해야 합니다." });
   if (i.field === "functional") out.push({ k: "산업상 이용가능성", c: "warn", v: "'치료 방법' 대신 조성물·식품 용도로 청구하세요." });
-  if (i.field === "smartfarm") out.push({ k: "발명 성립성", c: "warn", v: "알고리즘만이 아니라 센서·제어부와 연동된 구성으로 청구하세요." });
+  if (i.field === "smartfarm") out.push(/(센서|제어부|제어 장치|구동부|모듈|본체|프레임|모터|카메라|통신부|노즐|펌프)/.test(S.parts)
+    ? { k: "발명 성립성", c: "ok", v: "센서·제어부 같은 기계 구성이 있어 발명으로 인정받기 좋습니다." }
+    : { k: "발명 성립성", c: "warn", v: "알고리즘만이 아니라 센서·제어부와 연동된 구성으로 청구하세요." });
   out.push(i.disclosed === "yes" ? { k: "신규성 부족", c: "warn", v: "이미 공개했으므로 공지예외주장을 빠뜨리면 거절될 수 있습니다." }
     : i.disclosed === "no" ? { k: "신규성 부족", c: "ok", v: "공개 이력이 없습니다." }
     : { k: "신규성 부족", c: "warn", v: "외부 공개 이력을 아직 답하지 않았습니다." });
@@ -2492,6 +2540,8 @@ S.leaveSkip = new Set();
 function leaveChecks() {
   const pg = pagesFor(S.step)[S.sub]?.[0], k = `${S.step}:${pg}`, out = [], add = (t, go, kind = "todo") => out.push({ t, go, kind });
   if (k === "prior:results" && S.api !== "off" && !liveData()) add("비슷한 특허를 아직 찾지 않았어요", "#explore");
+  if (k === "prior:results" && S.kwChanged && liveData()) add("명칭이 바뀌었는데 비슷한 특허를 다시 찾지 않았어요", "[data-reexplore]");
+  if (k === "draft:0" && staleWords()) add(`${staleWords().where.join("·")}에 예전 낱말 ‘${staleWords().old.join("·")}’이(가) 남아 있어요`, "[data-stale-fix], #parts", "check");
   if (k === "diag:result") { const bad = requirementCards().cards.filter(c => c.c === "bad"); if (bad.length) add(`위험이 높은 항목 ${bad.length}개: ${bad.map(c => c.k).join(", ")}`, ".req.bad", "check"); }
   if (S.step === "draft" && S.spec) {
     if (S.sub === 0 && !S.parts.trim()) add("핵심 구성이 비어 있어요", "#parts");
@@ -2739,7 +2789,10 @@ const J = (w, t) => t === "으로" ? w + (jong(w) && jong(w) !== 8 ? "으로" : 
 const listKo = a => a.length < 2 ? (a[0] ?? "") : `${a.slice(0, -1).join(", ")} 및 ${a[a.length - 1]}`;
 const krAppNo = n => /^\d{13}$/.test(n) ? `한국 특허출원 제${n.slice(0, 2)}-${n.slice(2, 6)}-${n.slice(6)}호` : `한국 특허출원 제${n}호`;
 // 핵심 구성 한 줄을 이름·확인한 수치·예시로 나눈다. ‘(예: …)’는 화면이 보여 준 예시라서 확인한 값으로 쓰지 않는다
-const RANGE_G = /\d[\d.,]*\s*(?:~|-|내지)\s*\d[\d.,]*\s*(?:중량|부피|w\/w|v\/v)?\s*(?:%|℃|시간|분|일|mg\/kg|g\/L|ppm|배|cm|mm|lux)?|\d[\d.,]*\s*(?:중량|부피)?\s*(?:%|℃|시간|분|일|ppm)/g;
+// 단위는 긴 것부터 (mm 가 m 보다, mg 가 g 보다 먼저). 단위 뒤에 영문이 이어지면(10~20 mesh) 단위로 보지 않는다
+const RANGE_G = /\d[\d.,]*\s*(?:~|-|내지)\s*\d[\d.,]*\s*(?:중량|부피|w\/w|v\/v)?\s*(?:%|℃|°C|시간|분|초|일|개월|mg\/kg|mg\/L|g\/L|ppm|배|μm|nm|mm|cm|kg|mg|mL|ml|g|L|m|rpm|kPa|MPa|lux|개|회|매|W|V|Hz)?(?![A-Za-z])|\d[\d.,]*\s*(?:중량|부피)?\s*(?:%|℃|시간|분|일|ppm)/g;
+// 수치가 무엇의 값인지 나타내는 말 (‘직경 0.2~0.5 mm 천공부’ → 천공부의 직경)
+const PART_ATTR = "직경|지름|두께|길이|폭|높이|깊이|간격|크기|함량|농도|온도|면적|개수|용량|중량|무게|함수율|수분|압력|속도|회전수";
 const EX_G = /\s*\(\s*예(?:시)?\s*[:：]\s*([^()]*)\)/g;
 const TRIVIAL = /^(물|정제수|증류수|희석제|부형제|용매)$/;
 // 발명이 만들거나 정한 구성(발효물·추출물·서열번호의 프라이머 등). ‘시판품을 쓸 수 있다’고 쓰면 신규성·실시 가능 요건과 어긋나므로 얻는 방법을 묻는다
@@ -2754,8 +2807,15 @@ function parsePart(p) {
   const plain = noEx.replace(/\s*\([^()]*\)/g, "");
   const ranges = (plain.match(RANGE_G) || []).map(r => r.trim());
   // 수치를 빼면서 수치에 붙은 조사도 함께 뺀다 (‘30~40℃에서 발효하는 단계’ → ‘발효하는 단계’, ‘에서’만 남지 않게)
-  const name = plain.replace(new RegExp(`(?:${RANGE_G.source})(?:에서|으로|로|에|까지|의|을|를|이|가)?`, "g"), " ").replace(/[\s,，]+$/, "").replace(/\s+(을|를)$/, "").replace(/\s{2,}/g, " ").trim() || plain.trim() || raw;
-  return { raw, name, ranges, ex, exRanges: ex.match(RANGE_G) || [], exWords: ex.replace(RANGE_G, "").replace(/[\s,·]+/g, "").length > 0, note, balance, step: /(단계|공정|조건)$/.test(name), trivial: TRIVIAL.test(name) };
+  let name = plain.replace(new RegExp(`(?:${RANGE_G.source})(?:에서|으로|로|에|까지|의|을|를|이|가)?`, "g"), " ").replace(/[\s,，]+$/, "").replace(/\s+(을|를)$/, "").replace(/\s{2,}/g, " ").trim() || plain.trim() || raw;
+  // 수치 바로 앞의 ‘직경·두께·함량’ 같은 말은 이름에서 떼어 ‘무엇의 값’으로 쓴다
+  let attr = "";
+  if (ranges.length) {
+    const lead = plain.match(new RegExp(`^(${PART_ATTR})(?:이|가|은|는)?\\s*(?=\\d)`)), tail = plain.match(new RegExp(`\\s(${PART_ATTR})(?:이|가|은|는)?\\s*(?=\\d)`));
+    const a = lead?.[1] || tail?.[1];
+    if (a) { const rest = name.replace(new RegExp(`(^|\\s)${a}(?:이|가|은|는)?(?=\\s|$)`), " ").replace(/\s{2,}/g, " ").trim(); if (rest) { attr = a; name = rest; } }
+  }
+  return { raw, name, attr, ranges, ex, exRanges: ex.match(RANGE_G) || [], exWords: ex.replace(RANGE_G, "").replace(/[\s,·]+/g, "").length > 0, note, balance, step: /(단계|공정|조건)$/.test(name), trivial: TRIVIAL.test(name) };
 }
 const partName = p => parsePart(p).name;
 // "5~20 중량%" → "5 내지 20 중량%"
@@ -2893,7 +2953,7 @@ function buildSpecTemplate() {
   const rangeSentence = (p, label, asStep) => {
     if (p.ranges.length) {
       const r = listKo(p.ranges.map(rangeKo));
-      para(`${asStep ? `상기 ${J(label, "은")} ${r}의 조건에서 수행될 수 있다.` : isDevice ? `상기 ${J(label, "은")} ${J(r, "으로")} 설정될 수 있다.` : `상기 ${J(label, "은")} ${amount(p.ranges[0])}${J(r, "으로")} 포함될 수 있다.`} ${NEED(`${label}의 범위를 벗어날 때 나타나는 문제(하한·상한의 기술적 의미)`)}`);
+      para(`${asStep ? `상기 ${J(label, "은")} ${r}의 조건에서 수행될 수 있다.` : isDevice ? `상기 ${p.attr ? `${label}의 ${J(p.attr, "은")}` : J(label, "은")} ${J(r, "으로")} 설정될 수 있다.` : `상기 ${J(label, "은")} ${amount(p.ranges[0])}${J(r, "으로")} 포함될 수 있다.`} ${NEED(`${label}의 범위를 벗어날 때 나타나는 문제(하한·상한의 기술적 의미)`)}`);
     }
   };
   if (isProcess) steps.forEach((p, i) => rangeSentence(p, stepLabel(p, i), true));
@@ -2968,7 +3028,7 @@ function buildSpecTemplate() {
   else {
     const bal = comps.find(p => p.balance), ranged = comps.filter(p => !p.balance && p.ranges.length);
     if (!isDevice && bal && ranged.length) dep(`${amount(ranged[0].ranges[0]) || `${whole} 총 중량에 대하여 `}${J(listKo([...ranged.map(p => `상기 ${p.name} ${listKo(p.ranges.map(rangeKo))}`), `잔량의 ${bal.name}`]), "을")} 포함하는`);
-    else ranged.forEach(p => dep(isDevice ? `상기 ${J(p.name, "은")} ${listKo(p.ranges.map(rangeKo))}인` : `상기 ${J(p.name, "은")} ${amount(p.ranges[0])}${J(listKo(p.ranges.map(rangeKo)), "으로")} 포함되는`));
+    else ranged.forEach(p => dep(isDevice ? `상기 ${p.attr ? `${p.name}의 ${J(p.attr, "은")}` : J(p.name, "은")} ${listKo(p.ranges.map(rangeKo))}인` : `상기 ${J(p.name, "은")} ${amount(p.ranges[0])}${J(listKo(p.ranges.map(rangeKo)), "으로")} 포함되는`));
   }
   if (ferment && S.strain) {
     const target = isProcess ? steps.findIndex(p => /발효/.test(p.name)) : comps.findIndex(p => /발효/.test(p.name));
@@ -3862,10 +3922,41 @@ function ideateFrom(f, kw) {
   if (!kws.length) { toast("키워드를 하나 이상 적어 주세요"); return false; }
   S.ideate.kw = kw; S.ideate.f = f; S.idea.field = f;
   setDrafts(ruleDrafts(f, kws), "rule");
-  S.kw = kws.slice(0, 3).join("\n"); S.kwField = f; S.ipc = ""; S.live = null; S.gapSel = null;
+  S.kw = S.kwAuto = kws.slice(0, 3).join("\n"); S.kwField = f; S.ipc = ""; S.live = null; S.gapSel = null; S.kwChanged = false;
   S.tpl = tplFor(f);
   aiState("ideate").sig = ""; // 같은 키워드로 다시 받아도 AI가 다시 제안하게
   return true;
+}
+// 검색어는 사용자가 직접 고치지 않았다면 명칭을 따라간다 (명칭을 손으로 바꾸면 비슷한 특허도 새 명칭으로 찾는다)
+const KW_DROP = /^(유지|구조|방법|장치|시스템|제조|이용|위한|포함|함유|구비|개선|향상|효과|기능|용도)$/;
+function kwFromTitle(title) {
+  const ws = [...new Set(analyzePitch(title).kws.map(w => w.length > 2 ? w.replace(/(용|의)$/, "") : w).filter(w => w.length >= 2 && !KW_DROP.test(w)))];
+  if (!ws.length) return "";
+  return [...new Set([ws[0], ...(ws.length > 2 ? [ws.at(-2)] : []), ws.at(-1)])].join("\n");
+}
+// 명칭·다른 점·문제를 손으로 바꿨는데 핵심 구성·효과에 처음 문장의 낱말이 남아 있으면 (딸기 → 블루베리) 알려 주고 한 번에 바꾸게 한다
+function staleWords() {
+  const old = kwList(S.ideate.kw || "")[0], fresh = kwFromTitle(S.idea.title).split("\n")[0];
+  if (!old || !fresh || old === fresh || S.idea.title.includes(old) || S.idea.diff.includes(old)) return null;
+  const where = [["핵심 구성", S.parts], ["효과", S.effect], ["해결할 문제", S.idea.problem]].filter(([, v]) => v.includes(old)).map(([k]) => k);
+  return where.length ? { old: [old], fresh, where } : null;
+}
+function staleBox() {
+  const st = staleWords(); if (!st) return "";
+  return `<div class="alert warn" data-pg="0"><strong>${st.where.join("·")}에 예전 낱말 ‘${esc(st.old.join("·"))}’이(가) 남아 있어요</strong><span>명칭은 ‘${esc(S.idea.title)}’예요. 아래 칸을 직접 고치거나 한 번에 바꾸세요.
+    ${st.fresh ? ` <button type="button" class="btn sm" data-stale-fix>‘${esc(st.old[0])}’ → ‘${esc(st.fresh)}’ 바꾸기</button>` : ""}</span></div>`;
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest("[data-stale-fix]")) return;
+  const st = staleWords(); if (!st?.fresh) return;
+  const re = new RegExp(st.old[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+  S.parts = S.parts.replace(re, st.fresh); S.effect = S.effect.replace(re, st.fresh); S.idea.problem = S.idea.problem.replace(re, st.fresh);
+  invalidateSpec(); scheduleSave(); rerenderKeepScroll(); toast(`‘${st.old[0]}’를 ‘${st.fresh}’(으)로 바꿨어요`);
+});
+function syncKw() {
+  if (S.kwAuto == null || S.kw !== S.kwAuto) return; // 사용자가 검색어를 직접 고쳤으면 그대로 둔다
+  const k = kwFromTitle(S.idea.title); if (!k || k === S.kw) return;
+  S.kw = S.kwAuto = k; if (liveData()) S.kwChanged = true;
 }
 function pickGroup(key, label, list) {
   return `<div class="field full"><span class="label">${label} <span class="muted h-meta">하나를 고르세요</span></span>
@@ -4498,6 +4589,24 @@ function qaOf(label) {
 }
 // 입력칸으로 가는 사실 칸은 명세서 여러 곳에 같은 값이 들어가므로 묶어서 한 번만 묻는다
 const qaKey = x => { const go = QA_GO.find(([re]) => re.test(x.label)); return go ? `go:${go[2] ?? go[1]}` : fillKey(S.spec?.text ?? "", x.at, x.label); };
+// 출원서 쪽 값과 같은 사실 칸은 빈칸 질문 카드 안에서 바로 넣는다. 넣은 값은 출원서와 명세서의 같은 자리에 함께 들어간다
+const QA_FACT = [
+  [/영문 명칭/, [["engTitle", "발명의 영문 명칭", "예: VENTILATED PACKAGING CONTAINER FOR BERRIES"]]],
+  [/수탁번호|기탁기관/, [["depOrg", "기탁기관", "예: 한국생명공학연구원 생물자원센터(KCTC)"], ["depNo", "수탁번호", "예: KCTC 12345BP"]]],
+  [/학명/, [["strainName", "균주의 학명", "예: Bacillus velezensis"]]],
+  [/분양|입수 방법|입수처/, [["strainSource", "균주를 구한 곳", "예: 한국농업미생물자원센터(KACC) 분양, KACC 10111"]]]
+];
+function qaFactPut(box) {
+  const ins = [...box.querySelectorAll("[data-qa-fact]")], empty = ins.find(i => !i.value.trim());
+  if (empty) { empty.focus(); toast("값을 적어 주세요. 모르면 ‘건너뛰기’를 누르세요"); return; }
+  ins.forEach(i => { S.app[i.dataset.qaFact] = i.value.trim(); });
+  if (S.spec.source === "template" && !S.spec.edited) S.spec = newTemplateSpec(); else syncSpecIds();
+  const sp = $("#spec-text"); if (sp) sp.value = S.spec.text;
+  document.activeElement?.blur(); renderCheck(); refreshFilingDocs(); renderApProgress(); scheduleSave();
+  toast("넣었어요. 출원서와 명세서의 같은 자리에도 들어갔어요");
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-qa-fact-put]"); if (b) qaFactPut(b.closest(".qa-card")); });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset?.qaFact != null) { e.preventDefault(); qaFactPut(e.target.closest(".qa-card")); } });
 function qaCard() {
   if (!S.spec) return "";
   const slots = fillSlots(); if (!slots.length) return "";
@@ -4505,13 +4614,14 @@ function qaCard() {
   const cur = slots.find(x => !S.qaSkip.has(qaKey(x)));
   const head = `<div class="qa-top"><span><b>빈칸 질문</b> <span class="muted">· 답하면 명세서의 그 자리에 들어가요${aiMode() && fillTodo().length ? ". 한꺼번에 하려면 아래 ‘AI로 한꺼번에 채우기’" : ""}</span></span><span class="qa-left">${slots.length}곳 남음</span></div>`;
   if (!cur) return `${head}<div class="qa-done"><span>남은 ${slots.length}곳은 모두 건너뛰었어요. 잘 모르면 비워 두고 변리사 상담 때 물어봐도 돼요.</span><button type="button" class="btn ghost sm" data-qa-again>건너뛴 질문 다시 보기</button></div>`;
-  const Q = qaOf(cur.label), sent = s => esc(s.replace(/〔입력 필요[^〕]*〕/g, "＿＿").replace(/\s+/g, " ")), same = Q.go ? slots.filter(x => qaKey(x) === qaKey(cur)).length : 1;
+  const Q = qaOf(cur.label), fact = QA_FACT.find(([re]) => re.test(cur.label))?.[1], sent = s => esc(s.replace(/〔입력 필요[^〕]*〕/g, "＿＿").replace(/\s+/g, " ")), same = fact ? slots.filter(x => qaKey(x) === qaKey(cur)).length : 1;
   const sec = (S.spec.text.slice(0, cur.at).match(/【([^】\d][^】]*)】(?![\s\S]*【[^】\d][^】]*】)/) || [])[1] ?? "";
   const before = cur.before.split(/\n|(?<=다\.)\s/).pop().replace(/^【\d+】\s*/, "").slice(-140), after = cur.after.split(/\n|(?<=다\.)\s/)[0].slice(0, 120);
   return `${head}
     <p class="qa-q" id="qa-q">${esc(Q.q)}</p>
-    ${Q.go ? "" : `<p class="qa-ctx">${sec ? `<span>${esc(sec)} · </span>` : ""}${sent(before)}<mark>＿＿＿</mark>${sent(after)}</p>`}
-    ${Q.go ? `<div class="qa-actions"><button type="button" class="btn sm" data-fact-go="${Q.go}">입력하러 가기</button><span class="muted">입력칸에 한 번 넣으면 명세서 ${same}곳이 함께 채워져요.</span><button type="button" class="btn ghost sm" data-qa-skip="${cur.at}">건너뛰기</button></div>`
+    ${fact ? "" : `<p class="qa-ctx">${sec ? `<span>${esc(sec)} · </span>` : ""}${sent(before)}<mark>＿＿＿</mark>${sent(after)}</p>`}
+    ${fact ? `<div class="grid2">${fact.map(([k, l, ph]) => `<div class="field"><label for="qa-f-${k}">${l}</label><input type="text" id="qa-f-${k}" data-qa-fact="${k}" value="${esc(S.app[k] ?? "")}" placeholder="${esc(ph)}">${k === "engTitle" ? engHelp() : ""}</div>`).join("")}</div>
+    <div class="qa-actions"><button type="button" class="btn sm" data-qa-fact-put>넣기</button><span class="muted">한 번 넣으면 출원서와 명세서 ${same}곳에 함께 들어가요.</span><button type="button" class="btn ghost sm" data-qa-skip="${cur.at}">건너뛰기</button></div>`
     : `<textarea id="qa-answer" rows="3" aria-labelledby="qa-q" placeholder="${Q.ex ? `예: ${esc(Q.ex)}` : "여기에 적어 주세요"}">${esc(S.qaDraft?.at === cur.at ? S.qaDraft.v : "")}</textarea>${Q.hint ? `<span class="hint">${esc(Q.hint)}</span>` : ""}
     <div class="qa-actions"><button type="button" class="btn sm" data-qa-put="${cur.at}">명세서에 넣기</button><button type="button" class="btn ghost sm" data-qa-skip="${cur.at}">모르겠어요 · 건너뛰기</button><button type="button" class="linklike" data-need="${cur.at}">명세서에서 이 자리 보기</button></div>`}`;
 }
@@ -4526,28 +4636,23 @@ function qaPut(at) {
 }
 document.addEventListener("click", e => {
   const put = e.target.closest("[data-qa-put]"); if (put) { qaPut(+put.dataset.qaPut); return; }
-  const sk = e.target.closest("[data-qa-skip]"); if (sk) { const x = fillSlots().find(y => y.at === +sk.dataset.qaSkip); if (x) S.qaSkip.add(qaKey(x)); S.qaDraft = null; document.activeElement?.blur(); renderSpecNav(); setTimeout(() => ($("#qa-answer") ?? $("#qa-card [data-fact-go]"))?.focus({ preventScroll: true })); return; }
+  const sk = e.target.closest("[data-qa-skip]"); if (sk) { const x = fillSlots().find(y => y.at === +sk.dataset.qaSkip); if (x) S.qaSkip.add(qaKey(x)); S.qaDraft = null; document.activeElement?.blur(); renderSpecNav(); setTimeout(() => ($("#qa-answer") ?? $(".qa-card [data-qa-fact]"))?.focus({ preventScroll: true })); return; }
   if (e.target.closest("[data-qa-again]")) { S.qaSkip = new Set(); renderSpecNav(); }
 });
-document.addEventListener("input", e => { if (e.target.id === "qa-answer") S.qaDraft = { at: +e.target.closest("#qa-card").querySelector("[data-qa-put]").dataset.qaPut, v: e.target.value }; });
-document.addEventListener("keydown", e => { if (e.target.id === "qa-answer" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); e.target.closest("#qa-card").querySelector("[data-qa-put]")?.click(); } });
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-fact-go]"); if (!b) return;
-  const [st, pg, ...sel] = b.dataset.factGo.split(":"), q = sel.join(":");
-  if (st === "idea" && pg === "start") { const n = q.match(/name=(\w+)|#(\w+)/), id = { data: "data", sold: "hist", disclosed: "hist", discDate: "hist", discWhere: "hist", strain: "strain", problem: "problem" }[n?.[1] || n?.[2]]; if (id) S.chat.edit = id; }
-  goPage(st, /^\d+$/.test(pg) ? +pg : pg);
-  // 쪽 전환이 끝나야 칸이 생기므로 몇 번 다시 찾는다
-  const find = n => { const el = document.querySelector(q); if (!el) { if (n < 6) setTimeout(() => find(n + 1), 250); return; } if (el.closest("[hidden]")) { S.reveal[swKey()] = 99; applyReveal(); } el.scrollIntoView({ block: "center" }); (el.matches("input, textarea") ? el : el.querySelector("input, textarea"))?.focus({ preventScroll: true }); };
-  setTimeout(() => find(0), 300);
-});
+document.addEventListener("input", e => { if (e.target.id === "qa-answer") S.qaDraft = { at: +e.target.closest(".qa-card").querySelector("[data-qa-put]").dataset.qaPut, v: e.target.value }; });
+document.addEventListener("keydown", e => { if (e.target.id === "qa-answer" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); e.target.closest(".qa-card").querySelector("[data-qa-put]")?.click(); } });
 function renderSpecNav() {
   const box = $("#spec-nav"); if (!box) return;
   const n = specNeeds().length;
   box.innerHTML = n ? "" : `<span class="ok-t">채울 곳을 모두 채웠습니다 ✓</span><button type="button" class="btn ghost sm" data-sub="4">최종 점검으로</button>`;
-  const qa = $("#qa-card"); if (qa && document.activeElement?.id !== "qa-answer") qa.innerHTML = qaCard(); // 답을 적는 중에는 다시 그리지 않는다
+  // 빈칸 질문은 지금 보는 쪽(명세서 또는 최종 점검)에만 그린다 (같은 칸이 두 번 생기지 않게). 답을 적는 중에는 다시 그리지 않는다
+  const qa = S.sub === 4 ? $("#qa-card4") : $("#qa-card"), qo = S.sub === 4 ? $("#qa-card") : $("#qa-card4");
+  if (qo) qo.innerHTML = "";
+  if (qa && !qa.contains(document.activeElement)) qa.innerHTML = qaCard();
+  const aq = $("#ap-quick"); if (aq && !aq.contains(document.activeElement)) aq.innerHTML = apQuick();
   const fb = $("#fill-box"); if (fb) fb.innerHTML = fillBox();
   hintSoon();
-  const ub = $("#unv-box"); if (ub) ub.innerHTML = unvBox();
+  const ub = S.sub === 4 ? $("#unv-box4") : $("#unv-box"), uo = S.sub === 4 ? $("#unv-box") : $("#unv-box4"); if (uo) uo.innerHTML = ""; if (ub) ub.innerHTML = unvBox();
 }
 // 출원서에서 꼭 채울 칸 (화면에 있는 것만)
 function apRequired() {
@@ -4573,13 +4678,28 @@ function renderTodo() {
   const score = Math.round(40 * Math.max(0, 1 - needs / 30) + 25 * chk.filter(r => r.ok).length / chk.length + 20 * (apAll.length - ap.length) / apAll.length + 15 * (atts.length - attLeft.length) / atts.length);
   box.innerHTML = `<div class="sub-head"><h3>출원까지 남은 일 <span class="muted h-meta">${all ? `${all}가지` : "모두 끝"}</span></h3><span class="done-ring" style="--p:${score}%" role="img" aria-label="출원 서류 완성도 ${score}%"><span><b>${score}%</b><small>완성도</small></span></span></div>
     <ul class="todo">
-      ${item(needs, "명세서의 〔입력 필요〕 칸", `<button type="button" class="btn sm" data-to="draft:1">빈칸 채우러 가기</button>`)}
-      ${unv ? item(unv, "AI가 입력 없이 쓴 수치 (사실인지 확인)", `<button type="button" class="btn ghost sm" data-unv-go="${unvLive()[0].k}">확인하러</button>`) : ""}
-      ${item(ap.length, `출원서의 꼭 채울 칸${ap.length ? ` (${ap.map(x => x.t).join(", ")})` : ""}`, `<button type="button" class="btn ghost sm" data-ap-go="${ap[0]?.k ?? ""}">출원서로</button>`)}
+      ${item(needs, "명세서의 〔입력 필요〕 칸", `<button type="button" class="btn sm" data-scroll="#qa-card4">아래에서 채우기</button>`)}
+      ${unv ? item(unv, "AI가 입력 없이 쓴 수치 (사실인지 확인)", `<button type="button" class="btn ghost sm" data-scroll="#unv-box4">아래에서 확인</button>`) : ""}
+      ${item(ap.length, `출원서의 꼭 채울 칸${ap.length ? ` (${ap.map(x => x.t).join(", ")})` : ""}`, `<button type="button" class="btn ghost sm" data-scroll="#ap-quick">아래에서 넣기</button>`)}
       ${item(warn, "출원 전 점검에서 확인할 항목", `<button type="button" class="btn ghost sm" data-scroll="#spec-check">점검 보기</button>`)}
       ${item(attLeft.length, `준비할 서류${attLeft.length ? ` (${attLeft.map(x => x.name).join(", ")})` : ""}`, `<button type="button" class="btn ghost sm" data-scroll="#ready-list">서류 보기</button>`)}
     </ul>
     ${all ? "" : `<p class="hint">이제 아래 ‘제출용 파일 한 번에 받기’로 묶음을 받아 특허로에서 제출하세요.</p>`}`;
+  const aq = $("#ap-quick"); if (aq && !aq.contains(document.activeElement)) aq.innerHTML = apQuick(ap);
+}
+// 최종 점검에서 바로 넣는 출원서 꼭 채울 칸 (출원서 쪽 칸과 같은 값)
+// 빈칸 질문 카드가 지금 묻는 사실 칸 (같은 칸을 두 번 보여 주지 않게)
+function qaCurFactKeys() {
+  if (!S.spec) return [];
+  const cur = fillSlots().find(x => !(S.qaSkip ?? new Set()).has(qaKey(x))), f = cur && QA_FACT.find(([re]) => re.test(cur.label))?.[1];
+  return f ? f.map(x => x[0]) : [];
+}
+function apQuick(ap = apRequired().filter(x => !x.ok)) {
+  const asked = qaCurFactKeys(); ap = ap.filter(x => !asked.includes(x.k));
+  if (!ap.length) return "";
+  return `<div class="sub ap-quick"><span class="label">출원서에 꼭 넣을 칸 · 여기서 바로 넣어요</span><div class="grid2">${ap.map(x => `<div class="field"><label for="aq-${x.k}">${x.t}</label>${x.k === "inventors"
+      ? `<textarea id="aq-${x.k}" data-ap="${x.k}" rows="2" placeholder="한 줄에 한 명: 성명, 특허고객번호">${esc(S.app[x.k] ?? "")}</textarea>`
+      : `<input type="${x.k === "priDate" ? "date" : "text"}" id="aq-${x.k}" data-ap="${x.k}" value="${esc(S.app[x.k] ?? "")}">`}</div>`).join("")}</div></div>`;
 }
 
 /* ---------- 명세서 임시저장: 지금 명세서를 이 기기 브라우저에 따로 보관했다가 되돌린다 (작업 전체 자동 저장과 별개) ---------- */
@@ -4682,10 +4802,11 @@ function viewDraft() {
     <div class="panel-head"><h2 id="h-draft">출원 서류 작성</h2>${resetBtn()}
       <p class="muted">명세서·출원서·첨부서류를 현행 서식으로 만들고 수수료를 계산합니다. 〔입력 필요〕를 채우고 최종 점검을 마치면 특허로(patent.go.kr)에서 제출합니다.${aiMode() ? " AI가 켜져 있어 기본 초안을 AI 작성본으로 자동으로 바꿉니다(직접 고친 명세서는 그대로 둡니다)." : ""}</p></div>
     <div class="field" data-pg="0"><span class="label">보호받을 형태 <span class="muted h-meta">청구 유형 · 분야와 명칭을 보고 ‘추천’을 골라 두었어요. 잘 모르면 그대로 두세요</span></span>${seg("tpl", Object.entries(TPL).map(([k, v]) => [k, v.n, TPL_DESC[k], k === tplFor() ? "추천" : ""]), S.tpl, { label: "보호받을 형태" })}</div>
+    ${staleBox()}
     <div class="grid2" data-pg="0">
       <div class="field"><label for="parts">핵심 구성 (한 줄에 하나, 수치 범위 포함)</label><textarea id="parts" rows="4">${esc(S.parts)}</textarea></div>
       <div class="field"><label for="effect">효과 (측정값이 있으면 숫자로)</label><textarea id="effect" rows="4">${esc(S.effect)}</textarea>
-        ${S.idea.field === "ferment" ? `<p class="hint" style="margin-top:8px">균주: ${S.strain ? `<b>${STRAIN_OPTS.find(o => o[0] === S.strain)?.[1] ?? ""}</b> (1단계에서 답함)` : "1단계에서 아직 고르지 않았어요"} <button type="button" class="linklike" data-fact-go="idea:start:input[name=strain]">${S.strain ? "바꾸기" : "고르러 가기"}</button></p>` : ""}</div>
+        ${S.idea.field === "ferment" ? `<div class="field" style="margin-top:8px"><span class="label">균주 종류 <span class="muted h-meta">1단계 답과 같은 값 · 여기서 바꿔도 돼요</span></span>${seg("strain", STRAIN_OPTS, S.strain, { label: "균주 종류" })}</div>` : ""}</div>
     </div>
     ${cut("영문 명칭·도면·실험 결과 정하기", 0)}
     <div class="grid2" data-pg="0">
@@ -4718,6 +4839,9 @@ function viewDraft() {
     <p class="smart5-mini" id="smart5-mini" data-pg="1"></p>
     ${specDraftList()}
     <div class="sub todo-box" id="todo-box" data-pg="4"></div>
+    <div class="qa-card" id="qa-card4" data-pg="4" role="group" aria-label="빈칸 질문"></div>
+    <div id="unv-box4" data-pg="4"></div>
+    <div id="ap-quick" data-pg="4"></div>
     ${filingPages()}
     <div class="folds" data-pg="4">
       <span class="label">점검과 분석 · 눌러서 펼치기</span>
@@ -5794,7 +5918,7 @@ function stepTodo(id) {
     const q = chatCur(); if (q) add(`사전 질문 ‘${q.q}’에 답하기`, "start");
     if (!i.title.trim()) add("발명의 명칭 정하기", "pick");
     if (!i.diff.trim()) add("기존과 다른 점 적기", "pick");
-  } else if (id === "prior") { if (S.api !== "off" && i.title.trim() && !liveData()) add("비슷한 특허 찾기", "results"); }
+  } else if (id === "prior") { if (S.api !== "off" && i.title.trim() && !liveData()) add("비슷한 특허 찾기", "results"); else if (S.kwChanged) add("바뀐 명칭으로 비슷한 특허 다시 찾기", "results"); }
   else if (id === "draft") {
     if (!S.spec) add("명세서 초안 만들기", 0);
     else { const n = specNeeds().length, u = unvLive().length; if (n) add(`명세서 빈칸 ${n}곳 채우기`, 1); if (u) add(`AI가 쓴 확인 안 된 수치 ${u}곳 확인`, 1); }
@@ -5911,7 +6035,7 @@ const COACH = {
   "prior:sample": { do: ["비슷한 특허 훑어보기"], tip: "비슷한 특허가 있어도 괜찮아요. 다른 점만 분명하면 돼요." },
   "prior:compare": { do: ["겹치는 부분 보기", "나만 가진 부분 찾기"], tip: "나만 가진 부분이 특허의 핵심이에요." },
   "prior:gap": { do: ["추천 방향 읽기", "원하면 체크하기"], tip: "안 고르고 넘어가도 돼요." },
-  "diag:result": { do: ["빨간 항목부터 보기", "‘고치러 가기’ 누르기"], tip: "결과는 참고용이에요. 고치면 출원할 수 있어요." },
+  "diag:result": { do: ["빨간 항목부터 보기", "‘여기서 고치기’로 바로 고치기"], tip: "결과는 참고용이에요. 고치면 출원할 수 있어요." },
   "diag:suggest": { do: ["거절된 예 보기", "필요한 것만 넣기"], tip: "제안을 다 받을 필요는 없어요." },
   "draft:0": { do: ["내용 확인하기", "‘다음’ 누르기"], tip: "모르는 칸은 비워도 돼요. 나중에 빈칸으로 알려 드려요." },
   "draft:1": { do: ["빈칸 질문에 답하기", "명세서 읽어 보기"], tip: "모르는 질문은 ‘건너뛰기’를 누르세요." },
@@ -6044,13 +6168,14 @@ function nextHint() {
     if (bar && el.getBoundingClientRect().top > bar.getBoundingClientRect().top - 12) el = bar;
     return { el, t: "눌러서 다음 차례를 열어요" };
   }
-  if (S.step === "prior" && S.api !== "off" && !liveData() && (el = nhFind(main, "#explore"))) return { el, t: "눌러서 비슷한 특허를 찾아요" };
-  if (S.step === "draft" && S.sub === 1) {
-    const qa = $("#qa-card");
+  if (S.step === "prior" && S.api !== "off" && !liveData() && (el = nhFind(main, "#explore, [data-explore-here]"))) return { el, t: "눌러서 비슷한 특허를 찾아요" };
+  if (S.step === "prior" && S.kwChanged && (el = nhFind(main, "[data-reexplore]"))) return { el, t: "명칭이 바뀌었어요. 다시 찾아요" };
+  if (S.step === "draft" && (S.sub === 1 || S.sub === 4)) {
+    const qa = $(S.sub === 4 ? "#qa-card4" : "#qa-card");
     if (qa && nhVis(qa) && qa.innerHTML.trim()) {
-      const box = $("#qa-answer");
+      const box = $("#qa-answer"), fact = nhFind(qa, "[data-qa-fact]");
       if (nhVis(box)) return box.value.trim() ? { el: nhFind(qa, "[data-qa-put]") || box, t: "다 적었으면 넣어요" } : { el: box, t: "빈칸 질문에 답해 주세요" };
-      if ((el = nhFind(qa, "[data-fact-go]"))) return { el, t: "눌러서 입력하러 가요" };
+      if (fact) return fact.value.trim() ? { el: nhFind(qa, "[data-qa-fact-put]") || fact, t: "다 적었으면 넣어요" } : { el: fact, t: "여기에 적어 주세요" };
     }
   }
   if (S.step === "draft" && S.sub === 4 && !S.pkgSaved && (el = nhFind(main, "#save-package"))) return { el, t: "제출용 파일을 받아요" };
@@ -6296,7 +6421,7 @@ document.addEventListener("input", e => {
   if (t.id === "idea-pitch") S.idea.pitch = t.value;
   if (t.id === "field-custom") { S.idea.fieldCustom = t.value; const g = guessField(t.value); if (g !== S.idea.field) { S.idea.field = g; S.kwField = null; S.gapSel = null; S.citeSel = null; } invalidateSpec(); }
   // 다듬기 칸은 입력하는 대로 저장한다 (다른 후보를 고를 때 화면이 다시 그려져도 남도록)
-  if (["title", "problem", "diff", "discWhere"].includes(t.id) && t.closest("#f-diag, #f-chat")) { S.idea[t.id] = t.value; invalidateSpec(); }
+  if (["title", "problem", "diff", "discWhere"].includes(t.id) && t.closest("#f-diag, #f-chat")) { S.idea[t.id] = t.value; invalidateSpec(); if (t.id === "title") syncKw(); }
   if (t.id === "parts" || t.id === "effect") S[t.id] = t.value;
   if (t.id === "cmp-parts") S.parts = t.value;
 });
