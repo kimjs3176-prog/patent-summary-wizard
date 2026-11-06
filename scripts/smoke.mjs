@@ -95,8 +95,14 @@ for (const width of WIDTHS) {
     await p.goto(`${BASE}/filing-app/index.html#idea`, { waitUntil: "load" });
     await p.waitForFunction(() => typeof chatCur === "function" && document.querySelector("#f-chat"));
     const pick = (name, value) => p.locator(`label:has(input[name="${name}"][value="${value}"])`).click();
-    await pick("field", "food");
-    await p.locator("#idea-kw").fill("쌀겨, 발효, 저염");
+    // 첫 질문은 평소 말투의 문장: 규칙으로 분야·낱말·발명 유형을 읽는다
+    const read = await p.evaluate(() => ({ a: analyzePitch("비행하는 트랙터를 만들거야"), b: analyzePitch("쌀겨를 발효해서 액상 비료를 만들고 싶어요") }));
+    if (read.a.field !== "smartfarm" || read.a.kind !== "device" || read.a.obj !== "트랙터" || read.a.feat !== "비행") fail(where, `문장 읽기가 이상함: ${JSON.stringify(read.a)}`);
+    if (read.b.field !== "ferment" || !read.b.kws.includes("쌀겨") || !read.b.kws.includes("비료")) fail(where, `문장 읽기가 이상함: ${JSON.stringify(read.b)}`);
+    await p.locator("#idea-pitch").fill("곡물로 만든 저염 간편식을 만들고 싶어요");
+    await p.locator('[data-chat-ok="idea"]').click();
+    const guessed = await p.evaluate(() => [S.idea.field, S.ideate.kw]);
+    if (guessed[0] !== "food" || !/곡물/.test(guessed[1])) fail(where, `문장으로 정한 분야·낱말이 이상함: ${guessed}`);
     await p.locator("#ideate-run").click();
     await pick("pick-problem", "1");
     await p.locator('[data-chat-ok="problem"]').click();
@@ -107,6 +113,7 @@ for (const width of WIDTHS) {
     if (left) fail(where, `질문이 남음: ${left}`);
     const bubbles = await p.locator(".chat-a").count();
     if (bubbles < 5) fail(where, `답 말풍선이 ${bubbles}개뿐`);
+    if ((await p.locator(".chat-nav .done").count()) < 5) fail(where, "질문 진행 칩이 답한 질문을 보여 주지 않음");
     await p.locator("#pagebar [data-nav=next]").click();
     let opened = 0;
     for (; opened < 6; opened++) {
