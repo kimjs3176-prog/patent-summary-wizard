@@ -1368,7 +1368,8 @@ function toast(msg) { const t = $("#toast"); t.textContent = EMBED || FILING_ONL
 const KIND_NAME = { product: "물건(조성물)", method: "방법", device: "장치·물품" };
 function claimKinds(title = S.idea.title) {
   const t = String(title).replace(/\s+/g, ""), head = t.split("및")[0];
-  const kindOf = x => /(방법|공정)$/.test(x) ? "method" : /(장치|시스템|기기|설비|용기|포장재|포장체|기계|로봇|센서|라벨|키트)$/.test(x) ? "device" : "product";
+  // 명칭 끝말이 기계 이름(트랙터·드론·수확기…)이어도 장치 발명이다 (사전 질문의 PITCH_DEVICE 와 같은 낱말)
+  const kindOf = x => /(방법|공정)$/.test(x) ? "method" : /(장치|시스템|기기|설비|용기|포장재|포장체|기계|로봇|센서|라벨|키트|트랙터|경운기|이앙기|파종기|수확기|방제기|드론|장비|차량|운반차|카트|선별기|건조기|분쇄기|세척기)$/.test(x) ? "device" : "product";
   const main = kindOf(head), all = [main];
   if (t !== head && !all.includes(kindOf(t))) all.push(kindOf(t));
   return { main, all };
