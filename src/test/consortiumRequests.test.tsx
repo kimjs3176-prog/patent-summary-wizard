@@ -25,7 +25,7 @@ const reply = (org: string, page = 1, hasMore = false): Reply => ({
     items: [{ applicationNumber: `${org}-${page}`, title: `${org} 특허 ${page}`, applicant: "", applicationDate: "20261106", status: "등록" }],
   },
 });
-const select = (org: string) => fireEvent.click(screen.getByRole("button", { name: org, exact: true }));
+const select = (org: string) => fireEvent.click(screen.getByTitle(org));
 const finish = async (index: number, response: Reply) => {
   await act(async () => { pending[index].resolve(response); });
 };
