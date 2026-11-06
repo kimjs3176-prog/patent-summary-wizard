@@ -119,6 +119,7 @@ body.embed.skin-ais { --bg: hsl(60 5% 98%); --surface: #fff; --sunk: hsl(220 14%
 .logo.sm { width: 28px; height: 28px; border-radius: 8px; }
 .logo.sm svg { width: 14px; height: 14px; }
 .brand-t { display: grid; line-height: 1.25; min-width: 0; }
+.dev-pill { flex: none; padding: 1px 8px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--barley) 55%, var(--line)); background: color-mix(in oklab, var(--barley) 12%, var(--surface)); color: var(--fg); font-size: .7rem; font-weight: 700; white-space: nowrap; }
 .brand-t b { font-family: var(--f-head); font-size: .95rem; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
 .brand-t b em { font-style: normal; font-weight: 700; color: var(--moss); margin-left: 3px; }
 .brand-t small { font-size: .7rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1238,7 +1239,7 @@ h1, h2, h3 { font-weight: 600; }
   <div class="topbar-in">
     <a href="#home" class="brand" aria-label="에이프 Agri-IP 처음 화면">
       <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5V12.5"/><path d="M12 13.5c-3.8 0-6.2-2.4-6.2-6.2 3.8 0 6.2 2.4 6.2 6.2z"/><path d="M12 11.5c0-3.3 2.2-5.6 6.2-5.6 0 3.3-2.2 5.6-6.2 5.6z"/><path d="M6.5 20.5h11"/></svg></span>
-      <span class="brand-t"><b>에이프 <em>Agri-IP</em></b><small>농식품 기술 사업 지원 서비스</small></span>
+      <span class="brand-t"><b>에이프 <em>Agri-IP</em></b><small>농식품 기술 사업 지원 서비스</small></span><span class="dev-pill" title="개발 중인 기능으로, 실제 활용 시 제한이 있을 수 있습니다">개발 중</span>
     </a>
     <nav class="modes" aria-label="서비스 메뉴">
       <a href="#home" data-mode-link="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>처음 화면</a>
@@ -1300,7 +1301,7 @@ h1, h2, h3 { font-weight: 600; }
 
   <footer class="foot">
     <div class="foot-brand"><span class="logo sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5V12.5"/><path d="M12 13.5c-3.8 0-6.2-2.4-6.2-6.2 3.8 0 6.2 2.4 6.2 6.2z"/><path d="M12 11.5c0-3.3 2.2-5.6 6.2-5.6 0 3.3-2.2 5.6-6.2 5.6z"/><path d="M6.5 20.5h11"/></svg></span>에이프 <em>Agri-IP</em><small>농식품 기술 사업 지원 서비스</small></div>
-    <p class="legal">에이프는 농식품 기술의 출원과 사업화 준비를 돕는 참고용 도구입니다. 특허 가능성 판단과 명세서 초안은 AI가 생성한 참고 자료이며, 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. KIPRIS를 연결하지 않았을 때의 선행특허·출원·거절 통계와 사례는 프로토타입용 예시이며 실제 정보가 아닙니다. 지원사업 공고와 나라별 수출 실적은 공공데이터포털(기업마당·관세청) 자료입니다. ‘KIPRIS 실데이터’ 표시가 붙은 칸은 KIPRIS Plus에서 조회한 값입니다.</p>
+    <p class="legal">에이프는 개발 중인 기능으로, 실제 활용 시 제한이 있을 수 있습니다. 농식품 기술의 출원과 사업화 준비를 돕는 참고용 도구입니다. 특허 가능성 판단과 명세서 초안은 AI가 생성한 참고 자료이며, 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. KIPRIS를 연결하지 않았을 때의 선행특허·출원·거절 통계와 사례는 프로토타입용 예시이며 실제 정보가 아닙니다. 지원사업 공고와 나라별 수출 실적은 공공데이터포털(기업마당·관세청) 자료입니다. ‘KIPRIS 실데이터’ 표시가 붙은 칸은 KIPRIS Plus에서 조회한 값입니다.</p>
     <p class="legal">KIPRIS(한국특허정보원) 공공데이터를 활용합니다. 기술분석은 <a href="#ais">Agri IP Summary(AIS)</a>를 에이프 안에서 엽니다.</p>
   </footer>
 </div>
