@@ -21,9 +21,20 @@ interface AdminHomepagePanelProps {
   homepageVisibleSections: Record<string, boolean>;
   setHomepageVisibleSections: Dispatch<SetStateAction<Record<string, boolean>>>;
   handleSaveSettings: () => Promise<void>;
+  /** 관리자 함수 호출 (비밀번호를 함께 보낸다). 영상 올리기·지우기는 이 함수가 서명 주소로 처리한다 */
+  apiCall: (action: string, data?: Record<string, unknown>) => Promise<{ success?: boolean; error?: string; path?: string; token?: string }>;
 }
 
-export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSettings, categoryOptions, setCategoryOptions, techVideos, setTechVideos, dragVideoIdx, setDragVideoIdx, homepageVisibleSections, setHomepageVisibleSections, handleSaveSettings }: AdminHomepagePanelProps) {
+// 영상 파일 올리기: 관리자 함수가 비밀번호를 확인하고 한 번 쓰는 업로드 주소를 내주면, 그 주소로만 올린다 (버킷에 익명 쓰기 권한 없음)
+async function uploadVideoFile(apiCall: AdminHomepagePanelProps["apiCall"], file: File): Promise<string> {
+  const r = await apiCall("video-upload-url", { fileName: file.name, contentType: file.type, size: file.size });
+  if (!r?.success || !r.path || !r.token) throw new Error(r?.error || "업로드 주소를 받지 못했습니다.");
+  const { error } = await supabase.storage.from('tech-videos').uploadToSignedUrl(r.path, r.token, file, { contentType: file.type });
+  if (error) throw new Error(error.message);
+  return r.path;
+}
+
+export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSettings, categoryOptions, setCategoryOptions, techVideos, setTechVideos, dragVideoIdx, setDragVideoIdx, homepageVisibleSections, setHomepageVisibleSections, handleSaveSettings, apiCall }: AdminHomepagePanelProps) {
   return (
           <TabsContent value="settings">
             <div className="space-y-4">
@@ -241,11 +252,9 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('video/'));
                     if (files.length === 0) { toast.error('동영상 파일만 업로드 가능합니다.'); return; }
                     for (const file of files) {
-                      const ext = file.name.split('.').pop() || 'mp4';
-                      const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
                       toast.message(`업로드 중: ${file.name}`);
-                      const { error } = await supabase.storage.from('tech-videos').upload(path, file, { contentType: file.type, upsert: false });
-                      if (error) { toast.error(`업로드 실패: ${file.name} — ${error.message}`); continue; }
+                      let path: string;
+                      try { path = await uploadVideoFile(apiCall, file); } catch (err) { toast.error(`업로드 실패: ${file.name} — ${err instanceof Error ? err.message : String(err)}`); continue; }
                       const titleGuess = file.name.replace(/\.[^.]+$/, '');
                       setTechVideos(prev => [...prev, { title: titleGuess, url: `storage://${path}` }]);
                       toast.success(`업로드 완료: ${file.name}`);
@@ -258,18 +267,16 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                   <p className="text-[11px] text-muted-foreground mt-1">또는 아래에서 파일 선택 / YouTube URL 직접 입력</p>
                   <input
                     type="file"
-                    accept="video/*"
+                    accept="video/mp4,video/webm,video/quicktime"
                     multiple
                     id="tech-video-file-input"
                     className="hidden"
                     onChange={async (e) => {
                       const files = Array.from(e.target.files || []);
                       for (const file of files) {
-                        const ext = file.name.split('.').pop() || 'mp4';
-                        const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
                         toast.message(`업로드 중: ${file.name}`);
-                        const { error } = await supabase.storage.from('tech-videos').upload(path, file, { contentType: file.type, upsert: false });
-                        if (error) { toast.error(`업로드 실패: ${file.name} — ${error.message}`); continue; }
+                        let path: string;
+                        try { path = await uploadVideoFile(apiCall, file); } catch (err) { toast.error(`업로드 실패: ${file.name} — ${err instanceof Error ? err.message : String(err)}`); continue; }
                         const titleGuess = file.name.replace(/\.[^.]+$/, '');
                         setTechVideos(prev => [...prev, { title: titleGuess, url: `storage://${path}` }]);
                         toast.success(`업로드 완료: ${file.name}`);
@@ -313,7 +320,8 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                           const item = techVideos[idx];
                           if (item?.url?.startsWith('storage://')) {
                             const path = item.url.replace('storage://', '');
-                            await supabase.storage.from('tech-videos').remove([path]).catch(() => {});
+                            const r = await apiCall("video-delete", { path }).catch(() => null);
+                            if (!r?.success) toast.error(`파일은 지우지 못했습니다: ${r?.error || "잠시 후 다시 시도해 주세요"}. 목록에서만 뺍니다.`);
                           }
                           setTechVideos(prev => prev.filter((_, i) => i !== idx));
                           toast.success('삭제되었습니다.');

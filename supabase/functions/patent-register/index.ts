@@ -136,8 +136,9 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (e) {
-    console.error('patent-register error:', e);
-    return new Response(JSON.stringify({ success: false, error: e instanceof Error ? e.message : String(e) }), {
+    // 네트워크 오류 문구에는 키가 든 요청 주소가 들어갈 수 있어 이름만 남기고, 화면에는 정해진 문구만 보낸다
+    console.error('patent-register error:', e instanceof Error ? e.name : 'error');
+    return new Response(JSON.stringify({ success: false, error: '등록원부를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

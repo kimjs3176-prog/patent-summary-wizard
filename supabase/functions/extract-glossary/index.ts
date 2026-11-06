@@ -39,7 +39,8 @@ serve(withRequestLog("extract-glossary", async (req: Request, logger: RequestLog
   const limited = await enforceRateLimit(req, { bucket: "extract-glossary", limit: 120, windowSeconds: 300 });
   if (limited) return limited;
   try {
-    const { content, title } = await req.json();
+    const body = await req.json();
+    const content = body?.content, title = String(body?.title ?? "").slice(0, 300);
     if (!content || typeof content !== "string") {
       return new Response(JSON.stringify({ success: false, error: "content required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -96,7 +97,7 @@ JSON 형식:
   } catch (e) {
     logger.error("request.error", { error: e });
     if (e instanceof AiUnavailableError) return aiUnavailableResponse(corsHeaders);
-    return new Response(JSON.stringify({ success: false, error: String(e) }), {
+    return new Response(JSON.stringify({ success: false, error: "용어 풀이를 만들지 못했습니다. 잠시 후 다시 시도해 주세요." }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

@@ -54,6 +54,11 @@ const verifyPassword = async (password: string, stored: string): Promise<{ ok: b
   return { ok: timingSafeEqual(legacy, stored), needsUpgrade: true };
 };
 
+const VIDEO_BUCKET = "tech-videos";
+const VIDEO_MAX_BYTES = 500 * 1024 * 1024;
+// 버킷 안 파일 이름만 (하위 폴더·‘..’ 없이)
+const VIDEO_PATH_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$/;
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -115,6 +120,28 @@ serve(async (req) => {
         JSON.stringify({ success: false, error: "잘못된 요청입니다." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ========== 기술소개 영상 파일 (tech-videos 버킷) ==========
+    // 관리자 비밀번호를 확인한 뒤에만 한 번 쓰는 업로드 주소를 내주고, 삭제도 여기서 한다.
+    // 그래서 버킷에는 공개 읽기만 두고 익명 쓰기·삭제 정책을 두지 않는다.
+    if (action === "video-upload-url") {
+      const name = String(data?.fileName ?? ""), type = String(data?.contentType ?? ""), size = Number(data?.size) || 0;
+      const ext = (name.match(/\.([a-z0-9]{2,5})$/i)?.[1] ?? "").toLowerCase();
+      if (!/^video\/(mp4|webm|quicktime)$/.test(type) || !["mp4", "webm", "mov"].includes(ext)) return json({ success: false, error: "MP4·WebM·MOV 동영상만 올릴 수 있습니다." }, 400);
+      if (size <= 0 || size > VIDEO_MAX_BYTES) return json({ success: false, error: `동영상은 ${VIDEO_MAX_BYTES / 1024 / 1024}MB까지 올릴 수 있습니다.` }, 400);
+      const path = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+      const { data: signed, error } = await supabase.storage.from(VIDEO_BUCKET).createSignedUploadUrl(path);
+      if (error || !signed) throw error ?? new Error("upload url");
+      return json({ success: true, path: signed.path, token: signed.token });
+    }
+
+    if (action === "video-delete") {
+      const path = String(data?.path ?? "");
+      if (!VIDEO_PATH_RE.test(path)) return json({ success: false, error: "영상 파일 경로가 아닙니다." }, 400);
+      const { error } = await supabase.storage.from(VIDEO_BUCKET).remove([path]);
+      if (error) throw error;
+      return json({ success: true });
     }
 
     // ========== Site Settings ==========

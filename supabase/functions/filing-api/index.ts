@@ -4,6 +4,7 @@
 // 수출 실적·지원사업 공고·기사(에이프 해외동향·해외사업용)는 출원지원에 필요 없어 두지 않는다.
 // 비밀값: KIPRIS_API_KEY(필수, 기존 함수와 공유) · LOVABLE_API_KEY(서버 AI, Lovable Cloud 가 넣어 줌. 없으면 AI 기능은 꺼지고 기본 초안만) · KIPRIS_MOCK=1(모의)
 import "./lib/env.ts";
+import { callerIdentity, enforceRateLimit } from "../_shared/rateLimit.ts";
 import { kipris, MOCK, validate, explore, allowed, health, KiprisError } from "./lib/explore.js";
 import { draftEnabled, validateDraftInput, draftSpec, draftErrorResponse } from "./lib/draft.js";
 import { trends } from "./lib/trends.js";
@@ -25,7 +26,13 @@ const cors = (req: Request): Record<string, string> => {
 const json = (req: Request, status: number, body: unknown, cache = "no-store") =>
   new Response(JSON.stringify(body), { status, headers: { ...cors(req), "content-type": "application/json; charset=utf-8", "cache-control": cache, "x-content-type-options": "nosniff" } });
 const bad = (status: number, message: string) => Object.assign(new Error(message), { status });
-const ip = (req: Request) => (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "anon";
+// 이용자 구분은 공용 규칙(_shared/rateLimit.ts)으로: x-forwarded-for 의 첫 값은 요청한 쪽이 마음대로 적을 수 있다
+const ip = (req: Request) => callerIdentity(req);
+// 함수 인스턴스마다 따로 세는 분당 제한 위에, 인스턴스가 바뀌어도 이어지는 DB 기반 5분 제한을 둔다
+async function dbLimited(req: Request, bucket: string, limit: number) {
+  return !!(await enforceRateLimit(req, { bucket: `filing-api:${bucket}`, limit, windowSeconds: 300 }));
+}
+const busy = (req: Request) => json(req, 429, { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." });
 async function readJson(req: Request, limit = 32 * 1024) {
   if (Number(req.headers.get("content-length") || 0) > limit) throw bad(413, "요청이 너무 큽니다.");
   const text = await req.text();
@@ -44,11 +51,13 @@ Deno.serve(async (req: Request) => {
     if (req.method === "POST" && path === "/api/explore") {
       if (!kipris) return json(req, 503, { error: "서버에 KIPRIS_API_KEY 가 설정되지 않았습니다." });
       if (!allowed(who)) return json(req, 429, { error: "요청이 너무 많습니다. 1분 뒤 다시 시도하세요." });
+      if (await dbLimited(req, "explore", 30)) return busy(req);
       return json(req, 200, await explore(kipris, validate(await readJson(req))));
     }
     if (req.method === "POST" && path === "/api/draft") {
       if (!draftEnabled()) return json(req, 503, { error: "서버 AI 가 꺼져 있습니다(LOVABLE_API_KEY 없음)." });
       if (!allowed(`draft:${who}`, 3)) return json(req, 429, { error: "명세서 작성은 1분에 3번까지 할 수 있습니다." });
+      if (await dbLimited(req, "draft", 15)) return busy(req);
       try { return json(req, 200, await draftSpec(validateDraftInput(await readJson(req)))); }
       catch (e) { const r = draftErrorResponse(e); if (r) return json(req, r[0], { error: r[1] }); throw e; }
     }
@@ -62,6 +71,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === "POST" && path === "/api/ai") {
       if (!draftEnabled()) return json(req, 503, { error: "서버 AI 가 꺼져 있습니다(LOVABLE_API_KEY 없음)." });
       if (!allowed(`ai:${who}`, 6)) return json(req, 429, { error: "AI 분석은 1분에 6번까지 할 수 있습니다." });
+      if (await dbLimited(req, "ai", 30)) return busy(req);
       const body = await readJson(req, 96 * 1024);
       try { return json(req, 200, await runAi(body?.task, body?.input)); }
       catch (e) { const r = draftErrorResponse(e); if (r) return json(req, r[0], { error: r[1] }); throw e; }
@@ -71,7 +81,7 @@ Deno.serve(async (req: Request) => {
     if (e instanceof KiprisError) return json(req, 502, { error: (e as Error).message, code: (e as { code?: string }).code });
     const err = e as { status?: number; message?: string };
     if (err.status) return json(req, err.status, { error: err.message });
-    console.error(e);
+    console.error("[filing-api]", (e as Error)?.name ?? "error"); // 메시지에 키가 든 KIPRIS 주소가 있을 수 있다
     return json(req, 500, { error: "서버 오류가 발생했습니다." });
   }
 });

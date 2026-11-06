@@ -120,7 +120,8 @@ const Admin = () => {
     if (result.success) {
       const params = new URLSearchParams(window.location.search);
       const next = params.get("next");
-      if (next && next.startsWith("/")) {
+      // 이 사이트 안의 주소만 (‘//다른사이트’, ‘/\다른사이트’ 는 바깥으로 나가므로 받지 않는다)
+      if (next && /^\/(?![/\\])/.test(next)) {
         window.location.href = next;
         return;
       }
@@ -459,7 +460,7 @@ const Admin = () => {
           <AdminContentPanel patents={patents} isLoading={isLoading} editingId={editingId} setEditingId={setEditingId} showForm={showForm} setShowForm={setShowForm} form={form} setForm={setForm} isFetchingPatent={isFetchingPatent} categoryOptions={categoryOptions} apiCall={apiCall} handleFetchPatentInfo={handleFetchPatentInfo} handleSave={handleSave} handleEdit={handleEdit} handleDelete={handleDelete} handleToggleActive={handleToggleActive} />
 
           {/* ===== Settings Tab ===== */}
-          <AdminHomepagePanel siteSettings={siteSettings} setSiteSettings={setSiteSettings} isSavingSettings={isSavingSettings} categoryOptions={categoryOptions} setCategoryOptions={setCategoryOptions} techVideos={techVideos} setTechVideos={setTechVideos} dragVideoIdx={dragVideoIdx} setDragVideoIdx={setDragVideoIdx} homepageVisibleSections={homepageVisibleSections} setHomepageVisibleSections={setHomepageVisibleSections} handleSaveSettings={handleSaveSettings} />
+          <AdminHomepagePanel siteSettings={siteSettings} setSiteSettings={setSiteSettings} isSavingSettings={isSavingSettings} categoryOptions={categoryOptions} setCategoryOptions={setCategoryOptions} techVideos={techVideos} setTechVideos={setTechVideos} dragVideoIdx={dragVideoIdx} setDragVideoIdx={setDragVideoIdx} homepageVisibleSections={homepageVisibleSections} setHomepageVisibleSections={setHomepageVisibleSections} handleSaveSettings={handleSaveSettings} apiCall={apiCall} />
 
           {/* ===== Summary Customization Tab ===== */}
           <AdminSummaryPanel summaryTitles={summaryTitles} setSummaryTitles={setSummaryTitles} summarySectionLengths={summarySectionLengths} setSummarySectionLengths={setSummarySectionLengths} summaryDisclaimer={summaryDisclaimer} setSummaryDisclaimer={setSummaryDisclaimer} summaryVisibleSections={summaryVisibleSections} setSummaryVisibleSections={setSummaryVisibleSections} summaryAiPromptExtra={summaryAiPromptExtra} setSummaryAiPromptExtra={setSummaryAiPromptExtra} summaryCardIcons={summaryCardIcons} setSummaryCardIcons={setSummaryCardIcons} summaryInfoLabels={summaryInfoLabels} setSummaryInfoLabels={setSummaryInfoLabels} isSavingSummarySettings={isSavingSummarySettings} newSectionKey={newSectionKey} setNewSectionKey={setNewSectionKey} summaryMaxTokens={summaryMaxTokens} setSummaryMaxTokens={setSummaryMaxTokens} scoreConfig={scoreConfig} setScoreConfig={setScoreConfig} trlConfig={trlConfig} setTrlConfig={setTrlConfig} handleSaveSummarySettings={handleSaveSummarySettings} apiCall={apiCall} />

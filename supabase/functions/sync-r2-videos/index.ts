@@ -5,6 +5,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { AwsClient } from "npm:aws4fetch@1.0.20";
 import { keyFromUrl, publicUrl, titleFromKey, VIDEO_RE } from "./videoKeys.ts";
+import { enforceRateLimit } from "../_shared/rateLimit.ts";
 
 const ACCOUNT_ID = "766285132f8dac5b41c1f8ece436f600";
 const BUCKET = "techvideo";
@@ -34,6 +35,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const json = (b: unknown, status = 200) =>
     new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  // 누구나 부를 수 있으므로 자주 돌리지 못하게 한다 (버킷 목록 조회·설정 다시 쓰기)
+  const limited = await enforceRateLimit(req, { bucket: "sync-r2-videos", limit: 6, windowSeconds: 3600 });
+  if (limited) return limited;
   try {
     const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
     const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
@@ -81,7 +85,7 @@ Deno.serve(async (req) => {
     }
     return json({ total: kept.length + added.length, added: added.map((a) => a.title), removed });
   } catch (e) {
-    console.error("[sync-r2-videos]", e);
-    return json({ error: e instanceof Error ? e.message : "동기화 실패" }, 500);
+    console.error("[sync-r2-videos]", e instanceof Error ? e.name : "error");
+    return json({ error: "동기화하지 못했습니다." }, 500);
   }
 });

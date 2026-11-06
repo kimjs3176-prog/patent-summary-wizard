@@ -102,6 +102,12 @@ for (const width of WIDTHS) {
     const after = await p.evaluate(() => S.step);
     if (after !== "manage") fail(where, `‘그래도 다음으로’ 뒤 5단계로 넘어가지 않음 (${after})`);
     console.log(`  넘어가기 전 점검 ${leave.items}건 · ${after}`);
+    // 보안: 바깥에서 받은 작업 파일의 비교 특허·검색 결과는 그대로 그리지 않고, javascript: 링크는 만들지 않는다
+    const sec = await p.evaluate(() => {
+      const ok = restoreWork({ v: 1, idea: { title: "x" }, step: "prior", watch: [{ no: "<img src=x onerror=alert(1)>" }, { no: "1020200123456", title: "정상" }], live: { similar: { low: 0, items: [{ link: "javascript:alert(1)" }] } } }, true);
+      return { ok, watch: S.watch.map((w) => w.no), live: S.live ?? null, href: safeHref("javascript:alert(1)"), https: safeHref("https://doi.org/10.8080/1") };
+    });
+    if (!sec.ok || sec.watch.join() !== "1020200123456" || sec.live || sec.href || !sec.https) fail(where, `작업 파일 불러오기 검사가 이상함: ${JSON.stringify(sec)}`);
   } catch (e) {
     fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
   }

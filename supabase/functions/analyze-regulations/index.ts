@@ -111,7 +111,7 @@ serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Re
       });
     }
 
-    const title = patentData.titleKo || patentData.title || "";
+    const title = String(patentData.titleKo || patentData.title || "").slice(0, 300);
     const abstract = (patentData.abstract || "").slice(0, 1500);
     const claim0 = Array.isArray(patentData.claims) ? patentData.claims[0]?.slice(0, 800) || "" : "";
 
@@ -183,7 +183,7 @@ JSON 형식:
   } catch (e) {
     logger.error("request.error", { error: e });
     if (e instanceof AiUnavailableError) return aiUnavailableResponse(corsHeaders);
-    return new Response(JSON.stringify({ success: false, error: String(e) }), {
+    return new Response(JSON.stringify({ success: false, error: "규제 분석을 하지 못했습니다. 잠시 후 다시 시도해 주세요." }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
