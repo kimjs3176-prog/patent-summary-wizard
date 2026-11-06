@@ -222,6 +222,11 @@ body.ais .foot { display: none; }
 @media (max-width: 560px) { .chat-in { margin-left: 0; } .chat-line { flex-wrap: wrap; } .chat-line .btn { width: 100%; } }
 /* 한 쪽 안의 절차: 다음에 열 절차의 버튼만 보인다 */
 .sw-cut { grid-column: 1 / -1; display: flex; padding-top: 4px; }
+/* 실험 데이터 도우미 */
+.exp-plan { display: grid; gap: 8px; margin: 4px 0 10px; padding: 0; list-style: none; counter-reset: ep; }
+.exp-plan li { display: grid; gap: 2px; padding: 10px 12px 10px 40px; position: relative; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); font-size: .88rem; }
+.exp-plan li::before { counter-increment: ep; content: counter(ep); position: absolute; left: 12px; top: 10px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--moss-soft); color: var(--moss); font-size: .76rem; font-weight: 700; }
+.exp-pri { margin: 10px 0 0; padding: 10px 12px; border-radius: var(--r-sm); background: var(--moss-soft); font-size: .86rem; line-height: 1.6; }
 .sw-cut .btn { color: var(--moss); border-color: color-mix(in oklab, var(--primary) 50%, var(--line)); }
 .sw-in { animation: sw-in .28s ease-out; }
 @keyframes sw-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -1936,6 +1941,8 @@ function deadlineItems() {
   items.push({ d: plusDays(fd, 1), t: "출원 수수료 납부 기한", s: "접수번호를 받은 다음 날까지 접수번호를 납부자번호로 하여 냅니다(징수규칙 제8조). 공휴일이면 다음 근무일까지입니다." });
   if (disc && S.app.discProof === "later") items.push({ d: plusDays(fd, 30), t: "공지예외 증명서류 제출 기한", s: "출원일부터 30일 이내에 서류제출서(별지 제13호서식)에 증명서류를 첨부해 냅니다(특허법 제30조 제2항). 놓쳤다면 보완료를 내고 보정할 수 있는 기간에 보완할 수 있습니다(같은 조 제3항)." });
   if (S.app.tempSpec === "yes") items.push({ d: addMonths(base, 14), t: "정식 명세서(청구범위) 보정 기한", s: `임시 명세서로 출원했다면 ${from}부터 1년 2개월이 되는 날까지 청구범위를 적은 명세서로 보정해야 합니다. 하지 않으면 다음 날 출원이 취하된 것으로 봅니다(특허법 제42조의2). 그 전에 다른 사람이 낸 심사청구의 통지를 받으면 통지일부터 3개월과 이 날짜 중 빠른 날까지입니다.` });
+  // 실험 데이터 없이 냈다면: 1년 안에 데이터를 더한 개량 출원으로 국내우선권 주장 (특허법 제55조, 선출원은 1년 3개월 뒤 취하 간주 제56조)
+  if (!pri && S.idea.data !== "yes") items.push({ d: addMonths(fd, 12), t: "실험 데이터 보강 출원(국내우선권 주장) 기한", s: "출원일부터 1년 안에 잰 값을 더해 다시 출원하며 국내우선권을 주장하면 처음 출원일을 그대로 인정받습니다(특허법 제55조). 먼저 낸 출원은 1년 3개월 뒤 취하된 것으로 봅니다(제56조)." });
   items.push({ d: addMonths(base, 12), t: "해외 출원(우선권 주장)·PCT 국제출원 기한", s: `${from}부터 12개월입니다. 해외 진출 계획이 있다면 이 날짜까지 PCT 또는 개별국 출원을 하세요.` });
   items.push({ d: addMonths(base, 18), t: "출원 공개", s: `${from}부터 1년 6개월이 지나면 공개됩니다(특허법 제64조 제1항). 이후에는 기술 홍보에 활용할 수 있습니다.` });
   items.push({ d: addMonths(base, 30), t: "PCT 각국 국내단계 진입", s: "대부분 국가는 우선일부터 30개월입니다. 국가별 기한은 따로 확인하세요." });
@@ -1982,9 +1989,18 @@ const PAGE = {
   start: ideaStartPage, pick: ideaPickPage,
   results: priorResultsPage, compare: priorComparePage, sample: priorSamplePage, gap: gapPage,
   result: diagResultPage, reject: diagResultPage, suggest: suggestPage, // 예전 ‘거절 위험’ 쪽은 요건 쪽에 합쳤다
-  support: supportPage, deadline: deadlinePage, overseas: () => ipCardHtml("apply") + fileDateField() + bizPageHtml(ipDates().base || today)
+  support: supportPage, deadline: deadlinePage, overseas: overseasPage
 };
 
+// 5단계 해외 출원: 먼저 계획이 있는지 묻는다. 없으면 기한 한 줄만, 있으면 시장·목표 → 할 일 → 나라별 기한 → 진출 준비 → 지원사업 순서로 하나씩 연다
+S.overseasPlan = "";
+function overseasPage() {
+  const d = ipDates(), due = d.due ? `${fmt(d.due)} (${ddayText(d.left)})` : "출원일부터 12개월";
+  const ask = `<div class="field"><span class="label">해외에서도 팔거나 기술을 넘길 계획이 있나요?</span>${seg("overseas-plan", [["yes", "있어요", "수출·해외 판매·해외 기술이전"], ["no", "아직 없어요", "국내에서 먼저 쓸 거예요"]], S.overseasPlan, { label: "해외 계획" })}</div>`;
+  if (S.overseasPlan !== "yes") return `${ipCardHtml("apply")}${fileDateField()}${ask}
+    ${S.overseasPlan === "no" ? `<div class="alert"><strong>이 쪽은 건너뛰어도 돼요</strong><span>다만 해외에 출원할 수 있는 기한은 한국 출원일부터 12개월(${esc(due)})입니다. 그 전에 계획이 생기면 ‘있어요’로 바꿔 나라별 일정을 보세요.</span></div>` : ""}`;
+  return `${ipCardHtml("apply")}${fileDateField()}${ask}${bizPageHtml(d.base || today, "apply")}`;
+}
 // 프로토타입용 가상 선행문헌 (실제 특허 아님)
 const PRIOR = {
   ferment: [
@@ -3052,7 +3068,7 @@ function regionTradeTop(type) {
   return rows.length ? rows.map(([n, t]) => `${n} ${usd(t.exp)}${t.growth != null ? `(${t.growth > 0 ? "+" : ""}${t.growth}%)` : ""}`).join(", ") : "";
 }
 // 해외 사업화(출원지원 5단계 ‘해외 출원’ 쪽): 시장·목표 → 지금 할 일 → 나라별 출원 확인표 → 해외 출원 안내 → 시장 카드·로드맵·지원사업·파트너·경로·신호·체크리스트
-function bizPageHtml(base) {
+function bizPageHtml(base, mode = "global") {
   bizTrendLoad();
   const B = G.biz, type = bizType(), mk = BIZ_MARKETS.filter(([k]) => B.markets.has(k)), tName = BIZ_TYPES.find(([k]) => k === type)[1];
   const sec = (id, h, sub, body) => `<section class="card-sec biz-sec" aria-labelledby="${id}"><div class="biz-h"><h3 id="${id}">${h}</h3>${sub ? `<p class="muted">${sub}</p>` : ""}</div>${body}</section>`;
@@ -3063,9 +3079,8 @@ function bizPageHtml(base) {
   const checklist = BIZ.checklist.map((c, i) => `<li><label><input type="checkbox" data-biz-done="${i}" ${B.done.has(i) ? "checked" : ""}><span><b>${c.t}</b><span class="muted">${c.d}</span></span></label>${c.go === "filing" ? `<button type="button" class="btn ghost sm" data-go-filing>해외 출원 일정 보기</button>` : c.go === "ais" ? aisBtn(mainKeywords() || S.idea.title, "AIS로 경쟁 특허 보기") : c.go?.startsWith("#h-") ? (secShown(c.go) ? `<button type="button" class="btn ghost sm" data-scroll="${c.go}">${c.goL}</button>` : "") : c.go ? `<a class="btn ghost sm" href="${c.go}">${c.goL}</a>` : ""}</li>`).join("");
   const ai = B.ai;
   const tr = PD.trade[type], rec = tr?.state === "ok" && tr.data.mode === "live" ? [...new Set(tr.data.rows.filter(r => r.exp >= 1e5 && r.region && !B.markets.has(r.region)).map(r => r.region))].slice(0, 2) : [];
-  return `<div class="biz biz-main">
-    <nav class="of-toc biz-toc2" aria-label="이 쪽의 차례">${[["#h-biznow", "지금 할 일"], ["#h-bizctry", "나라별 출원 확인표"], ["#of-0", "해외 출원 일정·경로"], ["#h-bizmk", "시장별 진출 카드"], ["#h-bizmap", "IP·사업 로드맵"], ["#h-bizsup", "지원사업"], ["#h-bizpartner", "파트너 후보"], ["#h-bizchk", "체크리스트"]].map(([h, t]) => `<button type="button" class="chip" data-scroll="${h}">${t}</button>`).join("")}</nav>
-    <section class="card-sec biz-start" aria-labelledby="h-bizme">
+  const P_toc = `<nav class="of-toc biz-toc2" aria-label="이 쪽의 차례">${[["#h-biznow", "지금 할 일"], ["#h-bizctry", "나라별 출원 확인표"], ["#of-0", "해외 출원 일정·경로"], ["#h-bizmk", "시장별 진출 카드"], ["#h-bizmap", "IP·사업 로드맵"], ["#h-bizsup", "지원사업"], ["#h-bizpartner", "파트너 후보"], ["#h-bizchk", "체크리스트"]].map(([h, t]) => `<button type="button" class="chip" data-scroll="${h}">${t}</button>`).join("")}</nav>`;
+  const P_start = `<section class="card-sec biz-start" aria-labelledby="h-bizme">
       <div class="biz-me"><h3 id="h-bizme">시장과 목표 고르기</h3><p class="muted">${!S.idea.title.trim() ? "아직 정한 기술이 없습니다. 출원지원 1단계에서 아이디어를 정리하거나 해외동향에서 키워드로 시작하면 IP 카드가 채워집니다." : "위 IP 카드의 기술로 시장과 목표를 고르면 아래 할 일·확인표·카드가 바뀝니다. 사업할 나라에 권리가 있어야 수출·기술이전에서 협상력이 생깁니다."}</p>
         ${rec.length ? `<p class="hint">관세청 수출 실적으로 보면 ${rec.map(k => `<button type="button" class="linklike" data-biz-mk-add="${k}">${BIZ_MARKETS.find(([x]) => x === k)[1]} 추가</button>`).join(" · ")}도 검토할 만합니다.</p>` : ""}</div>
       <div class="biz-pick">
@@ -3073,31 +3088,22 @@ function bizPageHtml(base) {
         <div class="field"><span class="label">관심 시장 <span class="muted h-meta">여러 개</span></span><div class="pick-chips">${BIZ_MARKETS.map(([k, n]) => `<label class="pick-chip"><input type="checkbox" data-biz-mk="${k}" ${B.markets.has(k) ? "checked" : ""}><span>${n}</span></label>`).join("")}</div></div>
         <div class="field"><span class="label">목표</span><div class="seg" role="radiogroup" aria-label="사업화 목표">${BIZ_GOALS.map(g => `<label><input type="radio" name="biz-goal" value="${g}" ${B.goal === g ? "checked" : ""}>${g}</label>`).join("")}</div></div>
       </div>
-    </section>
-
-    ${sec("h-biznow", "지금 할 일", "출원 상태·공개 여부·시장·목표로 순서를 정했습니다", bizNowHtml(type, tName))}
-
-    ${sec("h-bizctry", "내 특허의 나라별 출원 확인표", "IP 카드의 우선일·공개 여부로 나라마다 기한·번역문·공개 유예·상표를 계산합니다", ctryTableHtml(type))}
-
-    <section class="card-sec biz-sec of-wrap" aria-label="해외 출원 일정과 경로">${viewOverseasFiling(base)}</section>
-
-    ${sec("h-bizmk", `시장별 진출 카드 <span class="muted h-meta">${tName}</span>`, "시장마다 수출 실적·규제·특허·상표를 한 장으로", marketCardsHtml(type, tName))}
-
-    ${sec("h-bizmap", `IP·사업 통합 로드맵 <span class="muted h-meta">${esc(B.goal)}</span>`, "해외 출원 기한 안에 진출 시장을 정하세요", roadmapHtml())}
-
-    ${(t => t ? sec("h-biztrade", `나라별 한국 수출 실적 <span class="muted h-meta">${tName}</span>`, "많이 파는 나라는 유통 경로가, 빠르게 느는 나라는 기회가 있습니다", t) : "")(bizTradeHtml())}
-
-    ${aiSlot("globalbiz")}
+    </section>`;
+  const P_now = `${sec("h-biznow", "지금 할 일", "출원 상태·공개 여부·시장·목표로 순서를 정했습니다", bizNowHtml(type, tName))}`;
+  const P_ctry = `${sec("h-bizctry", "내 특허의 나라별 출원 확인표", "IP 카드의 우선일·공개 여부로 나라마다 기한·번역문·공개 유예·상표를 계산합니다", ctryTableHtml(type))}`;
+  const P_of = `<section class="card-sec biz-sec of-wrap" aria-label="해외 출원 일정과 경로">${viewOverseasFiling(base)}</section>`;
+  const P_mk = `${sec("h-bizmk", `시장별 진출 카드 <span class="muted h-meta">${tName}</span>`, "시장마다 수출 실적·규제·특허·상표를 한 장으로", marketCardsHtml(type, tName))}`;
+  const P_map = `${sec("h-bizmap", `IP·사업 통합 로드맵 <span class="muted h-meta">${esc(B.goal)}</span>`, "해외 출원 기한 안에 진출 시장을 정하세요", roadmapHtml())}`;
+  const P_trade = `${(t => t ? sec("h-biztrade", `나라별 한국 수출 실적 <span class="muted h-meta">${tName}</span>`, "많이 파는 나라는 유통 경로가, 빠르게 느는 나라는 기회가 있습니다", t) : "")(bizTradeHtml())}`;
+  const P_ai = `${aiSlot("globalbiz")}
     ${ai ? sec("h-bizai", "AI 해외 사업화 전략", "", `<div class="biz-ai"><div class="biz-sum"><span class="g-tag">AI 제안</span><p>${esc(ai.summary)}</p></div>
         <div class="biz-ai-mk">${ai.markets.map(m => `<article class="g-route"><div class="biz-route-h"><h4>${esc(m.market)}</h4><span class="g-tag">${esc(m.route)}</span></div><p>${esc(m.why)}</p>
           <dl><dt>규제</dt><dd>${esc(m.regulation)}</dd><dt>파트너</dt><dd>${esc(m.partner)}</dd><dt>첫 단계</dt><dd>${esc(m.firstStep)}</dd></dl></article>`).join("")}</div>
         <div class="g-two"><div><h4 class="biz-sub">주요 위험</h4><ul class="biz-list">${(ai.risks || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
           <div><h4 class="biz-sub">사업화 전 확인할 일</h4><ul class="biz-list">${(ai.checklist || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
-        <p class="hint">AI 제안은 초안입니다. 규제 기관명·기간·비용은 아래 표의 공식 출처와 지원기관 상담으로 확인하세요.</p></div>`) : ""}
-
-    ${(n => sec("h-bizsup", `내 상황에 맞는 지원사업 <span class="muted h-meta">${tName} · ${esc(B.goal)}</span>`, n ? "제품 유형·목표·시장에 맞는 사업 먼저, 그 아래 지금 신청할 수 있는 기업마당 공고" : "제품 유형·목표·시장에 맞는 사업을 먼저 보여 줍니다", `${supportHtml(type)}${n ? `<h4 class="biz-sub">지금 신청할 수 있는 공고 <span class="muted h-meta">기업마당</span></h4>${n}` : ""}`))(noticesHtml("global", () => S.mode === "apply" && S.step === "manage"))}
-
-    ${td && td.mode !== "sample" ? sec("h-bizpartner", "해외 파트너·경쟁자 후보", `해외 특허 동향에서 뽑은 내용입니다. 출원이 많은 기관은 라이선스 상대이자 경쟁자, 증가율이 높은 관청은 떠오르는 시장입니다.`,
+        <p class="hint">AI 제안은 초안입니다. 규제 기관명·기간·비용은 아래 표의 공식 출처와 지원기관 상담으로 확인하세요.</p></div>`) : ""}`;
+  const P_sup = `${(n => sec("h-bizsup", `내 상황에 맞는 지원사업 <span class="muted h-meta">${tName} · ${esc(B.goal)}</span>`, n ? "제품 유형·목표·시장에 맞는 사업 먼저, 그 아래 지금 신청할 수 있는 기업마당 공고" : "제품 유형·목표·시장에 맞는 사업을 먼저 보여 줍니다", `${supportHtml(type)}${n ? `<h4 class="biz-sub">지금 신청할 수 있는 공고 <span class="muted h-meta">기업마당</span></h4>${n}` : ""}`))(noticesHtml("global", () => S.mode === "apply" && S.step === "manage"))}`;
+  const P_partner = `${td && td.mode !== "sample" ? sec("h-bizpartner", "해외 파트너·경쟁자 후보", `해외 특허 동향에서 뽑은 내용입니다. 출원이 많은 기관은 라이선스 상대이자 경쟁자, 증가율이 높은 관청은 떠오르는 시장입니다.`,
       !td ? `<p class="muted">동향 데이터를 불러오는 중…</p>` : `${td.mode === "sample" ? `<div class="alert warn"><strong>예시 데이터</strong><span>기관명과 수치는 가상입니다. 해외 특허 API를 연결하면 실제 출원인으로 바뀝니다.</span></div>` : ""}
       <div class="g-two">
         <div><h4 class="biz-sub">시장 규모와 속도 <span class="muted h-meta">${esc(td.name)}</span></h4>
@@ -3105,16 +3111,16 @@ function bizPageHtml(base) {
         <div><h4 class="biz-sub">출원 상위 기관 <span class="muted h-meta">파트너·경쟁자 후보</span></h4>
           <ol class="gbars">${td.applicants.slice(0, 6).map(a => `<li><span class="gb-name">${esc(a.name)}</span><span class="gb-track"><i class="s-${a.office}" style="width:${Math.round(a.count / td.applicants[0].count * 100)}%"></i></span><b>${a.count.toLocaleString("ko-KR")}</b></li>`).join("")}</ol></div>
       </div>
-      ${bizKrApplicants()}`) : S.api !== "off" ? sec("h-bizpartner", "국내 파트너 후보", "기술이전·공동연구 상대이자 경쟁자", bizKrApplicants()) : ""}
-
-    ${sec("h-bizroute", `진출 경로 <span class="muted h-meta">${esc(B.goal)}</span>`, "", `${routes.mine}${fold("biz-routes", "다른 경로 보기", `${routes.others.length}가지`, `<div class="g-routes biz-routes">${routes.others.join("")}</div>`)}`)}
-
-    ${(st => sec("h-bizsig", `시장 신호 <span class="muted h-meta">${tName}</span>`, `${BIZ.asOf} 기준 공식 발표·조사 수치 — 신청서·상담 자료에 그대로 인용할 수 있습니다`, `<div class="kpis ${st.length === 2 ? "kpis-2" : st.length === 3 ? "kpis-3" : ""}">${st.map(x => `<div class="kpi"><span class="kpi-l">${x.t}</span><b class="kpi-v">${x.v}</b><span class="kpi-d">${x.d}</span>${x.use ? `<span class="kpi-use">${x.use}</span>` : ""}<a class="kpi-src" href="${x.src[1]}" target="_blank" rel="noopener">${x.src[0]}</a></div>`).join("")}</div>`))((f => f.length ? f : BIZ.stats)(BIZ.stats.filter(x => !x.for || x.for.includes(type))))}
-
-    ${sec("h-bizchk", `사업화 체크리스트 <span class="muted h-meta">${B.done.size}/${BIZ.checklist.length} 확인</span>`, "", `<ol class="biz-chk">${checklist}</ol>`)}
-
-    ${fold("biz-src", "출처", `${BIZ.sources.length}곳 · ${BIZ.asOf} 기준 일반 안내`, `<p class="hint">${BIZ.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(" · ")}</p>`)}
-  </div>`;
+      ${bizKrApplicants()}`) : S.api !== "off" ? sec("h-bizpartner", "국내 파트너 후보", "기술이전·공동연구 상대이자 경쟁자", bizKrApplicants()) : ""}`;
+  const P_route = `${sec("h-bizroute", `진출 경로 <span class="muted h-meta">${esc(B.goal)}</span>`, "", `${routes.mine}${fold("biz-routes", "다른 경로 보기", `${routes.others.length}가지`, `<div class="g-routes biz-routes">${routes.others.join("")}</div>`)}`)}`;
+  const P_sig = `${(st => sec("h-bizsig", `시장 신호 <span class="muted h-meta">${tName}</span>`, `${BIZ.asOf} 기준 공식 발표·조사 수치 — 신청서·상담 자료에 그대로 인용할 수 있습니다`, `<div class="kpis ${st.length === 2 ? "kpis-2" : st.length === 3 ? "kpis-3" : ""}">${st.map(x => `<div class="kpi"><span class="kpi-l">${x.t}</span><b class="kpi-v">${x.v}</b><span class="kpi-d">${x.d}</span>${x.use ? `<span class="kpi-use">${x.use}</span>` : ""}<a class="kpi-src" href="${x.src[1]}" target="_blank" rel="noopener">${x.src[0]}</a></div>`).join("")}</div>`))((f => f.length ? f : BIZ.stats)(BIZ.stats.filter(x => !x.for || x.for.includes(type))))}`;
+  const P_chk = `${sec("h-bizchk", `사업화 체크리스트 <span class="muted h-meta">${B.done.size}/${BIZ.checklist.length} 확인</span>`, "", `<ol class="biz-chk">${checklist}</ol>`)}`;
+  const P_src = `${fold("biz-src", "출처", `${BIZ.sources.length}곳 · ${BIZ.asOf} 기준 일반 안내`, `<p class="hint">${BIZ.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(" · ")}</p>`)}`;
+  // 해외동향 메뉴는 모든 절을 한 쪽에, 출원지원 5단계는 할 일 순서로 하나씩 열고 참고 자료는 접어 둔다
+  if (mode !== "apply") return `<div class="biz biz-main">${[P_toc, P_start, P_now, P_ctry, P_of, P_mk, P_map, P_trade, P_ai, P_sup, P_partner, P_route, P_sig, P_chk, P_src].join("\n")}</div>`;
+  const more = [P_trade, P_ai, P_partner, P_route, P_sig].filter(x => x.trim()).join("\n");
+  return `<div class="biz biz-main">${P_start}${cut("지금 할 일 보기")}${P_now}${cut("나라별 출원 기한·경로 보기")}${P_ctry}${P_of}${cut("시장별 진출 준비 보기")}${P_mk}${P_map}${cut("지원사업·체크리스트 보기")}${P_sup}${P_chk}
+    ${more ? fold("biz-more", "더 알아보기", "수출 실적·AI 전략·파트너·진출 경로·시장 신호", more) : ""}${P_src}</div>`;
 }
 
 // 꺾은선 차트는 그려질 자리의 실제 너비에 맞춰 그린다 (글자 크기가 화면 폭에 따라 바뀌지 않도록)
@@ -5622,8 +5628,84 @@ function claimChartText() {
 }
 
 // 실험 결과 그래프 입력 (내용 확인 쪽). 칸마다 id를 붙여 다시 그려도 커서가 남게 한다
+/* ---------- 실험 데이터 도우미: 무엇을 잴지(실험 설계) → 기록지 → 잰 값 올리기 → 표·실시예·그래프 ----------
+   수치는 사용자가 직접 잰 값만 쓴다. 이 도우미는 무엇을·어떻게·무엇과 비교해 잴지만 제안하고 값을 만들지 않는다 */
+// [측정 항목, 단위, 재는 방법, 비교예(대조군)]
+const EXP_PLAN = {
+  ferment: [["작물 생체중", "g", "처리 4주 뒤 지상부를 잘라 저울로 잰다", "같은 양의 물만 준 작물"], ["생균수", "CFU/mL", "배양액을 희석해 평판 배지에서 센다", "균을 넣지 않은 배양액"], ["토양 EC", "dS/m", "처리 2주 뒤 토양 시료를 물에 풀어 잰다", "아무것도 주지 않은 토양"]],
+  food: [["경도(단단한 정도)", "N", "물성 측정기로 같은 크기 시료를 누른다", "기존 방법으로 만든 제품"], ["염도", "%", "염도계로 같은 양을 잰다", "시판 비슷한 제품"], ["관능 평가(맛·향 점수)", "점(9점 척도)", "20명 이상이 눈을 가리고 점수를 매긴다", "기존 제품"]],
+  functional: [["유효성분 함량", "mg/g", "분석기관에 HPLC 분석을 맡긴다", "가공하지 않은 원료"], ["추출 수율", "%", "말린 원료 무게 대비 추출물 무게", "기존 추출법"]],
+  smartfarm: [["제어 정확도(목표값과의 차이)", "%", "같은 조건에서 목표값과 실제값을 기록한다", "사람이 직접 조절한 경우"], ["에너지 사용량", "kWh", "같은 기간 전력량계를 읽는다", "기존 설비"], ["작물 생육 균일도", "%", "같은 날 작물 키·무게를 재 변이계수를 낸다", "관행 재배"]],
+  device: [["작업 속도", "m²/시간", "같은 면적을 작업하는 데 걸린 시간을 잰다", "기존 장비"], ["작업 정확도(위치 오차)", "cm", "목표 위치와 실제 위치 차이를 잰다", "기존 장비"], ["1회 연속 작동 시간", "분", "배터리·연료를 가득 채우고 멈출 때까지 잰다", "기존 장비"]],
+  variety: [["수량", "kg/10a", "3반복 이상 재배해 수확량을 잰다", "대비 품종"], ["병 발생률", "%", "병원균 접종 뒤 병든 포기 비율을 센다", "대비 품종"], ["당도", "°Brix", "굴절당도계로 잰다", "대비 품종"]],
+  pack: [["저장 중 무게 감소율", "%", "7일·14일째 무게를 잰다", "일반 포장"], ["경도 유지", "N", "물성 측정기로 저장 전후를 잰다", "일반 포장"], ["부패율", "%", "저장 뒤 무른 개수를 센다", "일반 포장"]],
+  generic: [["효과를 보여 줄 주요 지표", "단위", "같은 조건에서 3번 이상 잰다", "기존 방법·제품"]]
+};
+// 분야·발명 유형·낱말로 잴 항목을 고른다 (기능성은 낱말의 효능에 맞는 지표를 앞에)
+function expPlan() {
+  const i = S.idea, k = claimKinds().main, P = S.ideate.pitch;
+  const base = (k === "device" && (P?.kind === "device" || i.field === "smartfarm" || PITCH_DEVICE.test(i.title.replace(/\s+/g, ""))) && i.field !== "pack" ? EXP_PLAN.device : EXP_PLAN[i.field]) || EXP_PLAN.generic;
+  const extra = i.field === "functional" ? kwList(S.ideate.kw).map(w => USE_KO.find(([re]) => re.test(w))).filter(Boolean).map(m => [m[2].split(",")[0].trim(), "%", "세포·동물 시험을 분석기관에 맡긴다", "처리하지 않은 군"]) : [];
+  return [...extra, ...base].filter((r, n, a) => a.findIndex(x => x[0] === r[0]) === n).slice(0, 3);
+}
+// 기록지(CSV, 엑셀에서 열림): 항목마다 실시예 1·비교예 1 두 줄. 값 칸은 비워 둔다
+const EXP_COLS = ["측정 항목", "단위", "재는 방법", "반복 수", "비교예 조건", "구분", "측정값(평균)", "표준편차"];
+const csvCell = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+function expSheetCsv() {
+  const src = (S.expFigs ?? []).filter(g => g.metric?.trim()).length ? S.expFigs.map(g => [g.metric, g.unit, g.method ?? "", g.ctrl ?? "", g.n ?? "", g.rows]) : expPlan().map(([m, u, how, ctrl]) => [m, u, how, ctrl, "3", null]);
+  const lines = [EXP_COLS];
+  for (const [m, u, how, ctrl, n, rows] of src) (rows ?? [{ name: "실시예 1", val: "", sd: "" }, { name: "비교예 1", val: "", sd: "" }]).forEach(r => lines.push([m, u, how, n, ctrl, r.name, r.val, r.sd]));
+  return "﻿" + lines.map(l => l.map(csvCell).join(",")).join("\r\n");
+}
+function parseCsv(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let k = 0; k < text.length; k++) {
+    const c = text[k];
+    if (q) { if (c === '"' && text[k + 1] === '"') { cell += '"'; k++; } else if (c === '"') q = false; else cell += c; continue; }
+    if (c === '"') q = true; else if (c === ",") { row.push(cell); cell = ""; } else if (c === "\n" || c === "\r") { if (c === "\r" && text[k + 1] === "\n") k++; row.push(cell); rows.push(row); row = []; cell = ""; } else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.map(r => r.map(x => x.trim())).filter(r => r.some(Boolean));
+}
+// 채운 기록지를 올리면 항목별 그래프 입력표로 옮긴다 (값이 하나라도 있는 항목만)
+function importExpSheet(text) {
+  const rows = parseCsv(text.replace(/^﻿/, "")), head = rows[0] ?? [], at = name => head.findIndex(h => h.replace(/\s/g, "").startsWith(name.replace(/\s|\(.*$/g, "")));
+  const c = { m: at("측정 항목"), u: at("단위"), how: at("재는 방법"), n: at("반복 수"), ctrl: at("비교예 조건"), name: at("구분"), val: at("측정값"), sd: at("표준편차") };
+  if (c.m < 0 || c.val < 0 || c.name < 0) throw new Error("기록지 첫 줄(항목 이름)을 지우지 말고 올려 주세요.");
+  const byM = new Map();
+  for (const r of rows.slice(1)) {
+    const m = r[c.m]; if (!m) continue;
+    const g = byM.get(m) ?? { metric: m, unit: r[c.u] ?? "", kind: "bar", points: "", method: r[c.how] ?? "", n: r[c.n] ?? "", ctrl: r[c.ctrl] ?? "", rows: [] };
+    g.rows.push({ name: r[c.name] || `구분 ${g.rows.length + 1}`, val: (r[c.val] ?? "").replace(/[^\d.,\-]/g, ""), sd: (r[c.sd] ?? "").replace(/[^\d.,\-]/g, "") });
+    byM.set(m, g);
+  }
+  const gs = [...byM.values()].filter(g => g.rows.some(x => x.val));
+  if (!gs.length) throw new Error("측정값이 비어 있어요. 잰 값을 ‘측정값(평균)’ 칸에 넣고 저장해 올려 주세요.");
+  return gs;
+}
+function expHelperHtml() {
+  const plan = expPlan(), d = ipDates(), pri = d.base ? fmt(addMonths(d.base, 12)) : "출원일부터 1년";
+  return `<div class="field exp-help" data-pg="0"><span class="label">실험 데이터 도우미 <span class="muted h-meta">아직 잰 값이 없을 때 · 값은 직접 잰 것만 씁니다</span></span>
+    <p class="hint" style="margin-top:0">이 발명의 효과를 보여 주려면 아래 항목을 재 보세요. 실시예(이 발명) 1개 이상과 비교예(기존 방법) 1개 이상을 같은 조건에서 3번 이상 재면 됩니다.</p>
+    <ol class="exp-plan">${plan.map(([m, u, how, ctrl]) => `<li><b>${esc(m)} <span class="muted">(${esc(u)})</span></b><span>${esc(how)}</span><span class="muted">비교: ${esc(ctrl)}</span></li>`).join("")}</ol>
+    <div class="actions"><button type="button" class="btn ghost sm" data-exp-sheet>측정 기록지 받기 (엑셀에서 열림)</button><label class="btn sm" for="exp-import" tabindex="0" role="button" data-key-click>잰 값을 채운 기록지 올리기</label><input type="file" id="exp-import" accept=".csv,text/csv" hidden></div>
+    <p class="exp-pri"><b>데이터 없이 먼저 출원해도 돼요.</b> 출원일부터 1년 안(${esc(pri)}까지)에 잰 값을 더해 다시 출원하면서 ‘국내우선권’을 주장하면 처음 출원일을 그대로 인정받습니다(특허법 제55조). 기한은 5단계 기한 관리에 들어가 있어요.</p></div>`;
+}
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-exp-sheet]")) { saveFile(`실험기록지_${(S.idea.title || "발명").slice(0, 20)}.csv`, "text/csv;charset=utf-8", expSheetCsv()); toast("기록지를 받았습니다. 엑셀로 열어 측정값을 넣고 CSV로 저장해 올리세요"); }
+});
+document.addEventListener("change", async e => {
+  if (e.target.id !== "exp-import" || !e.target.files?.[0]) return;
+  try {
+    const gs = importExpSheet(await e.target.files[0].text());
+    S.expFigs = gs; S.idea.data = "yes"; S.hasDrawings = "yes";
+    invalidateSpec(); scheduleSave(); rerenderKeepScroll();
+    toast(`측정 항목 ${gs.length}개를 넣었습니다. 표·실험예 문장·그래프가 이 값으로 채워집니다`);
+  } catch (err) { toast(err.message || "기록지를 읽지 못했습니다"); }
+  e.target.value = "";
+});
 function expEditor() {
-  if (S.idea.data !== "yes") return `<div class="field" data-pg="0"><span class="label">실험 결과 그래프 (도면)</span><p class="hint" style="margin:0">1단계에서 실험 데이터 ‘있음’을 고르면, 실제로 잰 값으로 실시예·비교예 비교 그래프(흑백 도면)를 만들 수 있어요. <button type="button" class="linklike" data-to="idea:pick">사실 답하러 가기</button></p></div>`;
+  if (S.idea.data !== "yes") return expHelperHtml();
   const gs = S.expFigs ??= [], nums = figList().filter(f => f.src === "graph");
   let gi2 = 0;
   return `<div class="field exp-ed" data-pg="0"><span class="label">실험 결과 그래프 (도면) <span class="muted h-meta">실제로 잰 값만 넣으세요. 표 1과 실험예 문장, 도면 설명이 이 값으로 채워집니다</span></span>
@@ -5644,7 +5726,7 @@ function expEditor() {
       <div class="actions"><button type="button" class="btn ghost sm" data-xrow-add="${gi}">+ 구분 추가</button><button type="button" class="btn ghost sm" data-xg-del="${gi}">이 그래프 삭제</button></div>
       <p class="hint" role="status" data-xstat="${gi}">${chk.err ? `아직 그리지 않았습니다 · ${esc(chk.err)}` : S.hasDrawings === "yes" ? `${J(`도 ${fg?.n}`, "으로")} 그렸습니다. 첨부서류 쪽에서 미리 보고 받을 수 있습니다.` : "‘도면 있음’을 고르면 도면으로 들어갑니다."}</p>
       </fieldset>`; }).join("")}
-    <div class="actions"><button type="button" class="btn ghost sm" data-xg-add>+ 실험 결과 그래프 추가</button></div></div>`;
+    <div class="actions"><button type="button" class="btn ghost sm" data-xg-add>+ 실험 결과 그래프 추가</button><button type="button" class="btn ghost sm" data-exp-sheet>기록지로 받기</button><label class="btn ghost sm" for="exp-import" tabindex="0" role="button" data-key-click>기록지 올리기</label><input type="file" id="exp-import" accept=".csv,text/csv" hidden></div></div>`;
 }
 // 실험 결과 그래프 입력: 글자를 칠 때는 값만 바꾸고, 칸을 떠나면 명세서·도면을 다시 만든다
 const expAt = path => { const [gi, ri, f] = path.split("."); return ri != null && f != null ? [S.expFigs[+gi].rows[+ri], f] : [S.expFigs[+gi], ri]; };
@@ -6500,7 +6582,7 @@ const COACH = {
   "draft:4": { do: ["남은 일 위에서부터 끝내기", "제출용 파일 받기", "특허로에서 제출"], tip: "혼자 제출이 부담되면 5단계에서 무료 상담을 찾을 수 있어요." },
   "manage:support": { do: ["비용 지원사업 찾기", "변리사·무료 상담 찾기"], tip: "공익변리사 특허상담센터(pcc.or.kr)에서도 무료로 상담받을 수 있어요." },
   "manage:deadline": { do: ["출원일 넣기", "‘달력에 넣기’로 알림 받기"], tip: "기한을 놓치면 권리를 잃을 수 있어요." },
-  "manage:overseas": { do: ["진출할 나라 고르기", "일정·비용 확인"], tip: "해외 출원은 한국 출원일부터 1년 안에 해야 해요. 계획이 없으면 넘어가세요." },
+  "manage:overseas": { do: ["해외 계획 답하기", "할 일·나라별 기한 확인"], tip: "해외 출원은 한국 출원일부터 1년 안에 해야 해요. 계획이 없으면 ‘아직 없어요’를 고르고 넘어가세요." },
   "discover:0": { do: ["관심 분야 고르기", "유망기술 찾기"], tip: "아이디어가 이미 있다면 1단계 ‘아이디어’로 바로 가도 돼요." },
   "discover:1": { do: ["지도에서 기술 하나 고르기"], tip: "점이 위쪽·오른쪽일수록 세계에서 빠르게 느는 기술이에요." },
   "discover:2": { do: ["아이디어 후보 고르기", "1단계에서 다듬기"], tip: "후보는 출발점이에요. 현장 경험을 더해 고치면 돼요." }
@@ -6829,6 +6911,7 @@ document.addEventListener("change", e => {
   if (t.dataset?.bizMk) { t.checked ? G.biz.markets.add(t.dataset.bizMk) : G.biz.markets.delete(t.dataset.bizMk); scheduleSave(); rerenderKeepScroll(); return; }
   if (t.id === "biz-new-field" && G.biz.newTech) { G.biz.newTech.field = t.value; G.biz.newTech.kw = IDEA_BANK[t.value]?.d.join(", ") ?? ""; rerenderKeepScroll(); return; }
   if (t.name === "biz-goal") { G.biz.goal = t.value; scheduleSave(); rerenderKeepScroll(); return; }
+  if (t.name === "overseas-plan") { S.overseasPlan = t.value; scheduleSave(); rerenderKeepScroll(); return; }
   if (t.dataset?.bizDone != null) { const k = +t.dataset.bizDone; t.checked ? G.biz.done.add(k) : G.biz.done.delete(k); scheduleSave(); rerenderKeepScroll(); return; }
   if (t.name?.startsWith("pick-")) { S.ideate.pick[t.name.slice(5)] = +t.value; applyPicks(t.name.slice(5)); rerenderKeepScroll(); if (t.name === "pick-problem") setTimeout(() => $("#problem")?.focus({ preventScroll: true })); return; }
   if (t.dataset?.pickSet) { const set = S.ideate[t.dataset.pickSet], k = +t.value; t.checked ? set.add(k) : set.delete(k); syncParts(); rerenderKeepScroll(); return; }
@@ -6909,7 +6992,7 @@ document.addEventListener("click", e => { if (e.target.closest("[data-restart]")
 
 /* ---------- 작업 저장: 이 기기의 브라우저(localStorage)에만 자동 저장한다. 서버로 보내지 않는다 ---------- */
 const SAVE_KEY = "agri-ip:work:v1";
-const SAVE_FIELDS = ["filed", "supportFit", "step", "sub", "idea", "tpl", "tplAuto", "parts", "effect", "strain", "userType", "region", "fileDate", "hasDrawings", "app", "spec", "kw", "kwField", "ipc", "live", "liveField", "refined", "refinedSel", "axesCustom", "aiGap", "cmpAI", "rejAI", "revAI", "supAI", "expFigs", "photoFigs", "aiChanges", "aiFeedback", "fillTried", "watch", "practice", "chat", "reveal"];
+const SAVE_FIELDS = ["filed", "supportFit", "step", "sub", "idea", "tpl", "tplAuto", "parts", "effect", "strain", "userType", "region", "fileDate", "hasDrawings", "app", "spec", "kw", "kwField", "ipc", "live", "liveField", "refined", "refinedSel", "axesCustom", "aiGap", "cmpAI", "rejAI", "revAI", "supAI", "expFigs", "photoFigs", "aiChanges", "aiFeedback", "fillTried", "watch", "practice", "chat", "reveal", "overseasPlan"];
 const AI_KEEP = ["draft", "ideate", "compare", "whitespace", "reject", "review"];
 const SAVE_SETS = ["done", "gapSel", "citeSel"];
 const SAVE = { at: null, restored: null, t: 0, off: false };
