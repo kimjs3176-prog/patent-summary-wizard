@@ -9,11 +9,16 @@ describe("service menu", () => {
     expect(visibleServices({}).map((s) => s.key)).toContain("filing");
   });
 
-  it("leaves 출원도우미 out of the desktop header badges (owner: its badge lives in the home hero)", () => {
-    expect(headerBadgeServices({}).map((s) => s.key)).not.toContain("filing");
-    expect(headerBadgeServices({}).map((s) => s.key)).not.toContain("home");
-    // The badge only moved: the full visible list (mobile menu panel) still offers it.
-    expect(visibleServices({}).map((s) => s.key)).toContain("filing");
+  it("shows 출원도우미 in the desktop header and leaves out the two hero-foot entries (owner)", () => {
+    const keys = headerBadgeServices({}).map((s) => s.key);
+    expect(keys).toContain("filing");
+    expect(keys).not.toContain("home");
+    expect(keys).not.toContain("potential");
+    expect(keys).not.toContain("consortium");
+    // Their own entries stay at the foot of the home hero, and the mobile menu panel still lists them.
+    expect(visibleServices({}).map((s) => s.key)).toEqual(expect.arrayContaining(["potential", "consortium"]));
+    // 출원도우미 still follows the feature_filing setting in the bar.
+    expect(headerBadgeServices({ feature_filing: "false" }).map((s) => s.key)).not.toContain("filing");
   });
 
   it("leaves 기술소개영상 out of the desktop header badges (owner)", () => {
