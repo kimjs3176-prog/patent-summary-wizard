@@ -1207,7 +1207,6 @@ h1, h2, h3 { font-weight: 600; }
       <a href="#home" data-mode-link="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>처음 화면</a>
       <a href="#apply" data-mode-link="apply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>출원지원</a>
       <a href="#ais" data-mode-link="ais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>기술분석</a>
-      <a href="#global" data-mode-link="global"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>해외동향</a>
     </nav>
     <div class="mast-side">
       <button class="dday-chip" id="dday-chip" data-help hidden></button>
@@ -2231,29 +2230,7 @@ const ATTORNEYS = [
 ];
 
 // 해외 출원 안내 (제출·관리 3쪽): 내 출원일 기준 일정과 경로·나라별 유의점·비용 지원
-function viewOverseasFiling(base) {
-  const secs = [];
-  const sec = (h, body, meta = "") => { const id = `of-${secs.length}`, first = !secs.length; secs.push([id, h.replace(/\s*\d+가지$/, "").replace(/\s*\(.*\)$/, "")]);
-    return first ? `<div class="of-sec" id="${id}"><h3>${h}</h3>${body}</div>` : fold(id, `<h3>${h}</h3>`, meta, body, false, "of-sec").replace("<details ", `<details id="${id}" `); };
-  const body = OVERSEAS_BODY(sec, base);
-  return `<nav class="of-toc" aria-label="해외 출원 목차">${secs.map(([id, t]) => `<button type="button" class="chip" data-scroll="#${id}">${esc(t)}</button>`).join("")}</nav>${body}`;
-}
-function OVERSEAS_BODY(sec, base) {
-  return `<p class="muted">국내 출원일(우선일)부터 해외 출원 일정과 경로, 나라별 유의점입니다. 해외 시장·인증·파트너 같은 사업화는 <a href="#global">해외동향</a>에서 다룹니다.</p>
-    ${sec("내 출원일 기준 해외 출원 일정", timeScale([
-      { date: base, label: "국내 특허 출원 (우선일)" },
-      { date: addMonths(base, 12), label: "파리조약 우선권 출원 · PCT 국제출원 기한", kind: "urgent" },
-      { date: addMonths(base, 18), label: "국제공개" },
-      { date: addMonths(base, 30), label: "PCT 국내단계 진입: 미국·일본·중국" , kind: "urgent" },
-      { date: addMonths(base, 31), label: "PCT 국내단계 진입: 유럽·한국·베트남·인도", kind: "urgent" }
-    ], { start: addMonths(base, -1), end: addMonths(base, 33) }))}
-    ${sec(`해외 진출 전 체크포인트 ${GUIDE.checkpoints.length}가지`, `<ol class="steps6">${GUIDE.checkpoints.map(([t, d], i) => `<li><div class="g-pt"><span class="no">${String(i + 1).padStart(2, "0")}</span><b>${t}</b><span>${d}</span></div></li>`).join("")}</ol>`, GUIDE.checkpoints.slice(0, 2).map(([t]) => t).join(" · ") + " 등")}
-    ${sec("어떤 경로로 낼까", `<div class="g-routes">${GUIDE.routes.map(r => `<article class="g-route"><h4>${r.k}</h4><dl><dt>이럴 때</dt><dd>${r.when}</dd><dt>기한</dt><dd>${r.due}</dd><dt>비용</dt><dd>${r.cost}</dd></dl></article>`).join("")}</div>`, GUIDE.routes.map(r => r.k).join(" vs "))}
-    ${sec("무엇을 보호할까", `<div class="g-tools">${GUIDE.tools.map(x => `<article><span class="g-tag">${x.t}</span><h4>${x.k}</h4><p class="muted">${x.d}</p><p>${x.g}</p></article>`).join("")}</div>`, GUIDE.tools.map(x => x.k).join(" · "))}
-    ${sec("먼저 공개했다면: 나라별 공지예외", `<p class="muted">한국에서 공지예외로 출원해도 유럽·중국에서는 신규성을 잃습니다.</p><div class="table-wrap"><table class="g-grace"><thead><tr><th>나라</th><th>기간</th><th>조건</th></tr></thead><tbody>${GUIDE.grace.map(([c, p, n]) => `<tr><td><b>${c}</b></td><td class="${/없음|6개월/.test(p) ? "warn-t" : ""}">${p}</td><td>${n}</td></tr>`).join("")}</tbody></table></div>`, "유럽·중국은 공지예외가 좁습니다")}
-    ${sec("사례로 보는 교훈", `<div class="g-cases">${GUIDE.cases.map(c => `<article class="g-route"><h4>${c.t}</h4><p>${c.d}</p><p class="g-lesson">${c.l}</p><a class="hint" href="${c.src}" target="_blank" rel="noopener">출처</a></article>`).join("")}</div>`, GUIDE.cases.map(c => c.t).join(" · "))}
-    <p class="hint">${GUIDE.asOf} 기준 일반 안내입니다. 나라별 제도와 비용은 출원 전에 변리사나 지원기관에 확인하세요. 출처: ${GUIDE.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(" · ")}</p>`;
-}
+
 
 function renderSide() {
   $("#prog-title").textContent = S.idea.title;
@@ -2328,7 +2305,7 @@ function setModeFromHash() {
   if (stepIdx(h) >= 0) {
     S.mode = "apply";
     if (S.step !== h) { S.dir = stepIdx(h) < stepIdx() ? -1 : 1; S.step = h; S.sub = history.state?.sub ?? 0; }
-  } else S.mode = ["apply", "global", "ais"].includes(h) ? h : "home";
+  } else S.mode = ["apply", "ais"].includes(h) ? h : "home";
   if (EMBED && (S.mode === "home" || S.mode === "ais")) { if (S.mode === "ais") toParent({ type: "agri-ip:ais", q: AIS.q }); S.mode = "apply"; history.replaceState(null, "", `#${S.step}`); } // AIS 안에서는 처음 화면·기술분석이 없다 (기술분석 링크는 AIS 자신이 연다)
   if (FILING_ONLY && S.mode !== "apply") { if (S.mode === "ais" && !EMBED) openAisStandalone(AIS.q); S.mode = "apply"; history.replaceState(null, "", `#${S.step}`); } // 출원지원 전용 빌드: 처음 화면·기술분석·해외동향 없음
   closeDrawer(); render(); window.scrollTo({ top: 0 });
@@ -2483,9 +2460,7 @@ function viewHome() {
 /* ---------- 해외동향 · 해외 기술 동향 ---------- */
 // 동향 데이터는 /api/trends 에서 받는다 (지금은 예시 데이터, 실제 API 연결 시 같은 형태). 해외 출원 가이드는 검증한 사실과 출처를 GUIDE 에 모은다.
 const TREND_FIELD_LIST = [["smartfarm", "스마트팜·정밀농업"], ["altprotein", "대체단백·배양육"], ["biocontrol", "미생물 비료·생물농약"], ["foodferment", "발효·기능성 식품"], ["breeding", "육종·유전자 편집"], ["robotics", "농업 로봇·드론"], ["postharvest", "수확 후 저장·유통"]];
-const OFFICE_ORDER = ["CN", "US", "EP", "JP", "KR"]; // 색은 관청을 따라간다 (순위가 바뀌어도 색은 그대로)
-const G = { field: "smartfarm", span: 10, scale: "count", data: null, loading: false, err: "" };
-
+ // 색은 관청을 따라간다 (순위가 바뀌어도 색은 그대로)
 
 /* ---------- 국내 출원 동향 (KIPRIS 실데이터) ---------- */
 // 해외동향·유망기술 지도·해외 사업화가 함께 쓴다. 분야마다 한 번 불러와 둔다 (서버도 6시간 캐시)
@@ -2504,346 +2479,42 @@ async function loadKr(field) {
   finally {
     st.loading = false;
     // 이 데이터를 쓰는 화면에 있을 때만 다시 그린다 (다른 화면의 입력을 방해하지 않도록)
-    if (S.mode === "global" || (S.mode === "apply" && S.step === "discover")) rerenderKeepScroll();
+    if (S.mode === "apply" && S.step === "discover") rerenderKeepScroll();
   }
 }
 // 화면에서 쓸 국내 데이터: 없으면 불러오기를 시작하고 null 을 돌려준다
 function krFor(field) { const st = krState(field); if (st.err && Date.now() - st.errAt > 60000) st.err = ""; if (!st.data) loadKr(field); return st.data; }
 const krBadge = d => `<span class="kr-badge">${d?.mode === "mock" ? "KIPRIS 모의" : "KIPRIS 실데이터"}</span>`;
-const krNote = d => `<p class="hint">KIPRIS Plus 초록 검색 <span class="mono">${esc(d.query)}</span> · 조회 ${d.apiCalls}회 · ${new Date(d.fetchedAt).toLocaleString("ko-KR")}${d.mode === "mock" ? " · 모의 모드라 건수와 출원인은 가짜입니다" : ""}</p>`;
 
-function krSection(field, ref = false) {
-  const head = (sub, id = "") => `<div class="sub-head"><h3${id ? ` id="${id}"` : ""}>한국 출원 동향 <span class="muted h-meta">${esc(TREND_FIELD_LIST.find(([k]) => k === field)?.[1] || "")}</span></h3>${sub}</div>${ref ? `<p class="muted kr-ref">해외 관청별 출원 추이는 해외 특허 데이터를 연결하면 위에 나옵니다. 그때까지 한국 출원으로 이 분야의 흐름과 국내 경쟁자를 봅니다.</p>` : ""}`;
-  if (S.api === "off") return `<section class="card-sec kr-sec">${head("")}<p class="muted">서버에 KIPRIS 키를 설정하면 이 분야의 연도별 국내 출원, 세부기술 건수, 주요 출원인을 KIPRIS 실데이터로 보여 줍니다.</p></section>`;
-  const st = krState(field), d = krFor(field);
-  if (st.err) return `<section class="card-sec kr-sec">${head("")}<div class="alert"><strong>국내 출원을 세지 못했습니다</strong><span>${esc(st.err)}</span></div></section>`;
-  if (!d) return `<section class="card-sec kr-sec">${head(krBadge())}<p class="muted">KIPRIS에서 이 분야의 국내 출원을 세는 중입니다 (약 20회 조회, 10~20초).</p></section>`;
-  const max = Math.max(1, ...d.counts.filter(Number.isFinite)), reg = d.total ? Math.round(d.registered / d.total * 100) : 0;
-  const w = d.window, smax = Math.max(1, ...d.subs.map(s => s.recent ?? s.total ?? 0));
-  return `<section class="card-sec kr-sec" aria-labelledby="h-kr">
-    ${head(krBadge(d), "h-kr")}
-    <div class="kpis kpis-3">
-      <div class="kpi"><span class="kpi-l">국내 출원 (누적)</span><b class="kpi-v">${(d.total ?? 0).toLocaleString("ko-KR")}건</b><span class="kpi-d">특허·실용신안, 초록 기준</span></div>
-      <div class="kpi"><span class="kpi-l">등록</span><b class="kpi-v">${d.registered != null ? `${d.registered.toLocaleString("ko-KR")}건` : "–"}</b><span class="kpi-d">${d.registered != null ? `출원의 ${reg}%가 등록 유지` : "조회하지 못했습니다"}</span></div>
-      <div class="kpi"><span class="kpi-l">연평균 증가율${d.cagrSpan ? ` (${d.cagrSpan[0]}~${d.cagrSpan[1]})` : ""}</span><b class="kpi-v">${d.cagr != null ? `${d.cagr > 0 ? "+" : ""}${d.cagr}%` : "–"}</b><span class="kpi-d">공개 전인 최근 2년은 빼고 계산</span></div>
-    </div>
-    ${d.yearsOk ? `<figure class="chart-card"><figcaption><h4 class="biz-sub">연도별 국내 출원</h4></figcaption>
-      <div class="kr-bars" role="img" aria-label="${esc(d.years.map((y, i) => `${y}년 ${d.counts[i] ?? "조회 실패"}건`).join(", "))}">${d.years.map((y, i) => { const c = d.counts[i], lag = d.lagYears.includes(y);
-        return `<div class="kr-col ${lag ? "lag" : ""}"><b>${c != null ? c.toLocaleString("ko-KR") : "–"}</b><i style="height:${c != null ? Math.max(2, Math.round(c / max * 100)) : 0}%" data-tip="${y}년|${c != null ? `${c.toLocaleString("ko-KR")}건` : "조회 실패"}${lag ? " · 공개 전 출원이 빠져 적게 잡힘" : ""}" tabindex="0"></i><span>${String(y).slice(2)}</span></div>`; }).join("")}</div>
-      <p class="hint">흐린 막대(${d.lagYears.join("·")}년)는 출원 후 1년 6개월 뒤 공개되는 특성상 아직 덜 집계된 해입니다.</p>
-      ${tableView(["연도", "국내 출원"], d.years.map((y, i) => [String(y), d.counts[i] != null ? d.counts[i].toLocaleString("ko-KR") : "-"]))}</figure>`
-      : `<p class="hint">이 서버의 KIPRIS 응답에서는 출원일 범위 조건이 적용되지 않아 연도별 건수는 보여 드리지 않습니다 (환경변수 KIPRIS_DATE_RANGE 로 형식을 바꿀 수 있습니다).</p>`}
-    <div class="g-two">
-      <div><h4 class="biz-sub">세부기술별 국내 출원 ${d.yearsOk ? `<span class="muted h-meta">최근 5년(${w.recent[0]}~${w.recent[1]})</span>` : ""}</h4>
-        <ul class="kr-subs">${d.subs.map(s => { const v = d.yearsOk ? s.recent : s.total;
-          return `<li><span>${esc(s.name)}</span><span class="gb-track"><i style="width:${v != null ? Math.round(v / smax * 100) : 0}%"></i></span><b>${v != null ? v.toLocaleString("ko-KR") : "–"}</b>${d.yearsOk ? `<span class="muted">${s.change != null ? `${s.change > 0 ? "+" : ""}${s.change}%` : "–"}</span>` : ""}</li>`; }).join("")}</ul>
-        ${d.yearsOk ? `<p class="hint">오른쪽 %는 이전 5년(${w.prior[0]}~${w.prior[1]}) 대비 변화입니다.</p>` : ""}</div>
-      <div><h4 class="biz-sub">국내 주요 출원인 <span class="muted h-meta">최근 출원 ${d.applicantBasis}건 기준</span></h4>
-        <ol class="kr-apps">${d.applicants.map(a => `<li><span class="g-tag">${esc(a.kind)}</span><span>${esc(a.name)}</span><b>${a.count}</b></li>`).join("")}</ol></div>
-    </div>
-    ${krNote(d)}
-  </section>`;
-}
-
-const GUIDE = {
-  asOf: "2026. 10.",
-  stats: [
-    { v: "연 9.4%", t: "디지털 농업 특허 증가율", d: "최근 10년, 전체 기술 평균의 약 3배 (27만 특허패밀리 분석)", src: ["EPO, 2025. 9.", "https://www.epo.org/en/news-events/news/digital-agriculture-technologies-grow-three-times-faster-average-global-food"] },
-    { v: "29,250건", t: "2024년 세계 품종보호 출원", d: "이 가운데 중국이 16,177건(55.3%)", src: ["WIPO 세계지식재산지표 2025", "https://www.wipo.int/web-publications/world-intellectual-property-indicators-2025-highlights/en/plant-varieties-highlights.html"] },
-    { v: "738건", t: "2025년 K-식품 상표 무단선점 의심", d: "2023년 399건 → 2024년 421건 → 2025년 738건", src: ["한국지식재산보호원 집계 (보도)", "https://www.fnnews.com/news/202601191816598213"] }
-  ],
-  checkpoints: [
-    ["공개하기 전에 출원", "한국 공지예외(12개월)는 유럽·중국에서 통하지 않습니다. 논문·박람회·시식회·SNS·판매 전에 출원하세요."],
-    ["국내 출원일부터 12개월", "이 안에 우선권 주장 출원이나 PCT 국제출원을 마쳐야 국내 출원일을 인정받습니다."],
-    ["품종은 해외 판매 4년 안에", "외국에서 판매한 지 4년(과수·임목 6년)이 지나면 그 나라에서 품종보호를 받을 수 없습니다."],
-    ["미생물은 국제기탁으로", "부다페스트조약 국제기탁기관(KCTC·KCCM·KACC·KCLRF)에 맡기면 모든 체약국에서 인정됩니다."],
-    ["수출국 상표부터", "중국·동남아는 먼저 출원한 사람이 권리를 가집니다. 수출 전에 현지 상표를 출원하세요."],
-    ["지원사업은 연초에", "글로벌 IP스타기업은 연초, 지식재산 긴급지원은 분기마다 모집합니다."]
-  ],
-  routes: [
-    { k: "파리조약 우선권 (나라별 직접 출원)", when: "진출할 나라가 정해져 있을 때", due: "국내 출원일부터 12개월 안에 나라마다 출원", cost: "12개월 시점에 나라별 번역·대리인 비용이 한꺼번에 듭니다" },
-    { k: "PCT 국제출원", when: "나라를 아직 정하지 못했거나 여러 나라일 때", due: "12개월 안에 지식재산처에 국제출원 → 우선일부터 30개월(미국·일본·중국) 또는 31개월(유럽·한국·베트남·인도) 안에 나라별 진입", cost: "지식재산처 수리 기준 송달료 45,000원, 조사료 450,000원(한국어), 국제출원료 1,330스위스프랑(전자출원 감면 있음, 2026. 9. 기준). 나라별 비용은 30개월 시점으로 미룰 수 있습니다" }
-  ],
-  grace: [
-    ["한국", "12개월", "출원서에 취지를 적고 출원일부터 30일 안에 증명서류"],
-    ["미국", "12개월", "발명자 본인의 공개 (35 U.S.C. 102(b)(1)). 다른 나라에서는 특허를 막을 수 있음"],
-    ["일본", "12개월", "2018. 6.부터. 본인 공개는 출원 후 30일 안에 증명서"],
-    ["유럽(EPO)", "사실상 없음", "출원 전 6개월 안의 명백한 남용, 공인 국제박람회 전시만 예외 (EPC 제55조)"],
-    ["중국", "6개월", "정부 주최·승인 국제전시회, 규정된 학술·기술회의, 국가 비상 공익 공개, 타인의 무단 공개만 (전리법 제24조)"]
-  ],
-  tools: [
-    { k: "특허", t: "기술", d: "조성물·제조방법·장치·용도", g: "PCT(159개국) 또는 파리조약으로 나라마다 출원합니다. 미생물은 부다페스트 국제기탁기관에 한 번 기탁하면 체약국 모두에서 인정됩니다." },
-    { k: "품종보호", t: "신품종", d: "과수·채소·화훼·식량작물", g: "한국은 2002년 UPOV 1991년 협약에 가입했습니다(회원 80개). 나라마다 출원해야 하며, 해외 판매 4년(과수·임목 6년)이 지나면 신규성을 잃습니다." },
-    { k: "상표", t: "브랜드", d: "제품명·로고·포장", g: "마드리드 의정서(한국 2003년 발효)로 여러 나라를 한 번에 지정할 수 있습니다. 중국·동남아는 선출원주의라 수출 전에 출원하세요." },
-    { k: "지리적 표시", t: "지역 특산", d: "보성녹차(2002년 제1호) 등", g: "농수산물 품질관리법 지리적표시나 상표법 지리적 표시 단체표장으로 등록합니다. 한-EU FTA는 양측 GI를 상호 보호하며 2022년 41개를 추가했습니다." }
-  ],
-  cases: [
-    { t: "샤인머스캣", d: "일본이 2006년 등록한 품종이지만 해외 품종보호 출원 기한(자국 판매 후 6년)을 넘겨 중국·한국에서의 재배가 합법이 됐습니다. 2022년 재배면적은 중국 73,700ha, 한국 6,067ha로 일본(2,673ha)보다 넓고, 일본은 손실을 연 200억 엔 미만 규모로 추산합니다.", l: "품종은 수출·해외 판매 전에 주요 재배국에 품종보호를 출원해야 합니다.", src: "https://www.maff.go.jp/j/shokusan/syubyouhou/attach/pdf/index-29.pdf" },
-    { t: "국산 딸기 품종", d: "외국 품종이 90%를 넘던 딸기는 설향 등 국산 품종이 보급되면서 국산 비율이 2005년 9.2%에서 2021년 96.3%로 올라 로열티 부담을 덜었습니다.", l: "품종 개발과 보호가 함께 가야 해외 로열티에서 자유로워집니다.", src: "https://www.rda.go.kr/webzine/2022/02/sub1-2.html" },
-    { t: "K-식품 상표 무단선점", d: "해외에서 K-식품 상표를 제3자가 먼저 출원한 의심 사례가 2023년 399건에서 2025년 738건으로 늘었습니다. 업종 전체로는 중국·인도네시아·베트남·태국 순으로 많습니다.", l: "수출 계획이 생기면 현지 상표부터 출원하고, 무단선점 알림서비스를 신청하세요.", src: "https://www.fnnews.com/news/202601191816598213" }
-  ],
-  // 실데이터 연결에 필요한 API (화면 아래 표로 보여 준다)
-  apis: [
-    ["EPO Open Patent Services", "관청별 연도 건수(공개연도), 주목할 특허, 패밀리·법적상태", "developers.epo.org 가입, 키 발급", "주 4GB 무료", "EPO_OPS_KEY · EPO_OPS_SECRET"],
-    ["KIPRIS Plus 해외특허", "해외 서지·초록 교차검증, 한국 출원은 기존 API", "기존 키에 '해외특허' 상품 추가 신청", "월 1,000회 무료", "KIPRIS_API_KEY (기존)"],
-    ["Google 특허 공개 데이터(BigQuery)", "출원연도·패밀리 기준 집계, 주요 출원인, 키워드", "GCP 프로젝트·서비스계정", "월 1TiB 무료", "GCP_PROJECT_ID · GCP_SA_KEY_B64"],
-    ["네이버 뉴스 검색", "해외동향 산업동향 기사 (없으면 구글 뉴스 RSS 검색)", "네이버 개발자센터 앱 등록", "일 25,000회 무료", "NAVER_CLIENT_ID · NAVER_CLIENT_SECRET"],
-    ["Claude API", "해외 제목·초록 한국어 번역, 동향 요약", "기존 키", "사용량 과금", "ANTHROPIC_API_KEY (기존)"]
-  ],
-  sources: [
-    ["WIPO 파리조약", "https://www.wipo.int/treaties/en/ip/paris/summary_paris.html"], ["PCT 국내단계 기한", "https://www.wipo.int/en/web/pct-system/texts/time_limits"],
-    ["PCT 수수료표", "https://www.wipo.int/export/sites/www/pct/en/docs/fees.pdf"], ["EPC 제55조", "https://www.epo.org/en/legal/epc/2020/a55.html"],
-    ["USPTO MPEP 2153", "https://www.uspto.gov/web/offices/pac/mpep/s2153.html"], ["JPO 신규성 상실 예외", "https://www.jpo.go.jp/e/system/laws/rule/guideline/patent/kaitei/h3006_kaitei.html"],
-    ["부다페스트 국제기탁기관", "https://www.wipo.int/en/web/budapest-system/guide/section_d/subsection_c"], ["UPOV 회원", "https://www.upov.int/documents/d/upov/docs-en-publications-upov_pub_423.pdf"],
-    ["한-EU GI 추가 결정", "https://eur-lex.europa.eu/eli/dec/2022/1975/oj/eng"]
-  ]
-};
 
 // 차트에 쓰는 정의된 팔레트 (dataviz 기본 팔레트 1~5번, 밝은·어두운 화면 각각 검증)
-const compact = n => n >= 10000 ? `${Math.round(n / 1000)}K` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}K` : String(n);
-const officeKey = (o, nm) => `<span class="key"><i class="sw s-${o}"></i>${esc(nm)}</span>`;
+
 function tableView(head, rows) {
   return `<details class="tv"><summary>표로 보기</summary><div class="table-wrap"><table><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>`;
 }
 
-const officialStats = () => `    <section class="card-sec">
-  <h3>공식 통계로 본 흐름</h3>
-  <div class="kpis kpis-3">${GUIDE.stats.map(x => `<div class="kpi"><span class="kpi-l">${x.t}</span><b class="kpi-v">${x.v}</b><span class="kpi-d">${x.d}</span><a class="kpi-src" href="${x.src[1]}" target="_blank" rel="noopener">${x.src[0]}</a></div>`).join("")}</div>
-</section>`;
+
 // 해외 관청 수치는 아직 해외 특허 API를 연결하지 않아 예시(sample)다. 예시는 보여 주지 않고 공식 통계(세계 흐름)를 먼저, 한국 출원 동향(KIPRIS)을 견줄 기준으로 둔다
 
 /* ---------- 해외동향: 키워드로 보는 농식품 사업 인사이트 ---------- */
 // 키워드와 제품 유형으로 관세청 나라별 수출 실적·산업동향 기사·시장별 규제·공식 통계를 모아(근거), AI가 수요 흐름·수출 읽기·시장별 동향·경쟁 기업·기회·위험·지금 할 일을 한 페이지로 쓴다. 특허는 다루지 않는다
-G.ins = { kw: "", q: "", type: "", news: null, loading: false, err: "", ai: null, src: "" };
-const INS_SUGGEST = ["김치", "딸기", "쌀 가공식품", "홍삼 추출물", "미생물 비료", "스마트팜 온실", "파프리카", "유기농 비료"];
+
 // 키워드로 제품 유형을 짐작한다 (사용자가 바꿀 수 있다)
 const INS_TYPE_RE = [["bio", /비료|미생물|농약|방제|퇴비|균주|토양|생물제제|바이오스티뮬/], ["equip", /스마트팜|온실|센서|드론|로봇|장비|기계|양액|LED|자동화|관제/], ["seed", /종자|품종|육종|묘목|씨앗/], ["functional", /기능성|추출물|홍삼|프로바이오|건강|유산균|콜라겐|원료|소재/]];
 const guessType = kw => INS_TYPE_RE.find(([, re]) => re.test(kw))?.[0] || "food";
-const typeName = t => BIZ_TYPES.find(([k]) => k === t)?.[1] || "";
-async function runInsight(kw, type) {
-  const q = String(kw).trim(); if (!q) { toast("키워드를 적어 주세요"); return; }
-  const t = BIZ_TYPES.some(([k]) => k === type) ? type : guessType(q);
-  if (q === G.ins.q && t === G.ins.type && G.ins.news) return;
-  Object.assign(G.ins, { kw: q, q, type: t, news: null, loading: true, err: "", ai: null, src: "" }); aiState("insight").sig = ""; aiState("insight").err = "";
-  render();
-  try {
-    const r = await fetch(`/api/news?kw=${encodeURIComponent(q)}`);
-    const j = await r.json().catch(() => ({}));
-    if (q !== G.ins.q) return;
-    if (!r.ok) throw new Error(j.error || `서버 오류 (${r.status})`);
-    G.ins.news = j;
-  } catch (e) { if (q === G.ins.q) { G.ins.news = { mode: "off", items: [] }; G.ins.err = e.message === "Failed to fetch" ? "서버에 연결할 수 없습니다." : e.message; } }
-  finally { if (q === G.ins.q) { G.ins.loading = false; scheduleSave(); render(); aiAutoRun(); } }
-}
-const insTrade = () => { const st = pdLoad("trade", G.ins.type, `/api/trade?type=${G.ins.type}`, () => S.mode === "global"); st.kind = `trade|${G.ins.type}`; return st; };
-const insRegs = () => BIZ_MARKETS.map(([k, n]) => [n, BIZ.reg[G.ins.type]?.[k]]).filter(([, g]) => g).map(([n, g]) => `${n}: ${g.p} (${g.by})${g.src ? "" : " [출처 미확인]"}`);
+
 // AI 글의 근거 표시 "(기사 1)", "(수출 실적)", "(공식 통계·시장 신호)", "(일반적으로 알려진 흐름)"을 꼬리표로 뗀다
-function evidenceTag(text) {
-  const m = String(text).match(/\s*[(（]([^()（）]{2,40})[)）]\s*$/);
-  if (!m) return [text, ""];
-  const t = m[1], k = /기사/.test(t) ? "기사" : /수출/.test(t) ? "수출 실적" : /통계|신호/.test(t) ? "공식 통계" : /일반|알려진/.test(t) ? "일반 지식" : "";
-  return k ? [text.slice(0, m.index).trim(), k] : [text, ""];
-}
+
 // AI가 쓴 지역 이름을 관심 시장 묶음·나라 코드로 (수출 실적 데이터와 잇기 위해)
-const REGION_OF = [["미국", "US"], ["EU", "EU"], ["유럽", "EU"], ["독일", "EU"], ["네덜란드", "EU"], ["프랑스", "EU"], ["중국", "CN"], ["일본", "JP"], ["동남아", "SEA"], ["베트남", "SEA"], ["태국", "SEA"], ["인도네시아", "SEA"], ["말레이시아", "SEA"], ["싱가포르", "SEA"], ["필리핀", "SEA"], ["중동", "ME"], ["UAE", "ME"], ["아랍", "ME"], ["사우디", "ME"], ["호주", ""], ["캐나다", ""], ["인도", ""]];
-function regionTradeOf(name, rows) {
-  const n = String(name); const row = rows.find(r => n.includes(r.name) || r.name.includes(n.replace(/\s.*$/, "")));
-  if (row) return { exp: row.exp, prev: row.prev, growth: row.growth, label: row.name };
-  const key = REGION_OF.find(([k]) => n.includes(k))?.[1]; if (!key) return null;
-  const rs = rows.filter(r => r.region === key); if (!rs.length) return null;
-  const exp = rs.reduce((a, r) => a + r.exp, 0), prev = rs.reduce((a, r) => a + (r.prev ?? 0), 0);
-  return { exp, prev, growth: prev ? Math.round((exp - prev) / prev * 1000) / 10 : null, label: `${BIZ_MARKETS.find(([k]) => k === key)?.[1] ?? key} 합계` };
-}
-const growthChip = r => { const [g, c] = tradeGrowth(r); return g ? `<span class="tr-g ${c}">${c === "up" ? "▲" : c === "down" ? "▼" : ""} ${g}</span>` : ""; };
-function insightHtml() {
-  const I = G.ins, ai = I.ai, q = I.q, tName = typeName(I.type);
-  if (!q) return `<section class="card-sec ins-empty"><h3>키워드 하나로 시작합니다</h3><p class="muted">제품·원료·기술 이름을 적으면 관세청 나라별 한국 수출 실적, 언론 기사, 시장별 규제·인증, 공식 통계를 모아 수요 흐름 · 수출 읽기 · 시장별 동향 · 경쟁 기업 · 기회와 위험 · 농산업체가 지금 할 일을 한 페이지로 정리합니다.</p>
-    ${aiMode() ? "" : `<p class="hint">지금은 AI를 쓸 수 없어 인사이트 글은 만들지 않습니다. 수출 실적·기사·규제·통계는 볼 수 있습니다.</p>`}</section>`;
-  const tr = insTrade(), td = tr.state === "ok" ? tr.data : null, live = td && td.mode === "live", rows = live ? td.rows.filter(r => r.exp >= 1e4).slice(0, 8) : [], max = rows[0]?.exp || 1;
-  const N = I.news, items = N?.items ?? [], sample = N?.mode === "sample";
-  // ---- 한눈에: 숫자 네 칸 + 나라별 수출 막대 ----
-  const all = live ? td.rows.filter(r => r.exp >= 1e4) : [], total = all.reduce((a, r) => a + r.exp, 0), prevTotal = all.reduce((a, r) => a + (r.prev ?? 0), 0);
-  const fastest = all.filter(r => r.prev && Math.max(r.exp, r.prev) >= 1e5 && r.growth != null).sort((a, b) => b.growth - a.growth)[0];
-  const tile = (l, v, d, cls = "") => `<div class="kpi ins-kpi ${cls}"><span class="kpi-l">${l}</span><b class="kpi-v">${v}</b><span class="kpi-d">${d}</span></div>`;
-  const kpis = live ? [
-    tile("가장 큰 수출 시장", esc(rows[0]?.name ?? "–"), rows[0] ? `${usd(rows[0].exp)} ${growthChip(rows[0])}` : "실적 없음"),
-    tile("가장 빠르게 느는 시장", fastest ? esc(fastest.name) : "–", fastest ? `${growthChip(fastest)} · ${usd(fastest.exp)}` : "10만 달러 넘는 나라 없음"),
-    tile("12개월 수출 합계", usd(total), `비교 ${all.length}개 나라 ${growthChip({ exp: total, prev: prevTotal, growth: prevTotal ? Math.round((total - prevTotal) / prevTotal * 1000) / 10 : null })}`),
-    tile("기사", `${items.length}건`, items[0]?.date ? `최근 ${esc(items[0].date)}` : "검색 결과 없음")
-  ].join("") : "";
-  const bars = tr.state !== "ok" ? pdWait(tr, "관세청 수출 통계를 (처음에는 20초쯤 걸립니다)") : !live ? `<p class="muted">서버에 공공데이터포털 키(DATA_GO_KR_SERVICE_KEY)를 설정하면 관세청 품목별 국가별 수출입실적으로 채워집니다.</p>`
-    : rows.length ? `<ol class="gbars tr-list ins-bars">${rows.map(r => `<li title="${esc(r.name)} ${usd(r.exp)} (${tradeGrowth(r)[0] || "–"})"><span class="gb-name">${esc(r.name)}</span><span class="gb-track"><i style="width:${Math.max(2, Math.round(r.exp / max * 100))}%"></i></span><b>${usd(r.exp)}</b>${growthChip(r)}<span></span></li>`).join("")}</ol>` : `<p class="muted">최근 12개월 동안 비교한 나라로 1만 달러 넘게 수출한 실적이 없습니다.</p>`;
-  const hero = `<section class="card-sec ins-hero" aria-labelledby="h-inshero"><div class="biz-h"><h3 id="h-inshero">한눈에 <span class="muted h-meta">${esc(tName)}${td ? ` · HS ${esc(td.hs)} ${esc(td.hsName)}` : ""}${live ? ` · ${ymLabel(td.period.cur[0])}~${ymLabel(td.period.cur[1])}` : ""}</span></h3></div>
-    ${kpis ? `<div class="kpis ins-kpis">${kpis}</div>` : ""}
-    <h4 class="biz-sub">나라별 한국 수출 실적 <span class="muted h-meta">최근 12개월, 증가율은 그 전 12개월 대비</span></h4>${bars}
-    ${live ? `<p class="hint">출처: ${esc(td.source)}. 대표 품목 코드 하나로 센 값이라 ‘${esc(q)}’보다 범위가 넓을 수 있습니다.</p>` : ""}</section>`;
-  // ---- AI 인사이트: 짧은 글 + 숫자 띠 ----
-  const tagged = arr => `<ul class="ins-ev">${(arr ?? []).map(x => { const [t, k] = evidenceTag(x); return `<li>${k ? `<span class="ev-tag ev-${{ "기사": "news", "수출 실적": "trade", "공식 통계": "stat", "일반 지식": "gen" }[k]}">${k}</span>` : ""}<span>${esc(t)}</span></li>`; }).join("")}</ul>`;
-  const mk = (ai?.markets ?? []).map(r => { const t = all.length ? regionTradeOf(r.region, all) : null, share = t && total ? Math.round(t.exp / total * 100) : null;
-    return `<article><div class="ins-mk-h"><b>${esc(r.region)}</b>${t ? `<span class="ins-mk-n">${usd(t.exp)} ${growthChip(t)}</span>` : ""}</div>${t && share != null ? `<span class="ins-share" role="img" aria-label="수출 비중 ${share}%"><i style="width:${Math.max(2, share)}%"></i></span>` : ""}<p>${esc(r.d)}</p></article>`; }).join("");
-  const body = ai ? `<section class="card-sec ins-ai" aria-labelledby="h-inssum"><div class="biz-sum"><span class="g-tag">AI 인사이트</span><h3 id="h-inssum" class="sr">요약</h3><p>${esc(ai.summary)}</p></div>
-      <h4 class="biz-sub">시장별 동향 <span class="muted h-meta">막대는 수출 비중</span></h4><div class="ins-regions">${mk}</div>
-      <div class="ins-grid">
-        <div><h4 class="biz-sub">수요·소비 흐름</h4>${tagged(ai.demand)}</div>
-        <div><h4 class="biz-sub">수출 실적 읽기</h4>${ai.exportRead?.length ? tagged(ai.exportRead) : `<p class="muted">수출 실적 데이터가 없어 읽지 않았습니다.</p>`}</div>
-      </div>
-      <div class="ins-grid ins-or">
-        <div class="ins-op"><h4 class="biz-sub">기회</h4><ul class="biz-list">${(ai.opportunities ?? []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
-        <div class="ins-rk"><h4 class="biz-sub">위험</h4><ul class="biz-list">${(ai.risks ?? []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
-      </div>
-      <h4 class="biz-sub">농산업체가 지금 할 일</h4><ol class="ins-steps">${(ai.actions ?? []).map((x, i) => `<li><i>${i + 1}</i><span>${esc(x)}</span></li>`).join("")}</ol>
-      ${ai.players?.length ? fold("ins-players", "경쟁·참고 기업과 제품", `${ai.players.length}곳 · AI가 아는 범위, 확인 필요`, `<ul class="ins-players">${ai.players.map(x => `<li><span class="g-tag ${x.where === "해외" ? "tag-abroad" : ""}">${esc(x.where)}</span><b>${esc(x.name)}</b><span class="muted">${esc(x.note)}</span></li>`).join("")}</ul>`) : ""}
-      <p class="hint">수출 실적·규제·공식 통계는 근거 자료에서, 그 밖의 수요 흐름·기업·시장 동향은 AI의 일반 지식이라 확인이 필요합니다. 시장·목표를 정해 해외 출원 일정과 지원사업까지 보려면 <a href="#manage/overseas">출원지원 › 해외 출원</a>으로.</p></section>`
-    : aiMode() ? "" : `<section class="card-sec"><p class="hint">지금은 AI를 쓸 수 없어 인사이트 글은 만들지 않았습니다. 아래 근거 자료는 그대로 볼 수 있습니다.</p></section>`;
-  const newsSec = `<section class="card-sec" aria-labelledby="h-insnews"><div class="biz-h"><h3 id="h-insnews">산업동향 기사 <span class="muted h-meta">${N?.source ? esc(N.source) : "뉴스 검색"}${sample ? " · 예시" : ""} · ‘${esc(q)}’ 수출·해외·시장</span></h3></div>
-    ${I.loading ? `<p class="muted">기사를 찾는 중…</p>` : I.err ? `<div class="alert"><span>${esc(I.err)}</span></div>` : items.length ? `<ul class="ins-news">${items.map(x => `<li>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>` : `<b>${esc(x.title)}</b>`}<span class="muted">${esc([x.source, x.date].filter(Boolean).join(" · "))}</span>${x.summary ? `<p>${esc(x.summary)}</p>` : ""}</li>`).join("")}</ul>` : `<p class="muted">‘${esc(q)}’ 관련 기사를 찾지 못했습니다.</p>`}
-    <p class="hint">${sample ? "예시 기사입니다(점검 모드). 실제 서버에서는 뉴스 검색 결과가 나옵니다. " : "언론사 기사이므로 수치·정책은 원문과 공식 발표로 확인하세요. 같은 보도자료를 받아쓴 기사는 하나로 줄였습니다. "}<a href="https://www.kati.net/index.do" target="_blank" rel="noopener">KATI</a>·<a href="https://dream.kotra.or.kr/kotranews/index.do" target="_blank" rel="noopener">KOTRA 해외시장뉴스</a>에서도 ‘${esc(q)}’를 찾아보세요.</p></section>`;
-  const regs = BIZ_MARKETS.map(([k, n]) => [n, BIZ.reg[I.type]?.[k]]).filter(([, g]) => g);
-  const regSec = regs.length ? `<section class="card-sec" aria-labelledby="h-insreg"><div class="biz-h"><h3 id="h-insreg">시장별 규제·인증 <span class="muted h-meta">${esc(tName)} · ${BIZ.asOf} 기준</span></h3></div><dl class="ins-regs">${regs.map(([n, g]) => `<div><dt>${esc(n)}</dt><dd>${g.p} <span class="muted">(${g.by})</span>${g.src ? ` <a href="${g.src}" target="_blank" rel="noopener">출처</a>` : ` <span class="biz-unv">· 공식 출처 미확인</span>`}</dd></div>`).join("")}</dl></section>` : "";
-  const sup = supportFit(I.type).filter(x => x.sc >= 2).slice(0, 3);
-  const supSec = sup.length ? `<section class="card-sec" aria-labelledby="h-inssup"><div class="biz-h"><h3 id="h-inssup">이 제품 유형에 맞는 지원사업 <span class="muted h-meta">${esc(tName)}</span></h3></div><ul class="g-support">${sup.map(x => `<li><a href="${x.url}" target="_blank" rel="noopener"><b>${x.k}</b><span class="muted">${x.by}</span><span>${x.d}</span><span class="muted">${x.when}</span></a></li>`).join("")}</ul></section>` : "";
-  return `${hero}${aiSlot("insight")}${body}${newsSec}${regSec}${supSec}`;
-}
-function viewGlobal() {
-  const I = G.ins, mine = mainKeywords() || S.idea.title.trim(), guess = guessType(I.kw || I.q || mine || "");
-  return `<section class="home global" aria-labelledby="h-global">
-    <header class="page-head">
-      <h1 id="h-global">해외동향</h1>
-      <p class="muted">키워드로 보는 농식품 사업 인사이트 — 수출 실적·시장·규제·수요. 출원 기한·지원사업은 <a href="#manage/deadline">출원지원 › 제출·관리</a>에서.</p>
-    </header>
-    <form class="ins-form" id="ins-form" role="search" aria-label="키워드 인사이트">
-      <input type="search" id="ins-kw" value="${esc(I.kw)}" placeholder="예: 김치, 딸기, 미생물 비료, 스마트팜 온실" autocomplete="off" aria-label="키워드">
-      <label class="g-select"><span class="sr">제품 유형</span><select id="ins-type" aria-label="제품 유형">${BIZ_TYPES.map(([k, n]) => `<option value="${k}" ${(I.type || guess) === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
-      <button type="submit" class="btn" ${I.loading ? "disabled" : ""}>${I.loading ? "찾는 중…" : "인사이트 보기"}</button>
-    </form>
-    <div class="ins-chips">${mine ? `<button type="button" class="chip chip-mine" data-ins-kw="${esc(mine)}">내 기술: ${esc(mine)}</button>` : ""}${INS_SUGGEST.filter(k => k !== I.q).map(k => `<button type="button" class="chip" data-ins-kw="${esc(k)}">${esc(k)}</button>`).join("")}</div>
-    ${insightHtml()}
-    ${I.q ? `<section class="card-sec ins-start" aria-label="이 키워드로 출원지원 시작"><div class="biz-me"><h3>이 제품의 기술을 특허로</h3><p class="muted">키워드로 발명의 명칭 초안을 만들어 출원지원 1단계로 넘어갑니다. 출원 뒤에는 5단계에서 시장·목표에 맞춘 해외 출원 일정과 지원사업을 봅니다.</p>${G.biz.newTech ? bizTechHtml() : `<div class="actions"><button type="button" class="btn ghost sm" data-biz-new="" data-biz-kw="${esc(I.q)}">‘${esc(I.q)}’로 출원지원 시작</button></div>`}</div></section>` : ""}
-    ${officialStats()}
-    <section class="card-sec"><h3>시장 신호 <span class="muted h-meta">${BIZ.asOf} 기준 공식 발표·조사 수치</span></h3><div class="kpis">${BIZ.stats.map(x => `<div class="kpi"><span class="kpi-l">${x.t}</span><b class="kpi-v">${x.v}</b><span class="kpi-d">${x.d}</span><a class="kpi-src" href="${x.src[1]}" target="_blank" rel="noopener">${x.src[0]}</a></div>`).join("")}</div></section>
-  </section>`;
-}document.addEventListener("submit", e => { if (e.target.id !== "ins-form") return; e.preventDefault(); runInsight($("#ins-kw").value, $("#ins-type")?.value); });
-document.addEventListener("click", e => { const b = e.target.closest("[data-ins-kw]"); if (!b) return; G.ins.kw = b.dataset.insKw; runInsight(b.dataset.insKw); });
-document.addEventListener("change", e => { if (e.target.id !== "ins-type") return; e.target.dataset.picked = "1"; if (G.ins.q) runInsight(G.ins.q, e.target.value); else G.ins.type = e.target.value; });
+
 // 키워드를 치는 동안 유형을 따라 바꾼다 (손으로 고른 뒤에는 그대로 둔다)
 document.addEventListener("input", e => { if (e.target.id !== "ins-kw") return; const sel = $("#ins-type"); if (sel && !sel.dataset.picked && e.target.value.trim()) sel.value = guessType(e.target.value); });
 
 /* ---------- 해외 사업화 (해외동향 둘째 탭) ---------- */
 // 내 기술 → 진출 시장·목표 선택 → 진출 경로·시장별 규제 경로·해외 파트너 후보·지원사업·체크리스트 → AI 전략.
 // 해외 특허 출원은 출원지원 ‘제출·관리 › 해외 출원’에서 다룬다. 사실 정보는 BIZ 에 출처와 함께 모은다.
-const BIZ_MARKETS = [["US", "미국"], ["EU", "EU"], ["CN", "중국"], ["JP", "일본"], ["SEA", "동남아"], ["ME", "중동"]];
-const BIZ_TYPES = [["food", "식품·신소재"], ["functional", "기능성 원료"], ["bio", "비료·미생물제·생물농약"], ["equip", "스마트팜 장비·시스템"], ["seed", "종자·품종"]];
-const FIELD_TO_BIZ = { food: "food", functional: "functional", ferment: "bio", smartfarm: "equip", variety: "seed", pack: "food" };
-const FIELD_TO_TREND = { food: "foodferment", functional: "foodferment", ferment: "biocontrol", smartfarm: "smartfarm", variety: "breeding", pack: "postharvest" };
-const BIZ_GOALS = ["수출", "기술이전·라이선싱", "현지 실증·파일럿", "합작·현지 법인"];
-G.biz = { type: null, markets: new Set(["US", "SEA"]), fileOff: new Set(), goal: "기술이전·라이선싱", done: new Set(), ai: null, src: "", trend: null, trendField: "" };
-const bizType = () => G.biz.type || FIELD_TO_BIZ[S.idea.field] || "food";
 
-const BIZ = {
-  asOf: "2026. 10.",
-  stats: [
-    { v: "136.2억 달러", t: "2025년 K-푸드+ 수출", d: "농식품 104.1억 + 농산업 32.2억 달러, 전년보다 5.1% 증가. 미국 18억·중국 15.9억 달러", for: ["food", "functional", "seed"], use: "지원사업 신청서의 시장 근거로", src: ["농림축산식품부 발표 (보도, 2026. 1.)", "https://biz.newdaily.co.kr/site/data/html/2026/01/12/2026011200127.html"] },
-    { v: "2.41억 달러", t: "2024년 스마트팜 수출·수주 (잠정)", d: "12개국 18건. 2026년 목표는 1.8억 달러", for: ["equip"], use: "스마트팜 해외 실증 지원의 정책 배경", src: ["농림축산식품부", "https://www.mafra.go.kr/bbs/home/792/573001/artclView.do"] },
-    { v: "연 10.2%", t: "세계 스마트농업 시장 성장 전망", d: "157억 달러(2025) → 234억 달러(2029)", for: ["equip"], use: "투자·기술이전 상담 자료의 시장 규모로", src: ["MarketsandMarkets", "https://www.marketsandmarkets.com/Market-Reports/smart-farming-market-189476618.html"] },
-    { v: "연 13.7%", t: "세계 농업용 생물제제 시장 성장 전망", d: "184억 달러(2025) → 350억 달러(2030). 미생물 비료·생물농약 포함", for: ["bio"], use: "투자·기술이전 상담 자료의 시장 규모로", src: ["MarketsandMarkets", "https://www.marketsandmarkets.com/PressReleases/agricultural-biological.asp"] }
-  ],
-  routes: [
-    { k: "수출", when: "국내에서 만든 제품·원료를 그대로 팔 수 있을 때", need: "현지 규제·인증, 바이어, 물류·통관, 가격", partner: "수입·유통사, 현지 대리점", ip: "출시 전에 수출국 상표와 특허를 확보합니다", help: "aT 성장패키지, 수출바우처, KOTRA 지사화" },
-    { k: "기술이전·라이선싱", when: "현지 생산·판매 역량은 없고 기술 자체가 강점일 때", need: "그 나라 특허(또는 출원), 기술 패키지(노하우·매뉴얼·교육), 실시료 조건. 농업 바이오 실시료는 순매출의 1~5%가 흔합니다(IP Handbook)", partner: "현지 제조·종자·비료 기업, 연구기관", ip: "현지 특허가 있어야 실시료를 협상할 수 있습니다. 비밀유지계약(NDA)부터 맺습니다", help: "한국농업기술진흥원 기술가치평가·기술이전 중개" },
-    { k: "현지 실증·파일럿", when: "기후·작물·제도가 달라 현지 성능을 먼저 증명해야 할 때", need: "수요처 LoI·MOU, 실증 부지·협력기관, 성능 지표", partner: "현지 대학·연구소·농장, 정부기관", ip: "실증은 공개가 될 수 있으니 출원 후에 시작합니다", help: "스마트팜 해외 실증, 해외 테스트베드, 농산업 PoC, KOPIA" },
-    { k: "합작·현지 법인", when: "큰 시장에 오래 머물며 규제·유통을 현지 파트너와 함께 풀 때", need: "지분·기술 출자 조건, 현지 법·세무, 기술 유출 방지", partner: "현지 기업·투자자", ip: "출자하는 기술 범위와 개량 기술의 소유를 계약에 적습니다", help: "KOTRA 해외무역관, 무역보험공사" }
-  ],
-  // 제품 유형 × 시장별 대표 제도. 확인하지 못한 부분은 ‘확인 필요’로 적는다
-  reg: {
-    food: {
-      US: { p: "새 원료는 GRAS 통지(자율) 또는 식품첨가물 승인. 배양육은 FDA 사전상담 후 USDA-FSIS 검사", by: "FDA · USDA-FSIS", n: "FDA는 GRAS 통지에 180일(90일 연장 가능) 안에 회신합니다. 2026. 8. 통지를 의무로 바꾸는 규칙안이 나왔고 아직 확정 전입니다. 배양육은 플로리다·앨라배마 등 일부 주에서 판매가 금지됐습니다.", src: "https://www.fda.gov/food/food-ingredients-packaging/generally-recognized-safe-gras" },
-      EU: { p: "1997. 5. 15. 전에 EU에서 의미 있게 먹지 않은 식품은 신규식품 사전승인 (규정 (EU) 2015/2283)", by: "EU 집행위원회 · EFSA", n: "EFSA 평가는 9개월(보완 요청 시 정지)로 정해져 있지만, 실제 제출부터 EFSA 의견까지 평균 약 2.6년이 걸렸습니다. 제3국 전통식품(25년 섭취 이력)은 통지 절차를 씁니다.", src: "https://www.efsa.europa.eu/en/topics/topic/novel-food" },
-      CN: { p: "새 원료는 신식품원료(新食品原料) 허가", by: "국가위생건강위원회", n: "심사 기간·제출 자료는 현행 규정으로 확인이 필요합니다.", src: "" },
-      JP: { p: "게놈편집 식품은 사전상담 후 신고·공표 (2019. 10.~)", by: "소비자청", n: "GABA 토마토·참돔·복어 등이 신고됐습니다. 그 밖의 새 원료·첨가물은 확인이 필요합니다.", src: "https://www.caa.go.jp/policies/policy/standards_evaluation/bio/genome_edited_food/list" },
-      SEA: { p: "싱가포르: 20년 넘게 먹은 이력이 없는 원료·공정은 신규식품 사전승인. 인도네시아: 2026. 10. 18.부터 수입 식음료·원료도 할랄 인증 의무", by: "SFA(싱가포르) · BPJPH(인도네시아)", n: "싱가포르는 2020. 12. 세계 처음 배양육을 승인했습니다. 한국 KMF·KHA 인증은 2023년 BPJPH 상호인정 대상에 들었습니다. 말레이시아는 JAKIM이 인정한 인증기관의 할랄 인증이 있어야 할랄 표시가 가능합니다.", src: "https://www.sfa.gov.sg/food-information/novel-food/novel-food" },
-      ME: { p: "UAE: 최종 제품과 원료 모두 MoIAT 등록 인증기관의 할랄 인증 (내각결정 2014년 제10호)", by: "MoIAT(UAE)", n: "국가 할랄마크는 선택입니다. 다른 걸프 국가는 나라별로 확인하세요.", src: "https://moiat.gov.ae/en/halal" }
-    },
-    functional: {
-      US: { p: "1994년 이후 새 원료를 쓴 식이보충제는 판매 75일 전 NDI 신고. 일반 식품 원료는 GRAS", by: "FDA", n: "기능성 표현은 질병 치료·예방으로 읽히지 않게 써야 합니다.", src: "https://www.fda.gov/food/dietary-supplements/new-dietary-ingredient-ndi-notification-process" },
-      EU: { p: "새 원료는 신규식품 승인 (EU) 2015/2283. 기능성 표시는 허가된 건강강조표시만 (규정 (EC) 1924/2006)", by: "EU 집행위원회 · EFSA", n: "새 건강강조표시는 EFSA 과학 평가를 거쳐 허가 목록에 올라야 씁니다.", src: "https://www.efsa.europa.eu/en/topics/topic/novel-food" },
-      CN: { p: "새 원료는 신식품원료 허가. 건강식품(保健食品)으로 팔려면 등록 또는 비안(신고)", by: "국가위생건강위원회 · 시장감독관리총국", n: "기능 표시 범위와 절차는 확인이 필요합니다.", src: "" },
-      JP: { p: "기능성표시식품은 판매 전 소비자청에 신고", by: "소비자청", n: "근거 자료와 신고 요건은 확인이 필요합니다.", src: "" },
-      SEA: { p: "싱가포르 신규식품 사전승인, 인도네시아 할랄 인증 의무 (2026. 10. 18.~)", by: "SFA · BPJPH", n: "건강기능 표시 규정은 나라마다 달라 확인이 필요합니다.", src: "https://bpjph.halal.go.id/detail/raker-dengan-dpr-kepala-bpjph-pastikan-implementasi-wajib-halal-oktober-2026-sesuai-tahapan" },
-      ME: { p: "UAE: 제품·원료 할랄 인증 (MoIAT 등록 인증기관)", by: "MoIAT(UAE)", n: "다른 걸프 국가는 나라별로 확인하세요.", src: "https://moiat.gov.ae/en/halal" }
-    },
-    bio: {
-      US: { p: "생물농약은 EPA 등록 (FIFRA). 비료는 주(州)별 등록", by: "EPA · 각 주 농무부", n: "EPA 심사 목표 기간이 정해져 있습니다(예: 식용 작물 외 새 유효성분 15개월).", src: "https://www.epa.gov/pria-fees/b690-pria-fee-category" },
-      EU: { p: "비료·바이오스티뮬런트는 비료제품규정 (EU) 2019/1009 CE 마킹(2022. 7. 16.~) 또는 나라별 규정. 생물농약은 유효성분 승인", by: "EU 인증기관 · 회원국", n: "CE 마킹 미생물 바이오스티뮬런트는 Azotobacter·균근균·Rhizobium·Azospirillum만 쓸 수 있습니다. 다른 균주는 나라별 규정을 따릅니다.", src: "https://single-market-economy.ec.europa.eu/sectors/chemicals/fertilising-products_en" },
-      CN: { p: "농약은 ICAMA 등록, 비료는 농업농촌부 등록 또는 비안(신고)", by: "농업농촌부 · ICAMA", n: "중국 현지 약효·잔류 시험이 필요하고 농약 등록은 보통 4년 안팎 걸립니다. 해외 기업은 중국 대리인을 둬야 하고, 미생물 비료는 지정 기관 시험을 거칩니다.", src: "https://www.cirs-group.com/en/agrochemicals/china-fertilizer-registration-and-filing" },
-      JP: { p: "농약은 농림수산성 등록, 비료는 비료법에 따른 등록·신고", by: "농림수산성", n: "미생물 자재 분류와 절차는 확인이 필요합니다.", src: "" },
-      SEA: { p: "나라별 비료·농약 등록", by: "각국 농업부", n: "한국농업기술진흥원 해외 테스트베드가 베트남·인도네시아 등에서 비료·농약 현지 실증과 바이어 매칭을 지원합니다.", src: "https://www.livesnews.com/news/article.html?no=58775" }
-    },
-    equip: {
-      US: { p: "무선 기능이 있으면 FCC 인증. 전기 안전은 NRTL(UL 등) 인증을 요구받는 경우가 많음", by: "FCC · 설치 지역 당국", n: "온실 구조·전기 공사는 주·카운티 규정을 따릅니다.", src: "" },
-      EU: { p: "CE 마킹: 기계류 지침 2006/42/EC(2027. 1. 20.부터 기계류 규정 (EU) 2023/1230), 무선기기 지침 2014/53/EU", by: "제조자 자기적합선언 · 인증기관", n: "제어 소프트웨어와 무선 모듈이 있으면 해당 지침을 함께 확인합니다.", src: "" },
-      CN: { p: "강제인증(CCC) 대상 품목인지 확인", by: "시장감독관리총국", n: "품목별로 확인이 필요합니다.", src: "" },
-      JP: { p: "무선 기능은 전파법 기술기준적합증명, 전기용품은 PSE 표시", by: "총무성 · 경제산업성", n: "", src: "" },
-      SEA: { p: "나라별 전기·무선 인증 (확인 필요)", by: "각국", n: "현지 기후·작물에서 성능을 보여 주는 실증이 구매 조건인 경우가 많습니다.", src: "" },
-      ME: { p: "나라별 적합성 인증 (확인 필요)", by: "각국", n: "최근 2년 한국 스마트팜 수주의 약 60%가 중동입니다. UAE에서 80만 달러 PoC 뒤 260만 달러 본계약(2026. 7.)으로 이어진 사례가 있습니다.", src: "https://view.asiae.co.kr/article/2026070715525331069" }
-    },
-    seed: {
-      US: { p: "유전자편집 작물은 USDA-APHIS 규정(7 CFR 340). SECURE 규칙이 2024. 12. 법원 판결로 무효가 돼 이전 규정이 다시 적용됨", by: "USDA-APHIS", n: "USDA가 2026. 5. 새 규제 방향에 대해 의견을 받았습니다. 품종 권리는 식물특허 또는 PVP로 따로 확보합니다.", src: "https://www.federalregister.gov/documents/2025/06/16/2025-10797/movement-of-certain-genetically-engineered-organisms" },
-      EU: { p: "신육종기술(NGT) 규정 (EU) 2026/1388: 2026. 7. 16. 발효, 2028. 7. 17. 적용. 카테고리 1은 관행 육종과 같게, 카테고리 2는 GMO 규제", by: "EU 집행위원회 · EFSA", n: "적용 전까지는 GMO 규정을 따릅니다. 판매하려면 품종 목록 등록도 필요합니다.", src: "https://www.efsa.europa.eu/en/topics/new-genomic-techniques" },
-      CN: { p: "주요 작물은 품종 심사, 그 밖은 품종 등록. 종자 수입은 허가", by: "농업농촌부", n: "작물별로 확인이 필요합니다.", src: "" },
-      JP: { p: "게놈편집 작물·식품은 사전상담 후 신고·공표", by: "소비자청 · 농림수산성", n: "GABA 토마토, 찰옥수수 등이 신고됐습니다.", src: "https://www.caa.go.jp/policies/policy/standards_evaluation/bio/genome_edited_food/list" },
-      SEA: { p: "나라별 종자 수입·품종 등록 (확인 필요)", by: "각국 농업부", n: "농촌진흥청 KOPIA(22개국) 현지 네트워크로 실증·보급한 사례가 있습니다. 베트남 KOPIA 사업지의 땅콩을 한·베 합작법인이 2025년 30톤 구매했습니다.", src: "https://www.wowtv.co.kr/NewsCenter/News/Read?articleId=A202607070336" }
-    }
-  },
-  // fit: 제품 유형(t)·목표(g)·시장(m)에 맞을 때 점수. when: 보통 공고가 나는 때(해마다 바뀌니 확인), req: 신청 요건
-  support: [
-    { k: "스마트팜 해외 실증 지원", by: "농림축산식품부 · 한국농업기술진흥원", d: "해외 수요처와 수출을 논의 중인 스마트팜 기업에 제작·물류·현지 설치비 지원. 1사당 국비 최대 8천만 원(중소기업 80%), 수요처 LoI·MOU 필수. 2026년 6개사(네덜란드·대만·말레이시아·스리랑카·우즈베키스탄·일본·케냐)", url: "https://www.koat.or.kr",
-      fit: { t: ["equip"], g: ["현지 실증·파일럿", "수출"] }, when: "1~2월 공고 (2026년: 1. 19.~2. 6.)", req: "해외 정부·공공기관·기업과 수출 논의 중이라는 LoI 또는 MOU", next: "수요처와 LoI를 먼저 받아 두면 공고가 나자마자 낼 수 있습니다" },
-    { k: "농기자재 해외 테스트베드", by: "한국농업기술진흥원", d: "비료·농약·농기계 현지 성능 실증과 바이어 매칭. 2026~27년 베트남·중국·카자흐스탄·인도네시아·폴란드·일본", url: "https://www.koat.or.kr",
-      fit: { t: ["bio", "equip", "seed"], g: ["현지 실증·파일럿", "수출"], m: ["SEA", "CN", "JP"] }, when: "1~2월 공고 (2026년: 2. 4. 마감, 2년 운영)", req: "현지 기후·토양에서 성능을 증명해야 하는 비료·농약·농기계·종자", next: "실증 지표(수량·병해율 등)를 국내 데이터로 먼저 정리해 두세요. 실증 결과는 명세서 실시예 보강에도 씁니다" },
-    { k: "맞춤형 글로벌 마케팅", by: "한국농업기술진흥원", d: "농기계·농자재·ICT·종자 기업당 1,000만 원(국비 800만 원): 제품 개선·인허가·인증·박람회·통번역", url: "https://www.koat.or.kr",
-      fit: { t: ["equip", "bio", "seed"], g: ["수출"] }, when: "1월 공고 (2026년: 1. 12.~1. 29.)", req: "국내 농산업체(농기계·농자재·ICT·스마트팜·종자)", next: "인허가·인증 비용에 쓸 수 있으니 시장별 진출 카드의 인증 항목과 견적을 준비하세요" },
-    { k: "농식품 글로벌 성장패키지", by: "aT 한국농수산식품유통공사", d: "수출 실적에 따라 1,500만~15억 원, 22개 항목 비용의 최대 90%. 2026년 약 900개사. 해외지사 13개국 22곳", url: "https://www.at.or.kr",
-      fit: { t: ["food", "functional"], g: ["수출"] }, when: "연초 공고 (해마다)", req: "농식품 수출(예정) 기업, 수출 실적 구간별 지원", next: "해외 상표 출원·인증 비용이 지원 항목에 있는지 공고에서 확인하세요" },
-    { k: "농산업 수출 활성화 (PoC)", by: "농림축산식품부 · KOTRA", d: "수요 발굴부터 현지 PoC, 본계약까지 지원. 예: UAE 80만 달러 PoC → 260만 달러 본계약 (2026. 7.)", url: "https://www.kotra.or.kr",
-      fit: { t: ["equip", "bio"], g: ["현지 실증·파일럿", "합작·현지 법인", "수출"], m: ["ME", "SEA"] }, when: "연중 수요 발굴, 공고는 KOTRA 확인", req: "현지 수요처가 있는 농산업 기술·장비", next: "PoC는 기술이 공개되는 자리이므로 국내 출원(또는 PCT) 뒤에 시작하세요" },
-    { k: "지사화 사업", by: "KOTRA", d: "해외무역관(86개국 132곳) 전담 직원이 바이어 발굴·마케팅·유통망 입점을 대신 맡습니다", url: "https://www.kotra.or.kr",
-      fit: { g: ["수출"] }, when: "연중 (분기별 모집)", req: "수출 희망 중소·중견기업", next: "관심 시장의 무역관을 고르면 그 나라 바이어 발굴을 맡길 수 있습니다" },
-    { k: "수출바우처", by: "중소벤처기업부 · KOTRA", d: "전년 수출 실적에 따라 3천만~1억 원(관세 대응 추가 시 최대 1.5억 원), 정부 50~70%. 인증·전시회·지재권 등 메뉴에서 선택", url: "https://www.exportvoucher.com",
-      fit: { g: ["수출"] }, when: "1~2월 공고 (해마다)", req: "중소·중견기업, 전년 수출 실적 구간별", next: "‘지식재산권’ 메뉴로 해외 상표·특허 출원 비용을 쓸 수 있습니다" },
-    { k: "KOPIA 해외농업기술개발", by: "농촌진흥청", d: "22개국(2026. 7.) 해외농업기술센터. 기업을 직접 지원하지는 않지만 현지 정부·연구기관 네트워크를 활용할 수 있습니다", url: "https://www.rda.go.kr",
-      fit: { g: ["현지 실증·파일럿", "기술이전·라이선싱"], m: ["SEA", "ME"] }, when: "연중 (센터별 문의)", req: "현지 연구기관과 협력할 기술", next: "현지 실증 협력기관 후보로 KOPIA 센터의 상대 기관을 알아보세요" },
-    { k: "단기수출보험 (농수산물 패키지)", by: "한국무역보험공사", d: "수출 대금 미회수 위험 보장. aT 수출 지원 선정 기업과 연계", url: "https://www.ksure.or.kr/rh-kr/bbs/i-671/detail.do?ntt_sn=292",
-      fit: { t: ["food", "functional"], g: ["수출"] }, when: "연중", req: "수출 계약이 있는 농식품 기업", next: "첫 수출 계약을 맺을 때 바이어 신용 조사와 함께 신청하세요" }
-  ],
 
-  checklist: [
-    { t: "해외 특허 출원 일정과 대상국", d: "국내 출원일부터 12개월 안에 우선권·PCT 출원. 진출 시장과 출원국을 맞춥니다", go: "filing" },
-    { t: "진출국 침해 여부(FTO) 확인", d: "그 나라에 내 제품을 막는 특허가 있는지 변리사·조사기관에 확인합니다. 먼저 기술분석(AIS)으로 경쟁 특허를 살펴보세요", go: "ais" },
-    { t: "규제·인증 경로와 기간·비용", d: "시장별 진출 카드의 제도를 기준으로 담당 기관에 사전 상담합니다", go: "#h-bizmk", goL: "시장별 진출 카드" },
-    { t: "수출국 상표 출원", d: "중국·동남아는 먼저 출원한 사람이 권리를 가집니다. 무단선점 조사 지원 공고도 확인하세요", go: "#h-bizsup", goL: "지원사업 공고" },
-    { t: "현지 파트너 확인", d: "신용·평판·유통망을 확인하고 비밀유지계약을 먼저 맺습니다", go: "#h-bizpartner", goL: "파트너 후보" },
-    { t: "계약 조건", d: "실시 지역·기간·독점 여부·실시료·개량 기술·분쟁 해결 방법" },
-    { t: "현지 성능 데이터", d: "기후·작물·토양이 다르면 현지 실증 데이터가 영업과 인허가에 쓰입니다" },
-    { t: "가격·관세·수출 금융", d: "HS 코드와 FTA 관세, 수출 보험·보증을 확인합니다", go: "#h-biztrade", goL: "나라별 수출 실적" }
-  ],
-  sources: [
-    ["2026 스마트팜 해외 실증 공고", "https://grant-documents.thevc.kr/287537_1.+%5B%EA%B3%B5%EA%B3%A0%EB%AC%B8%5D+2026%EB%85%84+%EC%8A%A4%EB%A7%88%ED%8A%B8%ED%8C%9C+%ED%95%B4%EC%99%B8+%EC%8B%A4%EC%A6%9D%EC%A7%80%EC%9B%90%EC%82%AC%EC%97%85+%EC%B0%B8%EC%97%AC%EA%B8%B0%EC%97%85+%EB%AA%A8%EC%A7%91%EA%B3%B5%EA%B3%A0.pdf"],
-    ["해외 테스트베드 (보도)", "https://www.livesnews.com/news/article.html?no=58775"], ["aT 성장패키지 (보도)", "https://www.foodtoday.or.kr/news/article.html?no=201936"],
-    ["KOTRA 해외무역관 현황", "https://www.kotra.or.kr/upload/2026/05/26/BM202605260000097589_0.pdf"], ["FDA GRAS", "https://www.fda.gov/food/food-ingredients-packaging/generally-recognized-safe-gras"],
-    ["EU 신규식품", "https://food.ec.europa.eu/food-safety/novel-food_en"], ["EU NGT", "https://www.efsa.europa.eu/en/topics/new-genomic-techniques"],
-    ["EU 비료제품규정", "https://single-market-economy.ec.europa.eu/sectors/chemicals/fertilising-products_en"], ["BPJPH 할랄 의무화", "https://bpjph.halal.go.id/detail/raker-dengan-dpr-kepala-bpjph-pastikan-implementasi-wajib-halal-oktober-2026-sesuai-tahapan"],
-    ["SFA 신규식품", "https://www.sfa.gov.sg/food-information/novel-food/novel-food"], ["UAE 할랄", "https://moiat.gov.ae/en/halal"],
-    ["스마트팜 수주 중동 비중 (보도)", "https://www.etoday.co.kr/news/view/2464274"], ["UAE PoC → 본계약 사례 (보도)", "https://view.asiae.co.kr/article/2026070715525331069"],
-    ["농업 바이오 라이선싱 (IP Handbook)", "https://ipmall.info/sites/default/files/hosted_resources/IP_handbook/ch11/ipHandbook-Ch%2011%2002%20Cahoon%20Licensing%20in%20AgBiotech.pdf"]
-  ]
-};
-
-function bizTrendLoad() {
-  const f = FIELD_TO_TREND[S.idea.field] || "smartfarm";
-  if (G.biz.trendField === f) return;
-  G.biz.trendField = f; G.biz.trend = null;
-  fetch(`/api/trends?field=${f}&years=10`).then(r => r.ok ? r.json() : null).then(d => { G.biz.trend = d; if (S.mode === "apply" && S.step === "manage") rerenderKeepScroll(); }).catch(() => {});
-}
 /* ---------- 공공데이터포털: 나라별 한국 수출 실적(관세청) · 지금 신청할 수 있는 지원사업 공고(기업마당) ---------- */
 // 서버가 공공데이터포털을 부르고(키는 서버 환경변수) 결과를 캐시한다. 키가 없으면 예시 데이터(mode: sample)
 const PD = { trade: {}, notices: {} };
@@ -2858,27 +2529,11 @@ function pdLoad(kind, key, url, shown) {
   return st;
 }
 const pdWait = (st, what) => st.state === "loading" ? `<p class="muted" role="status">${what} 불러오는 중…</p>` : st.state === "err" ? `<p class="muted" role="alert">${esc(st.err)} <button type="button" class="linklike" data-pd-retry="${st.kind}">다시 시도</button></p>` : "";
-const usd = v => v >= 1e8 ? `${(v / 1e8).toFixed(1)}억 달러` : v >= 1e4 ? `${Math.round(v / 1e4).toLocaleString("ko-KR")}만 달러` : `${Math.round(v).toLocaleString("ko-KR")}달러`;
-const ymLabel = s => `${s.slice(0, 4)}. ${+s.slice(4)}.`;
+
 // 증가율은 어느 해든 10만 달러 이상일 때만 (작은 금액은 몇 건만 달라도 크게 흔들린다)
-const tradeGrowth = r => !r.prev ? (r.exp ? ["신규", "up"] : ["", ""]) : Math.max(r.exp, r.prev) < 1e5 || r.growth == null ? ["규모 작음", ""] : [`${r.growth > 0 ? "+" : ""}${r.growth}%`, r.growth >= 0 ? "up" : "down"];
-const tradeState = () => { const t = bizType(), st = pdLoad("trade", t, `/api/trade?type=${t}`, () => S.mode === "apply" && S.step === "manage"); st.kind = `trade|${t}`; return st; };
-function bizTradeHtml() {
-  const st = tradeState(); if (st.state !== "ok") return pdWait(st, "관세청 수출 통계를 (처음에는 20초쯤 걸립니다)");
-  if (st.data.mode === "sample") return "";
-  // 1만 달러 미만은 몇 건의 소량 거래라 빼고 센다
-  const d = st.data, rows = d.rows.filter(r => r.exp >= 1e4).slice(0, 10), small = d.rows.filter(r => r.exp > 0 && r.exp < 1e4).length, max = rows[0]?.exp || 1, mk = G.biz.markets;
-  const note = `<p class="hint">출처: ${esc(d.source)}. ${ymLabel(d.period.cur[0])}~${ymLabel(d.period.cur[1])} 12개월 한국의 ${esc(d.hsName)}(HS ${esc(d.hs)}) 수출액이며, 증가율은 그 전 12개월과 비교합니다. 대표 품목 코드 하나로 센 값이라 내 제품과 범위가 다를 수 있습니다.${small ? ` 1만 달러 미만인 ${small}개 나라는 뺐습니다.` : ""}${d.failed ? ` ${d.failed}개 나라는 불러오지 못했습니다.` : ""}</p>`;
-  if (!rows.length) return `<p class="muted">최근 12개월 동안 비교한 ${d.rows.length}개 나라로 1만 달러 넘게 수출한 실적이 없습니다.</p>${note}`;
-  return `<ol class="gbars tr-list">${rows.map(r => { const [g, c] = tradeGrowth(r), on = r.region && mk.has(r.region);
-      return `<li><span class="gb-name">${esc(r.name)}${on ? ` <span class="g-tag">관심</span>` : ""}</span><span class="gb-track"><i style="width:${Math.max(2, Math.round(r.exp / max * 100))}%"></i></span><b>${usd(r.exp)}</b><span class="tr-g ${c}">${g}</span>${r.region && !on ? `<button type="button" class="linklike" data-biz-mk-add="${r.region}">관심 시장에 넣기</button>` : "<span></span>"}</li>`; }).join("")}</ol>${note}`;
-}
+
 // AI 해외 사업화 전략에 넘기는 사실: 수출 상위 5개 나라
-function tradeFact() {
-  const st = PD.trade[bizType()]; if (st?.state !== "ok" || st.data.mode === "sample") return "";
-  const d = st.data, top = d.rows.filter(r => r.exp >= 1e4).slice(0, 5);
-  return top.length ? `한국 수출 실적(관세청, HS ${d.hs} ${d.hsName}, ${ymLabel(d.period.cur[0])}~${ymLabel(d.period.cur[1])}${d.mode === "sample" ? ", 예시 데이터" : ""}): ${top.map(r => `${r.name} ${usd(r.exp)}(${tradeGrowth(r)[0]})`).join(", ")}` : "";
-}
+
 function noticesHtml(scope, shown) {
   const key = `${scope}|${S.region || ""}`, st = pdLoad("notices", key, `/api/notices?scope=${scope}&region=${encodeURIComponent(S.region || "")}`, shown);
   st.kind = `notices|${key}`;
@@ -2889,106 +2544,27 @@ function noticesHtml(scope, shown) {
     <p class="hint">출처: ${esc(d.source)} · ${esc(d.license)}. 지금 신청할 수 있는 공고${d.total ? ` ${d.total}건` : ""} 중 농식품·지식재산과 가까운 순${S.region ? `(${esc(S.region)} 지역 우선)` : ""}으로 ${d.items.length}건입니다. 공고명은 원문 그대로이며, 조건은 공고문에서 확인하세요.</p>`;
 }
 document.addEventListener("click", e => {
-  const r = e.target.closest("[data-pd-retry]"), add = e.target.closest("[data-biz-mk-add]");
+  const r = e.target.closest("[data-pd-retry]");
   if (r) { const [kind, ...k] = r.dataset.pdRetry.split("|"); delete PD[kind][k.join("|")]; rerenderKeepScroll(); }
-  if (add) { G.biz.markets.add(add.dataset.bizMkAdd); scheduleSave(); toast(`${BIZ_MARKETS.find(([k]) => k === add.dataset.bizMkAdd)?.[1] ?? ""}을(를) 관심 시장에 넣었습니다`); rerenderKeepScroll(); }
 });
-function bizTrendText() {
-  const d = G.biz.trend; if (!d || d.mode === "sample") return "";
-  const s = d.summary, nm = d.offices;
-  return `${d.name}: ${s.rank.map(o => `${nm[o]} ${s.share[o]}%(연 ${s.growth[o]}%)`).join(", ")}. 주요 출원인 ${d.applicants.slice(0, 5).map(a => `${a.name}(${nm[a.office]})`).join(", ")}`;
-}
-
 
 // 국내 주요 출원인 (KIPRIS): 기술이전·공동연구 상대를 찾을 때 쓴다
-function bizKrApplicants() {
-  if (S.api === "off") return "";
-  const f = FIELD_TO_TREND[S.idea.field] || "smartfarm", d = krFor(f), st = krState(f);
-  return `<div class="biz-kr"><h4 class="biz-sub">국내 주요 출원인 ${d ? krBadge(d) : ""} <span class="muted h-meta">기술이전·공동연구 상대 후보</span></h4>
-    ${d ? `<ol class="kr-apps">${d.applicants.map(a => `<li><span class="g-tag">${esc(a.kind)}</span><span>${esc(a.name)}</span><b>${a.count}</b></li>`).join("")}</ol>
-      <p class="hint">${esc(d.name)} 분야 최근 국내 출원 ${d.applicantBasis}건의 출원인을 센 것입니다. 해외 기업이 한국에 낸 출원도 들어 있습니다.</p>`
-      : st.err ? `<p class="muted">${esc(st.err)}</p>` : `<p class="muted">KIPRIS에서 세는 중…</p>`}</div>`;
-}
 
 /* ---------- 해외사업 고도화: 시장별 진출 카드 · IP·사업 통합 로드맵 ---------- */
 // 관심 시장마다 한 장: 한국 수출 실적(관세청) · 규제·인증 경로 · 특허(PCT 국내단계·기한) · 상표 · 준비 상태
-function regionTrade(k) {
-  const st = PD.trade[bizType()]; if (st?.state !== "ok" || st.data.mode !== "live") return null;
-  const rows = st.data.rows.filter(r => r.region === k && r.exp != null); if (!rows.length) return null;
-  const exp = rows.reduce((a, r) => a + r.exp, 0), prev = rows.reduce((a, r) => a + (r.prev ?? 0), 0), top = rows.filter(r => r.exp >= 1e4).slice(0, 3);
-  return { exp, prev, growth: prev ? Math.round((exp - prev) / prev * 1000) / 10 : null, top };
-}
-function bizTocSync() {
-  document.querySelectorAll(".biz-toc [data-scroll]").forEach(b => { b.closest("li").hidden = !document.querySelector(b.dataset.scroll); });
-}
-function marketCardsHtml(type, tName) {
-  const mk = BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k)), d = ipDates();
-  if (!mk.length) return `<p class="muted">위에서 관심 시장을 고르면 시장마다 수출 실적·규제·특허·상표를 한 장으로 정리합니다.</p>`;
-  const chip = (ok, t) => `<li class="${ok === true ? "ok" : ok === false ? "need" : ""}"><span aria-hidden="true">${ok === true ? "✓" : ok === false ? "!" : "·"}</span>${t}</li>`;
-  return `<div class="mk-cards">${mk.map(([k, n]) => {
-    const g = BIZ.reg[type]?.[k], f = FILE_INFO[k], t = regionTrade(k), [gt, gc] = t ? tradeGrowth({ exp: t.exp, prev: t.prev, growth: t.growth }) : ["", ""];
-    const strict = f.strict && S.idea.disclosed === "yes";
-    const big = t && t.exp >= 1e4;
-    return `<article class="mk-card"><div class="mk-h"><h4>${n}</h4>${t ? `<span class="mk-trade">${big ? `<b>${usd(t.exp)}</b> <span class="tr-g ${gc}">${gt}</span>` : `<span class="muted">수출 실적 거의 없음</span>`}</span>` : ""}</div>
-      ${t ? `<p class="mk-sub">최근 12개월 한국 ${esc(PD.trade[type].data.hsName)} 수출${big ? t.top.length > 1 ? ` · ${t.top.map(r => esc(r.name)).join("·")}` : "" : " 1만 달러 미만 — 먼저 들어가면 경쟁이 적지만 유통 경로를 새로 만들어야 합니다"}</p>` : ""}
-      <dl class="mk-dl">
-        <dt>규제·인증</dt><dd>${g ? `${g.p} <span class="muted">(${g.by})</span>${g.src ? ` <a href="${g.src}" target="_blank" rel="noopener" aria-label="${esc(n)} 규제 출처">출처</a>` : ` <span class="biz-unv">· 공식 출처 미확인, 기관 확인 필요</span>`}` : `<span class="muted">${esc(tName)}의 ${n} 정리가 아직 없습니다. 담당 기관에 확인하세요.</span>`}</dd>
-        <dt>특허·상표</dt><dd>PCT 국내단계 ${f.pct}${f.tm ? " · 상표 무단선점 잦음" : ""} <button type="button" class="linklike" data-scroll="#h-bizctry">나라별 보기</button></dd>
-      </dl>
-      <details class="mk-more"><summary>자세히</summary>${g?.n ? `<p>${g.n}</p>` : ""}<p>${f.note}${d.due ? ` 우선권·PCT 기한은 ${fmt(d.due)}입니다.` : ""}</p></details>
-      <ul class="mk-ready" aria-label="${n} 준비 상태">
-        ${chip(d.filed ? true : d.base ? null : false, d.filed ? "국내 출원 완료" : d.base ? `국내 출원 예정 ${fmt(d.base)}` : "국내 출원일 미정")}
-        ${chip(d.left == null ? null : d.left > 60 ? true : false, d.left == null ? "해외 출원 기한 미정" : d.left >= 0 ? `해외 출원 기한 ${ddayText(d.left)}` : "우선권 기한 지남 — 변리사 상담")}
-        ${chip(g?.src ? true : g ? null : false, g?.src ? "규제 경로 공식 출처 있음" : "규제 경로 기관 확인 필요")}
-        ${strict ? chip(false, "이미 공개 — 신규성 상실 위험") : ""}
-      </ul>
-      <div class="mk-act">${aisBtn(`${mainKeywords() || S.idea.title}`, "AIS로 경쟁 특허 보기")}</div>
-    </article>`; }).join("")}</div>`;
-}
+
 // 목표별 권장 순서: 우선일(없으면 오늘)부터 특허 기한과 사업 단계를 한 축에. 개월 수는 일반적인 순서를 보여 주는 권장값
-const GOAL_STEPS = {
-  "기술이전·라이선싱": [[1, "라이선스 후보 찾기·비밀유지계약", "출원 뒤에 기술을 설명하고, 미공개 노하우는 NDA로 보호"], [6, "기술 패키지·실시 조건 정리", "특허·노하우·매뉴얼·교육, 실시 지역·기간·독점 여부·실시료"], [24, "라이선스 계약·대상국 확정", "PCT 국내단계(30개월) 전에 실시권자가 원하는 나라를 정하면 비용을 아낍니다"]],
-  "수출": [[2, "바이어 발굴·수출바우처 신청", "KOTRA·aT 지원사업으로 바이어 상담·박람회"], [6, "규제·인증 신청", "시장별 진출 카드의 제도 기준. 기간이 긴 나라부터"], [15, "첫 수출·현지 유통", "상표 등록과 통관(HS 코드) 확인 뒤"]],
-  "현지 실증·파일럿": [[2, "실증 협력기관 찾기·MOU", "현지 대학·연구소·농장, 수요처 LoI"], [6, "현지 실증 시작", "기후·작물이 다른 곳의 성능 지표(수율·생체중 등)를 기록"], [24, "실증 결과 정리", "국내단계 진입 때 실시예 보강·보정 자료로"]],
-  "합작·현지 법인": [[3, "파트너 실사·비밀유지계약", "신용·평판·유통망 확인"], [12, "합작 계약", "기술 출자 범위를 청구항과 맞추고, 개량 기술 귀속을 정함"], [24, "현지 법인·생산 준비", "현지 규제 등록과 함께"]]
-};
-function roadmapHtml() {
-  const d = ipDates(), base = d.base || today, steps = GOAL_STEPS[G.biz.goal] ?? [], mk = BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k));
-  const tm = mk.some(([k]) => FILE_INFO[k]?.tm);
-  const ev = [
-    { date: base, label: d.base ? (d.filed ? "국내 출원(우선일)" : "국내 출원 예정") : "오늘 (출원일 미정)" },
-    ...(tm ? [{ date: addMonths(base, 3), label: "진출국 상표 출원", kind: "urgent" }] : []),
-    { date: addMonths(base, 12), label: `해외 출원 기한 (${mk.length >= 3 ? "PCT" : "파리조약·PCT"})`, kind: "urgent" },
-    { date: addMonths(base, 18), label: "국제공개 — 이후 기술 내용이 공개됨" },
-    ...steps.map(([m, t]) => ({ date: addMonths(base, m), label: t })),
-    { date: addMonths(base, 30), label: "PCT 국내단계 진입(대상국 확정)", kind: "urgent" }
-  ].sort((a, b) => a.date - b.date);
-  return `${timeScale(ev, { start: addMonths(base, -1), end: addMonths(base, 33) })}
-    ${steps.length ? fold("biz-steps", `‘${esc(G.biz.goal)}’ 단계별 할 일`, `${steps.length}단계`, `<ol class="rm-list">${steps.map(([m, t, why]) => `<li><span class="mono">${fmt(addMonths(base, m))}</span><b>${esc(t)}</b><span class="muted">${why}</span></li>`).join("")}</ol>`) : ""}
-    <p class="hint">${d.base ? "출원일 기준. " : "출원일이 없어 오늘 기준. "}특허 기한은 법정 기한, 사업 단계는 권장 시점입니다.</p>`;
-}
+
 // 체크리스트에서 가리키는 칸이 지금 화면에 있는지 (수출 실적은 공공데이터 키가 있을 때, 파트너 후보는 KIPRIS가 있을 때만 보인다)
-const secShown = id => id === "#h-biztrade" ? PD.trade[bizType()]?.data?.mode === "live" : id === "#h-bizpartner" ? S.api !== "off" || (G.biz.trend && G.biz.trend.mode !== "sample") : true;
+
 // 해외동향에서 관심 기술로 새로 시작: 분야와 키워드로 기본 초안을 만들어 세 서비스가 함께 쓰는 '내 기술'(IP 카드)을 바꾼다
 // 동향 분야로 시작할 때 미리 넣는 키워드 (분야는 TREND_TO_FIELD)
-const TREND_START_KW = { smartfarm: "센서, 양액, 자동 제어", altprotein: "식물성 단백, 배양, 식감 개선", biocontrol: "바실러스, 발효, 병해 억제", foodferment: "유산균, 발효, 항산화",
-  breeding: "딸기, 내병성, 분자 마커", robotics: "드론, 영상 분석, 자동 방제", postharvest: "딸기, 통기 포장, 선도 유지" };
-function bizTechHtml() {
-  const N = G.biz.newTech;
-  if (!N) return `<div class="actions"><button type="button" class="btn ghost sm" data-biz-new>관심 기술로 새로 시작</button><a class="linklike" href="#idea">출원지원에서 아이디어 바꾸기</a></div>`;
-  return `<form class="biz-new" id="biz-new" aria-label="관심 기술로 새로 시작">
-    <label class="g-select"><span>기술 분야</span><select id="biz-new-field">${Object.entries(FIELDS).map(([k, f]) => `<option value="${k}" ${N.field === k ? "selected" : ""}>${f.name}</option>`).join("")}</select></label>
-    <div class="field"><label for="biz-new-kw">핵심 키워드 (쉼표로 구분)</label><input type="text" id="biz-new-kw" value="${esc(N.kw)}" placeholder="예: 쌀겨, 발효, 생장 촉진"></div>
-    <p class="hint">키워드로 발명의 명칭 초안을 만들어 IP 카드를 바꿉니다. 출원지원 1단계에 같은 초안 후보가 준비되어, 나중에 명칭·문제를 다듬어 출원으로 이어 갈 수 있습니다.${S.done.size || S.idea.title.trim() ? " 지금 작성 중인 출원지원 내용은 지워집니다." : ""}</p>
-    <div class="actions"><button type="submit" class="btn sm">이 기술로 시작</button><button type="button" class="btn ghost sm" data-biz-new-cancel>취소</button></div>
-  </form>`;
-}
+
+
 function startBizTech(field, kw) {
-  const B = G.biz, keep = { markets: new Set(B.markets), fileOff: new Set(B.fileOff), goal: B.goal };
   if (!kwList(kw).length) { toast("키워드를 하나 이상 적어 주세요"); return; }
   const busy = S.done.size > 0 || !!S.idea.title.trim();
   if (!resetWork(busy && `출원지원에 작성 중인 ‘${S.idea.title}’의 입력과 결과를 지우고 이 관심 기술로 새로 시작합니다. 계속할까요?`)) return;
-  Object.assign(B, keep, { type: null, newTech: null }); // 이 화면에서 고른 시장·목표는 그대로
   Object.assign(S.idea, { fieldCustom: null }); ideateFrom(field, kw);
   S.chat = { done: ["idea", "read", "problem"], edit: "" }; S.idea.pitch = S.idea.title; S.ideate.pitch = null;
   S.step = "idea"; S.sub = 1; // 출원지원으로 넘어가면 명칭 후보 고르기부터
@@ -2996,144 +2572,16 @@ function startBizTech(field, kw) {
   toast("관심 기술로 새로 시작했습니다. 1단계에서 명칭 후보를 고르고 다듬을 수 있어요");
 }
 // 지원사업을 내 제품 유형·목표·시장에 맞춰 고른다. 유형이 맞으면 2점, 목표 1점, 시장 1점. 조건이 없는 항목은 누구에게나 1점
-function supportFit(type) {
-  const B = G.biz;
-  return BIZ.support.map(x => {
-    const f = x.fit || {}, why = [];
-    let sc = 0;
-    if (f.t) { if (f.t.includes(type)) { sc += 2; why.push(BIZ_TYPES.find(([k]) => k === type)[1]); } else sc -= 3; }
-    if (f.g) { if (f.g.includes(B.goal)) { sc += 1; why.push(B.goal); } }
-    if (f.m) { const hit = f.m.filter(k => B.markets.has(k)); if (hit.length) { sc += 1; why.push(hit.map(k => BIZ_MARKETS.find(([x]) => x === k)[1]).join("·")); } }
-    if (!f.t && !f.g && !f.m) sc = 1;
-    return { ...x, sc, why };
-  }).sort((a, b) => b.sc - a.sc);
-}
-const KOAT_RE = /한국농업기술진흥원/;
-function supportHtml(type) {
-  const all = supportFit(type), top = all.filter(x => x.sc >= 2).slice(0, 4), rest = all.filter(x => !top.includes(x));
-  const m = today.getMonth() + 1, season = m >= 10 || m <= 1 ? "한국농업기술진흥원·수출바우처 등 주요 사업은 1~2월에 한 해 분을 모집합니다. 지금 요건(LoI·실증 지표·인증 견적)을 갖춰 두면 공고가 나자마자 낼 수 있습니다." : m <= 3 ? "1~3월은 한 해 지원사업 공고가 몰리는 때입니다. 아래 ‘공고 시기’를 보고 마감을 놓치지 마세요." : "주요 사업의 올해 모집은 대부분 끝났습니다. 내년 1~2월 공고에 맞춰 요건을 준비하고, 연중 모집(지사화·PoC·수출보험)은 지금 신청할 수 있습니다.";
-  const item = x => `<li class="sp-item"><div class="sp-h"><b>${x.k}</b><span class="muted">${x.by}</span>${x.why.length ? `<span class="sp-why">${x.why.map(w => `<i>${esc(w)}</i>`).join("")}</span>` : ""}</div>
-      <p>${x.d}</p>
-      <dl class="sp-dl"><dt>공고 시기</dt><dd>${x.when}</dd><dt>요건</dt><dd>${x.req}</dd>${x.next ? `<dt>지금 할 일</dt><dd>${x.next}</dd>` : ""}</dl>
-      <a href="${x.url}" target="_blank" rel="noopener">${KOAT_RE.test(x.by) ? "한국농업기술진흥원 공고" : "공고 보기"}</a></li>`;
-  return `<p class="hint sp-season">${season}</p>
-    ${top.length ? `<ol class="sp-list">${top.map(item).join("")}</ol>` : `<p class="muted">제품 유형·목표·시장을 고르면 맞는 사업을 먼저 보여 줍니다.</p>`}
-    ${rest.length ? fold("biz-support", "그 밖의 지원 제도", `${rest.length}개 · ${BIZ.asOf} 기준`, `<ul class="g-support">${rest.map(x => `<li><a href="${x.url}" target="_blank" rel="noopener"><b>${x.k}</b><span class="muted">${x.by}</span><span>${x.d}</span><span class="muted">${x.when}</span></a></li>`).join("")}</ul>`) : ""}`;
-}
+
 // 지금 할 일: 출원 상태·공개 여부·시장·목표·제품 유형으로 순서와 날짜를 정한다 (판단은 여기, 자료는 아래 칸)
-function bizNowHtml(type, tName) {
-  const B = G.biz, d = ipDates(), base = d.base || today, mk = BIZ_MARKETS.filter(([k]) => B.markets.has(k)), on = ctryOn(), out = [];
-  const add = (when, t, why, go, goL) => out.push({ when, t, why, go, goL });
-  const tm = mk.filter(([k]) => FILE_INFO[k]?.tm).map(([, n]) => n), strict = on.filter(c => CTRY[c].g[0] !== 1).map(c => CTRY[c].n);
-  if (!S.idea.title.trim()) return `<p class="muted">기술을 정하면 출원 상태와 시장에 맞춰 지금 할 일을 순서대로 정리합니다.</p>`;
-  if (!d.base) add("지금", "국내 출원일 정하기", "해외 출원·상표·실증의 모든 기한이 국내 출원일(우선일)에서 시작합니다. 날짜만 정해도 아래가 전부 계산됩니다.", "#manage", "출원지원 5단계");
-  else if (!d.filed) add(fmt(d.base), "국내 출원", "출원 전에 박람회·시식·실증으로 공개되지 않게 하세요. 공개가 불가피하면 공개 전에 출원합니다.", "#manage", "출원 서류");
-  if (S.idea.disclosed === "yes") add("지금", "공개한 발명의 해외 출원 가능성 확인", `${strict.length ? `${J(strict.join("·"), "은")} 본인 공개 예외가 없거나 좁습니다. ` : ""}국내는 공지예외주장으로 되지만 나라마다 다르니 변리사와 대상국을 정하세요.`, "#h-bizctry", "나라별 확인표");
-  if (tm.length) add(fmt(addMonths(base, 3)), `${tm.join("·")} 상표 출원`, "먼저 출원한 사람이 권리를 갖는 나라입니다. 제품명·브랜드를 진출 전에 출원하고, 마드리드로 한 번에 지정할 수 있습니다.", "#h-bizctry", "상표 제도 보기");
-  if (on.length) add(fmt(addMonths(base, 12)), on.length >= 3 ? "PCT 국제출원" : `${on.map(c => CTRY[c].n).join("·")} 직접 출원`, `${ctryRoute(on, d)} 비용은 지역지식재산센터 해외 출원 지원을 먼저 알아보세요.`, "#h-bizctry", "나라별 확인표");
-  const reg = mk.map(([k, n]) => [n, BIZ.reg[type]?.[k]]).filter(([, g]) => g);
-  if (reg.length) add(B.goal === "수출" ? fmt(addMonths(base, 6)) : "진출 전", `${reg.map(([n]) => n).join("·")} 규제·인증 사전 상담`, `${reg.slice(0, 2).map(([n, g]) => `${n}: ${g.p.split(".")[0]} (${g.by})`).join(" / ")}. 기간이 긴 나라부터 담당 기관에 문의합니다.`, "#h-bizmk", "시장별 진출 카드");
-  const sup = supportFit(type).filter(x => x.sc >= 2)[0];
-  if (sup) add(/1~2월|1월|연초/.test(sup.when) ? "내년 1~2월" : "연중", `지원사업 ‘${sup.k}’ 준비`, `${sup.by}. ${sup.req}. ${sup.next || ""}`, "#h-bizsup", "지원사업");
-  const tr = regionTradeTop(type);
-  if (tr) add("참고", `수출 실적으로 본 시장: ${tr}`, "관세청 최근 12개월 한국 수출액 기준입니다. 많이 파는 나라는 유통 경로가 있고, 빠르게 느는 나라는 기회가 있습니다.", "#h-biztrade", "나라별 수출 실적");
-  return `<ol class="now-list">${out.map(x => `<li><span class="now-when mono">${esc(x.when)}</span><div><b>${esc(x.t)}</b><p>${x.why}</p>${x.go ? x.go.startsWith("#h-") ? `<button type="button" class="linklike" data-scroll="${x.go}">${x.goL}</button>` : `<a class="linklike" href="${x.go}">${x.goL}</a>` : ""}</div></li>`).join("")}</ol>
-    <p class="hint">${d.base ? `우선일 ${fmt(d.base)} 기준` : "출원일이 없어 오늘 기준"} · 제품 유형 ${tName} · 목표 ${esc(B.goal)}. 특허 기한은 법정 기한, 나머지는 권장 시점입니다.</p>`;
-}
+
 // 관심 시장 가운데 한국 수출액이 큰 순서 (실데이터일 때만)
-function regionTradeTop(type) {
-  const rows = BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k)).map(([k, n]) => [n, regionTrade(k)]).filter(([, t]) => t && t.exp >= 1e4).sort((a, b) => b[1].exp - a[1].exp);
-  return rows.length ? rows.map(([n, t]) => `${n} ${usd(t.exp)}${t.growth != null ? `(${t.growth > 0 ? "+" : ""}${t.growth}%)` : ""}`).join(", ") : "";
-}
+
 // 해외 사업화(출원지원 5단계 ‘해외 출원’ 쪽): 시장·목표 → 지금 할 일 → 나라별 출원 확인표 → 해외 출원 안내 → 시장 카드·로드맵·지원사업·파트너·경로·신호·체크리스트
-function bizPageHtml(base) {
-  bizTrendLoad();
-  const B = G.biz, type = bizType(), mk = BIZ_MARKETS.filter(([k]) => B.markets.has(k)), tName = BIZ_TYPES.find(([k]) => k === type)[1];
-  const sec = (id, h, sub, body) => `<section class="card-sec biz-sec" aria-labelledby="${id}"><div class="biz-h"><h3 id="${id}">${h}</h3>${sub ? `<p class="muted">${sub}</p>` : ""}</div>${body}</section>`;
-  const td = G.biz.trend, nm = td?.offices;
-  const route = r => `<article class="g-route biz-route ${r.k === B.goal ? "on" : ""}"><div class="biz-route-h"><h4>${r.k}</h4>${r.k === B.goal ? `<span class="g-tag">내 목표</span>` : ""}</div>
-    <dl><dt>이럴 때</dt><dd>${r.when}</dd><dt>준비</dt><dd>${r.need}</dd><dt>파트너</dt><dd>${r.partner}</dd><dt>IP</dt><dd>${r.ip}</dd><dt>지원</dt><dd>${r.help}</dd></dl></article>`;
-  const routes = { mine: BIZ.routes.filter(r => r.k === B.goal).map(route).join(""), others: BIZ.routes.filter(r => r.k !== B.goal).map(route) }; // 내 목표 경로만 펼치고 나머지는 접는다
-  const checklist = BIZ.checklist.map((c, i) => `<li><label><input type="checkbox" data-biz-done="${i}" ${B.done.has(i) ? "checked" : ""}><span><b>${c.t}</b><span class="muted">${c.d}</span></span></label>${c.go === "filing" ? `<button type="button" class="btn ghost sm" data-go-filing>해외 출원 일정 보기</button>` : c.go === "ais" ? aisBtn(mainKeywords() || S.idea.title, "AIS로 경쟁 특허 보기") : c.go?.startsWith("#h-") ? (secShown(c.go) ? `<button type="button" class="btn ghost sm" data-scroll="${c.go}">${c.goL}</button>` : "") : c.go ? `<a class="btn ghost sm" href="${c.go}">${c.goL}</a>` : ""}</li>`).join("");
-  const ai = B.ai;
-  const tr = PD.trade[type], rec = tr?.state === "ok" && tr.data.mode === "live" ? [...new Set(tr.data.rows.filter(r => r.exp >= 1e5 && r.region && !B.markets.has(r.region)).map(r => r.region))].slice(0, 2) : [];
-  const P_toc = `<nav class="of-toc biz-toc2" aria-label="이 쪽의 차례">${[["#h-biznow", "지금 할 일"], ["#h-bizctry", "나라별 출원 확인표"], ["#of-0", "해외 출원 일정·경로"], ["#h-bizmk", "시장별 진출 카드"], ["#h-bizmap", "IP·사업 로드맵"], ["#h-bizsup", "지원사업"], ["#h-bizpartner", "파트너 후보"], ["#h-bizchk", "체크리스트"]].map(([h, t]) => `<button type="button" class="chip" data-scroll="${h}">${t}</button>`).join("")}</nav>`;
-  const P_start = `<section class="card-sec biz-start" aria-labelledby="h-bizme">
-      <div class="biz-me"><h3 id="h-bizme">시장과 목표 고르기</h3><p class="muted">${!S.idea.title.trim() ? "아직 정한 기술이 없습니다. 출원지원 1단계에서 아이디어를 정리하거나 해외동향에서 키워드로 시작하면 IP 카드가 채워집니다." : "위 IP 카드의 기술로 시장과 목표를 고르면 아래 할 일·확인표·카드가 바뀝니다. 사업할 나라에 권리가 있어야 수출·기술이전에서 협상력이 생깁니다."}</p>
-        ${rec.length ? `<p class="hint">관세청 수출 실적으로 보면 ${rec.map(k => `<button type="button" class="linklike" data-biz-mk-add="${k}">${BIZ_MARKETS.find(([x]) => x === k)[1]} 추가</button>`).join(" · ")}도 검토할 만합니다.</p>` : ""}</div>
-      <div class="biz-pick">
-        <label class="g-select"><span>제품 유형</span><select id="biz-type">${BIZ_TYPES.map(([k, n]) => `<option value="${k}" ${type === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
-        <div class="field"><span class="label">관심 시장 <span class="muted h-meta">여러 개</span></span><div class="pick-chips">${BIZ_MARKETS.map(([k, n]) => `<label class="pick-chip"><input type="checkbox" data-biz-mk="${k}" ${B.markets.has(k) ? "checked" : ""}><span>${n}</span></label>`).join("")}</div></div>
-        <div class="field"><span class="label">목표</span><div class="seg" role="radiogroup" aria-label="사업화 목표">${BIZ_GOALS.map(g => `<label><input type="radio" name="biz-goal" value="${g}" ${B.goal === g ? "checked" : ""}>${g}</label>`).join("")}</div></div>
-      </div>
-    </section>`;
-  const P_now = `${sec("h-biznow", "지금 할 일", "출원 상태·공개 여부·시장·목표로 순서를 정했습니다", bizNowHtml(type, tName))}`;
-  const P_ctry = `${sec("h-bizctry", "내 특허의 나라별 출원 확인표", "IP 카드의 우선일·공개 여부로 나라마다 기한·번역문·공개 유예·상표를 계산합니다", ctryTableHtml(type))}`;
-  const P_of = `<section class="card-sec biz-sec of-wrap" aria-label="해외 출원 일정과 경로">${viewOverseasFiling(base)}</section>`;
-  const P_mk = `${sec("h-bizmk", `시장별 진출 카드 <span class="muted h-meta">${tName}</span>`, "시장마다 수출 실적·규제·특허·상표를 한 장으로", marketCardsHtml(type, tName))}`;
-  const P_map = `${sec("h-bizmap", `IP·사업 통합 로드맵 <span class="muted h-meta">${esc(B.goal)}</span>`, "해외 출원 기한 안에 진출 시장을 정하세요", roadmapHtml())}`;
-  const P_trade = `${(t => t ? sec("h-biztrade", `나라별 한국 수출 실적 <span class="muted h-meta">${tName}</span>`, "많이 파는 나라는 유통 경로가, 빠르게 느는 나라는 기회가 있습니다", t) : "")(bizTradeHtml())}`;
-  const P_ai = `${aiSlot("globalbiz")}
-    ${ai ? sec("h-bizai", "AI 해외 사업화 전략", "", `<div class="biz-ai"><div class="biz-sum"><span class="g-tag">AI 제안</span><p>${esc(ai.summary)}</p></div>
-        <div class="biz-ai-mk">${ai.markets.map(m => `<article class="g-route"><div class="biz-route-h"><h4>${esc(m.market)}</h4><span class="g-tag">${esc(m.route)}</span></div><p>${esc(m.why)}</p>
-          <dl><dt>규제</dt><dd>${esc(m.regulation)}</dd><dt>파트너</dt><dd>${esc(m.partner)}</dd><dt>첫 단계</dt><dd>${esc(m.firstStep)}</dd></dl></article>`).join("")}</div>
-        <div class="g-two"><div><h4 class="biz-sub">주요 위험</h4><ul class="biz-list">${(ai.risks || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
-          <div><h4 class="biz-sub">사업화 전 확인할 일</h4><ul class="biz-list">${(ai.checklist || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
-        <p class="hint">AI 제안은 초안입니다. 규제 기관명·기간·비용은 아래 표의 공식 출처와 지원기관 상담으로 확인하세요.</p></div>`) : ""}`;
-  const P_sup = `${(n => sec("h-bizsup", `내 상황에 맞는 지원사업 <span class="muted h-meta">${tName} · ${esc(B.goal)}</span>`, n ? "제품 유형·목표·시장에 맞는 사업 먼저, 그 아래 지금 신청할 수 있는 기업마당 공고" : "제품 유형·목표·시장에 맞는 사업을 먼저 보여 줍니다", `${supportHtml(type)}${n ? `<h4 class="biz-sub">지금 신청할 수 있는 공고 <span class="muted h-meta">기업마당</span></h4>${n}` : ""}`))(noticesHtml("global", () => S.mode === "apply" && S.step === "manage"))}`;
-  const P_partner = `${td && td.mode !== "sample" ? sec("h-bizpartner", "해외 파트너·경쟁자 후보", `해외 특허 동향에서 뽑은 내용입니다. 출원이 많은 기관은 라이선스 상대이자 경쟁자, 증가율이 높은 관청은 떠오르는 시장입니다.`,
-      !td ? `<p class="muted">동향 데이터를 불러오는 중…</p>` : `${td.mode === "sample" ? `<div class="alert warn"><strong>예시 데이터</strong><span>기관명과 수치는 가상입니다. 해외 특허 API를 연결하면 실제 출원인으로 바뀝니다.</span></div>` : ""}
-      <div class="g-two">
-        <div><h4 class="biz-sub">시장 규모와 속도 <span class="muted h-meta">${esc(td.name)}</span></h4>
-          <ul class="share-list">${[...OFFICE_ORDER].sort((a, b) => td.summary.totals[b] - td.summary.totals[a]).map(o => `<li>${officeKey(o, nm[o])}<b>${td.summary.share[o]}%</b><span class="muted">연 ${td.summary.growth[o] > 0 ? "+" : ""}${td.summary.growth[o]}%</span></li>`).join("")}</ul></div>
-        <div><h4 class="biz-sub">출원 상위 기관 <span class="muted h-meta">파트너·경쟁자 후보</span></h4>
-          <ol class="gbars">${td.applicants.slice(0, 6).map(a => `<li><span class="gb-name">${esc(a.name)}</span><span class="gb-track"><i class="s-${a.office}" style="width:${Math.round(a.count / td.applicants[0].count * 100)}%"></i></span><b>${a.count.toLocaleString("ko-KR")}</b></li>`).join("")}</ol></div>
-      </div>
-      ${bizKrApplicants()}`) : S.api !== "off" ? sec("h-bizpartner", "국내 파트너 후보", "기술이전·공동연구 상대이자 경쟁자", bizKrApplicants()) : ""}`;
-  const P_route = `${sec("h-bizroute", `진출 경로 <span class="muted h-meta">${esc(B.goal)}</span>`, "", `${routes.mine}${fold("biz-routes", "다른 경로 보기", `${routes.others.length}가지`, `<div class="g-routes biz-routes">${routes.others.join("")}</div>`)}`)}`;
-  const P_sig = `${(st => sec("h-bizsig", `시장 신호 <span class="muted h-meta">${tName}</span>`, `${BIZ.asOf} 기준 공식 발표·조사 수치 — 신청서·상담 자료에 그대로 인용할 수 있습니다`, `<div class="kpis ${st.length === 2 ? "kpis-2" : st.length === 3 ? "kpis-3" : ""}">${st.map(x => `<div class="kpi"><span class="kpi-l">${x.t}</span><b class="kpi-v">${x.v}</b><span class="kpi-d">${x.d}</span>${x.use ? `<span class="kpi-use">${x.use}</span>` : ""}<a class="kpi-src" href="${x.src[1]}" target="_blank" rel="noopener">${x.src[0]}</a></div>`).join("")}</div>`))((f => f.length ? f : BIZ.stats)(BIZ.stats.filter(x => !x.for || x.for.includes(type))))}`;
-  const P_chk = `${sec("h-bizchk", `사업화 체크리스트 <span class="muted h-meta">${B.done.size}/${BIZ.checklist.length} 확인</span>`, "", `<ol class="biz-chk">${checklist}</ol>`)}`;
-  const P_src = `${fold("biz-src", "출처", `${BIZ.sources.length}곳 · ${BIZ.asOf} 기준 일반 안내`, `<p class="hint">${BIZ.sources.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(" · ")}</p>`)}`;
-  return `<div class="biz biz-main">${[P_toc, P_start, P_now, P_ctry, P_of, P_mk, P_map, P_trade, P_ai, P_sup, P_partner, P_route, P_sig, P_chk, P_src].join("\n")}</div>`;
-}
 
 // 꺾은선 차트는 그려질 자리의 실제 너비에 맞춰 그린다 (글자 크기가 화면 폭에 따라 바뀌지 않도록)
-function drawTrendCharts() {
-  const box = document.querySelector('.lc[data-chart="line"]'), d = G.data;
-  if (!box || !d) return;
-  const W = Math.max(300, box.clientWidth), H = W < 520 ? 230 : 280, m = { l: 44, r: W < 520 ? 52 : 92, t: 12, b: 28 };
-  const iw = W - m.l - m.r, ih = H - m.t - m.b, n = d.years.length;
-  const val = (o, i) => G.scale === "index" ? Math.round(d.series[o][i] / Math.max(1, d.series[o][0]) * 100) : d.series[o][i];
-  const max = Math.max(...OFFICE_ORDER.flatMap(o => d.years.map((_, i) => val(o, i))));
-  const step = (() => { const raw = max / 4, p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map(k => k * p).find(k => k >= raw); })();
-  const ymax = Math.ceil(max / step) * step, x = i => m.l + (n === 1 ? iw / 2 : i / (n - 1) * iw), y = v => m.t + ih - v / ymax * ih;
-  const ticks = Array.from({ length: Math.round(ymax / step) + 1 }, (_, k) => k * step);
-  const lag0 = d.years.findIndex(yr => d.lagYears.includes(yr));
-  const path = (o, a, b) => d.years.slice(a, b + 1).map((_, k) => `${k ? "L" : "M"}${x(a + k).toFixed(1)},${y(val(o, a + k)).toFixed(1)}`).join("");
-  // 끝 라벨: 마지막 완전한 해(공개 지연 전) 값에 붙이고, 겹치면 아래로 밀고 지시선으로 잇는다
-  const li = lag0 > 0 ? lag0 - 1 : n - 1;
-  const ends = OFFICE_ORDER.map(o => ({ o, y0: y(val(o, n - 1)), y: y(val(o, n - 1)) })).sort((a, b) => a.y - b.y), gap = 15, lo = m.t + 6, hi = m.t + ih;
-  ends.forEach((e, k) => { if (k && e.y - ends[k - 1].y < gap) e.y = ends[k - 1].y + gap; });
-  for (let k = ends.length - 1; k >= 0; k--) { const cap = k === ends.length - 1 ? hi : ends[k + 1].y - gap; if (ends[k].y > cap) ends[k].y = cap; }
-  const lbl = W >= 420 && ends[0].y >= lo;
-  box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-    ${lag0 > 0 ? `<rect class="lc-lag" x="${x(lag0 - 0.5)}" y="${m.t}" width="${W - m.r - x(lag0 - 0.5)}" height="${ih}"/><text class="lc-lagt" x="${W - m.r - 4}" y="${m.t + 12}" text-anchor="end">집계 중</text>` : ""}
-    ${ticks.map(t => `<line class="lc-grid" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/><text class="lc-tick" x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${compact(t)}</text>`).join("")}
-    ${d.years.map((yr, i) => (n <= 6 || i % 2 === (n - 1) % 2) ? `<text class="lc-tick" x="${x(i)}" y="${H - 8}" text-anchor="middle">${yr}</text>` : "").join("")}
-    ${OFFICE_ORDER.map(o => `<path class="lc-line s-${o}" d="${path(o, 0, lag0 > 0 ? lag0 - 1 : n - 1)}"/>${lag0 > 0 ? `<path class="lc-line lc-dim s-${o}" d="${path(o, lag0 - 1, n - 1)}"/>` : ""}<circle class="lc-dot s-${o}" cx="${x(li)}" cy="${y(val(o, li))}" r="4"/>`).join("")}
-    ${lbl ? ends.map(e => `${Math.abs(e.y - e.y0) > 2 ? `<line class="lc-leader" x1="${x(n - 1) + 3}" y1="${e.y0}" x2="${x(n - 1) + 10}" y2="${e.y}"/>` : ""}<text class="lc-end" x="${x(n - 1) + 12}" y="${e.y + 4}">${esc(d.offices[e.o])}</text>`).join("") : ""}
-    <line class="lc-cross" id="lc-cross" x1="0" x2="0" y1="${m.t}" y2="${m.t + ih}" visibility="hidden"/>
-    <rect class="lc-hit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}"/>
-  </svg>`;
-  box._geo = { x, n, m, iw, val };
-}
-function showLineTip(box, i, cx, cy) {
-  const d = G.data, g = box._geo; if (!g) return;
-  i = Math.max(0, Math.min(g.n - 1, i)); box._i = i;
-  const cross = box.querySelector("#lc-cross"); cross.setAttribute("x1", g.x(i)); cross.setAttribute("x2", g.x(i)); cross.setAttribute("visibility", "visible");
-  const rows = [...OFFICE_ORDER].sort((a, b) => g.val(b, i) - g.val(a, i));
-  showTip([`${d.years[i]}년${d.lagYears.includes(d.years[i]) ? " (집계 중)" : ""}`, ...rows.map(o => [o, d.offices[o], `${g.val(o, i).toLocaleString("ko-KR")}${G.scale === "index" ? "" : "건"}`])], cx, cy);
-}
+
+
 function showTip(lines, cx, cy) {
   let tip = document.getElementById("viz-tip");
   if (!tip) { tip = Object.assign(document.createElement("div"), { id: "viz-tip", role: "tooltip" }); document.body.appendChild(tip); }
@@ -3152,24 +2600,17 @@ function showTip(lines, cx, cy) {
 }
 function hideTip() { const t = document.getElementById("viz-tip"); if (t) t.hidden = true; document.querySelectorAll("#lc-cross").forEach(c => c.setAttribute("visibility", "hidden")); }
 document.addEventListener("pointermove", e => {
-  const hit = e.target.closest?.(".lc-hit");
-  if (hit) { const box = hit.closest(".lc"), g = box._geo, r = hit.getBoundingClientRect(); showLineTip(box, Math.round((e.clientX - r.left) / r.width * (g.n - 1)), e.clientX, e.clientY); return; }
   const t = e.target.closest?.("[data-tip]");
   if (t) { const [h, v] = t.dataset.tip.split("|"); showTip([h, v], e.clientX, e.clientY); return; }
   hideTip();
 });
 document.addEventListener("focusin", e => {
-  const t = e.target.closest?.("[data-tip]"), lc = e.target.closest?.(".lc");
+  const t = e.target.closest?.("[data-tip]");
   const r = e.target.getBoundingClientRect?.();
   if (t) { const [h, v] = t.dataset.tip.split("|"); showTip([h, v], r.left + r.width / 2, r.top); }
-  else if (lc && lc._geo) showLineTip(lc, lc._i ?? lc._geo.n - 1, r.left + r.width / 2, r.top + 20);
 });
 document.addEventListener("focusout", hideTip);
-document.addEventListener("keydown", e => {
-  const lc = e.target.closest?.(".lc"); if (!lc || !lc._geo || !/Arrow(Left|Right)/.test(e.key)) return;
-  e.preventDefault(); const r = lc.getBoundingClientRect(); showLineTip(lc, (lc._i ?? lc._geo.n - 1) + (e.key === "ArrowLeft" ? -1 : 1), r.left + r.width / 2, r.top + 20);
-});
-addEventListener("resize", () => { clearTimeout(drawTrendCharts.t); drawTrendCharts.t = setTimeout(() => { drawTrendCharts(); drawDiscoverChart(); }, 150); });
+addEventListener("resize", () => { clearTimeout(drawDiscoverChart.t); drawDiscoverChart.t = setTimeout(drawDiscoverChart, 150); });
 
 /* (출원지원 전용 빌드: 3D 지도 제거) */
 let FARM = null;
@@ -3824,7 +3265,6 @@ async function translateTitle() {
   } catch (e) { toast(e.message || "번역하지 못했습니다"); }
 }
 
-const aiProgress = st => st.got ? `${st.got.toLocaleString("ko-KR")}자 받는 중` : "생각하는 중";
 
 /* ---------- AI는 사용자가 눌러야 시작한다: 쪽에 들어오거나 입력을 바꿔도 저절로 돌지 않는다 ----------
    AI 자리(data-ai-slot)에는 '무엇을 해 주는지·보통 걸리는 시간'을 적은 시작 카드를 두고, 누르면 그 작업만 돈다.
@@ -3903,7 +3343,7 @@ const runAi = task => task === "draft" ? runAiDraft() : runAiTask(task);
 // 자리는 비어 있으면 숨겨지므로, 자리를 담은 칸이 지금 보이는지로 판단한다
 const slotShown = el => !!el && !el.closest("[hidden]") && el.parentElement?.getClientRects().length > 0;
 // 돌릴 작업: 지금 쪽에 자리가 보이는 작업 + 곧 볼 결과를 미리 돌리는 작업(early: 유사 특허 목록에서 심층 비교, 유망기술 지도에서 아이디어)
-const aiWanted = task => task === "draft" && S.step === "draft" && S.sub < 1 ? false : slotShown(document.querySelector(`[data-ai-slot="${task}"]`)) || !!AI_TASK_UI[task]?.early?.();
+
 function aiAutoRun() { refreshAiLock(); } // AI는 시작 카드나 버튼을 눌렀을 때만 돈다 (예전 자동 실행 자리)
 // AI 결과가 들어오면 다시 그리되, 스크롤과 입력 중인 칸(커서 위치)은 그대로 둔다
 function softRender() {
@@ -4087,24 +3527,7 @@ AI_TASK_UI.reject = {
   },
   apply: (r, src) => { if (!r?.reasons?.length) throw new Error("예상 거절이유가 비어 있습니다."); S.rejAI = { ...r, source: src }; }
 };
-// 해외동향 ‘해외 사업화’ 탭의 AI 전략 (viewBiz)
-AI_TASK_UI.globalbiz = {
-  label: "전략 제안", title: "AI로 해외 사업화 전략 받기", ready: () => !!S.idea.title.trim() && PD.trade[bizType()]?.state !== "loading",
-  desc: "내 기술, 고른 시장·목표, 해외 특허 동향을 바탕으로 시장별 진출 경로·규제 경로·파트너·첫 단계와 위험을 제안합니다. 규제 기간·비용은 반드시 기관 공고로 다시 확인하세요.",
-  input: () => ({ title: S.idea.title, field: fieldName(S.idea.field), problem: S.idea.problem, diff: S.idea.diff, parts: S.parts.split("\n").map(s => s.trim()).filter(Boolean),
-    markets: BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k)).map(([, n]) => n), goal: G.biz.goal, trend: bizTrendText(), sample: G.biz.trend?.mode === "sample",
-    facts: [tradeFact(), ...BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k) && BIZ.reg[bizType()]?.[k]).map(([k, n]) => { const g = BIZ.reg[bizType()][k]; return `${n}: ${g.p} (${g.by})${g.src ? "" : " [출처 미확인]"}`; })].filter(Boolean) }),
-  apply: (r, src) => { if (!r?.markets?.length) throw new Error("시장별 전략이 비어 있습니다."); G.biz.ai = r; G.biz.src = src; }
-};
 
-// 해외동향 키워드 인사이트 (viewGlobal)
-AI_TASK_UI.insight = {
-  label: "인사이트 작성", ready: () => !!G.ins.q && !!G.ins.news && !G.ins.loading && insTrade().state !== "loading",
-  input: () => { const tr = insTrade(), td = tr.state === "ok" && tr.data.mode === "live" ? tr.data : null;
-    return { keyword: G.ins.q, type: typeName(G.ins.type), trade: td ? td.rows.filter(r => r.exp >= 1e4).slice(0, 10).map(r => `${r.name} ${usd(r.exp)} (${tradeGrowth(r)[0]})`) : [], tradeMeta: td ? `HS ${td.hs} ${td.hsName}, ${ymLabel(td.period.cur[0])}~${ymLabel(td.period.cur[1])}` : "",
-      news: (G.ins.news?.mode === "live" ? G.ins.news.items : []).map(x => `${x.title}${x.date ? ` (${x.date})` : ""}${x.summary ? ` — ${x.summary}` : ""}`), regs: insRegs(), stats: [...GUIDE.stats, ...BIZ.stats].filter(x => !x.for || x.for.includes(G.ins.type)).map(x => `${x.t}: ${x.v} — ${x.d} (${x.src[0]})`), sample: !td }; },
-  apply: (r, src) => { if (!r?.summary) throw new Error("인사이트가 비어 있습니다."); G.ins.ai = r; G.ins.src = src; scheduleSave(); }
-};
 /* ---------- 키워드로 아이디어 초안 제안 (진단 1~2쪽) ---------- */
 // 사용자는 키워드만 적고, 명칭·문제·차별성·구성·효과는 제안된 후보에서 고른 뒤 다듬는다.
 // 문장 틀로 만든 기본 초안을 먼저 보여 주고, 서버 AI가 켜져 있으면 AI 제안으로 바꾼다.
@@ -5884,8 +5307,7 @@ function figList() {
   });
 }
 // 예전 이름 그대로: 자동 도 1
-function figImage() { const f = figList().find(x => x.src === "auto"); return f ? { ...f.img, m: f.m, file: f.file, tifFile: f.tifFile } : null; }
-function figTiff(img = figImage()) { return img ? tiffOf(FIGC.get(JSON.stringify(img.m)) || img) : null; }
+
 // 흑백(1비트) TIFF, 300dpi, PackBits 압축. 지식재산처(옛 특허청)가 권하는 도면 형식이다
 function tiffOf(img) {
   if (img.tif) return img.tif;
@@ -6239,25 +5661,9 @@ function ipDates() {
   const a = S.app, pri = a.priNo.trim() ? parse(a.priDate) : null, fd = parse(S.fileDate), base = pri || fd;
   return { base, filed: !!S.filed?.done, no: S.filed?.no?.trim() || "", due: base ? addMonths(base, 12) : null, left: base ? daysBetween(today, addMonths(base, 12)) : null };
 }
-const ddayText = left => left == null ? "" : left > 0 ? `D-${left}` : left === 0 ? "D-day" : `${-left}일 지남`;
+
 // 세 서비스 위에 같은 모양으로 두는 요약 카드: 무엇을(기술) · 권리가 어디까지(출원·우선권) · 어디서 쓸지(진출 시장)
-function ipCardHtml(here) {
-  const i = S.idea, d = ipDates(), L = liveData(), top = L?.similar?.items?.length ? Math.max(...L.similar.items.map(p => p.sim)) : null;
-  const mk = BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k)).map(([, n]) => n);
-  const go = [["apply", "#idea", "출원지원"], ["ais", "#ais", "기술분석"], ["global", "#global", "해외동향"]];
-  return `<section class="ip-card" aria-label="내 기술 IP 카드">
-    <div class="ip-card-h"><b>${esc(i.title || "아이디어를 먼저 정리하세요")}</b>
-      <span class="muted">${i.title ? `${esc(fieldName(i.field))}, ${KIND_NAME[claimKinds().main]} 발명` : "출원지원 1단계에서 키워드로 시작"}</span></div>
-    <dl class="ip-facts">
-      <div><dt>권리</dt><dd>${d.filed ? `출원 완료${d.no ? ` <span class="mono">${esc(d.no)}</span>` : ""}` : d.base ? `출원 예정 ${fmt(d.base)}` : "출원일 미정"}</dd></div>
-      <div><dt>해외 출원 기한</dt><dd>${d.due ? `<b class="mono ${d.left <= 60 ? "warn-t" : ""}">${ddayText(d.left)}</b> <span class="mono">${fmt(d.due)}</span>` : "출원일을 정하면 계산"}</dd></div>
-      <div><dt>비슷한 특허</dt><dd>${top != null ? `최고 유사도 ${top}%` : "조사 전"}${(S.watch ?? []).length ? ` · 직접 추가 ${S.watch.length}건` : ""}</dd></div>
-      <div><dt>진출 시장</dt><dd>${mk.length ? esc(mk.join(", ")) : "고르지 않음"} · ${esc(G.biz.goal)}</dd></div>
-    </dl>
-    <div class="ip-card-a"><nav class="ip-go" aria-label="서비스 이동">${go.map(([m, h, t]) => m === here ? `<span aria-current="page">${t}</span>` : `<a href="${h}">${t}</a>`).join("")}</nav>
-      <button type="button" class="btn ghost sm" data-ip-report>IP 활용 리포트(Word)</button></div>
-  </section>`;
-}
+
 // 기술분석(AIS)은 다른 사이트라 값을 직접 넘길 수 없다(주소로 검색어를 받지 않음). 출원번호·키워드를 복사해 두고 AIS 위에 띄운다
 const AIS = { q: "" };
 // AIS 연동 규약 (AIS 쪽에 반영 요청)
@@ -6324,7 +5730,7 @@ window.addEventListener("message", e => {
   if (e.data.type === "agri-ip:ready") sendAisContext();
   if (e.data.type === "agri-ip:start" && typeof e.data.kw === "string") startBizTech(FIELDS[e.data.field] ? e.data.field : S.idea.field, e.data.kw);
   if (!EMBED) return;
-  if (e.data.type === "agri-ip:go") { const st = String(e.data.step || ""), sub = Math.max(0, Number(e.data.sub) || 0); if (st === "global") location.hash = "global"; else if (stepIdx(st) >= 0) { if (S.mode !== "apply") { S.mode = "apply"; S.step = st; S.sub = sub; location.hash = st; } else { if (!aiGuard(st, sub)) toPage(st, sub, stepIdx(st) < stepIdx() ? -1 : stepIdx(st) > stepIdx() ? 1 : sub < S.sub ? -1 : 1); } } }
+  if (e.data.type === "agri-ip:go") { const st = String(e.data.step || ""), sub = Math.max(0, Number(e.data.sub) || 0); if (stepIdx(st) >= 0) { if (S.mode !== "apply") { S.mode = "apply"; S.step = st; S.sub = sub; location.hash = st; } else { if (!aiGuard(st, sub)) toPage(st, sub, stepIdx(st) < stepIdx() ? -1 : stepIdx(st) > stepIdx() ? 1 : sub < S.sub ? -1 : 1); } } }
   if (e.data.type === "agri-ip:move") { if (S.mode !== "apply") location.hash = S.step; else if (Number(e.data.dir) < 0) prevPage(); else nextPage(); }
   if (e.data.type === "agri-ip:open" && e.data.panel === "help") openDrawer();
   if (e.data.type === "agri-ip:state?") sendEmbedState();
@@ -6366,164 +5772,22 @@ function watchHtml() {
 document.addEventListener("submit", e => { if (!e.target.matches("[data-watch-form]")) return; e.preventDefault(); if (importCite($("#watch-no").value)) rerenderKeepScroll(); });
 document.addEventListener("click", e => { const d = e.target.closest("[data-watch-del]"); if (!d) return; S.watch = (S.watch ?? []).filter(w => w.no !== d.dataset.watchDel); scheduleSave(); rerenderKeepScroll(); });
 
-// 출원·진출 대상국: 해외사업의 관심 시장과 같은 목록(G.biz.markets)이라 어느 쪽에서 바꿔도 함께 바뀐다
-const FILE_INFO = {
-  US: { pct: "30개월", note: "공개 후 1년 안 출원은 신규성 예외(유예기간)" },
-  EU: { pct: "31개월(EPO)", note: "출원 전 공개하면 신규성 상실 — 공지예외 없음", strict: true },
-  CN: { pct: "30개월", note: "상표·특허 모두 먼저 출원한 사람이 권리. 공개 예외 범위가 좁음", tm: true, strict: true },
-  JP: { pct: "30개월", note: "공개 후 1년 안이면 신규성 상실 예외 신청 가능" },
-  SEA: { pct: "30~31개월(나라별)", note: "베트남·태국·인도네시아 등 상표 무단선점이 잦음", tm: true },
-  ME: { pct: "30개월 안팎(나라별)", note: "GCC 나라별로 따로 출원. 상표 선출원 확인", tm: true }
-};
+
 // 나라별 출원·수출 확인표. 기한·번역: WIPO PCT Applicant's Guide 국내장(2026. 10. 확인), 공개 유예: WIPO 유예기간 표(2025. 8.)와 각국 법령,
 // 마드리드: WIPO 회원국 목록(2026. 7. 8., 12개 나라 모두 가입), 상표 선출원·수입 기관: 각국 공식 누리집. g[0]: 1 예외 인정, 2 제한적, 0 없음
-const CTRY = {
-  US: { n: "미국", pct: 30, pn: "", lang: "영어", g: [1, "본인 공개 후 12개월 안이면 예외"], tm: "사용주의: 실제로 쓰는 곳에서 권리. 연방 등록은 사용 또는 사용 의사 필요", reg: ["FDA", "https://www.fda.gov/food/food-imports-exports/importing-food-products-united-states"], srch: "https://ppubs.uspto.gov/pubwebapp/", gp: "US", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=US&doc-lang=en" },
-  EU: { n: "EU", pct: 31, pn: "", lang: "영어·프랑스어·독일어 중 하나", g: [0, "본인 공개 예외 없음 (공인 박람회 전시 등만 6개월)"], tm: "선출원: EUIPO 등록으로 권리", reg: ["EU 집행위(DG SANTE)와 회원국 국경통제소", "https://food.ec.europa.eu/horizontal-topics/official-controls-and-enforcement/import-controls-food-and-feed-qas_en"], srch: "https://worldwide.espacenet.com", gp: "EP", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=EP&doc-lang=en" },
-  CN: { n: "중국", pct: 30, pn: "추가료 내면 32개월", lang: "중국어", g: [2, "6개월, 공인 박람회·지정 학술회의 등만"], tm: "선출원 (현행법). 전면 개정 상표법 2027. 1. 1. 시행", reg: ["해관총서(GACC)", "http://www.customs.gov.cn"], srch: "https://pss-system.cponline.cnipa.gov.cn/", gp: "CN", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=CN&doc-lang=en" },
-  JP: { n: "일본", pct: 30, pn: "요건에 따라 번역문 제출기간 연장 가능", lang: "일본어", g: [1, "12개월 안이면 예외 (출원 때 주장, 30일 안 증명서)"], tm: "선출원", reg: ["후생노동성 검역소", "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/shokuhin/yunyu_kanshi/index.html"], srch: "https://www.j-platpat.inpit.go.jp", gp: "JP", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=JP&doc-lang=en" },
-  VN: { n: "베트남", pct: 31, pn: "", lang: "베트남어", g: [1, "본인 공개 후 12개월 안이면 예외"], tm: "선출원", reg: ["보건부 식품안전국 등 품목별 부처", "https://vfa.gov.vn"], srch: "https://patentscope.wipo.int/search/en/advancedSearch.jsf", gp: "", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=VN&doc-lang=en" },
-  TH: { n: "태국", pct: 30, pn: "", lang: "태국어", g: [1, "본인 공개 후 12개월 안이면 예외"], tm: "선출원", reg: ["태국 FDA", "https://www.fda.moph.go.th"], srch: "https://patentsearch.ipthailand.go.th/DIPSearch/", gp: "", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=TH&doc-lang=en" },
-  ID: { n: "인도네시아", pct: 31, pn: "추가료 내면 연장 가능", lang: "인도네시아어", g: [2, "12개월, 공식 전시회·연구 사용·학술발표만 (2024 개정법)"], tm: "선출원·등록주의: 미등록 상표는 권리 주장 불가", reg: ["식품의약품감독청(BPOM)", "https://www.pom.go.id"], srch: "https://pdki-indonesia.dgip.go.id", gp: "", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=ID&doc-lang=en" },
-  MY: { n: "말레이시아", pct: 30, pn: "", lang: "영어", g: [1, "본인 공개 후 12개월 안이면 예외"], tm: "선출원. 미등록 선사용자는 passing off로 다툴 수 있음", reg: ["보건부 식품안전품질국(FoSIM)", "https://hq.moh.gov.my/fsq/"], srch: "https://iponline2u.myipo.gov.my/", gp: "", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=MY&doc-lang=en" },
-  SG: { n: "싱가포르", pct: 30, pn: "수수료 내면 최대 18개월 연장", lang: "영어", g: [1, "본인 공개 후 12개월 안이면 예외"], tm: "등록주의. 미등록은 passing off로만 보호", reg: ["싱가포르 식품청(SFA)", "https://www.sfa.gov.sg"], srch: "https://digitalhub.ipos.gov.sg/FAMN/eservice/IP4SG/MN_BasicSearch", gp: "", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=SG&doc-lang=en" },
-  PH: { n: "필리핀", pct: 30, pn: "추가료 내면 31개월", lang: "영어", g: [1, "본인 공개 후 12개월 안이면 예외"], tm: "선출원. 3년 안 사용선언서(DAU)를 내야 유지", reg: ["필리핀 FDA", "https://www.fda.gov.ph"], srch: "https://patentscope.wipo.int/search/en/advancedSearch.jsf", gp: "", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=PH&doc-lang=en" },
-  AE: { n: "UAE", pct: 30, pn: "", lang: "아랍어·영어 (제출 요건은 확인 필요)", g: [1, "본인 공개 후 12개월 안이면 예외 (2021 연방법)"], tm: "등록주의. 선사용자는 등록 후 5년 안 취소 청구 가능", reg: ["기후변화환경부(MOCCAE)와 각 에미리트 당국", "https://www.moccae.gov.ae"], srch: "https://patentscope.wipo.int/search/en/advancedSearch.jsf", gp: "", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=AE&doc-lang=en" },
-  SA: { n: "사우디아라비아", pct: 30, pn: "", lang: "아랍어", g: [0, "본인 공개 예외 없음 (공인 국제박람회 전시 등만)"], tm: "등록주의. 마드리드 지정은 2026. 10. 8.부터", reg: ["사우디 식품의약청(SFDA)", "https://www.sfda.gov.sa"], srch: "https://patentscope.wipo.int/search/en/advancedSearch.jsf", gp: "", eg: "https://pctlegal.wipo.int/eGuide/view-doc.xhtml?doc-code=SA&doc-lang=en" }
-};
-const CTRY_OF = { US: ["US"], EU: ["EU"], CN: ["CN"], JP: ["JP"], SEA: ["VN", "TH", "ID", "MY", "SG", "PH"], ME: ["AE", "SA"] };
-const BIZ_HS = { food: ["2106", "조제 식료품"], functional: ["1302", "식물성 수액·추출물"], bio: ["3101", "동식물성 비료"], equip: ["8436", "농업·원예용 기계"], seed: ["1209", "파종용 종자"] };
+
+
 // 수출·해외 출원 실무 확인처 (주소는 2026. 10. 확인)
-const EXPORT_LINKS = [
-  ["aT KATI 농식품수출정보", "https://www.kati.net/index.do", "나라별 수입 규제·통관·시장 정보"],
-  ["트레이드내비 (한국무역협회)", "https://www.tradenavi.or.kr", "HS 코드로 상대국 관세·수입 요건·인증"],
-  ["관세청 FTA 포털", "https://www.customs.go.kr/ftaportalkor/main.do", "협정세율과 원산지 기준"],
-  ["KOTRA 해외시장뉴스", "https://dream.kotra.or.kr/kotranews/index.do", "나라별 시장 동향과 바이어 정보"],
-  ["IP-NAVI 국제지재권분쟁정보포털", "https://www.ip-navi.or.kr", "나라별 지재권 보호 가이드"],
-  ["지역지식재산센터 해외출원 비용 지원", "https://pms.ripc.org", "PCT·개별국 출원비 지원 공고 (해마다)"],
-  ["WIPO 마드리드 수수료 계산기", "https://madrid.wipo.int/feecalcapp/", "상표 지정국별 수수료"],
-  ["WIPO PCT 수수료표", "https://www.wipo.int/en/web/pct-system/fees/index", "국제출원 수수료"]
-];
+
 // 출원 대상국: 관심 시장에 든 나라에서 표에서 뺀 나라(fileOff)를 뺀다
-const ctryList = () => BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k)).flatMap(([k]) => CTRY_OF[k]);
-const ctryOn = () => ctryList().filter(c => !G.biz.fileOff.has(c));
-const GRACE_WORD = ["없음", "있음", "제한적"];
-const cutNote = s => { const i = s.search(/[:.] /); return i < 0 ? [s, ""] : [s.slice(0, i), s.slice(i + 2)]; };
-const ctryAt = (d, m) => d.base ? fmt(addMonths(d.base, m)) : `우선일+${m}개월`;
+
 // 영문 명칭에서 검색어를 뽑아 Google Patents를 나라별로 걸러 연다 (한글 키워드로는 해외 문헌이 거의 안 걸린다)
-const gpWords = () => (S.app.engTitle || "").replace(/[^A-Za-z0-9-]+/g, " ").split(" ").filter(w => w.length > 3 && !/^(method|methods|thereof|using|with|from|that|which|comprising|comprises|including|containing|having|composition|apparatus|system|device|same|manufacturing|producing|preparing)$/i.test(w)).slice(0, 6);
-function ctryRoute(on, d) {
-  if (!on.length) return "표에서 출원할 나라를 고르세요.";
-  const first = Math.min(...on.map(c => CTRY[c].pct));
-  return on.length >= 3 ? `PCT 국제출원 — ${ctryAt(d, 12)}까지 한 건을 내고, 나라별 국내단계(${ctryAt(d, first)}부터) 전에 진출할 나라를 확정합니다.`
-    : `파리조약 우선권 출원 — ${ctryAt(d, 12)}까지 ${on.map(c => CTRY[c].n).join("·")}에 번역문과 함께 직접 냅니다.`;
-}
-function ctryTableHtml(type) {
-  const list = ctryList(), on = ctryOn(), d = ipDates(), food = type === "food" || type === "functional", disc = S.idea.disclosed === "yes", q = gpWords();
-  if (!list.length) return `<p class="muted">위에서 관심 시장을 고르면 나라마다 출원 기한·번역·공개 유예·상표·수입 기관을 한 표로 정리합니다.</p>`;
-  const risky = disc ? on.filter(c => CTRY[c].g[0] !== 1) : [], hs = BIZ_HS[type];
-  const link = (u, t, l = t) => `<a href="${u}" target="_blank" rel="noopener" aria-label="${esc(l)}">${t}</a>`;
-  return `<div class="ct-head"><p class="ct-route"><b>권장 경로</b> ${ctryRoute(on, d)}${d.left != null && on.length ? ` <span class="mono ${d.left <= 60 ? "warn-t" : ""}">${ddayText(d.left)}</span>` : ""}</p>
-      <button type="button" class="btn ghost sm" data-ctry-doc ${on.length ? "" : "disabled"}>해외 진출 실행표(Word)</button></div>
-    <div class="table-wrap"><table class="ct-tbl"><thead><tr><th>출원</th><th>PCT 국내단계</th><th>번역문</th><th>공개 유예</th><th>상표</th>${food ? "<th>식품 수입 기관</th>" : ""}<th>찾아보기</th></tr></thead><tbody>
-    ${list.map(c => { const x = CTRY[c], off = G.biz.fileOff.has(c), [th, tr] = cutNote(x.tm);
-      return `<tr class="${off ? "off" : ""}"><td><label class="ct-on"><input type="checkbox" data-ctry="${c}" ${off ? "" : "checked"}><b>${x.n}</b></label></td>
-        <td><span class="mono">${ctryAt(d, x.pct)}</span> <span class="muted">${x.pct}개월</span>${x.pn ? ` <small>${x.pn}</small>` : ""}</td>
-        <td>${x.lang}</td>
-        <td class="${disc && x.g[0] !== 1 ? "warn-t" : ""}"><b>${GRACE_WORD[x.g[0]]}</b> <small>${x.g[1]}</small></td>
-        <td>${th}${tr ? ` <small>${tr}</small>` : ""}</td>
-        ${food ? `<td>${link(x.reg[1], x.reg[0], `${x.n} 수입 기관`)}</td>` : ""}
-        <td><div class="ct-links">${link(x.srch, "특허 검색", `${x.n} 특허 검색`)} ${q.length && x.gp ? link(`https://patents.google.com/?q=${encodeURIComponent(q.join(" "))}&country=${x.gp}`, "Google Patents", `${x.n} Google Patents에서 영문 명칭으로 검색`) + " " : ""}${link(x.eg, "PCT 안내", `${x.n} PCT 국내단계 안내(WIPO)`)}</div></td></tr>`; }).join("")}
-    </tbody></table></div>
-    ${risky.length ? `<div class="alert"><strong>이미 공개한 발명입니다</strong><span>${J(risky.map(c => CTRY[c].n).join("·"), "은")} 본인 공개 예외가 없거나 좁아 신규성을 잃을 수 있습니다. 출원 전에 변리사와 상의하세요.</span></div>` : ""}
-    <p class="hint">상표: 12개 나라 모두 마드리드 의정서 가입국이라 한국 상표 출원을 기초로 한 번에 여러 나라를 지정할 수 있습니다. ${food ? "" : "수입 규제·인증은 위 시장별 진출 카드를 보세요. "}${q.length ? "" : "출원지원 4단계에서 영문 명칭을 적으면 Google Patents 검색도 붙습니다. "}</p>
-    ${fold("biz-export", "수출·해외 출원 실무 확인처", `${EXPORT_LINKS.length}곳${hs ? ` · HS ${hs[0]} ${hs[1]}` : ""}`, `<ul class="g-support">${EXPORT_LINKS.map(([t, u, n]) => `<li><a href="${u}" target="_blank" rel="noopener"><b>${t}</b><span>${n}</span></a></li>`).join("")}</ul>
-      ${hs ? `<p class="hint">관세·수입 요건은 대표 품목 코드 HS ${hs[0]}(${hs[1]})로 먼저 찾아보고, 실제 제품의 코드는 관세사·관세청 품목분류로 확정하세요.</p>` : ""}`)}
-    <p class="hint">출처: 기한·번역은 WIPO PCT Applicant's Guide 국내장, 공개 유예는 WIPO 유예기간 표와 각국 법령, 상표는 WIPO 마드리드 회원국 목록과 각국 특허청 (2026. 10. 확인). 수수료·번역 요건은 바뀔 수 있으니 출원 전 변리사와 확인하세요.</p>`;
-}
+
 // 해외 진출 실행표: 나라별 기한·번역·공개 유예·상표·수입 기관과 날짜별 할 일 (변리사·수출 담당자와 나눌 자료)
-function overseasPlanText() {
-  const i = S.idea, d = ipDates(), on = ctryOn(), type = bizType(), hs = BIZ_HS[type], food = type === "food" || type === "functional", out = [];
-  const h = t => out.push("", `■ ${t}`), li = t => out.push(`  · ${t}`), todo = (m, t) => ({ date: d.base ? addMonths(d.base, m) : null, m, t });
-  out.push("해외 진출 실행표", i.title || "(발명의 명칭 미정)", `작성일 ${fmt(today)} · 에이프(Agri-IP)`);
-  h("1. 기본 정보");
-  li(`제품 유형: ${BIZ_TYPES.find(([k]) => k === type)[1]}${hs ? ` (대표 HS ${hs[0]} ${hs[1]})` : ""} · 목표: ${G.biz.goal}`);
-  li(d.filed ? `국내 출원 완료${d.no ? ` ${d.no}` : ""}, 우선일 ${d.base ? fmt(d.base) : "확인 필요"}` : d.base ? `국내 출원 예정 ${fmt(d.base)}` : "국내 출원일 미정 — 날짜는 우선일부터 센 개월 수로 적었습니다");
-  if (i.disclosed === "yes") li(`외부 공개함${i.discDate ? ` (${i.discDate})` : ""} — 공개 유예가 없거나 좁은 나라는 출원 전 변리사 상담`);
-  h("2. 특허 출원 경로");
-  li(`권장: ${ctryRoute(on, d)}`);
-  on.forEach(c => { const x = CTRY[c]; li(`${x.n}: PCT 국내단계 ${ctryAt(d, x.pct)}(${x.pct}개월${x.pn ? `, ${x.pn}` : ""}) · 번역문 ${x.lang} · 공개 유예 ${GRACE_WORD[x.g[0]]}(${x.g[1]}) · 안내 ${x.eg}`); });
-  h("3. 상표");
-  on.forEach(c => li(`${CTRY[c].n}: ${CTRY[c].tm}`));
-  li("모든 대상국이 마드리드 의정서 가입국 — 한국 상표 출원을 기초로 한 번에 지정 (수수료: https://madrid.wipo.int/feecalcapp/)");
-  h("4. 수입 규제·인증");
-  BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k) && CTRY_OF[k].some(c => on.includes(c))).forEach(([k, n]) => { const g = BIZ.reg[type]?.[k]; li(g ? `${n}: ${g.p} (${g.by})${g.src ? ` ${g.src}` : ""}` : `${n}: 담당 기관 확인 필요`); });
-  if (food) on.forEach(c => li(`${CTRY[c].n} 식품 수입 기관: ${CTRY[c].reg[0]} ${CTRY[c].reg[1]}`));
-  h("5. 날짜별 할 일");
-  const tmFirst = on.some(c => !/^사용주의/.test(CTRY[c].tm));
-  const first = on.length ? Math.min(...on.map(c => CTRY[c].pct)) : 30;
-  [tmFirst && todo(3, "진출국 상표 출원(마드리드 또는 개별국)"), todo(9, "변리사 상담·번역 견적, 해외출원 비용 지원(지역지식재산센터) 신청"), todo(12, on.length >= 3 ? "PCT 국제출원 (우선권 주장)" : "나라별 직접 출원 (우선권 주장, 번역문 함께)"), on.length >= 3 && todo(18, "국제공개 — 이후 기술 내용이 공개됨"), on.length >= 3 && todo(first - 3, "국내단계 진입국 확정·번역 착수"), on.length >= 3 && todo(first, "PCT 국내단계 진입 시작")]
-    .filter(Boolean).forEach(x => li(`[ ] ${x.date ? fmt(x.date) : `우선일+${x.m}개월`} ${x.t}`));
-  h("6. 확인처");
-  EXPORT_LINKS.forEach(([t, u, n]) => li(`${t} — ${n}: ${u}`));
-  out.push("", "※ 기한·번역·공개 유예는 WIPO PCT Applicant's Guide와 각국 법령(2026. 10. 확인) 기준의 참고 자료입니다. 출원 전 변리사와 확인하세요.");
-  return out.join("\n");
-}
-document.addEventListener("click", e => { if (e.target.closest("[data-ctry-doc]")) saveDocx(`agri-ip_overseas-plan_${iso(today)}.docx`, overseasPlanText()); });
 
 // 출원 진단 · 비슷한 특허 · 해외 사업화 · 해외 출원 계획 · 지원사업을 하나로 묶은 'IP 활용 리포트' (지원사업 신청·기술이전 상담·투자 유치용)
-function ipReportText() {
-  const i = S.idea, d = ipDates(), L = liveData(), mk = BIZ_MARKETS.filter(([k]) => G.biz.markets.has(k)), type = bizType(), out = [];
-  const h = t => out.push("", `■ ${t}`), li = t => out.push(`  · ${t}`);
-  out.push("농식품 IP 활용 리포트", `${i.title}`, `작성일 ${fmt(today)} · 에이프(Agri-IP)`);
-  h("1. 내 기술");
-  li(`분야: ${fieldName(i.field)} · 청구 유형: ${KIND_NAME[claimKinds().main]}`);
-  if (i.problem) li(`해결하려는 문제: ${i.problem}`);
-  if (i.diff) li(`기존 기술과 다른 점: ${i.diff}`);
-  const parts = S.parts.split("\n").map(x => x.trim()).filter(Boolean); if (parts.length) li(`핵심 구성: ${parts.join(" / ")}`);
-  if (S.effect.trim()) li(`효과: ${S.effect.trim()}`);
-  h("2. 권리 현황");
-  li(d.filed ? `국내 출원 완료${d.no ? ` (${d.no})` : ""}${d.base ? `, 우선일 ${fmt(d.base)}` : ""}` : d.base ? `국내 출원 예정일 ${fmt(d.base)}` : "국내 출원일 미정");
-  if (d.due) li(`해외 출원(파리조약 우선권·PCT) 기한: ${fmt(d.due)} (${ddayText(d.left)})`);
-  if (i.disclosed === "yes" && i.discDate) li(`외부 공개 ${i.discDate} — 공지예외주장 기한 ${fmt(addMonths(parse(i.discDate), 12))}`);
-  h("3. 특허 요건 점검 (참고)");
-  requirementCards().cards.forEach(c => li(`${c.k}: ${RISK_WORD[c.c] ?? ""} — ${c.v[0]}`));
-  h("4. 비슷한 특허");
-  const sim = (L?.similar?.items ?? []).slice(0, 5);
-  sim.length ? sim.forEach(p => li(`${fmtNo(normNo(p.applicationNumber))} ${p.title} (${p.applicant || "출원인 미상"}, 유사도 ${p.sim}%)`)) : li("선행기술 조사 전");
-  (S.watch ?? []).forEach(w => li(`직접 추가: ${fmtNo(w.no)}${w.title ? ` ${w.title}` : ""}`));
-  li("자세한 권리 범위 분석은 기술분석(AIS)에서 출원번호로 확인하세요.");
-  h("5. 해외 사업화");
-  li(`목표: ${G.biz.goal} · 제품 유형: ${BIZ_TYPES.find(([k]) => k === type)[1]} · 관심 시장: ${mk.map(([, n]) => n).join(", ") || "미정"}`);
-  mk.forEach(([k, n]) => { const g = BIZ.reg[type]?.[k]; if (g) li(`${n} 규제·인증: ${g.p} (${g.by})`); });
-  const tf = tradeFact(); if (tf) li(tf);
-  if (G.biz.ai?.summary) li(`AI 전략 요약(참고): ${G.biz.ai.summary}`);
-  h("6. 해외 출원 계획");
-  if (mk.length) { li(`권장 경로: ${mk.length >= 3 ? "PCT 국제출원" : "파리조약 우선권 출원"}${d.due ? ` — ${fmt(d.due)}까지` : ""}`); const on = ctryOn(); on.length ? on.forEach(c => { const x = CTRY[c]; li(`${x.n}: PCT 국내단계 ${ctryAt(d, x.pct)}(${x.pct}개월) · 번역문 ${x.lang} · 공개 유예 ${GRACE_WORD[x.g[0]]}`); }) : mk.forEach(([k, n]) => li(`${n}: PCT 국내단계 ${FILE_INFO[k].pct}. ${FILE_INFO[k].note}`)); }
-  else li("대상국 미정");
-  const tm = mk.filter(([k]) => FILE_INFO[k]?.tm).map(([, n]) => n); if (tm.length) li(`${tm.join("·")}: 제품명·브랜드 상표를 진출 전에 출원`);
-  (GOAL_STEPS[G.biz.goal] ?? []).forEach(([m, t, why]) => li(`${fmt(addMonths(d.base || today, m))} ${t} — ${why} (목표 ‘${G.biz.goal}’ 권장 순서)`));
-  h("7. 지금 신청할 수 있는 지원사업 (기업마당)");
-  const seen = new Set(), notes = Object.values(PD.notices).filter(x => x.state === "ok" && x.data.mode === "live").flatMap(x => x.data.items).filter(x => !seen.has(x.id) && seen.add(x.id)).slice(0, 10);
-  notes.length ? notes.forEach(x => li(`${x.title} — ${x.org}, 신청 ${x.period || "공고문 확인"}, ${x.url}`)) : li("불러온 공고가 없습니다. 기업마당(bizinfo.go.kr)에서 확인하세요.");
-  if (notes.length) out.push("  출처: 기업마당 지원사업 공고(중소벤처기업부, 공공데이터포털) · 공공누리 제3유형(출처표시·변경금지)");
-  h("8. 다음 할 일");
-  if (!d.filed) li("국내 출원(명세서·출원서는 에이프 서류 작성 단계에서 내려받기)");
-  if (d.due && d.left > 0 && mk.length) li(`${fmt(d.due)} 전에 해외 출원 경로 결정·변리사 상담`);
-  if (tm.length) li("진출국 상표 출원");
-  li("진출국 침해 여부(FTO)를 변리사·조사기관과 확인");
-  li("기술이전·지원사업 상담: 농업기술실용화재단 등 지원기관");
-  out.push("", "※ 에이프가 만든 참고 자료입니다. 특허 가능성과 권리 범위는 변리사의 확인을 받으세요.");
-  return out.join("\n");
-}
+
 // 리포트에 넣을 공고(출원·해외 출원·수출)를 먼저 불러온다. 늦으면 8초까지만 기다린다
-async function saveIpReport(btn) {
-  btn.disabled = true; toast("IP 활용 리포트를 만드는 중…");
-  const wait = ["ip", "overseas", "global"].map(sc => pdLoad("notices", `${sc}|${S.region || ""}`, `/api/notices?scope=${sc}&region=${encodeURIComponent(S.region || "")}`, () => false).p);
-  try { await Promise.race([Promise.allSettled(wait), new Promise(r => setTimeout(r, 8000))]); saveDocx(`agri-ip_ip-report_${iso(today)}.docx`, ipReportText()); }
-  finally { btn.disabled = false; }
-}
-document.addEventListener("click", e => { const b = e.target.closest("[data-ip-report]"); if (b) saveIpReport(b); });
 
 // 기술분석: AIS를 에이프 머리글(서비스 바) 아래에 연다. AIS가 막히면 새 창으로 여는 길을 둔다
 function viewAis() {
@@ -6663,7 +5927,7 @@ function render() {
   aiAutoRun();
 }
 function renderView() {
-  const home = S.mode === "home" || S.mode === "global" || S.mode === "ais";
+  const home = S.mode === "home" || S.mode === "ais";
   // 화면 읽기용 페이지 제목 (처음 화면은 자체 제목이 있다)
   const h1 = $("#page-h1"); if (h1) { const st = STEPS.find(x => x.id === (BRANCH[S.step] || S.step)); h1.textContent = S.mode === "apply" ? `에이프 출원지원 · ${stepNo(S.step) || st?.t || ""}` : ""; h1.hidden = S.mode !== "apply"; }
   document.body.classList.toggle("ais", S.mode === "ais");
@@ -6676,7 +5940,6 @@ function renderView() {
   FARM?.dispose();
   if (S.mode === "ais") { if (hv.dataset.view !== "ais") { hv.innerHTML = viewAis(); hv.dataset.view = "ais"; } renderSide(); return; }
   if (hv.dataset.view === "ais") hv.innerHTML = ""; // 기술분석을 떠나면 AIS 화면을 닫는다
-  if (home) { if (S.mode === "global" && G.ins.q && !G.ins.news && !G.ins.loading) { const q = G.ins.q, t = G.ins.type; G.ins.q = ""; runInsight(q, t); return; } hv.innerHTML = viewGlobal(); hv.dataset.view = "global"; renderSide(); drawTrendCharts(); bizTocSync(); return; }
   hv.dataset.view = "";
   renderSteps();
   const subs = subsFor(S.step);
@@ -6754,9 +6017,6 @@ document.addEventListener("click", e => {
   const dlo = e.target.closest("[data-draft-load]"); if (dlo) { loadSpecDraft(+dlo.dataset.draftLoad); return; }
   const dde = e.target.closest("[data-draft-del]"); if (dde) { deleteSpecDraft(+dde.dataset.draftDel); return; }
 
-  const bn = e.target.closest("[data-biz-new]");
-  if (bn) { const tf = bn.dataset.bizNew, f = TREND_TO_FIELD[tf] || S.idea.field; G.biz.newTech = { field: f, kw: bn.dataset.bizKw || TREND_START_KW[tf] || IDEA_BANK[f]?.d.join(", ") || "" }; render(); requestAnimationFrame(() => { $("#biz-new")?.scrollIntoView({ block: "center" }); $("#biz-new-kw")?.focus(); }); return; }
-  if (e.target.closest("[data-biz-new-cancel]")) { G.biz.newTech = null; rerenderKeepScroll(); return; }
   if (e.target.id === "ideate-run") { runIdeate(); return; }
   const ak = e.target.closest("[data-add-kw]"); if (ak) { const el = $("#idea-kw"); S.ideate.kw = [...kwList(el?.value ?? S.ideate.kw), ak.dataset.addKw].join(", "); if (el) el.value = S.ideate.kw; ak.remove(); return; }
   if (e.target.id === "disc-run") { S.disc.resources = $("#disc-res")?.value ?? S.disc.resources; loadDiscover(); return; }
@@ -6777,7 +6037,6 @@ document.addEventListener("click", e => {
 });
 
 document.addEventListener("submit", e => {
-  if (e.target.id === "biz-new") { e.preventDefault(); startBizTech($("#biz-new-field").value, $("#biz-new-kw").value); return; }
   if (e.target.id !== "f-diag") return;
   e.preventDefault();
   const before = JSON.stringify([S.idea, S.strain]);
@@ -6823,7 +6082,6 @@ const rerenderKeepScroll = () => { const y = scrollY; render(); scrollTo(0, y); 
 // 포커스가 다음 칸으로 옮겨진 뒤에 다시 그리고, render 가 그 칸과 커서 자리를 되돌린다
 const deferRender = () => { clearTimeout(deferRender.t); deferRender.t = setTimeout(rerenderKeepScroll); };
 document.addEventListener("input", e => {
-  if (e.target.id === "biz-new-kw" && G.biz.newTech) G.biz.newTech.kw = e.target.value; // 데이터가 와서 다시 그려도 적던 키워드가 남게
   const ap = e.target.dataset?.ap;
   if (!ap || e.target.type === "radio" || e.target.tagName === "SELECT") return;
   const before = AP_TOGGLE[ap]?.(S.app[ap]), red = reduceOk();
@@ -6878,12 +6136,6 @@ document.addEventListener("change", e => {
     if (fresh) S.spec = newTemplateSpec();
     if (fresh || syncSpecIds()) { const ta = $("#spec-text"); if (ta) ta.value = S.spec.text; renderCheck(); refreshFilingDocs(); }
   }
-  if (t.id === "biz-type") { G.biz.type = t.value; scheduleSave(); rerenderKeepScroll(); return; }
-  if (t.dataset?.ctry) { t.checked ? G.biz.fileOff.delete(t.dataset.ctry) : G.biz.fileOff.add(t.dataset.ctry); scheduleSave(); rerenderKeepScroll(); return; }
-  if (t.dataset?.bizMk) { t.checked ? G.biz.markets.add(t.dataset.bizMk) : G.biz.markets.delete(t.dataset.bizMk); scheduleSave(); rerenderKeepScroll(); return; }
-  if (t.id === "biz-new-field" && G.biz.newTech) { G.biz.newTech.field = t.value; G.biz.newTech.kw = IDEA_BANK[t.value]?.d.join(", ") ?? ""; rerenderKeepScroll(); return; }
-  if (t.name === "biz-goal") { G.biz.goal = t.value; scheduleSave(); rerenderKeepScroll(); return; }
-  if (t.dataset?.bizDone != null) { const k = +t.dataset.bizDone; t.checked ? G.biz.done.add(k) : G.biz.done.delete(k); scheduleSave(); rerenderKeepScroll(); return; }
   if (t.name?.startsWith("pick-")) { S.ideate.pick[t.name.slice(5)] = +t.value; applyPicks(t.name.slice(5)); rerenderKeepScroll(); if (t.name === "pick-problem") setTimeout(() => $("#problem")?.focus({ preventScroll: true })); return; }
   if (t.dataset?.pickSet) { const set = S.ideate[t.dataset.pickSet], k = +t.value; t.checked ? set.add(k) : set.delete(k); syncParts(); rerenderKeepScroll(); return; }
   // 명칭을 고쳐 방법↔물건이 바뀌면 구성 후보(단계/구성)와 청구 유형을 다시 맞춘다
@@ -6954,7 +6206,7 @@ function resetWork(ask) {
   Object.assign(S.ideate, copy(INIT.ideate), { parts: new Set(INIT.ideate.parts), effects: new Set(INIT.ideate.effects) });
   S.fillLast = null; S.factsErr = false; S.err = ""; S.loading = false; S.gen = (S.gen || 0) + 1; // 진행 중이던 검색 결과는 버린다
   S.disc = copy(DISC_INIT); S.disc.sel = null;
-  Object.assign(G.biz, { type: null, markets: new Set(["US", "SEA"]), fileOff: new Set(), goal: "기술이전·라이선싱", done: new Set(), ai: null, src: "" }); AIS.q = "";
+  AIS.q = "";
   Object.values(AIT).forEach(st => { st.ctrl?.abort("restart"); clearTimeout(st.t); Object.assign(st, { sig: "", okSig: "", err: "" }); });
   S.practice = null;
   return true;
@@ -6975,8 +6227,6 @@ function snapshot(withLive = true) {
   o.aiSigs = Object.fromEntries(AI_KEEP.filter(t => AIT[t]?.okSig).map(t => [t, AIT[t].okSig]));
   if (o.supAI) o.supAI = { ...o.supAI, undo: null, after: null }; // 되돌리기용 명세서 사본은 저장하지 않는다
   o.pg = pagesFor(S.step)?.[S.sub]?.[0];
-  o.biz = { markets: [...G.biz.markets], fileOff: [...G.biz.fileOff], goal: G.biz.goal, type: G.biz.type, done: [...G.biz.done] };
-  if (G.ins.q) o.ins = { q: G.ins.q, type: G.ins.type, ai: G.ins.ai, src: G.ins.src }; // 쪽 번호 대신 쪽 이름도 남긴다 (단계의 쪽 구성이 바뀌어도 같은 쪽으로)
   const I = S.ideate; o.ideate = { kw: I.kw, f: I.f, pitch: I.pitch ?? null, drafts: I.drafts, src: I.src, pick: I.pick, partsKey: I.partsKey, parts: [...I.parts], effects: [...I.effects] };
   return o;
 }
@@ -6993,16 +6243,6 @@ function restoreWork(o) {
   // 쪽 이름이 있으면 그 쪽으로. 진단·보완을 2쪽으로 합치기 전 파일은 (진단 0·거절 위험 1·보완 제안 2) → (0·0·1)
   if (typeof o.pg === "string") S.sub = pageIndex(S.step, o.pg);
   else if (S.step === "diag" && S.sub > 0) S.sub -= 1;
-  // 해외사업 목표·관심 시장(= 해외 출원 대상국)·유형·체크리스트
-  if (o.biz && Array.isArray(o.biz.markets)) {
-    G.biz.markets = new Set(o.biz.markets.filter(k => BIZ_MARKETS.some(([x]) => x === k)));
-    if (BIZ_GOALS.includes(o.biz.goal)) G.biz.goal = o.biz.goal;
-    G.biz.type = BIZ_TYPES.some(([k]) => k === o.biz.type) ? o.biz.type : null;
-    G.biz.done = new Set((o.biz.done ?? []).filter(Number.isInteger));
-    G.biz.fileOff = new Set((o.biz.fileOff ?? []).filter(c => CTRY[c]));
-  }
-  if (o.ins && typeof o.ins.q === "string" && o.ins.q) { Object.assign(G.ins, { kw: o.ins.q, q: o.ins.q, type: BIZ_TYPES.some(([k]) => k === o.ins.type) ? o.ins.type : guessType(o.ins.q), news: null, ai: o.ins.ai && typeof o.ins.ai === "object" && o.ins.ai.summary ? o.ins.ai : null, src: o.ins.src || "" });
-  }
   // 사진 도면: 형식이 맞는 것만 (흑백 PNG), 그림은 비동기로 다시 만든다
   S.photoFigs = Array.isArray(o.photoFigs) ? o.photoFigs.filter(x => x && typeof x.id === "string" && typeof x.name === "string" && /^data:image\/png;base64,/.test(x.png ?? "")).slice(0, PHOTO_MAX) : [];
   setTimeout(photoHydrate);
