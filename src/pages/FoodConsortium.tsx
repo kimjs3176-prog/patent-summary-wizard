@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Handshake, Loader2, Search } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -42,6 +42,7 @@ const FoodConsortium = () => {
   const [items, setItems] = useState<ConsortiumPatent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const requestIdRef = useRef(0);
   const resultsRef = useRef<HTMLElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   // 주소(?org=)로 들어왔을 때 고른 기관이 목록 안에서 보이도록 목록만 스크롤한다 (페이지는 그대로)
@@ -63,28 +64,35 @@ const FoodConsortium = () => {
     return out;
   }, [query, kind]);
 
-  const load = async (name: string, page: number) => {
+  const load = useCallback(async (name: string, page: number) => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError("");
     try {
       const { data, error: err } = await supabase.functions.invoke("consortium-patents", { body: { org: name, page } });
+      if (requestId !== requestIdRef.current) return;
       if (err || !data?.success) throw new Error(data?.error || "특허 목록을 불러오지 못했습니다.");
       const r = data as ConsortiumResult;
       setResult(r);
       setItems((prev) => (page === 1 ? r.items : [...prev, ...r.items.filter((x) => !prev.some((p) => p.applicationNumber === x.applicationNumber))]));
     } catch (e) {
+      if (requestId !== requestIdRef.current) return;
       setError(e instanceof Error ? e.message : "특허 목록을 불러오지 못했습니다.");
       if (page === 1) setItems([]);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     setResult(null);
     setItems([]);
+    setError("");
+    setLoading(false);
     if (org) void load(org, 1);
-  }, [org]);
+    // Invalidate first-page and pagination requests on selection change or unmount.
+    return () => { requestIdRef.current += 1; };
+  }, [org, load]);
 
   const pick = (name: string) => {
     setParams(name === org ? {} : { org: name }, { replace: true });
