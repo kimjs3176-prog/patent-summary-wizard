@@ -191,7 +191,6 @@ body.ais .foot { display: none; }
 .idea-start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: 22px; align-items: start; }
 /* 사전 질문(대화): 질문은 왼쪽 말풍선, 답은 오른쪽 말풍선. 지금 답할 질문만 입력칸을 연다 */
 .chat { display: grid; gap: 16px; min-width: 0; }
-.chat-lead { margin: 0; font-size: .88rem; color: var(--muted); }
 .chat-row { display: grid; gap: 10px; min-width: 0; }
 .chat-q { display: flex; gap: 10px; align-items: flex-start; max-width: 64ch; }
 .chat-n { flex: none; display: grid; place-items: center; width: 28px; height: 28px; margin-top: 4px; border-radius: 50%; background: var(--sunk); color: var(--moss); font: 700 .82rem/1 var(--f-head); }
@@ -200,6 +199,18 @@ body.ais .foot { display: none; }
 .chat-q b { display: block; font-size: .98rem; }
 .chat-q small { display: block; margin-top: 2px; color: var(--muted); font-size: .84rem; line-height: 1.5; }
 .chat-row.open .chat-q p { border-color: color-mix(in oklab, var(--primary) 45%, var(--line)); }
+.chat-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.chat-nav li > * { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px 5px 5px; border-radius: 999px; font: inherit; font-size: .84rem; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+.chat-nav b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--sunk); font-size: .74rem; }
+.chat-nav .done > button { cursor: pointer; color: var(--fg); }
+.chat-nav .done > button:hover { border-color: var(--primary); }
+.chat-nav .done b { background: var(--moss-soft); color: var(--moss); }
+.chat-nav .cur > span { border-color: var(--primary); color: var(--fg); font-weight: 700; }
+.chat-nav .cur b { background: var(--primary); color: var(--on-primary); }
+.chat-use { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; font-size: .78rem; color: var(--muted); }
+.chat-use i { font-style: normal; padding: 1px 8px; border-radius: 999px; background: var(--moss-soft); color: var(--moss); font-weight: 600; }
+.chat-read { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; font-size: .9rem; }
+.chat-read b { margin-right: 6px; color: var(--muted); font-weight: 600; font-size: .82rem; }
 .chat-a { justify-self: end; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px 12px; max-width: min(64ch, 88%); padding: 9px 14px; background: var(--moss-soft); border-radius: 14px 4px 14px 14px; font-size: .92rem; line-height: 1.5; }
 .chat-a span { min-width: 0; overflow-wrap: anywhere; }
 .chat-a .linklike { font-size: .84rem; }
@@ -1276,7 +1287,7 @@ const FIELDS = {
 };
 
 // 기술 분야 직접 입력: 이름은 사용자가 쓴 대로 보여 주고 AI에 넘기며, 초안 틀·IPC·공백 맵 등은 이름으로 가장 가까운 분야를 고른다
-const FIELD_GUESS = [["ferment", /발효|미생물|균주|유산균|효모|퇴비|비료|토양/], ["functional", /기능성|건강|추출|약용|화장품|의약|항산화|면역/], ["smartfarm", /스마트|센서|로봇|드론|자동|농기계|장치|시스템|IoT|AI|온실|양액|수경/i], ["variety", /품종|육종|종자|유전|마커|교배/], ["pack", /포장|저장|유통|신선|선도|콜드|물류|용기/], ["food", /식품|가공|음료|간편식|떡|김치|장류|제과|제빵|조리|급식|소스/]];
+const FIELD_GUESS = [["ferment", /발효|미생물|균주|유산균|효모|퇴비|비료|토양/], ["functional", /기능성|건강|추출|약용|화장품|의약|항산화|면역/], ["smartfarm", /스마트|센서|로봇|드론|자동|농기계|장치|시스템|IoT|AI|온실|양액|수경|트랙터|경운기|이앙기|파종기|수확기|방제기|비행|무인|자율\s?주행|기계|장비/i], ["variety", /품종|육종|종자|유전|마커|교배/], ["pack", /포장|저장|유통|신선|선도|콜드|물류|용기/], ["food", /식품|가공|음료|간편식|떡|김치|장류|제과|제빵|조리|급식|소스/]];
 // 직접 입력한 분야가 위 어느 분야와도 맞지 않는가 (그러면 초안은 분야를 가리지 않는 일반 틀로)
 const fieldUnknown = () => S.idea.fieldCustom?.trim() && !FIELD_GUESS.some(([, re]) => re.test(S.idea.fieldCustom));
 const guessField = name => FIELD_GUESS.find(([, re]) => re.test(name))?.[0] ?? "food";
@@ -1284,7 +1295,7 @@ const fieldName = f => (f === S.idea.field && S.idea.fieldCustom?.trim()) || FIE
 
 // 출원지원 5단계: 아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리
 const STEPS = [
-  { id: "idea", t: "아이디어", s: "질문에 답하기", d: "질문에 답하고 초안을 골라요" },
+  { id: "idea", t: "아이디어", s: "문장으로 시작", d: "만들 기술을 말하고 초안을 골라요" },
   { id: "prior", t: "선행기술 조사", s: "유사 특허·공백", d: "비슷한 특허와 공백 영역을 찾아요" },
   { id: "diag", t: "진단·보완", s: "특허성·거절 위험", d: "특허성과 거절 위험을 점검해요" },
   { id: "draft", t: "서류 작성", s: "명세서·출원서", d: "명세서·출원서를 만들어요" },
@@ -1320,6 +1331,7 @@ const S = {
     disclosed: "",
     discDate: "",
     discWhere: "",
+    pitch: "",
     data: "",
     sold: ""
   },
@@ -1456,7 +1468,8 @@ function swOpen() {
 }
 document.addEventListener("click", e => {
   if (e.target.closest("[data-sw-go]")) { swOpen(); return; }
-  const ok = e.target.closest("[data-chat-ok]"); if (ok) { const id = ok.dataset.chatOk; id === "field" ? chatFieldDone() : chatDone(id); return; }
+  const ok = e.target.closest("[data-chat-ok]"); if (ok) { const id = ok.dataset.chatOk; id === "idea" ? pitchDone() : chatDone(id); return; }
+  const ex = e.target.closest("[data-pitch-ex]"); if (ex) { const t = $("#idea-pitch"); S.idea.pitch = ex.dataset.pitchEx; if (t) { t.value = S.idea.pitch; t.focus(); } return; }
   const ed = e.target.closest("[data-chat-edit]"); if (ed) { S.chat.edit = ed.dataset.chatEdit; rerenderKeepScroll(); requestAnimationFrame(() => $(".chat-row.open")?.scrollIntoView({ block: "nearest", behavior: "smooth" })); }
 });
 
@@ -1477,39 +1490,80 @@ function viewStep(id) {
 }
 
 // 1. 아이디어: 사전 질문(대화) → 초안 고르기
-// 질문은 하나씩 연다. 답한 질문은 말풍선으로 남고 ‘고치기’로 다시 연다. 후보 문장은 문장 틀(규칙)로 만들고, AI는 다음 쪽에서 버튼을 누를 때만 쓴다
+// 첫 질문은 평소 말투의 문장('비행하는 트랙터를 만들거야')으로 받고, 문장을 규칙으로 읽어(analyzePitch) 분야·낱말·발명 유형을 정한 뒤
+// 그에 맞춰 다음 질문을 묻는다. 질문은 하나씩 열고, 답한 질문은 말풍선으로 남아 ‘고치기’로 다시 연다. AI는 다음 쪽에서 버튼을 누를 때만 쓴다
+const PITCH_DEVICE = /(트랙터|경운기|이앙기|파종기|수확기|방제기|드론|로봇|기계|장치|장비|기기|설비|센서|시스템|키트|용기|포장재|포장체|카트|운반차|차량|선별기|건조기|분쇄기|세척기)$/;
+const PITCH_METHOD = /(방법|공정|재배법|제조법|기술)$/;
+const PITCH_DROP = /^(나|저|우리|제|내|저희|이|그|저것|이것|것|거|수|좀|꼭|정말|아주|더|또|새|새로운|기존|기존의|요즘|지금|현재|여러|다양한|특허|아이디어|발명|개발|제품|사업|창업)$/;
+// 어미·조사를 떼고 낱말만 남긴다. '하는·한·되는'으로 꾸미던 말(비행하는)은 기능(feat)으로 본다
+function analyzePitch(text) {
+  const raw = String(text || "").replace(/[“”"'‘’()[\]{}]/g, " ").trim(), toks = [];
+  for (let w of raw.split(/[\s,.!?~·/]+/).filter(Boolean)) {
+    // '만들거야·개발하려고·싶어요' 같은 서술어는 버리고, '쌀겨를만들' 처럼 붙여 쓴 앞말만 살린다
+    if (/^(만들|만든|만드|개발|싶|하려|하고|해요|해서|합니다|할래|할거|하겠|해)/.test(w)) continue;
+    w = w.replace(/(을|를)?(만들|만든|만드).*$/, "");
+    let verbal = false;
+    const v = w.replace(/(하는|하던|한|할|하게|해서|하여|되는|된|될|시키는|시킨)$/, ""); if (v !== w && v.length >= 2) { w = v; verbal = true; }
+    // '낮추는·무르는·줄이는'처럼 꾸미는 말(동사)은 낱말이 아니다
+    if (!verbal && /는$/.test(w) && /(추|르|리|키|우|히|애|내|치|지|이)$/.test(w.slice(0, -1)) && w.length <= 4) continue;
+    if (!PITCH_NOUN_KEEP.test(w)) w = w.replace(/(으로|에서|에게|까지|부터|처럼|보다|이랑|랑|와|과|을|를|이|가|은|는|의|에|로|도|만)$/, "");
+    if (w.length < 2 || PITCH_DROP.test(w) || /^\d+$/.test(w)) continue;
+    if (!toks.some(t => t.w === w)) toks.push({ w, verbal });
+  }
+  const head = [...toks].reverse().find(t => !t.verbal) ?? toks.at(-1);
+  const kind = head && PITCH_DEVICE.test(head.w) ? "device" : head && PITCH_METHOD.test(head.w) ? "method" : "product";
+  // 기능은 '~하는'으로 꾸민 말만 (비행하는 트랙터 → 비행). 없으면 분야 틀로 후보를 만든다
+  const feat = toks.find(t => t.verbal && t !== head)?.w ?? "";
+  const known = FIELD_GUESS.some(([, re]) => re.test(raw));
+  return { field: guessField(raw), known, kws: toks.map(t => t.w).slice(0, 5), obj: head?.w ?? "", feat, kind };
+}
+// 끝 글자가 조사처럼 보여도 떼면 안 되는 낱말
+const PITCH_NOUN_KEEP = /^(고양이|오이|참외|목이|팽이|새우|누에|지렁이|굼벵이|올갱이|다슬기|미나리|도라지|더덕이)$/;
+const PITCH_KIND = { device: "장치·기계", method: "방법", product: "물건(조성물·제품)" };
+const PITCH_EX = ["비행하는 트랙터를 만들거야", "쌀겨를 발효해서 액상 비료를 만들고 싶어요", "양파 껍질로 혈당을 낮추는 건강식품을 만들래요", "딸기가 덜 무르는 포장 용기를 개발하려고 해요"];
+// 발명 유형에 맞춰 데이터 질문의 말을 바꾼다 (장치는 시제품 시험, 그 밖에는 실험 데이터)
+const dataQ = () => S.ideate.pitch?.kind === "device" ? ["시제품으로 성능을 시험해 본 결과가 있나요?", "직접 재 본 속도·높이·작업량 같은 숫자"] : ["효과를 보여 줄 실험 데이터가 있나요?", "직접 시험해서 잰 숫자"];
+const pitchObj = () => { const p = S.ideate.pitch; return p?.obj ? (p.feat && p.kind === "device" ? `${p.feat}하는 ${p.obj}` : p.obj) : ""; };
 const CHAT_Q = [
-  { id: "field", q: "어떤 분야의 기술인가요?", hint: "가장 가까운 것 하나를 고르세요.",
-    ok: () => S.idea.fieldCustom == null || !!S.idea.fieldCustom.trim(),
-    a: () => S.idea.fieldCustom != null ? `${S.idea.fieldCustom} (${fieldName(S.idea.field)} 틀로 작성)` : fieldName(S.idea.field), body: chatField },
-  { id: "kw", q: "무엇을 써서, 어떻게 만들거나 쓰나요?", hint: "원료·방법·효과를 낱말 2~5개로 적어 주세요. 이 낱말로 명칭과 문제 후보를 만들어요.",
-    ok: () => kwList(S.ideate.kw).length > 0, a: () => kwList(S.ideate.kw).join(", "), body: chatKw },
-  { id: "problem", q: "이 기술로 어떤 문제를 해결하나요?", hint: "낱말로 만든 후보에서 고른 뒤, 내 말로 고쳐 쓰면 명세서에 그대로 들어가요.",
-    ok: () => !!S.idea.problem.trim(), a: () => S.idea.problem, body: chatProblem },
-  { id: "data", q: "효과를 보여 줄 실험 데이터가 있나요?", hint: "사실대로 골라 주세요. 답에 따라 명세서의 실시예와 진단이 달라져요.",
-    ok: () => !!S.idea.data, a: () => ({ yes: "있어요", no: "아직 없어요" })[S.idea.data],
-    body: () => seg("data", [["yes", "있음", "직접 시험해서 잰 숫자가 있어요"], ["no", "없음", "아직 재 보지 않았어요"]], S.idea.data, { label: "실험 데이터" }) },
-  { id: "hist", q: "제품을 팔았거나 외부에 공개한 적이 있나요?", hint: "박람회 전시·SNS 게시·논문 발표도 공개예요. 답에 따라 출원 기한이 달라져요.",
+  { id: "idea", short: "아이디어", q: "어떤 기술을 만들고 싶나요?", hint: "평소 말하듯 한두 문장으로 적어 주세요. 문장을 읽고 분야와 다음 질문을 정해요.",
+    use: ["발명의 명칭", "검색 낱말"], ok: () => !!(S.idea.pitch || "").trim() || kwList(S.ideate.kw).length > 0, a: () => S.idea.pitch || kwList(S.ideate.kw).join(", "), body: chatIdea },
+  { id: "read", short: "이해 확인", q: () => "이렇게 이해했어요. 맞나요?", hint: () => S.ideate.pitch?.known === false ? "분야를 문장만으로 정하지 못했어요. 가장 가까운 것을 골라 주세요." : "틀린 곳만 고치고 ‘맞아요’를 누르세요. 낱말로 명칭과 문제 후보를 만들어요.",
+    use: ["기술 분야·특허분류", "비슷한 특허 검색"],
+    ok: () => (S.idea.fieldCustom == null || !!S.idea.fieldCustom.trim()) && kwList(S.ideate.kw).length > 0,
+    a: () => `${S.idea.fieldCustom != null ? S.idea.fieldCustom : fieldName(S.idea.field)} · ${kwList(S.ideate.kw).join(", ")}`, body: chatRead },
+  { id: "problem", short: "문제", q: () => pitchObj() ? `${J(pitchObj(), "으로")} 어떤 문제를 해결하나요?` : "이 기술로 어떤 문제를 해결하나요?", hint: "후보에서 고른 뒤 내 말로 고쳐 쓰면 명세서에 그대로 들어가요.",
+    use: ["명세서 【해결하려는 과제】"], ok: () => !!S.idea.problem.trim(), a: () => S.idea.problem, body: chatProblem },
+  { id: "data", short: "데이터", q: () => dataQ()[0], hint: "사실대로 골라 주세요. 없어도 출원할 수 있고, 명세서에 넣을 자리를 비워 둡니다.",
+    use: ["명세서 【실시예】", "진보성 진단"], ok: () => !!S.idea.data, a: () => ({ yes: "있어요", no: "아직 없어요" })[S.idea.data],
+    body: () => seg("data", [["yes", "있음", `${dataQ()[1]}가 있어요`], ["no", "없음", "아직 재 보지 않았어요"]], S.idea.data, { label: "실험 데이터" }) },
+  { id: "hist", short: "공개 이력", q: "제품을 팔았거나 외부에 공개한 적이 있나요?", hint: "박람회 전시·SNS 게시·논문 발표도 공개예요. 공개했다면 1년 안에 출원해야 해요.",
+    use: ["신규성 진단", "공지예외주장 기한"],
     ok: () => !!S.idea.sold && !!S.idea.disclosed && (S.idea.disclosed !== "yes" || !!S.idea.discDate),
     a: () => `판매 ${S.idea.sold === "yes" ? "있음" : "없음"} · 외부 공개 ${S.idea.disclosed === "yes" ? `있음 (${S.idea.discDate}${S.idea.discWhere ? `, ${S.idea.discWhere}` : ""})` : "없음"}`, body: chatHist },
-  { id: "strain", when: () => S.idea.field === "ferment", q: "발명에 쓰는 균주는 어떤 균주인가요?", hint: "직접 찾은 균주는 출원 전에 공인기관에 맡겨야(기탁) 해요. 출원한 뒤에는 보완할 수 없어요.",
-    ok: () => !!S.strain, a: () => STRAIN_OPTS.find(o => o[0] === S.strain)?.[1] ?? "", body: () => seg("strain", STRAIN_OPTS, S.strain, { label: "균주 종류" }) }
+  { id: "strain", short: "균주", when: () => S.idea.field === "ferment" && S.chat.done.includes("idea"), q: "발명에 쓰는 균주는 어떤 균주인가요?", hint: "직접 찾은 균주는 출원 전에 공인기관에 맡겨야(기탁) 해요. 출원한 뒤에는 보완할 수 없어요.",
+    use: ["미생물 기탁", "실시가능요건"], ok: () => !!S.strain, a: () => STRAIN_OPTS.find(o => o[0] === S.strain)?.[1] ?? "", body: () => seg("strain", STRAIN_OPTS, S.strain, { label: "균주 종류" }) }
 ];
+const qText = v => typeof v === "function" ? v() : v;
 S.chat = { done: [], edit: "" };
 const chatQs = () => CHAT_Q.filter(q => !q.when || q.when());
 // 지금 답할 질문: 아직 답하지 않았거나, 답했지만 내용이 비어 버린 첫 질문
 const chatCur = () => chatQs().find(q => !S.chat.done.includes(q.id) || !q.ok());
 const chatAll = () => CHAT_Q.map(q => q.id);
-function chatField() {
-  const i = S.idea, custom = i.fieldCustom != null;
-  return `${seg("field", [...Object.entries(FIELDS).map(([k, f]) => [k, f.name, FIELD_EASY[k]]), ["__custom", "직접 입력", "수산·축산처럼 목록에 없을 때"]], custom ? "__custom" : S.chat.done.includes("field") ? i.field : "", { label: "기술 분야" })}
-    ${custom ? `<div class="chat-line"><input type="text" id="field-custom" value="${esc(i.fieldCustom)}" placeholder="예: 수산 양식, 축산 사료, 곤충 단백" aria-label="기술 분야 직접 입력"><button type="button" class="btn sm" data-chat-ok="field">답하기</button></div>
-    <span class="hint">후보 문장은 가장 가까운 분야(${esc(fieldName(i.field))})의 틀로 만듭니다.</span>` : ""}`;
+function chatIdea() {
+  return `<div class="field"><textarea id="idea-pitch" rows="2" placeholder="예: 비행하는 트랙터를 만들거야" aria-label="만들고 싶은 기술">${esc(S.idea.pitch || "")}</textarea></div>
+    <div class="rec-list"><span class="label" style="width:100%">이렇게 써도 돼요 · 눌러서 넣기</span>${PITCH_EX.map(x => `<button type="button" class="chip" data-pitch-ex="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+    <div class="actions"><button type="button" class="btn sm" data-chat-ok="idea">이렇게 시작하기</button><span class="muted" style="font-size:.82rem">Enter로도 보낼 수 있어요</span></div>`;
 }
-function chatKw() {
-  const I = S.ideate, B = IDEA_BANK[S.idea.field] || IDEA_BANK.food, have = kwList(I.kw);
-  return `<div class="chat-line"><input type="text" id="idea-kw" value="${esc(I.kw)}" placeholder="예: 쌀겨, 발효, 생장 촉진" aria-label="핵심 낱말 (쉼표로 구분)"><button type="button" class="btn sm" id="ideate-run">이 낱말로 답하기</button></div>
-    ${S.idea.fieldCustom != null ? "" : `<div class="rec-list"><span class="label" style="width:100%">자주 쓰는 낱말 · 눌러서 넣기</span>${B.sugg.filter(k => !have.includes(k)).map(k => `<button type="button" class="chip" data-add-kw="${esc(k)}">+ ${esc(k)}</button>`).join("")}</div>`}`;
+// 문장을 읽은 결과: 분야(추천 표시)·핵심 낱말·발명 유형을 보여 주고 고치게 한다
+function chatRead() {
+  const i = S.idea, I = S.ideate, P = I.pitch, custom = i.fieldCustom != null, B = IDEA_BANK[i.field] || IDEA_BANK.food, have = kwList(I.kw);
+  const opts = [...Object.entries(FIELDS).map(([k, f]) => [k, f.name, FIELD_EASY[k], P?.known && P.field === k ? "추천" : ""]), ["__custom", "직접 입력", "수산·축산처럼 목록에 없을 때"]];
+  return `${P ? `<p class="chat-read">${P.obj ? `<span><b>만들 것</b>${esc(pitchObj())}</span>` : ""}<span><b>발명 유형</b>${PITCH_KIND[P.kind]}</span></p>` : ""}
+    <div class="field"><span class="label">기술 분야</span>${seg("field", opts, custom ? "__custom" : i.field, { label: "기술 분야" })}
+    ${custom ? `<input type="text" id="field-custom" value="${esc(i.fieldCustom)}" placeholder="예: 수산 양식, 축산 사료, 곤충 단백" aria-label="기술 분야 직접 입력" style="margin-top:6px"><span class="hint">후보 문장은 가장 가까운 분야(${esc(fieldName(i.field))})의 틀로 만듭니다.</span>` : ""}</div>
+    <div class="field"><label for="idea-kw">핵심 낱말 <span class="muted h-meta">쉼표로 구분 · 원료·방법·효과</span></label><input type="text" id="idea-kw" value="${esc(I.kw)}" placeholder="${esc(B.d.join(", "))}"></div>
+    ${custom ? "" : `<div class="rec-list"><span class="label" style="width:100%">더 넣을 낱말 · 눌러서 넣기</span>${B.sugg.filter(k => !have.includes(k)).map(k => `<button type="button" class="chip" data-add-kw="${esc(k)}">+ ${esc(k)}</button>`).join("")}</div>`}
+    <div class="actions"><button type="button" class="btn sm" id="ideate-run">맞아요, 다음 질문</button></div>`;
 }
 function chatProblem() {
   const D = S.ideate.drafts;
@@ -1530,19 +1584,26 @@ function chatHist() {
 function ideaStartPage() {
   const qs = chatQs(), cur = chatCur(), edit = qs.find(q => q.id === S.chat.edit), open = edit || cur;
   const last = Math.max(cur ? qs.indexOf(cur) : qs.length - 1, edit ? qs.indexOf(edit) : -1);
+  const answered = q => S.chat.done.includes(q.id) && q.ok();
+  // 질문 진행: 답한 질문은 눌러서 고치고, 지금 질문은 강조, 남은 질문은 이름만
+  const nav = `<ol class="chat-nav" aria-label="질문 진행">${qs.map((q, n) => {
+    const st = q === open ? "cur" : answered(q) ? "done" : "todo";
+    return `<li class="${st}">${st === "done" ? `<button type="button" data-chat-edit="${q.id}" title="‘${esc(qText(q.q))}’ 고치기">` : `<span${st === "cur" ? ' aria-current="step"' : ""}>`}<b>${st === "done" ? "✓" : n + 1}</b>${q.short}${st === "done" ? "</button>" : "</span>"}</li>`;
+  }).join("")}</ol>`;
   const rows = qs.slice(0, last + 1).map((q, n) => {
-    const isOpen = q === open, answered = S.chat.done.includes(q.id) && q.ok();
+    const isOpen = q === open;
     return `<div class="chat-row${isOpen ? " open" : ""}" data-chat="${q.id}">
-      <div class="chat-q"><span class="chat-n" aria-hidden="true">${n + 1}</span><p><b>${q.q}</b><small>${q.hint}</small></p></div>
-      ${isOpen ? `<div class="chat-in">${q.body()}</div>` : answered ? `<div class="chat-a"><span>${esc(q.a())}</span><button type="button" class="linklike" data-chat-edit="${q.id}">고치기</button></div>` : ""}
+      <div class="chat-q"><span class="chat-n" aria-hidden="true">${n + 1}</span><p><b>${esc(qText(q.q))}</b><small>${esc(qText(q.hint))}</small>${isOpen ? `<span class="chat-use"><span>이 답이 쓰이는 곳</span>${q.use.map(u => `<i>${esc(u)}</i>`).join("")}</span>` : ""}</p></div>
+      ${isOpen ? `<div class="chat-in">${q.body()}</div>` : answered(q) ? `<div class="chat-a"><span>${esc(q.a())}</span><button type="button" class="linklike" data-chat-edit="${q.id}">고치기</button></div>` : ""}
     </div>`;
   }).join("");
+  const D = S.ideate.drafts;
   return `<div class="idea-start">
     <div class="chat" id="f-chat" aria-live="polite">
       ${practiceNote()}
-      <p class="chat-lead">답한 질문 <b>${qs.filter(q => S.chat.done.includes(q.id) && q.ok()).length} / ${qs.length}</b></p>
+      ${nav}
       ${rows}
-      ${cur ? "" : `<div class="chat-q chat-end"><span class="chat-n" aria-hidden="true">✓</span><p><b>답을 모두 받았어요.</b><small>다음 쪽에서 낱말로 만든 명칭·차별성 후보를 고르고 다듬어요.</small></p></div>`}
+      ${cur ? "" : `<div class="chat-q chat-end"><span class="chat-n" aria-hidden="true">✓</span><p><b>답을 모두 받았어요.</b><small>${D ? `낱말로 명칭 후보 ${D.titles.length}개를 만들어 두었어요. ` : ""}다음 쪽에서 고르고 다듬은 뒤, 2단계에서 비슷한 특허를 찾아요.</small></p></div>`}
       ${SAVE.restored ? `<p class="hint">지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔어요.</p>` : ""}${EMBED ? "" : `<p class="hint">입력한 내용은 이 기기의 브라우저에 자동 저장돼요. 내보내기·기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있어요.</p>`}
     </div>
     <aside class="branch-card" aria-label="다른 방법으로 시작">
@@ -1552,6 +1613,18 @@ function ideaStartPage() {
       <label class="branch-opt" for="work-import-start" tabindex="0" role="button" data-key-click><b>다른 기기에서 쓰던 게 있어요</b><span>내보낸 작업 파일(.json)로 이어 쓰기</span></label><input type="file" id="work-import-start" data-work-import accept="application/json,.json" hidden>
     </aside>
   </div>`;
+}
+// 첫 질문(문장)에 답했다: 문장을 읽어 분야·낱말·발명 유형을 정하고 후보를 만든 뒤 ‘이해 확인’ 질문을 연다
+function pitchDone() {
+  const text = ($("#idea-pitch")?.value ?? S.idea.pitch ?? "").trim();
+  if (!text) { toast("만들고 싶은 기술을 한 문장으로 적어 주세요"); return; }
+  const P = analyzePitch(text);
+  if (!P.kws.length) { toast("무엇을 만들지 낱말이 보이지 않아요. 예: 쌀겨로 만든 액상 비료"); return; }
+  S.idea.pitch = text; S.ideate.pitch = P;
+  Object.assign(S.idea, { fieldCustom: null, field: P.field }); S.kwField = null; S.gapSel = null; S.citeSel = null;
+  ideateFrom(P.field, P.kws.join(", "));
+  S.chat.done = S.chat.done.filter(x => x !== "read" && x !== "problem");
+  chatDone("idea");
 }
 // 질문 하나에 답했다: 다음 질문을 열고 그 자리로 데려간다
 function chatDone(id) {
@@ -2922,7 +2995,7 @@ function startBizTech(field, kw) {
   if (!resetWork(busy && `출원지원에 작성 중인 ‘${S.idea.title}’의 입력과 결과를 지우고 이 관심 기술로 새로 시작합니다. 계속할까요?`)) return;
   Object.assign(B, keep, { type: null, newTech: null }); // 이 화면에서 고른 시장·목표는 그대로
   Object.assign(S.idea, { fieldCustom: null }); ideateFrom(field, kw);
-  S.chat = { done: ["field", "kw", "problem"], edit: "" };
+  S.chat = { done: ["idea", "read", "problem"], edit: "" }; S.idea.pitch = S.idea.title; S.ideate.pitch = null;
   S.step = "idea"; S.sub = 1; // 출원지원으로 넘어가면 명칭 후보 고르기부터
   S.mode = "apply"; location.hash = "idea"; saveWork(); render();
   toast("관심 기술로 새로 시작했습니다. 1단계에서 명칭 후보를 고르고 다듬을 수 있어요");
@@ -4123,7 +4196,20 @@ const USE_KO = [[/혈당/, "혈당 조절", "알파-글루코시다아제 저해
   [/(간\s*건강|간\s*기능)/, "간 건강 개선", "ALT·AST 수치"], [/(인지|기억)/, "인지 기능 개선", "행동 시험 지표"], [/혈압/, "혈압 조절", "ACE 저해율, 혈압 변화"],
   [/(피부|미백|주름)/, "피부 건강 개선", "멜라닌·콜라겐 지표"], [/(콜레스테롤|지질)/, "혈중 지질 개선", "총콜레스테롤, 중성지방"]];
 const useOf = b => { const m = USE_KO.find(([re]) => re.test(b)); return m ? [m[1], m[2]] : [/(조절|개선|억제|예방|강화|증진|촉진|완화|보호|감소)$/.test(b) ? b : `${b} 개선`, "효능 측정 지표"]; };
-function ruleDrafts(field, kws) {
+// 문장에서 '만들 물건(장치)'과 그 기능을 찾았으면(예: 비행하는 트랙터) 분야보다 그 물건에 맞춘 틀을 쓴다
+const DEVICE_BANK = {
+  titles: ["{F} 기능을 갖춘 농업용 {O}", "{F}이 가능한 {O} 및 그 제어 방법", "{O}의 {F} 제어 장치"],
+  problems: ["기존 {O}은 {F}할 수 없어 작업할 수 있는 곳과 시간이 제한된다.", "{O} 작업에 사람이 오래 붙어 있어야 해 노동 부담이 크다.", "지형·날씨에 따라 {O} 작업 품질이 고르지 않다."],
+  diffs: ["{O}에 {F} 구동부를 결합해 기존 {O}이 못 하던 작업을 한다.", "센서로 위치·자세를 측정해 {F} 동작을 자동으로 제어한다 (예: 높이·속도 범위).", "{F} 모드와 일반 작업 모드를 바꿔 가며 한 대로 두 가지 작업을 한다."],
+  parts: ["{O} 본체", "{F} 구동부", "제어부 (위치·자세 계산)", "센서부 (위치·장애물 감지)", "동력·전원부"],
+  steps: ["센서로 {O}의 위치·자세를 측정하는 단계", "측정값으로 {F} 동작 조건을 계산하는 단계", "{F} 구동부를 작동하는 단계", "작업 결과를 기록·표시하는 단계"],
+  effects: ["작업 가능 범위 확대", "노동 시간 단축", "작업 품질 균일", "{O} 활용도 향상"]
+};
+function ruleDrafts(field, kws, pitch = S.ideate.pitch) {
+  if (pitch?.kind === "device" && pitch.obj && pitch.feat) {
+    const v = { O: pitch.obj, F: pitch.feat }, f = list => list.map(t => fillKw(t, [], v));
+    return { titles: f(DEVICE_BANK.titles), problems: f(DEVICE_BANK.problems), diffs: f(DEVICE_BANK.diffs), parts: f(DEVICE_BANK.parts), steps: f(DEVICE_BANK.steps), effects: f(DEVICE_BANK.effects) };
+  }
   const B = (fieldUnknown() ? IDEA_BANK.generic : IDEA_BANK[field]) || IDEA_BANK.food, k = [0, 1, 2].map(i => kws[i] || B.d[i]), extra = B.derive?.(k) ?? {};
   const f = list => list.map(t => fillKw(t, k, extra));
   return { titles: f(B.titles), problems: f(B.problems), diffs: f(B.diffs), parts: [...kws.slice(3), ...f(B.parts)].slice(0, 6), steps: f(B.steps), effects: f(B.effects) };
@@ -4243,18 +4329,18 @@ AI_TASK_UI.ideate = {
 };
 // 지금 고른 구성·단계 칩으로 만든 핵심 구성 (사용자가 고쳤는지 볼 때)
 const ideaPartsText = () => { const I = S.ideate, D = I.drafts, key = partsKey(); return D ? [...I.parts].sort((a, b) => a - b).map(n => D[key]?.[n]).filter(Boolean).join("\n") : S.parts; };
-// 사전 질문의 낱말에 답했다: 문장 틀로 후보를 만들고 ‘해결할 문제’ 질문을 연다
+// ‘이해 확인’에서 ‘맞아요’: 고친 낱말로 후보를 다시 만들고 ‘해결할 문제’ 질문을 연다
 function runIdeate() {
   const kw = $("#idea-kw")?.value ?? S.ideate.kw;
   if (!ideateFrom(S.idea.field, kw)) return;
-  S.chat.done = S.chat.done.filter(x => x !== "problem"); chatDone("kw");
+  S.chat.done = S.chat.done.filter(x => x !== "problem"); chatDone("read");
 }
 // 분야에 답했다(바꿨다): 이미 낱말로 후보를 만들었으면 새 분야 틀로 다시 만들고 문제를 다시 묻는다
 function chatFieldDone() {
   if (S.ideate.drafts && S.ideate.f && S.ideate.f !== S.idea.field && kwList(S.ideate.kw).length) {
-    ideateFrom(S.idea.field, S.ideate.kw); S.chat.done = S.chat.done.filter(x => x !== "problem"); toast("분야를 바꿔 명칭·문제 후보를 다시 만들었어요");
+    ideateFrom(S.idea.field, S.ideate.kw); S.chat.done = S.chat.done.filter(x => x !== "problem");
   }
-  chatDone("field");
+  rerenderKeepScroll();
 }
 // 분야·키워드로 기본 초안 후보를 만들고 첫 후보를 아이디어에 넣는다 (1단계와 해외동향의 '관심 기술로 새로 시작'이 함께 쓴다)
 function ideateFrom(f, kw) {
@@ -4340,9 +4426,9 @@ function useDiscIdea(c) {
   Object.assign(S, { live: null, gapSel: null, citeSel: null, refined: false, refinedSel: null, cmpAI: null }); invalidateSpec();
   const kws = [...theme.slice(0, 1), ...(c.parts || []).map(x => x.replace(/〔[^〕]*〕|\(.*?\)/g, "").trim()).filter(Boolean).slice(0, 2)];
   S.ideate.kw = kwList(kws.join(",")).join(", ");
-  const alt = ruleDrafts(f, kwList(S.ideate.kw));
+  const alt = ruleDrafts(f, kwList(S.ideate.kw), null);
   setDrafts({ titles: [c.title, ...alt.titles.slice(0, 2)], problems: [c.problem, ...alt.problems.slice(0, 2)], diffs: [c.solution, ...alt.diffs.slice(0, 2)], parts: [...(c.parts || []), ...alt.parts].slice(0, 6), effects: alt.effects }, "discover");
-  S.chat = { done: ["field", "kw", "problem"], edit: "" };
+  S.chat = { done: ["idea", "read", "problem"], edit: "" }; S.idea.pitch = c.title; S.ideate.pitch = null;
   S.done.add("discover"); toPage("idea", 1, 1); toast("아이디어를 초안 고르기로 옮겼습니다. 사실 질문은 1쪽에서 답해 주세요");
 }
 
@@ -6397,7 +6483,8 @@ function viewAis() {
 /* ---------- 쪽 머리의 할 일 줄: 처음 쓰는 사람에게 이 쪽에서 할 일을 순서대로 짧게 (설명 문단 대신) ---------- */
 // do: 차례대로 할 일(짧은 동사구), tip: 한 줄 도움말. 쪽 열쇠는 pagesFor 의 쪽 이름(서류 작성·유망기술은 쪽 번호)
 const COACH = {
-  "idea:start": { do: ["분야 고르기", "핵심 낱말과 해결할 문제 답하기", "실험 데이터·판매·공개 이력 답하기"], tip: "질문은 하나씩 열려요. 답한 것은 ‘고치기’로 언제든 바꿀 수 있어요. 막연하면 ‘처음이라 연습해 볼래요’로 흐름부터 익혀 보세요." },
+  "idea:start": { do: [], // 이 쪽은 대화 위의 질문 진행 칩이 할 일 줄을 대신한다
+    tip: "질문은 하나씩 열려요. 답한 것은 ‘고치기’로 언제든 바꿀 수 있어요. 막연하면 ‘처음이라 연습해 볼래요’로 흐름부터 익혀 보세요." },
   "idea:pick": { do: ["명칭 후보 고르고 다듬기", "기존과 다른 점 고르기", "핵심 구성·효과 고르기"], tip: "온도·시간·비율을 실제 값으로 적을수록 특허 받을 가능성이 높아져요." },
   "prior:results": { do: ["비슷한 특허 확인", "정말 비슷한 것만 고르기"], tip: "비슷한 특허가 있어도 다른 점을 분명히 하면 출원할 수 있어요." },
   "prior:sample": { do: ["비슷한 특허 확인", "정말 비슷한 것만 고르기"], tip: "비슷한 특허가 있어도 다른 점을 분명히 하면 출원할 수 있어요." },
@@ -6419,7 +6506,7 @@ const COACH = {
 };
 function doStripHtml() {
   const pg = pagesFor(S.step)?.[S.sub]?.[0], c = COACH[`${S.step}:${pg}`]; if (!c) return "";
-  return `<ol class="do-strip" aria-label="이 쪽에서 할 일">${c.do.map((t, i) => `<li><span class="n" aria-hidden="true">${i + 1}</span><span>${esc(t)}</span></li>`).join("")}</ol>${c.tip ? `<p class="do-tip">${esc(c.tip)}</p>` : ""}`;
+  return `${c.do.length ? `<ol class="do-strip" aria-label="이 쪽에서 할 일">${c.do.map((t, i) => `<li><span class="n" aria-hidden="true">${i + 1}</span><span>${esc(t)}</span></li>`).join("")}</ol>` : ""}${c.tip ? `<p class="do-tip">${esc(c.tip)}</p>` : ""}`;
 }
 // 쪽 머리 정리: 할 일 줄이 있는 쪽은 긴 설명 문단을 빼고 제목 아래에 할 일 줄을 둔다
 function placeHeader() {
@@ -6671,6 +6758,7 @@ document.addEventListener("keydown", e => {
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
 // 낱말 칸에서 Enter: 답하기 (후보를 만든다)
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "idea-kw" && !e.isComposing) { e.preventDefault(); runIdeate(); } });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && e.target.id === "idea-pitch" && !e.isComposing) { e.preventDefault(); pitchDone(); } });
 // 키 입력 칸에서 Enter: 키 확인
 
 // 출원서 입력: 글자 입력은 미리보기만 고치고, 화면 구성이 바뀌는 항목만 다시 그린다
@@ -6701,6 +6789,7 @@ document.addEventListener("input", e => {
   const t = e.target;
   if (t.id === "disc-res") S.disc.resources = t.value;
   if (t.id === "idea-kw") S.ideate.kw = t.value;
+  if (t.id === "idea-pitch") S.idea.pitch = t.value;
   if (t.id === "field-custom") { S.idea.fieldCustom = t.value; const g = guessField(t.value); if (g !== S.idea.field) { S.idea.field = g; S.kwField = null; S.gapSel = null; S.citeSel = null; } invalidateSpec(); }
   // 다듬기 칸은 입력하는 대로 저장한다 (다른 후보를 고를 때 화면이 다시 그려져도 남도록)
   if (["title", "problem", "diff", "discWhere"].includes(t.id) && t.closest("#f-diag, #f-chat")) { S.idea[t.id] = t.value; invalidateSpec(); }
@@ -6783,7 +6872,7 @@ function startPractice(seed = Math.floor(Math.random() * 1e6) + 1) {
   if (!resetWork(S.done.size > 0 && "지금 작성 중인 내용을 지우고 연습용 예시 시나리오로 처음부터 채웁니다. 계속할까요?")) return;
   const sc = practiceScenario(seed);
   Object.assign(S.idea, { field: sc.field, fieldCustom: null }); S.ideate.kw = sc.kw;
-  goPage("idea", 0); ideateFrom(sc.field, sc.kw); S.chat = { done: chatAll(), edit: "" }; // 사전 질문을 시나리오 답으로 모두 채운다
+  goPage("idea", 0); S.ideate.pitch = null; ideateFrom(sc.field, sc.kw); S.chat = { done: chatAll(), edit: "" }; // 사전 질문을 시나리오 답으로 모두 채운다
   S.ideate.pick.title = sc.titleIdx; applyPicks("title");
   const { strain, ...facts } = sc.facts;
   Object.assign(S.idea, facts, sc.disc ? { discDate: sc.disc.date, discWhere: sc.disc.where } : {});
@@ -6791,6 +6880,7 @@ function startPractice(seed = Math.floor(Math.random() * 1e6) + 1) {
   if (sc.draw) S.hasDrawings = "yes";
   Object.assign(S.app, sc.app, sc.draw ? { drawings: "yes" } : {});
   S.userType = { individual: "farmer", young: "farmer", small: "sme", midsize: "sme", public: "lab" }[sc.app.type];
+  S.idea.pitch = S.idea.title; // 첫 질문(문장) 답은 고른 명칭으로
   S.practice = { seed, name: sc.name }; invalidateSpec(); saveWork(); render();
   toast("연습용 예시를 채웠습니다. 출원인·번호는 모두 가상입니다");
 }
@@ -6832,7 +6922,7 @@ function snapshot(withLive = true) {
   o.pg = pagesFor(S.step)?.[S.sub]?.[0];
   o.biz = { markets: [...G.biz.markets], fileOff: [...G.biz.fileOff], goal: G.biz.goal, type: G.biz.type, done: [...G.biz.done] };
   if (G.ins.q) o.ins = { q: G.ins.q, type: G.ins.type, ai: G.ins.ai, src: G.ins.src }; // 쪽 번호 대신 쪽 이름도 남긴다 (단계의 쪽 구성이 바뀌어도 같은 쪽으로)
-  const I = S.ideate; o.ideate = { kw: I.kw, f: I.f, drafts: I.drafts, src: I.src, pick: I.pick, partsKey: I.partsKey, parts: [...I.parts], effects: [...I.effects] };
+  const I = S.ideate; o.ideate = { kw: I.kw, f: I.f, pitch: I.pitch ?? null, drafts: I.drafts, src: I.src, pick: I.pick, partsKey: I.partsKey, parts: [...I.parts], effects: [...I.effects] };
   return o;
 }
 function restoreWork(o) {
@@ -6862,7 +6952,9 @@ function restoreWork(o) {
   S.photoFigs = Array.isArray(o.photoFigs) ? o.photoFigs.filter(x => x && typeof x.id === "string" && typeof x.name === "string" && /^data:image\/png;base64,/.test(x.png ?? "")).slice(0, PHOTO_MAX) : [];
   setTimeout(photoHydrate);
   // 사전 질문(대화) 전에 저장한 작업은 이미 답한 것으로 본다
-  S.chat = { done: Array.isArray(o.chat?.done) ? o.chat.done.filter(x => typeof x === "string") : S.ideate.drafts || S.done.size ? chatAll() : [], edit: "" };
+  // 질문을 '분야·낱말' 둘에서 '문장·이해 확인'으로 바꾸기 전의 답은 새 질문에 옮긴다
+  const was = Array.isArray(o.chat?.done) ? o.chat.done.filter(x => typeof x === "string") : S.ideate.drafts || S.done.size ? chatAll() : [];
+  S.chat = { done: [...new Set(was.flatMap(x => x === "field" ? ["idea"] : x === "kw" ? ["idea", "read"] : [x]))], edit: "" };
   S.reveal = o.reveal && typeof o.reveal === "object" ? Object.fromEntries(Object.entries(o.reveal).filter(([, v]) => Number.isInteger(v))) : {};
   // 광고 문서를 거르기 전에 저장한 검색 결과는 버리고 다시 찾는다
   if (S.live && S.live.similar?.low == null) { S.live = null; S.citeSel = null; }
