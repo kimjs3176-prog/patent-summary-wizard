@@ -6,10 +6,12 @@ interface SplashScreenProps {
 
 // Timing (ms). The intro leaves after MIN_VISIBLE once fonts are ready,
 // but never later than MAX_VISIBLE so a slow network can't trap the visitor.
-// The CSS timeline (sheet drawing → scan → insights → readout) finishes at about 2.3 s.
-const MIN_VISIBLE = 2500;
-const MAX_VISIBLE = 3500;
-const EXIT_MS = 720;
+// The CSS timeline (sheet drawing → scan → insights → readout) finishes at about 2.4 s,
+// then the finished frame rests briefly before the exit starts.
+const MIN_VISIBLE = 2800;
+const MAX_VISIBLE = 3800;
+// Exit: the content settles first, then the whole panel dissolves (a slight zoom) over the page beneath.
+const EXIT_MS = 1000;
 const REDUCED_VISIBLE = 450;
 const REDUCED_EXIT_MS = 250;
 
@@ -210,9 +212,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       style={{
         transition: reduced
           ? `opacity ${REDUCED_EXIT_MS}ms ease-out`
-          : `transform ${EXIT_MS}ms cubic-bezier(0.76,0,0.24,1), opacity ${EXIT_MS}ms ease-in`,
-        transform: exiting && !reduced ? "translateY(-100%)" : "translateY(0)",
-        opacity: exiting && reduced ? 0 : 1,
+          : `opacity ${EXIT_MS - 150}ms cubic-bezier(0.4,0,0.2,1) 150ms, transform ${EXIT_MS}ms cubic-bezier(0.22,1,0.36,1)`,
+        transform: exiting && !reduced ? "scale(1.04)" : "scale(1)",
+        opacity: exiting ? 0 : 1,
         pointerEvents: exiting ? "none" : "auto",
       }}
     >

@@ -424,13 +424,13 @@ time, .tabular-nums, [data-numeric] {
   .splash-screen {
     background: hsl(165 38% 13%);
     color: hsl(150 25% 97%);
-    box-shadow: 0 6px 40px hsl(165 50% 4% / 0.6);
-    will-change: transform;
+    will-change: transform, opacity;
   }
+  /* Exit: the content settles down and fades slightly ahead of the panel's dissolve. */
   .splash-screen[data-exiting] .splash-stage {
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
     opacity: 0;
-    transform: translateY(-14px) scale(0.97);
+    transform: translateY(10px) scale(0.985);
   }
   .splash-grid {
     background-image:
