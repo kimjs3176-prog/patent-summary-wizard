@@ -36,6 +36,13 @@
       "when": 1793525603234,
       "tag": "0004_cached_score_lookup",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793977015471,
+      "tag": "0005_security_hardening",
+      "breakpoints": true
     }
   ]
 }
