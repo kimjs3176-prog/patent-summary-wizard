@@ -88,6 +88,15 @@ for (const width of WIDTHS) {
     if (r.needs && !r.qa) fail(where, "빈칸이 있는데 빈칸 질문 카드가 없음");
     if (!/^[A-Z0-9 ,.;:()'&-]+$/.test(r.eng)) fail(where, `연습 영문 명칭이 이상함: ${r.eng}`);
     console.log(`  명세서 ${r.spec}자 · 빈칸 ${r.needs}곳 · ${r.title} / ${r.eng}`);
+    // 쉬운 말 읽기: 법정 항목이 일상 질문 카드로 바뀌고, 빈칸은 눌러서 원문의 그 자리로 간다. 상담 요약서는 입력·진단을 모아 만든다
+    const easy = await p.evaluate(() => {
+      const sec = [...document.querySelectorAll("#spec-easy .easy-sec h4")].map((h) => h.firstChild.textContent);
+      const chip = document.querySelector("#spec-easy .need-chip"); chip?.click();
+      const ta = document.querySelector("#spec-text");
+      return { shown: !document.querySelector("#spec-easy").hidden || S.specView === "raw", secs: sec.length, q: sec.includes("무엇을 해결하나요?"), chip: !!chip, raw: chip ? S.specView === "raw" && ta.value.slice(ta.selectionStart, ta.selectionStart + 6) === "〔입력 필요" : true, brief: consultBrief().length };
+    });
+    if (easy.secs < 5 || !easy.q || !easy.raw || easy.brief < 500) fail(where, `쉬운 말 읽기·상담 요약서가 이상함: ${JSON.stringify(easy)}`);
+    console.log(`  쉬운 말 읽기 ${easy.secs}항목 · 상담 요약서 ${easy.brief}자`);
     await p.evaluate(() => goPage("draft", 4));
     const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 20000 }), p.locator("#save-package").click()]);
     const path = await dl.path();

@@ -20,11 +20,11 @@ const STEP_ICONS = { idea: Lightbulb, prior: Search, diag: Stethoscope, draft: F
 // 에이프가 첫 상태를 보내기 전에 보여 줄 기본 단계 (에이프 STEPS 와 같은 순서)
 const step0 = { done: false, cur: false, visited: false, todo: [] };
 const DEFAULT_STEPS: FilingState["steps"] = [
-  { ...step0, id: "idea", t: "아이디어", s: "질문에 답하기", cur: true },
-  { ...step0, id: "prior", t: "선행기술 조사", s: "유사 특허·공백" },
-  { ...step0, id: "diag", t: "진단·보완", s: "특허성·거절 위험" },
-  { ...step0, id: "draft", t: "서류 작성", s: "명세서·출원서" },
-  { ...step0, id: "manage", t: "제출·관리", s: "지원·기한" },
+  { ...step0, id: "idea", t: "아이디어 정리", s: "무엇을 만들었나요", cur: true },
+  { ...step0, id: "prior", t: "비슷한 특허 찾기", s: "이미 있는지 확인" },
+  { ...step0, id: "diag", t: "특허 가능성 진단", s: "받을 수 있을까" },
+  { ...step0, id: "draft", t: "서류 만들기", s: "발명 설명서·신청서" },
+  { ...step0, id: "manage", t: "제출하고 챙기기", s: "비용·기한" },
 ];
 
 const Filing = () => {
@@ -142,7 +142,7 @@ const Filing = () => {
                 </div>
                 <div className="leading-tight">
                   <p className="text-[13px] font-bold text-foreground">출원지원</p>
-                  <p className="text-[11px] text-muted-foreground truncate max-w-[160px]" title={state?.title || undefined}>{state?.title || "아이디어부터 해외 출원까지"}</p>
+                  <p className="text-[11px] text-muted-foreground truncate max-w-[160px]" title={state?.title || undefined}>{state?.title || "아이디어부터 제출까지"}</p>
                 </div>
               </div>
               <ol className="flex items-center gap-1 md:gap-1.5 overflow-x-auto min-w-0 flex-1 py-0.5" aria-label="출원 준비 단계">
