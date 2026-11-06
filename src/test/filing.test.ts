@@ -91,6 +91,16 @@ describe("출원지원(에이프) 연결", () => {
     expect(idle.state.aiBusy).toBe("");
   });
 
+  it("다음 누를 곳 안내는 'next' 만 받는다", () => {
+    const origin = "https://atipsum.lovable.app";
+    const base = { type: "agri-ip:state", step: "idea", steps: [{ id: "idea", t: "아이디어", s: "", done: false, cur: true }] };
+    const on = parseFilingMessage({ origin, data: { ...base, coach: "next" } }, origin);
+    const other = parseFilingMessage({ origin, data: { ...base, coach: "<b>" } }, origin);
+    if (on?.type !== "agri-ip:state" || other?.type !== "agri-ip:state") throw new Error("state expected");
+    expect(on.state.coach).toBe("next");
+    expect(other.state.coach).toBe("");
+  });
+
   it("메시지는 에이프 출처에서 온 아는 형식만", () => {
     const origin = "https://koat-axlab.vercel.app";
     expect(parseFilingMessage({ origin, data: { type: "agri-ip:ais", q: "10-2020-0123456" } }, origin)).toEqual({ type: "agri-ip:ais", q: "10-2020-0123456" });

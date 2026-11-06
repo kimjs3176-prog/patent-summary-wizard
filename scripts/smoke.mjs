@@ -2,7 +2,7 @@
 //   node scripts/smoke.mjs http://127.0.0.1:4173
 // - 바깥 요청(Supabase·KIPRIS·영상 등)은 막는다: 서버 상태와 상관없이 같은 결과가 나오고, 서버가 안 될 때도 화면이 깨지지 않는지 본다.
 // - 화면마다: 페이지 오류(잡히지 않은 예외)가 없고, 제목(h1)이 보이고, 가로로 넘치지 않는지 (데스크톱·휴대폰 폭).
-// - 출원도우미(public/filing-app): 연습 시나리오로 1~5단계의 모든 쪽을 돌고, 기본 명세서·빈칸 질문·제출용 묶음 파일을 만든다.
+// - 출원도우미(public/filing-app): 연습 시나리오로 1~5단계의 모든 쪽을 돌고, 기본 명세서·빈칸 질문·제출용 묶음 파일을 만든 뒤 넘어가기 전 점검 팝업을 거쳐 5단계로 간다.
 // - 출원도우미 1단계: 사전 질문(대화)에 화면에서 차례로 답하고, 초안 고르기 쪽의 절차를 하나씩 연 뒤 2단계로 넘어간다.
 // - 요약서(데이터시트형): scripts/fixtures 의 저장된 서버 응답으로 띄워, 인쇄와 PDF 다운로드가 정확히 A4 두 쪽인지 본다.
 import { createRequire } from "node:module";
@@ -82,6 +82,14 @@ for (const width of WIDTHS) {
     const size = path ? (await import("node:fs")).statSync(path).size : 0;
     if (size < 10000) fail(where, `제출용 묶음 파일이 너무 작음 (${size}B)`);
     console.log(`  제출용 묶음 ${dl.suggestedFilename()} ${size}B`);
+    // 넘어가기 전 점검: 빈칸이 남은 채 ‘다음’을 누르면 팝업이 남은 일을 보여 주고, ‘그래도 다음으로’로 넘어간다
+    await p.locator("#pagebar [data-nav=next]").click();
+    const leave = await p.evaluate(() => ({ needs: specNeeds().length, shown: !document.querySelector("#leave").hidden, items: document.querySelectorAll("#leave [data-leave-go]").length }));
+    if (leave.needs && (!leave.shown || !leave.items)) fail(where, `빈칸이 남았는데 넘어가기 전 점검 팝업이 없음: ${JSON.stringify(leave)}`);
+    if (leave.shown) await p.locator("[data-leave-skip]").click();
+    const after = await p.evaluate(() => S.step);
+    if (after !== "manage") fail(where, `‘그래도 다음으로’ 뒤 5단계로 넘어가지 않음 (${after})`);
+    console.log(`  넘어가기 전 점검 ${leave.items}건 · ${after}`);
   } catch (e) {
     fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
   }
@@ -89,7 +97,7 @@ for (const width of WIDTHS) {
   await p.context().close();
 }
 
-// 출원도우미 1단계: 사전 질문에 화면에서 차례로 답하고(질문은 하나씩 열린다), 초안 고르기 쪽의 절차를 하나씩 연 뒤 2단계로 넘어간다
+// 출원도우미 1단계: 사전 질문에 화면에서 차례로 답하고(질문은 하나씩 열린다, 다음에 누를 곳 안내가 따라온다), 초안 고르기 쪽의 절차를 하나씩 연 뒤 2단계로 넘어간다
 {
   const where = "출원도우미 사전 질문";
   console.log(where);
@@ -117,6 +125,10 @@ for (const width of WIDTHS) {
     const bubbles = await p.locator(".chat-a").count();
     if (bubbles < 5) fail(where, `답 말풍선이 ${bubbles}개뿐`);
     if ((await p.locator(".chat-nav .done").count()) < 5) fail(where, "질문 진행 칩이 답한 질문을 보여 주지 않음");
+    // 다음에 누를 곳 안내: 질문을 다 답하면 아래 막대의 ‘다음’을 가리킨다
+    await p.waitForFunction(() => !document.querySelector("#nh-tip").hidden && NH.el?.matches?.('#pagebar [data-nav="next"]'), null, { timeout: 3000 }).catch(() => {});
+    const hint = await p.evaluate(() => ({ shown: !document.querySelector("#nh-tip").hidden, next: !!NH.el?.matches?.('#pagebar [data-nav="next"]') }));
+    if (!hint.shown || !hint.next) fail(where, `다음 누를 곳 안내가 ‘다음’ 버튼을 가리키지 않음: ${JSON.stringify(hint)}`);
     await p.locator("#pagebar [data-nav=next]").click();
     let opened = 0;
     for (; opened < 6; opened++) {

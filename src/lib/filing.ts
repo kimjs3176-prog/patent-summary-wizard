@@ -111,6 +111,8 @@ export interface FilingState {
   api: string;
   /** 지금 쪽에서 돌고 있는 AI 작업 이름(없으면 빈 값). 도는 동안 '다음'을 잠근다 */
   aiBusy: string;
+  /** "next": 다음에 누를 곳이 '다음' 버튼이다 (출원지원이 누를 곳 안내를 켰을 때). 이 페이지의 '다음' 버튼을 함께 강조한다 */
+  coach: "next" | "";
   /** 출원지원 전용 빌드(이 사이트 안의 사본): 해외동향 탭이 없다 */
   filingOnly: boolean;
 }
@@ -149,6 +151,7 @@ export function parseFilingMessage(ev: { origin: string; data: unknown }, expect
         dday: dd && typeof dd.text === "string" ? { label: str(dd.label, 40), text: str(dd.text, 20), warn: dd.warn === true } : null,
         api: str(d.api, 40),
         aiBusy: str(d.aiBusy, 60),
+        coach: d.coach === "next" ? "next" : "",
         filingOnly: d.filingOnly === true,
       },
     };

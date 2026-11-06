@@ -232,7 +232,7 @@ const Filing = () => {
                       <span className="max-w-[160px] truncate">AI 분석 중…</span>
                     </Button>
                   ) : (
-                  <Button size="sm" disabled={!state.next} onClick={() => post({ type: "agri-ip:move", dir: 1 })} className="h-8 rounded-full px-3 text-[12px] gap-1 font-semibold btn-press" title={state.next ? `${state.next}${pageTodo.length ? ` · 이 쪽에 남은 일: ${pageTodo.map((t) => t.t).join(", ")} (나중에 해도 됩니다)` : ""}` : undefined}>
+                  <Button size="sm" disabled={!state.next} onClick={() => post({ type: "agri-ip:move", dir: 1 })} className={`h-8 rounded-full px-3 text-[12px] gap-1 font-semibold btn-press ${state.coach === "next" && state.next ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-background" : ""}`} title={state.next ? `${state.next}${pageTodo.length ? ` · 이 쪽에 남은 일: ${pageTodo.map((t) => t.t).join(", ")} (나중에 해도 됩니다)` : ""}` : undefined}>
                     {pageTodo.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-300" aria-hidden="true" />}
                     <span className="max-w-[160px] truncate"><span className="hidden sm:inline">{state.next ? "다음: " : ""}</span>{state.next || "마지막 단계"}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
