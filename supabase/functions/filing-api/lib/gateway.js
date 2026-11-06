@@ -1,7 +1,9 @@
 // 서버 AI — Lovable AI 게이트웨이(OpenAI 호환 chat completions)로 부른다. 키는 환경변수 LOVABLE_API_KEY (Lovable Cloud 가 넣어 준다).
-// 사이트의 다른 함수(요약·점수·출원 동향)와 같은 게이트웨이·모델을 쓴다. 모델은 FILING_AI_MODEL 로 바꿀 수 있다.
-export const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-export const SERVER_MODEL = process.env.FILING_AI_MODEL || "google/gemini-3.8-flash";
+// 사이트의 다른 함수(요약·점수·출원 동향)와 같은 게이트웨이·모델을 쓴다(_shared/aiConfig.ts).
+import { AI_GATEWAY_URL, aiModel } from "../../_shared/aiConfig.ts";
+// 주소와 기본 모델은 사이트 공통 설정(_shared/aiConfig.ts)을 따른다. FILING_AI_MODEL 이 있으면 출원도우미만 그 모델로
+export const GATEWAY_URL = AI_GATEWAY_URL;
+export const SERVER_MODEL = process.env.FILING_AI_MODEL || aiModel("main");
 export const gatewayEnabled = () => !!process.env.LOVABLE_API_KEY;
 // Gemini 3.x 는 기본으로 생각(thinking) 시간을 길게 써서 짧은 JSON 작업도 15~20초, 명세서는 45초 넘게 걸렸다.
 // 요약서(summarize-patent)처럼 생각 예산을 낮게 둔다. FILING_AI_REASONING(none·low·medium·high)으로 바꿀 수 있다

@@ -1,3 +1,4 @@
+import { aiModel } from "../_shared/aiConfig.ts";
 import { generateChatCompletion, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.11";
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -62,7 +63,7 @@ async function summarize(report: TrendReport): Promise<string[]> {
   };
   try {
     const res: any = await (generateChatCompletion as any)({
-      model: "google/gemini-3.8-flash",
+      model: aiModel("main"),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: "당신은 농식품 분야 특허 동향 분석가입니다. 주어진 통계만 근거로 간결한 동향 요약을 씁니다. Return JSON only." },
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
   const respond = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (!["GET", "POST"].includes(req.method)) return respond({ error: "Method not allowed" }, 405);
-  const limited = await enforceRateLimit(req, { bucket: "filing-trends", limit: 60, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "filing-trends", limit: 180, windowSeconds: 300 });
   if (limited) return limited;
 
   const { data } = await supabaseAdmin().from("site_settings").select("value").eq("key", CACHE_KEY).maybeSingle();

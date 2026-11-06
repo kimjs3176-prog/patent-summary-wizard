@@ -1,3 +1,4 @@
+import { aiModel } from "../_shared/aiConfig.ts";
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   CancelledError, generateChatCompletion, GatewayError, PaymentRequiredError, RateLimitError, TimeoutError,
@@ -72,7 +73,7 @@ async function planSearchTerms(b: Body): Promise<{ terms: string[]; need: string
   const fallback = [b.item, ...b.item.split(/\s+/)].filter((t) => t.length >= 2);
   try {
     const res = await (generateChatCompletion as any)({
-      model: "google/gemini-3.1-flash-lite",
+      model: aiModel("lite"),
       response_format: { type: "json_object" },
       messages: [
         {
@@ -184,7 +185,7 @@ async function rankCandidates(b: Body, need: string, candidates: FinderCandidate
     trl: c.trl ?? "미분석",
   }));
   const res = await (generateChatCompletion as any)({
-    model: "google/gemini-3.8-flash",
+    model: aiModel("main"),
     response_format: { type: "json_object" },
     messages: [
       {
@@ -223,7 +224,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ success: false, error: "허용되지 않는 요청입니다." }, 405);
 
-  const limited = await enforceRateLimit(req, { bucket: "find-my-patents", limit: 10, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "find-my-patents", limit: 30, windowSeconds: 300 });
   if (limited) return limited;
 
   const raw = await req.json().catch(() => null);

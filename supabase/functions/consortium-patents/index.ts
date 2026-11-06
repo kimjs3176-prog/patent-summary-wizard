@@ -89,7 +89,7 @@ const fmtDate = (v: string) => (/^\d{8}$/.test(v) ? `${v.slice(0, 4)}.${v.slice(
 Deno.serve(async (req) => {
   const pre = handleCorsPreflight(req);
   if (pre) return pre;
-  const limited = await enforceRateLimit(req, { bucket: "consortium-patents", limit: 60, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "consortium-patents", limit: 180, windowSeconds: 300 });
   if (limited) return limited;
 
   try {
