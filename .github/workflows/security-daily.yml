@@ -1,0 +1,42 @@
+name: Daily security check
+
+on:
+  schedule:
+    # 09:00 Asia/Seoul (GitHub schedules use UTC; execution may be delayed).
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-daily
+  cancel-in-progress: false
+
+jobs:
+  secrets:
+    name: Secret exposure scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependencies:
+    name: Dependency vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm i -g npm@11
+      - name: Audit locked dependencies
+        run: npm audit --package-lock-only --audit-level=moderate
