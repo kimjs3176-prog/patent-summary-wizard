@@ -24,7 +24,7 @@ const DEFAULT_STEPS: FilingState["steps"] = [
   { ...step0, id: "prior", t: "선행기술 조사", s: "유사 특허·공백" },
   { ...step0, id: "diag", t: "진단·보완", s: "특허성·거절 위험" },
   { ...step0, id: "draft", t: "서류 작성", s: "명세서·출원서" },
-  { ...step0, id: "manage", t: "제출·관리", s: "지원·기한·해외" },
+  { ...step0, id: "manage", t: "제출·관리", s: "지원·기한" },
 ];
 
 const Filing = () => {
