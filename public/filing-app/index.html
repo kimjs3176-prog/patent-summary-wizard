@@ -4,6 +4,7 @@
 <script>window.FILING_ONLY = true;</script>
 <meta name="filing-api" content="https://rrvraugvigylkdpstwsl.supabase.co/functions/v1/filing-api">
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>출원지원 · 아이디어부터 명세서·제출까지</title>
 <meta name="description" content="농식품 기술의 특허 출원지원: 아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·기한 관리">
@@ -1736,7 +1737,7 @@ function priorResultsPage() {
       ${L.similar.items.length ? `<div class="table-wrap"><table>
         <thead><tr><th>(21) 출원번호</th><th>(54) 발명의 명칭 · (57) 요약</th><th>(71) 출원인 · (22) 출원일</th><th>상태</th><th>유사도</th></tr></thead>
         <tbody>${L.similar.items.slice(0, 10).map(p => `<tr>
-          <td class="mono">${p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.applicationNumber)}</a>` : esc(p.applicationNumber)}<div>${aisBtn(fmtNo(normNo(p.applicationNumber)))}</div></td>
+          <td class="mono">${safeHref(p.link) ? `<a href="${safeHref(p.link)}" target="_blank" rel="noopener">${esc(p.applicationNumber)}</a>` : esc(p.applicationNumber)}<div>${aisBtn(fmtNo(normNo(p.applicationNumber)))}</div></td>
           <td>${esc(p.title)}${p.abstract ? `<div class="muted" style="font-size:.8rem;margin-top:4px">${esc(p.abstract.slice(0, 120))}${p.abstract.length > 120 ? "…" : ""}</div>` : ""}</td>
           <td>${esc(p.applicant || "-")}<div class="muted mono" style="font-size:.78rem">${ymd(p.applicationDate)}</div></td>
           <td>${esc(p.status || "-")}</td>
@@ -1823,8 +1824,8 @@ function gapPage() {
         <div class="legend"><span>출원 적음</span><span class="ramp" aria-hidden="true"></span><span>많음</span><span class="sw" aria-hidden="true"></span><span>고른 칸</span></div></div>
       <p class="muted" style="font-size:.86rem">칸의 숫자는 기술 요소와 효과·용도를 함께 다룬 기존 출원 건수입니다. ${threshold}건 이하인 칸이 공백 후보이며, 칸을 눌러도 방향을 고를 수 있어요.</p>
       <div class="table-wrap"><table class="heat">
-        <thead><tr><th scope="col">기술 요소 \\ 효과·용도</th>${g.cols.map(c => `<th scope="col">${c}</th>`).join("")}</tr></thead>
-        <tbody>${g.rows.map((r, ri) => `<tr><th scope="row">${r}</th>${g.m[ri].map((v, ci) => {
+        <thead><tr><th scope="col">기술 요소 \\ 효과·용도</th>${g.cols.map(c => `<th scope="col">${esc(c)}</th>`).join("")}</tr></thead>
+        <tbody>${g.rows.map((r, ri) => `<tr><th scope="row">${esc(r)}</th>${g.m[ri].map((v, ci) => {
           if (!Number.isFinite(v)) return `<td><span class="cell" style="background:var(--sunk);color:var(--muted);cursor:default" title="조회 실패">–</span></td>`;
           const key = `${ri}-${ci}`, pct = Math.round(6 + 94 * Math.log1p(v) / Math.log1p(max)), dark = pct > 55, gap = v <= threshold, sel = S.gapSel.has(key);
           return `<td><button class="cell ${sel ? "sel" : ""}" data-gap="${key}" aria-pressed="${sel}" title="${r} × ${g.cols[ci]}: 기존 출원 ${v.toLocaleString()}건${gap ? " (공백 후보)" : ""}"
@@ -1941,7 +1942,7 @@ function rejectionHtml() {
       <p class="hint">거절이유 원문은 검색 API로 제공되지 않아, 의견제출통지서 횟수와 심사관 인용문헌으로 유형을 추정했습니다.</p>
       ${fold("rej-cases", `비슷한 거절 출원 ${L.rejected.cases.length}건의 심사 이력과 교훈`, "의견제출통지·보정·거절결정 경과", `${rejTimeline(L.rejected.cases)}
       <div class="cards">${L.rejected.cases.map(c => `<article class="card case"><span class="reason">${esc(c.insight.category)}</span><h3>${esc(c.title)}</h3>
-        <span class="org mono">${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.applicationNumber)}</a>` : esc(c.applicationNumber)} · ${esc(c.applicant || "-")} · 유사도 ${c.sim}%</span>
+        <span class="org mono">${safeHref(c.link) ? `<a href="${safeHref(c.link)}" target="_blank" rel="noopener">${esc(c.applicationNumber)}</a>` : esc(c.applicationNumber)} · ${esc(c.applicant || "-")} · 유사도 ${c.sim}%</span>
         <p style="font-size:.84rem"><span class="muted">심사 이력:</span> 의견제출통지 ${c.insight.notices}회${c.insight.amendedThenRejected ? ", 보정 후에도 거절" : ""}${c.insight.appealed ? ", 심판·재심사 이력 있음" : ""}${c.insight.citedDocs.length ? `, 인용문헌 ${c.insight.citedDocs.slice(0, 3).map(esc).join(", ")}` : ""}</p>
         <p class="lesson">${LESSON[c.insight.category] || ""}</p></article>`).join("")}</div>`)}` : `<p class="muted">같은 키워드의 거절 출원을 찾지 못했습니다.</p>`}`
     : `
@@ -4160,7 +4161,7 @@ function viewCompare(L) {
       <tfoot><tr><th scope="row">겹치는 구성</th>${M.overlap.map(o => `<td class="num">${o}/${M.comps.length}</td>`).join("")}<td></td></tr></tfoot>
     </table></div>
     <p class="hint">● 명칭·요약에 구성이 나옴 · ◐ 일부 단어만 나옴 · ○ 나오지 않음. 같은 뜻의 검색어 묶음(‘쌀겨, 미강’ 등)은 함께 찾습니다. 청구범위 전문이 아닌 요약 기준이므로 최종 판단은 원문으로 확인하세요.</p>
-    <ol class="cmp-docs">${M.pats.map((p, j) => `<li><b>문헌 ${j + 1}</b> ${p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.title)}</a>` : esc(p.title)} <span class="muted h-meta">${esc(p.status || "-")} · ${esc(p.applicant || "-")}</span></li>`).join("")}</ol>
+    <ol class="cmp-docs">${M.pats.map((p, j) => `<li><b>문헌 ${j + 1}</b> ${safeHref(p.link) ? `<a href="${safeHref(p.link)}" target="_blank" rel="noopener">${esc(p.title)}</a>` : esc(p.title)} <span class="muted h-meta">${esc(p.status || "-")} · ${esc(p.applicant || "-")}</span></li>`).join("")}</ol>
     <div class="cmp-sum">
       <article><span class="eyebrow">구성이 가장 많이 겹치는 문헌</span><b>문헌 ${M.closest.j + 1} · ${esc(M.closest.p.title)}</b><span>구성 ${M.closest.o}/${M.comps.length} 겹침 · ${esc(M.closest.p.status || "상태 미상")}${live ? " — 권리가 살아 있거나 심사 중이므로 겹치는 구성은 피하거나 차별점을 분명히 하세요." : " — 권리는 없지만 선행기술로 쓰여 신규성·진보성 판단에 영향을 줍니다."}</span></article>
       <article><span class="eyebrow">차별점 후보</span>${diffs.length ? `<b>${diffs.map(esc).join(", ")}</b><span>유사 특허 어디에도 나오지 않는 구성입니다. 청구항 1에 넣고 효과 데이터로 뒷받침하세요.</span>` : `<b>없음</b><span>모든 구성이 어딘가에 나옵니다. 조합의 새로운 효과나 수치 범위로 차별화하세요.</span>`}</article>
@@ -5902,8 +5903,8 @@ const aisSrc = () => AIS.q ? `${TECH_URL}search?q=${encodeURIComponent(AIS.q)}&f
 //  주소: {에이프}/?embed=ais[&theme=light|dark]#단계  — 머리글에서 처음 화면·기술분석 메뉴를 빼고, 처음 화면 대신 1단계로
 //  에이프 → AIS(부모): {type:"agri-ip:nav", hash} 쪽이 바뀔 때 · {type:"agri-ip:ais", q} 'AIS로 분석'을 누르면 AIS가 직접 검색
 //  AIS → 에이프: {type:"agri-ip:cite", no, title} 비교 특허 · {type:"agri-ip:start", kw, field} 키워드로 새로 시작
-//  부모 출처는 문서 referrer 로 알고(vercel.json 의 frame-ancestors 에 적힌 AIS 출처만 넣을 수 있다), 그 출처하고만 주고받는다
-const EMBED = (() => { const q = new URLSearchParams(location.search); if (q.get("embed") !== "ais" || window.parent === window) return null; let parent = ""; try { parent = new URL(document.referrer).origin; } catch {} return { theme: q.get("theme") || "", skin: q.get("skin") || "", accent: q.get("accent") || "", parent }; })();
+//  부모 출처는 문서 referrer 로 알되, 이 사이트·AIS·Lovable 미리보기 화면일 때만 믿고 그 출처하고만 주고받는다 (다른 사이트가 넣으면 주고받지 않는다)
+const EMBED = (() => { const q = new URLSearchParams(location.search); if (q.get("embed") !== "ais" || window.parent === window) return null; let parent = ""; try { parent = new URL(document.referrer).origin; } catch {} if (![location.origin, new URL(TECH_URL).origin].includes(parent) && !/^https:\/\/id-preview--[0-9a-f-]+\.lovable\.app$/.test(parent)) parent = ""; return { theme: q.get("theme") || "", skin: q.get("skin") || "", accent: q.get("accent") || "", parent }; })();
 if (EMBED) {
   document.body.classList.add("embed"); if (EMBED.skin === "ais") document.body.classList.add("skin-ais");
   if (/^(dark|light)$/.test(EMBED.theme)) document.documentElement.dataset.theme = EMBED.theme;
@@ -5976,6 +5977,8 @@ document.addEventListener("click", e => {
 });
 // AIS에서 본 특허를 내 출원의 비교 대상으로: 선행기술 조사의 입력칸이나 주소 #prior?cite=10-2020-0123456
 const normNo = v => String(v ?? "").replace(/[^0-9]/g, "");
+// 바깥으로 여는 링크는 https 주소만 (javascript: 같은 주소가 들어와도 링크로 만들지 않는다)
+const safeHref = u => /^https:\/\//i.test(String(u ?? "")) ? esc(u) : "";
 const fmtNo = n => n.length === 13 ? `${n.slice(0, 2)}-${n.slice(2, 6)}-${n.slice(6)}` : n;
 function importCite(raw, title = "") {
   const n = normNo(raw);
@@ -5990,8 +5993,8 @@ function importCite(raw, title = "") {
 function watchHtml() {
   const W = S.watch ?? [];
   return `<div class="sub watch"><div class="sub-head"><h3>직접 추가한 비교 특허</h3><span class="muted" style="font-size:.8rem">기술분석(AIS)이나 다른 곳에서 찾은 특허</span></div>
-    ${W.length ? `<ul class="watch-list">${W.map(w => `<li><span class="mono">${fmtNo(w.no)}</span>${w.title ? `<span>${esc(w.title)}</span>` : ""}
-      <a href="https://www.kipris.or.kr/khome/search/searchResult.do?queryText=${w.no}" target="_blank" rel="noopener">KIPRIS</a>${aisBtn(fmtNo(w.no))}<button type="button" class="linklike" data-watch-del="${w.no}">빼기</button></li>`).join("")}</ul>` : ""}
+    ${W.length ? `<ul class="watch-list">${W.map(w => `<li><span class="mono">${esc(fmtNo(w.no))}</span>${w.title ? `<span>${esc(w.title)}</span>` : ""}
+      <a href="https://www.kipris.or.kr/khome/search/searchResult.do?queryText=${encodeURIComponent(w.no)}" target="_blank" rel="noopener">KIPRIS</a>${aisBtn(fmtNo(w.no))}<button type="button" class="linklike" data-watch-del="${esc(w.no)}">빼기</button></li>`).join("")}</ul>` : ""}
     <form class="watch-add" data-watch-form><input type="text" id="watch-no" inputmode="numeric" placeholder="출원번호 예: 10-2020-0123456" aria-label="비교 특허 출원번호"><button type="submit" class="btn ghost sm">추가</button></form></div>`;
 }
 document.addEventListener("submit", e => { if (!e.target.matches("[data-watch-form]")) return; e.preventDefault(); if (importCite($("#watch-no").value)) rerenderKeepScroll(); });
@@ -6547,8 +6550,10 @@ function snapshot(withLive = true) {
   const I = S.ideate; o.ideate = { kw: I.kw, f: I.f, pitch: I.pitch ?? null, drafts: I.drafts, src: I.src, pick: I.pick, partsKey: I.partsKey, parts: [...I.parts], effects: [...I.effects] };
   return o;
 }
-function restoreWork(o) {
-  if (!o || o.v !== 1 || !o.idea) return false;
+// imported: 바깥에서 받은 작업 파일. 화면에 그대로 그리는 검색 결과(live)는 받지 않고 다시 찾게 한다
+function restoreWork(o, imported = false) {
+  if (!o || o.v !== 1 || !o.idea || typeof o.idea !== "object") return false;
+  if (imported) { o = { ...o }; delete o.live; delete o.liveField; }
   SAVE_FIELDS.forEach(k => { if (!(k in o)) return; S[k] = k === "idea" || k === "app" ? { ...S[k], ...o[k] } : o[k]; });
   SAVE_SETS.forEach(k => { S[k] = Array.isArray(o[k]) ? new Set(o[k]) : k === "done" ? new Set() : null; });
   Object.entries(o.aiSigs ?? {}).forEach(([t, sig]) => { if (AI_KEEP.includes(t) && typeof sig === "string") Object.assign(aiState(t), { sig, okSig: sig }); });
@@ -6561,7 +6566,9 @@ function restoreWork(o) {
   if (typeof o.pg === "string") S.sub = pageIndex(S.step, o.pg);
   else if (S.step === "diag" && S.sub > 0) S.sub -= 1;
   // 사진 도면: 형식이 맞는 것만 (흑백 PNG), 그림은 비동기로 다시 만든다
-  S.photoFigs = Array.isArray(o.photoFigs) ? o.photoFigs.filter(x => x && typeof x.id === "string" && typeof x.name === "string" && /^data:image\/png;base64,/.test(x.png ?? "")).slice(0, PHOTO_MAX) : [];
+  S.photoFigs = Array.isArray(o.photoFigs) ? o.photoFigs.filter(x => x && typeof x.id === "string" && /^[\w-]{1,40}$/.test(x.id) && typeof x.name === "string" && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(x.png ?? "")).slice(0, PHOTO_MAX) : [];
+  // 비교 특허는 출원번호(13자리)만
+  S.watch = Array.isArray(o.watch) ? o.watch.filter(w => w && typeof w.no === "string" && /^\d{13}$/.test(w.no)).map(w => ({ no: w.no, at: /^\d{4}-\d{2}-\d{2}$/.test(w.at ?? "") ? w.at : "", title: typeof w.title === "string" ? w.title.slice(0, 200) : "" })).slice(0, 20) : [];
   setTimeout(photoHydrate);
   // 사전 질문(대화) 전에 저장한 작업은 이미 답한 것으로 본다
   // 질문을 '분야·낱말' 둘에서 '문장·이해 확인'으로 바꾸기 전의 답은 새 질문에 옮긴다
@@ -6604,10 +6611,10 @@ document.addEventListener("change", e => {
   if (hasWork && !confirm("지금 작성 중인 내용을 이 작업 파일의 내용으로 바꿉니다. 계속할까요?")) return;
   file.text().then(t => {
     const prev = JSON.parse(JSON.stringify(snapshot()));
-    try { if (!restoreWork(JSON.parse(t))) throw new Error(); }
-    catch (err) { restoreWork(prev); throw err; } // 중간에 깨지면 불러오기 전으로
-    history.replaceState(null, "", `#${S.step}`);
-    saveWork(); toast("작업 파일을 불러왔습니다"); render();
+    // 중간에 깨지거나 화면을 그리지 못하면 불러오기 전으로 (깨진 내용을 저장해 다음에 열 때도 막히지 않게, 그린 뒤에 저장한다)
+    try { if (!restoreWork(JSON.parse(t), true)) throw new Error(); history.replaceState(null, "", `#${S.step}`); render(); }
+    catch (err) { restoreWork(prev); render(); throw err; }
+    saveWork(); toast("작업 파일을 불러왔습니다");
   }).catch(() => toast("에이프 작업 파일(.json)이 아닙니다"));
 });
 

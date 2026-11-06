@@ -320,6 +320,8 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 // Korean-only answers: CJK line breaking is the only plugin needed (code/math/mermaid dropped to keep the bundle small).
 const streamdownPlugins = { cjk };
+// AI 답의 그림 문법은 그리지 않는다: 특허 원문에 숨긴 지시로 바깥 주소의 그림을 불러 대화 내용을 보내지 못하게
+const NoImage = () => null;
 
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
@@ -330,6 +332,7 @@ export const MessageResponse = memo(
       )}
       plugins={streamdownPlugins}
       {...props}
+      components={{ ...props.components, img: NoImage }}
     />
   ),
   (prevProps, nextProps) =>

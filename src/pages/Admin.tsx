@@ -120,7 +120,8 @@ const Admin = () => {
     if (result.success) {
       const params = new URLSearchParams(window.location.search);
       const next = params.get("next");
-      if (next && next.startsWith("/")) {
+      // 이 사이트 안의 주소만 (‘//다른사이트’, ‘/\다른사이트’ 는 바깥으로 나가므로 받지 않는다)
+      if (next && /^\/(?![/\\])/.test(next)) {
         window.location.href = next;
         return;
       }

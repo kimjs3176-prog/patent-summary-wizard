@@ -35,6 +35,11 @@ serve(async (req) => {
     const rows = Math.max(1, Math.min(500, Number(body.numOfRows) || 500));
     // 발명자 이름은 목록 API에 없고 상세 API에만 있으므로, 요청 시 상세 조회를 병행한다
     const withInventors = body.withInventors === true;
+    // 발명자까지 받으면 문헌마다 상세 조회를 한 번 더 하므로(최대 500회) 따로 더 좁게 제한한다 (KIPRIS 공용 한도 보호)
+    if (withInventors && rows > 50) {
+      const heavy = await enforceRateLimit(req, { bucket: "export-patents-inventors", limit: 12, windowSeconds: 600 });
+      if (heavy) return heavy;
+    }
     // 상표명이 주어지면 해당 기관 보유 상표도 함께 조회 (1페이지 요청 시에만)
     const trademarkKeyword = typeof body.trademarkKeyword === "string" ? body.trademarkKeyword.trim().slice(0, 50) : "";
     // 권리 종류: all | patent | utility | design | trademark
@@ -147,7 +152,7 @@ serve(async (req) => {
     }
     return json({ success: true, totalCount, items, trademarks });
   } catch (e) {
-    console.error("export-patents error:", e);
+    console.error("export-patents error:", e instanceof Error ? e.name : "error"); // 메시지에 키가 든 주소가 있을 수 있다
     return json({ success: false, error: "조회 중 오류가 발생했습니다." }, 500);
   }
 });

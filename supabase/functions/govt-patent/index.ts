@@ -74,9 +74,9 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : '알 수 없는 오류';
-    console.error('[govt-patent]', msg);
-    return new Response(JSON.stringify({ success: false, error: msg }), {
+    // 네트워크 오류 문구에는 키가 든 요청 주소가 들어갈 수 있어 이름만 남기고, 화면에는 정해진 문구만 보낸다
+    console.error('[govt-patent]', e instanceof Error ? e.name : 'error');
+    return new Response(JSON.stringify({ success: false, error: '국유특허 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

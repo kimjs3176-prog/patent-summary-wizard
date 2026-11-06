@@ -61,7 +61,10 @@ serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Re
   if (limited) return limited;
 
   try {
-    const { title, abstract, classifications, patentNumber } = await req.json();
+    const body = await req.json();
+    // 프롬프트에 들어가는 값은 길이를 자른다 (아주 긴 값으로 비싼 호출을 만들지 못하게)
+    const title = String(body?.title ?? "").slice(0, 300), abstract = String(body?.abstract ?? "").slice(0, 3000), patentNumber = body?.patentNumber;
+    const classifications: string[] = Array.isArray(body?.classifications) ? body.classifications.slice(0, 20).map((c: unknown) => String(c).slice(0, 40)) : [];
 
     if (!title && !abstract) {
       return new Response(
