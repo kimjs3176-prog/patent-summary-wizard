@@ -1,5 +1,5 @@
 // 출원지원 AI 분석 — 아이디어 초안(ideate), 유망기술 아이디어(discover), 유사 특허 심층 비교(compare), 공백기술 아이디어(whitespace),
-// 거절이유 예상(reject), 명세서 검토(review), 〔입력 필요〕 칸 채우기(fill), 검토 메모·누락 항목 보완(supplement), 해외 사업화 전략(globalbiz), 키워드 사업 인사이트(insight).
+// 거절이유 예상(reject), 명세서 검토(review), 〔입력 필요〕 칸 채우기(fill), 검토 메모·누락 항목 보완(supplement). 해외 사업화·키워드 인사이트는 해외동향 화면과 함께 지웠다.
 // 서버에서 Lovable AI 게이트웨이(gateway.js, JSON 출력)로 실행한다.
 import { chat } from "./gateway.js";
 
@@ -41,56 +41,6 @@ export const AI_TASKS = {
       "- 기대 효과 3~4개: 측정할 수 있는 형태(예: 생체중, 저장 기간, 수율)로. 실험 결과처럼 단정하지 않습니다."
     ].filter(Boolean).join("\n"),
     schema: obj({ titles: SA, problems: SA, diffs: SA, parts: SA, steps: SA, effects: SA })
-  },
-  // 내 기술의 해외 사업화 전략: 시장별 진출 경로·규제 경로·파트너·첫 단계 (해외 출원은 다루지 않는다)
-  globalbiz: {
-    validate(b) {
-      const title = str(b?.title, 200); if (!title) throw bad("발명의 명칭이 필요합니다.");
-      return { title, field: str(b?.field, 60), problem: str(b?.problem, 600), diff: str(b?.diff, 800), parts: arr(b?.parts, 8).map(p => str(p, 120)).filter(Boolean),
-        markets: arr(b?.markets, 6).map(m => str(m, 30)).filter(Boolean), goal: str(b?.goal, 40), trend: str(b?.trend, 400), sample: !!b?.sample, facts: arr(b?.facts, 6).map(f => str(f, 400)).filter(Boolean) };
-    },
-    user: d => [
-      `[내 기술] ${d.title} (${d.field})`, `해결하는 문제: ${d.problem}`, `차별점: ${d.diff}`, d.parts.length ? `핵심 구성: ${d.parts.join(" / ")}` : "",
-      `[관심 시장] ${d.markets.join(", ") || "추천해 주세요"}`, `[목표] ${d.goal || "해외 사업화"}`,
-      d.trend ? `[해외 특허 동향] ${d.trend}${d.sample ? " (예시 데이터)" : ""}` : "",
-      d.facts.length ? `[시장별 규제 정보 (공식 출처 기준, 2026. 10.)]\n${d.facts.map(f => `- ${f}`).join("\n")}` : "",
-      "",
-      "이 기술을 해외에서 사업화하는 전략을 짜 주세요. 해외 특허 출원 절차는 다루지 말고 시장·진출 경로·규제·파트너 중심으로 씁니다.",
-      "- 시장 2~4곳: 왜 유망한지, 알맞은 진출 경로(수출 / 기술이전·라이선싱 / 현지 실증·파일럿 / 합작·현지 법인 중 하나), 거쳐야 할 규제·인증 경로(제도 이름까지, 확실하지 않으면 '확인 필요'), 찾을 파트너 유형, 첫 단계.",
-      "- 주요 위험 3~5개와 사업화 전 확인할 일(체크리스트) 4~6개.",
-      "규제는 위 [시장별 규제 정보]를 우선 쓰고, 거기 없는 기관명·제도명·기간을 지어내지 마세요. 확실하지 않으면 '확인 필요'라고 쓰세요."
-    ].filter(Boolean).join("\n"),
-    schema: obj({ summary: S,
-      markets: { type: "array", items: obj({ market: S, why: S, route: { type: "string", enum: ["수출", "기술이전·라이선싱", "현지 실증·파일럿", "합작·현지 법인"] }, regulation: S, partner: S, firstStep: S }) },
-      risks: SA, checklist: SA })
-  },
-  // 해외동향: 키워드 하나로 보는 농식품 사업 인사이트. 근거는 관세청 수출 실적·산업동향 기사·규제 정보·공식 통계이고, 그 밖은 일반 지식임을 밝힌다. 특허는 다루지 않는다
-  insight: {
-    validate(b) {
-      const keyword = str(b?.keyword, 80); if (!keyword) throw bad("키워드를 입력하세요.");
-      return { keyword, type: str(b?.type, 40), trade: arr(b?.trade, 12).map(x => str(x, 120)).filter(Boolean), tradeMeta: str(b?.tradeMeta, 200), news: arr(b?.news, 8).map(x => str(x, 300)).filter(Boolean),
-        regs: arr(b?.regs, 8).map(x => str(x, 400)).filter(Boolean), stats: arr(b?.stats, 8).map(x => str(x, 200)).filter(Boolean), sample: !!b?.sample };
-    },
-    user: d => [
-      `[키워드] ${d.keyword}${d.type ? ` (제품 유형: ${d.type})` : ""}`,
-      d.trade.length ? `[한국 수출 실적 — 관세청, ${d.tradeMeta}${d.sample ? ", 예시 데이터" : ""}]\n${d.trade.map(x => `- ${x}`).join("\n")}` : "[한국 수출 실적 없음]",
-      d.news.length ? `[최근 산업동향 기사${d.sample ? " (예시)" : ""}]\n${d.news.map(x => `- ${x}`).join("\n")}` : "",
-      d.regs.length ? `[시장별 규제·인증 (공식 출처 기준, 2026. 10.)]\n${d.regs.map(x => `- ${x}`).join("\n")}` : "",
-      d.stats.length ? `[공식 통계·시장 신호]\n${d.stats.map(x => `- ${x}`).join("\n")}` : "",
-      "",
-      "이 키워드 제품·기술을 해외 사업 관점에서 읽는 인사이트를 쓰세요. 농식품 기업 담당자가 10분 안에 읽고 어느 시장을 먼저, 무엇부터 할지 정할 수 있게 짧고 구체적으로. 특허·출원 이야기는 쓰지 않습니다.",
-      "- summary: 이 제품·기술의 해외 시장이 지금 어디쯤 와 있는지 두 문장, 120자 안쪽.",
-      "- demand: 수요·소비 흐름 3~5개, 각 60자 안쪽 한 문장 (소비자 관심, 유통 형태, 가격대, 대체·경쟁 품목). 문장 끝에 근거를 괄호로: '(기사 1)', '(수출 실적)', '(공식 통계)', 없으면 '(일반적으로 알려진 흐름)'.",
-      "- exportRead: 위 수출 실적을 읽어 주는 문장 3~4개, 각 60자 안쪽 (어느 나라가 크고, 어디가 빠르게 늘고, 어디가 빠져 있는지). 끝에 '(수출 실적)'. 실적이 없으면 빈 배열.",
-      "- markets: 미국·EU·중국·일본·동남아·중동 가운데 4~6곳을 region·d로. region은 그 이름 그대로, d는 80자 안쪽 한두 문장(수요·규제·인증·유통 경로). 규제는 위 [시장별 규제·인증]만 쓰고 없으면 '확인 필요'.",
-      "- players: 경쟁·참고 기업과 제품 4~8개. where는 '국내' 또는 '해외'. 확실한 기업만 적고 note에 무엇으로 알려졌는지 한 줄. 모르면 적지 않습니다.",
-      "- opportunities: 기회 2~4개 (비어 있는 시장·형태·채널).",
-      "- risks: 위험 2~4개 (규제·가격·물류·모방 등).",
-      "- actions: 농산업체가 지금 할 일 3~5개, 순서대로, 각 50자 안쪽 (어느 시장을 먼저, 어떤 경로로, 무엇을 준비, 어느 지원사업).",
-      "지어내지 않습니다: 없는 수치·점유율·기관명·기업명을 만들지 말고, 확실하지 않으면 '확인 필요'라고 씁니다."
-    ].filter(Boolean).join("\n"),
-    schema: obj({ summary: S, demand: SA, exportRead: SA, markets: { type: "array", items: obj({ region: S, d: S }) },
-      players: { type: "array", items: obj({ name: S, where: { type: "string", enum: ["국내", "해외"] }, note: S }) }, opportunities: SA, risks: SA, actions: SA })
   },
   // 유망기술(성장 빠르고 국내 출원이 적은 세부기술)에서 출원할 만한 아이디어 후보를 만든다
   discover: {
