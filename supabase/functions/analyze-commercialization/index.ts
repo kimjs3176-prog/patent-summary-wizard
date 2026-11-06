@@ -1,3 +1,4 @@
+import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -19,7 +20,7 @@ async function callAIChatCompletions(
   init: { signal?: AbortSignal } = {},
 ): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  return await fetch(AI_GATEWAY_URL, {
     method: "POST",
     signal: init.signal,
     headers: {
@@ -302,7 +303,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const limited = await enforceRateLimit(req, { bucket: "analyze-commercialization", limit: 20, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "analyze-commercialization", limit: 60, windowSeconds: 300 });
   if (limited) return limited;
 
   try {
@@ -694,8 +695,8 @@ JSON형식:
 
 
     // 분석 모델은 가격/성능 균형이 가장 우수한 Gemini 3 Flash Preview로 고정한다.
-    const configuredModel = "google/gemini-3.8-flash";
-    const scoreModel = isDetailedScore ? configuredModel : "google/gemini-3.1-flash-lite";
+    const configuredModel = aiModel("main");
+    const scoreModel = isDetailedScore ? configuredModel : aiModel("lite");
     // max_tokens — 절대 잘리지 않도록 충분한 한도 확보.
     // 한국어 1글자 ≈ 2~3 토큰(JSON 이스케이프 포함). 5개 필드 합계 최대 ~600자 → 약 2,000토큰.
     // 안전 마진 2배 적용하여 detailed 4,800 / lite 3,600 기본.

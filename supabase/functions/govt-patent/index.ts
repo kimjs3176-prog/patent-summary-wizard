@@ -28,7 +28,7 @@ const fmtDate = (v?: string): string | undefined => {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const limited = await enforceRateLimit(req, { bucket: "govt-patent", limit: 60, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "govt-patent", limit: 180, windowSeconds: 300 });
   if (limited) return limited;
 
   try {

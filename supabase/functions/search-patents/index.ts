@@ -1,3 +1,4 @@
+import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
@@ -150,14 +151,14 @@ async function extractKeywordsWithAI(query: string): Promise<{ keywords: string[
   }
 
   try {
-    const response = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetchWithTimeout(AI_GATEWAY_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-3.1-flash-lite",
+        model: aiModel("lite"),
         messages: [
           {
             role: "system",
@@ -238,14 +239,14 @@ async function recommendQueriesWithAI(
   if (!LOVABLE_API_KEY) return fallback();
 
   try {
-    const response = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetchWithTimeout(AI_GATEWAY_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-3.1-flash-lite",
+        model: aiModel("lite"),
         messages: [
           {
             role: "system",
@@ -313,7 +314,7 @@ serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Re
     return new Response(null, { headers: corsHeaders });
   }
 
-  const limited = await enforceRateLimit(req, { bucket: "search-patents", limit: 60, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "search-patents", limit: 180, windowSeconds: 300 });
   if (limited) return limited;
 
   try {

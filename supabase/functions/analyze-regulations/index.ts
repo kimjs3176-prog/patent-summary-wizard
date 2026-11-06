@@ -1,3 +1,4 @@
+import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { AiUnavailableError, aiUnavailableResponse, fetchAiWithRetry } from "../_shared/aiRetry.ts";
@@ -27,7 +28,7 @@ async function callAI(prompt: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
   const payload = {
-    model: "google/gemini-3.1-flash-lite",
+    model: aiModel("lite"),
     messages: [
       { role: "system", content: "You are a Korean regulatory expert. Reply strictly in JSON, no code fences." },
       { role: "user", content: prompt },
@@ -35,7 +36,7 @@ async function callAI(prompt: string): Promise<string> {
     temperature: 0.3,
   };
 
-  const r = await fetchAiWithRetry("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetchAiWithRetry(AI_GATEWAY_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -91,7 +92,7 @@ async function searchLaw(oc: string, query: string): Promise<RegulationLaw[]> {
 serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const limited = await enforceRateLimit(req, { bucket: "analyze-regulations", limit: 20, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "analyze-regulations", limit: 60, windowSeconds: 300 });
   if (limited) return limited;
 
   try {

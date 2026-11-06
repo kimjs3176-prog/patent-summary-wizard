@@ -1,3 +1,4 @@
+import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -19,7 +20,7 @@ async function callAIChatCompletions(
   init: { signal?: AbortSignal } = {},
 ): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  return await fetch(AI_GATEWAY_URL, {
     method: "POST",
     signal: init.signal,
     headers: {
@@ -38,7 +39,7 @@ async function callAISummaryCompletions(
   // routinely exceeded the 8s timeout and aborted mid-flight. Route summary requests
   // directly to the Lovable AI Gateway with streaming enabled — far more reliable.
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  return await fetch(AI_GATEWAY_URL, {
     method: "POST",
     signal: init.signal,
     headers: {
@@ -310,7 +311,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const limited = await enforceRateLimit(req, { bucket: "summarize-patent", limit: 20, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "summarize-patent", limit: 60, windowSeconds: 300 });
   if (limited) return limited;
 
   try {
@@ -372,7 +373,7 @@ serve(async (req) => {
     let customPromptExtra = "";
     let maxTokens = 4000;
     // 긴 요약은 스트리밍 경로에서 본문이 중간에 닫히는 사례가 있어 기본 Gateway 모델의 비스트리밍 완료 후 전송으로 안정화한다.
-    const aiModel = "google/gemini-3.8-flash";
+    const summaryModel = aiModel("main");
     let sectionLengthSettings: Record<string, number> = {};
     try {
       const supabase = getSupabaseClient();
@@ -408,7 +409,7 @@ serve(async (req) => {
     // v21: 원문 근거 규칙(원문에 없는 효과 수치·시험·실증 서술 금지, 직접 시장 우선, 예시 수치 제거) + 서버 원문으로 프롬프트 구성
     // v22: 비전문가도 읽기 쉬운 서술(쉬운 말·짧은 문장·용어 풀이·분류 코드 대신 분야명) — 원문의 사실·수치·성분은 그대로
     const promptVersion = `v24-${CASE_POLICY_VERSION}`;
-    const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel, sectionLengthSettings, promptVersion });
+    const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel: summaryModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
     const summaryAnalysisMode = `detailed_${Math.abs(signatureHash).toString(36)}`;
@@ -435,7 +436,7 @@ serve(async (req) => {
           start(controller) {
             // 생성 정보(모델·저장 시각·대체 문단 여부)를 먼저 보내 화면이 신뢰 표식을 그릴 수 있게 한다.
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-              meta: { model: aiModel, cached: true, generatedAt: cached.created_at ?? null, promptVersion, marketFallback: isMarketFallbackText(content) },
+              meta: { model: summaryModel, cached: true, generatedAt: cached.created_at ?? null, promptVersion, marketFallback: isMarketFallbackText(content) },
             })}\n\n`));
             const chunkSize = 50;
             for (let i = 0; i < content.length; i += chunkSize) {
@@ -611,7 +612,7 @@ ${BOLD_RULES}
       async start(controller) {
         // 생성 정보를 먼저 보낸다(모델·시각·분석 기준). 대체 문단 여부는 후처리 뒤 final_content 와 함께 보낸다.
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-          meta: { model: aiModel, cached: false, generatedAt: new Date().toISOString(), promptVersion },
+          meta: { model: summaryModel, cached: false, generatedAt: new Date().toISOString(), promptVersion },
         })}\n\n`));
         // 첫 바이트를 즉시 내보내 프록시 버퍼링을 풀고 클라이언트가 바로 진행 상태를 받게 한다.
         try { controller.enqueue(encoder.encode(": open\n\n")); } catch { /* ignore */ }
@@ -624,7 +625,7 @@ ${BOLD_RULES}
           // 체감 속도 개선: 토큰을 스트리밍으로 즉시 전달하고, 종료 후 후처리 결과로 교체한다.
           const response = await callAISummaryCompletions(
             {
-              model: aiModel,
+              model: summaryModel,
               messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userMessage },

@@ -1,3 +1,4 @@
+import { aiModel } from "../_shared/aiConfig.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
@@ -456,7 +457,7 @@ serve(async (req) => {
             recentSummaries,
             recentSearches,
             topSearched: topSearched || [],
-            currentModel: "google/gemini-3.8-flash",
+            currentModel: aiModel("main"),
           },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }

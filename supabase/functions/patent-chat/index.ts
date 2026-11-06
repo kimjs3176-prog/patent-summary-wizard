@@ -2,6 +2,7 @@
 // Answers only from retrieved, applicant-scoped patents (search-patents), the
 // filing-trend snapshot, stored TRL values and the fixed tech-transfer guide.
 // Commercialization scores are intentionally not shown here — users see them in the patent summary.
+import { aiModel } from "../_shared/aiConfig.ts";
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   generateChatCompletion, streamChatCompletion, GatewayError, PaymentRequiredError, RateLimitError,
@@ -46,7 +47,7 @@ async function route(history: ChatMessage[], question: string): Promise<ChatRout
   const context = history.slice(-4).map((m) => `${m.role === "user" ? "사용자" : "상담"}: ${m.content.slice(0, 300)}`).join("\n");
   try {
     const res = await (generateChatCompletion as any)({
-      model: "google/gemini-3.1-flash-lite",
+      model: aiModel("lite"),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: "당신은 농업 국가연구기관 특허 상담 서비스의 질문 분류기입니다. 질문에 답하는 데 필요한 자료를 고릅니다. Return JSON only." },
@@ -153,7 +154,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ success: false, error: "허용되지 않는 요청입니다." }, 405);
 
-  const limited = await enforceRateLimit(req, { bucket: "patent-chat", limit: 20, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "patent-chat", limit: 60, windowSeconds: 300 });
   if (limited) return limited;
 
   const parsed = BodySchema.safeParse(await req.json().catch(() => null));
@@ -232,7 +233,7 @@ Deno.serve(async (req) => {
           : "\n\n[자료]\n(이번 질문에는 새로 조회한 자료가 없습니다. 이전 대화에 나온 내용만 근거로 답하고, 없으면 무엇을 찾아볼지 되물어 주세요. 이번 답변 아래에는 카드가 없으니 카드 안내는 하지 마세요.)";
 
         const aiStream = await (streamChatCompletion as any)({
-          model: "google/gemini-3.8-flash",
+          model: aiModel("main"),
           messages: [
             { role: "system", content: ANSWER_RULES },
             ...history.map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS * 2) })),

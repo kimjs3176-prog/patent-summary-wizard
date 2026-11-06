@@ -1,3 +1,4 @@
+import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
@@ -14,7 +15,7 @@ async function callAIChatCompletions(
   init: { signal?: AbortSignal } = {},
 ): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  return await fetch(AI_GATEWAY_URL, {
     method: "POST",
     signal: init.signal,
     headers: {
@@ -56,7 +57,7 @@ serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Re
     return new Response(null, { headers: corsHeaders });
   }
 
-  const limited = await enforceRateLimit(req, { bucket: "recommend-similar-patents", limit: 30, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "recommend-similar-patents", limit: 90, windowSeconds: 300 });
   if (limited) return limited;
 
   try {
@@ -111,7 +112,7 @@ JSON만 출력:
     try {
       aiResponse = await callAIChatCompletions(
         {
-          model: "google/gemini-3.1-flash-lite",
+          model: aiModel("lite"),
           messages: [
             { role: "system", content: "You are a Korean patent search expert. Output only valid JSON." },
             { role: "user", content: prompt },

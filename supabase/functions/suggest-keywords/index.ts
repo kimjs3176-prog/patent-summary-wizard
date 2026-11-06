@@ -1,3 +1,4 @@
+import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { withRequestLog, type RequestLogger } from "../_shared/log.ts";
@@ -6,7 +7,7 @@ import { withRequestLog, type RequestLogger } from "../_shared/log.ts";
 Deno.serve(withRequestLog("suggest-keywords", async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const limited = await enforceRateLimit(req, { bucket: "suggest-keywords", limit: 30, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "suggest-keywords", limit: 90, windowSeconds: 300 });
   if (limited) return limited;
 
   try {
@@ -21,11 +22,11 @@ Deno.serve(withRequestLog("suggest-keywords", async (req: Request, logger: Reque
     }
 
     const aiStartedAt = Date.now();
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await fetch(AI_GATEWAY_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-6-astra",
+        model: aiModel("alt"),
         messages: [
           {
             role: "system",

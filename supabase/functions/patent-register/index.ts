@@ -29,7 +29,7 @@ function normalizeRgstNo(input: string): string | null {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const limited = await enforceRateLimit(req, { bucket: "patent-register", limit: 60, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "patent-register", limit: 180, windowSeconds: 300 });
   if (limited) return limited;
 
   try {

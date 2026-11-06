@@ -203,7 +203,7 @@ serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Re
     return new Response(null, { headers: corsHeaders });
   }
 
-  const limited = await enforceRateLimit(req, { bucket: "fetch-patent", limit: 60, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "fetch-patent", limit: 180, windowSeconds: 300 });
   if (limited) return limited;
 
   try {

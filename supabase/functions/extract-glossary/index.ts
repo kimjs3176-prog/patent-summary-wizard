@@ -1,3 +1,4 @@
+import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
@@ -7,11 +8,11 @@ import { withRequestLog, type RequestLogger } from "../_shared/log.ts";
 
 async function callGemini(prompt: string): Promise<string> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const r = await fetchAiWithRetry("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetchAiWithRetry(AI_GATEWAY_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-3.1-flash-lite",
+      model: aiModel("lite"),
       messages: [
         { role: "system", content: "당신은 한국어 특허·과학기술 용어 사전 편집자입니다. 반드시 JSON만 반환하고 코드펜스를 쓰지 마세요." },
         { role: "user", content: prompt },
@@ -35,7 +36,7 @@ function extractJson(text: string): any {
 serve(withRequestLog("extract-glossary", async (req: Request, logger: RequestLogger): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const limited = await enforceRateLimit(req, { bucket: "extract-glossary", limit: 40, windowSeconds: 300 });
+  const limited = await enforceRateLimit(req, { bucket: "extract-glossary", limit: 120, windowSeconds: 300 });
   if (limited) return limited;
   try {
     const { content, title } = await req.json();
