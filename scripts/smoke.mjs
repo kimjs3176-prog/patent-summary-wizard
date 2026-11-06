@@ -61,6 +61,18 @@ for (const width of WIDTHS) {
       return out;
     });
     console.log(`  쪽 ${pages.length}개: ${pages.join(" ")}`);
+    // 손으로 고친 값: 명칭을 바꾸면 검색어가 따라가고, 수치 범위의 단위·속성(직경 등)은 청구항에 맞게 읽는다
+    const hand = await p.evaluate(() => ({ kw: kwFromTitle("블루베리 선도 유지용 통기 포장 용기"), a: parsePart("직경 0.2~0.5 mm 미세 천공부"), b: parsePart("제올라이트 흡습 패드 3~8 g") }));
+    if (hand.kw !== "블루베리\n포장\n용기") fail(where, `명칭에서 뽑은 검색어가 이상함: ${JSON.stringify(hand.kw)}`);
+    if (hand.a.name !== "미세 천공부" || hand.a.attr !== "직경" || hand.b.name !== "제올라이트 흡습 패드" || hand.b.ranges[0] !== "3~8 g") fail(where, `구성 수치 읽기가 이상함: ${JSON.stringify([hand.a, hand.b])}`);
+    // 진단 쪽에서 바로 고치기: 카드 안에 고칠 칸이 열린다 (다른 쪽으로 가지 않는다)
+    await p.evaluate(() => goPage("diag", 0));
+    const rq = p.locator("[data-rq-open]");
+    if (await rq.count()) {
+      await rq.first().click();
+      const ed = await p.evaluate(() => ({ step: S.step, edit: !!document.querySelector(".req-edit [data-rq-apply]") }));
+      if (ed.step !== "diag" || !ed.edit) fail(where, `진단 쪽에서 바로 고칠 칸이 열리지 않음: ${JSON.stringify(ed)}`);
+    }
     // 실험 데이터 도우미: 기록지(CSV)를 받아 값을 채워 올리면 그래프 입력표로 들어간다
     const sheet = await p.evaluate(() => { const csv = expSheetCsv().replace(/,,(?=\r\n|$)/g, ",5,0.1"); const gs = importExpSheet(csv); return { n: gs.length, v: gs[0]?.rows?.[0]?.val }; });
     if (!sheet.n || !sheet.v) fail(where, `실험 기록지를 올려도 값이 들어가지 않음: ${JSON.stringify(sheet)}`);
