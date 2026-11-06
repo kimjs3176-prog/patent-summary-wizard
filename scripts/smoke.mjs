@@ -61,6 +61,9 @@ for (const width of WIDTHS) {
       return out;
     });
     console.log(`  쪽 ${pages.length}개: ${pages.join(" ")}`);
+    // 실험 데이터 도우미: 기록지(CSV)를 받아 값을 채워 올리면 그래프 입력표로 들어간다
+    const sheet = await p.evaluate(() => { const csv = expSheetCsv().replace(/,,(?=\r\n|$)/g, ",5,0.1"); const gs = importExpSheet(csv); return { n: gs.length, v: gs[0]?.rows?.[0]?.val }; });
+    if (!sheet.n || !sheet.v) fail(where, `실험 기록지를 올려도 값이 들어가지 않음: ${JSON.stringify(sheet)}`);
     await p.evaluate(() => {
       goPage("draft", 1);
       const basic = [...document.querySelectorAll("button")].find((b) => /기본 초안 만들고 보기/.test(b.textContent));
