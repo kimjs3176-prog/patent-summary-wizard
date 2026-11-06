@@ -1650,13 +1650,12 @@ function ideaStartPage() {
       ${nav}
       ${rows}
       ${cur ? "" : `<div class="chat-q chat-end"><span class="chat-n" aria-hidden="true">✓</span><p><b>답을 모두 받았어요.</b><small>${D ? `낱말로 명칭 후보 ${D.titles.length}개를 만들어 두었어요. ` : ""}다음 쪽에서 고르고 다듬은 뒤, 2단계에서 비슷한 특허를 찾아요.</small></p></div>`}
-      ${SAVE.restored ? `<p class="hint">지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔어요.</p>` : ""}${EMBED ? "" : `<p class="hint">입력한 내용은 이 기기의 브라우저에 자동 저장돼요. 내보내기·기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있어요.</p>`}
+      ${SAVE.restored ? `<p class="hint">지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔어요.</p>` : ""}${EMBED ? "" : `<p class="hint">입력한 내용은 이 기기의 브라우저에 자동 저장돼요. 기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있어요.</p>`}
     </div>
     <aside class="branch-card" aria-label="다른 방법으로 시작">
       <span class="branch-label">다른 방법으로 시작</span>
       <button type="button" class="branch-opt" data-to="discover:0"><b>아이디어가 아직 없어요</b><span>유망기술 지도에서 골라 시작</span></button>
       <button type="button" class="branch-opt" data-practice><b>처음이라 연습해 볼래요</b><span>가상 예시로 1~5단계 따라가기</span></button>
-      <label class="branch-opt" for="work-import-start" tabindex="0" role="button" data-key-click><b>다른 기기에서 쓰던 게 있어요</b><span>내보낸 작업 파일(.json)로 이어 쓰기</span></label><input type="file" id="work-import-start" data-work-import accept="application/json,.json" hidden>
     </aside>
   </div>`;
 }
@@ -5853,7 +5852,6 @@ function filingPages() {
     <div class="actions">
       <button class="btn" id="save-package">제출용 파일 한 번에 받기 (.zip)</button>
       <button class="btn ghost" data-save-doc>명세서만 Word(.docx)</button>
-      <button class="btn ghost" data-work-export title="이 기기 브라우저에만 저장된 작성 내용을 파일로 받아, 다른 기기의 첫 화면 ‘다른 기기에서 쓰던 게 있어요’로 이어 씁니다">이어 쓰기용 작업 파일</button>
     </div>
     <div class="folds">
     ${fold("ready", "서류 준비 현황", `${ready === atts.length ? `<span class="st ok">모두 준비</span>` : `<span class="st warn">남음 ${atts.length - ready}</span>`}${ready} / ${atts.length}`, `<ul class="checks" id="ready-list">${atts.map(x => `<li><span class="st ${x.ready ? "ok" : "warn"}">${x.ready ? "준비" : "남음"}</span><span><b>${esc(x.name)}</b> · ${esc(x.note)}</span></li>`).join("")}</ul>`)}
@@ -6513,7 +6511,7 @@ function startPractice(seed = Math.floor(Math.random() * 1e6) + 1) {
 }
 const practiceNote = () => S.practice ? `<p class="practice-note"><b>연습용 예시 ${S.practice.seed}</b> ${esc(S.practice.name)}. 출원인·번호는 가상이니 실제 출원에 쓰지 마세요. <button type="button" class="linklike" data-practice>다른 예시</button></p>` : "";
 function restartWork() {
-  if (!resetWork("모든 단계(아이디어·선행기술 조사·진단·보완·서류 작성·제출·관리)의 입력과 결과를 지우고 1단계부터 다시 작성합니다.\n명세서 임시저장본은 남습니다. 지우기 전에 남기려면 도움말의 ‘작업 파일로 내보내기’를 쓰세요. 계속할까요?")) return;
+  if (!resetWork("모든 단계(아이디어·선행기술 조사·진단·보완·서류 작성·제출·관리)의 입력과 결과를 지우고 1단계부터 다시 작성합니다.\n명세서 임시저장본은 남습니다. 계속할까요?")) return;
   saveWork(); history.replaceState(null, "", "#idea"); goPage("idea", 0); window.scrollTo({ top: 0 });
   toast("처음부터 다시 작성합니다");
 }
@@ -6550,10 +6548,9 @@ function snapshot(withLive = true) {
   const I = S.ideate; o.ideate = { kw: I.kw, f: I.f, pitch: I.pitch ?? null, drafts: I.drafts, src: I.src, pick: I.pick, partsKey: I.partsKey, parts: [...I.parts], effects: [...I.effects] };
   return o;
 }
-// imported: 바깥에서 받은 작업 파일. 화면에 그대로 그리는 검색 결과(live)는 받지 않고 다시 찾게 한다
-function restoreWork(o, imported = false) {
+// 이 기기 브라우저에 저장된 작업을 되살린다. 형식이 맞지 않는 값은 버린다 (저장소가 오염돼도 화면에 그대로 그리지 않게)
+function restoreWork(o) {
   if (!o || o.v !== 1 || !o.idea || typeof o.idea !== "object") return false;
-  if (imported) { o = { ...o }; delete o.live; delete o.liveField; }
   SAVE_FIELDS.forEach(k => { if (!(k in o)) return; S[k] = k === "idea" || k === "app" ? { ...S[k], ...o[k] } : o[k]; });
   SAVE_SETS.forEach(k => { S[k] = Array.isArray(o[k]) ? new Set(o[k]) : k === "done" ? new Set() : null; });
   Object.entries(o.aiSigs ?? {}).forEach(([t, sig]) => { if (AI_KEEP.includes(t) && typeof sig === "string") Object.assign(aiState(t), { sig, okSig: sig }); });
@@ -6589,35 +6586,19 @@ const scheduleSave = () => { clearTimeout(SAVE.t); if (!SAVE.off) SAVE.t = setTi
 function renderSaveBox() {
   const box = $("#save-box"); if (!box) return;
   box.innerHTML = `<span class="label">작업 저장</span>
-    <p class="hint">입력한 내용은 이 기기의 브라우저에만 자동 저장됩니다${SAVE.at ? ` · 마지막 저장 ${SAVE.at.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}` : ""}. 다른 기기로 옮기거나 보관하려면 파일로 내보내세요. 여러 사람이 쓰는 PC에서는 끝난 뒤 ‘이 기기 기록 모두 지우기’로 지우세요.</p>
-    <div class="actions"><button type="button" class="btn ghost sm" data-work-export>작업 파일로 내보내기</button><label class="btn ghost sm" for="work-import" tabindex="0" role="button" data-key-click>작업 파일 불러오기</label><input type="file" id="work-import" data-work-import accept="application/json,.json" hidden><button type="button" class="btn ghost sm" id="work-reset" title="저장된 작업·명세서 임시저장본을 모두 지웁니다. 입력만 다시 쓰려면 단계 머리의 ↺ 처음부터 작성을 쓰세요">이 기기 기록 모두 지우기</button></div>`;
+    <p class="hint">입력한 내용은 이 기기의 브라우저에만 자동 저장됩니다${SAVE.at ? ` · 마지막 저장 ${SAVE.at.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}` : ""}. 다른 기기로는 옮겨지지 않아요. 여러 사람이 쓰는 PC에서는 끝난 뒤 ‘이 기기 기록 모두 지우기’로 지우세요.</p>
+    <div class="actions"><button type="button" class="btn ghost sm" id="work-reset" title="저장된 작업·명세서 임시저장본을 모두 지웁니다. 입력만 다시 쓰려면 단계 머리의 ↺ 처음부터 작성을 쓰세요">이 기기 기록 모두 지우기</button></div>`;
 }
 document.addEventListener("input", scheduleSave);
 document.addEventListener("change", scheduleSave);
 window.addEventListener("pagehide", () => { if (SAVE.t) saveWork(); });
 document.addEventListener("click", e => {
-  if (e.target.closest("[data-work-export]")) { saveFile(`agri-ip-work_${iso(today)}.json`, "application/json", JSON.stringify(snapshot(), null, 1)); toast("작업 파일을 받았어요. 다른 기기의 첫 화면에서 ‘다른 기기에서 쓰던 게 있어요’로 불러오세요"); }
   if (e.target.id === "work-reset") {
     if (!confirm("저장된 작업과 명세서 임시저장본을 지우고 빈 상태로 새로 시작합니다. 계속할까요?")) return;
     try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(DRAFTS_KEY); } catch {}
     SAVE.off = true; clearTimeout(SAVE.t); SAVE.t = 0; location.replace(`${location.pathname}#apply`); location.reload(); // 새로고침 전에 다시 저장하지 않는다
   }
 });
-document.addEventListener("change", e => {
-  if (!e.target.matches("[data-work-import]") || !e.target.files?.[0]) return;
-  const file = e.target.files[0]; e.target.value = ""; // 같은 파일을 다시 골라도 불러오게
-  // 쓰던 내용(아이디어·키워드·명세서)이 있을 때만 묻는다. 연 단계(S.done)는 주소만으로도 생기므로 기준이 아니다
-  const hasWork = [S.idea.title, S.idea.problem, S.ideate.kw, S.app.name].some(v => String(v ?? "").trim()) || !!S.spec?.edited;
-  if (hasWork && !confirm("지금 작성 중인 내용을 이 작업 파일의 내용으로 바꿉니다. 계속할까요?")) return;
-  file.text().then(t => {
-    const prev = JSON.parse(JSON.stringify(snapshot()));
-    // 중간에 깨지거나 화면을 그리지 못하면 불러오기 전으로 (깨진 내용을 저장해 다음에 열 때도 막히지 않게, 그린 뒤에 저장한다)
-    try { if (!restoreWork(JSON.parse(t), true)) throw new Error(); history.replaceState(null, "", `#${S.step}`); render(); }
-    catch (err) { restoreWork(prev); render(); throw err; }
-    saveWork(); toast("작업 파일을 불러왔습니다");
-  }).catch(() => toast("에이프 작업 파일(.json)이 아닙니다"));
-});
-
 window.addEventListener("hashchange", setModeFromHash);
 INIT = JSON.parse(JSON.stringify(snapshot(false))); // 단계별 초기화의 처음 값 (저장된 작업을 불러오기 전)
 try { const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (restoreWork(saved)) { SAVE.restored = saved.savedAt; SAVE.at = new Date(saved.savedAt); } } catch {}
