@@ -442,7 +442,7 @@ const Batch = () => {
       },
       body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: ipType === "design" || ipType === "trademark" ? tmKeyword : undefined, withInventors: true, ipType }),
       // 429(요청 한도)는 재시도해도 한도만 더 소모하므로 바로 안내한다
-      timeoutMs: 45000, retries: 2, retryOn: (status: number) => status !== 429 && (status === 408 || status >= 500),
+      timeoutMs: 45000, retries: 2, retryOn: (status: number) => status === 408 || status >= 500,
     });
     if (res.status === 429) throw new Error("요청이 많아 잠시 제한됐어요. 몇 분 뒤 다시 시도해 주세요.");
     const data = await res.json();

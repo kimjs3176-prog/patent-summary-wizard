@@ -61,7 +61,7 @@ export async function safeFetch(
       const res = await fetch(url, { ...rest, signal: controller.signal });
 
       // If a retryable status and we have attempts left, fall through to retry
-      if (!res.ok && isRetryableStatus(res.status) && attempt < retries) {
+      if (!res.ok && retryOn(res.status) && attempt < retries) {
         lastError = new Error(`HTTP ${res.status}`);
       } else {
         return res;
