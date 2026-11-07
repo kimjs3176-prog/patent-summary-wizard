@@ -14,6 +14,8 @@ export interface SafeFetchOptions extends RequestInit {
   retries?: number;
   /** Base delay for exponential backoff. Default: 600ms */
   baseDelayMs?: number;
+  /** Overrides which HTTP statuses are retried. */
+  retryOn?: (status: number) => boolean;
 }
 
 function isRetryableStatus(status: number): boolean {
@@ -40,6 +42,7 @@ export async function safeFetch(
     timeoutMs = 30000,
     retries = 1,
     baseDelayMs = 600,
+    retryOn = isRetryableStatus,
     signal: externalSignal,
     ...rest
   } = options;
