@@ -132,7 +132,7 @@ const Filing = () => {
         <div className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 md:pt-3">
           <p className="mb-1.5 flex items-start gap-2 text-[11.5px] md:text-xs leading-relaxed text-muted-foreground" role="note">
             <span className="flex-shrink-0 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200">개발 중</span>
-            <span>출원지원은 개발 중인 기능이라 실제 출원에 쓸 때 제한이 있을 수 있어요. 특허 가능성 판단과 명세서 초안은 참고 자료이며, 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다.</span>
+            <span>출원지원은 개발 중인 기능이라 실제 출원에 쓸 때 제한이 있을 수 있어요. 특허 가능성 판단과 명세서 초안은 참고 자료이며, 이 결과물이 특허 출원이나 등록을 보장하지 않습니다. 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다.</span>
           </p>
           <div ref={barRef} className="glossy-card rounded-2xl md:rounded-3xl px-2.5 md:px-4 py-2 md:py-2.5">
             <div className="flex items-center gap-2 md:gap-3">
