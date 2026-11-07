@@ -37,7 +37,7 @@ serve(async (req) => {
     const withInventors = body.withInventors === true;
     // 발명자까지 받으면 문헌마다 상세 조회를 한 번 더 하므로(최대 500회) 따로 더 좁게 제한한다 (KIPRIS 공용 한도 보호)
     if (withInventors && rows > 50) {
-      const heavy = await enforceRateLimit(req, { bucket: "export-patents-inventors", limit: 12, windowSeconds: 600 });
+      const heavy = await enforceRateLimit(req, { bucket: "export-patents-inventors", limit: 120, windowSeconds: 600 }); // 기관 4곳·대형 기관(수만 건) 일괄조회도 끊기지 않게 페이지 120개(6만 건)/10분
       if (heavy) return heavy;
     }
     // 상표명이 주어지면 해당 기관 보유 상표도 함께 조회 (1페이지 요청 시에만)
