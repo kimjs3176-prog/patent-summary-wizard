@@ -145,7 +145,8 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
           )}
           <p className="text-xs text-muted-foreground leading-relaxed">{settings.footer_line1}</p>
           <p className="text-xs text-muted-foreground mt-1">{settings.footer_line2}</p>
-          <p className="text-xs text-muted-foreground mt-3">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="inline-flex items-center min-h-6 underline hover:text-foreground transition-colors">kimjs1408@koat.or.kr</a></p>
+          <p className="text-xs text-muted-foreground mt-3">이 서비스는 이름·연락처 같은 개인정보를 받지 않습니다. 방문과 검색은 횟수만 셉니다.</p>
+          <p className="text-xs text-muted-foreground mt-1">오류신고/이용문의: <a href="mailto:kimjs1408@koat.or.kr" className="inline-flex items-center min-h-6 underline hover:text-foreground transition-colors">kimjs1408@koat.or.kr</a></p>
           <p className="text-xs text-muted-foreground mt-1">
             화면이 이전 버전으로 보이나요?{" "}
             <button

@@ -9,7 +9,7 @@ import { parseIpNumber } from "@/lib/ipNumber";
 import { buildFilingSrc, buildFilingStandaloneUrl, filingEnabled, filingOrigin, parseFilingMessage, type FilingState } from "@/lib/filing";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
-// 출원지원 — 관리자 설정 '출원지원' 토글로 켜고 끄는 옵션 메뉴. 화면에는 AIS 의 한 기능으로만 보이고 바깥 서비스 이름은 쓰지 않는다.
+// 출원도우미 — 관리자 설정 '출원도우미' 토글로 켜고 끄는 옵션 메뉴. 화면에는 AIS 의 한 기능으로만 보이고 바깥 서비스 이름은 쓰지 않는다.
 // 출원지원 서버(에이프)의 5단계 출원 준비(아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·관리·해외 출원)를 본문만 iframe 으로 넣고,
 // 단계 탭·쪽 이동·이전/다음·남은 일·D-day·도움말은 이 페이지가 AIS 디자인으로 그린다 (에이프가 그릴 때마다 상태를 보내 준다).
 //   /filing?p=단계            그 단계로 (에이프가 쪽을 바꾸면 주소도 따라 바뀐다)
@@ -33,7 +33,7 @@ const NOTICE_KEY = "filing_notice_seen";
 const noticeSeen = () => { try { return sessionStorage.getItem(NOTICE_KEY) === "1"; } catch { return false; } };
 
 const Filing = () => {
-  useDocumentTitle("출원지원");
+  useDocumentTitle("출원도우미");
   const [noticeOpen, setNoticeOpen] = useState(() => !noticeSeen());
   const closeNotice = () => { setNoticeOpen(false); try { sessionStorage.setItem(NOTICE_KEY, "1"); } catch { /* 저장이 막힌 브라우저: 이번 화면에서만 닫는다 */ } };
   const { settings } = useSiteSettings();
@@ -114,8 +114,8 @@ const Filing = () => {
           <div className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: "var(--gradient-accent)" }}>
             <FileSignature className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-xl font-bold text-foreground mb-2">출원지원은 지금 꺼져 있습니다</h1>
-          <p className="text-sm text-muted-foreground">관리자 페이지의 기능 설정에서 ‘출원지원’을 켜면 이 메뉴가 열립니다.</p>
+          <h1 className="text-xl font-bold text-foreground mb-2">출원도우미는 지금 꺼져 있습니다</h1>
+          <p className="text-sm text-muted-foreground">관리자 페이지의 기능 설정에서 ‘출원도우미’를 켜면 이 메뉴가 열립니다.</p>
         </main>
       </PageLayout>
     );
@@ -147,12 +147,12 @@ const Filing = () => {
         </DialogContent>
       </Dialog>
       <main aria-labelledby="filing-title" className="relative z-10">
-        <h1 id="filing-title" className="sr-only">출원지원</h1>
+        <h1 id="filing-title" className="sr-only">출원도우미</h1>
         {/* 단계 바 — AIS 디자인. 누르면 iframe 안 에이프가 그 단계로 간다 */}
         <div className="container mx-auto px-3 sm:px-4 md:px-6 pt-2 md:pt-3">
           <p className="mb-1.5 flex items-start gap-2 text-[11.5px] md:text-xs leading-relaxed text-muted-foreground" role="note">
             <span className="flex-shrink-0 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/10 dark:text-amber-200">개발 중</span>
-            <span>출원지원은 개발 중인 기능이라 실제 출원에 쓸 때 제한이 있을 수 있어요. 특허 가능성 판단과 명세서 초안은 참고 자료이며, 이 결과물이 특허 출원이나 등록을 보장하지 않습니다. 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다.</span>
+            <span>출원도우미는 개발 중인 기능이라 실제 출원에 쓸 때 제한이 있을 수 있어요. 특허 가능성 판단과 명세서 초안은 참고 자료이며, 이 결과물이 특허 출원이나 등록을 보장하지 않습니다. 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다.</span>
           </p>
           <div ref={barRef} className="glossy-card rounded-2xl md:rounded-3xl px-2.5 md:px-4 py-2 md:py-2.5">
             <div className="flex items-center gap-2 md:gap-3">
@@ -161,7 +161,7 @@ const Filing = () => {
                   <FileSignature className="w-4 h-4 text-white" />
                 </div>
                 <div className="leading-tight">
-                  <p className="text-[13px] font-bold text-foreground">출원지원</p>
+                  <p className="text-[13px] font-bold text-foreground">출원도우미</p>
                   <p className="text-[11px] text-muted-foreground truncate max-w-[160px]" title={state?.title || undefined}>{state?.title || "아이디어부터 제출까지"}</p>
                 </div>
               </div>
@@ -212,7 +212,7 @@ const Filing = () => {
                     {state.dday.text}
                   </span>
                 )}
-                <button type="button" onClick={() => post({ type: "agri-ip:open", panel: "help" })} className="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full text-muted-foreground hover:bg-accent/60 transition-colors" title="도움말 · 진행 상황 · 작업 파일 내보내기" aria-label="도움말">
+                <button type="button" onClick={() => post({ type: "agri-ip:open", panel: "help" })} className="inline-flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-full text-muted-foreground hover:bg-accent/60 transition-colors" title="도움말 · 진행 상황" aria-label="도움말">
                   <HelpCircle className="w-4 h-4" />
                 </button>
               </div>
@@ -290,14 +290,14 @@ const Filing = () => {
         <iframe
           ref={frameRef}
           src={src}
-          title="출원지원"
+          title="출원도우미"
           className="block w-full border-0 bg-background mt-2"
           style={{ height: `calc(100dvh - ${frameTop}px)`, minHeight: 520 }}
           allow="clipboard-read; clipboard-write; fullscreen"
           referrerPolicy="strict-origin-when-cross-origin"
         />
         <p className="container mx-auto px-4 py-2.5 text-[11px] md:text-xs text-muted-foreground">
-          작성 내용은 이 브라우저에 저장됩니다{state?.api ? ` · ${state.api}` : ""}. 화면이 보이지 않으면{" "}
+          작성 내용은 이 브라우저에만 저장됩니다{state?.api ? ` · ${state.api}` : ""}. 검색·AI 버튼을 누를 때만 그 내용이 서버로 갑니다. 화면이 보이지 않으면{" "}
           <a href={standalone} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-6 underline hover:text-foreground/70">새 창으로 열기</a>를 누르세요.
         </p>
       </main>

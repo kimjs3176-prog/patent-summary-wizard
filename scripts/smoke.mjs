@@ -99,6 +99,18 @@ for (const width of WIDTHS) {
   try {
     await p.goto(`${BASE}/filing-app/index.html#idea`, { waitUntil: "load" });
     await p.waitForFunction(() => typeof window.startPractice === "function");
+    // 옛 사파리(iOS 16.3 이하)·카카오톡 안 브라우저에서도 열리게: 앱 스크립트에 정규식 lookbehind·Array.prototype.at 이 없고, 시작 코드가 끝까지 돌면 옛 브라우저용 안내를 지운다
+    const oldSyntax = [...new Set((await (await fetch(`${BASE}/filing-app/index.html`)).text()).match(/\(\?<[=!]|\.at\(/g) || [])];
+    if (oldSyntax.length || (await p.locator("#boot-fail").count())) fail(where, `옛 브라우저 호환이 깨짐: ${oldSyntax.join(" ") || "옛 브라우저 안내가 남음"}`);
+    // 시작 코드가 첫 화면을 그리기 전에 실행 오류로 멈춰도(옛 엔진에 없는 기능) 빈 상자 대신 안내가 남는다
+    const old = await p.context().newPage();
+    await old.addInitScript(() => Object.defineProperty(window, "FILING_ONLY", { configurable: true, get() { throw new Error("옛 엔진 흉내"); } }));
+    await old.goto(`${BASE}/filing-app/index.html#idea`, { waitUntil: "load" });
+    if (!(await old.locator("#main #boot-fail").count())) fail(where, "시작하다 멈추면 안내 없이 빈 화면이 됨");
+    await old.close();
+    // 이름은 메뉴와 같은 ‘출원도우미’ 하나: 탭 제목·화면에 옛 이름(출원지원·에이프·Agri-IP)이 없다
+    const names = await p.evaluate(() => ({ title: document.title, old: [...new Set(document.body.innerText.match(/출원지원|에이프|Agri-IP/g) || [])].join() }));
+    if (!/^출원도우미/.test(names.title) || names.old) fail(where, `서비스 이름이 섞임: ${JSON.stringify(names)}`);
     const pages = await p.evaluate(() => {
       startPractice(4242);
       const out = [];
@@ -106,6 +118,9 @@ for (const width of WIDTHS) {
       return out;
     });
     console.log(`  쪽 ${pages.length}개: ${pages.join(" ")}`);
+    // 내려받는 글(상담 요약서·검토 요청·제출 안내)에도 옛 이름이 없고, 제출 안내는 AI 버튼을 누르면 적은 내용이 외부 AI로 간다고 알린다
+    const files = await p.evaluate(() => { const g = submissionGuide(filingFiles()); return { old: [...new Set([consultBrief(), attorneyText(), g].join("\n").match(/출원지원|에이프|Agri-IP/g) || [])], ai: /AI 버튼을 누르면 적은 내용이 외부 AI 서버로/.test(g) }; });
+    if (files.old.length || !files.ai) fail(where, `내려받는 글의 이름·AI 안내가 이상함: ${JSON.stringify(files)}`);
     // 손으로 고친 값: 명칭을 바꾸면 검색어가 따라가고, 수치 범위의 단위·속성(직경 등)은 청구항에 맞게 읽는다
     const hand = await p.evaluate(() => ({ kw: kwFromTitle("블루베리 선도 유지용 통기 포장 용기"), a: parsePart("직경 0.2~0.5 mm 미세 천공부"), b: parsePart("제올라이트 흡습 패드 3~8 g") }));
     if (hand.kw !== "블루베리\n포장\n용기") fail(where, `명칭에서 뽑은 검색어가 이상함: ${JSON.stringify(hand.kw)}`);
@@ -133,6 +148,9 @@ for (const width of WIDTHS) {
     if (form.join() !== "인터넷 게시,인터넷 게시") fail(where, `연습 4242의 공개형태가 공개한 곳과 다름: ${form}`);
     // 진단 쪽에서 바로 고치기: 카드 안에 고칠 칸이 열린다 (다른 쪽으로 가지 않는다)
     await p.evaluate(() => goPage("diag", 0));
+    // AI 시작 카드는 누르면 적은 내용이 외부 AI 서버로 간다고 알린다 (AI 서버가 막힌 점검 환경이라 켠 것처럼 그려 본다)
+    const aiNote = await p.evaluate(() => { const was = S.draftApi; S.draftApi = was || "smoke"; const h = ["reject", "compare", "ideate"].map((t) => aiStartCard(t)).filter(Boolean); S.draftApi = was; return h.length > 0 && h.every((x) => /외부 AI 서버로/.test(x)); });
+    if (!aiNote) fail(where, "AI 시작 카드에 외부 AI 서버로 보낸다는 안내가 없음");
     const rq = p.locator("[data-rq-open]");
     if (await rq.count()) {
       await rq.first().click();
@@ -166,6 +184,10 @@ for (const width of WIDTHS) {
     });
     if (easy.secs < 5 || !easy.q || !easy.raw || easy.brief < 500) fail(where, `쉬운 말 읽기·상담 요약서가 이상함: ${JSON.stringify(easy)}`);
     console.log(`  쉬운 말 읽기 ${easy.secs}항목 · 상담 요약서 ${easy.brief}자`);
+    // 서류 미리보기 글상자는 어느 서류인지 이름이 있다 (화면낭독기)
+    await p.evaluate(() => goPage("draft", 3));
+    const noName = await p.evaluate(() => [...document.querySelectorAll("#main textarea[readonly]")].filter((t) => !t.labels?.length && !t.getAttribute("aria-label")).map((t) => t.id));
+    if (noName.length) fail(where, `이름 없는 서류 미리보기: ${noName.join(", ")}`);
     await p.evaluate(() => goPage("draft", 4));
     const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 20000 }), p.locator("#save-package").click()]);
     const path = await dl.path();
@@ -219,6 +241,15 @@ for (const width of WIDTHS) {
     });
     if (ren2.at < 0 || !ren2.list || !/ 및 말토덱스트린을 포함하는 /.test(ren2.c1) || /균주 입수/.test(ren2.todo)) fail(where, `물질명 답·서류 남은 일이 이상함: ${JSON.stringify(ren2)}`);
     console.log(`  수치 표기 시험표 ${nums.length ? "실패" : "통과"} · 청구항 ${claims.length ? "실패" : "통과"}`);
+    // 예시 변리사 카드와 아무것도 보내지 않는 ‘상담 요청’ 버튼은 없다 (상담 요약서 받기만)
+    await p.evaluate(() => goPage("manage", 0));
+    await p.waitForFunction(() => S.step === "manage" && document.querySelector("#main [data-consult-brief]"), null, { timeout: 5000 });
+    if (await p.locator("#main [data-consult]").count()) fail(where, "보내지 않는 ‘상담 요청’ 버튼이 있음");
+    // 유망기술 발굴 3쪽: 아직 찾지 않았으면 관심 분야로 돌아가는 버튼이 있고, 관심 분야는 쉬운 뜻이 붙은 seg 타일
+    await p.evaluate(() => { S.disc.data = null; goPage("discover", 2); });
+    await p.waitForFunction(() => S.step === "discover" && document.querySelector('#main .sub[data-pg="2"]'), null, { timeout: 5000 });
+    const disc = await p.evaluate(() => ({ back: !!document.querySelector('#main .sub[data-pg="2"] button[data-sub="0"]'), tiles: document.querySelectorAll('#main .seg [name="disc-field"] + span small').length }));
+    if (!disc.back || disc.tiles < 7) fail(where, `유망기술 발굴 빈 화면·관심 분야 타일이 이상함: ${JSON.stringify(disc)}`);
   } catch (e) {
     fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
   }
@@ -234,6 +265,9 @@ for (const width of WIDTHS) {
   try {
     await p.goto(`${BASE}/filing-app/index.html#idea`, { waitUntil: "load" });
     await p.waitForFunction(() => typeof chatCur === "function" && document.querySelector("#f-chat"));
+    // 휴대폰 폭에서 아이콘만 보이는 ‘이전’ 버튼도 화면낭독기에는 이름이 읽힌다
+    const prevName = await p.evaluate(() => { const s = document.querySelector('#pagebar [data-nav="prev"] .pb-l'); return s && getComputedStyle(s).display !== "none" ? s.textContent.trim() : ""; });
+    if (!prevName) fail(where, "휴대폰 폭의 ‘이전’ 버튼에 이름이 없음");
     const pick = (name, value) => p.locator(`label:has(input[name="${name}"][value="${value}"])`).click();
     // 첫 질문은 평소 말투의 문장: 규칙으로 분야·낱말·발명 유형을 읽는다
     const read = await p.evaluate(() => ({ a: analyzePitch("비행하는 트랙터를 만들거야"), b: analyzePitch("쌀겨를 발효해서 액상 비료를 만들고 싶어요") }));
