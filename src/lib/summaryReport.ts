@@ -62,8 +62,9 @@ export interface MarketRow {
   source?: string;
 }
 
-const AMOUNT = String.raw`(?:USD\s*[\d,.]+\s*(?:억|십억|billion|million)?|[\d,.]+\s*(?:조(?:\s*[\d,]+\s*억)?|억)\s*(?:[\d,]+\s*만\s*)?원)`;
-const YEAR_AMOUNT = new RegExp(String.raw`((?:19|20)\d{2})\s*년(?:에|의|\s*기준)?\s*(?:약\s*)?(?:시장\s*규모[는은가이]?\s*)?(${AMOUNT})`, "g");
+// 원화(2조 3,400억 원), 달러 앞붙임(USD 78억), 달러 뒷붙임(78억 달러, 107억 2,400만 달러)을 모두 읽는다
+const AMOUNT = String.raw`(?:USD\s*[\d,.]+\s*(?:억|십억|billion|million)?|[\d,.]+\s*(?:조(?:\s*[\d,]+\s*억)?|억)\s*(?:[\d,]+\s*만\s*)?원|[\d,.]+\s*(?:조(?:\s*[\d,]+\s*억)?|억)\s*(?:[\d,]+\s*만\s*)?(?:달러|USD))`;
+const YEAR_AMOUNT = new RegExp(String.raw`((?:19|20)\d{2})\s*년(?:에는|에도|에|의|\s*기준)?\s*(?:약\s*)?(?:시장\s*규모[는은가이]?\s*)?(${AMOUNT})`, "g");
 const AMOUNT_ONLY = new RegExp(AMOUNT, "g");
 const CAGR = /(?:연평균|CAGR)[^\d%]{0,12}(\d+(?:\.\d+)?)\s*%/;
 const SOURCE = /\(\s*출처:\s*([^()]*?)\s*(?:,\s*(?:19|20)\d{2}년\s*기준(?:값에서\s*환산)?)?\s*\)/;
@@ -92,11 +93,15 @@ export function parseMarketRows(paragraphs: string[]): MarketRow[] {
     if (!current) continue;
     const plain = s.replace(/\*\*/g, "");
     const pairs = [...plain.matchAll(YEAR_AMOUNT)].map((m) => ({ year: Number(m[1]), amount: m[2].replace(/\s+/g, " ").trim() }));
-    // "2026년 약 1조 3,984억 원을 형성"처럼 연도와 금액 사이에 낱말이 끼면 금액만 따로 찾는다
-    if (!pairs.length) {
-      const years = [...plain.matchAll(/((?:19|20)\d{2})\s*년/g)].map((m) => Number(m[1]));
+    // "2026년 약 1조 3,984억 원을 형성"처럼 연도와 금액 사이에 낱말이 끼면 금액만 따로 찾는다.
+    // 쌍을 하나도 못 찾았거나, 일부만 찾았는데 연도 수와 금액 수가 같으면(하나씩 짝지을 수 있으면) 이 길을 쓴다.
+    const years = [...plain.matchAll(/((?:19|20)\d{2})\s*년/g)].map((m) => Number(m[1]));
+    if (pairs.length < years.length) {
       const amounts = [...plain.matchAll(AMOUNT_ONLY)].map((m) => m[0].replace(/\s+/g, " ").trim());
-      years.forEach((y, i) => { if (amounts[i]) pairs.push({ year: y, amount: amounts[i] }); });
+      if (!pairs.length || amounts.length === years.length) {
+        pairs.length = 0;
+        years.forEach((y, i) => { if (amounts[i]) pairs.push({ year: y, amount: amounts[i] }); });
+      }
     }
     for (const p of pairs) {
       if (current.baseYear == null || p.year < current.baseYear) {

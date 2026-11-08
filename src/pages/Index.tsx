@@ -2,7 +2,9 @@ import { RotateCcw, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { PatentInput } from "@/components/PatentInput";
-import { usePatentSummary } from "@/hooks/usePatentSummary";
+import { SUMMARY_TOAST_ID, usePatentSummary } from "@/hooks/usePatentSummary";
+import { SummaryErrorCard } from "@/components/PatentSummary/SummaryErrorCard";
+import { parseIpNumber } from "@/lib/ipNumber";
 import { useSearchHistory, SearchHistoryItem } from "@/hooks/useSearchHistory";
 import { SearchHistory } from "@/components/SearchHistory";
 import { Button } from "@/components/ui/button";
@@ -45,7 +47,7 @@ const Index = () => {
   const {
     isLoading, isFetching, summary, currentPatent, patentData,
     relatedPatents, analysisStep, generateSummary,
-    loadFromHistory, reset, summaryMeta
+    loadFromHistory, reset, summaryMeta, summaryError
   } = usePatentSummary();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { settings } = useSiteSettings();
@@ -78,7 +80,11 @@ const Index = () => {
     }
   }, [analysisStep]);
 
-  const handleSubmitInternal = async (patentNumber: string) => {
+  const handleSubmitInternal = async (raw: string) => {
+    // 링크·협의체·KIPRIS 복사본 등 표기가 달라도(KR10-…, 제…호, 1020808340000, 10-2080834-0000) 한 가지 번호로
+    // 주소·서버 조회·검색 기록·인기 순위를 맞춘다. 같은 특허가 따로 저장되거나 AI 요약이 두 번 만들어지지 않게 한다.
+    const ip = parseIpNumber(raw);
+    const patentNumber = ip?.supported ? ip.normalized : raw.trim();
     updateUrl(patentNumber);
     const result = await generateSummary(patentNumber);
     if (result && result.patentData) {
@@ -142,7 +148,7 @@ const Index = () => {
 
   // Site-wide services live in the shared header menu (SiteNav); only the summary view adds its own actions here.
   const headerBtn = "rounded-full text-[11px] md:text-xs h-8 md:h-9 px-2.5 md:px-3.5 glossy-card gap-1.5 btn-press font-medium";
-  const headerRight = (summary || isLoading) ? (
+  const headerRight = (summary || isLoading || summaryError) ? (
     <>
       <Button variant="outline" size="sm" onClick={() => { updateUrl(); reset(); }} className={headerBtn} aria-label="새로운 검색">
         <Search className="w-3.5 h-3.5" />
@@ -165,7 +171,7 @@ const Index = () => {
   return (
     <PageLayout headerRight={headerRight}>
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6 relative z-10">
-        {!summary && !isLoading ? (
+        {!summary && !isLoading && !summaryError ? (
           <>
             <HomeSearchHero
               onSubmit={handleSubmit}
@@ -254,6 +260,10 @@ const Index = () => {
                 />
               </div>
             </div>
+            {/* 실패하면 처음 화면으로 돌아가지 않고 결과 자리에 이유와 '다시 시도'를 남긴다 (주소의 ?patent= 와 화면이 맞는다) */}
+            {summaryError && !isLoading ? (
+              <SummaryErrorCard error={summaryError} onRetry={() => { if (currentPatent) void handleSubmitInternal(currentPatent); }} />
+            ) : (
             <Suspense fallback={<SummaryPlaceholder />}>
             {/* Until the patent record arrives the report has no title or basic-info block; showing it early made
                 every section jump down when they appeared (layout shift), so a placeholder holds the space instead. */}
@@ -278,7 +288,7 @@ const Index = () => {
                 onScoreReady={handleScoreReady}
                 onRegenerate={async () => {
                   if (!currentPatent) return;
-                  toast.info("요약서를 새로 생성합니다…");
+                  toast.info("요약서를 새로 생성합니다…", { id: SUMMARY_TOAST_ID });
                   const result = await generateSummary(currentPatent, { forceRegenerate: true });
                   if (result && result.patentData) {
                     addToHistory({
@@ -302,6 +312,7 @@ const Index = () => {
             </section>
             )}
             </Suspense>
+            )}
           </div>
         )}
       </main>

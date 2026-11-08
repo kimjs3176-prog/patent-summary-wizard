@@ -46,6 +46,23 @@ describe("요약서 보고서 레이아웃 도우미", () => {
     expect(rows[2]).toMatchObject({ baseYear: 2024, baseAmount: "USD 385억", cagr: "7.5%", projYear: 2026, projAmount: "USD 444.9억", trust: "ai" });
   });
 
+  it("'78억 달러'·'2026년에는 약 …' 꼴의 금액과 전망도 표에 옮긴다", () => {
+    // 운영 요약서(10-2250884, 10-2024-0193000)에서 표가 '-'로 비던 문장 그대로
+    const rows = parseMarketRows([
+      "본 기술이 적용되는 계측 장비의 상위 산업인 **국내 생물농약 및 친환경 농자재 시장**은 2023년 6,200억 원 규모에서 연평균 6.8%로 성장하여 2026년에는 약 7,553억 원에 이를 것으로 전망된다(AI 추정치). " +
+      "한편 해외의 **글로벌 바이오비료 및 생물농약 시장** 규모는 2023년 78억 달러 수준이었으며 연평균 11.2%의 성장세를 이어가 2026년에는 약 107억 2,400만 달러에 도달할 것으로 분석된다(AI 추정치). " +
+      "상위 시장인 국내 과채가공품 및 음료 원료 시장 규모는 2023년 2조 3,400억 원에서 연평균 4.8% 성장하여 2026년에는 약 2조 6,933억 원에 달할 것으로 전망된다(AI 추정치).",
+    ]);
+    expect(rows[0]).toMatchObject({ baseYear: 2023, baseAmount: "6,200억 원", projYear: 2026, projAmount: "7,553억 원" });
+    expect(rows[1]).toMatchObject({ baseYear: 2023, baseAmount: "78억 달러", cagr: "11.2%", projYear: 2026, projAmount: "107억 2,400만 달러" });
+    expect(rows[2]).toMatchObject({ label: "국내 과채가공품 및 음료 원료 시장", baseAmount: "2조 3,400억 원", projYear: 2026, projAmount: "2조 6,933억 원" });
+  });
+
+  it("연도만 있고 금액이 없는 연도는 금액과 엇갈려 짝짓지 않는다", () => {
+    const rows = parseMarketRows(["**국내 버섯 시장**은 2020년 이후 꾸준히 커져 2023년 1,500억 원에서 연평균 6.5% 성장하여 2026년 약 1,812억 원에 이를 전망이다(AI 추정치)."]);
+    expect(rows[0]).toMatchObject({ baseYear: 2023, baseAmount: "1,500억 원", projYear: 2026, projAmount: "1,812억 원" });
+  });
+
   it("굵게 표시가 없어도 '국내 …시장' 명사구를 시장명으로 본다", () => {
     const rows = parseMarketRows(["국내 버섯 시장은 2023년 1,500억 원 규모이며 연평균 6.5% 성장하고 있다(AI 추정치)."]);
     expect(rows[0]).toMatchObject({ label: "국내 버섯 시장", baseAmount: "1,500억 원", cagr: "6.5%", trust: "ai" });

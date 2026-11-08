@@ -5,6 +5,7 @@
  *   '영상 분석을 이용한 작물 생육 관리 방법' → 수단 '영상 분석' · 용도 '작물 생육 관리' · 형태 '방법'
  *   '쌀 단백질을 함유하는 라이스 볼의 제조방법' → 원료 '단백질' · 방식 '쌀' · 제품 '라이스 볼' · 형태 '제조방법'
  *   '콩 들불병 진단용 조성물 및 이의 용도' → 용도 낱말 ['콩', '들불병', '진단'] · 형태 '조성물'
+ *   '딸기의 저장, 유통성 향상을 위한 페룰린산 처리 방법' → 대상 '딸기' · 용도 '저장·유통성 향상' · 수단 '페룰린산 처리' · 형태 '방법'
  * 키워드는 낱말로만 내보낸다: '라이스 볼의'처럼 조사가 붙은 꼴은 조사를 떼고 쓴다.
  */
 export interface TitleParts {
@@ -62,7 +63,57 @@ export function parsePatentTitle(title: string): TitleParts {
     }
     return out;
   }
+  // '…의 …을 위한 … 방법/시스템': '의' 앞은 대상(원료 자리), 뒤는 용도, '위한' 뒤 형태 앞까지는 수단
+  const purpose = t.replace(/\s*\([^)]*\)/g, "").match(/^(.+?)(?:을|를)\s*위한\s+(.+)$/);
+  if (purpose) {
+    const goal = purpose[1].replace(/\s*,\s*/g, "·");
+    const of = goal.match(/^(.+?)의\s+(.+)$/);
+    if (of) { out.subject = cleanPhrase(of[1]); out.use = cleanPhrase(of[2]); } else out.use = cleanPhrase(goal);
+    const rest = purpose[2].split(" ");
+    out.kind = rest.pop() ?? ""; // '…을 위한 조성물'처럼 한 낱말이면 형태만 있고 수단은 없다
+    // '… 장치 및 방법'처럼 형태가 둘이면 '및'과 앞 형태도 수단에서 뺀다 ('양액 공급 장치 및'이 키워드가 되지 않게)
+    while (rest.length && /^(?:및|또는)$/.test(rest[rest.length - 1])) {
+      rest.pop();
+      if (rest.length && KIND_WORD.test(rest[rest.length - 1])) rest.pop();
+    }
+    out.means = cleanPhrase(rest.join(" ").replace(/\s+및\s+/g, "·"));
+    return out;
+  }
   const use = t.match(/^(.+?)용\s/);
   if (use) out.useWords = use[1].split(" ").filter(Boolean).map(stripParticle);
+  return out;
+}
+
+const KIND_WORD = /^(?:방법|제조방법|제조법|조성물|시스템|장치|키트|용도|모듈|제형|제제|설비|기구|구조)$/;
+const LINK_WORD = /^(?:및|또는|그|이의|이를|상기|위한|관한|본|발명|기반)$/;
+
+/** '종류와'·'드론과'의 이음 조사를 뗀다. 받침 없는 글자 뒤 '와', 받침 있는 글자 뒤 '과'만 조사로 본다(사과·무화과·결과는 그대로) */
+function stripAnd(w: string): string {
+  const m = w.match(/^(.+)([와과])$/);
+  if (!m || m[1].length < 2) return w;
+  const code = m[1].charCodeAt(m[1].length - 1) - 0xac00;
+  if (code < 0 || code > 11171) return w;
+  const hasFinal = code % 28 !== 0;
+  return (m[2] === "와") !== hasFinal ? m[1] : w;
+}
+
+/**
+ * 명칭의 내용 낱말을 앞에서부터 고른다(조사·형태·연결 낱말·'…하는' 꼴 제외).
+ * 명칭 형식을 나누지 못할 때 분류 이름보다 먼저 키워드로 쓴다 ('스마트 온실 환기 장치' → 스마트·온실).
+ */
+export function titleNouns(title: string, max = 2): string[] {
+  const words = String(title ?? "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[[\]{}<>"'`,.:;?!]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  const out: string[] = [];
+  for (const raw of words) {
+    if (/(?:하는|하기|한|된|되는|있는)$/.test(raw)) continue;
+    const w = stripAnd(stripParticle(raw));
+    if (w.length < 2 || KIND_WORD.test(w) || LINK_WORD.test(w) || /^\d/.test(w) || out.includes(w)) continue;
+    out.push(w);
+    if (out.length >= max) break;
+  }
   return out;
 }

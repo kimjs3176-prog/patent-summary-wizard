@@ -7,6 +7,8 @@ import { Plus, Trash2, Save, Loader2, ToggleLeft, ToggleRight } from "lucide-rea
 import { ScoreTrlSettings, type ScoreConfig, type TrlConfig } from "@/components/admin/ScoreTrlSettings";
 import { MarketReferencePanel, type MarketRefApiCall } from "@/components/admin/MarketReferencePanel";
 import type { Dispatch, SetStateAction } from "react";
+import { UnusedBadge, UnusedSetting } from "@/components/admin/UnusedSetting";
+import { formatAiModelLabel } from "@/components/PatentSummary/toss/helpers";
 
 interface AdminSummaryPanelProps {
   summaryTitles: Record<string, string>;
@@ -35,9 +37,11 @@ interface AdminSummaryPanelProps {
   handleSaveSummarySettings: () => Promise<void>;
   /** 관리자 API 호출(있으면 시장 표준값 검토 패널을 함께 보여준다) */
   apiCall?: MarketRefApiCall;
+  /** 서버가 요약에 실제로 쓰는 AI 모델(usage-stats 의 currentModel). 불러오기 전에는 null, 불러오지 못하면 빈 문자열 */
+  currentModel?: string | null;
 }
 
-export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySectionLengths, setSummarySectionLengths, summaryDisclaimer, setSummaryDisclaimer, summaryVisibleSections, setSummaryVisibleSections, summaryAiPromptExtra, setSummaryAiPromptExtra, summaryCardIcons, setSummaryCardIcons, summaryInfoLabels, setSummaryInfoLabels, isSavingSummarySettings, newSectionKey, setNewSectionKey, summaryMaxTokens, setSummaryMaxTokens, scoreConfig, setScoreConfig, trlConfig, setTrlConfig, handleSaveSummarySettings, apiCall }: AdminSummaryPanelProps) {
+export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySectionLengths, setSummarySectionLengths, summaryDisclaimer, setSummaryDisclaimer, summaryVisibleSections, setSummaryVisibleSections, summaryAiPromptExtra, setSummaryAiPromptExtra, summaryCardIcons, setSummaryCardIcons, summaryInfoLabels, setSummaryInfoLabels, isSavingSummarySettings, newSectionKey, setNewSectionKey, summaryMaxTokens, setSummaryMaxTokens, scoreConfig, setScoreConfig, trlConfig, setTrlConfig, handleSaveSummarySettings, apiCall, currentModel }: AdminSummaryPanelProps) {
   return (
           <TabsContent value="summary">
             <div className="space-y-6">
@@ -46,7 +50,7 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
               {/* Section Titles with Add/Delete */}
               <div>
                 <h3 className="font-semibold text-sm mb-3">섹션 제목 수정 · 추가/삭제</h3>
-                <p className="text-[10px] text-muted-foreground mb-3">AI 요약서의 각 섹션 제목을 변경하거나 새 섹션을 추가할 수 있습니다</p>
+                <p className="text-[10px] text-muted-foreground mb-3">섹션을 추가하거나 지우면 아래 항목별 분량 조절 목록도 함께 바뀝니다</p>
                 <div className="space-y-2">
                   {Object.entries(summaryTitles).map(([key, val]) => (
                     <div key={key} className="flex items-center gap-2">
@@ -98,11 +102,15 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1.5">왼쪽은 AI가 생성하는 원래 제목, 오른쪽은 표시할 제목입니다</p>
+                <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <UnusedBadge />오른쪽 표시 제목은 지금 요약서에 반영되지 않습니다. 왼쪽 원래 제목은 아래 항목별 분량 조절에 쓰입니다.
+                </p>
               </div>
 
               {/* Card Icons */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">카드 아이콘 (이모지)</h3>
+                <UnusedSetting>
                 <div className="space-y-2">
                   {[
                     { key: "patentInfo", label: "특허 정보 카드" },
@@ -121,11 +129,13 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                     </div>
                   ))}
                 </div>
+                </UnusedSetting>
               </div>
 
               {/* Patent Info Labels */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">특허 정보 라벨 수정</h3>
+                <UnusedSetting>
                 <p className="text-[10px] text-muted-foreground mb-3">특허 정보 카드에 표시되는 라벨 텍스트를 변경합니다</p>
                 <div className="space-y-2">
                   {[
@@ -147,11 +157,13 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                     </div>
                   ))}
                 </div>
+                </UnusedSetting>
               </div>
 
               {/* Disclaimer */}
               <div className="pt-4 border-t border-border/50">
-                <h3 className="font-semibold text-sm mb-3">면책 조항 문구</h3>
+                <h3 className="font-semibold text-sm mb-1">면책 조항 문구</h3>
+                <p className="text-[10px] text-muted-foreground mb-3">요약서 화면 맨 아래에 보입니다. 요약은 공개된 초록·청구항만 보고 만듭니다.</p>
                 <Input
                   value={summaryDisclaimer}
                   onChange={e => setSummaryDisclaimer(e.target.value)}
@@ -162,6 +174,7 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
               {/* Section Visibility */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">섹션 표시/숨김</h3>
+                <UnusedSetting>
                 <div className="space-y-3">
                   {[
                     { key: "commercialization", label: "기술분석 점수", desc: "종합 점수 + TRL 통합 카드 (기술성·시장성·사업성)" },
@@ -182,12 +195,13 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                     );
                   })}
                 </div>
+                </UnusedSetting>
               </div>
 
               {/* Summary Length */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">요약 결과 분량 조절</h3>
-                <p className="text-[10px] text-muted-foreground mb-3">AI 요약서의 결과 텍스트 분량을 조절합니다. 값이 클수록 더 상세한 요약이 생성됩니다.</p>
+                <UnusedSetting note="서버가 요약이 잘리지 않도록 분량을 고정해 지금은 반영되지 않습니다. 항목별 분량 조절을 쓰세요.">
                 <div className="space-y-3">
                   <div className="flex items-center gap-4">
                     {[
@@ -211,6 +225,7 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                   </div>
                   <div className="flex items-center gap-3 mt-3">
                     <Slider
+                      disabled
                       value={[summaryMaxTokens]}
                       onValueChange={([v]) => setSummaryMaxTokens(v)}
                       min={500}
@@ -230,8 +245,9 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                       max={8000}
                     />
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-2">현재 설정: {summaryMaxTokens} tokens (500~8000) · ⚠️ 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
+                  <p className="text-[10px] text-muted-foreground mt-2">저장된 값: {summaryMaxTokens} tokens</p>
                 </div>
+                </UnusedSetting>
               </div>
 
               {/* Section Lengths */}
@@ -274,12 +290,14 @@ export function AdminSummaryPanel({ summaryTitles, setSummaryTitles, summarySect
                 <p className="text-[10px] text-muted-foreground mt-2">⚠️ 항목별 분량 변경 후 기존 AI 캐시를 삭제해야 새 설정이 적용됩니다</p>
               </div>
 
-              {/* AI 분석 모델은 가격/성능 균형이 가장 우수한 Gemini 3 Flash Preview로 고정 */}
+              {/* AI 분석 모델: 서버가 실제로 쓰는 모델(usage-stats 의 currentModel)을 보여 준다. 여기서 바꾸지는 않는다 */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-2">AI 분석 모델</h3>
-                <div className="p-3 rounded-lg border border-border/50 bg-secondary/20">
-                  <p className="text-sm font-medium">Gemini 3 Flash Preview</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">현재 시점에서 분석 성능 대비 비용이 가장 우수한 모델로 고정 적용됩니다.</p>
+                <div className="p-3 rounded-lg border border-border/50 bg-secondary/20" data-current-model={currentModel ?? ""}>
+                  <p className="text-sm font-medium" title={currentModel ?? undefined}>
+                    {currentModel ? formatAiModelLabel(currentModel) : currentModel === "" ? "확인하지 못했습니다" : "불러오는 중…"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">요약서·점수 분석에 지금 쓰는 모델입니다. 서버 설정으로 정해지며 여기서 바꿀 수 없습니다.</p>
                 </div>
               </div>
 

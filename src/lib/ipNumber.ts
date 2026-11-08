@@ -55,7 +55,8 @@ function build(prefix: string, rest: string, isApplication: boolean): IpNumberIn
 export function parseIpNumber(input: string): IpNumberInfo | null {
   if (!input) return null;
 
-  // "제 10-2024-0080354 호", "KR 10-2024-0080354", 전각/유사 하이픈 정리
+  // "제 10-2024-0080354 호", "KR 10-2024-0080354", 전각/유사 하이픈 정리,
+  // 끝의 공보 종류 코드(10-2080834 B1, 10-2019-0003962 A, 20-0412345 Y1) 떼기
   const cleaned = input
     .trim()
     .replace(/[‐-‒–—―ー]/g, "-")
@@ -63,7 +64,8 @@ export function parseIpNumber(input: string): IpNumberInfo | null {
     .replace(/\s*호$/, "")
     .replace(/^KR\s*/i, "")
     .replace(/\s+/g, "")
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/(\d)-?(?:A|B|U|Y)\d?$/, "$1");
 
   if (!/^[0-9-]+$/.test(cleaned)) return null;
 
@@ -75,7 +77,8 @@ export function parseIpNumber(input: string): IpNumberInfo | null {
     return build(prefix, `${year}${serial.padStart(7, "0")}`, true);
   }
 
-  const dashedReg = cleaned.match(/^(10|20|30|40)-(\d{5,7})$/);
+  // KIPRIS 등록번호 전체 표기: 10-2080834-0000 (끝 0000 은 등록번호 뒤에 붙는 자리 채움)
+  const dashedReg = cleaned.match(/^(10|20|30|40)-(\d{5,7})(?:-0000)?$/);
   if (dashedReg) {
     const [, prefix, serial] = dashedReg;
     return build(prefix, serial.padStart(7, "0"), false);
@@ -86,9 +89,13 @@ export function parseIpNumber(input: string): IpNumberInfo | null {
 
   const digits = cleaned;
 
-  // 2) 13자리: XX + YYYY + 7자리 → 출원번호
+  // 2) 13자리: XX + YYYY + 7자리 → 출원번호, 또는 XX + 등록번호 7자리 + 0000 → 등록번호(KIPRIS 원번호)
+  //    한 해 출원은 100만 건이 안 되어 출원 일련번호 7자리는 늘 0으로 시작한다. 그래서 끝이 0000 이면서
+  //    연도로 읽히지 않거나 일련번호 첫 자리가 0이 아니면 등록번호로 읽는다 (1020808340000 → 10-2080834).
   if (digits.length === 13 && KIND_BY_PREFIX[digits.slice(0, 2)]) {
     const year = digits.slice(2, 6);
+    const registration = digits.endsWith("0000") && (!isPlausibleYear(year) || digits[6] !== "0");
+    if (registration) return build(digits.slice(0, 2), digits.slice(2, 9), false);
     if (isPlausibleYear(year)) return build(digits.slice(0, 2), digits.slice(2), true);
   }
 

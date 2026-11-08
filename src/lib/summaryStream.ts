@@ -26,7 +26,7 @@ export type StreamFrame =
   | { type: "delta"; content: string }
   | { type: "final"; content: string }
   | { type: "meta"; meta: SummaryMeta }
-  | { type: "error"; message: string }
+  | { type: "error"; message: string; code?: string }
   | { type: "done" }
   | { type: "skip" };
 
@@ -58,7 +58,7 @@ export function parseSseLine(rawLine: string): StreamFrame {
     if (typeof obj.final_content !== "string") return frame;
   }
   if (typeof obj.error === "string") {
-    return { type: "error", message: typeof obj.message === "string" && obj.message ? obj.message : "요약 생성 중 오류가 발생했습니다." };
+    return { type: "error", code: obj.error, message: typeof obj.message === "string" && obj.message ? obj.message : "요약 생성 중 오류가 발생했습니다." };
   }
   if (typeof obj.final_content === "string" && obj.final_content.length > 0) {
     return { type: "final", content: obj.final_content };
@@ -94,4 +94,27 @@ export function metaFromPayload(rawLine: string): SummaryMeta | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Whether a server error frame is worth another try. Decided from the frame's code, not its wording:
+ *   empty_response, stream_error  the model answered badly this time; nothing was cached, so a plain retry regenerates
+ *   ai_error                      gateway failure; retried unless it was a rate limit (429) or out of credits (402),
+ *                                 which the frame only tells apart by its message
+ */
+export function isRetryableErrorFrame(code: string | undefined, message: string): boolean {
+  if (code === "empty_response" || code === "stream_error") return true;
+  if (code === "ai_error") return !/요청이 너무 많|크레딧/.test(message);
+  return false;
+}
+
+/** Whether an HTTP failure of summarize-patent is worth another try: server-side 5xx and timeouts, never 4xx limits. */
+export function isRetryableSummaryStatus(status: number): boolean {
+  return status === 408 || (status >= 500 && status < 600);
+}
+
+/** Drops "자동 재시도합니다" style promises from a message shown after the last try has already failed. */
+export function finalFailureMessage(message: string): string {
+  const cleaned = message.replace(/\s*(?:자동\s*)?재시도합니다\.?\s*$/, "").trim();
+  return cleaned || "요약서를 만들지 못했습니다.";
 }

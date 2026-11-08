@@ -17,6 +17,7 @@ import { AdminSummaryPanel } from '@/components/admin/AdminSummaryPanel';
 import { AdminOutputPanel } from '@/components/admin/AdminOutputPanel';
 import { AdminSystemPanel } from '@/components/admin/AdminSystemPanel';
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { DEFAULT_SUMMARY_DISCLAIMER } from "@/lib/summaryNotice";
 
 
 
@@ -57,6 +58,18 @@ const Admin = () => {
     setSatComments(commentsRes?.success ? (commentsRes.comments as typeof satComments) || [] : []);
   };
 
+  // 요약서 탭의 'AI 분석 모델' 칸: 서버가 실제로 쓰는 모델 이름만 가볍게 불러온다(시스템 탭을 열었으면 그 값을 쓴다)
+  const [currentModel, setCurrentModel] = useState<string | null>(null);
+  const loadCurrentModel = async () => {
+    if (currentModel || usageStats?.currentModel) return;
+    try {
+      const result = await apiCall("usage-stats");
+      setCurrentModel(result.success && typeof result.stats?.currentModel === "string" ? result.stats.currentModel : "");
+    } catch {
+      setCurrentModel(""); // 모델 이름을 못 불러와도 다른 설정은 그대로 쓸 수 있다('확인하지 못함'으로 보이고 탭을 다시 열면 다시 묻는다)
+    }
+  };
+
   const loadUsageStats = async () => {
     setStatsLoading(true);
     try {
@@ -81,7 +94,7 @@ const Admin = () => {
 
   const [summaryTitles, setSummaryTitles] = useState<Record<string, string>>(DEFAULT_SECTION_TITLES);
   const [summarySectionLengths, setSummarySectionLengths] = useState<Record<string, number>>(DEFAULT_SECTION_LENGTHS);
-  const [summaryDisclaimer, setSummaryDisclaimer] = useState("※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음");
+  const [summaryDisclaimer, setSummaryDisclaimer] = useState(DEFAULT_SUMMARY_DISCLAIMER);
   const [summaryVisibleSections, setSummaryVisibleSections] = useState<Record<string, boolean>>(DEFAULT_VISIBLE_SECTIONS);
   const [summaryAiPromptExtra, setSummaryAiPromptExtra] = useState("");
   const [summaryCardIcons, setSummaryCardIcons] = useState<Record<string, string>>(DEFAULT_CARD_ICONS);
@@ -444,7 +457,7 @@ const Admin = () => {
               <TabsTrigger value="settings" className="gap-1.5 text-xs sm:text-sm">
                 <Settings className="w-3.5 h-3.5" /> 홈페이지
               </TabsTrigger>
-              <TabsTrigger value="summary" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="summary" className="gap-1.5 text-xs sm:text-sm" onClick={() => { void loadCurrentModel(); }}>
                 <FileText className="w-3.5 h-3.5" /> 요약서
               </TabsTrigger>
               <TabsTrigger value="output" className="gap-1.5 text-xs sm:text-sm">
@@ -463,7 +476,7 @@ const Admin = () => {
           <AdminHomepagePanel siteSettings={siteSettings} setSiteSettings={setSiteSettings} isSavingSettings={isSavingSettings} categoryOptions={categoryOptions} setCategoryOptions={setCategoryOptions} techVideos={techVideos} setTechVideos={setTechVideos} dragVideoIdx={dragVideoIdx} setDragVideoIdx={setDragVideoIdx} homepageVisibleSections={homepageVisibleSections} setHomepageVisibleSections={setHomepageVisibleSections} handleSaveSettings={handleSaveSettings} apiCall={apiCall} />
 
           {/* ===== Summary Customization Tab ===== */}
-          <AdminSummaryPanel summaryTitles={summaryTitles} setSummaryTitles={setSummaryTitles} summarySectionLengths={summarySectionLengths} setSummarySectionLengths={setSummarySectionLengths} summaryDisclaimer={summaryDisclaimer} setSummaryDisclaimer={setSummaryDisclaimer} summaryVisibleSections={summaryVisibleSections} setSummaryVisibleSections={setSummaryVisibleSections} summaryAiPromptExtra={summaryAiPromptExtra} setSummaryAiPromptExtra={setSummaryAiPromptExtra} summaryCardIcons={summaryCardIcons} setSummaryCardIcons={setSummaryCardIcons} summaryInfoLabels={summaryInfoLabels} setSummaryInfoLabels={setSummaryInfoLabels} isSavingSummarySettings={isSavingSummarySettings} newSectionKey={newSectionKey} setNewSectionKey={setNewSectionKey} summaryMaxTokens={summaryMaxTokens} setSummaryMaxTokens={setSummaryMaxTokens} scoreConfig={scoreConfig} setScoreConfig={setScoreConfig} trlConfig={trlConfig} setTrlConfig={setTrlConfig} handleSaveSummarySettings={handleSaveSummarySettings} apiCall={apiCall} />
+          <AdminSummaryPanel summaryTitles={summaryTitles} setSummaryTitles={setSummaryTitles} summarySectionLengths={summarySectionLengths} setSummarySectionLengths={setSummarySectionLengths} summaryDisclaimer={summaryDisclaimer} setSummaryDisclaimer={setSummaryDisclaimer} summaryVisibleSections={summaryVisibleSections} setSummaryVisibleSections={setSummaryVisibleSections} summaryAiPromptExtra={summaryAiPromptExtra} setSummaryAiPromptExtra={setSummaryAiPromptExtra} summaryCardIcons={summaryCardIcons} setSummaryCardIcons={setSummaryCardIcons} summaryInfoLabels={summaryInfoLabels} setSummaryInfoLabels={setSummaryInfoLabels} isSavingSummarySettings={isSavingSummarySettings} newSectionKey={newSectionKey} setNewSectionKey={setNewSectionKey} summaryMaxTokens={summaryMaxTokens} setSummaryMaxTokens={setSummaryMaxTokens} scoreConfig={scoreConfig} setScoreConfig={setScoreConfig} trlConfig={trlConfig} setTrlConfig={setTrlConfig} handleSaveSummarySettings={handleSaveSummarySettings} apiCall={apiCall} currentModel={usageStats?.currentModel || currentModel} />
 
           {/* ===== Output Tab (Print + PDF) ===== */}
           <AdminOutputPanel printSections={printSections} setPrintSections={setPrintSections} isSavingPrintSettings={isSavingPrintSettings} pdfLayoutConfig={pdfLayoutConfig} apiCall={apiCall} handleSavePrintSettings={handleSavePrintSettings} />

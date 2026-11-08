@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { type SiteSettings, SETTINGS_FIELDS } from './adminPageConstants';
 import type { Dispatch, SetStateAction } from "react";
+import { UnusedSetting } from "@/components/admin/UnusedSetting";
 
 interface AdminHomepagePanelProps {
   siteSettings: SiteSettings;
@@ -54,6 +55,7 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
               {/* Color Settings */}
               <div className="pt-4 border-t border-border/50">
                 <h3 className="font-semibold text-sm mb-3">🎨 컬러 설정</h3>
+                <UnusedSetting note="사이트 색은 디자인에 고정돼 있어 여기서 바꾼 색은 반영되지 않습니다.">
                 <div className="space-y-3">
                   {[
                     { key: "primary_color", label: "메인 컬러 (히어로 그라데이션)", placeholder: "#00aba2" },
@@ -78,6 +80,7 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                     </div>
                   ))}
                 </div>
+                </UnusedSetting>
               </div>
 
               {/* Feature Toggles */}

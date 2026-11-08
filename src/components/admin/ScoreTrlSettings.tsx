@@ -4,6 +4,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import { TRL_REFERENCE_LEVELS } from "@/lib/trlPresentation";
+import { UnusedSetting } from "@/components/admin/UnusedSetting";
 
 export interface ScoreConfig {
   cardTitle: string;
@@ -74,8 +75,10 @@ export function ScoreTrlSettings({ scoreConfig, trlConfig, onScoreConfigChange, 
 
   return (
     <div className="space-y-4">
-      {/* ===== Score Settings ===== */}
-      <CollapsibleSection title="📊 기술사업화점수 설정">
+      {/* ===== Score Settings ===== (점수 계산·요약서는 이 설정을 읽지 않는다: 비중은 서버에 고정) */}
+      <CollapsibleSection title="📊 기술사업화점수 설정 · 현재 쓰지 않음">
+        <UnusedSetting note="점수 비중·등급은 서버 계산에 고정돼 있고, 카드 제목·항목명도 지금 요약서에 반영되지 않습니다.">
+        <div className="space-y-4">
         {/* Card Title */}
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">카드 제목</label>
@@ -125,6 +128,7 @@ export function ScoreTrlSettings({ scoreConfig, trlConfig, onScoreConfigChange, 
             <div key={key} className="flex items-center gap-3 mb-2">
               <span className="text-xs w-16 flex-shrink-0">{scoreConfig.subLabels[key]}</span>
               <Slider
+                disabled
                 value={[scoreConfig.weights[key]]}
                 onValueChange={([v]) => onScoreConfigChange({
                   ...scoreConfig,
@@ -190,6 +194,8 @@ export function ScoreTrlSettings({ scoreConfig, trlConfig, onScoreConfigChange, 
             <RotateCcw className="w-3.5 h-3.5 mr-1" /> 기본값 복원
           </Button>
         </div>
+        </div>
+        </UnusedSetting>
       </CollapsibleSection>
 
       {/* ===== TRL Settings ===== */}
@@ -274,9 +280,6 @@ export function ScoreTrlSettings({ scoreConfig, trlConfig, onScoreConfigChange, 
         </div>
       </CollapsibleSection>
 
-      <p className="text-[10px] text-muted-foreground">
-        ⚠️ 비중/등급 변경 후 기존 점수 캐시를 삭제해야 새 설정으로 재계산됩니다
-      </p>
     </div>
   );
 }

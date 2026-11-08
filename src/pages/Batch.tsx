@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/DateField";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { parseIpNumberList, IP_KIND_LABEL, IpNumberInfo } from "@/lib/ipNumber";
+import { parseIpNumber, parseIpNumberList, IP_KIND_LABEL, IpNumberInfo } from "@/lib/ipNumber";
 import { safeFetch } from "@/lib/safeFetch";
 import { supabase } from "@/integrations/supabase/client";
 import { lookupCachedScores, registrationShortForm, scoreFor, type ScoreFetcher } from "@/lib/scoreCacheLookup";
@@ -101,8 +101,10 @@ async function attachCachedScores(rows: ExportRow[]): Promise<{ rows: ExportRow[
   }
 }
 
-/** 숫자만 있는 KIPRIS 번호를 10-2021-0162560 / 10-2456789 형태로 */
+/** 숫자만 있는 KIPRIS 번호를 10-2021-0162560 / 10-2456789 형태로 (13자리 등록번호 1024567890000 도 번호 규칙으로 읽는다) */
 const dash = (n: string) => {
+  const ip = parseIpNumber(n || "");
+  if (ip) return ip.normalized;
   const c = (n || "").replace(/\D/g, "");
   if (c.length === 13) return `${c.slice(0, 2)}-${c.slice(2, 6)}-${c.slice(6)}`;
   if (c.length >= 9) return `${c.slice(0, 2)}-${c.slice(2, 9)}`;

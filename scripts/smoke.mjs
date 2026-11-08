@@ -6,6 +6,7 @@
 // - 출원도우미(public/filing-app): 연습 시나리오로 1~5단계의 모든 쪽을 돌고, 기본 명세서·빈칸 질문·제출용 묶음 파일을 만든 뒤 넘어가기 전 점검 팝업을 거쳐 5단계로 간다.
 // - 출원도우미 1단계: 사전 질문(대화)에 화면에서 차례로 답하고, 초안 고르기 쪽의 절차를 하나씩 연 뒤 2단계로 넘어간다.
 // - 요약서(데이터시트형): scripts/fixtures 의 저장된 서버 응답으로 띄워, 인쇄와 PDF 다운로드가 정확히 A4 두 쪽인지 본다.
+//   2쪽 바닥글의 'AI 분석 참고자료 · 생성일', 용어 풀이의 키보드 열기, 요약 생성 실패 때 결과 자리의 '다시 시도'도 본다.
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -358,6 +359,8 @@ for (const width of WIDTHS) {
     const st = await p.evaluate(() => ({ printing: document.body.classList.contains("ais-printing"), free: document.querySelectorAll(".ds-free").length, scale: [...document.querySelectorAll(".ds-sheet")].map((s) => s.style.getPropertyValue("--ds-scale") || "1") }));
     if (!st.printing) fail(where, "인쇄 버튼을 눌렀는데 요약서만 남기는 인쇄 상태가 아님");
     if (st.free) fail(where, `글자를 78%까지 줄여도 한 쪽에 안 들어가는 면이 ${st.free}개`);
+    const foot = await p.evaluate(() => document.querySelectorAll(".ds-pf")[1]?.textContent || "");
+    if (!/AI 분석 참고자료 · 생성 20\d\d\.\d\d\.\d\d/.test(foot)) fail(where, `2쪽 바닥글에 참고자료·생성일이 없음: ${foot}`);
     await p.emulateMedia({ media: "print" });
     const printed = pageCount(await p.pdf({ preferCSSPageSize: true, printBackground: true }));
     await p.emulateMedia({ media: "screen" });
@@ -367,6 +370,44 @@ for (const width of WIDTHS) {
     const downloaded = pageCount(fs.readFileSync(await dl.path()));
     if (downloaded !== 2) fail(where, `PDF 다운로드가 ${downloaded}쪽 (2쪽이어야 함)`);
     console.log(`  인쇄 ${printed}쪽 · PDF 다운로드 ${downloaded}쪽 · 글자 배율 ${st.scale.join(", ")}`);
+    // 용어 풀이(점선 밑줄)는 키보드로도 연다: 포커스 → Enter 로 열고 Esc 로 닫는다 (휴대폰 탭은 vitest 가 본다)
+    const term = p.locator(".ds .cursor-help").first();
+    await term.focus();
+    await p.keyboard.press("Escape");
+    await p.keyboard.press("Enter");
+    await p.locator("[role=tooltip]").first().waitFor({ timeout: 3000 }).catch(() => {});
+    const tip = await p.locator("[role=tooltip]").count();
+    await p.keyboard.press("Escape");
+    if (tip !== 1) fail(where, `용어 풀이가 키보드(Enter)로 열리지 않음 (${tip})`);
+  } catch (e) {
+    fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
+  }
+  for (const e of p.errors) fail(where, `페이지 오류: ${e}`);
+  await p.context().close();
+}
+
+// 요약서 생성 실패: 처음 화면으로 돌아가지 않고 결과 자리에 '다시 시도'가 남는다 (요청 한도 429 는 자동으로 다시 시도하지 않아 바로 끝난다)
+{
+  const where = "요약서 실패";
+  console.log(where);
+  const fs = await import("node:fs");
+  const fx = JSON.parse(fs.readFileSync(new URL("./fixtures/summary-10-2080834.json", import.meta.url), "utf8"));
+  const p = await page(390);
+  let calls = 0;
+  await p.context().route(/\/functions\/v1\/([a-z-]+)/, (r) => {
+    const name = r.request().url().match(/\/functions\/v1\/([a-z-]+)/)[1];
+    if (name === "summarize-patent") { calls++; return r.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }) }); }
+    const f = fx.functions[name];
+    return f ? r.fulfill({ status: f.status, contentType: f.contentType, body: f.body }) : r.abort();
+  });
+  try {
+    await p.goto(`${BASE}/?patent=${fx.patent}`, { waitUntil: "load", timeout: 30000 });
+    await p.locator("[data-summary-error] button:has-text('다시 시도')").waitFor({ timeout: 20000 });
+    if (!p.url().includes(`patent=${fx.patent}`)) fail(where, `주소의 특허 번호가 사라짐: ${p.url()}`);
+    await p.locator("[data-summary-error] button:has-text('다시 시도')").click();
+    for (let t = 0; t < 100 && !(calls === 2 && (await p.locator("[data-summary-error]").count())); t++) await p.waitForTimeout(200);
+    if (calls !== 2) fail(where, `요약 요청 ${calls}번 (처음 1번 + 다시 시도 1번이어야 함)`);
+    console.log(`  다시 시도 카드 · 요약 요청 ${calls}번`);
   } catch (e) {
     fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
   }

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FavoriteToggle } from "@/components/search/FavoriteToggle";
 import { useCardFavorites } from "@/components/search/useCardFavorites";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { parseIpNumber } from "@/lib/ipNumber";
 import {
   CONSORTIUM_ORGS,
   consortiumInitial,
@@ -183,11 +184,16 @@ const FoodConsortium = () => {
                 )}
                 {items.length > 0 && (
                   <ul className="rounded-2xl border border-border/50 bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
-                    {items.map((r) => (
+                    {items.map((r) => {
+                      // 요약서·관심특허는 10-2019-0003962 꼴로 맞춘다 (KIPRIS 13자리 원번호로 넘기면 같은 특허가 따로 저장된다).
+                      // 예전에 원번호로 담아 둔 관심특허는 그 키를 그대로 쓴다.
+                      const no = parseIpNumber(r.applicationNumber)?.normalized ?? r.applicationNumber;
+                      const favKey = favorites.isFavorite(r.applicationNumber) ? r.applicationNumber : no;
+                      return (
                       <li key={r.applicationNumber} className="border-b border-border/40 last:border-b-0 flex items-center">
                         <button
                           type="button"
-                          onClick={() => navigate(`/?patent=${encodeURIComponent(r.applicationNumber)}`)}
+                          onClick={() => navigate(`/?patent=${encodeURIComponent(no)}`)}
                           className="min-w-0 flex-1 text-left px-4 py-3.5 hover:bg-muted/40 transition-colors flex items-start gap-3"
                         >
                           <span className={`shrink-0 mt-0.5 px-2 py-0.5 rounded-md border text-[11px] font-bold ${statusClass(r.status)}`}>{r.status || "-"}</span>
@@ -207,10 +213,10 @@ const FoodConsortium = () => {
                         {favorites.enabled && (
                           <FavoriteToggle
                             className="shrink-0 mr-3"
-                            active={favorites.isFavorite(r.applicationNumber)}
+                            active={favorites.isFavorite(favKey)}
                             title={r.title}
                             onToggle={() => favorites.toggle({
-                              patentNumber: r.applicationNumber,
+                              patentNumber: favKey,
                               title: r.title,
                               assignee: r.applicant || org,
                               applicationNumber: r.applicationNumber,
@@ -220,7 +226,8 @@ const FoodConsortium = () => {
                           />
                         )}
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
                 {loading && (

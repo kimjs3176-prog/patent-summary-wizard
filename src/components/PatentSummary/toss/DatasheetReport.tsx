@@ -5,6 +5,7 @@ import { RegulationAnalysis } from "../RegulationAnalysis";
 import { RelatedPatentsCompact } from "../RelatedPatentsCompact";
 import type { KwItem } from "../_keywords";
 import { datasheetSlots } from "@/lib/datasheet";
+import { sheetFooterNote } from "@/lib/summaryNotice";
 import { formatPatentNumber, sectionMeta, type MdSection } from "./helpers";
 import { ProseSection } from "./ProseSection";
 import { MarketReadNote, ReportHead, ScoreStrip } from "./DatasheetNotes";
@@ -21,6 +22,8 @@ interface Props {
   figureItems: { src: string; caption: string }[]; setLightboxIndex: (i: number | null) => void;
   sections: MdSection[]; isStreaming: boolean; annotate: (text: string) => React.ReactNode;
   onRelatedPatentClick: BasePatentSummaryProps["onRelatedPatentClick"];
+  /** 요약서 생성 시각(ISO). 2쪽 바닥글에 'AI 분석 참고자료 · 생성 날짜'로 찍는다 */
+  generatedAt?: string | null;
 }
 
 /**
@@ -38,7 +41,7 @@ export function DatasheetReport(p: Props) {
   const fig = p.figureItems[0];
   // 대표 도면은 '무엇을 해결하나요?(발명 요약)' 절 제목 바로 아래에 둔다 (어느 절의 그림인지 분명하게)
   const figure = fig ? (
-    <figure id="sec-figures" data-summary-section data-summary-label="특허 도면" className="ds-fig scroll-mt-24">
+    <figure id="sec-figures" data-summary-section data-summary-label={fig.caption.replace(/[【】]/g, "")} className="ds-fig scroll-mt-24">
       <button type="button" onClick={() => p.setLightboxIndex(0)} title="누르면 크게 봅니다">
         <img src={fig.src} alt={`${fig.caption.replace(/[【】]/g, "")} 이미지`} decoding="async"
           onError={(e) => { (e.currentTarget.closest("figure") as HTMLElement).style.display = "none"; }} />
@@ -84,19 +87,19 @@ export function DatasheetReport(p: Props) {
             </section>
           )}
           {patentData && (
-            <section id="sec-related" data-summary-section data-summary-label="관련 특허" className="ds-block ds-related scroll-mt-24">
+            <section id="sec-related" data-summary-section data-summary-label="기능이 비슷한 특허" className="ds-block ds-related scroll-mt-24">
               <h2 className="ds-h">기능이 비슷한 특허<span>참고</span></h2>
               <RelatedPatentsCompact patentData={patentData} onPatentClick={p.onRelatedPatentClick} />
             </section>
           )}
           {p.details?.analysis && (
-            <section id="sec-analysis" data-summary-section data-summary-label="AI 종합 의견" className="ds-verdict scroll-mt-24">
+            <section id="sec-analysis" data-summary-section data-summary-label="종합 의견" className="ds-verdict scroll-mt-24">
               <h2>종합 의견</h2>
               <p>{renderBold(p.details.analysis)}</p>
             </section>
           )}
         </div>
-        <footer className="ds-pf"><span>Agri IP Summary · {formatPatentNumber(p.patentNumber, kind)}</span><span>시장·사업화</span><span>2 / 2</span></footer>
+        <footer className="ds-pf"><span>Agri IP Summary · {formatPatentNumber(p.patentNumber, kind)}</span><span>{sheetFooterNote(p.generatedAt)}</span><span>2 / 2</span></footer>
       </section>
     </div>
   );
