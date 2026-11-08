@@ -3,10 +3,30 @@ import { toast } from "sonner";
 import { PatentData, RelatedPatent } from "@/components/PatentSummary/types";
 import { AnalysisStep } from "@/components/AnalysisProgressStepper";
 import { safeFetch } from "@/lib/safeFetch";
-import { metaFromPayload, parseSseLine, splitSseBuffer, type SummaryMeta } from "@/lib/summaryStream";
+import {
+  finalFailureMessage, isRetryableErrorFrame, isRetryableSummaryStatus, metaFromPayload, parseSseLine, splitSseBuffer,
+  type SummaryMeta,
+} from "@/lib/summaryStream";
 
 /** How long the streamed body may stay silent before the run is treated as failed. */
 const STREAM_IDLE_TIMEOUT_MS = 60_000;
+
+/** One toast for the whole run: retry notices and the final result replace each other instead of piling up. */
+export const SUMMARY_TOAST_ID = "patent-summary";
+
+/** A failed run, kept on screen so the reader can try again instead of being sent back home. */
+export interface SummaryError {
+  message: string;
+  /** Automatic retries that were actually made before giving up. */
+  retries: number;
+}
+
+/** A failed attempt that knows whether another try can help. */
+class SummaryAttemptError extends Error {
+  constructor(message: string, readonly retryable: boolean) {
+    super(message);
+  }
+}
 
 const setAppBusy = (busy: boolean) => {
   if (typeof window !== "undefined") (window as unknown as { __APP_BUSY__?: boolean }).__APP_BUSY__ = busy;
@@ -21,7 +41,7 @@ async function readWithIdleTimeout<T>(read: () => Promise<T>, onTimeout: () => v
       new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
           onTimeout();
-          reject(new Error("스트리밍 응답이 중단되었습니다 (timeout)"));
+          reject(new SummaryAttemptError("AI 응답이 1분 넘게 멈췄습니다.", true));
         }, STREAM_IDLE_TIMEOUT_MS);
       }),
     ]);
@@ -39,6 +59,7 @@ export function usePatentSummary() {
   const [patentData, setPatentData] = useState<PatentData | null>(null);
   const [relatedPatents, setRelatedPatents] = useState<RelatedPatent[]>([]);
   const [analysisStep, setAnalysisStep] = useState<AnalysisStep>("idle");
+  const [summaryError, setSummaryError] = useState<SummaryError | null>(null);
 
   // One run at a time: a newer generateSummary call (or unmount) aborts the previous
   // network work, and callbacks from a superseded run never touch state again.
@@ -65,6 +86,15 @@ export function usePatentSummary() {
       setIsLoading(false);
       setAppBusy(false);
     };
+    /** Ends the run as failed: one error toast, and the error stays in the result area with a retry button. */
+    const fail = (message: string, retries: number) => {
+      if (!isCurrent()) return;
+      toast.error(`${message}${retries > 0 ? ` (재시도 ${retries}회 모두 실패)` : ""}`, { id: SUMMARY_TOAST_ID });
+      setSummary("");
+      setSummaryError({ message, retries });
+      setIsFetching(false);
+      finish("idle");
+    };
 
     setIsLoading(true);
     setIsFetching(true);
@@ -75,15 +105,15 @@ export function usePatentSummary() {
     setSummaryMeta(null);
     setPatentData(null);
     setRelatedPatents([]);
+    setSummaryError(null);
     setCurrentPatent(patentNumber);
 
     let fetchedPatentData: PatentData | null = null;
     let fetchedRelated: RelatedPatent[] = [];
 
-    // Step 1: Fetch patent data from KIPRIS
+    // Step 1: Fetch patent data from KIPRIS (the progress stepper shows this step, so no toast here)
+    let fetchErrorMessage = "";
     try {
-      toast.info("KIPRIS에서 특허 정보를 조회 중…");
-
       const fetchResponse = await safeFetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-patent`,
         {
@@ -112,15 +142,12 @@ export function usePatentSummary() {
           fetchedRelated = fetchResult.relatedPatents;
           setRelatedPatents(fetchedRelated);
         }
-
-        toast.success("특허 정보를 성공적으로 가져왔습니다!");
-      } else {
-        toast.warning(fetchResult.error || "특허 정보를 가져올 수 없어 일반 요약을 생성합니다.");
+      } else if (typeof fetchResult.error === "string") {
+        fetchErrorMessage = fetchResult.error;
       }
     } catch (fetchError) {
       if (!isCurrent()) return null; // superseded or unmounted: stay silent
       console.error("Patent fetch error:", fetchError);
-      toast.warning("특허 정보 조회 실패. 일반 요약을 생성합니다.");
     }
 
     setIsFetching(false);
@@ -136,43 +163,26 @@ export function usePatentSummary() {
       )
     );
     if (!hasUsable) {
-      toast.error("특허 원문을 가져오지 못했습니다. 번호를 확인하거나 잠시 후 다시 시도해 주세요.");
-      setSummary("");
-      finish("idle");
+      // 요약을 만들지 않으므로 '일반 요약을 생성합니다' 같은 안내 없이 실패 한 가지만 알린다
+      fail(
+        fetchErrorMessage
+          ? `특허 원문을 가져오지 못했습니다. ${fetchErrorMessage}`
+          : "특허 원문을 가져오지 못했습니다. 번호를 확인하거나 잠시 후 다시 시도해 주세요.",
+        0,
+      );
       return null;
     }
 
     // Step 2: Generate AI summary with patent data (with auto-retry + backoff)
     const MAX_ATTEMPTS = 3; // initial + up to 2 retries
-    const isRetryableMessage = (msg: string) => {
-      const m = msg.toLowerCase();
-      return (
-        m.includes("network") ||
-        m.includes("failed to fetch") ||
-        m.includes("load failed") ||
-        m.includes("timeout") ||
-        m.includes("abort") ||
-        m.includes("스트리밍") ||
-        m.includes("생성에 실패") ||
-        m.includes("생성 중 오류") ||
-        m.includes("http 5") ||
-        m.includes("503") ||
-        m.includes("502") ||
-        m.includes("500") ||
-        m.includes("504") ||
-        m.includes("429")
-      );
-    };
 
     let lastError: unknown = null;
+    let attemptsMade = 0;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       if (!isCurrent()) return null;
+      attemptsMade = attempt;
       try {
-        if (attempt === 1) {
-          toast.info("AI 요약서를 생성 중…");
-        } else {
-          toast.info(`재시도 중… (${attempt - 1}/${MAX_ATTEMPTS - 1})`);
-        }
+        if (attempt > 1) toast.info(`다시 시도하는 중… (${attempt - 1}/${MAX_ATTEMPTS - 1})`, { id: SUMMARY_TOAST_ID });
 
         // Reset partial buffer for clean re-stream
         setSummary("");
@@ -190,8 +200,10 @@ export function usePatentSummary() {
               // The current server reads the original from its own cache and ignores this field; it is still
               // sent so the page keeps working against a not-yet-redeployed function that requires it.
               patentData: fetchedPatentData,
-              // Force regenerate on retries so we bypass any partially-cached/stale state
-              forceRegenerate: force || attempt > 1,
+              // Only the reader's own 재생성 forces a new generation. The server caches complete results only, so an
+              // automatic retry regenerates anyway when nothing was saved, and uses a saved copy (no cost, no
+              // regenerate quota) when one exists.
+              forceRegenerate: force,
             }),
             // Only the initial request needs a timeout; the streamed body is read by `reader` afterwards
             timeoutMs: 60000,
@@ -205,14 +217,14 @@ export function usePatentSummary() {
           const errorData = await response.json().catch(() => ({}));
           if (response.status === 402) {
             // Non-retryable: surface immediately
-            throw new Error("AI 서비스 크레딧이 일시적으로 소진되었습니다. 잠시 후 다시 시도해 주세요.");
+            throw new SummaryAttemptError("AI 서비스 크레딧이 일시적으로 소진되었습니다. 잠시 후 다시 시도해 주세요.", false);
           }
-          const msg = errorData.error || `요약서 생성에 실패했습니다. (HTTP ${response.status})`;
-          throw new Error(msg);
+          const msg = typeof errorData.error === "string" && errorData.error ? errorData.error : `요약서 생성에 실패했습니다. (HTTP ${response.status})`;
+          throw new SummaryAttemptError(msg, isRetryableSummaryStatus(response.status));
         }
 
         if (!response.body) {
-          throw new Error("스트리밍 응답을 받을 수 없습니다.");
+          throw new SummaryAttemptError("요약서 응답을 받지 못했습니다.", true);
         }
 
         const reader = response.body.getReader();
@@ -238,7 +250,7 @@ export function usePatentSummary() {
             if (frame.type === "skip") continue;
             if (frame.type === "done") { streamDone = true; break; }
             if (frame.type === "meta") { setSummaryMeta((prev) => ({ ...(prev ?? {}), ...frame.meta })); continue; }
-            if (frame.type === "error") throw new Error(frame.message);
+            if (frame.type === "error") throw new SummaryAttemptError(frame.message, isRetryableErrorFrame(frame.code, frame.message));
             if (frame.type === "final") {
               const extraMeta = metaFromPayload(line);
               if (extraMeta) setSummaryMeta((prev) => ({ ...(prev ?? {}), ...extraMeta }));
@@ -252,13 +264,14 @@ export function usePatentSummary() {
 
         // If stream finished but produced no content, treat as retryable failure
         if (!fullContent || fullContent.trim().length < 20) {
-          throw new Error("빈 응답을 받았습니다. 재시도합니다.");
+          throw new SummaryAttemptError("AI가 빈 응답을 보냈습니다.", true);
         }
 
         toast.success(
           attempt === 1
             ? "요약서가 생성되었습니다!"
-            : `요약서가 생성되었습니다! (재시도 ${attempt - 1}회)`
+            : `요약서가 생성되었습니다! (재시도 ${attempt - 1}회)`,
+          { id: SUMMARY_TOAST_ID },
         );
         finish("done");
 
@@ -273,23 +286,25 @@ export function usePatentSummary() {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`[summary] attempt ${attempt} failed:`, message);
 
-        const canRetry = attempt < MAX_ATTEMPTS && isRetryableMessage(message);
+        // Network drops and timeouts (raw fetch/stream errors) are worth another try; classified failures say so themselves.
+        const retryable = error instanceof SummaryAttemptError ? error.retryable : true;
+        const canRetry = attempt < MAX_ATTEMPTS && retryable;
         if (!canRetry) break;
 
         // Exponential backoff: 1.5s, 4s (+ small jitter)
         const delayMs = [1500, 4000][attempt - 1] ?? 4000;
         const jitter = Math.floor(Math.random() * 400);
-        toast.warning(`요약 생성 실패. ${Math.round((delayMs + jitter) / 1000)}초 후 자동 재시도합니다…`);
+        toast.warning(`요약 생성 실패. ${Math.round((delayMs + jitter) / 1000)}초 후 자동 재시도합니다…`, { id: SUMMARY_TOAST_ID });
         await new Promise((r) => setTimeout(r, delayMs + jitter));
       }
     }
 
-    // All attempts exhausted
+    // Gave up: report only the retries that really happened
     if (!isCurrent()) return null;
-    const message = lastError instanceof Error ? lastError.message : "오류가 발생했습니다.";
-    toast.error(`${message}${MAX_ATTEMPTS > 1 ? ` (재시도 ${MAX_ATTEMPTS - 1}회 모두 실패)` : ""}`);
-    setSummary("");
-    finish("idle");
+    const message = lastError instanceof SummaryAttemptError
+      ? finalFailureMessage(lastError.message)
+      : "연결이 끊기거나 응답이 늦어 요약서를 받지 못했습니다.";
+    fail(message, attemptsMade - 1);
     return null;
   }, []);
 
@@ -306,6 +321,7 @@ export function usePatentSummary() {
     setAppBusy(false);
     setSummary(historyItem.summary);
     setSummaryMeta(null);
+    setSummaryError(null);
     setPatentData(historyItem.patentData);
     setRelatedPatents(historyItem.relatedPatents);
     setCurrentPatent(historyItem.patentNumber);
@@ -322,6 +338,7 @@ export function usePatentSummary() {
     setCurrentPatent("");
     setPatentData(null);
     setRelatedPatents([]);
+    setSummaryError(null);
     setAnalysisStep("idle");
   }, []);
 
@@ -334,6 +351,7 @@ export function usePatentSummary() {
     patentData,
     relatedPatents,
     analysisStep,
+    summaryError,
     generateSummary,
     loadFromHistory,
     reset,

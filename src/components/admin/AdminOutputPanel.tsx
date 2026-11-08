@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Save, Loader2, ToggleLeft, ToggleRight, FileDown, Printer } from "lucide-react";
 import { PdfLayoutSettings, type PdfLayoutConfig } from "@/components/admin/PdfLayoutSettings";
 import type { Dispatch, SetStateAction } from "react";
+import { UnusedSetting } from "@/components/admin/UnusedSetting";
 
 interface AdminOutputPanelProps {
   printSections: Record<string, boolean>;
@@ -24,8 +25,8 @@ export function AdminOutputPanel({ printSections, setPrintSections, isSavingPrin
                   <span className="flex items-center gap-2"><Printer className="w-4 h-4 text-primary" /> 인쇄 설정</span>
                 </AccordionTrigger>
                 <AccordionContent>
+                  <UnusedSetting note="인쇄·PDF는 요약서 전체를 A4 두 쪽으로 고정해 찍어서, 여기서 고른 항목은 반영되지 않습니다.">
                   <div className="space-y-4">
-                    <p className="text-[11px] text-muted-foreground">저장 후 인쇄 시 선택한 항목만 포함됩니다.</p>
                     <div className="space-y-3">
                       {[
                         { key: "header", label: "인쇄 헤더", desc: "출력 상단 제목/번호 영역" },
@@ -57,6 +58,7 @@ export function AdminOutputPanel({ printSections, setPrintSections, isSavingPrin
                       인쇄 설정 저장
                     </Button>
                   </div>
+                  </UnusedSetting>
                 </AccordionContent>
               </AccordionItem>
 
@@ -65,7 +67,9 @@ export function AdminOutputPanel({ printSections, setPrintSections, isSavingPrin
                   <span className="flex items-center gap-2"><FileDown className="w-4 h-4 text-primary" /> PDF 레이아웃</span>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <PdfLayoutSettings apiCall={apiCall} initialConfig={pdfLayoutConfig} />
+                  <UnusedSetting note="PDF 다운로드는 화면의 A4 두 쪽 요약서를 그대로 담아서, 여기서 바꾼 배치·색은 반영되지 않습니다.">
+                    <PdfLayoutSettings apiCall={apiCall} initialConfig={pdfLayoutConfig} />
+                  </UnusedSetting>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Technical/academic glossary for patent summaries
@@ -94,15 +95,18 @@ const glossary: Record<string, string> = {
 // For ASCII-only terms (e.g. AI, IoT, LLM, GPS), enforce word boundaries so they
 // don't match inside larger words like "MAIN", "RAID", "HELLO". Korean/mixed terms
 // don't need this because Hangul characters never sit adjacent to ASCII identifiers.
+// 앞 글자 검사는 정규식 lookbehind 대신 annotateWithGlossary 에서 한다:
+// lookbehind 를 모르는 브라우저(iOS 16.4 미만 사파리)는 이 모듈을 불러오는 순간 오류가 나 요약서가 열리지 않는다.
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isAsciiTerm = (s: string) => /^[A-Za-z0-9]+$/.test(s);
+const isAsciiWordChar = (c: string | undefined) => !!c && /[A-Za-z0-9]/.test(c);
 function buildRegex(terms: string[]): RegExp | null {
   if (terms.length === 0) return null;
   const sorted = [...terms].sort((a, b) => b.length - a.length);
   const pattern = sorted
     .map((t) => {
       const esc = escapeRe(t);
-      return isAsciiTerm(t) ? `(?<![A-Za-z0-9])${esc}(?![A-Za-z0-9])` : esc;
+      return isAsciiTerm(t) ? `${esc}(?![A-Za-z0-9])` : esc;
     })
     .join('|');
   return new RegExp(`(${pattern})`, 'g');
@@ -135,6 +139,12 @@ export function annotateWithGlossary(
   while ((match = regex.exec(text)) !== null) {
     const term = match[0];
     const idx = match.index;
+    // 영문·숫자 용어가 더 긴 낱말 안에 있으면(MAIN 의 AI) 건너뛰고 다음 글자부터 다시 찾는다.
+    // 같은 자리에서 시작하는 더 짧은 후보도 모두 영문·숫자라 함께 걸러지므로 lookbehind 와 결과가 같다.
+    if (isAsciiTerm(term) && isAsciiWordChar(text[idx - 1])) {
+      regex.lastIndex = idx + 1;
+      continue;
+    }
     
     // Add text before match
     if (idx > lastIndex) {
@@ -163,15 +173,67 @@ export function annotateWithGlossary(
 
 function GlossaryTerm({ term, definition }: { term: string; definition: string }) {
   const isAi = !(term in glossary);
+  // 마우스는 올리면 열리고, 휴대폰은 누를 때마다 열고 닫으며, 키보드는 Tab 으로 가면 열리고 Enter·Space 로 여닫고 Esc 로 닫는다.
+  // Radix Tooltip 은 터치로 열리지 않고 누르면 닫으므로, 열림 상태를 직접 들고 누르기 전 상태를 기준으로 뒤집는다.
+  const [open, setOpen] = useState(false);
+  const openRef = useRef(false);
+  openRef.current = open;
+  const pressedFrom = useRef<boolean | null>(null);
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const keyboardFocus = useRef(false);
+  const toggle = () => {
+    const wasOpen = pressedFrom.current ?? openRef.current;
+    pressedFrom.current = null;
+    setOpen(!wasOpen);
+  };
+  // Tab 으로 화면 밖 용어에 가면 브라우저가 그 자리로 (부드럽게) 스크롤하고, Radix 는 스크롤이 나면 풀이를 닫는다.
+  // 키보드로 포커스한 동안에는 Radix 의 닫기를 무시하고 Esc·Enter·Space·포커스 이동으로만 닫는다.
+  const onOpenChange = (next: boolean) => {
+    if (!next && keyboardFocus.current && triggerRef.current === document.activeElement) return;
+    setOpen(next);
+  };
+  // 다른 용어 풀이가 열리면(마우스를 올림) 키보드로 연 이 풀이는 닫는다. Radix 가 여는 풀이마다 이 이벤트를 보낸다
+  useEffect(() => {
+    if (!open) return;
+    const closeForOther = () => setOpen(false);
+    document.addEventListener("tooltip.open", closeForOther);
+    return () => document.removeEventListener("tooltip.open", closeForOther);
+  }, [open]);
   return (
     <TooltipProvider delayDuration={200}>
-      <Tooltip>
+      <Tooltip open={open} onOpenChange={onOpenChange}>
         <TooltipTrigger asChild>
           <span
+            ref={triggerRef}
+            role="button"
+            tabIndex={0}
+            onFocus={() => {
+              keyboardFocus.current = pressedFrom.current === null;
+            }}
+            onBlur={() => {
+              keyboardFocus.current = false;
+            }}
             className={
               "underline decoration-dotted underline-offset-2 cursor-help text-foreground hover:text-primary transition-colors " +
               (isAi ? "decoration-emerald-500/50" : "decoration-primary/40")
             }
+            onPointerDown={(e) => {
+              // 누르는 순간 닫아 버리는 Radix 기본 동작을 막고, 누르기 전 상태를 기억한다
+              pressedFrom.current = openRef.current;
+              e.preventDefault();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              toggle();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                toggle();
+              } else if (e.key === "Escape") {
+                setOpen(false);
+              }
+            }}
           >
             {term}
           </span>

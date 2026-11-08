@@ -1,5 +1,5 @@
 import React from "react";
-import { parsePatentTitle, cleanPhrase } from "@/lib/patentKeywords";
+import { parsePatentTitle, cleanPhrase, titleNouns } from "@/lib/patentKeywords";
 
 export type KeywordCategory = "function" | "industry" | "material" | "product" | "tech" | "general";
 
@@ -42,7 +42,8 @@ export type KwItem = { word: string; cat: KeywordCategory };
  * 요약서 '관련 키워드': 이 특허만의 낱말을 먼저 보여 준다.
  * 특허 명칭에서 원료·용도·방식(또는 수단)을 뽑고(parsePatentTitle), 형태(최종제품)·활용산업은 분류 규칙에서 하나씩 더한다.
  * 예전처럼 '발효기능·비료산업·미생물활용' 같은 분류 이름만 나오면 특허마다 비슷하고, 눌러 검색해도 엉뚱한 결과가 나왔다.
- * 명칭에서 둘 이상 뽑지 못하면(명칭 형식이 다르면) 분류 규칙 결과를 그대로 쓴다.
+ * 명칭에서 둘 이상 뽑지 못하면(명칭 형식이 다르면) 명칭의 앞 낱말을 먼저 쓰고, 분류 규칙 결과는 뒤에 보충만 한다
+ * (분류 이름만 단독으로 나오지 않게).
  */
 export function extractKeywordsFromPatent(
   patentData: { titleKo?: string; title?: string; abstract?: string; classifications?: string[] } | null | undefined,
@@ -56,6 +57,8 @@ export function extractKeywordsFromPatent(
   const add = (word: string, cat: KeywordCategory) => {
     const w = cleanPhrase(word); // '라이스 볼의'처럼 조사가 붙은 꼴은 키워드로 내보내지 않는다
     if (!w || w.length > 20 || specific.some((k) => k.word === w)) return; // 콩·쌀·김처럼 한 글자 원료도 있다
+    // 명칭을 덜 나눈 조각('…조성물, 이를 이용한'의 '…조성물, 이')은 키워드로 쓰지 않는다
+    if (w.includes(",") || /\s(?:이|그|상기)$/.test(w)) return;
     specific.push({ word: w, cat });
   };
   if (p.subject) add(p.subject, "material");
@@ -64,7 +67,14 @@ export function extractKeywordsFromPatent(
   if (p.product) add(p.product, "product");
   if (p.means) add(p.means, "tech");
   else if (p.way) add(p.way, "tech");
-  if (specific.length < 2) return base.slice(0, max);
+  if (specific.length < 2) {
+    for (const w of titleNouns(title)) { if (specific.length >= 2) break; add(w, classifyKeyword(w)); }
+    for (const k of base) {
+      if (specific.length >= max) break;
+      if (!specific.some((s) => s.word === k.word)) specific.push(k);
+    }
+    return specific.slice(0, max);
+  }
   for (const cat of ["product", "industry"] as KeywordCategory[]) {
     if (specific.some((s) => s.cat === cat)) continue; // 명칭에서 이미 찾은 제품이 있으면 분류 규칙 제품은 덧붙이지 않는다
     const k = base.find((x) => x.cat === cat && !specific.some((s) => s.word === x.word));
@@ -107,7 +117,7 @@ function ruleKeywords(
       A23L: "식품산업", A23B: "식품저장", A23C: "유제품", A23D: "유지식품",
       A23F: "음료", A23G: "제과", A23J: "단백질식품", A23K: "사료",
       A23P: "식품가공", A22C: "축산식품", A22B: "도축",
-      A01G: "스마트팜", A01H: "품종개량", A01K: "스마트축산",
+      A01G: "원예·재배", A01H: "품종개량", A01K: "스마트축산",
       A01N: "농약·방제", A01C: "정밀농업", A01D: "수확기계", A01J: "유가공",
       A01F: "수확후관리",
       A61K: "의약품", A61P: "치료제", A61B: "의료기기", A61F: "의료용품",

@@ -7,6 +7,7 @@ import { enterSummaryPrint, leaveSummaryPrint, printWebSummary } from "./PdfGene
 import { useFavoritePatents } from "@/hooks/useFavoritePatents";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { safeFetch } from "@/lib/safeFetch";
+import { summaryDisclaimerText } from "@/lib/summaryNotice";
 import { annotateWithGlossary } from "@/components/GlossaryTooltip";
 import { useAutoGlossary } from "@/hooks/useAutoGlossary";
 import { extractKeywordsFromPatent } from "./_keywords";
@@ -267,6 +268,7 @@ function TossPatentSummaryInner({
             figureItems={figureItems} setLightboxIndex={setLightboxIndex}
             sections={sections} isStreaming={!!isStreaming} annotate={annotate}
             onRelatedPatentClick={onRelatedPatentClick}
+            generatedAt={summaryMeta?.generatedAt}
           />
 
           {/* 액션 버튼 */}
@@ -307,8 +309,8 @@ function TossPatentSummaryInner({
             </section>
           )}
 
-          <p className="text-[12px] text-[#6B7684] text-center leading-relaxed mt-8">
-            ※ 본 분석은 특허명세서를 바탕으로 실시하여<br />실제 연구 및 개발 단계와는 상이할 수 있습니다.
+          <p data-summary-disclaimer className="text-[12px] text-[#6B7684] text-center leading-relaxed mt-8 max-w-[34em] mx-auto break-keep">
+            {summaryDisclaimerText(settings.summary_disclaimer)}
           </p>
         </div>
       </div>

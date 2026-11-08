@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { metaFromPayload, parseSseLine, splitSseBuffer } from "@/lib/summaryStream";
+import { finalFailureMessage, isRetryableErrorFrame, isRetryableSummaryStatus, metaFromPayload, parseSseLine, splitSseBuffer } from "@/lib/summaryStream";
 
 describe("summary SSE parser", () => {
   it("parses incremental deltas", () => {
@@ -22,7 +22,24 @@ describe("summary SSE parser", () => {
   });
 
   it("surfaces server error frames", () => {
-    expect(parseSseLine('data: {"error":"stream_error","message":"요약 생성 중 오류"}')).toEqual({ type: "error", message: "요약 생성 중 오류" });
+    expect(parseSseLine('data: {"error":"stream_error","message":"요약 생성 중 오류"}')).toEqual({ type: "error", code: "stream_error", message: "요약 생성 중 오류" });
+  });
+
+  it("decides retries from the error code and HTTP status, not from the wording", () => {
+    expect(isRetryableErrorFrame("empty_response", "AI 응답이 비어 있습니다. 자동 재시도합니다.")).toBe(true);
+    expect(isRetryableErrorFrame("stream_error", "아무 문구")).toBe(true);
+    expect(isRetryableErrorFrame("ai_error", "AI 서비스 오류가 발생했습니다.")).toBe(true);
+    expect(isRetryableErrorFrame("ai_error", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.")).toBe(false);
+    expect(isRetryableErrorFrame("ai_error", "서비스 크레딧이 부족합니다.")).toBe(false);
+    expect(isRetryableErrorFrame(undefined, "요약 생성 중 오류가 발생했습니다.")).toBe(false);
+    expect([500, 502, 503, 504, 408].every(isRetryableSummaryStatus)).toBe(true);
+    expect([400, 402, 422, 429].some(isRetryableSummaryStatus)).toBe(false);
+  });
+
+  it("drops the retry promise from a message shown after the last try", () => {
+    expect(finalFailureMessage("AI 응답이 비어 있습니다. 자동 재시도합니다.")).toBe("AI 응답이 비어 있습니다.");
+    expect(finalFailureMessage("요약 생성 중 오류가 발생했습니다. 자동 재시도합니다.")).toBe("요약 생성 중 오류가 발생했습니다.");
+    expect(finalFailureMessage("AI 서비스 오류가 발생했습니다.")).toBe("AI 서비스 오류가 발생했습니다.");
   });
 
   it("parses meta frames and ignores unknown fields", () => {

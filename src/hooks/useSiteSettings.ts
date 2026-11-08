@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_SUMMARY_DISCLAIMER } from "@/lib/summaryNotice";
 
 export type SiteSettings = Record<string, string>;
 
@@ -23,7 +24,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   feature_filing: "true",
   filing_url: "/filing-app/",
   homepage_visible_sections: "",
-  summary_disclaimer: "※ 본 분석은 특허명세서를 바탕으로 실시하여 실제 연구 및 개발 단계와는 상이할 수 있음",
+  summary_disclaimer: DEFAULT_SUMMARY_DISCLAIMER,
   summary_section_titles: "",
   summary_visible_sections: "",
   summary_ai_prompt_extra: "",
