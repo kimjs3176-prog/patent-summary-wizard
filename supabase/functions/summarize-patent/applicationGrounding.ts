@@ -26,7 +26,7 @@ export function groundApplications(summary: string, source: GroundingSource | nu
     const label = normalize(rawLabel);
     const evidence = normalize(rawEvidence);
     const valid = label.length >= 2 && label.length <= 60 && evidence.length >= 15 && evidence.length <= 200 && evidence.includes(label);
-    const inClaims = valid && kind === "청구항" && claims.includes(evidence);
+    const inClaims = valid && kind === "청구항" && /(?:용|제조|생산|처리|방제|치료|예방|검출|진단|재배|발효|추출)/.test(evidence) && claims.includes(evidence);
     const inDescription = valid && description.includes(evidence);
     if (!inClaims && !inDescription) return "**용도 근거 미확인** — 아래 활용 설명은 원문 대조가 필요하다. ";
     applications.push({ label, claimed_in_claims: inClaims, source: inClaims ? "claims" : "description", evidence });

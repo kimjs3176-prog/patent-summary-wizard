@@ -65,14 +65,14 @@ function rangeSupported(range: string, unit: string, figs: SourceFigures): boole
   return range.split(/\s*[~∼～〜\-–]\s*/).every((n) => set.has(normNum(n)));
 }
 
-const metricTerms = (text: string): string[] => (text.match(/[가-힣A-Za-z]{2,}/g) ?? [])
-  .map((word) => word.replace(/(?:으로|에서|보다|률을|율을|도를|량을|을|를|이|가|은|는)$/, (ending) => ending.length === 1 ? "" : ending.slice(0, -1)))
-  .filter((word) => word.length >= 2 && !/^(?:기존|대비|이상|이하|향상|감소|절감|개선|효과|수준|본|발명|상기|한다|된다|있다)$/.test(word));
+// Lexical metric stems only; never rewrite Korean words or particles in the output.
+const metricTerms = (text: string): string[] => text.match(/(?:[가-힣]{0,8}(?:비용|수율|효율|정확도|신뢰도|회복률|회수율|생존율|순도|손실률|실패율|이병률|살포량|시간|에너지|소비량|노동력|감염|항균활성))/g) ?? [];
+const sentences = (text: string): string[] => text.match(/[\s\S]+?(?:[.!?](?=\s|$)|\n|$)/g) ?? [];
 
 /** A matching number alone (e.g. ingredient concentration) is not evidence of performance. */
 function contextualSupport(range: string, unit: string, sentence: string, src: GroundingSource): boolean {
   const terms = metricTerms(sentence);
-  return sourceText(src).split(/(?:[.!?](?:\s|$)|\n)/).some((excerpt) => {
+  return sentences(sourceText(src)).some((excerpt) => {
     if (!rangeSupported(range, unit, sourceFigures({ description: excerpt }))) return false;
     if (!new RegExp(EFFECT_VERB).test(excerpt) && !/(?:회복률|회수율|정확도|신뢰도|효율|수율|생존율|순도)/.test(excerpt)) return false;
     return metricTerms(excerpt).some((word) => terms.includes(word));
@@ -99,7 +99,7 @@ export function stripUnsupportedEffectFigures(summary: string, src: GroundingSou
   if (!sourceText(src).trim()) return summary;
   return summary.replace(EFFECT_SECTION_RE, (_m, heading: string, body: string) => {
     // Split only at sentence endings, not decimal points. Keep every original separator.
-    const outBody = body.replace(/[^.!?\n]+(?:[.!?](?=\s|$)|$)/g, (sentence: string) => {
+    const outBody = sentences(body).map((sentence: string) => {
     let changed = false;
     let out = sentence.replace(EFFECT_FIGURE_RE, (full: string, range: string, unit: string) => {
       if (src && contextualSupport(range, unit, sentence, src)) return full;
@@ -117,17 +117,23 @@ export function stripUnsupportedEffectFigures(summary: string, src: GroundingSou
       return "검증이 필요한 ";
     });
     out = out.replace(OTHER_EFFECT_FIGURE_RE, (full: string, range: string, unit: string) => {
-      const supported = sourceText(src).includes(`${range}${unit}`) || sourceText(src).includes(`${range} ${unit}`);
-      if (supported && metricTerms(sourceText(src)).some((term) => metricTerms(sentence).includes(term))) return full;
+      const supported = sentences(sourceText(src)).some((excerpt) => {
+        const figure = new RegExp(`${range.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*${unit}`);
+        return figure.test(excerpt) && new RegExp(EFFECT_VERB).test(excerpt) && metricTerms(excerpt).some((term) => metricTerms(sentence).includes(term));
+      });
+      if (supported) return full;
       changed = true;
       return "";
     });
     // With no matching metric in the source, even a qualitative improvement is unverified.
-    if (changed && !metricTerms(sourceText(src)).some((term) => metricTerms(sentence).includes(term))) {
-      return "해당 효과의 크기와 개선 여부는 원문 근거만으로 확인되지 않아 추가 검증이 필요하다.";
+    if (changed) {
+      // Do not turn an invented percentage into an equally invented 'significant' improvement.
+      const labels = sentence.match(/^\s*\*\*(?:청구항 명시 용도|명세서 일반 용도):[^*]+\*\*\.\s*/)?.[0] ?? "";
+      const metric = metricTerms(sentence)[0];
+      return `${sentence.startsWith(" ") ? " " : ""}${labels}${metric ? `${metric} 관련 효과는` : "해당 효과는"} 원문에 정량 근거가 없어 추가 검증이 필요하다.${sentence.endsWith("\n") ? "\n" : " "}`;
     }
     return changed ? cleanup(out) : sentence;
-    });
+    }).join("");
     return heading + outBody;
   });
 }
