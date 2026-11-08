@@ -9,7 +9,7 @@ import { claimToRef, currentSeoulYear, extractGlobalClaims, extractMarketClaims,
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
 import { stripUnsupportedEffectFigures } from "./summaryGrounding.ts";
-import { APPLICATION_GROUNDING_INSTRUCTION, groundApplications } from "./applicationGrounding.ts";
+import { APPLICATION_GROUNDING_INSTRUCTION, cacheApplicationEvidence, groundApplications, readApplicationEvidence } from "./applicationGrounding.ts";
 import { BOLD_RULES, countBoldBySection, tidyBold } from "./boldPolicy.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
 import { CASE_POLICY_VERSION } from "../_shared/analysisCasePolicy.ts";
@@ -430,14 +430,15 @@ serve(async (req) => {
 
       if (cached?.summary_content && (cached.cache_version || "v1") === SUMMARY_CACHE_VERSION) {
         console.log(`[CACHE HIT] ${trimmedPatent}`);
-        const content = await unifyMarketFigures(stripUnsupportedEffectFigures(stripDurationFromCommercialization(cached.summary_content), pd));
+        const evidence = readApplicationEvidence(cached.summary_content, pd);
+        const content = await unifyMarketFigures(stripUnsupportedEffectFigures(stripDurationFromCommercialization(evidence.content), pd));
         await recordAnalysisCase(caseContext, trimmedPatent, "summary", content, undefined, true);
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
             // 생성 정보(모델·저장 시각·대체 문단 여부)를 먼저 보내 화면이 신뢰 표식을 그릴 수 있게 한다.
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-              meta: { model: summaryModel, cached: true, generatedAt: cached.created_at ?? null, promptVersion, marketFallback: isMarketFallbackText(content) },
+              meta: { model: summaryModel, cached: true, generatedAt: cached.created_at ?? null, promptVersion, marketFallback: isMarketFallbackText(content), applications: evidence.applications },
             })}\n\n`));
             const chunkSize = 50;
             for (let i = 0; i < content.length; i += chunkSize) {
@@ -715,7 +716,7 @@ ${APPLICATION_GROUNDING_INSTRUCTION}
           emitText(controller, fullContent);
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent, meta: { marketFallback: usedMarketFallback, applications: grounded.applications } })}\n\n`));
           // 스트림을 닫기 전에 저장해, 종료 직후 호출되는 점수 분석이 서버 요약을 읽을 수 있게 한다.
-          await saveCache(fullContent);
+          await saveCache(cacheApplicationEvidence(fullContent, grounded.applications));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
           if (finishReason === "stop") await recordAnalysisCase(caseContext, trimmedPatent, "summary", fullContent);

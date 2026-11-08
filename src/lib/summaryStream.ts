@@ -9,6 +9,7 @@
  */
 
 export interface SummaryMeta {
+  applications?: { label: string; claimed_in_claims: boolean; source: "claims" | "description"; evidence: string }[];
   /** Model identifier the server actually used (e.g. google/gemini-3.8-flash). */
   model?: string;
   /** True when the text was served from the server cache instead of generated now. */
@@ -77,6 +78,9 @@ export function normalizeMeta(raw: Record<string, unknown>): SummaryMeta {
   if (typeof raw.generatedAt === "string") meta.generatedAt = raw.generatedAt;
   if (typeof raw.promptVersion === "string") meta.promptVersion = raw.promptVersion;
   if (typeof raw.marketFallback === "boolean") meta.marketFallback = raw.marketFallback;
+  if (Array.isArray(raw.applications)) {
+    meta.applications = raw.applications.filter((item) => item && typeof item.label === "string" && typeof item.claimed_in_claims === "boolean" && typeof item.evidence === "string" && item.source === (item.claimed_in_claims ? "claims" : "description"));
+  }
   return meta;
 }
 

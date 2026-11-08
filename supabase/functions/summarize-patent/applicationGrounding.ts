@@ -35,3 +35,21 @@ export function groundApplications(summary: string, source: GroundingSource | nu
   // Never expose malformed machine markers as a confirmed claim.
   return { content: content.replace(/\[\[용도[^\n]*(?:\]\]|$)/g, "용도 근거 미확인. "), applications };
 }
+
+/** Store source proposals beside the prose, never in a new public table. Revalidate on read. */
+export function cacheApplicationEvidence(content: string, applications: GroundedApplication[]): string {
+  return content + `\n<!--application-evidence:${encodeURIComponent(JSON.stringify(applications))}-->`;
+}
+
+export function readApplicationEvidence(content: string, source: GroundingSource | null | undefined) {
+  const match = content.match(/\n<!--application-evidence:([^\n]*?)-->\s*$/);
+  const prose = content.replace(/\n<!--application-evidence:[^\n]*?-->\s*$/, "");
+  if (!match) return { content: prose, applications: [] as GroundedApplication[] };
+  try {
+    const records: unknown = JSON.parse(decodeURIComponent(match[1]));
+    if (!Array.isArray(records)) return { content: prose, applications: [] as GroundedApplication[] };
+    const proposals = records.filter((r) => r && typeof r.label === "string" && typeof r.evidence === "string" && typeof r.claimed_in_claims === "boolean")
+      .map((r) => `[[용도|${r.claimed_in_claims ? "청구항" : "명세서"}|${r.label}|${r.evidence}]]`).join("\n");
+    return { content: prose, applications: groundApplications(proposals, source).applications };
+  } catch { return { content: prose, applications: [] as GroundedApplication[] }; }
+}

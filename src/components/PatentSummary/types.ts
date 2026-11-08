@@ -37,6 +37,7 @@ export interface FeatureFlags {
 
 /** Generation metadata streamed by summarize-patent (see src/lib/summaryStream.ts). */
 export interface SummaryGenerationMeta {
+  applications?: { label: string; claimed_in_claims: boolean; source: "claims" | "description"; evidence: string }[];
   model?: string;
   cached?: boolean;
   generatedAt?: string;

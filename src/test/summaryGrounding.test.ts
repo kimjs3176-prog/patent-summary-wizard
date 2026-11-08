@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { sourceFigures, stripUnsupportedEffectFigures } from "../../supabase/functions/summarize-patent/summaryGrounding";
-import { groundApplications } from "../../supabase/functions/summarize-patent/applicationGrounding";
+import { cacheApplicationEvidence, groundApplications, readApplicationEvidence } from "../../supabase/functions/summarize-patent/applicationGrounding";
 
 const summaryOf = (body: string, section = "발명요약 및 특징") => `## ${section}\n${body}\n\n## 관련시장 동향\n국내 시장은 2023년 6,200억 원에서 연평균 6.8% 성장한다(AI 추정치).\n`;
 const source = { abstract: "이 장치는 에너지를 절감하는 장치이다.", claims: ["1. 에너지 절감용 장치로서 제어부를 포함하는 장치."] };
@@ -60,5 +60,12 @@ describe("application evidence", () => {
   it("rejects fabricated excerpts and unrelated use labels", () => {
     expect(groundApplications(`[[용도|청구항|치료|${claims}]]`, { claims: [claims] }).applications).toHaveLength(0);
     expect(groundApplications("[[용도|청구항|치료|암 치료에 사용하는 새로운 조성물이다.]]", { claims: [claims] }).applications).toHaveLength(0);
+  });
+  it("keeps claim booleans across cached views and removes storage metadata from prose", () => {
+    const grounded = groundApplications(`[[용도|청구항|식품 발효|${claims}]]`, { claims: [claims] });
+    const cached = readApplicationEvidence(cacheApplicationEvidence(grounded.content, grounded.applications), { claims: [claims] });
+    expect(cached.content).toBe(grounded.content);
+    expect(cached.applications[0]?.claimed_in_claims).toBe(true);
+    expect(readApplicationEvidence(cacheApplicationEvidence(grounded.content, grounded.applications), { claims: [description] }).applications).toHaveLength(0);
   });
 });
