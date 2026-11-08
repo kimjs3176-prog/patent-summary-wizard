@@ -9,6 +9,7 @@ import { claimToRef, currentSeoulYear, extractGlobalClaims, extractMarketClaims,
 import { fetchKosisRef, findSeries } from "./kosis.ts";
 import { buildSectionBalanceInstruction } from "./sectionBalance.ts";
 import { stripUnsupportedEffectFigures } from "./summaryGrounding.ts";
+import { APPLICATION_GROUNDING_INSTRUCTION, cacheApplicationEvidence, groundApplications, readApplicationEvidence } from "./applicationGrounding.ts";
 import { BOLD_RULES, countBoldBySection, tidyBold } from "./boldPolicy.ts";
 import { loadAnalysisCases, recordAnalysisCase } from "../_shared/analysisCases.ts";
 import { CASE_POLICY_VERSION } from "../_shared/analysisCasePolicy.ts";
@@ -408,7 +409,7 @@ serve(async (req) => {
     // v20: 시장 수치 신뢰 수준(공식·승인 표준값만 출처, 검증 전 값은 (AI 추정치)) + 기준연도를 올해(한국 시간)로 계산
     // v21: 원문 근거 규칙(원문에 없는 효과 수치·시험·실증 서술 금지, 직접 시장 우선, 예시 수치 제거) + 서버 원문으로 프롬프트 구성
     // v22: 비전문가도 읽기 쉬운 서술(쉬운 말·짧은 문장·용어 풀이·분류 코드 대신 분야명) — 원문의 사실·수치·성분은 그대로
-    const promptVersion = `v24-${CASE_POLICY_VERSION}`;
+    const promptVersion = `v25-grounded-applications-${CASE_POLICY_VERSION}`;
     const settingsSignature = JSON.stringify({ customPromptExtra, maxTokens, aiModel: summaryModel, sectionLengthSettings, promptVersion });
     let signatureHash = 0;
     for (let i = 0; i < settingsSignature.length; i++) signatureHash = ((signatureHash << 5) - signatureHash + settingsSignature.charCodeAt(i)) | 0;
@@ -429,14 +430,15 @@ serve(async (req) => {
 
       if (cached?.summary_content && (cached.cache_version || "v1") === SUMMARY_CACHE_VERSION) {
         console.log(`[CACHE HIT] ${trimmedPatent}`);
-        const content = await unifyMarketFigures(stripUnsupportedEffectFigures(stripDurationFromCommercialization(cached.summary_content), pd));
+        const evidence = readApplicationEvidence(cached.summary_content, pd);
+        const content = await unifyMarketFigures(stripUnsupportedEffectFigures(stripDurationFromCommercialization(evidence.content), pd));
         await recordAnalysisCase(caseContext, trimmedPatent, "summary", content, undefined, true);
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
           start(controller) {
             // 생성 정보(모델·저장 시각·대체 문단 여부)를 먼저 보내 화면이 신뢰 표식을 그릴 수 있게 한다.
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-              meta: { model: summaryModel, cached: true, generatedAt: cached.created_at ?? null, promptVersion, marketFallback: isMarketFallbackText(content) },
+              meta: { model: summaryModel, cached: true, generatedAt: cached.created_at ?? null, promptVersion, marketFallback: isMarketFallbackText(content), applications: evidence.applications },
             })}\n\n`));
             const chunkSize = 50;
             for (let i = 0; i < content.length; i += chunkSize) {
@@ -557,6 +559,7 @@ ${BOLD_RULES}
   · 연평균 성장률(CAGR)은 근거 있는 현실적 범위(통상 30% 이하)로 쓰고, 국내 시장과 글로벌 시장의 CAGR은 각 시장 문장에 따로 적는다("각각 a%, b%" 같은 묶음 표기 금지).
   · 과거 보고 사실만 과거형, 환산된 ${marketYear}년 수치 및 전망은 현재형·미래형.
 ## 농산업활용 가능성 — 청구항·기술원리에서 직접 도출되는 적용 분야 → 현장 시나리오(누가/어디서/어떤 문제를 어떻게) → 기대 효과(수율·품질·인건비·에너지·로스율 등)를 연결어구로 자연스럽게 잇는다. 효과 수치는 원문에 있을 때만 쓰고, 없으면 무엇이 줄거나 좋아지는지를 정성적으로 쓴다. 기술 원리와 무관한 비약(토양센서를 의료·우주에 적용 등) 금지. 확장 시 "기술원리가 동일하게 적용 가능한 인접 분야"임을 명시.
+${APPLICATION_GROUNDING_INSTRUCTION}
  ## 상용화전망 — 다른 섹션과 동일한 분량 범위에서 다음 7요소를 관련성에 따라 통합해 작성한다: (1) 기술완성도(실험실/파일럿/실증/양산준비)와 남은 핵심 과제 1개 이상, (2) 단기(1~2년)·중기(3~5년) 상용화 경로·사업화 단계(라이선싱·기술이전·자체양산·합작), (3) 1차 수요처와 수익모델(B2B·로열티·OEM·구독), (4) 양산·스케일업 시 예상되는 기술적·공정적 제약과 원가 요인(설비·원료·수율·인증 비용 등) 1개 이상, (5) 인허가·표준·규격 등 제도적 진입 요건(식품·사료·농약·비료·기계 안전 등 해당 분야 기준) 1개 이상, (6) 경쟁·대체 기술 대비 우위 요소와 열위 요소를 각각 구체적으로 대비, (7) 마지막 문장은 강점·한계·성공조건·유망 적용영역을 종합한 결론으로 마무리한다. 정량 지표는 원문 또는 검증된 근거가 있을 때만 포함한다. TRL 숫자 직접 언급 금지, "발전 가능성이 크다"식 막연한 마무리 금지.
   · 특허 존속기간·잔여기간·보호기간·권리 수명·출원 후 경과연수·만료 시점은 상용화 근거 또는 한계로 절대 언급하지 않는다. 출원일이 입력에 있더라도 기간을 계산하거나 평가하지 않는다. 기간 서술을 뺀 만큼 기술완성도·양산 제약·인허가 요건·경쟁 비교 내용을 더 구체적으로 채워 분량을 유지한다.
 
@@ -677,9 +680,7 @@ ${BOLD_RULES}
                 const delta = parsed?.choices?.[0]?.delta?.content;
                 if (typeof delta === "string" && delta) {
                   raw += delta;
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: delta } }] })}\n\n`),
-                  );
+                  // Do not display unverified figures or model-proposed claim labels, even briefly.
                 }
               } catch { /* partial chunk — ignore */ }
             }
@@ -708,13 +709,14 @@ ${BOLD_RULES}
           fullContent = mergeMarketParagraphs(fullContent);
           fullContent = inlineMarketCitations(fullContent);
           fullContent = stripDurationFromCommercialization(fullContent);
+          const grounded = groundApplications(fullContent, pd);
+          fullContent = grounded.content;
           fullContent = stripUnsupportedEffectFigures(fullContent, pd);
           fullContent = await unifyMarketFigures(fullContent);
-          if (fullContent !== raw.trim() || usedMarketFallback) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent, meta: { marketFallback: usedMarketFallback } })}\n\n`));
-          }
+          emitText(controller, fullContent);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ final_content: fullContent, meta: { marketFallback: usedMarketFallback, applications: grounded.applications } })}\n\n`));
           // 스트림을 닫기 전에 저장해, 종료 직후 호출되는 점수 분석이 서버 요약을 읽을 수 있게 한다.
-          await saveCache(fullContent);
+          await saveCache(cacheApplicationEvidence(fullContent, grounded.applications));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
           if (finishReason === "stop") await recordAnalysisCase(caseContext, trimmedPatent, "summary", fullContent);

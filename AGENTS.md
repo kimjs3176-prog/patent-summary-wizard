@@ -18,3 +18,4 @@ Subdirectories have their own AGENTS.md (src/, supabase/functions/); read it bef
 - Prefer changes that need no function deploy: copy, layout, public/filing-app and admin-stored site settings ship without one.
 - Consortium list requests use a monotonically increasing request ID, invalidated on selection change and unmount, so stale success, error and pagination responses cannot affect another organization's list.
 - Daily security checks run in a dedicated GitHub Actions workflow with separate secret and lockfile dependency scans, so neither a scan failure nor unrelated app CI prevents the other scan from running; this does not schedule Lovable's managed deep or database scans.
+- Summary grounding runs before any generated text reaches users: performance evidence is checked in summaryGrounding and application source markers in applicationGrounding; cache stores the verified human-readable labels so web and two-page PDF share the same evidence distinctions.

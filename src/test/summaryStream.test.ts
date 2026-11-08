@@ -41,4 +41,9 @@ describe("summary SSE parser", () => {
   it("splits buffers on newlines and keeps the partial tail", () => {
     expect(splitSseBuffer("data: a\n\ndata: b\ndata: partial")).toEqual({ lines: ["data: a", "", "data: b"], rest: "data: partial" });
   });
+  it("keeps true/false application flags without coercing strings", () => {
+    const application = { label: "식품 발효", claimed_in_claims: false, source: "description", evidence: "발효용 조성물" };
+    const line = `data: ${JSON.stringify({ meta: { applications: [application, { ...application, claimed_in_claims: "false" }] } })}`;
+    expect(metaFromPayload(line)?.applications).toEqual([application]);
+  });
 });
