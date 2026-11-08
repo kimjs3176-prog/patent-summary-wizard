@@ -15,6 +15,7 @@ import { TechVideoSection } from "@/components/TechVideoSection";
 import { PopularSearches } from "@/components/PopularSearches";
 import { HomeInsights } from "@/components/HomeInsights";
 import { trackPatentSearch } from "@/hooks/useTrackSearch";
+import { shouldCountPopular } from "@/lib/popularCount";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { AnalysisProgressStepper } from "@/components/AnalysisProgressStepper";
 import { NoticeSection } from "@/components/NoticeSection";
@@ -61,15 +62,6 @@ const Index = () => {
   }, [settings.homepage_visible_sections]);
 
   const [keywordResults] = useState<KeywordSearchResult[]>([]);
-  const initialLoadDone = useRef(false);
-
-  const updateUrl = (patentNum?: string) => {
-    if (patentNum) {
-      window.history.replaceState(null, "", `?patent=${encodeURIComponent(patentNum)}`);
-    } else {
-      window.history.replaceState(null, "", window.location.pathname);
-    }
-  };
 
   // Auto-scroll to results when analysis starts
   useEffect(() => {
@@ -80,12 +72,16 @@ const Index = () => {
     }
   }, [analysisStep]);
 
-  const handleSubmitInternal = async (raw: string) => {
-    // 링크·협의체·KIPRIS 복사본 등 표기가 달라도(KR10-…, 제…호, 1020808340000, 10-2080834-0000) 한 가지 번호로
-    // 주소·서버 조회·검색 기록·인기 순위를 맞춘다. 같은 특허가 따로 저장되거나 AI 요약이 두 번 만들어지지 않게 한다.
+  // 링크·협의체·KIPRIS 복사본 등 표기가 달라도(KR10-…, 제…호, 1020808340000, 10-2080834-0000) 한 가지 번호로
+  // 주소·서버 조회·검색 기록·인기 순위를 맞춘다. 같은 특허가 따로 저장되거나 AI 요약이 두 번 만들어지지 않게 한다.
+  const normalizePatent = (raw: string) => {
     const ip = parseIpNumber(raw);
-    const patentNumber = ip?.supported ? ip.normalized : raw.trim();
-    updateUrl(patentNumber);
+    return ip?.supported ? ip.normalized : raw.trim();
+  };
+  const patentSearch = (patentNumber: string) => `?patent=${encodeURIComponent(patentNumber)}`;
+
+  // entryKey: 주소를 따라 연 요약서의 방문 기록 칸. '뒤로·앞으로'로 같은 칸에 돌아온 것은 인기 검색에 다시 세지 않는다
+  const runSummary = async (patentNumber: string, entryKey?: string) => {
     const result = await generateSummary(patentNumber);
     if (result && result.patentData) {
       addToHistory({
@@ -94,7 +90,9 @@ const Index = () => {
         summary: result.summary,
         relatedPatents: result.relatedPatents || []
       });
-      trackPatentSearch(patentNumber, result.patentData.titleKo || result.patentData.title);
+      if (entryKey === undefined || shouldCountPopular(entryKey)) {
+        trackPatentSearch(patentNumber, result.patentData.titleKo || result.patentData.title);
+      }
     }
   };
 
@@ -112,30 +110,47 @@ const Index = () => {
     } catch { /* ignore */ }
   };
 
+  // 요약서는 주소(?patent=)를 따른다. 새 요약서를 열 때 방문 기록을 쌓아 휴대폰·브라우저의 '뒤로'가 앞 요약서나
+  // 처음 화면으로 돌아오게 하고, 처음 들어올 때·뒤로·앞으로·로고·'새로운 검색'으로 주소가 바뀌면 여기서 한 번만
+  // 열거나 닫는다. 표기가 다른 번호는 한 가지 번호의 주소로 바꿔 둔다.
+  const handledLocation = useRef<string | null>(null);
+  const pendingHistoryItem = useRef<SearchHistoryItem | null>(null);
   useEffect(() => {
-    if (initialLoadDone.current) return;
-    initialLoadDone.current = true;
-    const params = new URLSearchParams(window.location.search);
-    const patentParam = params.get("patent");
-    if (patentParam) handleSubmitInternal(patentParam);
-  }, []);
+    if (handledLocation.current === location.key) return;
+    handledLocation.current = location.key;
+    const raw = new URLSearchParams(location.search).get("patent");
+    const historyItem = pendingHistoryItem.current;
+    pendingHistoryItem.current = null;
+    if (!raw) {
+      if (summary || isLoading || currentPatent || summaryError) reset();
+      return;
+    }
+    const patentNumber = normalizePatent(raw);
+    if (location.search !== patentSearch(patentNumber)) {
+      navigate({ search: patentSearch(patentNumber) }, { replace: true });
+      return;
+    }
+    if (historyItem?.patentNumber === patentNumber) loadFromHistory(historyItem);
+    else if (patentNumber !== currentPatent || (!summary && !isLoading)) void runSummary(patentNumber, location.key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
-  // 머리의 로고(홈 링크)를 누르면 요약서를 닫고 처음 화면으로. 요약서 주소(?patent=)는 history.replaceState 로만
-  // 바꾸므로 라우터가 '/'로 다시 이동해도 화면이 그대로였다: 새 이동(key)이 오고 주소에 patent 가 없으면 닫는다
-  const lastLocationKey = useRef(location.key);
-  useEffect(() => {
-    if (lastLocationKey.current === location.key) return;
-    lastLocationKey.current = location.key;
-    if (!new URLSearchParams(location.search).get("patent") && (summary || isLoading || currentPatent)) reset();
-  }, [location.key, location.search, summary, isLoading, currentPatent, reset]);
-
-  const handleSubmit = async (patentNumber: string) => {
-    await handleSubmitInternal(patentNumber);
+  const openPatent = (raw: string) => {
+    const patentNumber = normalizePatent(raw);
+    // 지금 주소와 같은 번호(같은 번호를 다시 검색, 실패 뒤 다시 시도)는 기록을 더 쌓지 않고 바로 다시 연다
+    if (location.search === patentSearch(patentNumber)) void runSummary(patentNumber);
+    else navigate({ pathname: "/", search: patentSearch(patentNumber) });
   };
 
+  const handleSubmit = (patentNumber: string) => openPatent(patentNumber);
+
   const handleHistorySelect = (item: SearchHistoryItem) => {
-    updateUrl(item.patentNumber);
-    loadFromHistory(item);
+    if (location.search === patentSearch(item.patentNumber)) {
+      loadFromHistory(item);
+      return;
+    }
+    pendingHistoryItem.current = item;
+    navigate({ pathname: "/", search: patentSearch(item.patentNumber) });
   };
 
   const handleKeywordSearch = (_results: KeywordSearchResult[], keyword: string) => {
@@ -150,14 +165,14 @@ const Index = () => {
   const headerBtn = "rounded-full text-[11px] md:text-xs h-8 md:h-9 px-2.5 md:px-3.5 glossy-card gap-1.5 btn-press font-medium";
   const headerRight = (summary || isLoading || summaryError) ? (
     <>
-      <Button variant="outline" size="sm" onClick={() => { updateUrl(); reset(); }} className={headerBtn} aria-label="새로운 검색">
+      <Button variant="outline" size="sm" onClick={() => navigate("/")} className={headerBtn} aria-label="새로운 검색">
         <Search className="w-3.5 h-3.5" />
         <span className="hidden sm:inline xl:hidden 2xl:inline">새로운 검색</span>
       </Button>
       <Button
         variant="outline"
         size="sm"
-        onClick={() => { updateUrl(); reset(); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); }}
+        onClick={() => { navigate("/"); clearHistory(); toast.success("검색 기록이 초기화되었습니다"); }}
         className={headerBtn}
         aria-label="검색 기록 초기화"
         title="검색 기록 초기화"
@@ -250,19 +265,21 @@ const Index = () => {
         ) : (
           <div ref={resultRef} data-results-visible="true">
             {isLoading && (<AnalysisProgressStepper currentStep={analysisStep} floating />)}
-            <div className="sticky top-2 z-30 mb-5 md:mb-7">
-              <div className="max-w-2xl mx-auto rounded-2xl bg-background/85 backdrop-blur-md p-1.5">
+            <div className="sticky sticky-below-header z-30 mb-5 md:mb-7">
+              {/* lg 부터는 양옆 칸(섹션 바로가기 196px·만족도 240px와 간격) 사이에만 놓여, 따라 내려올 때 그 칸 머리를 가리지 않는다 */}
+              <div className="max-w-2xl lg:max-w-[min(42rem,calc(100%-512px))] mx-auto rounded-2xl bg-background/85 backdrop-blur-md p-1.5">
                 <PatentInput
                   onSubmit={handleSubmit}
                   isLoading={isLoading}
                   onKeywordSearch={handleKeywordSearch}
+                  skipKeywordFetch
                   placeholder={settings.search_placeholder}
                 />
               </div>
             </div>
             {/* 실패하면 처음 화면으로 돌아가지 않고 결과 자리에 이유와 '다시 시도'를 남긴다 (주소의 ?patent= 와 화면이 맞는다) */}
             {summaryError && !isLoading ? (
-              <SummaryErrorCard error={summaryError} onRetry={() => { if (currentPatent) void handleSubmitInternal(currentPatent); }} />
+              <SummaryErrorCard error={summaryError} onRetry={() => { if (currentPatent) void runSummary(currentPatent); }} />
             ) : (
             <Suspense fallback={<SummaryPlaceholder />}>
             {/* Until the patent record arrives the report has no title or basic-info block; showing it early made

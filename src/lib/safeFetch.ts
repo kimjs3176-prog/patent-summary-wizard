@@ -16,6 +16,11 @@ export interface SafeFetchOptions extends RequestInit {
   baseDelayMs?: number;
   /** Overrides which HTTP statuses are retried. */
   retryOn?: (status: number) => boolean;
+  /**
+   * false: an attempt that ran out of time is not sent again. Use it for slow server work (bulk lists), where a
+   * repeat only waits as long again and spends the server's quota. Default: true
+   */
+  retryTimeouts?: boolean;
 }
 
 function isRetryableStatus(status: number): boolean {
@@ -43,6 +48,7 @@ export async function safeFetch(
     retries = 1,
     baseDelayMs = 600,
     retryOn = isRetryableStatus,
+    retryTimeouts = true,
     signal: externalSignal,
     ...rest
   } = options;
@@ -51,11 +57,16 @@ export async function safeFetch(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
 
     // Forward external cancellation
     const onAbort = () => controller.abort();
     externalSignal?.addEventListener("abort", onAbort);
+    if (externalSignal?.aborted) controller.abort();
 
     try {
       const res = await fetch(url, { ...rest, signal: controller.signal });
@@ -70,6 +81,7 @@ export async function safeFetch(
       lastError = err;
       // External cancellation is not retryable
       if (externalSignal?.aborted) throw err;
+      if (timedOut && !retryTimeouts) throw err;
       if (attempt === retries || !isRetryableError(err)) throw err;
     } finally {
       clearTimeout(timer);

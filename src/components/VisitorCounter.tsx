@@ -1,12 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Users, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-
-function todayKst(): string {
-  const now = new Date();
-  const kst = new Date(now.getTime() + (now.getTimezoneOffset() + 540) * 60000);
-  return `${kst.getFullYear()}-${String(kst.getMonth() + 1).padStart(2, "0")}-${String(kst.getDate()).padStart(2, "0")}`;
-}
+import { visitDateKey } from "@/lib/visitDate";
 
 export function VisitorCounter({ className = "" }: { className?: string }) {
   const { data } = useQuery({
@@ -19,7 +14,7 @@ export function VisitorCounter({ className = "" }: { className?: string }) {
       if (error) throw error;
       const rows = data ?? [];
       const total = rows.reduce((s, r) => s + (r.visit_count ?? 0), 0);
-      const today = rows.find((r) => r.visit_date === todayKst())?.visit_count ?? 0;
+      const today = rows.find((r) => r.visit_date === visitDateKey())?.visit_count ?? 0;
       return { total, today };
     },
   });

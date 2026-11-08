@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { linkifyBareWww } from "@/lib/chatLinks";
 import { cjk } from "@streamdown/cjk";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
@@ -322,18 +323,30 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 const streamdownPlugins = { cjk };
 // AI 답의 그림 문법은 그리지 않는다: 특허 원문에 숨긴 지시로 바깥 주소의 그림을 불러 대화 내용을 보내지 못하게
 const NoImage = () => null;
+// 링크를 누르면 뜨는 확인 창 문구 (기본은 영어)
+const linkTranslations = {
+  openExternalLink: "다른 사이트로 이동할까요?",
+  externalLinkWarning: "이 사이트를 벗어나 아래 주소를 엽니다.",
+  copyLink: "주소 복사",
+  copied: "복사했어요",
+  openLink: "열기",
+  close: "닫기",
+};
 
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
+  ({ className, children, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className
       )}
       plugins={streamdownPlugins}
+      translations={linkTranslations}
       {...props}
       components={{ ...props.components, img: NoImage }}
-    />
+    >
+      {typeof children === "string" ? linkifyBareWww(children) : children}
+    </Streamdown>
   ),
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&

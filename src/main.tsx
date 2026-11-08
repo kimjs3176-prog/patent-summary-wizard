@@ -1,3 +1,5 @@
+// 가장 먼저: 사이트 데이터 저장이 막힌 브라우저에서도 앱이 열리게 저장소를 준비한다 (앱 모듈보다 앞에 둘 것)
+import "./lib/storageFallback";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";

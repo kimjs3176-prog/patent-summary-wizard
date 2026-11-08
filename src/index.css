@@ -1288,6 +1288,9 @@ time, .tabular-nums, [data-numeric] {
   color: var(--toss-fg-1);
 }
 
+/* 요약서·검색 결과의 따라오는 검색창: 머리 메뉴(높이는 PageLayout 이 --site-header-h 로 알려 준다) 바로 밑에 붙는다 */
+.sticky-below-header { top: calc(var(--site-header-h, 0px) + 0.5rem); }
+
 /* ============ Blueprint Hero (A안: Technical Blueprint + Monospace) ============ */
 .home-search-hero {
   isolation: isolate;

@@ -7,6 +7,7 @@
 // - 출원도우미 1단계: 사전 질문(대화)에 화면에서 차례로 답하고, 초안 고르기 쪽의 절차를 하나씩 연 뒤 2단계로 넘어간다.
 // - 요약서(데이터시트형): scripts/fixtures 의 저장된 서버 응답으로 띄워, 인쇄와 PDF 다운로드가 정확히 A4 두 쪽인지 본다.
 //   2쪽 바닥글의 'AI 분석 참고자료 · 생성일', 용어 풀이의 키보드 열기, 요약 생성 실패 때 결과 자리의 '다시 시도'도 본다.
+// - 뒤로 가기: 홈에서 연 요약서는 '뒤로'로 홈에 돌아오고, 검색 결과에서 연 요약서는 '뒤로'로 같은 쪽·스크롤의 결과에 (다시 검색하지 않고) 돌아온다.
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -408,6 +409,63 @@ for (const width of WIDTHS) {
     for (let t = 0; t < 100 && !(calls === 2 && (await p.locator("[data-summary-error]").count())); t++) await p.waitForTimeout(200);
     if (calls !== 2) fail(where, `요약 요청 ${calls}번 (처음 1번 + 다시 시도 1번이어야 함)`);
     console.log(`  다시 시도 카드 · 요약 요청 ${calls}번`);
+  } catch (e) {
+    fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
+  }
+  for (const e of p.errors) fail(where, `페이지 오류: ${e}`);
+  await p.context().close();
+}
+
+// 뒤로 가기: 홈 → 요약서 → 뒤로 → 홈, 검색 결과(2쪽·스크롤) → 요약서 → 뒤로 → 같은 결과
+{
+  const where = "뒤로 가기";
+  console.log(where);
+  const fs = await import("node:fs");
+  const fx = JSON.parse(fs.readFileSync(new URL("./fixtures/summary-10-2080834.json", import.meta.url), "utf8"));
+  const found = Array.from({ length: 30 }, (_, i) => ({ patentId: `10-20${80000 + i}`, title: `발효 시험 특허 ${i + 1}`, titleKo: `발효 시험 특허 ${i + 1}`, assignee: "농촌진흥청", publicationDate: "2020-01-01", snippet: "시험용 요약 ".repeat(8) }));
+  const p = await page(390);
+  let searches = 0;
+  await p.context().route(/\/functions\/v1\/([a-z-]+)/, (r) => {
+    const name = r.request().url().match(/\/functions\/v1\/([a-z-]+)/)[1];
+    if (name === "search-patents") { searches++; return r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, patents: found, totalCount: found.length }) }); }
+    const f = fx.functions[name];
+    return f ? r.fulfill({ status: f.status, contentType: f.contentType, body: f.body }) : r.abort();
+  });
+  try {
+    await p.goto(`${BASE}/`, { waitUntil: "load", timeout: 30000 });
+    await p.locator(".home-search-hero input").first().fill(fx.patent);
+    await p.locator(".home-search-hero input").first().press("Enter");
+    await p.locator("[data-results-visible]").waitFor({ timeout: 20000 });
+    await p.goBack();
+    await p.locator(".home-search-hero").waitFor({ timeout: 10000 }).catch(() => {});
+    if (new URL(p.url()).search || !(await p.locator(".home-search-hero").count())) fail(where, `요약서에서 뒤로 눌러도 홈이 아님: ${p.url()}`);
+    await p.goto(`${BASE}/search?keyword=${encodeURIComponent("발효")}`, { waitUntil: "load", timeout: 30000 });
+    await p.getByText("30건 중 1-12건 표시").waitFor({ timeout: 20000 });
+    await p.getByRole("button", { name: "2", exact: true }).click();
+    await p.getByText("30건 중 13-24건 표시").waitFor({ timeout: 5000 });
+    await p.waitForFunction(() => window.scrollY === 0, null, { timeout: 5000 }).catch(() => {}); // 쪽을 넘기면 맨 위로 (부드럽게)
+    // 눈에 보이는 카드를 스크롤을 건드리지 않고 누른다
+    const y = await p.evaluate(() => {
+      window.scrollTo({ top: 600, behavior: "instant" });
+      const card = [...document.querySelectorAll("main button")].find((b) => /AI 요약 보기/.test(b.textContent) && b.getBoundingClientRect().top > 80);
+      const at = Math.round(window.scrollY);
+      card.click();
+      return at;
+    });
+    await p.locator("[data-results-visible]").waitFor({ timeout: 20000 });
+    await p.goBack();
+    await p.getByText("30건 중 13-24건 표시").waitFor({ timeout: 10000 });
+    const back = await p.evaluate(() => Math.round(window.scrollY));
+    if (searches !== 1) fail(where, `검색 결과로 돌아오며 다시 검색함 (검색 ${searches}번)`);
+    if (Math.abs(back - y) > 40) fail(where, `검색 결과로 돌아온 스크롤 위치가 다름 (${y} → ${back})`);
+    // 요약서 위 검색창의 키워드 검색은 결과 화면에서 한 번만 한다
+    await p.evaluate(() => [...document.querySelectorAll("main button")].find((b) => /AI 요약 보기/.test(b.textContent))?.click());
+    const box = p.locator("[data-results-visible] input").first();
+    await box.fill("유채박");
+    await box.press("Enter");
+    await p.getByText("30건 중 1-12건 표시").waitFor({ timeout: 10000 });
+    if (searches !== 2) fail(where, `요약서 위 검색창의 키워드 검색이 ${searches - 1}번 (1번이어야 함)`);
+    console.log(`  홈으로 돌아옴 · 검색 결과 2쪽 · 스크롤 ${y} → ${back} · 검색 ${searches}번`);
   } catch (e) {
     fail(where, `진행 중 멈춤: ${String(e.message).split("\n")[0]}`);
   }

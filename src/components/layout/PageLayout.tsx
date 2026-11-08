@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { FileText, Tablet, Type } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -18,6 +18,20 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
   const { settings, isLoading } = useSiteSettings();
   const { enabled: kioskEnabled, toggle: toggleKiosk } = useKioskMode();
   const { scale, cycle: cycleFontScale, label: fontScaleLabel } = useFontScale();
+
+  // 머리 메뉴 높이(폭·글자 크기·두 줄 여부마다 다르다)를 --site-header-h 로 알려, 따라오는 검색창이 그 밑에 붙게 한다
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const publish = () =>
+      document.documentElement.style.setProperty("--site-header-h", `${Math.round(header.getBoundingClientRect().height)}px`);
+    publish();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(publish);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, [isLoading]);
 
   const forceRefresh = async () => {
     try {
@@ -59,7 +73,7 @@ export function PageLayout({ children, headerRight, showFooterLogo = true }: Pag
       >
         본문 바로가기
       </a>
-      <header className="w-full sticky top-0 z-50 backdrop-blur-3xl border-b border-border/30" style={{ background: 'hsl(var(--background) / 0.85)' }}>
+      <header ref={headerRef} className="w-full sticky top-0 z-50 backdrop-blur-3xl border-b border-border/30" style={{ background: 'hsl(var(--background) / 0.85)' }}>
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2 md:py-3.5 flex flex-wrap xl:flex-nowrap items-center justify-between gap-x-2 gap-y-1">
           <Link
             to="/"

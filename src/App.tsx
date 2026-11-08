@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigationType } from "react-router-dom";
 import Index from "./pages/Index";
 const Admin = lazy(() => import("./pages/Admin"));
 const Compare = lazy(() => import("./pages/Compare"));
@@ -41,11 +41,15 @@ const queryClient = new QueryClient({
   },
 });
 
-// Scroll to top when the page (path) changes — keeps header navigation predictable.
+// Scroll to top when the page (path) changes — keeps header navigation predictable. Back/forward (POP) keeps the
+// position the browser restores, so returning to search results lands where the visitor left them.
 const ScrollToTop = () => {
   const { pathname } = useLocation();
+  const navigationType = useNavigationType();
   useEffect(() => {
+    if (navigationType === "POP") return;
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
   return null;
 };
