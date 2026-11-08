@@ -11,7 +11,7 @@ export interface GroundingSource {
 }
 
 /** 효과 수치를 검사하는 섹션(발명요약·농산업활용·상용화전망). 기술분야·관련시장 동향은 제외한다. */
-const EFFECT_SECTION_RE = /(^##[ \t]*(?:발명\s*요약|농산업\s*활용|상용화\s*전망)[^\n]*\n)([\s\S]*?)(?=^##\s|$(?![\s\S]))/gm;
+const EFFECT_SECTION_RE = /(^##[ \t]*(?:기술\s*분야|발명\s*요약|농산업\s*활용|상용화\s*전망)[^\n]*\n)([\s\S]*?)(?=^##\s|$(?![\s\S]))/gm;
 
 const NUM = String.raw`\d+(?:[.,]\d+)*`;
 const RANGE = String.raw`${NUM}(?:\s*[~∼～〜\-–]\s*${NUM})?`;
@@ -65,6 +65,22 @@ function rangeSupported(range: string, unit: string, figs: SourceFigures): boole
   return range.split(/\s*[~∼～〜\-–]\s*/).every((n) => set.has(normNum(n)));
 }
 
+const metricTerms = (text: string): string[] => (text.match(/[가-힣A-Za-z]{2,}/g) ?? [])
+  .map((word) => word.replace(/(?:으로|에서|보다|률을|율을|도를|량을|을|를|이|가|은|는)$/, (ending) => ending.length === 1 ? "" : ending.slice(0, -1)))
+  .filter((word) => word.length >= 2 && !/^(?:기존|대비|이상|이하|향상|감소|절감|개선|효과|수준|본|발명|상기|한다|된다|있다)$/.test(word));
+
+/** A matching number alone (e.g. ingredient concentration) is not evidence of performance. */
+function contextualSupport(range: string, unit: string, sentence: string, src: GroundingSource): boolean {
+  const terms = metricTerms(sentence);
+  return sourceText(src).split(/(?:[.!?](?:\s|$)|\n)/).some((excerpt) => {
+    if (!rangeSupported(range, unit, sourceFigures({ description: excerpt }))) return false;
+    if (!new RegExp(EFFECT_VERB).test(excerpt) && !/(?:회복률|회수율|정확도|신뢰도|효율|수율|생존율|순도)/.test(excerpt)) return false;
+    return metricTerms(excerpt).some((word) => terms.includes(word));
+  });
+}
+
+const OTHER_EFFECT_FIGURE_RE = new RegExp(String.raw`(?:약\s*|최대\s*|평균\s*)?(${RANGE})\s*(시간|분|초|일|개월|년|회|원|kWh|킬로와트시)\s*${QUALIFIER}?\s*(?:의\s*)?(?=\**\s*${EFFECT_VERB})`, "g");
+
 function cleanup(body: string): string {
   return body
     .replace(/\*\*\s*\*\*/g, "")
@@ -81,24 +97,37 @@ function cleanup(body: string): string {
 export function stripUnsupportedEffectFigures(summary: string, src: GroundingSource | null | undefined): string {
   if (!summary) return summary;
   if (!sourceText(src).trim()) return summary;
-  const figs = sourceFigures(src);
   return summary.replace(EFFECT_SECTION_RE, (_m, heading: string, body: string) => {
+    // Split only at sentence endings, not decimal points. Keep every original separator.
+    const outBody = body.replace(/[^.!?\n]+(?:[.!?](?=\s|$)|$)/g, (sentence: string) => {
     let changed = false;
-    let out = body.replace(EFFECT_FIGURE_RE, (full: string, range: string, unit: string) => {
-      if (rangeSupported(range, unit, figs)) return full;
+    let out = sentence.replace(EFFECT_FIGURE_RE, (full: string, range: string, unit: string) => {
+      if (src && contextualSupport(range, unit, sentence, src)) return full;
       changed = true;
       return "";
     });
     out = out.replace(CEILING_RE, (full: string, range: string, bold: string, josa: string) => {
-      if (rangeSupported(range, "%", figs)) return full;
+      if (src && contextualSupport(range, "%", sentence, src)) return full;
       changed = true;
-      return `낮은 수준${bold}${josa === "로" ? "으로" : josa}`;
+      return `확인되지 않은 수준${bold}${josa === "로" ? "으로" : josa}`;
     });
     out = out.replace(FLOOR_NOUN_RE, (full: string, range: string) => {
-      if (rangeSupported(range, "%", figs)) return full;
+      if (src && contextualSupport(range, "%", sentence, src)) return full;
       changed = true;
-      return "높은 ";
+      return "검증이 필요한 ";
     });
-    return heading + (changed ? cleanup(out) : body);
+    out = out.replace(OTHER_EFFECT_FIGURE_RE, (full: string, range: string, unit: string) => {
+      const supported = sourceText(src).includes(`${range}${unit}`) || sourceText(src).includes(`${range} ${unit}`);
+      if (supported && metricTerms(sourceText(src)).some((term) => metricTerms(sentence).includes(term))) return full;
+      changed = true;
+      return "";
+    });
+    // With no matching metric in the source, even a qualitative improvement is unverified.
+    if (changed && !metricTerms(sourceText(src)).some((term) => metricTerms(sentence).includes(term))) {
+      return "해당 효과의 크기와 개선 여부는 원문 근거만으로 확인되지 않아 추가 검증이 필요하다.";
+    }
+    return changed ? cleanup(out) : sentence;
+    });
+    return heading + outBody;
   });
 }
