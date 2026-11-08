@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, Loader2, FileSignature, FileText, Globe, HelpCircle, Lightbulb, Search, Send, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { parseIpNumber } from "@/lib/ipNumber";
@@ -27,8 +28,14 @@ const DEFAULT_STEPS: FilingState["steps"] = [
   { ...step0, id: "manage", t: "제출하고 챙기기", s: "비용·기한" },
 ];
 
+// 처음 열 때(같은 탭에서 한 번): 결과물이 출원·등록을 보장하지 않는다는 안내 (owner). 단독 화면(public/filing-app)도 같은 안내를 띄운다.
+const NOTICE_KEY = "filing_notice_seen";
+const noticeSeen = () => { try { return sessionStorage.getItem(NOTICE_KEY) === "1"; } catch { return false; } };
+
 const Filing = () => {
   useDocumentTitle("출원지원");
+  const [noticeOpen, setNoticeOpen] = useState(() => !noticeSeen());
+  const closeNotice = () => { setNoticeOpen(false); try { sessionStorage.setItem(NOTICE_KEY, "1"); } catch { /* 저장이 막힌 브라우저: 이번 화면에서만 닫는다 */ } };
   const { settings } = useSiteSettings();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -126,6 +133,19 @@ const Filing = () => {
 
   return (
     <PageLayout headerRight={headerRight} showFooterLogo={false}>
+      <Dialog open={noticeOpen} onOpenChange={(open) => { if (!open) closeNotice(); }}>
+        <DialogContent data-filing-notice className="max-w-md [&>button:last-child]:hidden" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>시작하기 전에 꼭 읽어 주세요</DialogTitle>
+            <DialogDescription className="leading-relaxed text-foreground/80">
+              출원도우미가 만든 진단 결과, 발명 설명서 초안, 출원서 같은 결과물은 참고 자료예요. <strong className="font-bold text-foreground">특허 출원이나 등록을 보장하지 않아요.</strong> 실제로 출원하기 전에는 변리사에게 검토를 받으세요.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={closeNotice} autoFocus>확인했어요</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <main aria-labelledby="filing-title" className="relative z-10">
         <h1 id="filing-title" className="sr-only">출원지원</h1>
         {/* 단계 바 — AIS 디자인. 누르면 iframe 안 에이프가 그 단계로 간다 */}
