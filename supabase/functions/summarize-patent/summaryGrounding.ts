@@ -80,6 +80,7 @@ function contextualSupport(range: string, unit: string, sentence: string, src: G
 }
 
 const OTHER_EFFECT_FIGURE_RE = new RegExp(String.raw`(?:약\s*|최대\s*|평균\s*)?(${RANGE})\s*(시간|분|초|일|개월|년|회|원|kWh|킬로와트시)\s*${QUALIFIER}?\s*(?:의\s*)?(?=\**\s*${EFFECT_VERB})`, "g");
+const REVERSE_EFFECT_RE = new RegExp(String.raw`(${EFFECT_VERB}[가-힣]*\s*(?:효과|율|률)?\s*(?:은|는|이|가|:)?\s*)(?:약\s*)?(${RANGE})\s*(%|배)`, "g");
 
 function cleanup(body: string): string {
   return body
@@ -124,6 +125,11 @@ export function stripUnsupportedEffectFigures(summary: string, src: GroundingSou
       if (supported) return full;
       changed = true;
       return "";
+    });
+    out = out.replace(REVERSE_EFFECT_RE, (full: string, prefix: string, range: string, unit: string) => {
+      if (src && contextualSupport(range, unit, sentence, src)) return full;
+      changed = true;
+      return prefix + "추가 검증 필요";
     });
     // With no matching metric in the source, even a qualitative improvement is unverified.
     if (changed) {

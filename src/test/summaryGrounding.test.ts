@@ -43,6 +43,9 @@ describe("performance grounding", () => {
   it("does not treat claim numbers as performance evidence", () => {
     expect(sourceFigures({ claims: ["30. 에너지 절감용 장치."] }).percent.size).toBe(0);
   });
+  it("removes figures written after the performance verb", () => {
+    expect(stripUnsupportedEffectFigures(summaryOf("에너지 절감률은 30%이다."), source)).not.toContain("30%");
+  });
 });
 
 describe("application evidence", () => {
