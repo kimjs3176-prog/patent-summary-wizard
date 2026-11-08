@@ -1346,6 +1346,7 @@ h1, h2, h3 { font-weight: 600; }
 <nav class="pagebar" id="pagebar" aria-label="페이지 이동" hidden></nav>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div class="leave" id="leave" hidden></div>
+<div class="leave" id="notice" hidden></div>
 <div class="nh-tip" id="nh-tip" hidden><button type="button" class="nh-go" data-nh-go><span class="nh-k">다음</span><span class="nh-t"></span><span class="nh-w"></span></button><button type="button" class="nh-x" data-nh-x aria-label="이 쪽에서 안내 숨기기">×</button></div>
 
 <script>
@@ -6745,6 +6746,27 @@ setModeFromHash();
 renderSaveBox();
 if (SAVE.restored && S.mode === "apply") toast(`지난 작업을 불러왔습니다 (${new Date(SAVE.restored).toLocaleString("ko-KR")})`);
 checkApi();
+// 처음 열 때(같은 탭에서 한 번): 결과물이 출원·등록을 보장하지 않는다는 안내 (owner). AIS 안에서는 AIS 화면(pages/Filing.tsx)이 같은 안내를 띄운다.
+// 자동 점검 브라우저에서는 띄우지 않는다 (scripts/smoke.mjs 가 __noticeForce 로 따로 확인). 처음 인트로가 끝난 뒤에 띄운다.
+const NOTICE_KEY = "filing_notice_seen";
+function filingNotice() {
+  if (EMBED) return;
+  try { if (sessionStorage.getItem(NOTICE_KEY) === "1") return; } catch {}
+  if (navigator.webdriver && !window.__noticeForce) return;
+  if (document.querySelector(".intro")) { setTimeout(filingNotice, 250); return; }
+  const box = $("#notice"); if (!box || !box.hidden) return;
+  box.innerHTML = `<div class="leave-box" role="alertdialog" aria-modal="true" aria-labelledby="notice-h" aria-describedby="notice-p">
+    <h3 id="notice-h">시작하기 전에 꼭 읽어 주세요</h3>
+    <p id="notice-p">출원도우미가 만든 진단 결과, 발명 설명서 초안, 출원서 같은 결과물은 참고 자료예요. <b>특허 출원이나 등록을 보장하지 않아요.</b> 실제로 출원하기 전에는 변리사에게 검토를 받으세요.</p>
+    <div class="leave-act"><button type="button" class="btn" data-notice-ok>확인했어요</button></div>
+  </div>`;
+  const close = () => { box.hidden = true; box.innerHTML = ""; document.removeEventListener("keydown", onKey); try { sessionStorage.setItem(NOTICE_KEY, "1"); } catch {} };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  box.querySelector("[data-notice-ok]").addEventListener("click", close);
+  document.addEventListener("keydown", onKey);
+  box.hidden = false; box.querySelector("[data-notice-ok]").focus();
+}
+filingNotice();
 </script>
 </body>
 </html>
