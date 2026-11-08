@@ -6,8 +6,8 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>출원지원 · 아이디어부터 명세서·제출까지</title>
-<meta name="description" content="농식품 기술의 특허 출원지원: 아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·기한 관리">
+<title>출원도우미 · 아이디어부터 명세서·제출까지</title>
+<meta name="description" content="농식품 기술의 특허 출원도우미: 아이디어 → 선행기술 조사 → 진단·보완 → 서류 작성 → 제출·기한 관리">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%235f8f1f%22/%3E%3Cg fill=%22none%22 stroke=%22%23fff%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 20.5V12.5%22/%3E%3Cpath d=%22M12 13.5c-3.8 0-6.2-2.4-6.2-6.2 3.8 0 6.2 2.4 6.2 6.2z%22/%3E%3Cpath d=%22M12 11.5c0-3.3 2.2-5.6 6.2-5.6 0 3.3-2.2 5.6-6.2 5.6z%22/%3E%3C/g%3E%3C/svg%3E">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -108,6 +108,7 @@ html { caret-color: var(--primary); scrollbar-color: var(--line) transparent; }
 .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 25; background: color-mix(in oklab, var(--bg) 86%, transparent); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--line); }
 .topbar-in { max-width: 1360px; margin: 0 auto; padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 10px 18px; }
 body.filing-only [data-mode-link="home"], body.filing-only [data-mode-link="ais"], body.filing-only [data-mode-link="global"], body.filing-only a[href="#global"], body.filing-only a[href="#ais"], body.filing-only .foot .legal:last-child { display: none !important; }
+body.filing-only .modes { display: none !important; } /* 서비스가 출원도우미 하나뿐: 머리의 이름과 같은 메뉴 알약을 또 두지 않는다 */
 /* AIS 안에 녹여 넣기: 머리글·목차·하단 바는 AIS 가 자기 디자인으로 그리고(단계 탭·쪽 이동·도움말), 여기는 본문만 */
 body.embed .topbar, body.embed #rail, body.embed #pagebar, body.embed .foot { display: none !important; } /* 고지문은 AIS 쪽 안내줄에 */
 body.embed.app .layout { grid-template-columns: minmax(0, 1fr) !important; gap: 0; }
@@ -306,8 +307,8 @@ textarea { min-height: 84px; resize: vertical; }
 .result { display: grid; gap: 16px; }
 /* 요건 카드: 줄마다 개수를 고르게(7개면 4+3), 마지막 줄 카드는 넓혀 빈칸을 남기지 않는다 */
 /* 카드 격자: 줄마다 개수를 고르게(--cols, 4개면 2+2), 좁으면 --min 아래로 줄이지 않고 내려 쌓으며, 마지막 줄 카드는 넓혀 빈칸을 남기지 않는다 */
-.cards, .mk-cards, .disc-fields { --cols: 3; --min: 240px; --gap: 12px; display: flex; flex-wrap: wrap; gap: var(--gap); }
-:is(.cards, .mk-cards, .disc-fields) > * { flex: 1 1 max(min(100%, var(--min)), calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols))); min-width: 0; }
+.cards, .mk-cards { --cols: 3; --min: 240px; --gap: 12px; display: flex; flex-wrap: wrap; gap: var(--gap); }
+:is(.cards, .mk-cards) > * { flex: 1 1 max(min(100%, var(--min)), calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols))); min-width: 0; }
 :is(.cards, .mk-cards):has(> :nth-child(4):last-child) { --cols: 2; }
 /* 특허 요건 진단: 요약 막대 + 고칠 요건 목록 */
 .req-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
@@ -678,9 +679,6 @@ details.tv[open] summary { margin-bottom: 8px; }
 
 /* (출원지원 전용 빌드: 처음 화면 스타일 제거) */
 /* ---------- 유망기술 발굴 · 유사 특허 비교 · 공백기술 탐색 ---------- */
-.disc-fields { --cols: 4; --min: 170px; --gap: 8px; margin-bottom: 14px; }
-.disc-field { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); cursor: pointer; font-size: .9rem; }
-.disc-field:has(input:checked) { border-color: var(--primary); background: var(--moss-soft); color: var(--moss); }
 .dc { width: 100%; min-height: 260px; margin: 6px 0 4px; }
 .dc svg { display: block; overflow: visible; }
 .dc-best { fill: color-mix(in oklab, var(--c1) 8%, transparent); }
@@ -730,6 +728,9 @@ details.tv[open] summary { margin-bottom: 8px; }
 .skip-link { position: fixed; left: 12px; top: -60px; z-index: 300; padding: 10px 16px; border-radius: 10px; background: var(--primary); color: var(--on-primary); font-weight: 700; text-decoration: none; transition: top .15s; }
 .skip-link:focus { top: 12px; }
 #main:focus { outline: none; }
+/* 앱 스크립트가 끝까지 돌지 못한 옛 브라우저에서만 보이는 안내 (첫 화면을 그리면 사라지고 스크립트 끝에서도 지운다. 잠깐 깜빡이지 않게 늦게 보인다) */
+.boot-fail { visibility: hidden; animation: boot-fail 0s 2.5s forwards; margin: 24px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); line-height: 1.6; }
+@keyframes boot-fail { to { visibility: visible; } }
 /* 고정 머리글·아래 막대가 키보드로 옮겨 간 칸을 가리지 않게, 두 번 누름 확대 지연 없이 */
 html, body { overflow-x: clip; }
 html { scroll-padding-top: 120px; scroll-padding-bottom: 96px; touch-action: manipulation; }
@@ -1143,7 +1144,7 @@ body.app .toast { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
   nav.steps { grid-template-columns: repeat(var(--n, 5), minmax(118px, 1fr)); padding: 14px 14px 12px; }
   nav.steps .d { display: none; }
   .pb-where { display: none; }
-  .pagebar [data-nav="prev"] .pb-l { display: none; }
+  .pagebar [data-nav="prev"] .pb-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } /* 화면에서만 숨김: 버튼 이름으로 읽힌다 */
   .pb-in .btn { padding: 11px 14px; }
   .proc { grid-template-columns: minmax(0, 1fr); }
   .proc li { grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 0 0 14px; }
@@ -1274,13 +1275,13 @@ h1, h2, h3 { font-weight: 600; }
 <a class="skip-link" href="#main">본문으로 건너뛰기</a>
 <header class="topbar">
   <div class="topbar-in">
-    <a href="#home" class="brand" aria-label="에이프 Agri-IP 처음 화면">
+    <a href="#home" class="brand" aria-label="출원도우미 처음 화면">
       <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5V12.5"/><path d="M12 13.5c-3.8 0-6.2-2.4-6.2-6.2 3.8 0 6.2 2.4 6.2 6.2z"/><path d="M12 11.5c0-3.3 2.2-5.6 6.2-5.6 0 3.3-2.2 5.6-6.2 5.6z"/><path d="M6.5 20.5h11"/></svg></span>
-      <span class="brand-t"><b>에이프 <em>Agri-IP</em></b><small>농식품 기술 사업 지원 서비스</small></span><span class="dev-pill" title="개발 중인 기능으로, 실제 활용 시 제한이 있을 수 있습니다">개발 중</span>
+      <span class="brand-t"><b>출원도우미</b><small>농식품 기술 특허 출원 준비</small></span><span class="dev-pill" title="개발 중인 기능으로, 실제 활용 시 제한이 있을 수 있습니다">개발 중</span>
     </a>
     <nav class="modes" aria-label="서비스 메뉴">
       <a href="#home" data-mode-link="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>처음 화면</a>
-      <a href="#apply" data-mode-link="apply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>출원지원</a>
+      <a href="#apply" data-mode-link="apply"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>출원도우미</a>
       <a href="#ais" data-mode-link="ais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>기술분석</a>
     </nav>
     <div class="mast-side">
@@ -1301,7 +1302,7 @@ h1, h2, h3 { font-weight: 600; }
       <div id="rail-subs"></div>
       <div class="rail-card" id="rail-card"></div>
     </aside>
-    <main id="main" tabindex="-1"></main>
+    <main id="main" tabindex="-1"><p class="boot-fail" id="boot-fail">이 브라우저에서는 출원도우미가 열리지 않아요. 휴대폰이나 브라우저를 최신 버전으로 업데이트하거나, 크롬·엣지·사파리 최신 버전으로 다시 열어 주세요.</p></main>
     <aside id="drawer" class="drawer" aria-label="도움말" hidden>
       <div class="drawer-head"><h2>도움말</h2><button class="btn ghost sm" id="help-close">닫기</button></div>
       <section class="side" aria-labelledby="prog-h">
@@ -1337,9 +1338,9 @@ h1, h2, h3 { font-weight: 600; }
   </div>
 
   <footer class="foot">
-    <div class="foot-brand"><span class="logo sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5V12.5"/><path d="M12 13.5c-3.8 0-6.2-2.4-6.2-6.2 3.8 0 6.2 2.4 6.2 6.2z"/><path d="M12 11.5c0-3.3 2.2-5.6 6.2-5.6 0 3.3-2.2 5.6-6.2 5.6z"/><path d="M6.5 20.5h11"/></svg></span>에이프 <em>Agri-IP</em><small>농식품 기술 사업 지원 서비스</small></div>
-    <p class="legal">에이프는 개발 중인 기능으로, 실제 활용 시 제한이 있을 수 있습니다. 농식품 기술의 출원과 사업화 준비를 돕는 참고용 도구입니다. 특허 가능성 판단과 명세서 초안은 AI가 생성한 참고 자료이며, 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. KIPRIS를 연결하지 않았을 때의 선행특허·출원·거절 통계와 사례는 프로토타입용 예시이며 실제 정보가 아닙니다. 지원사업 공고와 나라별 수출 실적은 공공데이터포털(기업마당·관세청) 자료입니다. ‘KIPRIS 실데이터’ 표시가 붙은 칸은 KIPRIS Plus에서 조회한 값입니다.</p>
-    <p class="legal">KIPRIS(한국특허정보원) 공공데이터를 활용합니다. 기술분석은 <a href="#ais">Agri IP Summary(AIS)</a>를 에이프 안에서 엽니다.</p>
+    <div class="foot-brand"><span class="logo sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5V12.5"/><path d="M12 13.5c-3.8 0-6.2-2.4-6.2-6.2 3.8 0 6.2 2.4 6.2 6.2z"/><path d="M12 11.5c0-3.3 2.2-5.6 6.2-5.6 0 3.3-2.2 5.6-6.2 5.6z"/><path d="M6.5 20.5h11"/></svg></span>출원도우미<small>농식품 기술 특허 출원 준비</small></div>
+    <p class="legal">출원도우미는 개발 중인 기능으로, 실제 활용 시 제한이 있을 수 있습니다. 농식품 기술의 출원 준비를 돕는 참고용 도구입니다. 특허 가능성 판단과 명세서 초안은 AI가 생성한 참고 자료이며, 출원 대리·법률 감정은 변리사를 통해 진행해야 합니다. KIPRIS를 연결하지 않았을 때의 선행특허·출원·거절 통계와 사례는 연습용 예시이며 실제 정보가 아닙니다. ‘KIPRIS 실데이터’ 표시가 붙은 칸은 KIPRIS Plus에서 조회한 값입니다.</p>
+    <p class="legal">KIPRIS(한국특허정보원) 공공데이터를 활용합니다. 기술분석은 <a href="#ais">Agri IP Summary(AIS)</a>를 출원도우미 안에서 엽니다.</p>
   </footer>
 </div>
 <div class="scrim" id="scrim" hidden></div>
@@ -1357,6 +1358,9 @@ const API_BASE = (document.querySelector('meta[name="filing-api"]')?.content || 
 if (API_BASE) { const _fetch = window.fetch.bind(window); window.fetch = (u, o) => _fetch(typeof u === "string" && u.startsWith("/api/") ? API_BASE + u : u, o); }
 if (FILING_ONLY) document.body.classList.add("filing-only");
 const $ = (s, el = document) => el.querySelector(s);
+// 옛 사파리(iOS 16.3 이하)에서도 돌도록 정규식 lookbehind 와 Array.prototype.at 을 쓰지 않는다 (scripts/smoke.mjs 가 확인)
+function lastOf(a) { return a[a.length - 1]; }
+function splitSentences(t) { return t.replace(/다\.\s/g, "다.\n").split("\n"); }
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const FIELDS = {
@@ -1461,7 +1465,7 @@ const DISC_GUESS = [[/온라인|인터넷|SNS|블로그|유튜브|인스타|페�
 const guessDiscForm = w => DISC_GUESS.find(([re]) => re.test(w || ""))?.[1] ?? "";
 const discFormOf = () => S.app.discForm || guessDiscForm(S.idea.discWhere);
 
-function toast(msg) { const t = $("#toast"); t.textContent = EMBED || FILING_ONLY ? BRAND_FIX.reduce((x, [re, to]) => x.replace(re, to), msg) : msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2200); }
+function toast(msg) { const t = $("#toast"); t.textContent = brandText(msg); t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2200); }
 
 /* ---------- 진단 로직 ---------- */
 // 발명의 명칭으로 청구 유형을 가린다. ‘A 조성물 및 그 제조방법’은 물건이 주, 방법이 함께
@@ -1619,7 +1623,7 @@ function analyzePitch(text) {
     if (w.length < 2 || PITCH_DROP.test(w) || /^\d+$/.test(w)) continue;
     if (!toks.some(t => t.w === w)) toks.push({ w, verbal });
   }
-  const head = [...toks].reverse().find(t => !t.verbal) ?? toks.at(-1);
+  const head = [...toks].reverse().find(t => !t.verbal) ?? lastOf(toks);
   const kind = head && PITCH_DEVICE.test(head.w) ? "device" : head && PITCH_METHOD.test(head.w) ? "method" : "product";
   // 기능은 '~하는'으로 꾸민 말만 (비행하는 트랙터 → 비행). 없으면 분야 틀로 후보를 만든다
   const feat = toks.find(t => t.verbal && t !== head)?.w ?? "";
@@ -1735,7 +1739,7 @@ function ideaStartPage() {
       ${nav}
       ${rows}
       ${cur ? "" : `<div class="chat-q chat-end"><span class="chat-n" aria-hidden="true">✓</span><p><b>답을 모두 받았어요.</b><small>${D ? `낱말로 명칭 후보 ${D.titles.length}개를 만들어 두었어요. ` : ""}다음 쪽에서 고르고 다듬은 뒤, 2단계에서 비슷한 특허를 찾아요.</small></p></div>`}
-      ${SAVE.restored ? `<p class="hint">지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔어요.</p>` : ""}${EMBED ? "" : `<p class="hint">입력한 내용은 이 기기의 브라우저에 자동 저장돼요. 기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있어요.</p>`}
+      ${SAVE.restored ? `<p class="hint">지난 작업(${new Date(SAVE.restored).toLocaleString("ko-KR")})을 불러왔어요.</p>` : ""}${EMBED ? "" : `<p class="hint">입력한 내용은 이 기기의 브라우저에만 자동 저장돼요. 검색·AI 버튼을 누를 때만 그 내용이 서버로 가요. 기록 지우기는 <button type="button" class="linklike" data-help>도움말</button>에 있어요.</p>`}
     </div>
     <aside class="branch-card" aria-label="다른 방법으로 시작">
       <span class="branch-label">다른 방법으로 시작</span>
@@ -2095,7 +2099,7 @@ function consultBrief() {
   const sim = (L?.similar?.items ?? []).slice(0, 3);
   const needs = S.spec ? specNeeds().length : null, ap = apRequired().filter(x => !x.ok);
   const L2 = [];
-  L2.push("【변리사 상담 요약서】", `${fmt(today)} · 출원도우미(에이프)에서 입력한 내용으로 만든 자료입니다. 상담 전에 변리사에게 보내거나 가져가세요.`);
+  L2.push("【변리사 상담 요약서】", `${fmt(today)} · 출원도우미에서 입력한 내용으로 만든 자료입니다. 상담 전에 변리사에게 보내거나 가져가세요.`);
   L2.push("【발명 이름】", i.title || "(아직 안 정함)", "【분야·종류】", `${fieldName(i.field)} · ${KIND_NAME[k.main]}`);
   L2.push("【무엇을 해결하나요】", i.problem || "(아직 안 적음)", "【기존과 다른 점】", i.diff || "(아직 안 적음)");
   L2.push("【핵심 구성】", ...(parts.length ? parts.map(x => `· ${x}`) : ["(아직 안 적음)"]), "【효과】", S.effect || "(아직 안 적음)");
@@ -2106,26 +2110,23 @@ function consultBrief() {
   L2.push("【변리사에게 물어볼 것】", ...qs.map((q, n) => `${n + 1}. ${q}`));
   L2.push("【서류 준비 상태】", S.spec ? `· 발명 설명서(명세서) 초안 있음 (${SPEC_SRC[S.spec.source] ?? "AI 작성본"}${needs ? `, 아직 안 적은 곳 ${needs}곳` : ", 빈칸 없음"})` : "· 발명 설명서(명세서) 초안 아직 없음", `· 신청서 꼭 채울 칸: ${ap.length ? `${ap.map(x => x.t).join(", ")} 남음` : "모두 채움"}`);
   L2.push("【참고】", "이 자료의 진단은 참고용이며 법률 판단이 아닙니다. 공익변리사 특허상담센터(pcc.or.kr, 1544-8080)에서 무료 상담을 받을 수 있습니다.");
-  return L2.join("\n");
+  return brandText(L2.join("\n"));
 }
 const consultBtn = (cls = "btn") => `<button type="button" class="${cls}" data-consult-brief title="입력한 내용·비슷한 특허·진단 결과·물어볼 것을 한 장으로 정리해 받아요">변리사 상담 요약서 받기 (.docx)</button>`;
 document.addEventListener("click", e => { if (e.target.closest("[data-consult-brief]")) { saveDocx(`변리사상담요약서_${iso(today)}.docx`, consultBrief()); toast("상담 요약서를 받았어요. 상담 전에 변리사에게 보내세요"); } });
 function supportPage() {
-  const atts = ATTORNEYS.filter(a => a.f.includes(S.idea.field)), L = liveData(), ags = L?.agents ?? [];
+  const L = liveData(), ags = L?.agents ?? [];
   const agentsHtml = ags.length ? `<div class="field"><span class="label">비슷한 특허를 대리한 특허사무소·변리사 <span class="kr-badge">${L.mode === "mock" ? "KIPRIS 모의" : "KIPRIS 서지정보"}</span></span>
       <div class="cards">${ags.map(a => `<article class="card"><div class="attorney"><span class="avatar" aria-hidden="true">${esc(a.name.replace(/^\[모의\]\s*/, "").slice(0, 1))}</span><div><h3>${esc(a.name)}</h3><span class="org">비슷한 특허 ${a.count}건 대리</span></div></div>
         <p class="muted" style="font-size:.82rem">${a.cases.map(c => `${esc(c.title)} (${esc(c.applicationNumber)}, 유사도 ${c.sim}%)`).join(" · ")}</p></article>`).join("")}</div>
       <p class="hint">선행기술 조사에서 가장 비슷했던 특허의 공개 서지정보에 나온 대리인을 대리 건수 순으로 보여 줍니다. 추천이나 평가가 아니며, 상담 전에 변리사 등록 여부를 대한변리사회에서 확인하세요.</p></div>` : "";
   return `<div class="brief-card"><div><b>상담 가기 전에 한 장으로 정리해요</b><span class="muted">발명 내용·비슷한 특허·진단 결과·물어볼 것을 모아 드려요. 변리사가 처음부터 묻지 않아도 돼요.</span></div>${consultBtn()}</div>
-    <p class="example-note">${ags.length ? "아래 특허사무소·변리사는 KIPRIS 공개 서지정보입니다." : (S.api === "off" ? "아래 변리사 정보는 예시이며, 서버에 KIPRIS 키를 설정하고 선행기술 조사를 실행하면 비슷한 특허를 대리한 사무소를 찾아 드립니다." : "아래 변리사 정보는 예시이며, 선행기술 조사를 실행하면 비슷한 특허를 대리한 사무소를 KIPRIS로 찾아 드립니다.")}</p>
+    <p class="example-note">${ags.length ? "아래 특허사무소·변리사는 KIPRIS 공개 서지정보입니다." : (S.api === "off" ? "서버에 KIPRIS 키를 설정하고 선행기술 조사를 실행하면 비슷한 특허를 대리한 특허사무소를 여기에 보여 드립니다." : "2단계에서 비슷한 특허를 찾으면 그 특허를 대리한 특허사무소를 KIPRIS로 찾아 여기에 보여 드립니다.")}</p>
     ${(n => n ? `<div class="grid2">
       <div class="field"><label for="region">지역</label><select id="region">${["서울", "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"].map(r => `<option ${S.region === r ? "selected" : ""}>${r}</option>`).join("")}</select></div>
     </div>
     <div class="field"><span class="label">지금 신청할 수 있는 특허·지식재산 공고 <span class="kr-badge">기업마당</span></span>${n}</div>` : "")(noticesHtml("ip", () => S.mode === "apply" && S.step === "manage"))}
-    ${cut("변리사 찾기")}
-    ${agentsHtml || `<div class="field"><span class="label">${esc(fieldName(S.idea.field))} 분야 변리사 (예시)</span>
-      <div class="cards">${(atts.length ? atts : ATTORNEYS.slice(0, 2)).map(a => `<article class="card"><div class="attorney"><span class="avatar" aria-hidden="true">${a.i}</span><div><h3>${a.n}</h3><span class="org">${a.tag}</span></div></div>
-        <button class="btn sm ghost" data-consult="${a.n}">진단 리포트 보내고 상담 요청</button></article>`).join("")}</div></div>`}`;
+    ${agentsHtml ? `${cut("변리사 찾기")}${agentsHtml}` : ""}`;
 }
 const fileDateField = () => `<div class="grid2"><div class="field"><label for="fileDate">${S.filed?.done ? "출원일" : "출원일(예정일)"}</label><input type="date" id="fileDate" value="${esc(S.fileDate)}"><span class="hint">출원일을 넣으면 아래 기한이 실제 날짜로 바뀝니다.</span></div></div>`;
 function deadlineItems() {
@@ -2453,12 +2454,6 @@ const TPL = {
 };
 
 
-const ATTORNEYS = [
-  { i: "가", n: "변리사 A (예시)", tag: "발효·미생물, 비료", f: ["ferment", "functional"] },
-  { i: "나", n: "변리사 B (예시)", tag: "식품 조성물, 가공 공정", f: ["food", "functional"] },
-  { i: "다", n: "변리사 C (예시)", tag: "스마트팜, 농기계·포장 구조, 제어 SW", f: ["smartfarm", "pack"] },
-  { i: "라", n: "변리사 D (예시)", tag: "품종보호, 육종·분자마커", f: ["variety"] }
-];
 
 // 해외 출원 안내 (제출·관리 3쪽): 내 출원일 기준 일정과 경로·나라별 유의점·비용 지원
 
@@ -2485,7 +2480,7 @@ const stepNo = id => { const i = stepIdx(id); return i < 0 ? "" : BRANCH[id] ? `
 /* ---------- 서비스 인트로: 출원지원·해외동향에 들어갈 때 (AIS와 같은 방식) ---------- */
 // 화면은 뒤에서 이미 그려 두고, 인트로가 2.3초 뒤 걷힌다. 누르거나 아무 키나 누르면 바로 걷힌다. 움직임 줄이기 설정이면 띄우지 않는다
 const INTRO = {
-  apply: { t: "출원지원", s: "Agri-IP · Patent Filing Support", ic: "file" },
+  apply: { t: "출원도우미", s: "Agri IP Summary · Patent Filing Helper", ic: "file" },
   global: { t: "해외동향", s: "Agri-IP · Global Tech & Business", ic: "globe" }
 };
 function playIntro(mode) {
@@ -2772,6 +2767,8 @@ function viewHome() {
 
 /* ---------- 해외동향 · 해외 기술 동향 ---------- */
 // 동향 데이터는 /api/trends 에서 받는다 (지금은 예시 데이터, 실제 API 연결 시 같은 형태). 해외 출원 가이드는 검증한 사실과 출처를 GUIDE 에 모은다.
+// 관심 분야 고르기 타일의 쉬운 뜻 한 줄
+const TREND_FIELD_EASY = { smartfarm: "센서와 자동 제어로 작물을 키우는 기술", altprotein: "콩·곤충·세포 배양으로 고기를 대신하는 단백질", biocontrol: "미생물로 작물을 키우고 병해충을 막는 기술", foodferment: "발효하거나 몸에 좋은 성분을 넣어 만든 식품", breeding: "더 좋은 품종을 만드는 기술", robotics: "사람 대신 농사일을 하는 로봇과 드론", postharvest: "거둔 농산물을 신선하게 보관하고 옮기는 기술" };
 const TREND_FIELD_LIST = [["smartfarm", "스마트팜·정밀농업"], ["altprotein", "대체단백·배양육"], ["biocontrol", "미생물 비료·생물농약"], ["foodferment", "발효·기능성 식품"], ["breeding", "육종·유전자 편집"], ["robotics", "농업 로봇·드론"], ["postharvest", "수확 후 저장·유통"]];
  // 색은 관청을 따라간다 (순위가 바뀌어도 색은 그대로)
 
@@ -2877,7 +2874,7 @@ document.addEventListener("click", e => {
 function startBizTech(field, kw) {
   if (!kwList(kw).length) { toast("키워드를 하나 이상 적어 주세요"); return; }
   const busy = S.done.size > 0 || !!S.idea.title.trim();
-  if (!resetWork(busy && `출원지원에 작성 중인 ‘${S.idea.title}’의 입력과 결과를 지우고 이 관심 기술로 새로 시작합니다. 계속할까요?`)) return;
+  if (!resetWork(busy && `출원도우미에 작성 중인 ‘${S.idea.title}’의 입력과 결과를 지우고 이 관심 기술로 새로 시작합니다. 계속할까요?`)) return;
   Object.assign(S.idea, { fieldCustom: null }); ideateFrom(field, kw);
   S.chat = { done: ["idea", "read", "problem"], edit: "" }; S.idea.pitch = S.idea.title; S.ideate.pitch = null;
   S.step = "idea"; S.sub = 1; // 출원지원으로 넘어가면 명칭 후보 고르기부터
@@ -3077,7 +3074,7 @@ function priorGaps(prior, pp) {
 function formsOf({ subject, isDevice, isProcess, ferment }) {
   if (isDevice || isProcess) return "";
   const f = S.idea.field, w = subject.replace(/\s+/g, " ");
-  if (!MIX_SUBJECT.test(w.split(" ").at(-1))) return "";
+  if (!MIX_SUBJECT.test(lastOf(w.split(" ")))) return "";
   if (ferment || f === "ferment" || /비료|농약|방제|생장|생육|병해|토양|사료/.test(w)) return "액상, 분말, 과립 또는 펠릿";
   if (f === "food" || f === "functional" || f === "pack" || /식품|음료|조성물|소재|제제/.test(w)) return "분말, 과립, 정제, 캡슐 또는 액상";
   return "";
@@ -3087,7 +3084,7 @@ function formsOf({ subject, isDevice, isProcess, ferment }) {
 const ELEC_RE = /(제어|센서|통신|모듈|프로세서|스마트|모터|펌프|카메라|구동|서버|단말|애플리케이션|앱|프로그램|플랫폼|전원|전자|회로|LED|조명|히터|드론|로봇|자동)/;
 const elecDevice = (t, names) => S.tpl === "smartfarm" || ELEC_RE.test(`${t} ${names.join(" ")}`);
 function specBoiler({ t, subject, pp, isDevice, isProcess, ferment }) {
-  const out = [], all = `${t} ${pp.map(p => p.name).join(" ")}`, f = S.idea.field, whole = subject.split(/\s+/).at(-1);
+  const out = [], all = `${t} ${pp.map(p => p.name).join(" ")}`, f = S.idea.field, whole = lastOf(subject.split(/\s+/));
   out.push("본 명세서에서 사용하는 용어는 실시예를 설명하기 위한 것일 뿐 본 발명을 한정하려는 것이 아니며, 단수의 표현은 문맥상 명백히 다르게 뜻하지 않는 한 복수의 표현을 포함한다. 수치 범위는 그 범위에 속하는 모든 수치와 하위 범위를 포함하며, 달리 정의되지 않는 한 백분율은 중량 기준이다.");
   if (/추출/.test(all)) out.push("본 명세서에서 ‘추출물’은 원료를 물, 탄소수 1 내지 4의 저급 알코올 또는 이들의 혼합 용매로 추출한 추출액, 그 희석액이나 농축액, 이를 건조하여 얻은 건조물, 및 이들의 조정제물 또는 정제물을 모두 포함하는 의미로 사용한다.");
   if (/발효/.test(all)) out.push("본 명세서에서 ‘발효물’은 미생물을 원료에 접종하여 배양한 배양물, 그 배양 상등액, 균체, 이들의 건조물·농축물·추출물 및 이들의 가공물을 모두 포함하는 의미로 사용한다.");
@@ -3126,8 +3123,8 @@ function buildSpecTemplate() {
   const stepList = list => list.map((p, i) => stepLabel(p, i));
   // 제조·사용 방법에 단계가 하나뿐이면 이어지는 단계를 채울 자리를 둔다
   const methodSteps = () => steps.length === 1 ? [stepLabel(steps[0], 0), `(b) ${NEED("이어지는 단계와 조건")}`] : stepList(steps);
-  const join = arr => arr.length > 1 ? `${arr.slice(0, -1).join("; ")}; 및 ${arr.at(-1)}` : arr[0] ?? "";
-  const whole = subject.split(/\s+/).at(-1);
+  const join = arr => arr.length > 1 ? `${arr.slice(0, -1).join("; ")}; 및 ${lastOf(arr)}` : arr[0] ?? "";
+  const whole = lastOf(subject.split(/\s+/));
   const amount = r => /중량\s*%|w\/w/.test(r) ? `${whole} 총 중량에 대하여 ` : /부피\s*%|v\/v/.test(r) ? `${whole} 총 부피에 대하여 ` : "";
   const mainNames = (isProcess ? steps : comps).map(p => p.name);
   const P = [];
@@ -3277,7 +3274,7 @@ function buildSpecTemplate() {
     `본 발명의 ${J(subject, "은")} ${J(isProcess ? listKo(stepList(steps)) : listKo(mainNames), "을")} ${verb}하며, ${eff.plain || NEED("효과")} 효과를 나타낸다.`
   ].filter(Boolean);
   let sum = sums.join(" ");
-  if (sum.length > 400) sum = [sums[0], sums.at(-1)].join(" ").slice(0, 400);
+  if (sum.length > 400) sum = [sums[0], lastOf(sums)].join(" ").slice(0, 400);
   P.push(sum);
   if (draw) { head("【대표도】"); P.push("도 1"); }
   return P.join("\n");
@@ -3673,7 +3670,7 @@ function aiStartCard(task) {
   const sig = aiSig(task); if (!sig) return "";
   const st = aiState(task); if (st.okSig === sig) return "";
   const again = !!st.okSig, [btn, what] = AI_START[task] ?? [ui.title || `AI로 ${ui.label} 받기`, ui.desc || `${ui.label}을(를) AI가 해 드려요`];
-  return `<div class="ai-start ai-opt"><div><b>${AI_TAG}${again ? "입력이 바뀌었어요. " : ""}${what}</b><span class="muted">보통 ${AI_TOOK[task] ?? "10~20초"} · 안 눌러도 다음으로 넘어갈 수 있어요</span></div><button type="button" class="btn ghost sm" data-ai-run="${task}">${again ? "AI로 다시 받기" : btn}</button></div>`;
+  return `<div class="ai-start ai-opt"><div><b>${AI_TAG}${again ? "입력이 바뀌었어요. " : ""}${what}</b><span class="muted">보통 ${AI_TOOK[task] ?? "10~20초"} · 누르면 적은 내용이 외부 AI 서버로 가요 · 안 눌러도 다음으로 넘어갈 수 있어요</span></div><button type="button" class="btn ghost sm" data-ai-run="${task}">${again ? "AI로 다시 받기" : btn}</button></div>`;
 }
 // '다음' 버튼 잠금을 고친다 (AI 상태가 바뀔 때마다)
 function refreshAiLock() {
@@ -3830,7 +3827,7 @@ document.addEventListener("click", e => {
 });
 // 숙련자 이관: 위험 높은 곳만 모아 변리사에게 넘길 검토 목록 (승인 대기·승인한 AI 문장, 고치지 않은 '높음' 지적, 위험 '상' 거절이유)
 function attorneyText() {
-  const L = [`[변리사 검토 요청] ${S.idea.title}`, `작성일 ${iso(today)} · 에이프(Agri-IP)에서 AI가 쓰거나 지적한 곳 중 위험이 높은 것만 모았습니다.`, ""];
+  const L = [`[변리사 검토 요청] ${S.idea.title}`, `작성일 ${iso(today)} · 출원도우미에서 AI가 쓰거나 지적한 곳 중 위험이 높은 것만 모았습니다.`, ""];
   const C = (S.aiChanges ?? []).filter(c => c.risk === "high" && (c.st === "held" || c.st === "ok"));
   if (C.length) L.push("1. AI가 쓴 문장 (청구범위·수치·효과 등)", ...C.map((c, i) => `  ${i + 1}) [${CH_ST[c.st][0]}] ${chLabel(c)}\n     ${c.task === "review" ? `고치기 전: ${c.before}\n     고친 뒤: ` : ""}${c.after}\n     이유: ${c.why}`), "");
   const R = S.revAI?.issues?.filter((x, i) => x.severity === "높음" && !S.revAI.applied?.includes(i) && !S.revAI.rejected?.includes(i)) ?? [];
@@ -3839,9 +3836,9 @@ function attorneyText() {
   if (J.length) L.push("3. 위험이 높은 예상 거절이유", ...J.map((x, i) => `  ${i + 1}) ${x.law}: ${x.why}${x.fix ? `\n     대비책: ${x.fix}` : ""}`), "");
   if (L.length === 3) L.push("위험이 높은 항목이 없습니다.");
   L.push("※ AI 결과는 참고 의견입니다. 출원 전 변리사의 확인을 받으세요.");
-  return L.join("\n");
+  return brandText(L.join("\n"));
 }
-document.addEventListener("click", e => { if (e.target.closest("[data-attorney-list]")) saveFile(`agri-ip_attorney-review_${iso(today)}.txt`, "text/plain;charset=utf-8", "\ufeff" + attorneyText()); });
+document.addEventListener("click", e => { if (e.target.closest("[data-attorney-list]")) saveFile(`patent-attorney-review_${iso(today)}.txt`, "text/plain;charset=utf-8", "\ufeff" + attorneyText()); });
 const AI_TASK_UI = {};
 const aiTaskInput = task => { const fb = aiFeedback(task); return fb.length ? { ...AI_TASK_UI[task].input(), feedback: fb } : AI_TASK_UI[task].input(); };
 async function runAiTask(task) {
@@ -4147,7 +4144,7 @@ const KW_DROP = /^(유지|구조|방법|장치|시스템|제조|이용|위한|�
 function kwFromTitle(title) {
   const ws = [...new Set(analyzePitch(title).kws.map(w => w.length > 2 ? w.replace(/(용|의)$/, "") : w).filter(w => w.length >= 2 && !KW_DROP.test(w)))];
   if (!ws.length) return "";
-  return [...new Set([ws[0], ...(ws.length > 2 ? [ws.at(-2)] : []), ws.at(-1)])].join("\n");
+  return [...new Set([ws[0], ...(ws.length > 2 ? [ws[ws.length - 2]] : []), lastOf(ws)])].join("\n");
 }
 // 명칭·다른 점·문제를 손으로 바꿨는데 핵심 구성·효과에 처음 문장의 낱말이 남아 있으면 (딸기 → 블루베리) 알려 주고 한 번에 바꾸게 한다
 function staleWords() {
@@ -4261,8 +4258,7 @@ function viewDiscover() {
       <p class="muted">아직 출원할 아이디어가 없다면, 세계 특허 출원이 빠르게 늘지만 한국 출원은 적은 기술을 찾아 아이디어 후보를 만들어 드립니다. 아이디어가 이미 있다면 <a href="#idea">키워드로 바로 시작</a>하세요.</p></div>
 
     <div class="sub" data-pg="0">
-      <span class="label">관심 분야</span>
-      <div class="disc-fields" role="radiogroup" aria-label="관심 분야">${TREND_FIELD_LIST.map(([k, n]) => `<label class="disc-field"><input type="radio" name="disc-field" value="${k}" ${D.field === k ? "checked" : ""}><b>${n}</b></label>`).join("")}</div>
+      <div class="field"><span class="label">관심 분야</span>${seg("disc-field", TREND_FIELD_LIST.map(([k, n]) => [k, n, TREND_FIELD_EASY[k]]), D.field, { label: "관심 분야" })}</div>
       <div class="grid2">
         <div class="field"><label for="disc-res">보유 자원·역량 (선택)</label><textarea id="disc-res" rows="3" placeholder="예: 쌀겨 원료를 많이 확보하고 있고 발효 설비가 있습니다">${esc(D.resources)}</textarea><span class="hint">원료, 설비, 재배 작물, 보유 기술처럼 남보다 유리한 점을 적으면 맞춤 아이디어가 나옵니다.</span></div>
         <div class="field"><span class="label">목표</span>${seg("disc-goal", DISC_GOALS.map(g => [g, g]), D.goal)}</div>
@@ -4273,7 +4269,7 @@ function viewDiscover() {
 
     <div class="sub" data-pg="1">${d ? `
       ${d.mode === "sample" ? `<p class="example-note">세부기술별 출원 건수와 증가율은 아직 예시 데이터입니다. 글로벌 특허 동향 API를 연결하면 실제 데이터로 바뀝니다.</p>` : ""}
-      <div class="sub-head"><h3>유망기술 지도 · ${esc(d.name)}</h3><span class="muted" style="font-size:.8rem">${d.years[0]}~${d.years.at(-1)}년 5개 관청 출원 기준</span></div>
+      <div class="sub-head"><h3>유망기술 지도 · ${esc(d.name)}</h3><span class="muted" style="font-size:.8rem">${d.years[0]}~${lastOf(d.years)}년 5개 관청 출원 기준</span></div>
       <p class="muted" style="font-size:.86rem">오른쪽으로 갈수록 세계 출원이 빨리 늘고, 아래로 갈수록 한국 출원 비중이 작습니다. <b>오른쪽 아래</b>가 먼저 권리를 잡기 좋은 유망기술입니다.</p>
       <div class="dc" data-chart="opp" role="img" aria-label="${esc(ops.map(o => `${o.name}: 증가율 ${o.growth}%, 한국 비중 ${o.kr}%`).join(", "))}"></div>
       ${tableView(["세부기술", "세계 연 증가율", "한국 비중", "유망도", "구분", ...(kr ? [`국내 출원${kr.yearsOk ? " 최근 5년" : ""} (KIPRIS)`] : [])], ops.map(o => [o.name, `${o.growth}%`, `${o.kr}%`, `${o.score}`, o.q, ...(kr ? [krN(krBy(o.name))?.toLocaleString("ko-KR") ?? "-"] : [])]))}
@@ -4299,7 +4295,7 @@ function viewDiscover() {
           ${c.parts?.length ? `<dt>핵심 구성</dt><dd>${c.parts.map(esc).join(" · ")}</dd>` : ""}
           <dt>유망한 이유</dt><dd>${esc(c.why || "")}</dd>${c.firstExperiment ? `<dt>첫 실험</dt><dd>${esc(c.firstExperiment)}</dd>` : ""}${c.risk ? `<dt>주의</dt><dd>${esc(c.risk)}</dd>` : ""}</dl>
         <div class="actions"><button class="btn sm" data-disc-use="${i}">이 아이디어로 시작</button></div></article>`).join("")}</div>` : `<p class="muted">유망기술을 하나 이상 고르세요.</p>`}`
-      : `<p class="muted">먼저 유망기술을 찾아 주세요.</p>`}
+      : `<p class="muted">먼저 유망기술을 찾아 주세요.</p><div class="actions"><button class="btn" data-sub="0">관심 분야 고르기</button></div>`}
     </div>
   </section>`;
 }
@@ -4441,7 +4437,7 @@ function priorLandscape(items) {
   const groups = STATUS_GROUPS.map(([k, re, c, d]) => ({ k, c, d, n: items.filter(p => re.test(p.status || "")).length }));
   const other = items.length - groups.reduce((a, g) => a + g.n, 0);
   const years = {}; items.forEach(p => { const y = String(p.applicationDate || "").slice(0, 4); if (/^\d{4}$/.test(y)) years[y] = (years[y] || 0) + 1; });
-  const ys = Object.keys(years).sort(), y0 = +ys[0], y1 = +ys.at(-1), yrs = ys.length ? Array.from({ length: y1 - y0 + 1 }, (_, i) => String(y0 + i)) : [], ymax = Math.max(1, ...Object.values(years));
+  const ys = Object.keys(years).sort(), y0 = +ys[0], y1 = +lastOf(ys), yrs = ys.length ? Array.from({ length: y1 - y0 + 1 }, (_, i) => String(y0 + i)) : [], ymax = Math.max(1, ...Object.values(years));
   const apps = {}; items.forEach(p => { if (p.applicant) apps[p.applicant] = (apps[p.applicant] || 0) + 1; });
   const top = Object.entries(apps).sort((a, b) => b[1] - a[1]).slice(0, 5), amax = top[0]?.[1] || 1;
   return `<div class="sub" data-pg="1"><h3>유사 특허 한눈에 보기 <span class="muted" style="font-weight:400;font-size:.86rem">· 유사도 상위 ${items.length}건 기준</span></h3>
@@ -4488,7 +4484,7 @@ function claimTree(text) {
   });
   if (!claims.length) return "";
   const kids = n => claims.filter(c => c.refs.length && Math.min(...c.refs) === n);
-  const node = c => `<li><div class="ct-node ${c.refs.length ? "" : "ind"}"><span class="ct-n">청구항 ${c.n}</span><span class="ct-k">${c.refs.length ? (c.multi ? `청구항 ${c.refs[0]}~${c.refs.at(-1)} 인용` : `청구항 ${c.refs[0]} 인용`) : /방법\.?$/.test(c.body) ? "독립항 · 방법" : "독립항 · 물건"}</span><span class="ct-t">${esc(c.body.replace(/^청구항[^,]*,\s*/, "").slice(0, 60))}${c.body.length > 60 ? "…" : ""}</span></div>${kids(c.n).length ? `<ul>${kids(c.n).map(node).join("")}</ul>` : ""}</li>`;
+  const node = c => `<li><div class="ct-node ${c.refs.length ? "" : "ind"}"><span class="ct-n">청구항 ${c.n}</span><span class="ct-k">${c.refs.length ? (c.multi ? `청구항 ${c.refs[0]}~${lastOf(c.refs)} 인용` : `청구항 ${c.refs[0]} 인용`) : /방법\.?$/.test(c.body) ? "독립항 · 방법" : "독립항 · 물건"}</span><span class="ct-t">${esc(c.body.replace(/^청구항[^,]*,\s*/, "").slice(0, 60))}${c.body.length > 60 ? "…" : ""}</span></div>${kids(c.n).length ? `<ul>${kids(c.n).map(node).join("")}</ul>` : ""}</li>`;
   const ind = claims.filter(c => !c.refs.length);
   return `<div class="sub-head"><h3>청구항 구조</h3><span class="muted mono">독립항 ${ind.length} · 종속항 ${claims.length - ind.length}</span></div>
     <ul class="ctree">${ind.map(node).join("")}</ul>
@@ -4831,7 +4827,7 @@ function qaCard() {
   if (!cur) return `${head}<div class="qa-done"><span>남은 ${slots.length}곳은 모두 건너뛰었어요. 잘 모르면 비워 두고 변리사 상담 때 물어봐도 돼요.</span><button type="button" class="btn ghost sm" data-qa-again>건너뛴 질문 다시 보기</button></div>`;
   const Q = qaOf(cur.label), fact = QA_FACT.find(([re]) => re.test(cur.label))?.[1], sent = s => esc(s.replace(/〔입력 필요[^〕]*〕/g, "＿＿").replace(/\s+/g, " ")), same = fact ? slots.filter(x => qaKey(x) === qaKey(cur)).length : 1;
   const sec = (S.spec.text.slice(0, cur.at).match(/【([^】\d][^】]*)】(?![\s\S]*【[^】\d][^】]*】)/) || [])[1] ?? "";
-  const before = cur.before.split(/\n|(?<=다\.)\s/).pop().replace(/^【\d+】\s*/, "").slice(-140), after = cur.after.split(/\n|(?<=다\.)\s/)[0].slice(0, 120);
+  const before = splitSentences(cur.before).pop().replace(/^【\d+】\s*/, "").slice(-140), after = splitSentences(cur.after)[0].slice(0, 120);
   return `${head}
     <p class="qa-q" id="qa-q">${esc(Q.q)}</p>
     ${fact ? "" : `<p class="qa-ctx">${sec ? `<span>${esc(sec)} · </span>` : ""}${sent(before)}<mark>＿＿＿</mark>${sent(after)}</p>`}
@@ -5655,7 +5651,7 @@ document.addEventListener("click", e => {
   S.expFigs ??= [];
   if (t.dataset.xgAdd != null) S.expFigs.push(newExpGraph());
   if (t.dataset.xgDel != null) { if (!confirm("이 그래프와 넣은 값을 지울까요?")) return; S.expFigs.splice(+t.dataset.xgDel, 1); }
-  if (t.dataset.xrowAdd != null) { const g = S.expFigs[+t.dataset.xrowAdd]; g.rows.push({ name: `${/실시예/.test(g.rows.at(-1)?.name) ? "실시예" : "비교예"} ${g.rows.length}`, val: "", sd: "" }); }
+  if (t.dataset.xrowAdd != null) { const g = S.expFigs[+t.dataset.xrowAdd]; g.rows.push({ name: `${/실시예/.test(lastOf(g.rows)?.name) ? "실시예" : "비교예"} ${g.rows.length}`, val: "", sd: "" }); }
   if (t.dataset.xrowDel != null) { const [gi, ri] = t.dataset.xrowDel.split(".").map(Number); S.expFigs[gi].rows.splice(ri, 1); }
   invalidateSpec(); scheduleSave(); rerenderKeepScroll();
 });
@@ -5810,7 +5806,7 @@ function figList() {
     const n = i + 1, key = f.src === "photo" ? `photo:${f.p.id}` : JSON.stringify(f.src === "auto" ? f.m : f.g);
     if (!FIGC.has(key)) FIGC.set(key, jpegOf(f.src === "auto" ? figCanvas(f.m) : graphCanvas(f.g)));
     const safe = f.label.replace(/[\\/:*?"<>|\s]+/g, "_");
-    return { ...f, n, img: FIGC.get(key), file: `도면_도${n}_${safe}.jpg`, tifFile: `도면_도${n}_${safe}.tif`, ascii: `agri-ip_figure${n}_${f.src === "auto" ? (f.m.type === "flow" ? "flowchart" : "block-diagram") : f.src === "photo" ? "photo-drawing" : "graph"}` };
+    return { ...f, n, img: FIGC.get(key), file: `도면_도${n}_${safe}.jpg`, tifFile: `도면_도${n}_${safe}.tif`, ascii: `patent-figure${n}_${f.src === "auto" ? (f.m.type === "flow" ? "flowchart" : "block-diagram") : f.src === "photo" ? "photo-drawing" : "graph"}` };
   });
 }
 // 예전 이름 그대로: 자동 도 1
@@ -5916,8 +5912,8 @@ const figJ = n => [2, 4, 5, 9].includes(n % 10) ? "는" : "은";
 function graphSentences(g, n) {
   const A = g.rows.find(r => /실시예/.test(r.name)) ?? g.rows[0], B = g.rows.find(r => r !== A && /비교예|대조|무처리|control/i.test(r.name)) ?? g.rows.find(r => r !== A);
   const at = g.kind === "line" ? g.pts.length - 1 : 0, a = A.vals[at], b = B.vals[at], d = b ? Math.round((a - b) / Math.abs(b) * 1000) / 10 : null, u = g.unit ? ` ${g.unit}` : "";
-  const desc = g.kind === "line" ? `도 ${n}${figJ(n)} ${listKo(g.rows.map(r => r.name))}의 ${g.pts[0]}부터 ${g.pts.at(-1)}까지의 ${g.metric} 변화를 나타낸 그래프이다.` : `도 ${n}${figJ(n)} ${listKo(g.rows.map(r => r.name))}의 ${J(g.metric, "을")} 비교하여 나타낸 그래프이다.`;
-  const cmp = `${A.name}의 ${J(g.metric, "은")}${g.kind === "line" ? ` ${g.pts.at(-1)}에` : ""} ${fmtN(a)}${u}${d == null ? "였다" : `이고, ${B.name}(${fmtN(b)}${u})보다 ${Math.abs(d)}% ${d >= 0 ? "높았다" : "낮았다"}`}.`;
+  const desc = g.kind === "line" ? `도 ${n}${figJ(n)} ${listKo(g.rows.map(r => r.name))}의 ${g.pts[0]}부터 ${lastOf(g.pts)}까지의 ${g.metric} 변화를 나타낸 그래프이다.` : `도 ${n}${figJ(n)} ${listKo(g.rows.map(r => r.name))}의 ${J(g.metric, "을")} 비교하여 나타낸 그래프이다.`;
+  const cmp = `${A.name}의 ${J(g.metric, "은")}${g.kind === "line" ? ` ${lastOf(g.pts)}에` : ""} ${fmtN(a)}${u}${d == null ? "였다" : `이고, ${B.name}(${fmtN(b)}${u})보다 ${Math.abs(d)}% ${d >= 0 ? "높았다" : "낮았다"}`}.`;
   return { desc, cmp };
 }
 
@@ -5971,21 +5967,21 @@ function submissionGuide(files) {
   const count = list => list.reduce((n, x) => n + (x.text.match(/〔입력 필요/g) || []).length, 0);
   const pre = count(files.filter(x => !x.post)), post = count(files.filter(x => x.post));
   const pri = a.priNo.trim() ? parse(a.priDate) : null, base = pri || parse(S.fileDate) || today, miss = missingFacts();
-  return [
-    `에이프(Agri-IP) · 제출 안내 (${dotDate(iso(today))} 생성)`,
+  return brandText([
+    `AIS 출원도우미 · 제출 안내 (${dotDate(iso(today))} 생성)`,
     `발명의 명칭: ${S.idea.title}`,
     "",
     "1. 들어 있는 파일",
     ...files.map(x => `  ${x.name}\n    → ${x.when}`),
     "",
     "2. 제출 전에 할 일",
-    ...(miss.length ? [`  - 에이프 1단계에서 ${miss.join(", ")}을(를) 먼저 고릅니다. 공지예외·실시예·미생물 항목이 이 답에 따라 바뀝니다.`] : []),
+    ...(miss.length ? [`  - 출원도우미 1단계(아이디어 정리)에서 ${miss.join(", ")}을(를) 먼저 고릅니다. 공지예외·실시예·미생물 항목이 이 답에 따라 바뀝니다.`] : []),
     `  - 출원 전에 채울 〔입력 필요〕 ${pre}곳을 모두 채웁니다.${pre ? ` (${files.filter(x => !x.post).map(x => [x.name.replace(/^\d+_|\.docx$/g, ""), count([x])]).filter(([, n]) => n).map(([nm, n]) => `${nm} ${n}곳`).join(", ")} · Word에서 '〔입력 필요'를 찾기로 검색)` : ""}`,
     ...(post ? [`  - 출원 뒤에 내는 서류의 〔입력 필요〕 ${post}곳(출원번호·접수번호 등)은 출원번호를 받은 뒤 채웁니다.`] : []),
     "  - ‘(예: …)’로 보여 준 값은 예시입니다. 실험으로 확인한 값만 명세서와 청구항에 넣습니다. 효능·용도 데이터는 출원 뒤에 보탤 수 없습니다.",
     ...(strainNew() ? [S.strain === "no" ? "  - 새 균주는 출원 전에 반드시 기탁하고, 받은 수탁번호를 명세서와 출원서에 적습니다(특허법 시행령 제2·3조)." : "  - 명세서의 미생물 표기에 학명과 수탁번호가 함께 있는지 확인합니다."] : []),
     "  - 청구범위는 권리 범위를 정하므로 제출 전에 변리사 검토를 받는 것을 권합니다.",
-    "  - 출원 전 발명 내용은 영업비밀입니다. 외부 AI 서비스에 붙여 넣기 전에 그 서비스의 데이터 이용 조건을 확인하세요.",
+    "  - 출원 전 발명 내용은 영업비밀입니다. 출원도우미의 AI 버튼을 누르면 적은 내용이 외부 AI 서버로 보내집니다(출원도우미 서버에는 남기지 않습니다). 다른 AI 서비스에 붙여 넣을 때도 그 서비스의 데이터 이용 조건을 먼저 확인하세요.",
     "",
     agent ? "3. 대리인(변리사)을 통한 제출" : "3. 특허로(patent.go.kr) 제출 순서",
     ...(agent ? [
@@ -6023,7 +6019,7 @@ function submissionGuide(files) {
     ...(strainNew() ? ["  - 출원 뒤 미생물 수탁번호가 새로 부여되면 바로 지식재산처에 신고합니다(특허법 시행령 제2조 제3항)."] : []),
     "",
     "이 파일들은 입력한 정보로 자동 생성한 초안입니다. 법적 효력이 있는 판단은 지식재산처 또는 변리사에게 확인하세요."
-  ].join("\r\n");
+  ].join("\r\n"));
 }
 function saveFilingZip() {
   const files = filingFiles();
@@ -6113,11 +6109,11 @@ function filingPages() {
         ${apField("discWhat", "공개된 내용", "전시한 시제품, 발표 자료 제목 등")}
         ${apField("discEvidence", "증빙자료 목록", "사진, 팸플릿, 참가 확인서, 게시물 화면 캡처 등", "textarea")}
       </div>
-      <textarea id="doc-disc" class="doc doc-sm" readonly>${esc(buildDisclosureProof())}</textarea>
+      <textarea id="doc-disc" class="doc doc-sm" readonly aria-label="공지예외적용대상 증명서류 미리보기">${esc(buildDisclosureProof())}</textarea>
       <div class="actions"><button class="btn ghost" data-copy="disc">복사</button><button class="btn ghost" data-save="disc">Word(.docx)</button></div>
     </div>` : ""}
     ${a.agentName.trim() && !a.poaNo.trim() ? `<div class="doc-card"><h4>위임장 <span class="muted h-meta">별지 제1호서식</span></h4>
-      <textarea id="doc-poa" class="doc doc-sm" readonly>${esc(buildPoa())}</textarea>
+      <textarea id="doc-poa" class="doc doc-sm" readonly aria-label="위임장 미리보기">${esc(buildPoa())}</textarea>
       <div class="actions"><button class="btn ghost" data-copy="poa">복사</button><button class="btn ghost" data-save="poa">Word(.docx)</button></div></div>` : ""}
     <div class="doc-card"><h4>직접 준비할 서류</h4>
       <div class="grid2">
@@ -6223,12 +6219,14 @@ function embedState() {
 }
 const sendEmbedState = () => { if (EMBED) toParent(embedState()); };
 // AIS 안에서는 '에이프'라는 이름을 쓰지 않고 'AIS 의 출원지원 기능'으로만 보이게, 그린 뒤 화면 글의 서비스 이름을 바꾼다
-const BRAND_FIX = [[/에이프\s*\(Agri-IP\)\s*출원지원|에이프\s*출원지원|에이프\s*\(Agri-IP\)|에이프 Agri-IP/g, "출원지원"], [/에이프가/g, "출원지원이"], [/에이프는/g, "출원지원은"], [/에이프를/g, "출원지원을"], [/에이프의/g, "출원지원의"], [/에이프/g, "출원지원"]];
+const BRAND_FIX = [[/에이프\s*\(Agri-IP\)\s*출원지원|에이프\s*출원지원|에이프\s*\(Agri-IP\)|에이프 Agri-IP/g, "출원도우미"], [/에이프/g, "출원도우미"]]; // 받침이 없어 조사(가·는·를·의)는 그대로
+// 앱이 쓰는 글(토스트·상담 요약서·검토 요청·제출 안내 파일)에도 같은 이름을 쓴다
+function brandText(s) { return EMBED || FILING_ONLY ? BRAND_FIX.reduce((t, [re, to]) => t.replace(re, to), s) : s; }
 function brandFix(root = document.body) {
   if (!(EMBED || FILING_ONLY) || !root) return;
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentNode && !/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName) && n.nodeValue.includes("에이프") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
   const nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
-  nodes.forEach(n => { n.nodeValue = BRAND_FIX.reduce((t, [re, to]) => t.replace(re, to), n.nodeValue); });
+  nodes.forEach(n => { n.nodeValue = brandText(n.nodeValue); });
   root.querySelectorAll?.("[title*='에이프'],[aria-label*='에이프'],[placeholder*='에이프']").forEach(el => ["title", "aria-label", "placeholder"].forEach(a => { const v = el.getAttribute(a); if (v && v.includes("에이프")) el.setAttribute(a, BRAND_FIX.reduce((t, [re, to]) => t.replace(re, to), v)); }));
 }
 const toParent = msg => { if (EMBED?.parent) window.parent.postMessage(msg, EMBED.parent); };
@@ -6533,7 +6531,7 @@ function render() {
 function renderView() {
   const home = S.mode === "home" || S.mode === "ais";
   // 화면 읽기용 페이지 제목 (처음 화면은 자체 제목이 있다)
-  const h1 = $("#page-h1"); if (h1) { const st = STEPS.find(x => x.id === (BRANCH[S.step] || S.step)); h1.textContent = S.mode === "apply" ? `에이프 출원지원 · ${stepNo(S.step) || st?.t || ""}` : ""; h1.hidden = S.mode !== "apply"; }
+  const h1 = $("#page-h1"); if (h1) { const st = STEPS.find(x => x.id === (BRANCH[S.step] || S.step)); h1.textContent = S.mode === "apply" ? `출원도우미 · ${stepNo(S.step) || st?.t || ""}` : ""; h1.hidden = S.mode !== "apply"; }
   document.body.classList.toggle("ais", S.mode === "ais");
   $("#home").hidden = !home; $("#rail").hidden = home; $(".layout").hidden = home;
   document.querySelectorAll("[data-mode-link]").forEach(a => a.setAttribute("aria-current", a.dataset.modeLink === S.mode ? "page" : "false"));
@@ -6585,7 +6583,6 @@ document.addEventListener("click", e => {
     if (S.spec?.source === "template" && !S.spec.edited) S.spec = null; else if (S.spec) S.spec.review = [...new Set([...S.spec.review, ...templateReview()])];
     goPage("draft", 4); toast("보완 후보를 검토 메모에 넣었습니다. 명칭과 청구항은 그대로입니다"); return;
   }
-  const c = e.target.closest("[data-consult]"); if (c) { toast(`${c.dataset.consult}에게 상담 요청을 보냈습니다 (프로토타입)`); return; }
   if (e.target.id === "copy") {
     const text = S.spec?.text ?? "";
     navigator.clipboard?.writeText(text).then(() => toast("명세서 전체를 복사했습니다"), () => { $("#spec-text")?.select(); toast("텍스트를 선택했습니다. 복사해 사용하세요"); })
@@ -6635,7 +6632,7 @@ document.addEventListener("click", e => {
   if (e.target.id === "ax-reset") { delete S.axesCustom[S.idea.field]; S.gapSel = null; runExplore(); return; }
   if (e.target.id === "explore") { S.kw = $("#kw").value; runExplore(); return; }
   const ip = e.target.closest("[data-ipc]"); if (ip) { S.kw = $("#kw")?.value ?? S.kw; S.ipc = S.ipc === ip.dataset.ipc ? "" : ip.dataset.ipc; runExplore(); return; }
-  if (e.target.closest("[data-ics]")) { saveFile(`agri-ip-deadlines_${iso(today)}.ics`, "text/calendar;charset=utf-8", deadlinesIcs()); S.done.add("manage"); renderSteps(); renderSide(); toast("달력 파일을 받았습니다. 열어서 달력에 추가하세요"); }
+  if (e.target.closest("[data-ics]")) { saveFile(`patent-deadlines_${iso(today)}.ics`, "text/calendar;charset=utf-8", deadlinesIcs()); S.done.add("manage"); renderSteps(); renderSide(); toast("달력 파일을 받았습니다. 열어서 달력에 추가하세요"); }
   if (e.target.id === "due-copy") navigator.clipboard?.writeText(deadlinesText()).then(() => toast("기한 목록을 복사했습니다"), () => toast("복사가 막혀 있습니다"));
   if (e.target.id === "gap-clear") { S.gapSel = new Set(); rerenderKeepScroll(); toast("고른 공백 칸을 지웠습니다"); return; }
 });
@@ -6669,7 +6666,7 @@ document.addEventListener("keydown", e => {
   const box = [$("#drawer")].find(x => x && !x.hidden);
   if (e.key === "Tab" && box) {
     const f = [...box.querySelectorAll("a[href], button:not([disabled]), input:not([type=hidden]):not([hidden]), select, textarea, [tabindex='0']")].filter(x => x.getClientRects().length);
-    if (f.length && (e.shiftKey ? document.activeElement === f[0] : document.activeElement === f.at(-1))) { e.preventDefault(); (e.shiftKey ? f.at(-1) : f[0]).focus(); }
+    if (f.length && (e.shiftKey ? document.activeElement === f[0] : document.activeElement === lastOf(f))) { e.preventDefault(); (e.shiftKey ? lastOf(f) : f[0]).focus(); }
     else if (f.length && !box.contains(document.activeElement)) { e.preventDefault(); f[0].focus(); }
   }
 });
@@ -6873,7 +6870,7 @@ const scheduleSave = () => { clearTimeout(SAVE.t); if (!SAVE.off) SAVE.t = setTi
 function renderSaveBox() {
   const box = $("#save-box"); if (!box) return;
   box.innerHTML = `<span class="label">작업 저장</span>
-    <p class="hint">입력한 내용은 이 기기의 브라우저에만 자동 저장됩니다${SAVE.at ? ` · 마지막 저장 ${SAVE.at.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}` : ""}. 다른 기기로는 옮겨지지 않아요. 여러 사람이 쓰는 PC에서는 끝난 뒤 ‘이 기기 기록 모두 지우기’로 지우세요.</p>
+    <p class="hint">입력한 내용은 이 기기의 브라우저에만 자동 저장됩니다${SAVE.at ? ` · 마지막 저장 ${SAVE.at.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}` : ""}. 검색·AI 버튼을 누를 때만 그 내용이 서버로 가고, 서버에는 남기지 않아요. 다른 기기로는 옮겨지지 않아요. 여러 사람이 쓰는 PC에서는 끝난 뒤 ‘이 기기 기록 모두 지우기’로 지우세요.</p>
     <div class="actions"><button type="button" class="btn ghost sm" id="work-reset" title="저장된 작업·명세서 임시저장본을 모두 지웁니다. 입력만 다시 쓰려면 단계 머리의 ↺ 처음부터 작성을 쓰세요">이 기기 기록 모두 지우기</button></div>`;
 }
 document.addEventListener("input", scheduleSave);
@@ -6915,6 +6912,7 @@ function filingNotice() {
   box.hidden = false; box.querySelector("[data-notice-ok]").focus();
 }
 filingNotice();
+document.getElementById("boot-fail")?.remove(); // 시작 코드가 끝까지 돌았다: 옛 브라우저용 안내를 지운다 (읽기 오류든 실행 오류든 그 전에 멈추면 안내가 남는다)
 </script>
 </body>
 </html>

@@ -75,8 +75,10 @@ export const SatisfactionPanel = ({ patentNumber, className = "" }: Props) => {
             onChange={(e) => setComment(e.target.value.slice(0, 500))}
             rows={3}
             placeholder="개선 의견 (선택)"
+            aria-describedby={`${commentId}-note`}
             className="w-full rounded-[12px] border border-[#E5E8EB] bg-[#F9FAFB] px-3 py-2 text-[12px] outline-none focus:border-primary/50 resize-none"
           />
+          <p id={`${commentId}-note`} className="mt-1 text-[11px] leading-snug text-[#6B7684]">이름·연락처 같은 개인정보는 적지 마세요. 답변이 필요하면 맨 아래 이용문의 메일로 보내 주세요.</p>
           <button
             type="button"
             onClick={submit}
