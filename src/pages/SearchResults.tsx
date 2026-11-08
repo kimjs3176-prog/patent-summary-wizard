@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams, useNavigate, useLocation, useNavigationType, Link } from "react-router-dom";
 import { Search, ArrowLeft, Loader2, ChevronLeft, ChevronRight, Sparkles, User, FileSignature, Info } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { filingEnabled } from "@/lib/filing";
@@ -18,6 +18,9 @@ import {
   type SearchFilterState, type SearchResultRow,
 } from "@/components/search/searchFilters";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import {
+  pageFromParam, readSearchCache, recallScroll, rememberScroll, searchCacheKey, writeSearchCache,
+} from "@/lib/searchResultsCache";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -35,14 +38,15 @@ export default function SearchResults() {
   }, [rawQ]);
   const fieldName = searchParams.get("field") || "";
   const fieldId = searchParams.get("fieldId") || "";
-  const [results, setResults] = useState<SearchResultRow[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [extractedKeywords, setExtractedKeywords] = useState<string[]>([]);
-  const [aiIntent, setAiIntent] = useState("");
+  // 요약서를 보고 '뒤로' 오면 기억해 둔 결과로 바로 그린다 (같은 검색을 다시 보내지 않는다)
+  const [cachedAtOpen] = useState(() => (keyword ? readSearchCache(searchCacheKey(keyword, fieldId)) : null));
+  const [results, setResults] = useState<SearchResultRow[]>(cachedAtOpen?.patents ?? []);
+  const [isLoading, setIsLoading] = useState(!!keyword && !cachedAtOpen);
+  const [totalCount, setTotalCount] = useState(cachedAtOpen?.totalCount ?? 0);
+  const [extractedKeywords, setExtractedKeywords] = useState<string[]>(cachedAtOpen?.extractedKeywords ?? []);
+  const [aiIntent, setAiIntent] = useState(cachedAtOpen?.intent ?? "");
   // Sentence searches: how many retrieved patents the strict concept filter dropped (server-reported).
-  const [droppedByRelevance, setDroppedByRelevance] = useState(0);
+  const [droppedByRelevance, setDroppedByRelevance] = useState(cachedAtOpen?.dropped ?? 0);
   const filters = useMemo(() => parseFilterParams(searchParams), [searchParams]);
   const filtered = useMemo(() => applySearchFilters(results, filters), [results, filters]);
   const favorites = useCardFavorites();
@@ -83,10 +87,20 @@ export default function SearchResults() {
     if (!keyword) return;
     let cancelled = false;
     const isCancelled = () => cancelled;
-    setCurrentPage(1);
+    const cacheKey = searchCacheKey(keyword, fieldId);
+    const cached = readSearchCache(cacheKey);
     setSearchError("");
     setSuggestions([]);
     setCorrected("");
+    if (cached) {
+      setResults(cached.patents);
+      setTotalCount(cached.totalCount);
+      setExtractedKeywords(cached.extractedKeywords);
+      setAiIntent(cached.intent);
+      setDroppedByRelevance(cached.dropped);
+      setIsLoading(false);
+      return;
+    }
     setResults([]);
     setDroppedByRelevance(0);
     const doSearch = async () => {
@@ -108,15 +122,22 @@ export default function SearchResults() {
         const result = await response.json().catch(() => ({ success: false, error: "응답 형식이 올바르지 않습니다." }));
         if (cancelled) return;
         if (result.success && Array.isArray(result.patents)) {
-          setResults(result.patents);
-          setTotalCount(result.totalCount || result.patents.length);
-          setExtractedKeywords(result.extractedKeywords || []);
-          setAiIntent(result.intent || "");
-          setDroppedByRelevance(
-            result.isNaturalLanguage && typeof result.droppedByRelevance === "number" && result.droppedByRelevance > 0
-              ? Math.round(result.droppedByRelevance)
-              : 0,
-          );
+          const found = {
+            patents: result.patents as SearchResultRow[],
+            totalCount: result.totalCount || result.patents.length,
+            extractedKeywords: (result.extractedKeywords || []) as string[],
+            intent: result.intent || "",
+            dropped:
+              result.isNaturalLanguage && typeof result.droppedByRelevance === "number" && result.droppedByRelevance > 0
+                ? Math.round(result.droppedByRelevance)
+                : 0,
+          };
+          writeSearchCache(cacheKey, found);
+          setResults(found.patents);
+          setTotalCount(found.totalCount);
+          setExtractedKeywords(found.extractedKeywords);
+          setAiIntent(found.intent);
+          setDroppedByRelevance(found.dropped);
           if (result.patents.length === 0) fetchSuggestions(keyword, isCancelled);
         } else {
           setSearchError(
@@ -139,26 +160,46 @@ export default function SearchResults() {
 
   const searchFor = (kw: string) => navigate(`/search?keyword=${encodeURIComponent(kw)}`);
 
-  // Filters live in the URL (replace, so the back button still leaves the page) and restart paging.
+  // Filters and the page number live in the URL (replace, so the back button still leaves the page);
+  // a filter change restarts paging.
   const updateFilters = (next: SearchFilterState) => {
-    setCurrentPage(1);
-    setSearchParams(writeFilterParams(searchParams, next), { replace: true });
+    const params = writeFilterParams(searchParams, next);
+    params.delete("page");
+    setSearchParams(params, { replace: true });
   };
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const currentPage = Math.min(pageFromParam(searchParams.get("page")), Math.max(1, totalPages));
   const paginatedResults = filtered.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams);
+    if (page > 1) params.set("page", String(page));
+    else params.delete("page");
+    setSearchParams(params, { replace: true });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handlePatentClick = (patentId: string) => {
-    navigate(`/?patent=${encodeURIComponent(patentId)}`);
+  // 요약서로 갈 때 지금 스크롤을 기억해 두었다가, '뒤로' 돌아와 결과가 그려지면 그 자리로 되돌린다
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const openSummary = (patentNumber: string) => {
+    rememberScroll(location.key, window.scrollY);
+    navigate(`/?patent=${encodeURIComponent(patentNumber)}`);
   };
+  const restoredFor = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (navigationType !== "POP" || restoredFor.current === location.key || isLoading || paginatedResults.length === 0) return;
+    restoredFor.current = location.key;
+    const y = recallScroll(location.key);
+    // html 의 부드러운 스크롤을 거치지 않고 바로 그 자리에 둔다 (맨 위에서 미끄러져 내려오지 않게)
+    if (y !== undefined) window.scrollTo({ top: y, behavior: "instant" as ScrollBehavior });
+  });
+
+  const handlePatentClick = (patentId: string) => openSummary(patentId);
 
   const proxyUrl = (url: string) =>
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image?url=${encodeURIComponent(url)}`;
@@ -195,13 +236,13 @@ export default function SearchResults() {
         {/* Persistent sticky search bar */}
         {/* Same classification as home: questions open the assistant here, keywords/sentences search. */}
         <SmartSearchBox
-          onSubmit={(patentNumber) => navigate(`/?patent=${encodeURIComponent(patentNumber)}`)}
+          onSubmit={openSummary}
           isLoading={isLoading}
           onKeywordSearch={(_r, kw) => navigate(`/search?keyword=${encodeURIComponent(kw)}`)}
           skipKeywordFetch
           frame={(content, chatOpen) => (
             // The conversation is tall, so it scrolls with the page instead of sticking over the results.
-            <div className={chatOpen ? "relative z-30 mb-6" : "sticky top-2 z-30 mb-6"}>
+            <div className={chatOpen ? "relative z-30 mb-6" : "sticky sticky-below-header z-30 mb-6"}>
               <div className={`max-w-3xl mx-auto rounded-2xl p-1.5 ${chatOpen ? "border bg-card shadow-[var(--shadow-card)]" : "bg-background/85 backdrop-blur-md"}`}>
                 {content}
               </div>

@@ -10,6 +10,7 @@ import { DateField } from "@/components/DateField";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { parseIpNumber, parseIpNumberList, IP_KIND_LABEL, IpNumberInfo } from "@/lib/ipNumber";
 import { safeFetch } from "@/lib/safeFetch";
+import { CRITERIA_SERVER_MESSAGE, criteriaErrorMessage, criteriaPageSize } from "@/lib/batchCriteria";
 import { supabase } from "@/integrations/supabase/client";
 import { lookupCachedScores, registrationShortForm, scoreFor, type ScoreFetcher } from "@/lib/scoreCacheLookup";
 import { PatentData } from "@/components/PatentSummary/types";
@@ -194,7 +195,8 @@ async function fetchPatent(patentNumber: string): Promise<PatentData> {
 function firstSentences(text: string | undefined, count = 2): string {
   if (!text) return "";
   const clean = text.replace(/\s+/g, " ").trim();
-  const parts = clean.split(/(?<=[.。])\s+/).slice(0, count).join(" ");
+  // 정규식 lookbehind 는 iOS 16.4 미만 사파리에서 화면 전체 오류가 나므로 쓰지 않는다
+  const parts = clean.replace(/([.。])\s+/g, "$1\n").split("\n").slice(0, count).join(" ");
   return parts.length > 240 ? `${parts.slice(0, 240)}…` : parts;
 }
 
@@ -234,7 +236,6 @@ const STATUSES = [
   { v: "all", l: "전체" }, { v: "registered", l: "등록" }, { v: "published", l: "공개" },
   { v: "rejected", l: "거절" }, { v: "expired", l: "소멸" }, { v: "withdrawn", l: "취하" }, { v: "abandoned", l: "포기" },
 ];
-const PAGE = 500;
 const EXPORT_ENDPOINT = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/export-patents`;
 
 interface Item {
@@ -385,10 +386,11 @@ const Batch = () => {
 
     let cursor = 0;
     const worker = async () => {
-      while (cursor < list.length) {
+      while (cursor < list.length && alive.current) {
         const idx = cursor++;
         const ip = list[idx];
         if (idx > 0) await sleep(REQUEST_GAP_MS);
+        if (!alive.current) return;
         setRows((prev) => prev.map((r) => (r.key === ip.digits ? { ...r, status: "loading" } : r)));
         try {
           const data = await fetchPatent(ip.normalized);
@@ -425,16 +427,29 @@ const Batch = () => {
   const [to, setTo] = useState("");
   const [inventor, setInventor] = useState("");
   const [status, setStatus] = useState("all");
+  // 발명자 이름은 건마다 상세 조회가 더 필요해 느리므로, 고른 사람만 받는다
+  const [withInventors, setWithInventors] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [tmKeyword, setTmKeyword] = useState("");
   const [trademarks, setTrademarks] = useState<TmItem[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [running, setRunning] = useState(false);
   const cancel = useRef(false);
+  // 화면을 떠나면 남은 조회를 멈춘다 (두 방식 모두, 떠난 뒤에는 안내도 띄우지 않는다)
+  const alive = useRef(true);
+  const criteriaAbort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      cancel.current = true;
+      criteriaAbort.current?.abort();
+    };
+  }, []);
 
   const toggleOrg = (o: string) => setOrgs((p) => (p.includes(o) ? p.filter((x) => x !== o) : [...p, o]));
 
-  const fetchPage = async (org: string, pageNo: number) => {
+  const fetchPage = async (org: string, pageNo: number, pageSize: number, signal: AbortSignal) => {
     const res = await safeFetch(EXPORT_ENDPOINT, {
       method: "POST",
       headers: {
@@ -442,13 +457,16 @@ const Batch = () => {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: PAGE, trademarkKeyword: ipType === "design" || ipType === "trademark" ? tmKeyword : undefined, withInventors: true, ipType }),
-      // 429(요청 한도)는 재시도해도 한도만 더 소모하므로 바로 안내한다
-      timeoutMs: 45000, retries: 2, retryOn: (status: number) => status === 408 || status >= 500,
+      body: JSON.stringify({ org, from, to, inventor, status, pageNo, numOfRows: pageSize, trademarkKeyword: ipType === "design" || ipType === "trademark" ? tmKeyword : undefined, withInventors, ipType }),
+      // 429(요청 한도)는 재시도해도 한도만 더 소모하므로 바로 안내한다. 시간 초과도 다시 보내면 그만큼 또 기다리고
+      // 서버는 KIPRIS 를 또 부르므로 다시 보내지 않는다.
+      timeoutMs: 45000, retries: 1, retryTimeouts: false, retryOn: (status: number) => status === 408 || status >= 500,
+      signal,
     });
     if (res.status === 429) throw new Error("요청이 많아 잠시 제한됐어요. 몇 분 뒤 다시 시도해 주세요.");
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.error || "조회 실패");
+    const data = await res.json().catch(() => null);
+    if (res.status >= 500 || !data) throw new Error(CRITERIA_SERVER_MESSAGE);
+    if (!res.ok || !data.success) throw new Error(data.error || CRITERIA_SERVER_MESSAGE);
     return data as { totalCount: number; items: Item[]; trademarks?: TmItem[] };
   };
 
@@ -459,6 +477,10 @@ const Batch = () => {
       return toast.error(ipType === "design" ? "디자인 물품명을 입력해 주세요." : "상표명을 입력해 주세요.");
     }
     cancel.current = false;
+    criteriaAbort.current?.abort();
+    const ctrl = new AbortController();
+    criteriaAbort.current = ctrl;
+    const pageSize = criteriaPageSize(withInventors);
     setRunning(true);
     setItems([]);
     setTrademarks([]);
@@ -467,7 +489,8 @@ const Batch = () => {
     try {
       const firsts = [];
       for (const org of orgs) {
-        const f = { org, ...(await fetchPage(org, 1)) };
+        if (cancel.current) break;
+        const f = { org, ...(await fetchPage(org, 1, pageSize, ctrl.signal)) };
         firsts.push(f);
         if (Array.isArray(f.trademarks)) tms.push(...f.trademarks.map((t) => ({ ...t, org: f.org })));
       }
@@ -476,25 +499,27 @@ const Batch = () => {
       for (const f of firsts) {
         all.push(...f.items.map((i) => ({ ...i, org: f.org })));
         setProgress({ done: all.length, total });
-        const pages = Math.ceil(f.totalCount / PAGE);
+        const pages = Math.ceil(f.totalCount / pageSize);
         for (let p = 2; p <= pages; p++) {
           if (cancel.current) break;
-          const r = await fetchPage(f.org, p);
+          const r = await fetchPage(f.org, p, pageSize, ctrl.signal);
           all.push(...r.items.map((i) => ({ ...i, org: f.org })));
           setProgress({ done: all.length, total });
           setItems([...all]);
         }
         if (cancel.current) break;
       }
+      if (!alive.current) return;
       const seen = new Set<string>();
       const uniq = all.filter((i) => (seen.has(i.applicationNumber) ? false : (seen.add(i.applicationNumber), true)));
       setItems(uniq);
       toast.success(`특허 ${uniq.length.toLocaleString()}건${tms.length > 0 ? `, 상표 ${tms.length.toLocaleString()}건` : ""}을 불러왔습니다.`);
     } catch (e) {
+      if (!alive.current) return;
       setItems(all);
-      toast.error(e instanceof Error ? e.message : "조회 중 오류가 발생했습니다.");
+      toast.error(criteriaErrorMessage(e));
     } finally {
-      setRunning(false);
+      if (alive.current) setRunning(false);
     }
   };
 
@@ -758,6 +783,15 @@ const Batch = () => {
                 <dt className="text-sm font-semibold"><label htmlFor="batch-inventor">발명자</label></dt>
                 <dd className="max-w-md">
                   <Input id="batch-inventor" value={inventor} onChange={(e) => setInventor(e.target.value)} placeholder="예: 홍길동 (비우면 전체)" maxLength={50} />
+                </dd>
+
+                <dt className="text-sm font-semibold">발명자 이름</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {[{ v: false, l: "받지 않기 (빠름)" }, { v: true, l: "함께 받기 (느림)" }].map((o) => (
+                    <button key={o.l} type="button" aria-pressed={withInventors === o.v} onClick={() => setWithInventors(o.v)} className={chip(withInventors === o.v)}>
+                      {o.l}
+                    </button>
+                  ))}
                 </dd>
 
                 {(ipType === "design" || ipType === "trademark") && (

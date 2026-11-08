@@ -59,7 +59,9 @@ const FoodConsortium = () => {
     const out: { initial: string; names: string[] }[] = [];
     for (const n of shown) {
       const i = consortiumInitial(n);
-      if (out.at(-1)?.initial === i) out.at(-1)!.names.push(n);
+      // Array.at 은 ES2022(iOS 15.4 미만에서 오류)라 마지막 칸을 길이로 찾는다
+      const last = out[out.length - 1];
+      if (last?.initial === i) last.names.push(n);
       else out.push({ initial: i, names: [n] });
     }
     return out;
