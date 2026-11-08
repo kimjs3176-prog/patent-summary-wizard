@@ -11,4 +11,6 @@ regexes = [
   '''\b(VITE_)?SUPABASE_(PUBLISHABLE_KEY|URL|PROJECT_ID)\s*=\s*"[^"]*"''',
   # Cache entry names such as const CACHE_KEY = "filing_trends_v1"; these are labels, not credentials.
   '''\bCACHE_KEY\s*=\s*["'][a-z0-9_]+["']''',
+  # site_settings row lookups such as .eq("key", "filing_trends_v1"); the value is the row name, not a credential.
+  '''\.eq\(\s*["']key["']\s*,\s*["'][a-z0-9_]+["']\s*\)''',
 ]
