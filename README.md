@@ -56,7 +56,6 @@ npm run dev
 | AI 특허 요약서 | `/?patent=번호` | 특허번호 하나로 A4 2쪽 요약서를 만듭니다(아래 '요약서' 참고). |
 | 나만의 특허찾기 | `/finder` | 업종과 아이템을 넣으면 검색된 후보 안에서 맞는 특허를 골라 추천합니다. |
 | 무상기술이전 | `/potential` | 무상으로 이전받을 수 있는 특허 목록을 모아 보여 줍니다. |
-| 식품기술이전 협의체 | `/consortium` | 협의체 51개 기관(대학 산학협력단·연구기관·기술지주회사)을 골라 그 기관이 가진 특허를 봅니다. 기관마다 출원인명으로 특허고객번호를 찾아 그 번호로만 목록을 받으므로 이름이 비슷한 다른 기관의 특허가 섞이지 않습니다. |
 | 출원도우미 | `/filing` | 아이디어 정리 → 비슷한 특허 찾기 → 특허 가능성 진단 → 서류 만들기 → 제출하고 챙기기 5단계로 출원 준비를 돕고, 제출용 묶음 파일(zip)과 변리사 상담 요약서(.docx)를 만듭니다. 자세한 동작은 [docs/filing-helper.md](docs/filing-helper.md)에 있습니다. |
 | 인사이트 | `/insights` | 연도별·기술분야별 출원 동향과 주요 키워드를 보여 줍니다. |
 | 일괄조회 | `/batch` | 여러 특허를 한 번에 조회하고 엑셀로 내려받습니다. |
@@ -113,7 +112,6 @@ npm run dev
 | `analyze-commercialization`, `analyze-regulations`, `recommend-similar-patents`, `extract-glossary` | 점수·TRL, 예상 규제, 비슷한 특허, 용어 풀이 |
 | `patent-chat`, `find-my-patents`, `suggest-keywords` | 특허 상담, 나만의 특허찾기, 대체 검색어 |
 | `filing-api`, `filing-trends` | 출원도우미 서버, 출원 동향 통계 |
-| `consortium-patents` | 식품기술이전 협의체 기관별 특허(출원인명 → 특허고객번호, 찾은 번호는 90일 저장) |
 | `export-patents`, `manage-featured-patents`, `sync-r2-videos` | 엑셀 내보내기, 추천 특허 관리, 영상 목록 동기화 |
 
 ## 점검
