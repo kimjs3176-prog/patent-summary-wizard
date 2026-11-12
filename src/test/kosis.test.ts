@@ -53,7 +53,7 @@ describe("국가통계 시장 표준값", () => {
   it("생물농약 제조업 코드로 2024년 출하액과 5년 CAGR을 계산한다", async () => {
     const series = findSeries("국내생물살균살충제및식물보호제제조업시장")!;
     const values: Record<number, number> = { 2020: 219215, 2021: 221609, 2022: 54663, 2023: 58137, 2024: 58764 };
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ response: { body: { items: { item: Object.entries(values).map(([year, value]) => ({
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({ response: { body: { items: { item: Object.entries(values).map(([year, value]) => ({
       C1_NM: "전국", C2: "C20322", ITM_ID: "T04", PRD_DE: year, DT: String(value),
     })) } } } }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
