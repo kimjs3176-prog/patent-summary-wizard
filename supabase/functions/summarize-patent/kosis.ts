@@ -10,6 +10,7 @@ export interface KosisSeries {
   itmId: string;
   c1Name: string;         // 분류값 이름 (예: "계")
   c2Name?: string;        // 두 번째 분류값 이름 (있는 표만)
+  c2Code?: string;        // 두 번째 분류 코드 (개정 표의 문자 차이를 피할 때 사용)
   unitToEok: number;      // 원 단위 값 → 억 원 배수
   source: string;
 }
@@ -29,6 +30,9 @@ const COS_SRC = "KOSIS 국가통계포털, 식품의약품안전처 「화장품
 // 의료기기 생산·수출·수입액과 시장규모 (백만원 → 억원)
 const MED = { orgId: "145", tblId: "DT_14508_007", itmId: "T001", unitToEok: 1 / 100 };
 const MED_SRC = "KOSIS 국가통계포털, 식품의약품안전처 「의료기기 생산·수출·수입 실적」";
+// 광업·제조업조사 산업편: 생물 살균·살충제 및 식물보호제 제조업 출하액 (백만원 → 억원)
+const BIO_PESTICIDE = { orgId: "101", tblId: "DT_1FS1101", itmId: "T04", unitToEok: 1 / 100 };
+const BIO_PESTICIDE_SRC = "KOSIS 국가통계포털, 국가데이터처 「광업·제조업조사」(생물 살균·살충제 및 식물보호제 제조업 출하액)";
 
 // 시장 이름은 통계 분류와 같은 범위일 때만 연결한다(넓거나 좁은 시장에 다른 분류 값을 붙이지 않는다).
 export const KOSIS_SERIES: KosisSeries[] = [
@@ -57,6 +61,39 @@ export const KOSIS_SERIES: KosisSeries[] = [
   { match: /^국내화장품(산업)?시장$/, label: "국내 화장품 시장(생산실적)", c1Name: "데이터", source: COS_SRC, ...COS },
   { match: /^국내기초화장품시장$/, label: "국내 기초화장품 시장(생산실적)", c1Name: "기초화장용 제품류", source: COS_SRC, ...COS_TYPE },
   { match: /^국내의료기기(산업)?시장$/, label: "국내 의료기기 시장", c1Name: "시장규모", source: MED_SRC, ...MED },
+
+  // 식품 생산실적에 실제로 있는 유형만 추가한다. '과자·빵·떡'은 통계상 한 분류이므로 개별 시장에 나눠 붙이지 않는다.
+  { match: /^국내과자류?빵류?(또는)?떡류?시장$/, label: "국내 과자류·빵류·떡류 시장", c1Name: "과자류 빵류 또는 떡류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내당류시장$/, label: "국내 당류 시장", c1Name: "당류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내동물성가공식품(류)?시장$/, label: "국내 동물성가공식품 시장", c1Name: "동물성가공식품류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내벌꿀(및|·)?화분가공품(류)?시장$/, label: "국내 벌꿀·화분가공품 시장", c1Name: "벌꿀 및 화분가공품류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내빙과류시장$/, label: "국내 빙과류 시장", c1Name: "빙과류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내식품첨가물시장$/, label: "국내 식품첨가물 시장", c1Name: "식품첨가물", source: FOOD_SRC, ...FOOD },
+  { match: /^국내알가공품(류)?시장$/, label: "국내 알가공품 시장", c1Name: "알가공품류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내유가공품(류)?시장$/, label: "국내 유가공품 시장", c1Name: "유가공품", source: FOOD_SRC, ...FOOD },
+  { match: /^국내잼(류)?시장$/, label: "국내 잼류 시장", c1Name: "잼류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내절임류(또는|·)?조림류시장$/, label: "국내 절임류·조림류 시장", c1Name: "절임류 또는 조림류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내코코아가공품(류)?(또는|·)?초콜릿(류)?시장$/, label: "국내 코코아가공품·초콜릿 시장", c1Name: "코코아가공품류 또는 초콜릿류", source: FOOD_SRC, ...FOOD },
+  { match: /^국내특수영양식품시장$/, label: "국내 특수영양식품 시장", c1Name: "특수영양식품", source: FOOD_SRC, ...FOOD },
+  { match: /^국내특수용도식품시장$/, label: "국내 특수용도식품 시장", c1Name: "특수용도식품", source: FOOD_SRC, ...FOOD },
+  { match: /^국내기타식품(류)?시장$/, label: "국내 기타식품 시장", c1Name: "기타식품류", source: FOOD_SRC, ...FOOD },
+
+  // 화장품 유형별 책임판매업체 생산실적. 기능성화장품 전체 매출로 해석하지 않는다.
+  { match: /^국내색조화장품시장$/, label: "국내 색조화장품 시장(생산실적)", c1Name: "색조화장용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내눈화장품시장$/, label: "국내 눈화장품 시장(생산실적)", c1Name: "눈화장용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내두발염색용제품시장$/, label: "국내 두발염색용 제품 시장(생산실적)", c1Name: "두발염색용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내두발용제품시장$/, label: "국내 두발용 제품 시장(생산실적)", c1Name: "두발용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내면도용제품시장$/, label: "국내 면도용 제품 시장(생산실적)", c1Name: "면도용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내목욕용제품시장$/, label: "국내 목욕용 제품 시장(생산실적)", c1Name: "목욕용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내방향용제품시장$/, label: "국내 방향용 제품 시장(생산실적)", c1Name: "방향용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내손발톱용제품시장$/, label: "국내 손발톱용 제품 시장(생산실적)", c1Name: "손발톱용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내(영유아|영·유아)용제품시장$/, label: "국내 영·유아용 제품 시장(생산실적)", c1Name: "영.유아용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내인체세정용제품시장$/, label: "국내 인체세정용 제품 시장(생산실적)", c1Name: "인체세정용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내체모제거용제품시장$/, label: "국내 체모제거용 제품 시장(생산실적)", c1Name: "체모제거용 제품류", source: COS_SRC, ...COS_TYPE },
+  { match: /^국내체취방지용제품시장$/, label: "국내 체취방지용 제품 시장(생산실적)", c1Name: "체취방지용 제품류", source: COS_SRC, ...COS_TYPE },
+
+  // 생물농약+친환경 농자재처럼 범위가 다른 복합 시장에는 이 값을 적용하지 않는다.
+  { match: /^국내생물살균살충제및식물보호제(제조업)?시장$/, label: "국내 생물 살균·살충제 및 식물보호제 제조업(출하액)", c1Name: "전국", c2Code: "C20322", source: BIO_PESTICIDE_SRC, ...BIO_PESTICIDE },
 ];
 
 export function findSeries(key: string): KosisSeries | null {
@@ -78,7 +115,7 @@ export function refFromSeries(points: { year: number; eok: number }[]): { baseYe
 export async function fetchKosisRef(key: string, s: KosisSeries, serviceKey: string): Promise<MarketRef | null> {
   const url = `https://apis.data.go.kr/1240000/statisticsData/getStatisticsData?serviceKey=${serviceKey}` +
     // 분류가 많은 표(식품 생산실적 ≈1,200행, 쌀가공 ≈2,500행)도 한 번에 다 받도록 행 수를 넉넉히 준다
-    `&orgId=${s.orgId}&tblId=${s.tblId}&itmId=${s.itmId}&objL1=ALL${s.c2Name ? "&objL2=ALL" : ""}&prdSe=Y&newEstPrdCnt=6&format=json&jsonVD=Y&numOfRows=5000`;
+    `&orgId=${s.orgId}&tblId=${s.tblId}&itmId=${s.itmId}&objL1=ALL${s.c2Code ? `&objL2=${encodeURIComponent(s.c2Code)}` : s.c2Name ? "&objL2=ALL" : ""}&prdSe=Y&newEstPrdCnt=6&format=json&jsonVD=Y&numOfRows=5000`;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8000);
   try {
@@ -97,7 +134,8 @@ export async function fetchKosisRef(key: string, s: KosisSeries, serviceKey: str
     const raw = json?.response?.body?.items?.item;
     const items: any[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
     const points = items
-      .filter((i) => (i.C1_NM ?? "").trim() === s.c1Name && i.ITM_ID === s.itmId && (!s.c2Name || (i.C2_NM ?? "").trim() === s.c2Name))
+      .filter((i) => (i.C1_NM ?? "").trim() === s.c1Name && i.ITM_ID === s.itmId &&
+        (!s.c2Name || (i.C2_NM ?? "").trim() === s.c2Name) && (!s.c2Code || (i.C2 ?? "").trim() === s.c2Code))
       .map((i) => ({ year: Number(i.PRD_DE), eok: Number(i.DT) * s.unitToEok }));
     const r = refFromSeries(points);
     if (!r) return null;
