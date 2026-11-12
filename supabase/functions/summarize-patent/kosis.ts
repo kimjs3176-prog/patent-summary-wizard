@@ -10,6 +10,7 @@ export interface KosisSeries {
   itmId: string;
   c1Name: string;         // 분류값 이름 (예: "계")
   c2Name?: string;        // 두 번째 분류값 이름 (있는 표만)
+  c2Code?: string;        // 두 번째 분류 코드 (개정 표의 문자 차이를 피할 때 사용)
   unitToEok: number;      // 원 단위 값 → 억 원 배수
   source: string;
 }
@@ -29,6 +30,9 @@ const COS_SRC = "KOSIS 국가통계포털, 식품의약품안전처 「화장품
 // 의료기기 생산·수출·수입액과 시장규모 (백만원 → 억원)
 const MED = { orgId: "145", tblId: "DT_14508_007", itmId: "T001", unitToEok: 1 / 100 };
 const MED_SRC = "KOSIS 국가통계포털, 식품의약품안전처 「의료기기 생산·수출·수입 실적」";
+// 광업·제조업조사 산업편: 생물 살균·살충제 및 식물보호제 제조업 출하액 (백만원 → 억원)
+const BIO_PESTICIDE = { orgId: "101", tblId: "DT_1FS1101", itmId: "T04", unitToEok: 1 / 100 };
+const BIO_PESTICIDE_SRC = "KOSIS 국가통계포털, 국가데이터처 「광업·제조업조사」(생물 살균·살충제 및 식물보호제 제조업 출하액)";
 
 // 시장 이름은 통계 분류와 같은 범위일 때만 연결한다(넓거나 좁은 시장에 다른 분류 값을 붙이지 않는다).
 export const KOSIS_SERIES: KosisSeries[] = [
@@ -97,7 +101,8 @@ export async function fetchKosisRef(key: string, s: KosisSeries, serviceKey: str
     const raw = json?.response?.body?.items?.item;
     const items: any[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
     const points = items
-      .filter((i) => (i.C1_NM ?? "").trim() === s.c1Name && i.ITM_ID === s.itmId && (!s.c2Name || (i.C2_NM ?? "").trim() === s.c2Name))
+      .filter((i) => (i.C1_NM ?? "").trim() === s.c1Name && i.ITM_ID === s.itmId &&
+        (!s.c2Name || (i.C2_NM ?? "").trim() === s.c2Name) && (!s.c2Code || (i.C2 ?? "").trim() === s.c2Code))
       .map((i) => ({ year: Number(i.PRD_DE), eok: Number(i.DT) * s.unitToEok }));
     const r = refFromSeries(points);
     if (!r) return null;
