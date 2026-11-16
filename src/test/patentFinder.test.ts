@@ -14,6 +14,15 @@ describe("나만의 특허찾기 규칙", () => {
     expect(merged.map((c) => c.patentId)).toEqual(["10-1"]);
   });
 
+  it("원문과 일치한 떡 기술은 다른 검색어의 신규 특허 40건 때문에 후보에서 밀리지 않음", () => {
+    const merged = mergeCandidates([
+      { term: "굳지 않는 떡", patents: [p("10-1099619", "농촌진흥청", "굳지 않는 떡의 제조방법 및 상기 방법으로 제조된 떡")] },
+      { term: "효소", patents: Array.from({ length: 45 }, (_, i) => ({ ...p(`10-${i}`, "농촌진흥청", "효소 조성물"), applicationDate: "2025.01.01" })) },
+    ], "굳지 않는 떡");
+    expect(merged).toHaveLength(40);
+    expect(merged[0].patentId).toBe("10-1099619");
+  });
+
   it("출원인이 비어 있으면 검색한 기관명(organizationName)으로 범위 확인", () => {
     const merged = mergeCandidates([{ term: "딸기", patents: [
       { patentId: "10-3", title: "딸기", applicant: "", organizationName: "농촌진흥청" },

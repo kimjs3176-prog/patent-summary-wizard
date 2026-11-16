@@ -75,7 +75,7 @@ export function sanitizeTerms(raw: unknown, fallback: string[], item = ""): stri
 }
 
 /** Merge per-term search results; drop anything outside the six-institute scope. */
-export function mergeCandidates(groups: { term: string; patents: Array<Record<string, unknown>> }[]): FinderCandidate[] {
+export function mergeCandidates(groups: { term: string; patents: Array<Record<string, unknown>> }[], item = ""): FinderCandidate[] {
   const map = new Map<string, FinderCandidate>();
   for (const { term, patents } of groups) {
     for (const p of patents) {
@@ -104,8 +104,10 @@ export function mergeCandidates(groups: { term: string; patents: Array<Record<st
       });
     }
   }
+  const explicitNeed = negativeNeedParts(item);
+  const literalMatch = (c: FinderCandidate) => Boolean(explicitNeed && c.title.replace(/\s/g, "").includes(explicitNeed.query.replace(/\s/g, "")));
   return [...map.values()]
-    .sort((a, b) => b.hits - a.hits || String(b.applicationDate || "").localeCompare(String(a.applicationDate || "")))
+    .sort((a, b) => Number(literalMatch(b)) - Number(literalMatch(a)) || b.hits - a.hits || String(b.applicationDate || "").localeCompare(String(a.applicationDate || "")))
     .slice(0, MAX_CANDIDATES);
 }
 
