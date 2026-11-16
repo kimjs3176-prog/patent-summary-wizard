@@ -64,6 +64,33 @@ describe("application evidence", () => {
     expect(groundApplications(`[[용도|청구항|치료|${claims}]]`, { claims: [claims] }).applications).toHaveLength(0);
     expect(groundApplications("[[용도|청구항|치료|암 치료에 사용하는 새로운 조성물이다.]]", { claims: [claims] }).applications).toHaveLength(0);
   });
+  it("확인하지 못한 용도는 본문에 문장을 넣지 않고 개수만 남긴다", () => {
+    const result = groundApplications(`[[용도|청구항|치료|${claims}]] 사료에 쓴다.`, { claims: [claims] });
+    expect(result.content).toBe("사료에 쓴다.");
+    expect(result.content).not.toContain("용도 근거");
+    expect(result.unverified).toEqual(["치료"]);
+  });
+  it("형식이 망가진 마커도 본문에 남기지 않는다", () => {
+    const result = groundApplications("온실 재배에 쓴다. [[용도|청구항|치료", { claims: [claims] });
+    expect(result.content).toBe("온실 재배에 쓴다. ");
+    expect(result.unverified).toEqual(["활용 설명"]);
+  });
+  it("확인하지 못한 용도는 저장·재독에서도 개수로 남고 본문에는 없다", () => {
+    const grounded = groundApplications(`[[용도|청구항|식품 발효|${claims}]] [[용도|청구항|치료|${claims}]]`, { claims: [claims], description });
+    expect(grounded.unverified).toEqual(["치료"]);
+    const cached = readApplicationEvidence(cacheApplicationEvidence(grounded.content, grounded.applications, grounded.unverified), { claims: [claims] });
+    expect(cached.applications).toHaveLength(1);
+    expect(cached.unverified).toEqual(["치료"]);
+    expect(cached.content).toBe(grounded.content);
+  });
+  it("예전 저장본(배열)도 읽고, 본문에 남은 옛 문구는 지운다", () => {
+    const payload = encodeURIComponent(JSON.stringify([{ label: "식품 발효", claimed_in_claims: true, source: "claims", evidence: claims }]));
+    const stored = `**용도 근거 미확인** — 아래 활용 설명은 원문 대조가 필요하다. 사료에 쓴다.\n<!--application-evidence:${payload}-->`;
+    const cached = readApplicationEvidence(stored, { claims: [claims], description });
+    expect(cached.content).toBe("사료에 쓴다.");
+    expect(cached.unverified).toEqual(["활용 설명"]);
+    expect(cached.applications).toHaveLength(1);
+  });
   it("keeps claim booleans across cached views and removes storage metadata from prose", () => {
     const grounded = groundApplications(`[[용도|청구항|식품 발효|${claims}]]`, { claims: [claims] });
     const cached = readApplicationEvidence(cacheApplicationEvidence(grounded.content, grounded.applications), { claims: [claims] });

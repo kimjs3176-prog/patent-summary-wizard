@@ -50,3 +50,16 @@ describe("볼드 안 학명 이탤릭", () => {
     expect(container.querySelector("strong em")?.textContent).toBe("Bacillus subtilis");
   });
 });
+
+describe("용도 근거 미확인 참고 문구", () => {
+  it("예전 요약서 본문에서는 문구를 걷어내고 절 표시만 남긴다", () => {
+    const md = "## 농산업활용 가능성\n\n**용도 근거 미확인** — 아래 활용 설명은 원문 대조가 필요하다. 온실 재배에 쓴다.\n";
+    const [sec] = parseSections(md);
+    expect(sec.paragraphs).toEqual(["온실 재배에 쓴다."]);
+    expect(sec.unverifiedNote).toBe(true);
+  });
+  it("새 요약서는 표시가 없다", () => {
+    const [sec] = parseSections("## 농산업활용 가능성\n\n**청구항 명시 용도: 온실 재배**. 온실 재배에 쓴다.\n");
+    expect(sec.unverifiedNote).toBeFalsy();
+  });
+});
