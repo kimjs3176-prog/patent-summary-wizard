@@ -1726,6 +1726,8 @@ time, .tabular-nums, [data-numeric] {
 .ds .report-market-table thead th { font-size: .92em; }
 .ds .report-market-table .yr { font-size: .85em; }
 .ds-foot-notes { margin: .3em 0 0; padding-left: 1.2em; font-size: .82em; color: var(--ds-sub); }
+/* '어디에 쓸 수 있나요?' 아래 참고 문구 — 본문이 아니라 절 끝에 한 줄로만 알린다 */
+.ds-use-note { margin: .55em 0 0; font-size: .8em; line-height: 1.55; color: var(--ds-sub); }
 .ds-fig { margin: .2em 0 .9em; }
 /* 발명 요약 절: 왼쪽 본문 | 오른쪽 대표 도면 */
 .ds-split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 0 1.6em; align-items: start; }

@@ -25,6 +25,21 @@ export const APPLICATION_GROUNDING_INSTRUCTION = `
 
 const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
 
+/**
+ * 예전 생성본은 확인하지 못한 용도 문단을 본문에 "용도 근거 미확인 — …" 문장으로 남겼다.
+ * 이제 그 문장은 쓰지 않는다. 저장된 요약서를 읽을 때 걷어내고, 개수만 참고 문구 표시에 쓴다.
+ */
+const LEGACY_UNVERIFIED_NOTE_RE = new RegExp(
+  String.raw`\*{0,2}\s*용도\s*근거\s*미확인\s*\*{0,2}\s*(?:[—–-]\s*)?(?:아래\s*활용\s*설명은\s*)?원문\s*대조가\s*필요하다\.?\s*`
+  + String.raw`|\*{0,2}\s*용도\s*근거\s*미확인\s*\*{0,2}\s*\.\s*`, "g",
+);
+
+function dropLegacyNote(prose: string): { prose: string; unverified: string[] } {
+  let count = 0;
+  const cleaned = prose.replace(LEGACY_UNVERIFIED_NOTE_RE, () => { count += 1; return ""; });
+  return { prose: cleaned, unverified: count > 0 ? ["활용 설명"] : [] };
+}
+
 /** Model-proposed source labels are accepted only with a verbatim source excerpt. */
 export function groundApplications(summary: string, source: GroundingSource | null | undefined): GroundedApplications {
   const applications: GroundedApplication[] = [];
