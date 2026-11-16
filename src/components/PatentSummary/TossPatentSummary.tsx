@@ -269,6 +269,7 @@ function TossPatentSummaryInner({
             sections={sections} isStreaming={!!isStreaming} annotate={annotate}
             onRelatedPatentClick={onRelatedPatentClick}
             generatedAt={summaryMeta?.generatedAt}
+            unverifiedApplications={summaryMeta?.unverifiedApplications}
           />
 
           {/* 액션 버튼 */}

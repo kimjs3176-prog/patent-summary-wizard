@@ -24,6 +24,8 @@ interface Props {
   onRelatedPatentClick: BasePatentSummaryProps["onRelatedPatentClick"];
   /** 요약서 생성 시각(ISO). 2쪽 바닥글에 'AI 분석 참고자료 · 생성 날짜'로 찍는다 */
   generatedAt?: string | null;
+  /** 원문에서 근거를 확인하지 못한 활용 용도. 본문 대신 '어디에 쓸 수 있나요?' 아래 참고 문구로만 알린다. */
+  unverifiedApplications?: string[] | null;
 }
 
 /**
@@ -70,6 +72,9 @@ export function DatasheetReport(p: Props) {
             : at("tech")}
           {slots.invention.length > 0 ? slots.invention.map((i, n) => prose(i, n === 0 ? figure : undefined)) : figure}
           {at("use")}
+          {useNote && (
+            <p className="ds-use-note">※ 위 활용 설명 중 원문에서 근거를 확인하지 못한 용도는 청구항·명세서와 대조해 확인してください.</p>
+          )}
         </div>
         <footer className="ds-pf"><span>Agri IP Summary · {formatPatentNumber(p.patentNumber, kind)}</span><span>기술</span><span>1 / 2</span></footer>
       </section>

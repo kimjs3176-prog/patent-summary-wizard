@@ -64,7 +64,19 @@ export interface MdSection {
   title: string;
   paragraphs: string[];
   footnotes?: { num: number; text: string }[];
+  /** 이 절 본문에 '용도 근거 미확인' 문구가 있었다는 표시. 본문에서는 지우고 절 아래 참고 문구로만 알린다. */
+  unverifiedNote?: boolean;
 }
+
+/**
+ * 예전 요약서 본문에 서버가 직접 넣던 문구. 이제 본문에는 쓰지 않는다(신규 생성분은 서버에서 제거).
+ * 저장된 요약서에는 그대로 남아 있으므로 화면·인쇄 직전这里에서 지운다.
+ */
+const UNVERIFIED_USE_NOTE_RE = new RegExp(
+  String.raw`\*{0,2}\s*용도\s*근거\s*미확인\s*\*{0,2}\s*(?:[—–-]\s*)?(?:아래\s*활용\s*설명은\s*)?원문\s*대조가\s*필요하다\.?\s*`
+  + String.raw`|\*{0,2}\s*용도\s*근거\s*미확인\s*\*{0,2}\s*\.\s*`, "g",
+);
+
 export function parseSections(md: string): MdSection[] {
   if (!md) return [];
   const lines = normalizeCommercializationProse(md).split("\n");
@@ -91,6 +103,12 @@ export function parseSections(md: string): MdSection[] {
       const looksLikeLatin = /^[A-Za-z][A-Za-z0-9 .-]{1,60}$/.test(inner.trim());
       return pre + (looksLikeLatin ? `*${inner}*` : inner);
     });
+    // '용도 근거 미확인 …' 참고 문구는 본문에서 걷어내고, 이 절에 있었는지 표시만 남긴다
+    const withoutNote = line.replace(UNVERIFIED_USE_NOTE_RE, "");
+    if (withoutNote !== line) {
+      if (cur) cur.unverifiedNote = true;
+      line = withoutNote;
+    }
     const h2 = line.match(/^##\s+(.+?)\s*$/);
     if (h2) {
       flush();
@@ -178,6 +196,7 @@ export function parseSections(md: string): MdSection[] {
   if (parsed.length > 0) return parsed;
 
   const fallback = md
+    .replace(UNVERIFIED_USE_NOTE_RE, "")
     .replace(/\*\*/g, "")
     .split("\n")
     .map((line) => line.replace(/^#{1,6}\s+/, "").replace(/^\s*[-•]\s+/, "").replace(/^\s*\d+\.\s+/, "").trim())
