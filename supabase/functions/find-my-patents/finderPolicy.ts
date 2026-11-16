@@ -1,6 +1,7 @@
 // Pure rules for "나만의 특허찾기" (company-profile patent finder).
 // Kept free of Deno/runtime imports so the rules can be unit-tested.
 import { negativeNeedParts } from "../_shared/negativeNeed.ts";
+import { cleanKeywordTerm } from "../_shared/keywordTerms.ts";
 
 export const INSTITUTE_NAMES = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
 
@@ -65,7 +66,7 @@ export function sanitizeTerms(raw: unknown, fallback: string[], item = ""): stri
   const explicitNeed = negativeNeedParts(item);
   for (const t of [...(explicitNeed ? [explicitNeed.query] : []), ...list, ...fallback]) {
     if (typeof t !== "string") continue;
-    const term = t.replace(/\s+/g, " ").trim();
+    const term = cleanKeywordTerm(t);
     if (term.length < 2 || term.length > 30 || !SEARCH_TERM_RE.test(term)) continue;
     if (out.some((o) => o === term)) continue;
     out.push(term);

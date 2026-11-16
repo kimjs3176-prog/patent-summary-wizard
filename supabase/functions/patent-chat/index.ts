@@ -3,6 +3,7 @@
 // filing-trend snapshot, stored TRL values and the fixed tech-transfer guide.
 // Commercialization scores are intentionally not shown here — users see them in the patent summary.
 import { aiModel } from "../_shared/aiConfig.ts";
+import { KEYWORD_NOUN_RULE } from "../_shared/keywordTerms.ts";
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   generateChatCompletion, streamChatCompletion, GatewayError, PaymentRequiredError, RateLimitError,
@@ -65,6 +66,7 @@ ${question}
   - "search": 특정 작물·식품·제품·공정·문제에 맞는 특허를 찾거나 추천받고 싶을 때.
   - "transfer": 기술이전 절차, 계약, 기술료, 무상기술이전을 물을 때.
 - query: "search"일 때만. 특허 제목에 실제로 쓰일 핵심 한국어 명사 1~3개(공백 구분, 예: "딸기 저장", "돼지 질병 진단"). 이전 대화 맥락을 반영(예: "그중 저장 기술은?" → 앞 주제 + 저장).
+- ${KEYWORD_NOUN_RULE}
 - recommendFromTrend: 주제 없이 "요즘 활용하면 좋은 기술", "유망 기술 추천"처럼 물으면 true (이때 search는 넣지 말 것).
 - fromHistory: 이미 보여준 특허나 이전 답변에 대한 후속 질문(예: "첫 번째 특허 TRL은?")이면 true, tools는 [].
 - smalltalk: 인사·감사처럼 자료가 필요 없으면 true, tools는 [].

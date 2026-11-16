@@ -1,5 +1,6 @@
 import { aiModel } from "../_shared/aiConfig.ts";
 import { negativeNeedParts } from "../_shared/negativeNeed.ts";
+import { KEYWORD_NOUN_RULE } from "../_shared/keywordTerms.ts";
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   CancelledError, generateChatCompletion, GatewayError, PaymentRequiredError, RateLimitError, TimeoutError,
@@ -88,6 +89,7 @@ async function planSearchTerms(b: Body): Promise<{ terms: string[]; need: string
 
 규칙:
 - terms: 특허 제목·요약에 실제로 쓰일 만한 한국어 기술 명사 4~5개(각 1~3단어). 업종 이름 자체보다 아이템의 원료·공정·소재·장치·기능 위주.
+- ${KEYWORD_NOUN_RULE}
 - 도입 목적과 보유 설비에 맞는 기술 쪽으로 검색어를 구체화.
 - need: 회사가 찾는 기술을 한 문장(40자 이내)으로 요약.
 형식: {"terms":["..."],"need":"..."}`,

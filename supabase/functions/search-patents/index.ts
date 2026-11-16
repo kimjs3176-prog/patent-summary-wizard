@@ -1,4 +1,5 @@
 import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
+import { KEYWORD_NOUN_RULE } from "../_shared/keywordTerms.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
@@ -171,7 +172,7 @@ Rules:
 - Keywords should be technical terms, not conversational phrases
 - Focus on the core technology, crop, method, or domain
 - Each keyword should be 1-2 words max, ideally single word
-- Do NOT include particles or verb endings
+- Do NOT include particles or verb endings. ${KEYWORD_NOUN_RULE}
 - Keep to 2-3 keywords only for precise AND-combined search
 - Think about what patent titles would contain`
           },
@@ -200,7 +201,7 @@ Rules:
       if (parsed.keywords && Array.isArray(parsed.keywords) && parsed.keywords.length > 0) {
         log("info", "ai.keywords", { fn: FN, keywords: parsed.keywords.length, queryLength: query.length });
         return { 
-          keywords: parsed.keywords.slice(0, 4), 
+          keywords: sanitizeNlTerms(parsed.keywords).slice(0, 4),
           originalIntent: parsed.intent || query 
         };
       }
@@ -229,8 +230,9 @@ async function recommendQueriesWithAI(
   const maxMust = sentence ? 3 : 2;
   // Conservative fallback: just use base keywords, no synonyms.
   const fallback = () => {
-    const must = baseKeywords.slice(0, 2).filter(Boolean);
-    const should = baseKeywords.slice(2, 4).filter(Boolean);
+    const cleaned = sanitizeNlTerms(baseKeywords);
+    const must = cleaned.slice(0, 2);
+    const should = cleaned.slice(2, 4);
     const queries: string[] = [];
     if (must.length > 1) queries.push(must.join("*"));
     for (const k of [...must, ...should]) queries.push(k);
@@ -262,7 +264,7 @@ Tasks:
      Use the short noun stem that patent titles actually use (e.g. "저장기간 늘리기" -> "저장", "빨리 진단" -> "진단", "쌀로 만든" -> "쌀").
    - "synonyms": for each must item except the first, 0-3 synonyms or concrete forms patent titles use instead (e.g. "저장": ["보관","선도유지"]; "간식": ["과자","스낵"]; "질병": ["감염","바이러스","증후군"]; "진단": ["검출","판별"]).
    - "should": leave empty unless a synonym does not belong to one specific must item.
-4. Each keyword: 1-3 Korean characters/words, no particles, no punctuation, no English unless it's a standard term.
+4. Each keyword: 1-3 Korean characters/words, no particles, no punctuation, no English unless it's a standard term. ${KEYWORD_NOUN_RULE}
 5. Output ONLY JSON: {"corrected":"<corrected raw input>","must":["..."],"synonyms":{"<must item>":["..."]},"should":["..."]}
    - Synonyms must not be new unrelated topics or generic words.`,
           },
@@ -389,7 +391,7 @@ serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Re
       if (isNaturalLanguageQuery(rawInput)) {
         isNLQuery = true;
         const extraction = await extractKeywordsWithAI(rawInput);
-        searchKeywords = extraction.keywords;
+        searchKeywords = sanitizeNlTerms(extraction.keywords);
         aiIntent = extraction.originalIntent;
       } else {
         const words = rawInput.split(/\s+/).filter((w: string) => w.length > 0);

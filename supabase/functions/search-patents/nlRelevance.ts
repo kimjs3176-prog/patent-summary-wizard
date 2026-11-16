@@ -6,6 +6,7 @@
 // concepts they cover, so a patent about strawberry storage beats one that only
 // mentions strawberries. Conversational words ("늘리고", "싶음") never count as matches.
 import { negativeNeedParts } from "../_shared/negativeNeed.ts";
+import { cleanKeywordTerm } from "../_shared/keywordTerms.ts";
 
 /** Words that never narrow a patent search on their own. */
 export const GENERIC_QUERY_TERMS = [
@@ -28,7 +29,7 @@ export function sanitizeNlTerms(terms: unknown[]): string[] {
   const out: string[] = [];
   for (const raw of terms) {
     if (typeof raw !== "string") continue;
-    const t = raw.trim();
+    const t = cleanKeywordTerm(raw);
     if (!t || t.length > 20) continue;
     const n = normalizeText(t);
     if (!n || GENERIC_QUERY_TERMS.includes(n)) continue;
@@ -58,7 +59,7 @@ export function sanitizeSynonymMap(raw: unknown, must: string[]): Record<string,
   const out: Record<string, string[]> = {};
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
   for (const [key, list] of Object.entries(raw as Record<string, unknown>)) {
-    const target = must.find((m) => normalizeText(m) === normalizeText(key));
+    const target = must.find((m) => normalizeText(m) === normalizeText(cleanKeywordTerm(key)));
     if (!target || !Array.isArray(list)) continue;
     const syns = sanitizeNlTerms(list).filter((s) => normalizeText(s) !== normalizeText(target)).slice(0, 3);
     if (syns.length > 0) out[target] = syns;
