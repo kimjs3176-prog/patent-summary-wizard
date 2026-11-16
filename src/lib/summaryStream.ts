@@ -10,6 +10,8 @@
 
 export interface SummaryMeta {
   applications?: { label: string; claimed_in_claims: boolean; source: "claims" | "description"; evidence: string }[];
+  /** 원문에서 근거를 확인하지 못한 활용 용도. 본문에는 쓰지 않고 요약서 아래 참고 문구로만 표시한다. */
+  unverifiedApplications?: string[];
   /** Model identifier the server actually used (e.g. google/gemini-3.8-flash). */
   model?: string;
   /** True when the text was served from the server cache instead of generated now. */
@@ -80,6 +82,9 @@ export function normalizeMeta(raw: Record<string, unknown>): SummaryMeta {
   if (typeof raw.marketFallback === "boolean") meta.marketFallback = raw.marketFallback;
   if (Array.isArray(raw.applications)) {
     meta.applications = raw.applications.filter((item) => item && typeof item.label === "string" && typeof item.claimed_in_claims === "boolean" && typeof item.evidence === "string" && item.source === (item.claimed_in_claims ? "claims" : "description"));
+  }
+  if (Array.isArray(raw.unverifiedApplications)) {
+    meta.unverifiedApplications = raw.unverifiedApplications.filter((item): item is string => typeof item === "string" && !!item.trim());
   }
   return meta;
 }
