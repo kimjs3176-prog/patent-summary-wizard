@@ -247,6 +247,9 @@ for (const width of WIDTHS) {
     await p.evaluate(() => goPage("manage", 0));
     await p.waitForFunction(() => S.step === "manage" && document.querySelector("#main [data-consult-brief]"), null, { timeout: 5000 });
     if (await p.locator("#main [data-consult]").count()) fail(where, "보내지 않는 ‘상담 요청’ 버튼이 있음");
+    // 5단계는 지원금·상담 하나 (owner: 기한 관리 화면은 없앰) — 기한 목록·달력 파일(.ics)이 돌아오면 실패
+    const mg = await p.evaluate(() => ({ pages: pagesFor("manage").map((x) => x[1]), text: document.querySelector("#main").innerText }));
+    if (mg.pages.join() !== "지원금·상담" || /기한 챙기기|달력에 넣기|\.ics/.test(mg.text)) fail(where, `5단계에 기한 관리가 남음: ${JSON.stringify(mg.pages)}`);
     // 유망기술 발굴 3쪽: 아직 찾지 않았으면 관심 분야로 돌아가는 버튼이 있고, 관심 분야는 쉬운 뜻이 붙은 seg 타일
     await p.evaluate(() => { S.disc.data = null; goPage("discover", 2); });
     await p.waitForFunction(() => S.step === "discover" && document.querySelector('#main .sub[data-pg="2"]'), null, { timeout: 5000 });
