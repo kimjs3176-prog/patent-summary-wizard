@@ -95,13 +95,13 @@ async function planSearchTerms(b: Body): Promise<{ terms: string[]; need: string
     }, { signal: AbortSignal.timeout(PLAN_TIMEOUT_MS), maxRetries: AI_MAX_RETRIES });
     const parsed = parseJson(res.choices?.[0]?.message?.content);
     return {
-      terms: sanitizeTerms(parsed?.terms, fallback),
+      terms: sanitizeTerms(parsed?.terms, fallback, b.item),
       need: typeof parsed?.need === "string" ? parsed.need.slice(0, 80) : "",
     };
   } catch (e) {
     console.error("[find-my-patents] plan failed", isAbort(e) ? "timeout" : e instanceof GatewayError ? e.code : e);
     if (e instanceof PaymentRequiredError || e instanceof RateLimitError) throw e;
-    return { terms: sanitizeTerms([], fallback), need: "" };
+    return { terms: sanitizeTerms([], fallback, b.item), need: "" };
   }
 }
 

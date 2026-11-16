@@ -7,6 +7,12 @@ import { applyEvent, toRequestMessages, visibleCards, type ChatMessage } from "@
 const RDA = "대한민국(농촌진흥청장)";
 
 describe("물어보기 질문 분류", () => {
+  it("굳지 않는 떡 질문은 AI가 노화·연화로 바꿔도 원문 조건으로 조회", () => {
+    const r = normalizeRoute({ tools: ["search"], query: "떡 노화 연화" }, "굳지 않는 떡 기술 있을까?");
+    expect(r.query).toBe("굳지 않는 떡");
+    expect(r.tools).toEqual(["search"]);
+    expect(fallbackRoute("굳지 않는 떡 기술 알려줘").query).toBe("굳지 않는 떡");
+  });
   it("주제 없이 요즘 좋은 기술을 물으면 동향 기반 추천", () => {
     const r = normalizeRoute({ tools: [], recommendFromTrend: true }, "요새 활용하면 좋은 기술 있을까?");
     expect(r.tools).toEqual(["trends"]);

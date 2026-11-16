@@ -1,6 +1,7 @@
 // Pure rules for the conversational patent assistant (홈 '물어보기' 탭).
 // No runtime imports beyond shared pure modules so the rules stay unit-testable.
 import { TECHNOLOGY_FIELDS, type TechnologyFieldId } from "../_shared/technologyFields.ts";
+import { negativeNeedParts } from "../_shared/negativeNeed.ts";
 
 export const CHAT_TOOLS = ["trends", "search", "transfer"] as const;
 export type ChatTool = typeof CHAT_TOOLS[number];
@@ -42,6 +43,8 @@ export function sanitizeQuery(raw: unknown): string {
 
 /** Keyword heuristics used when the AI router fails or returns something unusable. */
 export function fallbackRoute(text: string): ChatRoute {
+  const explicitNeed = negativeNeedParts(text);
+  if (explicitNeed) return { tools: ["search"], query: explicitNeed.query, recommendFromTrend: false };
   const tools = new Set<ChatTool>();
   if (TREND_RE.test(text)) tools.add("trends");
   if (TRANSFER_RE.test(text)) tools.add("transfer");
@@ -53,6 +56,8 @@ export function fallbackRoute(text: string): ChatRoute {
 
 /** Validate the AI router's JSON; anything malformed falls back to the keyword heuristics. */
 export function normalizeRoute(raw: unknown, text: string): ChatRoute {
+  const explicitNeed = negativeNeedParts(text);
+  if (explicitNeed) return { tools: ["search"], query: explicitNeed.query, recommendFromTrend: false };
   if (!raw || typeof raw !== "object") return fallbackRoute(text);
   const r = raw as Record<string, unknown>;
   const tools = new Set<ChatTool>(

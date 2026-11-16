@@ -4,6 +4,11 @@ import { buildResults, mergeCandidates, readinessMatch, sanitizeTerms, MAX_RESUL
 const p = (patentId: string, applicant: string, title = "딸기 저장 방법") => ({ patentId, title, applicant });
 
 describe("나만의 특허찾기 규칙", () => {
+  it("굳지 않는 떡 아이템은 AI 검색어가 5개여도 원문 검색을 먼저 수행", () => {
+    expect(sanitizeTerms(["떡 노화", "연화", "식감", "저장성", "전분"], [], "굳지 않는 떡")).toEqual([
+      "굳지 않는 떡", "떡 노화", "연화", "식감", "저장성",
+    ]);
+  });
   it("6개 기관 밖 출원인의 특허는 후보에서 제외", () => {
     const merged = mergeCandidates([{ term: "딸기", patents: [p("10-1", "대한민국(농촌진흥청장)"), p("10-2", "주식회사 에이")] }]);
     expect(merged.map((c) => c.patentId)).toEqual(["10-1"]);
