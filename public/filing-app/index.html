@@ -1600,7 +1600,7 @@ function analyzePitch(text) {
     const v = w.replace(/(하는|하던|한|할|하게|해서|하여|되는|된|될|시키는|시킨)$/, ""); if (v !== w && v.length >= 2) { w = v; verbal = true; }
     // '낮추는·무르는·줄이는'처럼 꾸미는 말(동사)은 낱말이 아니다
     if (!verbal && /는$/.test(w) && /(추|르|리|키|우|히|애|내|치|지|이)$/.test(w.slice(0, -1)) && w.length <= 4) continue;
-    if (!PITCH_NOUN_KEEP.test(w)) w = w.replace(/(으로|에서|에게|까지|부터|처럼|보다|이랑|랑|와|과|을|를|이|가|은|는|의|에|로|도|만)$/, "");
+    if (!PITCH_NOUN_KEEP.test(w)) w = w.replace(/(으로부터|에서부터|에게서|로부터|에서는|으로는|에는|으로|에서|에게|까지|부터|처럼|보다|이랑|랑|와|과|을|를|이|가|은|는|의|에|로|도|만)$/, "");
     if (w.length < 2 || PITCH_DROP.test(w) || /^\d+$/.test(w)) continue;
     if (!toks.some(t => t.w === w)) toks.push({ w, verbal });
   }
@@ -1633,7 +1633,7 @@ function pitchRoles(P, text) {
   return [a || d[0], b || d[1], c2 || d[2], ...(P.field === "pack" ? [] : toks)];
 }
 // 끝 글자가 조사처럼 보여도 떼면 안 되는 낱말
-const PITCH_NOUN_KEEP = /^(고양이|오이|참외|목이|팽이|새우|누에|지렁이|굼벵이|올갱이|다슬기|미나리|도라지|더덕이)$/;
+const PITCH_NOUN_KEEP = /^(고양이|오이|참외|목이|팽이|새우|누에|지렁이|굼벵이|올갱이|다슬기|미나리|도라지|더덕이|알로에|효과|증가|농가|단가|차이|가을|마을|노을|저울|서울|종이|곰팡이|사과|무화과|결과)$/;
 const PITCH_KIND = { device: "장치·기계", method: "방법", product: "물건(조성물·제품)" };
 const PITCH_EX = ["비행하는 트랙터를 만들거야", "쌀겨를 발효해서 액상 비료를 만들고 싶어요", "양파 껍질로 혈당을 낮추는 건강식품을 만들래요", "딸기가 덜 무르는 포장 용기를 개발하려고 해요"];
 // 발명 유형에 맞춰 데이터 질문의 말을 바꾼다 (장치는 시제품 시험, 그 밖에는 실험 데이터)
