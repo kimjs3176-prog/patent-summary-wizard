@@ -24,6 +24,8 @@ interface Props {
   onRelatedPatentClick: BasePatentSummaryProps["onRelatedPatentClick"];
   /** 요약서 생성 시각(ISO). 2쪽 바닥글에 'AI 분석 참고자료 · 생성 날짜'로 찍는다 */
   generatedAt?: string | null;
+  /** 원문에서 근거를 확인하지 못한 활용 용도. 본문 대신 '어디에 쓸 수 있나요?' 아래 참고 문구로만 알린다. */
+  unverifiedApplications?: string[] | null;
 }
 
 /**
@@ -37,6 +39,8 @@ export function DatasheetReport(p: Props) {
   const slots = datasheetSlots(sections.map((s) => sectionMeta(s.title).kicker));
   const prose = (i: number, media?: React.ReactNode) => <ProseSection key={i} sec={sections[i]} idx={i} settled={!isStreaming || i < sections.length - 1} annotate={annotate} media={media} />;
   const at = (k: keyof typeof slots) => slots[k].map((i) => prose(i));
+  // '어디에 쓸 수 있나요?' 아래 참고 문구: 확인하지 못한 용도가 있거나 예전 요약서 본문에 그 문구가 있었다면 한 줄만 알린다
+  const useNote = slots.use.some((i) => sections[i]?.unverifiedNote) || (p.unverifiedApplications?.length ?? 0) > 0;
   const kind = patentData?.searchType === "application" ? "application" : "registration";
   const fig = p.figureItems[0];
   // 대표 도면은 '무엇을 해결하나요?(발명 요약)' 절 제목 바로 아래에 둔다 (어느 절의 그림인지 분명하게)
@@ -70,6 +74,9 @@ export function DatasheetReport(p: Props) {
             : at("tech")}
           {slots.invention.length > 0 ? slots.invention.map((i, n) => prose(i, n === 0 ? figure : undefined)) : figure}
           {at("use")}
+          {useNote && (
+            <p className="ds-use-note">※ 위 활용 설명 중 원문에서 근거를 확인하지 못한 용도는 청구항·명세서와 대조해 확인해 주세요.</p>
+          )}
         </div>
         <footer className="ds-pf"><span>Agri IP Summary · {formatPatentNumber(p.patentNumber, kind)}</span><span>기술</span><span>1 / 2</span></footer>
       </section>

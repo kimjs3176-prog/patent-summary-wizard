@@ -7,6 +7,14 @@ export interface GroundedApplication {
   evidence: string;
 }
 
+/** Result of grounding one summary: clean prose, verified usages, and labels we could not verify. */
+export interface GroundedApplications {
+  content: string;
+  applications: GroundedApplication[];
+  /** 활용 용도 중 원문에서 근거를 확인하지 못한 것. 본문에는 쓰지 않고 요약서 아래 참고 문구로만 알린다. */
+  unverified: string[];
+}
+
 export const APPLICATION_GROUNDING_INSTRUCTION = `
 [활용 용도 근거 구분 — 최우선]
 농산업활용 가능성의 각 용도 문단 첫머리에 [[용도|청구항|용도명|원문 연속 발췌]] 또는 [[용도|명세서|용도명|원문 연속 발췌]]를 붙인다.
@@ -17,9 +25,25 @@ export const APPLICATION_GROUNDING_INSTRUCTION = `
 
 const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
 
+/**
+ * 예전 생성본은 확인하지 못한 용도 문단을 본문에 "용도 근거 미확인 — …" 문장으로 남겼다.
+ * 이제 그 문장은 쓰지 않는다. 저장된 요약서를 읽을 때 걷어내고, 개수만 참고 문구 표시에 쓴다.
+ */
+const LEGACY_UNVERIFIED_NOTE_RE = new RegExp(
+  String.raw`\*{0,2}\s*용도\s*근거\s*미확인\s*\*{0,2}\s*(?:[—–-]\s*)?(?:아래\s*활용\s*설명은\s*)?원문\s*대조가\s*필요하다\.?\s*`
+  + String.raw`|\*{0,2}\s*용도\s*근거\s*미확인\s*\*{0,2}\s*\.\s*`, "g",
+);
+
+function dropLegacyNote(prose: string): { prose: string; unverified: string[] } {
+  let count = 0;
+  const cleaned = prose.replace(LEGACY_UNVERIFIED_NOTE_RE, () => { count += 1; return ""; });
+  return { prose: cleaned, unverified: count > 0 ? ["활용 설명"] : [] };
+}
+
 /** Model-proposed source labels are accepted only with a verbatim source excerpt. */
-export function groundApplications(summary: string, source: GroundingSource | null | undefined) {
+export function groundApplications(summary: string, source: GroundingSource | null | undefined): GroundedApplications {
   const applications: GroundedApplication[] = [];
+  const unverified: string[] = [];
   const claims = normalize(Array.isArray(source?.claims) ? source.claims.join("\n") : source?.claims ?? "");
   const description = normalize([source?.abstract, source?.description].filter(Boolean).join("\n"));
   const content = summary.replace(/\[\[용도\|([^|\]\n]*)\|([^|\]\n]*)\|([^\]\n]*)\]\]/g, (_full, kind: string, rawLabel: string, rawEvidence: string) => {
@@ -28,28 +52,48 @@ export function groundApplications(summary: string, source: GroundingSource | nu
     const valid = label.length >= 2 && label.length <= 60 && evidence.length >= 15 && evidence.length <= 200 && evidence.includes(label);
     const inClaims = valid && kind === "청구항" && /(?:용|제조|생산|처리|방제|치료|예방|검출|진단|재배|발효|추출)/.test(evidence) && claims.includes(evidence);
     const inDescription = valid && description.includes(evidence);
-    if (!inClaims && !inDescription) return "**용도 근거 미확인** — 아래 활용 설명은 원문 대조가 필요하다. ";
+    // 근거를 못 찾은 용도는 본문에 문장을 넣지 않는다(읽는 사람이 두 번 읽게 된다). 아래 참고 문구로만 알린다.
+    if (!inClaims && !inDescription) {
+      unverified.push(label || "활용 설명");
+      return "";
+    }
     applications.push({ label, claimed_in_claims: inClaims, source: inClaims ? "claims" : "description", evidence });
     return `**${inClaims ? "청구항 명시 용도" : "명세서 일반 용도"}: ${label}**. `;
   });
   // Never expose malformed machine markers as a confirmed claim.
-  return { content: content.replace(/\[\[용도[^\n]*(?:\]\]|$)/g, "용도 근거 미확인. "), applications };
+  const cleaned = content
+    .replace(/\[\[용도[^\n]*(?:\]\]|$)/g, () => {
+      unverified.push("활용 설명");
+      return "";
+    })
+    // 지운 마커 자리(문단 첫머리)에 공백이 남지 않게 한다
+    .replace(/(^|\n)[ \t]+/g, "$1");
+  return { content: cleaned, applications, unverified };
 }
 
 /** Store source proposals beside the prose, never in a new public table. Revalidate on read. */
-export function cacheApplicationEvidence(content: string, applications: GroundedApplication[]): string {
-  return content + `\n<!--application-evidence:${encodeURIComponent(JSON.stringify(applications))}-->`;
+export function cacheApplicationEvidence(content: string, applications: GroundedApplication[], unverified: string[] = []): string {
+  return content + `\n<!--application-evidence:${encodeURIComponent(JSON.stringify({ applications, unverified }))}-->`;
 }
 
-export function readApplicationEvidence(content: string, source: GroundingSource | null | undefined) {
+export function readApplicationEvidence(content: string, source: GroundingSource | null | undefined): GroundedApplications {
   const match = content.match(/\n<!--application-evidence:([^\n]*?)-->\s*$/);
-  const prose = content.replace(/\n<!--application-evidence:[^\n]*?-->\s*$/, "");
-  if (!match) return { content: prose, applications: [] as GroundedApplication[] };
+  const stored = content.replace(/\n<!--application-evidence:[^\n]*?-->\s*$/, "");
+  // 저장본 본문에 예전 '용도 근거 미확인' 문구가 남아 있으면 여기서 걷어낸다(화면·PDF·점수 분석 모두 clean 본문을 읽는다)
+  const legacy = dropLegacyNote(stored);
+  const prose = legacy.prose;
+  const withLegacy = (labels: string[]) => Array.from(new Set([...legacy.unverified, ...labels]));
+  if (!match) return { content: prose, applications: [], unverified: withLegacy([]) };
   try {
-    const records: unknown = JSON.parse(decodeURIComponent(match[1]));
-    if (!Array.isArray(records)) return { content: prose, applications: [] as GroundedApplication[] };
+    const payload: unknown = JSON.parse(decodeURIComponent(match[1]));
+    // 예전 저장본은 배열(검증된 용도만)이었다. 그 형식은 그대로 읽고 확인하지 못한 용도는 모른다고 처리한다.
+    const records: unknown = Array.isArray(payload) ? payload : (payload as { applications?: unknown })?.applications;
+    const storedUnverified = Array.isArray(payload) || !Array.isArray((payload as { unverified?: unknown })?.unverified)
+      ? []
+      : (payload as { unverified: unknown[] }).unverified.filter((u): u is string => typeof u === "string" && !!u.trim());
+    if (!Array.isArray(records)) return { content: prose, applications: [], unverified: withLegacy(storedUnverified) };
     const proposals = records.filter((r) => r && typeof r.label === "string" && typeof r.evidence === "string" && typeof r.claimed_in_claims === "boolean")
       .map((r) => `[[용도|${r.claimed_in_claims ? "청구항" : "명세서"}|${r.label}|${r.evidence}]]`).join("\n");
-    return { content: prose, applications: groundApplications(proposals, source).applications };
-  } catch { return { content: prose, applications: [] as GroundedApplication[] }; }
+    return { content: prose, applications: groundApplications(proposals, source).applications, unverified: withLegacy(storedUnverified) };
+  } catch { return { content: prose, applications: [], unverified: withLegacy([]) }; }
 }
