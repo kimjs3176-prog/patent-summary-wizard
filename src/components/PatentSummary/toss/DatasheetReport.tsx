@@ -75,7 +75,7 @@ export function DatasheetReport(p: Props) {
           {slots.invention.length > 0 ? slots.invention.map((i, n) => prose(i, n === 0 ? figure : undefined)) : figure}
           {at("use")}
           {useNote && (
-            <p className="ds-use-note">※ 위 활용 설명 중 원문에서 근거를 확인하지 못한 용도는 청구항·명세서와 대조해 확인してください.</p>
+            <p className="ds-use-note">※ 위 활용 설명 중 원문에서 근거를 확인하지 못한 용도는 청구항·명세서와 대조해 확인해 주세요.</p>
           )}
         </div>
         <footer className="ds-pf"><span>Agri IP Summary · {formatPatentNumber(p.patentNumber, kind)}</span><span>기술</span><span>1 / 2</span></footer>
