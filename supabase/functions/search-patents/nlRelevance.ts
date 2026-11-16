@@ -5,6 +5,7 @@
 // AI planner (must = [딸기, 저장성], should = [선도유지]). Results are ranked by how many
 // concepts they cover, so a patent about strawberry storage beats one that only
 // mentions strawberries. Conversational words ("늘리고", "싶음") never count as matches.
+import { negativeNeedParts } from "../_shared/negativeNeed.ts";
 
 /** Words that never narrow a patent search on their own. */
 export const GENERIC_QUERY_TERMS = [
@@ -63,6 +64,30 @@ export function sanitizeSynonymMap(raw: unknown, must: string[]): Record<string,
     if (syns.length > 0) out[target] = syns;
   }
   return out;
+}
+
+/** Keep an explicit negative modifier instead of requiring AI-invented mechanisms.
+ * Short needs such as "굳지 않는 떡" have two concepts, not 떡 + 노화 + 연화.
+ * Longer sentences keep the existing multi-concept policy unchanged.
+ */
+export function preserveNegativeNeed(
+  rawInput: string,
+  plan: { must: string[]; should: string[]; synonyms: Record<string, string[]>; queries: string[]; corrected?: string },
+) {
+  const parts = negativeNeedParts(rawInput);
+  if (!parts) return plan;
+  const { modifier, target } = parts;
+  const must = [target, modifier];
+  // AI alternatives remain optional forms of the purpose, never additional requirements.
+  const alternatives = sanitizeNlTerms([
+    ...plan.must.filter((term) => normalizeText(term) !== normalizeText(target)),
+    ...plan.should,
+    ...Object.entries(plan.synonyms)
+      .filter(([term]) => normalizeText(term) !== normalizeText(target))
+      .flatMap(([, terms]) => terms),
+  ]).filter((term) => normalizeText(term) !== normalizeText(modifier)).slice(0, 5);
+  const synonyms = { [modifier]: alternatives };
+  return { ...plan, must, should: [], synonyms, queries: buildPlanQueries(must, synonyms) };
 }
 
 /**

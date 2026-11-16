@@ -4,9 +4,23 @@ import { buildResults, mergeCandidates, readinessMatch, sanitizeTerms, MAX_RESUL
 const p = (patentId: string, applicant: string, title = "딸기 저장 방법") => ({ patentId, title, applicant });
 
 describe("나만의 특허찾기 규칙", () => {
+  it("굳지 않는 떡 아이템은 AI 검색어가 5개여도 원문 검색을 먼저 수행", () => {
+    expect(sanitizeTerms(["떡 노화", "연화", "식감", "저장성", "전분"], [], "굳지 않는 떡")).toEqual([
+      "굳지 않는 떡", "떡 노화", "연화", "식감", "저장성",
+    ]);
+  });
   it("6개 기관 밖 출원인의 특허는 후보에서 제외", () => {
     const merged = mergeCandidates([{ term: "딸기", patents: [p("10-1", "대한민국(농촌진흥청장)"), p("10-2", "주식회사 에이")] }]);
     expect(merged.map((c) => c.patentId)).toEqual(["10-1"]);
+  });
+
+  it("원문과 일치한 떡 기술은 다른 검색어의 신규 특허 40건 때문에 후보에서 밀리지 않음", () => {
+    const merged = mergeCandidates([
+      { term: "굳지 않는 떡", patents: [p("10-1099619", "농촌진흥청", "굳지 않는 떡의 제조방법 및 상기 방법으로 제조된 떡")] },
+      { term: "효소", patents: Array.from({ length: 45 }, (_, i) => ({ ...p(`10-${i}`, "농촌진흥청", "효소 조성물"), applicationDate: "2025.01.01" })) },
+    ], "굳지 않는 떡");
+    expect(merged).toHaveLength(40);
+    expect(merged[0].patentId).toBe("10-1099619");
   });
 
   it("출원인이 비어 있으면 검색한 기관명(organizationName)으로 범위 확인", () => {

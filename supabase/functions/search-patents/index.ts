@@ -6,7 +6,7 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { resolveKiprisKey } from "../_shared/kipris.ts";
 import { log, withRequestLog, type RequestLogger } from "../_shared/log.ts";
 import { classifyTechnology, FIELD_SEARCH_TERMS, isTechnologyFieldId } from "../_shared/technologyFields.ts";
-import { buildConceptGroups, buildPlanQueries, rankNaturalLanguage, sanitizeNlTerms, sanitizeSynonymMap } from "./nlRelevance.ts";
+import { buildConceptGroups, buildPlanQueries, preserveNegativeNeed, rankNaturalLanguage, sanitizeNlTerms, sanitizeSynonymMap } from "./nlRelevance.ts";
 
 const FN = "search-patents";
 
@@ -396,7 +396,9 @@ serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Re
         searchKeywords = words.length > 0 ? words : [rawInput];
       }
 
-      const refined = await recommendQueriesWithAI(rawInput, searchKeywords, isNLQuery);
+      const aiPlan = await recommendQueriesWithAI(rawInput, searchKeywords, isNLQuery);
+      const refined = isNLQuery ? preserveNegativeNeed(rawInput, aiPlan) : aiPlan;
+      if (refined !== aiPlan) searchKeywords = refined.must;
       let recommendedQueries = refined.queries;
       if (!recommendedQueries || recommendedQueries.length === 0) {
         const fb: string[] = [];

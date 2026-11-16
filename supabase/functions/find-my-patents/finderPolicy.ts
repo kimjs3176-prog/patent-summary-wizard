@@ -1,5 +1,6 @@
 // Pure rules for "나만의 특허찾기" (company-profile patent finder).
 // Kept free of Deno/runtime imports so the rules can be unit-tested.
+import { negativeNeedParts } from "../_shared/negativeNeed.ts";
 
 export const INSTITUTE_NAMES = ["농촌진흥청", "농림축산검역본부", "국립농산물품질관리원", "국립종자원", "농업기술센터", "농업기술원"];
 
@@ -58,10 +59,11 @@ export function isInScope(applicant?: string): boolean {
 }
 
 /** Clean AI-proposed search terms: short, allowed characters, unique, max MAX_TERMS. */
-export function sanitizeTerms(raw: unknown, fallback: string[]): string[] {
+export function sanitizeTerms(raw: unknown, fallback: string[], item = ""): string[] {
   const list = Array.isArray(raw) ? raw : [];
   const out: string[] = [];
-  for (const t of [...list, ...fallback]) {
+  const explicitNeed = negativeNeedParts(item);
+  for (const t of [...(explicitNeed ? [explicitNeed.query] : []), ...list, ...fallback]) {
     if (typeof t !== "string") continue;
     const term = t.replace(/\s+/g, " ").trim();
     if (term.length < 2 || term.length > 30 || !SEARCH_TERM_RE.test(term)) continue;
@@ -73,7 +75,7 @@ export function sanitizeTerms(raw: unknown, fallback: string[]): string[] {
 }
 
 /** Merge per-term search results; drop anything outside the six-institute scope. */
-export function mergeCandidates(groups: { term: string; patents: Array<Record<string, unknown>> }[]): FinderCandidate[] {
+export function mergeCandidates(groups: { term: string; patents: Array<Record<string, unknown>> }[], item = ""): FinderCandidate[] {
   const map = new Map<string, FinderCandidate>();
   for (const { term, patents } of groups) {
     for (const p of patents) {
@@ -102,8 +104,10 @@ export function mergeCandidates(groups: { term: string; patents: Array<Record<st
       });
     }
   }
+  const explicitNeed = negativeNeedParts(item);
+  const literalMatch = (c: FinderCandidate) => Boolean(explicitNeed && c.title.replace(/\s/g, "").includes(explicitNeed.query.replace(/\s/g, "")));
   return [...map.values()]
-    .sort((a, b) => b.hits - a.hits || String(b.applicationDate || "").localeCompare(String(a.applicationDate || "")))
+    .sort((a, b) => Number(literalMatch(b)) - Number(literalMatch(a)) || b.hits - a.hits || String(b.applicationDate || "").localeCompare(String(a.applicationDate || "")))
     .slice(0, MAX_CANDIDATES);
 }
 

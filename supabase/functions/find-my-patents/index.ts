@@ -1,4 +1,5 @@
 import { aiModel } from "../_shared/aiConfig.ts";
+import { negativeNeedParts } from "../_shared/negativeNeed.ts";
 import { z } from "https://deno.land/x/zod@v3.23.8/mod.ts";
 import {
   CancelledError, generateChatCompletion, GatewayError, PaymentRequiredError, RateLimitError, TimeoutError,
@@ -95,13 +96,13 @@ async function planSearchTerms(b: Body): Promise<{ terms: string[]; need: string
     }, { signal: AbortSignal.timeout(PLAN_TIMEOUT_MS), maxRetries: AI_MAX_RETRIES });
     const parsed = parseJson(res.choices?.[0]?.message?.content);
     return {
-      terms: sanitizeTerms(parsed?.terms, fallback),
-      need: typeof parsed?.need === "string" ? parsed.need.slice(0, 80) : "",
+      terms: sanitizeTerms(parsed?.terms, fallback, b.item),
+      need: negativeNeedParts(b.item)?.query ?? (typeof parsed?.need === "string" ? parsed.need.slice(0, 80) : ""),
     };
   } catch (e) {
     console.error("[find-my-patents] plan failed", isAbort(e) ? "timeout" : e instanceof GatewayError ? e.code : e);
     if (e instanceof PaymentRequiredError || e instanceof RateLimitError) throw e;
-    return { terms: sanitizeTerms([], fallback), need: "" };
+    return { terms: sanitizeTerms([], fallback, b.item), need: "" };
   }
 }
 
@@ -251,7 +252,7 @@ Deno.serve(async (req) => {
     const groups = await retrieveGroups(terms, forwardedFor);
     mark("search");
 
-    const candidates = mergeCandidates(groups);
+    const candidates = mergeCandidates(groups, body.item);
     if (!candidates.length) {
       return jsonResponse({ success: true, terms, need, candidateCount: 0, results: [] });
     }
