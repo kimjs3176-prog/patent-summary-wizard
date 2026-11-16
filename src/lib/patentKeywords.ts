@@ -108,7 +108,7 @@ export function titleNouns(title: string, max = 2): string[] {
   for (const raw of words) {
     if (/(?:하는|하기|한|된|되는|있는|않는|않은)$/.test(raw) || /지$/.test(raw) && words.some((w) => /^(?:않는|않은)$/.test(w))) continue;
     const w = stripAnd(stripParticle(raw));
-    if (w.length < 2 || KIND_WORD.test(w) || LINK_WORD.test(w) || /^\d/.test(w) || out.includes(w)) continue;
+    if ((w.length < 2 && !["떡", "쌀", "콩", "밀", "김", "차", "꿀", "배"].includes(w)) || KIND_WORD.test(w) || LINK_WORD.test(w) || /^\d/.test(w) || out.includes(w)) continue;
     out.push(w);
     if (out.length >= max) break;
   }
