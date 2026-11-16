@@ -25,7 +25,7 @@ const DEFAULT_STEPS: FilingState["steps"] = [
   { ...step0, id: "prior", t: "비슷한 특허 찾기", s: "이미 있는지 확인" },
   { ...step0, id: "diag", t: "특허 가능성 진단", s: "받을 수 있을까" },
   { ...step0, id: "draft", t: "서류 만들기", s: "발명 설명서·신청서" },
-  { ...step0, id: "manage", t: "제출하고 챙기기", s: "비용·기한" },
+  { ...step0, id: "manage", t: "제출하고 챙기기", s: "비용·상담" },
 ];
 
 // 처음 열 때(같은 탭에서 한 번): 결과물이 출원·등록을 보장하지 않는다는 안내 (owner). 단독 화면(public/filing-app)도 같은 안내를 띄운다.

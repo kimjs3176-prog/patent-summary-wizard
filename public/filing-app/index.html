@@ -2524,7 +2524,7 @@ function goPage(id, key) {
   toPage(id, k, stepIdx(id) < stepIdx() || (id === S.step && k < S.sub) ? -1 : 1);
 }
 
-// 목차 아래 '내 기술' 요약: 출원 기한과 다른 두 서비스로 가는 길을 늘 보이게
+// 목차 아래 '내 기술' 요약: 출원 현황판과 다른 두 서비스로 가는 길을 늘 보이게
 // 출원 현황판: 어디까지 왔고, 다음에 무엇을 하며, 돈과 시간이 얼마나 드는지 한눈에
 function boardRows() {
   const i = stepIdx();
@@ -2685,7 +2685,7 @@ function viewHome() {
       <p>농식품 기술의 특허를 내고, 분석하고, 해외에서 쓰기까지 한곳에서 준비합니다.</p>
     </header>
     <nav class="svc-links" aria-label="서비스 바로가기">
-      <a class="svc-link" href="#apply"><span class="svc-ic">${ICON.file}</span><span class="svc-t"><b>출원지원</b><span>아이디어부터 명세서·출원서, 제출과 기한까지 5단계</span></span><span class="svc-go" aria-hidden="true"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+      <a class="svc-link" href="#apply"><span class="svc-ic">${ICON.file}</span><span class="svc-t"><b>출원지원</b><span>아이디어부터 명세서·출원서, 제출·상담까지 5단계</span></span><span class="svc-go" aria-hidden="true"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
       <a class="svc-link ais" href="#ais"><span class="svc-ic">${ICON.chart}</span><span class="svc-t"><b>기술분석</b><span>농식품 특허를 AI로 요약·비교 (AIS)</span></span><span class="svc-go" aria-hidden="true"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
       <a class="svc-link glb" href="#global"><span class="svc-ic">${ICON.globe}</span><span class="svc-t"><b>해외동향</b><span>수출 실적·규제·해외 출원으로 진출 시장 정하기</span></span><span class="svc-go" aria-hidden="true"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
     </nav>
@@ -5518,7 +5518,7 @@ function expHelperHtml() {
     <p class="hint" style="margin-top:0">이 발명의 효과를 보여 주려면 아래 항목을 재 보세요. 실시예(이 발명) 1개 이상과 비교예(기존 방법) 1개 이상을 같은 조건에서 3번 이상 재면 됩니다.</p>
     <ol class="exp-plan">${plan.map(([m, u, how, ctrl]) => `<li><b>${esc(m)} <span class="muted">(${esc(u)})</span></b><span>${esc(how)}</span><span class="muted">비교: ${esc(ctrl)}</span></li>`).join("")}</ol>
     <div class="actions"><button type="button" class="btn ghost sm" data-exp-sheet>측정 기록지 받기 (엑셀에서 열림)</button><label class="btn sm" for="exp-import" tabindex="0" role="button" data-key-click>잰 값을 채운 기록지 올리기</label><input type="file" id="exp-import" accept=".csv,text/csv" hidden></div>
-    <p class="exp-pri"><b>데이터 없이 먼저 출원해도 돼요.</b> 출원일부터 1년 안(${esc(pri)}까지)에 잰 값을 더해 다시 출원하면서 ‘국내우선권’을 주장하면 처음 출원일을 그대로 인정받습니다(특허법 제55조). 기한은 5단계 기한 관리에 들어가 있어요.</p></div>`;
+    <p class="exp-pri"><b>데이터 없이 먼저 출원해도 돼요.</b> 출원일부터 1년 안(${esc(pri)}까지)에 잰 값을 더해 다시 출원하면서 ‘국내우선권’을 주장하면 처음 출원일을 그대로 인정받습니다(특허법 제55조).</p></div>`;
 }
 document.addEventListener("click", e => {
   if (e.target.closest("[data-exp-sheet]")) { saveFile(`실험기록지_${(S.idea.title || "발명").slice(0, 20)}.csv`, "text/csv;charset=utf-8", expSheetCsv()); toast("기록지를 받았습니다. 엑셀로 열어 측정값을 넣고 CSV로 저장해 올리세요"); }
@@ -6056,6 +6056,7 @@ function filingPages() {
 
   <div class="sub" data-pg="4">
     <div class="sub-head"><h3>제출용 파일</h3></div>
+    ${filedRecordCard()}
     <div class="actions">
       <button class="btn" id="save-package">제출용 파일 한 번에 받기 (.zip)</button>
       <button class="btn ghost" data-save-doc>명세서만 Word(.docx)</button>
@@ -6560,7 +6561,7 @@ document.addEventListener("click", e => {
   if (e.target.id === "ax-reset") { delete S.axesCustom[S.idea.field]; S.gapSel = null; runExplore(); return; }
   if (e.target.id === "explore") { S.kw = $("#kw").value; runExplore(); return; }
   const ip = e.target.closest("[data-ipc]"); if (ip) { S.kw = $("#kw")?.value ?? S.kw; S.ipc = S.ipc === ip.dataset.ipc ? "" : ip.dataset.ipc; runExplore(); return; }
-  if (e.target.id === "due-copy") navigator.clipboard?.writeText(deadlinesText()).then(() => toast("기한 목록을 복사했습니다"), () => toast("복사가 막혀 있습니다"));
+
   if (e.target.id === "gap-clear") { S.gapSel = new Set(); rerenderKeepScroll(); toast("고른 공백 칸을 지웠습니다"); return; }
 });
 
