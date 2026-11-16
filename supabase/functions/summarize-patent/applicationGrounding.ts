@@ -61,10 +61,13 @@ export function groundApplications(summary: string, source: GroundingSource | nu
     return `**${inClaims ? "청구항 명시 용도" : "명세서 일반 용도"}: ${label}**. `;
   });
   // Never expose malformed machine markers as a confirmed claim.
-  const cleaned = content.replace(/\[\[용도[^\n]*(?:\]\]|$)/g, () => {
-    unverified.push("활용 설명");
-    return "";
-  });
+  const cleaned = content
+    .replace(/\[\[용도[^\n]*(?:\]\]|$)/g, () => {
+      unverified.push("활용 설명");
+      return "";
+    })
+    // 지운 마커 자리(문단 첫머리)에 공백이 남지 않게 한다
+    .replace(/(^|\n)[ \t]+/g, "$1");
   return { content: cleaned, applications, unverified };
 }
 
