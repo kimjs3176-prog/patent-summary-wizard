@@ -6,11 +6,39 @@ import {
   sanitizeNlTerms,
   sanitizeSynonymMap,
   requiredConcepts,
+  preserveNegativeNeed,
 } from "../../supabase/functions/search-patents/nlRelevance";
 
 const p = (title: string, snippet = "") => ({ title, snippet });
 
 describe("문장형 검색 정합도 규칙", () => {
+  it("'굳지 않는 떡'은 원문 용도를 보존하고 AI가 추가한 연화를 필수조건으로 요구하지 않음", () => {
+    const plan = preserveNegativeNeed("굳지 않는 떡", {
+      must: ["떡", "노화", "연화"], should: ["식감"],
+      synonyms: { 노화: ["경화방지"] }, queries: ["떡*노화*연화"],
+    });
+    expect(plan.must).toEqual(["떡", "굳지 않는"]);
+    expect(plan.queries[0]).toBe("떡*굳지 않는");
+    const ranked = rankNaturalLanguage([
+      p("굳지 않는 떡의 제조방법 및 상기 방법으로 제조된 떡"),
+      p("보릿가루를 활용한 굳지 않는 떡의 제조방법"),
+      p("떡 노화 방지 제조방법"),
+      p("떡 성형 장치"),
+      p("피부 노화 방지 조성물"),
+    ], buildConceptGroups(plan.must, plan.should, [], plan.synonyms));
+    expect(ranked.map((x) => x.title)).toEqual([
+      "굳지 않는 떡의 제조방법 및 상기 방법으로 제조된 떡",
+      "보릿가루를 활용한 굳지 않는 떡의 제조방법",
+      "떡 노화 방지 제조방법",
+    ]);
+  });
+
+  it("긴 문장과 짧은 일반 키워드의 기존 검색 조건은 바꾸지 않음", () => {
+    const plan = { must: ["음식", "기름", "제거"], should: [], synonyms: {}, queries: ["음식*기름*제거"] };
+    for (const query of ["음식 기름 제거", "김치 유산균", "발효", "굳지 않는 떡을 대량 생산하고 싶어"])
+      expect(preserveNegativeNeed(query, plan)).toBe(plan);
+  });
+
   it("'제조방법'·'기술' 같은 일반어는 핵심어에서 제외", () => {
     expect(sanitizeNlTerms(["쌀", "제조방법", "간식", "기술"])).toEqual(["쌀", "간식"]);
   });

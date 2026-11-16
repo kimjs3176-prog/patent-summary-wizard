@@ -65,6 +65,31 @@ export function sanitizeSynonymMap(raw: unknown, must: string[]): Record<string,
   return out;
 }
 
+/** Keep an explicit negative modifier instead of requiring AI-invented mechanisms.
+ * Short needs such as "굳지 않는 떡" have two concepts, not 떡 + 노화 + 연화.
+ * Longer sentences keep the existing multi-concept policy unchanged.
+ */
+export function preserveNegativeNeed(
+  rawInput: string,
+  plan: { must: string[]; should: string[]; synonyms: Record<string, string[]>; queries: string[]; corrected?: string },
+) {
+  const match = rawInput.trim().match(/^([가-힣]{1,8}지)\s*(않는|않은)\s+([가-힣]{1,12})(?:\s+(?:기술|검색|기술\s*검색))?$/u);
+  if (!match) return plan;
+  const modifier = `${match[1]} ${match[2]}`;
+  const target = match[3];
+  const must = [target, modifier];
+  // AI alternatives remain optional forms of the purpose, never additional requirements.
+  const alternatives = sanitizeNlTerms([
+    ...plan.must.filter((term) => normalizeText(term) !== normalizeText(target)),
+    ...plan.should,
+    ...Object.entries(plan.synonyms)
+      .filter(([term]) => normalizeText(term) !== normalizeText(target))
+      .flatMap(([, terms]) => terms),
+  ]).filter((term) => normalizeText(term) !== normalizeText(modifier)).slice(0, 5);
+  const synonyms = { [modifier]: alternatives };
+  return { ...plan, must, should: [], synonyms, queries: buildPlanQueries(must, synonyms) };
+}
+
 /**
  * KIPRIS title queries in priority order: all concepts AND-ed, then each concept swapped
  * for one of its synonyms, then concept pairs keeping the target (first term), then
