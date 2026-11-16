@@ -75,8 +75,12 @@ export function cacheApplicationEvidence(content: string, applications: Grounded
 
 export function readApplicationEvidence(content: string, source: GroundingSource | null | undefined): GroundedApplications {
   const match = content.match(/\n<!--application-evidence:([^\n]*?)-->\s*$/);
-  const prose = content.replace(/\n<!--application-evidence:[^\n]*?-->\s*$/, "");
-  if (!match) return { content: prose, applications: [], unverified: [] };
+  const stored = content.replace(/\n<!--application-evidence:[^\n]*?-->\s*$/, "");
+  // 저장본 본문에 예전 '용도 근거 미확인' 문구가 남아 있으면 여기서 걷어낸다(화면·PDF·점수 분석 모두 clean 본문을 읽는다)
+  const legacy = dropLegacyNote(stored);
+  const prose = legacy.prose;
+  const withLegacy = (labels: string[]) => Array.from(new Set([...legacy.unverified, ...labels]));
+  if (!match) return { content: prose, applications: [], unverified: withLegacy([]) };
   try {
     const payload: unknown = JSON.parse(decodeURIComponent(match[1]));
     // 예전 저장본은 배열(검증된 용도만)이었다. 그 형식은 그대로 읽고 확인하지 못한 용도는 모른다고 처리한다.
@@ -84,9 +88,9 @@ export function readApplicationEvidence(content: string, source: GroundingSource
     const storedUnverified = Array.isArray(payload) || !Array.isArray((payload as { unverified?: unknown })?.unverified)
       ? []
       : (payload as { unverified: unknown[] }).unverified.filter((u): u is string => typeof u === "string" && !!u.trim());
-    if (!Array.isArray(records)) return { content: prose, applications: [], unverified: storedUnverified };
+    if (!Array.isArray(records)) return { content: prose, applications: [], unverified: withLegacy(storedUnverified) };
     const proposals = records.filter((r) => r && typeof r.label === "string" && typeof r.evidence === "string" && typeof r.claimed_in_claims === "boolean")
       .map((r) => `[[용도|${r.claimed_in_claims ? "청구항" : "명세서"}|${r.label}|${r.evidence}]]`).join("\n");
-    return { content: prose, applications: groundApplications(proposals, source).applications, unverified: storedUnverified };
-  } catch { return { content: prose, applications: [], unverified: [] }; }
+    return { content: prose, applications: groundApplications(proposals, source).applications, unverified: withLegacy(storedUnverified) };
+  } catch { return { content: prose, applications: [], unverified: withLegacy([]) }; }
 }
