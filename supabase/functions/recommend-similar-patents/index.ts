@@ -1,4 +1,5 @@
 import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
+import { cleanKeywordTerm, KEYWORD_NOUN_RULE } from "../_shared/keywordTerms.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
@@ -94,7 +95,7 @@ ${classInfo}
 2. 특허가 실제로 다루는 "물리적 장치/구성/공정/성분/작용원리"에 집중하세요.
    - 예: "탈모기"는 도계(닭) 공정의 깃털 제거 기계입니다. 두피/모발과 무관합니다.
 3. 산업 분야가 전혀 다른 일반어(조성물·추출물·프리바이오틱스 등)는 산업이 실제로 그것이 아닌 이상 사용 금지.
-4. 각 키워드는 2~8자의 한국어 명사·복합명사. 조사·동사·서술어 금지.
+4. 각 키워드는 2~8자의 한국어 명사·복합명사. 조사·동사·서술어 금지. ${KEYWORD_NOUN_RULE}
 
 JSON만 출력:
 {
@@ -164,9 +165,10 @@ JSON만 출력:
       return sourceText.includes(k.toLowerCase());
     };
     searchQueries = searchQueries
-      .map((set) => (Array.isArray(set) ? set.filter(validateKw) : []))
+      .map((set) => (Array.isArray(set) ? set.filter((kw): kw is string => typeof kw === "string").map(cleanKeywordTerm).filter(validateKw) : []))
       .filter((set) => set.length > 0);
-    corePhrases = corePhrases.filter(validateKw);
+    corePhrases = corePhrases.map(cleanKeywordTerm).filter(validateKw);
+    negativeTerms = negativeTerms.map(cleanKeywordTerm).filter(Boolean);
 
     // Extract meaningful nouns from the title as a guaranteed-grounded fallback / supplement
     const stopWords = new Set([
@@ -183,7 +185,8 @@ JSON만 출력:
     const titleTokensRaw = (title || "")
       .replace(/[\[\](),.·\-/]/g, " ")
       .split(/\s+/)
-      .map((t: string) => t.trim())
+      .map((t: string) => cleanKeywordTerm(t))
+      .filter((t: string) => !/(?:하는|되는|않는|않은|하여|하고)$/.test(t))
       .filter((t: string) => t.length >= 2 && !stopWords.has(t));
     const titleTokens = titleTokensRaw.filter((t: string) => !genericTerms.has(t));
 

@@ -3,6 +3,7 @@ import { cleanKeywordTerm } from "../../supabase/functions/_shared/keywordTerms"
 import { sanitizeNlTerms } from "../../supabase/functions/search-patents/nlRelevance";
 import { sanitizeTerms } from "../../supabase/functions/find-my-patents/finderPolicy";
 import { sanitizeQuery } from "../../supabase/functions/patent-chat/chatPolicy";
+import { frequentTerms, stem } from "../../supabase/functions/filing-api/lib/analyze.js";
 
 describe("키워드 전용 조사 정리", () => {
   it("붙은 조사와 단독 연결어를 제거", () => {
@@ -20,5 +21,12 @@ describe("키워드 전용 조사 정리", () => {
   });
   it("굳지 않는 떡의 부정 조건은 유지", () => {
     expect(cleanKeywordTerm("굳지 않는 떡")).toBe("굳지 않는 떡");
+  });
+  it("출원도우미 빈출어도 조사를 제거하고 정상 명사를 훼손하지 않음", () => {
+    expect(stem("농가")).toBe("농가");
+    expect(stem("단가")).toBe("단가");
+    const result = frequentTerms("", [{ title: "딸기의 알로에 저장을 위한", abstract: "농가 단가" }], { minShare: 0 });
+    expect(result.map((r: { term: string }) => r.term)).toEqual(expect.arrayContaining(["딸기", "알로에", "저장", "농가", "단가"]));
+    expect(result.map((r: { term: string }) => r.term)).not.toContain("딸기의");
   });
 });

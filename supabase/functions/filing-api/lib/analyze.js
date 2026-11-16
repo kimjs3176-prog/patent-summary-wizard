@@ -1,7 +1,7 @@
 // KIPRIS 검색 결과를 아이디어 보강용 지표로 바꾸는 순수 함수 모음.
 // 형태소 분석기 없이 동작하도록 한글은 글자 2-gram, 영문·숫자는 단어 단위로 비교한다.
 
-const PARTICLES = /(으로써|으로서|에서의|에서|으로|에게|부터|까지|하는|되는|하여|하고|이며|이고|와의|과의|의|을|를|이|가|은|는|에|와|과|로|및|도)$/;
+import { cleanKeywordTerm } from "../../_shared/keywordTerms.ts";
 const STOP = new Set(["포함", "포함하는", "이용", "이용한", "방법", "제조", "제조방법", "조성물", "장치", "시스템", "발명", "본발명", "상기", "또는", "그리고", "따라", "위한", "있는", "있다", "통해", "관한", "것으로", "것을", "제공", "효과", "단계", "경우", "사용", "대한", "더욱", "보다", "구체적", "일실시예", "특징", "목적", "모의"]); // ‘모의’는 모의 모드 문헌의 [모의] 표시
 
 export const normalize = s => String(s ?? "").toLowerCase().replace(/[^0-9a-z가-힣\s]/g, " ").replace(/\s+/g, " ").trim();
@@ -56,9 +56,8 @@ export function keywordShare(groups, items) {
 }
 
 export function stem(w) {
-  let s = w;
-  for (let i = 0; i < 2 && PARTICLES.test(s) && s.length > 2; i++) s = s.replace(PARTICLES, "");
-  return s;
+  if (/(?:하는|되는|하여|하고|이며|이고|않는|않은)$/.test(w)) return "";
+  return cleanKeywordTerm(w);
 }
 
 // 유사 문헌에 자주 나오지만 아이디어에는 없는 용어 (문서 빈도 기준)

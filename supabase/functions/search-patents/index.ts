@@ -391,7 +391,7 @@ serve(withRequestLog(FN, async (req: Request, logger: RequestLogger): Promise<Re
       if (isNaturalLanguageQuery(rawInput)) {
         isNLQuery = true;
         const extraction = await extractKeywordsWithAI(rawInput);
-        searchKeywords = extraction.keywords;
+        searchKeywords = sanitizeNlTerms(extraction.keywords);
         aiIntent = extraction.originalIntent;
       } else {
         const words = rawInput.split(/\s+/).filter((w: string) => w.length > 0);
