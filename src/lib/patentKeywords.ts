@@ -8,6 +8,8 @@
  *   '딸기의 저장, 유통성 향상을 위한 페룰린산 처리 방법' → 대상 '딸기' · 용도 '저장·유통성 향상' · 수단 '페룰린산 처리' · 형태 '방법'
  * 키워드는 낱말로만 내보낸다: '라이스 볼의'처럼 조사가 붙은 꼴은 조사를 떼고 쓴다.
  */
+import { cleanKeywordTerm } from "../../supabase/functions/_shared/keywordTerms";
+
 export interface TitleParts {
   /** '…을 포함하는'의 원료(마지막 낱말) */
   subject: string;
@@ -31,12 +33,7 @@ const GENERIC_TAIL = /^(추출물|발효물|분말|농축액|혼합물|배양액
  * 낱말 끝의 조사를 뗀다. '가을·마을'처럼 조사와 같은 글자로 끝나는 짧은 낱말은 그대로 둔다.
  */
 export function stripParticle(token: string): string {
-  const t = token.trim();
-  const m = t.match(/^(.+?)(에서|으로|의|를|을|에)$/u);
-  if (!m) return t;
-  const [, stem, josa] = m;
-  if (josa === "의" || josa === "를" || josa === "에서" || josa === "으로") return stem;
-  return stem.length >= 2 ? stem : t;
+  return cleanKeywordTerm(token);
 }
 
 /** 여러 낱말 묶음의 각 낱말에서 조사를 뗀다('라이스 볼의' → '라이스 볼') */
@@ -109,7 +106,7 @@ export function titleNouns(title: string, max = 2): string[] {
     .filter(Boolean);
   const out: string[] = [];
   for (const raw of words) {
-    if (/(?:하는|하기|한|된|되는|있는)$/.test(raw)) continue;
+    if (/(?:하는|하기|한|된|되는|있는|않는|않은)$/.test(raw) || /지$/.test(raw) && words.some((w) => /^(?:않는|않은)$/.test(w))) continue;
     const w = stripAnd(stripParticle(raw));
     if (w.length < 2 || KIND_WORD.test(w) || LINK_WORD.test(w) || /^\d/.test(w) || out.includes(w)) continue;
     out.push(w);

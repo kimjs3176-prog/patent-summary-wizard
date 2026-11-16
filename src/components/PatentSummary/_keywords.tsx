@@ -272,11 +272,11 @@ function ruleKeywords(
       .replace(/[[\](){}<>"'`·,.\-—–:;?!]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
-    const tokens = cleaned.split(/\s+/).filter(t => /[가-힣A-Za-z]/.test(t));
+    const tokens = titleNouns(cleaned, 10);
     const nouns: string[] = [];
     const SUFFIX_LIKE = /(제조방법|제조법|조성물|키트|용도|방법|시스템|장치|모듈|제형|제제|마커)$/;
     for (const t of tokens) {
-      const stem = t.replace(/(?:으로|에서|로서|로써|에게|에서|에|의|를|을|이|가|와|과|로|은|는)$/u, "");
+      const stem = cleanPhrase(t);
       if (stem.length < 2 || stem.length > 8) continue;
       if (STOP.has(stem)) continue;
       if (/^\d+$/.test(stem)) continue;
@@ -342,7 +342,7 @@ function ruleKeywords(
             const m = tokens[i].match(/^([가-힣A-Za-z]{1,6})(마커|키트|장치|시스템)$/);
             if (m) return m[2] === "마커" ? "마커" : m[1] + m[2];
             for (let j = i - 1; j >= 0; j--) {
-              const stem = tokens[j].replace(/(?:으로|에서|로서|로써|에게|에|의|를|을|이|가|와|과|로|은|는|용)$/u, "");
+              const stem = cleanPhrase(tokens[j]);
               if (stem.length < 2 || stem.length > 8) continue;
               if (STOP_LOCAL.has(stem)) continue;
               if (/^\d+$/.test(stem)) continue;
@@ -395,7 +395,8 @@ function ruleKeywords(
 
   const seen = new Set<string>();
   const unique: KwItem[] = [];
-  const push = (word: string, cat: KeywordCategory) => {
+  const push = (raw: string, cat: KeywordCategory) => {
+    const word = cleanPhrase(raw || "");
     if (!word || seen.has(word) || unique.length >= max) return;
     seen.add(word);
     unique.push({ word, cat });

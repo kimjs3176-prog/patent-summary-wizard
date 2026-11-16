@@ -1,4 +1,5 @@
 import { AI_GATEWAY_URL, aiModel } from "../_shared/aiConfig.ts";
+import { cleanKeywordTerm, KEYWORD_NOUN_RULE } from "../_shared/keywordTerms.ts";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { withRequestLog, type RequestLogger } from "../_shared/log.ts";
@@ -31,7 +32,7 @@ Deno.serve(withRequestLog("suggest-keywords", async (req: Request, logger: Reque
           {
             role: "system",
             content:
-              "당신은 한국 농식품 분야 특허 검색 도우미입니다. 사용자의 검색어로 결과가 없을 때, 특허 문헌에서 실제로 쓰일 법한 대체 검색어를 제안합니다. 오타가 있으면 교정어를 첫 번째로 넣으세요. 반드시 JSON만 반환: {\"corrected\": \"교정어 또는 빈 문자열\", \"suggestions\": [\"검색어\", ...]} (suggestions 5~6개, 각 2~12자, 원래 검색어와 동일한 것 제외)",
+              "당신은 한국 농식품 분야 특허 검색 도우미입니다. 사용자의 검색어로 결과가 없을 때, 특허 문헌에서 실제로 쓰일 법한 대체 검색어를 제안합니다. 오타가 있으면 교정어를 첫 번째로 넣으세요. 반드시 JSON만 반환: {\"corrected\": \"교정어 또는 빈 문자열\", \"suggestions\": [\"검색어\", ...]} (suggestions 5~6개, 각 2~12자, 원래 검색어와 동일한 것 제외) " + KEYWORD_NOUN_RULE,
           },
           { role: "user", content: keyword },
         ],
@@ -49,7 +50,7 @@ Deno.serve(withRequestLog("suggest-keywords", async (req: Request, logger: Reque
     let parsed: any = {};
     try { parsed = m ? JSON.parse(m[0]) : {}; } catch { parsed = {}; }
 
-    const clean = (s: unknown) => String(s ?? "").replace(/["'`]/g, "").trim();
+    const clean = (s: unknown) => cleanKeywordTerm(String(s ?? "").replace(/["'`]/g, ""));
     const corrected = clean(parsed.corrected);
     const seen = new Set([keyword]);
     const suggestions: string[] = [];

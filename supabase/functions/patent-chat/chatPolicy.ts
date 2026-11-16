@@ -2,6 +2,7 @@
 // No runtime imports beyond shared pure modules so the rules stay unit-testable.
 import { TECHNOLOGY_FIELDS, type TechnologyFieldId } from "../_shared/technologyFields.ts";
 import { negativeNeedParts } from "../_shared/negativeNeed.ts";
+import { cleanKeywordTerm } from "../_shared/keywordTerms.ts";
 
 export const CHAT_TOOLS = ["trends", "search", "transfer"] as const;
 export type ChatTool = typeof CHAT_TOOLS[number];
@@ -33,7 +34,7 @@ const GENERIC_WORDS = new Set([
 /** Clean an AI- or user-provided search keyword: allowed characters only, collapsed spaces, max 40 chars. */
 export function sanitizeQuery(raw: unknown): string {
   if (typeof raw !== "string") return "";
-  const cleaned = raw.replace(QUERY_RE, " ").replace(/\s+/g, " ").trim().slice(0, 40).trim();
+  const cleaned = cleanKeywordTerm(raw.replace(QUERY_RE, " ").slice(0, 40));
   if (cleaned.length < 2) return "";
   // A word counts as generic when it is (or starts with) a generic stem, e.g. "추천해줘", "기술을".
   const isGeneric = (w: string) => GENERIC_WORDS.has(w) || [...GENERIC_WORDS].some((g) => g.length >= 2 && w.startsWith(g));
