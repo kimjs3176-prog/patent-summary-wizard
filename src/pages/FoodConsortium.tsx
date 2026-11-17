@@ -276,12 +276,13 @@ const FoodConsortium = () => {
                 )}
                 {loading && (
                   <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> <span className="text-sm">특허고객번호로 특허를 찾는 중…</span>
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                    <span className="text-sm">{patentKeyword ? "선택 기관에서 키워드로 찾는 중…" : "특허고객번호로 특허를 찾는 중…"}</span>
                   </div>
                 )}
                 {!loading && result?.hasMore && (
                   <div className="mt-5 flex justify-center">
-                    <Button variant="outline" size="sm" onClick={() => void load(org, (result?.page ?? 1) + 1)}>더 보기</Button>
+                    <Button variant="outline" size="sm" onClick={() => void load(org, (result?.page ?? 1) + 1, patentKeyword)}>더 보기</Button>
                   </div>
                 )}
               </>
