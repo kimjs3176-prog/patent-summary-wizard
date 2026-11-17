@@ -188,17 +188,7 @@ Deno.serve(async (req) => {
         const status = xmlTag(it, "registerStatus");
         if (!applicationNumber || seen.has(applicationNumber) || EXCLUDED_STATUS.test(status)) continue;
         seen.add(applicationNumber);
-        out.push({
-          applicationNumber,
-          registrationNumber: xmlTag(it, "registerNumber") || undefined,
-          title: xmlTag(it, "inventionTitle"),
-          applicationDate: fmtDate(xmlTag(it, "applicationDate")),
-          registrationDate: fmtDate(xmlTag(it, "registerDate")) || undefined,
-          status,
-          applicant: xmlTag(it, "applicantName"),
-          ipc: xmlTag(it, "ipcNumber").split("|")[0]?.trim() || undefined,
-          abstract: xmlTag(it, "astrtCont").slice(0, 220),
-        });
+        out.push(patentFromItem(it));
       }
     }
     out.sort((a, b) => b.applicationDate.localeCompare(a.applicationDate));

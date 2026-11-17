@@ -224,7 +224,7 @@ const FoodConsortium = () => {
                 )}
                 {!loading && result && (org ? result.codes.length > 0 : Boolean(patentKeyword)) && items.length === 0 && (
                   <p className="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
-                    {patentKeyword ? `이 기관의 특허명에서 ‘${patentKeyword}’을(를) 찾지 못했습니다.` : "표시할 특허가 없습니다."}
+                    {patentKeyword ? `${org ? "이 기관" : "협의체 기관"}의 특허명에서 ‘${patentKeyword}’을(를) 찾지 못했습니다.` : "표시할 특허가 없습니다."}
                   </p>
                 )}
                 {items.length > 0 && (
