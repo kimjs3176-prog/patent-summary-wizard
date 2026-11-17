@@ -95,6 +95,7 @@ export interface ConsortiumPatent {
 
 export interface ConsortiumResult {
   org: string;
+  keyword?: string;
   codes: string[];
   total: number;
   page: number;

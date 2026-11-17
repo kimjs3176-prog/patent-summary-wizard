@@ -37,7 +37,9 @@ const FoodConsortium = () => {
   const favorites = useCardFavorites();
   const [params, setParams] = useSearchParams();
   const org = CONSORTIUM_ORGS.includes(params.get("org") ?? "") ? (params.get("org") as string) : "";
+  const patentKeyword = (params.get("kw") ?? "").trim();
   const [query, setQuery] = useState("");
+  const [patentQuery, setPatentQuery] = useState(patentKeyword);
   const [kind, setKind] = useState<"all" | ConsortiumKind>("all");
   const [result, setResult] = useState<ConsortiumResult | null>(null);
   const [items, setItems] = useState<ConsortiumPatent[]>([]);

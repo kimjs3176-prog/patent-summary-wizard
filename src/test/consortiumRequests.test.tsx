@@ -17,7 +17,7 @@ vi.mock("@/components/search/FavoriteToggle", () => ({
 const A = "한국식품연구원";
 const B = "한국생명공학연구원";
 type Reply = { data: unknown; error: Error | null };
-const pending: { org: string; page: number; resolve: (reply: Reply) => void }[] = [];
+const pending: { org: string; page: number; keyword?: string; resolve: (reply: Reply) => void }[] = [];
 const reply = (org: string, page = 1, hasMore = false): Reply => ({
   error: null,
   data: {

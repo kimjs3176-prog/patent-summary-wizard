@@ -40,10 +40,12 @@ async function writeCache(cache: CodeCache): Promise<void> {
   }
 }
 
-function searchUrl(key: string, applicant: string, page: number, rows: number): string {
+function searchUrl(key: string, applicant: string, page: number, rows: number, keyword = ""): string {
   const url = new URL(KIPRIS_PATENT_SEARCH_URL);
   url.searchParams.set("ServiceKey", key);
   url.searchParams.set("applicant", applicant);
+  // 협의체 검색도 전역 6개 기관 검색과 분리해, 선택 기관의 코드 안에서만 특허명을 찾는다.
+  if (keyword) url.searchParams.set("inventionTitle", keyword);
   url.searchParams.set("pageNo", String(page));
   url.searchParams.set("numOfRows", String(rows));
   url.searchParams.set("sortSpec", "AD");
