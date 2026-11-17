@@ -124,10 +124,10 @@ Deno.serve(async (req) => {
         await writeCache(cache);
       }
     }
-    if (!codes.length) return jsonResponse({ success: true, org: org.name, codes: [], total: 0, page, hasMore: false, items: [] });
+    if (!codes.length) return jsonResponse({ success: true, org: org.name, keyword, codes: [], total: 0, page, hasMore: false, items: [] });
 
     // 번호가 둘 이상이면(이름이 바뀐 기관) 번호마다 같은 쪽을 받아 합친다
-    const pages = await Promise.all(codes.map((c) => kiprisFetchText(searchUrl(key, c, page, PAGE_SIZE), { retries: 1 })));
+    const pages = await Promise.all(codes.map((c) => kiprisFetchText(searchUrl(key, c, page, PAGE_SIZE, keyword), { retries: 1 })));
     const seen = new Set<string>();
     let total = 0, hasMore = false;
     const out = [];

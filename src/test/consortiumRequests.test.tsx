@@ -39,6 +39,38 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+describe("협의체 기관별 키워드 검색", () => {
+  it("선택한 기관과 키워드를 함께 보내고 해당 특허를 표시한다", async () => {
+    select(A);
+    await finish(0, reply(A));
+    fireEvent.change(screen.getByRole("textbox", { name: "기관 특허 키워드" }), { target: { value: "블록체인" } });
+    fireEvent.click(screen.getByRole("button", { name: "특허 검색" }));
+    expect(pending[1]).toEqual(expect.objectContaining({ org: A, page: 1, keyword: "블록체인" }));
+    const found = reply(A);
+    (found.data as { items: unknown[] }).items = [{
+      applicationNumber: "1020190018667",
+      title: "블록체인을 이용한 의료정보관리 시스템 및 방법",
+      applicant: "충북대학교 산학협력단",
+      applicationDate: "2019.02.18",
+      status: "등록",
+    }];
+    await finish(1, found);
+    expect(screen.getByText("블록체인을 이용한 의료정보관리 시스템 및 방법")).toBeInTheDocument();
+  });
+
+  it("기관을 바꾸면 이전 검색어를 다음 기관 요청에 보내지 않는다", async () => {
+    select(A);
+    await finish(0, reply(A));
+    fireEvent.change(screen.getByRole("textbox", { name: "기관 특허 키워드" }), { target: { value: "블록체인" } });
+    fireEvent.click(screen.getByRole("button", { name: "특허 검색" }));
+    await finish(1, reply(A));
+    select(B);
+    expect(pending[2]).toEqual(expect.objectContaining({ org: B, page: 1 }));
+    expect(pending[2].keyword).toBeUndefined();
+    expect(screen.getByRole("textbox", { name: "기관 특허 키워드" })).toHaveValue("");
+  });
+});
+
 describe("협의체 기관 변경 중 요청 순서", () => {
   it("먼저 선택한 기관의 늦은 응답이 현재 기관의 특허·코드·관심특허를 덮어쓰지 않는다", async () => {
     select(A);

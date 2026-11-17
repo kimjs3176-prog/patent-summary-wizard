@@ -92,19 +92,37 @@ const FoodConsortium = () => {
   }, []);
 
   useEffect(() => {
+    setPatentQuery(patentKeyword);
     setResult(null);
     setItems([]);
     setError("");
     setLoading(false);
-    if (org) void load(org, 1);
-    // Invalidate first-page and pagination requests on selection change or unmount.
+    if (org) void load(org, 1, patentKeyword);
+    // 검색어·기관 변경과 unmount 때 첫 페이지와 페이지네이션 응답을 모두 무효화한다.
     return () => { requestIdRef.current += 1; };
-  }, [org, load]);
+  }, [org, patentKeyword, load]);
 
   const pick = (name: string) => {
+    setPatentQuery("");
     setParams(name === org ? {} : { org: name }, { replace: true });
     // 휴대폰에서는 기관 목록이 길어 결과가 화면 밖에 생기므로 결과 머리로 데려간다
     if (name !== org && window.innerWidth < 1024) requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  const searchPatents = (event?: React.FormEvent) => {
+    event?.preventDefault();
+    if (!org) return;
+    const keyword = patentQuery.trim();
+    if (keyword === patentKeyword) {
+      void load(org, 1, keyword);
+      return;
+    }
+    setParams(keyword ? { org, kw: keyword } : { org }, { replace: true });
+  };
+
+  const clearPatentSearch = () => {
+    setPatentQuery("");
+    if (patentKeyword) setParams({ org }, { replace: true });
   };
 
   return (
