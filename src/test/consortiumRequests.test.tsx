@@ -33,7 +33,7 @@ const finish = async (index: number, response: Reply) => {
 beforeEach(() => {
   pending.length = 0;
   vi.clearAllMocks();
-  invoke.mockImplementation((_fn, { body }: { body: { org: string; page: number } }) =>
+  invoke.mockImplementation((_fn, { body }: { body: { org: string; page: number; keyword?: string } }) =>
     new Promise<Reply>((resolve) => pending.push({ ...body, resolve })));
   render(<MemoryRouter initialEntries={["/consortium"]}><FoodConsortium /></MemoryRouter>);
 });

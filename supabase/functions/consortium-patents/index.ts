@@ -99,6 +99,13 @@ Deno.serve(async (req) => {
     const org = CONSORTIUM_ORGS.find((o) => o.name === body?.org);
     if (!org) return jsonResponse({ success: false, error: "협의체 기관 이름이 아닙니다." }, 400);
     const page = Math.min(50, Math.max(1, Number(body?.page) || 1));
+    if (body?.keyword != null && typeof body.keyword !== "string") {
+      return jsonResponse({ success: false, error: "검색어 형식이 올바르지 않습니다." }, 400);
+    }
+    const keyword = typeof body?.keyword === "string" ? body.keyword.trim() : "";
+    if (keyword.length > 100 || (keyword && !/^[\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-(),.?!~·]+$/u.test(keyword))) {
+      return jsonResponse({ success: false, error: "검색어는 100자 이내의 한글·영문·숫자로 입력해 주세요." }, 400);
+    }
 
     const key = await resolveKiprisKey();
     if (!key) throw new Error("KIPRIS_API_KEY is not configured");

@@ -69,12 +69,14 @@ const FoodConsortium = () => {
     return out;
   }, [query, kind]);
 
-  const load = useCallback(async (name: string, page: number) => {
+  const load = useCallback(async (name: string, page: number, keyword = "") => {
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError("");
     try {
-      const { data, error: err } = await supabase.functions.invoke("consortium-patents", { body: { org: name, page } });
+      const { data, error: err } = await supabase.functions.invoke("consortium-patents", {
+        body: { org: name, page, ...(keyword ? { keyword } : {}) },
+      });
       if (requestId !== requestIdRef.current) return;
       if (err || !data?.success) throw new Error(data?.error || "특허 목록을 불러오지 못했습니다.");
       const r = data as ConsortiumResult;
