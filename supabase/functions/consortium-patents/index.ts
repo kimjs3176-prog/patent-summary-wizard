@@ -156,6 +156,7 @@ Deno.serve(async (req) => {
 
     const key = await resolveKiprisKey();
     if (!key) throw new Error("KIPRIS_API_KEY is not configured");
+    if (!org) return jsonResponse(await searchAllOrgs(key, keyword, page));
 
     // owner 가 확인한 번호가 있으면 그것만 쓴다 (이름 검색·캐시를 거치지 않음)
     let codes = (org.codes ?? []).filter((c) => CODE_RE.test(c));
