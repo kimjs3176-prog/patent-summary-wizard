@@ -40,6 +40,26 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("협의체 기관별 키워드 검색", () => {
+  it("기관을 고르기 전에도 전체 협의체에서 검색하고 출원 기관을 보여준다", async () => {
+    fireEvent.change(screen.getByRole("textbox", { name: "기관 특허 키워드" }), { target: { value: "블록체인" } });
+    fireEvent.click(screen.getByRole("button", { name: "특허 검색" }));
+    expect(pending[0]).toEqual(expect.objectContaining({ page: 1, keyword: "블록체인" }));
+    expect(pending[0].org).toBeUndefined();
+    const found = reply("");
+    (found.data as { codes: string[]; items: unknown[] }).codes = [];
+    (found.data as { items: unknown[] }).items = [{
+      applicationNumber: "1020190018667",
+      title: "블록체인을 이용한 의료정보관리 시스템 및 방법",
+      applicant: "충북대학교 산학협력단",
+      applicationDate: "2019.02.18",
+      status: "등록",
+    }];
+    await finish(0, found);
+    expect(screen.getByText("협의체 전체 특허 검색")).toBeInTheDocument();
+    expect(screen.getByText("블록체인을 이용한 의료정보관리 시스템 및 방법")).toBeInTheDocument();
+    expect(screen.getByText("출원인 충북대학교 산학협력단")).toBeInTheDocument();
+  });
+
   it("선택한 기관과 키워드를 함께 보내고 해당 특허를 표시한다", async () => {
     select(A);
     await finish(0, reply(A));

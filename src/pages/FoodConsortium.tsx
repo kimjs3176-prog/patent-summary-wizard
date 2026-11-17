@@ -186,7 +186,22 @@ const FoodConsortium = () => {
           </section>
 
           <section ref={resultsRef} aria-live="polite" className="min-w-0 min-h-[12rem] scroll-mt-20">
-            {!org ? (
+            <form onSubmit={searchPatents} className="mb-4 flex gap-2" role="search" aria-label="협의체 특허 검색">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+                <Input
+                  value={patentQuery}
+                  onChange={(event) => setPatentQuery(event.target.value)}
+                  maxLength={100}
+                  placeholder={org ? "선택 기관 특허명 검색" : "51개 기관 특허명 검색 (예: 블록체인)"}
+                  aria-label="기관 특허 키워드"
+                  className="pl-9 h-10 bg-card"
+                />
+              </div>
+              <Button type="submit" aria-label="특허 검색" className="h-10 px-4">검색</Button>
+              {patentKeyword && <Button type="button" variant="outline" className="h-10 px-3" onClick={clearPatentSearch}>전체</Button>}
+            </form>
+            {!org && !patentKeyword ? (
               <div className="rounded-2xl border border-dashed border-border px-6 py-14 text-center">
                 <Handshake className="mx-auto w-8 h-8 text-primary/70" aria-hidden="true" />
                 <p className="mt-3 text-sm font-semibold">기관을 고르면 그 기관이 가진 특허가 여기에 나옵니다.</p>

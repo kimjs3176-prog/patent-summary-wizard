@@ -144,7 +144,6 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const org = CONSORTIUM_ORGS.find((o) => o.name === body?.org);
-    if (!org) return jsonResponse({ success: false, error: "협의체 기관 이름이 아닙니다." }, 400);
     const page = Math.min(50, Math.max(1, Number(body?.page) || 1));
     if (body?.keyword != null && typeof body.keyword !== "string") {
       return jsonResponse({ success: false, error: "검색어 형식이 올바르지 않습니다." }, 400);
