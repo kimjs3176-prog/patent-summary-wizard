@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: false, error: "검색어 형식이 올바르지 않습니다." }, 400);
     }
     const keyword = typeof body?.keyword === "string" ? body.keyword.trim() : "";
+    if (!org && !keyword) return jsonResponse({ success: false, error: "협의체 기관 이름이 아니거나 검색어가 없습니다." }, 400);
     if (keyword.length > 100 || (keyword && !/^[\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-(),.?!~·]+$/u.test(keyword))) {
       return jsonResponse({ success: false, error: "검색어는 100자 이내의 한글·영문·숫자로 입력해 주세요." }, 400);
     }

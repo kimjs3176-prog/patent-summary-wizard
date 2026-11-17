@@ -210,8 +210,9 @@ const FoodConsortium = () => {
             ) : (
               <>
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
-                  <h2 className="text-lg md:text-xl font-bold">{org}</h2>
-                  {result && result.codes.length > 0 && (
+                  <h2 className="text-lg md:text-xl font-bold">{org || "협의체 전체 특허 검색"}</h2>
+                  {!org && result && <span className="text-[12px] text-muted-foreground">‘{patentKeyword}’ 검색 결과 {items.length}건 표시</span>}
+                  {org && result && result.codes.length > 0 && (
                     <span className="text-[12px] text-muted-foreground">
                       특허고객번호 <span className="font-mono">{result.codes.join(", ")}</span> · 살아 있는 권리 {items.length}건 표시 (KIPRIS 전체 {result.total.toLocaleString()}건)
                     </span>
