@@ -83,5 +83,9 @@ export function orgNames(org: ConsortiumOrg): string[] {
 export function consortiumOrgForApplicant(value: string): string | undefined {
   const applicants = new Set(value.split(/[|,]/).map(normalizeApplicant).filter(Boolean));
   if (!applicants.size) return undefined;
-  return CONSORTIUM_ORGS.find((org) => orgNames(org).some((name) => applicants.has(normalizeApplicant(name))))?.name;
+  for (const applicant of applicants) {
+    const org = CONSORTIUM_ORGS.find((candidate) => orgNames(candidate).some((name) => normalizeApplicant(name) === applicant));
+    if (org) return org.name;
+  }
+  return undefined;
 }
