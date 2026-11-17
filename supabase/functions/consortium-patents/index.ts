@@ -88,6 +88,53 @@ async function resolveCodes(key: string, names: string[]): Promise<string[]> {
 
 const fmtDate = (v: string) => (/^\d{8}$/.test(v) ? `${v.slice(0, 4)}.${v.slice(4, 6)}.${v.slice(6, 8)}` : v);
 
+function patentFromItem(it: string) {
+  return {
+    applicationNumber: xmlTag(it, "applicationNumber"),
+    registrationNumber: xmlTag(it, "registerNumber") || undefined,
+    title: xmlTag(it, "inventionTitle"),
+    applicationDate: fmtDate(xmlTag(it, "applicationDate")),
+    registrationDate: fmtDate(xmlTag(it, "registerDate")) || undefined,
+    status: xmlTag(it, "registerStatus"),
+    applicant: xmlTag(it, "applicantName") || xmlTag(it, "applicant"),
+    ipc: xmlTag(it, "ipcNumber").split("|")[0]?.trim() || undefined,
+    abstract: xmlTag(it, "astrtCont").slice(0, 220),
+  };
+}
+
+/** 기관 선택 전 검색: 넓게 찾은 특허명 결과에서 51개 협의체 출원인만 정확히 남긴다. */
+async function searchAllOrgs(key: string, keyword: string, startPage: number) {
+  const ROWS = 50;
+  const out: ReturnType<typeof patentFromItem>[] = [];
+  const seen = new Set<string>();
+  let upstreamTotal = 0;
+  let lastPage = startPage;
+  for (let page = startPage; page <= Math.min(50, startPage + 3); page++) {
+    lastPage = page;
+    const xml = await kiprisFetchText(searchUrl(key, "", page, ROWS, keyword), { retries: 1 });
+    upstreamTotal = Math.max(upstreamTotal, Number(xmlTag(xml, "totalCount")) || 0);
+    for (const it of items(xml)) {
+      const patent = patentFromItem(it);
+      if (!patent.applicationNumber || seen.has(patent.applicationNumber) || EXCLUDED_STATUS.test(patent.status)) continue;
+      if (!consortiumOrgForApplicant(patent.applicant)) continue;
+      seen.add(patent.applicationNumber);
+      out.push(patent);
+    }
+    if (out.length >= PAGE_SIZE || page * ROWS >= upstreamTotal) break;
+  }
+  out.sort((a, b) => b.applicationDate.localeCompare(a.applicationDate));
+  return {
+    success: true,
+    org: "",
+    keyword,
+    codes: [],
+    total: out.length,
+    page: lastPage,
+    hasMore: lastPage * ROWS < upstreamTotal,
+    items: out,
+  };
+}
+
 Deno.serve(async (req) => {
   const pre = handleCorsPreflight(req);
   if (pre) return pre;
