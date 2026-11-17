@@ -135,7 +135,7 @@ const FoodConsortium = () => {
               식품기술이전 협의체
             </h1>
             <p className="mt-2 text-[13px] md:text-sm text-muted-foreground leading-relaxed max-w-2xl">
-              협의체 {CONSORTIUM_ORGS.length}개 기관이 가진 특허를 기관별로 봅니다. 기관마다 특허고객번호로 찾아, 이름이 비슷한 다른 기관의 특허는 섞이지 않습니다.
+              협의체 {CONSORTIUM_ORGS.length}개 기관의 특허를 함께 검색하거나 기관별로 봅니다. 기관별 목록은 특허고객번호로 찾아, 이름이 비슷한 다른 기관의 특허는 섞이지 않습니다.
             </p>
           </header>
 

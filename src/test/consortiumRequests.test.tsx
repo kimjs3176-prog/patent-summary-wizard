@@ -92,6 +92,18 @@ describe("협의체 기관별 키워드 검색", () => {
 });
 
 describe("협의체 기관 변경 중 요청 순서", () => {
+  it("전체 검색의 늦은 응답이 그 사이 선택한 기관의 목록을 덮어쓰지 않는다", async () => {
+    fireEvent.change(screen.getByRole("textbox", { name: "기관 특허 키워드" }), { target: { value: "블록체인" } });
+    fireEvent.click(screen.getByRole("button", { name: "특허 검색" }));
+    select(A);
+    await finish(1, reply(A));
+    const global = reply("");
+    (global.data as { items: unknown[] }).items = [{ applicationNumber: "1020190018667", title: "전체 검색의 이전 특허", applicant: "충북대학교 산학협력단", applicationDate: "2019.02.18", status: "등록" }];
+    await finish(0, global);
+    expect(screen.queryByText("전체 검색의 이전 특허")).toBeNull();
+    expect(screen.getByText(`${A} 특허 1`)).toBeInTheDocument();
+  });
+
   it("먼저 선택한 기관의 늦은 응답이 현재 기관의 특허·코드·관심특허를 덮어쓰지 않는다", async () => {
     select(A);
     select(B);
