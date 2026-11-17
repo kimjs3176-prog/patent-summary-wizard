@@ -111,18 +111,18 @@ const FoodConsortium = () => {
 
   const searchPatents = (event?: FormEvent) => {
     event?.preventDefault();
-    if (!org) return;
     const keyword = patentQuery.trim();
+    if (!keyword && !org) return;
     if (keyword === patentKeyword) {
       void load(org, 1, keyword);
       return;
     }
-    setParams(keyword ? { org, kw: keyword } : { org }, { replace: true });
+    setParams(keyword ? { ...(org ? { org } : {}), kw: keyword } : (org ? { org } : {}), { replace: true });
   };
 
   const clearPatentSearch = () => {
     setPatentQuery("");
-    if (patentKeyword) setParams({ org }, { replace: true });
+    if (patentKeyword) setParams(org ? { org } : {}, { replace: true });
   };
 
   return (
