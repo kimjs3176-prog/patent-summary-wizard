@@ -40,10 +40,12 @@ async function writeCache(cache: CodeCache): Promise<void> {
   }
 }
 
-function searchUrl(key: string, applicant: string, page: number, rows: number): string {
+function searchUrl(key: string, applicant: string, page: number, rows: number, keyword = ""): string {
   const url = new URL(KIPRIS_PATENT_SEARCH_URL);
   url.searchParams.set("ServiceKey", key);
   url.searchParams.set("applicant", applicant);
+  // 협의체 검색도 전역 6개 기관 검색과 분리해, 선택 기관의 코드 안에서만 특허명을 찾는다.
+  if (keyword) url.searchParams.set("inventionTitle", keyword);
   url.searchParams.set("pageNo", String(page));
   url.searchParams.set("numOfRows", String(rows));
   url.searchParams.set("sortSpec", "AD");
@@ -97,6 +99,13 @@ Deno.serve(async (req) => {
     const org = CONSORTIUM_ORGS.find((o) => o.name === body?.org);
     if (!org) return jsonResponse({ success: false, error: "협의체 기관 이름이 아닙니다." }, 400);
     const page = Math.min(50, Math.max(1, Number(body?.page) || 1));
+    if (body?.keyword != null && typeof body.keyword !== "string") {
+      return jsonResponse({ success: false, error: "검색어 형식이 올바르지 않습니다." }, 400);
+    }
+    const keyword = typeof body?.keyword === "string" ? body.keyword.trim() : "";
+    if (keyword.length > 100 || (keyword && !/^[\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-(),.?!~·]+$/u.test(keyword))) {
+      return jsonResponse({ success: false, error: "검색어는 100자 이내의 한글·영문·숫자로 입력해 주세요." }, 400);
+    }
 
     const key = await resolveKiprisKey();
     if (!key) throw new Error("KIPRIS_API_KEY is not configured");
@@ -115,10 +124,10 @@ Deno.serve(async (req) => {
         await writeCache(cache);
       }
     }
-    if (!codes.length) return jsonResponse({ success: true, org: org.name, codes: [], total: 0, page, hasMore: false, items: [] });
+    if (!codes.length) return jsonResponse({ success: true, org: org.name, keyword, codes: [], total: 0, page, hasMore: false, items: [] });
 
     // 번호가 둘 이상이면(이름이 바뀐 기관) 번호마다 같은 쪽을 받아 합친다
-    const pages = await Promise.all(codes.map((c) => kiprisFetchText(searchUrl(key, c, page, PAGE_SIZE), { retries: 1 })));
+    const pages = await Promise.all(codes.map((c) => kiprisFetchText(searchUrl(key, c, page, PAGE_SIZE, keyword), { retries: 1 })));
     const seen = new Set<string>();
     let total = 0, hasMore = false;
     const out = [];
@@ -145,7 +154,7 @@ Deno.serve(async (req) => {
       }
     }
     out.sort((a, b) => b.applicationDate.localeCompare(a.applicationDate));
-    return jsonResponse({ success: true, org: org.name, codes, total, page, hasMore, items: out });
+    return jsonResponse({ success: true, org: org.name, keyword, codes, total, page, hasMore, items: out });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "알 수 없는 오류";
     console.error("[consortium-patents]", msg);

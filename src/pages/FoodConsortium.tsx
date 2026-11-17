@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Handshake, Loader2, Search } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -37,7 +37,9 @@ const FoodConsortium = () => {
   const favorites = useCardFavorites();
   const [params, setParams] = useSearchParams();
   const org = CONSORTIUM_ORGS.includes(params.get("org") ?? "") ? (params.get("org") as string) : "";
+  const patentKeyword = (params.get("kw") ?? "").trim();
   const [query, setQuery] = useState("");
+  const [patentQuery, setPatentQuery] = useState(patentKeyword);
   const [kind, setKind] = useState<"all" | ConsortiumKind>("all");
   const [result, setResult] = useState<ConsortiumResult | null>(null);
   const [items, setItems] = useState<ConsortiumPatent[]>([]);
@@ -67,12 +69,14 @@ const FoodConsortium = () => {
     return out;
   }, [query, kind]);
 
-  const load = useCallback(async (name: string, page: number) => {
+  const load = useCallback(async (name: string, page: number, keyword = "") => {
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError("");
     try {
-      const { data, error: err } = await supabase.functions.invoke("consortium-patents", { body: { org: name, page } });
+      const { data, error: err } = await supabase.functions.invoke("consortium-patents", {
+        body: { org: name, page, ...(keyword ? { keyword } : {}) },
+      });
       if (requestId !== requestIdRef.current) return;
       if (err || !data?.success) throw new Error(data?.error || "특허 목록을 불러오지 못했습니다.");
       const r = data as ConsortiumResult;
@@ -88,19 +92,37 @@ const FoodConsortium = () => {
   }, []);
 
   useEffect(() => {
+    setPatentQuery(patentKeyword);
     setResult(null);
     setItems([]);
     setError("");
     setLoading(false);
-    if (org) void load(org, 1);
-    // Invalidate first-page and pagination requests on selection change or unmount.
+    if (org) void load(org, 1, patentKeyword);
+    // 검색어·기관 변경과 unmount 때 첫 페이지와 페이지네이션 응답을 모두 무효화한다.
     return () => { requestIdRef.current += 1; };
-  }, [org, load]);
+  }, [org, patentKeyword, load]);
 
   const pick = (name: string) => {
+    setPatentQuery("");
     setParams(name === org ? {} : { org: name }, { replace: true });
     // 휴대폰에서는 기관 목록이 길어 결과가 화면 밖에 생기므로 결과 머리로 데려간다
     if (name !== org && window.innerWidth < 1024) requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  const searchPatents = (event?: FormEvent) => {
+    event?.preventDefault();
+    if (!org) return;
+    const keyword = patentQuery.trim();
+    if (keyword === patentKeyword) {
+      void load(org, 1, keyword);
+      return;
+    }
+    setParams(keyword ? { org, kw: keyword } : { org }, { replace: true });
+  };
+
+  const clearPatentSearch = () => {
+    setPatentQuery("");
+    if (patentKeyword) setParams({ org }, { replace: true });
   };
 
   return (
@@ -180,9 +202,29 @@ const FoodConsortium = () => {
                     </span>
                   )}
                 </div>
+                <form onSubmit={searchPatents} className="mb-4 flex gap-2" role="search" aria-label="선택 기관 특허 검색">
+                  <div className="relative min-w-0 flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+                    <Input
+                      value={patentQuery}
+                      onChange={(event) => setPatentQuery(event.target.value)}
+                      maxLength={100}
+                      placeholder="특허명 키워드 (예: 블록체인)"
+                      aria-label="기관 특허 키워드"
+                      className="pl-9 h-10 bg-card"
+                    />
+                  </div>
+                  <Button type="submit" aria-label="특허 검색" className="h-10 px-4">검색</Button>
+                  {patentKeyword && <Button type="button" variant="outline" className="h-10 px-3" onClick={clearPatentSearch}>전체</Button>}
+                </form>
                 {error && <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}
                 {result && !result.codes.length && !loading && (
                   <p className="py-10 text-center text-sm text-muted-foreground">KIPRIS에서 이 이름으로 출원한 특허를 찾지 못했습니다.</p>
+                )}
+                {!loading && result && result.codes.length > 0 && items.length === 0 && (
+                  <p className="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
+                    {patentKeyword ? `이 기관의 특허명에서 ‘${patentKeyword}’을(를) 찾지 못했습니다.` : "표시할 특허가 없습니다."}
+                  </p>
                 )}
                 {items.length > 0 && (
                   <ul className="rounded-2xl border border-border/50 bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -234,12 +276,13 @@ const FoodConsortium = () => {
                 )}
                 {loading && (
                   <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> <span className="text-sm">특허고객번호로 특허를 찾는 중…</span>
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                    <span className="text-sm">{patentKeyword ? "선택 기관에서 키워드로 찾는 중…" : "특허고객번호로 특허를 찾는 중…"}</span>
                   </div>
                 )}
                 {!loading && result?.hasMore && (
                   <div className="mt-5 flex justify-center">
-                    <Button variant="outline" size="sm" onClick={() => void load(org, (result?.page ?? 1) + 1)}>더 보기</Button>
+                    <Button variant="outline" size="sm" onClick={() => void load(org, (result?.page ?? 1) + 1, patentKeyword)}>더 보기</Button>
                   </div>
                 )}
               </>
