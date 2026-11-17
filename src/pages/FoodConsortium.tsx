@@ -249,7 +249,7 @@ const FoodConsortium = () => {
                               {r.registrationNumber ? ` · 등록 ${r.registrationNumber}` : ""}
                               {r.ipc ? ` · ${r.ipc}` : ""}
                             </span>
-                            {r.applicant && r.applicant.replace(/\s/g, "") !== org.replace(/\s/g, "") && (
+                            {r.applicant && (!org || r.applicant.replace(/\s/g, "") !== org.replace(/\s/g, "")) && (
                               <span className="block mt-0.5 text-[11px] text-muted-foreground">출원인 {r.applicant}</span>
                             )}
                           </span>
@@ -278,7 +278,7 @@ const FoodConsortium = () => {
                 {loading && (
                   <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                    <span className="text-sm">{patentKeyword ? "선택 기관에서 키워드로 찾는 중…" : "특허고객번호로 특허를 찾는 중…"}</span>
+                    <span className="text-sm">{patentKeyword ? `${org ? "선택 기관" : "협의체 전체"}에서 키워드로 찾는 중…` : "특허고객번호로 특허를 찾는 중…"}</span>
                   </div>
                 )}
                 {!loading && result?.hasMore && (
