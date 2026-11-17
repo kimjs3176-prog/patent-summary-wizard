@@ -75,7 +75,7 @@ const FoodConsortium = () => {
     setError("");
     try {
       const { data, error: err } = await supabase.functions.invoke("consortium-patents", {
-        body: { org: name, page, ...(keyword ? { keyword } : {}) },
+        body: { ...(name ? { org: name } : {}), page, ...(keyword ? { keyword } : {}) },
       });
       if (requestId !== requestIdRef.current) return;
       if (err || !data?.success) throw new Error(data?.error || "특허 목록을 불러오지 못했습니다.");
@@ -97,7 +97,7 @@ const FoodConsortium = () => {
     setItems([]);
     setError("");
     setLoading(false);
-    if (org) void load(org, 1, patentKeyword);
+    if (org || patentKeyword) void load(org, 1, patentKeyword);
     // 검색어·기관 변경과 unmount 때 첫 페이지와 페이지네이션 응답을 모두 무효화한다.
     return () => { requestIdRef.current += 1; };
   }, [org, patentKeyword, load]);
@@ -111,18 +111,18 @@ const FoodConsortium = () => {
 
   const searchPatents = (event?: FormEvent) => {
     event?.preventDefault();
-    if (!org) return;
     const keyword = patentQuery.trim();
+    if (!keyword && !org) return;
     if (keyword === patentKeyword) {
       void load(org, 1, keyword);
       return;
     }
-    setParams(keyword ? { org, kw: keyword } : { org }, { replace: true });
+    setParams(keyword ? { ...(org ? { org } : {}), kw: keyword } : (org ? { org } : {}), { replace: true });
   };
 
   const clearPatentSearch = () => {
     setPatentQuery("");
-    if (patentKeyword) setParams({ org }, { replace: true });
+    if (patentKeyword) setParams(org ? { org } : {}, { replace: true });
   };
 
   return (
@@ -135,7 +135,7 @@ const FoodConsortium = () => {
               식품기술이전 협의체
             </h1>
             <p className="mt-2 text-[13px] md:text-sm text-muted-foreground leading-relaxed max-w-2xl">
-              협의체 {CONSORTIUM_ORGS.length}개 기관이 가진 특허를 기관별로 봅니다. 기관마다 특허고객번호로 찾아, 이름이 비슷한 다른 기관의 특허는 섞이지 않습니다.
+              협의체 {CONSORTIUM_ORGS.length}개 기관의 특허를 함께 검색하거나 기관별로 봅니다. 기관별 목록은 특허고객번호로 찾아, 이름이 비슷한 다른 기관의 특허는 섞이지 않습니다.
             </p>
           </header>
 
@@ -186,7 +186,22 @@ const FoodConsortium = () => {
           </section>
 
           <section ref={resultsRef} aria-live="polite" className="min-w-0 min-h-[12rem] scroll-mt-20">
-            {!org ? (
+            <form onSubmit={searchPatents} className="mb-4 flex gap-2" role="search" aria-label="협의체 특허 검색">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+                <Input
+                  value={patentQuery}
+                  onChange={(event) => setPatentQuery(event.target.value)}
+                  maxLength={100}
+                  placeholder={org ? "선택 기관 특허명 검색" : "51개 기관 특허명 검색 (예: 블록체인)"}
+                  aria-label="기관 특허 키워드"
+                  className="pl-9 h-10 bg-card"
+                />
+              </div>
+              <Button type="submit" aria-label="특허 검색" className="h-10 px-4">검색</Button>
+              {patentKeyword && <Button type="button" variant="outline" className="h-10 px-3" onClick={clearPatentSearch}>전체</Button>}
+            </form>
+            {!org && !patentKeyword ? (
               <div className="rounded-2xl border border-dashed border-border px-6 py-14 text-center">
                 <Handshake className="mx-auto w-8 h-8 text-primary/70" aria-hidden="true" />
                 <p className="mt-3 text-sm font-semibold">기관을 고르면 그 기관이 가진 특허가 여기에 나옵니다.</p>
@@ -195,35 +210,21 @@ const FoodConsortium = () => {
             ) : (
               <>
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
-                  <h2 className="text-lg md:text-xl font-bold">{org}</h2>
-                  {result && result.codes.length > 0 && (
+                  <h2 className="text-lg md:text-xl font-bold">{org || "협의체 전체 특허 검색"}</h2>
+                  {!org && result && <span className="text-[12px] text-muted-foreground">‘{patentKeyword}’ 검색 결과 {items.length}건 표시</span>}
+                  {org && result && result.codes.length > 0 && (
                     <span className="text-[12px] text-muted-foreground">
                       특허고객번호 <span className="font-mono">{result.codes.join(", ")}</span> · 살아 있는 권리 {items.length}건 표시 (KIPRIS 전체 {result.total.toLocaleString()}건)
                     </span>
                   )}
                 </div>
-                <form onSubmit={searchPatents} className="mb-4 flex gap-2" role="search" aria-label="선택 기관 특허 검색">
-                  <div className="relative min-w-0 flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
-                    <Input
-                      value={patentQuery}
-                      onChange={(event) => setPatentQuery(event.target.value)}
-                      maxLength={100}
-                      placeholder="특허명 키워드 (예: 블록체인)"
-                      aria-label="기관 특허 키워드"
-                      className="pl-9 h-10 bg-card"
-                    />
-                  </div>
-                  <Button type="submit" aria-label="특허 검색" className="h-10 px-4">검색</Button>
-                  {patentKeyword && <Button type="button" variant="outline" className="h-10 px-3" onClick={clearPatentSearch}>전체</Button>}
-                </form>
                 {error && <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}
-                {result && !result.codes.length && !loading && (
+                {org && result && !result.codes.length && !loading && (
                   <p className="py-10 text-center text-sm text-muted-foreground">KIPRIS에서 이 이름으로 출원한 특허를 찾지 못했습니다.</p>
                 )}
-                {!loading && result && result.codes.length > 0 && items.length === 0 && (
+                {!loading && result && (org ? result.codes.length > 0 : Boolean(patentKeyword)) && items.length === 0 && (
                   <p className="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
-                    {patentKeyword ? `이 기관의 특허명에서 ‘${patentKeyword}’을(를) 찾지 못했습니다.` : "표시할 특허가 없습니다."}
+                    {patentKeyword ? `${org ? "이 기관" : "협의체 기관"}의 특허명에서 ‘${patentKeyword}’을(를) 찾지 못했습니다.` : "표시할 특허가 없습니다."}
                   </p>
                 )}
                 {items.length > 0 && (
@@ -248,7 +249,7 @@ const FoodConsortium = () => {
                               {r.registrationNumber ? ` · 등록 ${r.registrationNumber}` : ""}
                               {r.ipc ? ` · ${r.ipc}` : ""}
                             </span>
-                            {r.applicant && r.applicant.replace(/\s/g, "") !== org.replace(/\s/g, "") && (
+                            {r.applicant && (!org || r.applicant.replace(/\s/g, "") !== org.replace(/\s/g, "")) && (
                               <span className="block mt-0.5 text-[11px] text-muted-foreground">출원인 {r.applicant}</span>
                             )}
                           </span>
@@ -277,7 +278,7 @@ const FoodConsortium = () => {
                 {loading && (
                   <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                    <span className="text-sm">{patentKeyword ? "선택 기관에서 키워드로 찾는 중…" : "특허고객번호로 특허를 찾는 중…"}</span>
+                    <span className="text-sm">{patentKeyword ? `${org ? "선택 기관" : "협의체 전체"}에서 키워드로 찾는 중…` : "특허고객번호로 특허를 찾는 중…"}</span>
                   </div>
                 )}
                 {!loading && result?.hasMore && (

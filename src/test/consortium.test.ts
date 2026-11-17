@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CONSORTIUM_ORGS, consortiumKind } from "@/lib/consortium";
-import { CONSORTIUM_ORGS as SERVER_ORGS, normalizeApplicant } from "../../supabase/functions/_shared/consortiumOrgs";
+import { CONSORTIUM_ORGS as SERVER_ORGS, consortiumOrgForApplicant, normalizeApplicant } from "../../supabase/functions/_shared/consortiumOrgs";
 
 describe("식품기술이전 협의체 기관", () => {
   it("화면 목록과 서버 목록이 같은 이름·순서다", () => {
@@ -14,6 +14,13 @@ describe("식품기술이전 협의체 기관", () => {
     expect(normalizeApplicant("건국대학교글로컬 산학협력단")).toBe(normalizeApplicant("건국대학교 글로컬산학협력단"));
     expect(normalizeApplicant("건국대학교 산학협력단")).not.toBe(normalizeApplicant("건국대학교 글로컬산학협력단"));
     expect(normalizeApplicant("연세대학교기술지주 주식회사")).not.toBe(normalizeApplicant("연세대학교 미래캠퍼스 산학협력단"));
+  });
+
+  it("전체 검색은 정확한 협의체 출원인만 인정하고 비슷한 기관은 제외한다", () => {
+    expect(consortiumOrgForApplicant("충북대학교 산학협력단")).toBe("충북대학교 산학협력단");
+    expect(consortiumOrgForApplicant("한국식품연구원|충북대학교 산학협력단")).toBe("한국식품연구원");
+    expect(consortiumOrgForApplicant("건국대학교 산학협력단")).not.toBe("건국대학교 글로컬산학협력단");
+    expect(consortiumOrgForApplicant("충북대학교병원")).toBeUndefined();
   });
 
   it("owner 가 확인한 특허고객번호는 12자리로 그대로 둔다", () => {

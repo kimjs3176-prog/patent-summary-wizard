@@ -2,7 +2,7 @@ import { handleCorsPreflight, jsonResponse } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { KIPRIS_PATENT_DETAIL_URL, KIPRIS_PATENT_SEARCH_URL, kiprisFetchText, resolveKiprisKey, xmlTag, xmlTagAll } from "../_shared/kipris.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { CONSORTIUM_ORGS, normalizeApplicant, orgNames } from "../_shared/consortiumOrgs.ts";
+import { CONSORTIUM_ORGS, consortiumOrgForApplicant, normalizeApplicant, orgNames } from "../_shared/consortiumOrgs.ts";
 
 /**
  * 식품기술이전 협의체: 기관 하나의 특허 목록.
@@ -43,7 +43,7 @@ async function writeCache(cache: CodeCache): Promise<void> {
 function searchUrl(key: string, applicant: string, page: number, rows: number, keyword = ""): string {
   const url = new URL(KIPRIS_PATENT_SEARCH_URL);
   url.searchParams.set("ServiceKey", key);
-  url.searchParams.set("applicant", applicant);
+  if (applicant) url.searchParams.set("applicant", applicant);
   // 협의체 검색도 전역 6개 기관 검색과 분리해, 선택 기관의 코드 안에서만 특허명을 찾는다.
   if (keyword) url.searchParams.set("inventionTitle", keyword);
   url.searchParams.set("pageNo", String(page));
@@ -88,6 +88,53 @@ async function resolveCodes(key: string, names: string[]): Promise<string[]> {
 
 const fmtDate = (v: string) => (/^\d{8}$/.test(v) ? `${v.slice(0, 4)}.${v.slice(4, 6)}.${v.slice(6, 8)}` : v);
 
+function patentFromItem(it: string) {
+  return {
+    applicationNumber: xmlTag(it, "applicationNumber"),
+    registrationNumber: xmlTag(it, "registerNumber") || undefined,
+    title: xmlTag(it, "inventionTitle"),
+    applicationDate: fmtDate(xmlTag(it, "applicationDate")),
+    registrationDate: fmtDate(xmlTag(it, "registerDate")) || undefined,
+    status: xmlTag(it, "registerStatus"),
+    applicant: xmlTag(it, "applicantName") || xmlTag(it, "applicant"),
+    ipc: xmlTag(it, "ipcNumber").split("|")[0]?.trim() || undefined,
+    abstract: xmlTag(it, "astrtCont").slice(0, 220),
+  };
+}
+
+/** 기관 선택 전 검색: 넓게 찾은 특허명 결과에서 51개 협의체 출원인만 정확히 남긴다. */
+async function searchAllOrgs(key: string, keyword: string, startPage: number) {
+  const ROWS = 50;
+  const out: ReturnType<typeof patentFromItem>[] = [];
+  const seen = new Set<string>();
+  let upstreamTotal = 0;
+  let lastPage = startPage;
+  for (let page = startPage; page <= Math.min(50, startPage + 3); page++) {
+    lastPage = page;
+    const xml = await kiprisFetchText(searchUrl(key, "", page, ROWS, keyword), { retries: 1 });
+    upstreamTotal = Math.max(upstreamTotal, Number(xmlTag(xml, "totalCount")) || 0);
+    for (const it of items(xml)) {
+      const patent = patentFromItem(it);
+      if (!patent.applicationNumber || seen.has(patent.applicationNumber) || EXCLUDED_STATUS.test(patent.status)) continue;
+      if (!consortiumOrgForApplicant(patent.applicant)) continue;
+      seen.add(patent.applicationNumber);
+      out.push(patent);
+    }
+    if (out.length >= PAGE_SIZE || page * ROWS >= upstreamTotal) break;
+  }
+  out.sort((a, b) => b.applicationDate.localeCompare(a.applicationDate));
+  return {
+    success: true,
+    org: "",
+    keyword,
+    codes: [],
+    total: out.length,
+    page: lastPage,
+    hasMore: lastPage * ROWS < upstreamTotal,
+    items: out,
+  };
+}
+
 Deno.serve(async (req) => {
   const pre = handleCorsPreflight(req);
   if (pre) return pre;
@@ -97,18 +144,19 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const org = CONSORTIUM_ORGS.find((o) => o.name === body?.org);
-    if (!org) return jsonResponse({ success: false, error: "협의체 기관 이름이 아닙니다." }, 400);
     const page = Math.min(50, Math.max(1, Number(body?.page) || 1));
     if (body?.keyword != null && typeof body.keyword !== "string") {
       return jsonResponse({ success: false, error: "검색어 형식이 올바르지 않습니다." }, 400);
     }
     const keyword = typeof body?.keyword === "string" ? body.keyword.trim() : "";
+    if (!org && !keyword) return jsonResponse({ success: false, error: "협의체 기관 이름이 아니거나 검색어가 없습니다." }, 400);
     if (keyword.length > 100 || (keyword && !/^[\w\s가-힣ㄱ-ㅎㅏ-ㅣ\-(),.?!~·]+$/u.test(keyword))) {
       return jsonResponse({ success: false, error: "검색어는 100자 이내의 한글·영문·숫자로 입력해 주세요." }, 400);
     }
 
     const key = await resolveKiprisKey();
     if (!key) throw new Error("KIPRIS_API_KEY is not configured");
+    if (!org) return jsonResponse(await searchAllOrgs(key, keyword, page));
 
     // owner 가 확인한 번호가 있으면 그것만 쓴다 (이름 검색·캐시를 거치지 않음)
     let codes = (org.codes ?? []).filter((c) => CODE_RE.test(c));
@@ -140,17 +188,7 @@ Deno.serve(async (req) => {
         const status = xmlTag(it, "registerStatus");
         if (!applicationNumber || seen.has(applicationNumber) || EXCLUDED_STATUS.test(status)) continue;
         seen.add(applicationNumber);
-        out.push({
-          applicationNumber,
-          registrationNumber: xmlTag(it, "registerNumber") || undefined,
-          title: xmlTag(it, "inventionTitle"),
-          applicationDate: fmtDate(xmlTag(it, "applicationDate")),
-          registrationDate: fmtDate(xmlTag(it, "registerDate")) || undefined,
-          status,
-          applicant: xmlTag(it, "applicantName"),
-          ipc: xmlTag(it, "ipcNumber").split("|")[0]?.trim() || undefined,
-          abstract: xmlTag(it, "astrtCont").slice(0, 220),
-        });
+        out.push(patentFromItem(it));
       }
     }
     out.sort((a, b) => b.applicationDate.localeCompare(a.applicationDate));
