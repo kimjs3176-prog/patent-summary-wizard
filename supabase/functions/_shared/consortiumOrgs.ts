@@ -78,3 +78,10 @@ export function normalizeApplicant(name: string): string {
 export function orgNames(org: ConsortiumOrg): string[] {
   return [org.name, ...(org.aliases ?? [])];
 }
+
+/** 전체 협의체 검색에서 공동 출원인 중 정확히 일치하는 협의체 기관 하나를 찾는다. */
+export function consortiumOrgForApplicant(value: string): string | undefined {
+  const applicants = new Set(value.split(/[|,]/).map(normalizeApplicant).filter(Boolean));
+  if (!applicants.size) return undefined;
+  return CONSORTIUM_ORGS.find((org) => orgNames(org).some((name) => applicants.has(normalizeApplicant(name))))?.name;
+}
