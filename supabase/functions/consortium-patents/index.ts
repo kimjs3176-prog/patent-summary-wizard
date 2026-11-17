@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
       }
     }
     out.sort((a, b) => b.applicationDate.localeCompare(a.applicationDate));
-    return jsonResponse({ success: true, org: org.name, codes, total, page, hasMore, items: out });
+    return jsonResponse({ success: true, org: org.name, keyword, codes, total, page, hasMore, items: out });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "알 수 없는 오류";
     console.error("[consortium-patents]", msg);

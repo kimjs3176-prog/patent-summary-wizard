@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Handshake, Loader2, Search } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -109,7 +109,7 @@ const FoodConsortium = () => {
     if (name !== org && window.innerWidth < 1024) requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
-  const searchPatents = (event?: React.FormEvent) => {
+  const searchPatents = (event?: FormEvent) => {
     event?.preventDefault();
     if (!org) return;
     const keyword = patentQuery.trim();
