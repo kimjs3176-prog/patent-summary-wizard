@@ -97,7 +97,7 @@ const FoodConsortium = () => {
     setItems([]);
     setError("");
     setLoading(false);
-    if (org) void load(org, 1, patentKeyword);
+    if (org || patentKeyword) void load(org, 1, patentKeyword);
     // 검색어·기관 변경과 unmount 때 첫 페이지와 페이지네이션 응답을 모두 무효화한다.
     return () => { requestIdRef.current += 1; };
   }, [org, patentKeyword, load]);

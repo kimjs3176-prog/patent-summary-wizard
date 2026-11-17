@@ -2,7 +2,7 @@ import { handleCorsPreflight, jsonResponse } from "../_shared/cors.ts";
 import { enforceRateLimit } from "../_shared/rateLimit.ts";
 import { KIPRIS_PATENT_DETAIL_URL, KIPRIS_PATENT_SEARCH_URL, kiprisFetchText, resolveKiprisKey, xmlTag, xmlTagAll } from "../_shared/kipris.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
-import { CONSORTIUM_ORGS, normalizeApplicant, orgNames } from "../_shared/consortiumOrgs.ts";
+import { CONSORTIUM_ORGS, consortiumOrgForApplicant, normalizeApplicant, orgNames } from "../_shared/consortiumOrgs.ts";
 
 /**
  * 식품기술이전 협의체: 기관 하나의 특허 목록.

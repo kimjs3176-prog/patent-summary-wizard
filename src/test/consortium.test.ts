@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CONSORTIUM_ORGS, consortiumKind } from "@/lib/consortium";
-import { CONSORTIUM_ORGS as SERVER_ORGS, normalizeApplicant } from "../../supabase/functions/_shared/consortiumOrgs";
+import { CONSORTIUM_ORGS as SERVER_ORGS, consortiumOrgForApplicant, normalizeApplicant } from "../../supabase/functions/_shared/consortiumOrgs";
 
 describe("식품기술이전 협의체 기관", () => {
   it("화면 목록과 서버 목록이 같은 이름·순서다", () => {
