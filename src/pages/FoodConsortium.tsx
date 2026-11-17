@@ -202,9 +202,29 @@ const FoodConsortium = () => {
                     </span>
                   )}
                 </div>
+                <form onSubmit={searchPatents} className="mb-4 flex gap-2" role="search" aria-label="선택 기관 특허 검색">
+                  <div className="relative min-w-0 flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+                    <Input
+                      value={patentQuery}
+                      onChange={(event) => setPatentQuery(event.target.value)}
+                      maxLength={100}
+                      placeholder="특허명 키워드 (예: 블록체인)"
+                      aria-label="기관 특허 키워드"
+                      className="pl-9 h-10 bg-card"
+                    />
+                  </div>
+                  <Button type="submit" aria-label="특허 검색" className="h-10 px-4">검색</Button>
+                  {patentKeyword && <Button type="button" variant="outline" className="h-10 px-3" onClick={clearPatentSearch}>전체</Button>}
+                </form>
                 {error && <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}
                 {result && !result.codes.length && !loading && (
                   <p className="py-10 text-center text-sm text-muted-foreground">KIPRIS에서 이 이름으로 출원한 특허를 찾지 못했습니다.</p>
+                )}
+                {!loading && result && result.codes.length > 0 && items.length === 0 && (
+                  <p className="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground">
+                    {patentKeyword ? `이 기관의 특허명에서 ‘${patentKeyword}’을(를) 찾지 못했습니다.` : "표시할 특허가 없습니다."}
+                  </p>
                 )}
                 {items.length > 0 && (
                   <ul className="rounded-2xl border border-border/50 bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
