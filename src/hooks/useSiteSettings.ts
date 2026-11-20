@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   feature_favorites: "true",
   feature_search_history: "true",
   feature_glossary: "true",
-  feature_filing: "true",
+  feature_filing: "false",
   filing_url: "/filing-app/",
   homepage_visible_sections: "",
   summary_disclaimer: DEFAULT_SUMMARY_DISCLAIMER,
@@ -48,7 +48,9 @@ let cachedSettings: SiteSettings | null = null;
 
 // Last fetched settings, kept in the browser so returning visitors see the
 // page at once (no blank loading screen) while fresh values load in the background.
-const SNAPSHOT_KEY = "site-settings-snapshot-v1";
+// Only values the admin actually stored are saved, so a code-side default (출원도우미 비공개처럼)
+// never gets overridden by an old snapshot; the key is bumped whenever a default flips.
+const SNAPSHOT_KEY = "site-settings-snapshot-v2";
 const snapshot: SiteSettings | null = (() => {
   try {
     const raw = localStorage.getItem(SNAPSHOT_KEY);
@@ -72,11 +74,15 @@ async function fetchSettings(): Promise<SiteSettings> {
         .select("key, value");
       if (!error && data) {
         const map: SiteSettings = { ...DEFAULT_SETTINGS };
+        const stored: SiteSettings = {};
         for (const row of data) {
-          if (row.key && row.value) map[row.key] = row.value;
+          if (row.key && row.value) {
+            map[row.key] = row.value;
+            stored[row.key] = row.value;
+          }
         }
         cachedSettings = map;
-        try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(map)); } catch { /* ignore */ }
+        try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(stored)); } catch { /* ignore */ }
         return map;
       }
     } catch {

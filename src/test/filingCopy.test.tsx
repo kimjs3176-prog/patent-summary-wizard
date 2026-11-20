@@ -22,6 +22,11 @@ afterEach(() => {
 
 const page = (ui: ReactNode) => render(<MemoryRouter initialEntries={["/filing"]}>{ui}</MemoryRouter>);
 
+// 출원도우미는 기본 비공개(owner): 화면 검사는 관리자가 켠 상태로 한다.
+beforeEach(() => {
+  settings.current = { feature_filing: "true" };
+});
+
 describe("출원도우미 화면 이름 — 메뉴(services.ts)와 같은 ‘출원도우미’ 하나만 쓴다", () => {
   // 처음 열 때 뜨는 면책 안내(아래 따로 확인)는 이미 본 것으로 둔다
   beforeEach(() => sessionStorage.setItem("filing_notice_seen", "1"));

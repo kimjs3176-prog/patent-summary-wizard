@@ -1,4 +1,5 @@
 // 출원지원(에이프 Agri-IP) 연결 — 관리자 설정 feature_filing 으로 켜고 끄는 옵션 기능.
+// 기본은 꺼짐(비공개): 관리자 페이지에서 '출원도우미'를 켜야 상단 메뉴·홈 배지·검색 결과 버튼과 /filing 화면이 나타난다 (owner, 2026-11).
 // AIS 는 에이프를 /filing 페이지의 iframe 으로 열고(임베드 모드), 두 창은 postMessage 로만 주고받는다.
 //   AIS → 에이프: 주소 {filing_url}?embed=ais&skin=ais&theme=light&accent=hsl(…)#단계[?cite=출원번호&title=…|?kw=키워드&field=분야]
 //                 메시지 {type:"agri-ip:go", step, sub} 단계·쪽 이동 · {type:"agri-ip:move", dir} 이전/다음 · {type:"agri-ip:open", panel:"help"} 도움말
@@ -10,8 +11,9 @@ export const FILING_DEFAULT_URL = "/filing-app/";
 
 export type SettingsLike = Record<string, string | undefined>;
 
+/** 비공개가 기본: 관리자 설정 feature_filing 을 'true' 로 켠 때만 출원도우미가 보인다. */
 export function filingEnabled(settings: SettingsLike): boolean {
-  return settings.feature_filing !== "false";
+  return settings.feature_filing === "true";
 }
 
 /** 관리자가 적은 주소를 정리한다: 이 사이트 안의 경로(/…/)나 https 주소만, 그 밖에는 기본 주소. */

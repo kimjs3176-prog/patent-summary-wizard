@@ -4,13 +4,15 @@ import { heroCtaServices, isServiceActive, headerBadgeServices, SERVICES, visibl
 const byKey = (k: string) => SERVICES.find((s) => s.key === k)!;
 
 describe("service menu", () => {
-  it("hides 출원도우미 when the feature_filing setting is off", () => {
+  it("hides 출원도우미 until the feature_filing setting is turned on (owner: 비공개)", () => {
+    expect(visibleServices({}).map((s) => s.key)).not.toContain("filing");
     expect(visibleServices({ feature_filing: "false" }).map((s) => s.key)).not.toContain("filing");
-    expect(visibleServices({}).map((s) => s.key)).toContain("filing");
+    expect(visibleServices({ feature_filing: "true" }).map((s) => s.key)).toContain("filing");
   });
 
-  it("shows 출원도우미 in the desktop header and leaves out the two hero-foot entries (owner)", () => {
-    const keys = headerBadgeServices({}).map((s) => s.key);
+  it("keeps 출원도우미 out of the desktop header while private, and leaves out the two hero-foot entries (owner)", () => {
+    expect(headerBadgeServices({}).map((s) => s.key)).not.toContain("filing");
+    const keys = headerBadgeServices({ feature_filing: "true" }).map((s) => s.key);
     expect(keys).toContain("filing");
     expect(keys).not.toContain("home");
     expect(keys).not.toContain("potential");
@@ -30,8 +32,8 @@ describe("service menu", () => {
   it("gives 무상기술이전 and, to its right, 식품기술이전 협의체 their own entries at the bottom of the home hero (owner)", () => {
     expect(heroCtaServices({}).map((s) => s.key)).toEqual(["potential", "consortium"]);
     // The hero entry reads the same visible list as the menu, so it can never point at a hidden service.
-    expect(heroCtaServices({ feature_filing: "false" })).toEqual(
-      visibleServices({ feature_filing: "false" }).filter((s) => s.key === "potential" || s.key === "consortium"),
+    expect(heroCtaServices({})).toEqual(
+      visibleServices({}).filter((s) => s.key === "potential" || s.key === "consortium"),
     );
   });
 

@@ -2,7 +2,7 @@
 //   node scripts/smoke.mjs http://127.0.0.1:4173
 // - 바깥 요청(Supabase·KIPRIS·영상 등)은 막는다: 서버 상태와 상관없이 같은 결과가 나오고, 서버가 안 될 때도 화면이 깨지지 않는지 본다.
 // - 화면마다: 페이지 오류(잡히지 않은 예외)가 없고, 제목(h1)이 보이고, 가로로 넘치지 않는지 (데스크톱·휴대폰 폭).
-// - 출원도우미를 처음 열 때 결과물이 출원·등록을 보장하지 않는다는 안내가 (AIS 화면·단독 화면에서) 한 번 뜨고 닫히는지.
+// - 출원도우미는 기본 비공개(owner): /filing 은 닫혀 있다는 안내만 보인다. 단독 화면(public/filing-app)의 면책 안내가 한 번 뜨고 닫히는지.
 // - 출원도우미(public/filing-app): 연습 시나리오로 1~5단계의 모든 쪽을 돌고, 기본 명세서·빈칸 질문·제출용 묶음 파일을 만든 뒤 넘어가기 전 점검 팝업을 거쳐 5단계로 간다.
 // - 출원도우미 1단계: 사전 질문(대화)에 화면에서 차례로 답하고, 초안 고르기 쪽의 절차를 하나씩 연 뒤 2단계로 넘어간다.
 // - 요약서(데이터시트형): scripts/fixtures 의 저장된 서버 응답으로 띄워, 인쇄와 PDF 다운로드가 정확히 A4 두 쪽인지 본다.
@@ -49,31 +49,20 @@ for (const width of WIDTHS) {
   }
 }
 
-// 출원도우미를 처음 열 때 결과물이 출원·등록을 보장하지 않는다는 안내가 뜨고, 확인하면 같은 탭에서는 다시 뜨지 않는다.
-// AIS 화면(/filing)이 띄우고 그 안의 iframe 은 띄우지 않는다. 단독 화면은 자동 점검 브라우저에서 숨기므로 __noticeForce 로 확인한다.
+// 출원도우미는 기본 비공개(owner): /filing 은 '꺼져 있습니다' 안내만 보이고, 면책 안내나 iframe 은 없다.
+// 단독 화면(public/filing-app)은 자동 점검 브라우저에서 안내를 숨기므로 __noticeForce 로 확인한다.
 {
-  const where = "출원 면책 안내";
+  const where = "출원도우미 비공개 기본값";
   console.log(where);
   const p = await page(390);
   const said = /출원이나 등록을 보장하지 않아요/;
   try {
     await p.addInitScript(() => { window.__noticeForce = true; });
     await p.goto(`${BASE}/filing`, { waitUntil: "load" });
-    const dlg = p.locator("[data-filing-notice]");
-    await dlg.waitFor({ timeout: 15000 });
-    if (!said.test(await dlg.innerText())) fail(where, "AIS 화면 안내에 '출원이나 등록을 보장하지 않아요'가 없음");
-    const inner = p.frames().find((f) => f.url().includes("/filing-app/"));
-    if (!inner) fail(where, "출원도우미 iframe 이 없음");
-    else {
-      await inner.waitForFunction(() => typeof window.startPractice === "function", null, { timeout: 15000 });
-      if (await inner.evaluate(() => !document.querySelector("#notice")?.hidden)) fail(where, "iframe 안에서도 안내가 떠 두 번 보임");
-    }
-    await dlg.getByRole("button", { name: "확인했어요" }).click();
-    await dlg.waitFor({ state: "detached", timeout: 5000 });
-    await p.reload({ waitUntil: "load" });
     await p.locator("h1").first().waitFor({ timeout: 15000 });
-    await p.waitForTimeout(800);
-    if (await p.locator("[data-filing-notice]").count()) fail(where, "확인한 뒤 같은 탭에서 다시 뜸");
+    if (!(await p.evaluate(() => /출원도우미는 지금 꺼져 있습니다/.test(document.body.innerText)))) fail(where, "/filing 이 비공개 안내를 보이지 않음");
+    if (await p.locator("[data-filing-notice]").count()) fail(where, "비공개 화면에서 면책 안내가 뜸");
+    if (await p.locator("iframe").count()) fail(where, "비공개 화면에 출원도우미 iframe 이 있음");
     await p.evaluate(() => sessionStorage.clear());
     await p.goto(`${BASE}/filing-app/index.html#idea`, { waitUntil: "load" });
     const box = p.locator("#notice:not([hidden])");
@@ -85,7 +74,7 @@ for (const width of WIDTHS) {
     await p.waitForFunction(() => typeof window.startPractice === "function");
     await p.waitForTimeout(400);
     if (await p.locator("#notice").isVisible()) fail(where, "단독 화면: 확인한 뒤 같은 탭에서 다시 뜸");
-    console.log("  AIS 화면·단독 화면 모두 한 번 뜨고 닫힘");
+    console.log("  /filing 은 비공개, 단독 화면 안내는 한 번 뜨고 닫힘");
   } catch (e) {
     fail(where, String(e.message).split("\n")[0]);
   }

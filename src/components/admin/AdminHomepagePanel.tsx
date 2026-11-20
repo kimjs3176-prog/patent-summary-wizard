@@ -88,13 +88,13 @@ export function AdminHomepagePanel({ siteSettings, setSiteSettings, isSavingSett
                 <h3 className="font-semibold text-sm mb-3">기능 활성화/비활성화</h3>
                 <div className="space-y-3">
                   {[
-                    { key: "feature_pdf", label: "PDF 내보내기", desc: "특허 요약서를 PDF로 다운로드하는 기능" },
-                    { key: "feature_favorites", label: "관심 특허(즐겨찾기)", desc: "요약 화면의 '담기' 버튼 및 비교 페이지" },
-                    { key: "feature_search_history", label: "최근 검색 기록", desc: "메인 화면의 검색 기록 카드 노출" },
-                    { key: "feature_glossary", label: "용어집 자동 주석", desc: "AI 요약 본문의 학술 용어 툴팁 자동 표시" },
-                    { key: "feature_filing", label: "출원도우미", desc: "상단 메뉴의 ‘출원도우미’와 검색 결과의 ‘이 키워드로 출원 준비’ 버튼 (아이디어 정리 → 비슷한 특허 찾기 → 특허 가능성 진단 → 서류 만들기 → 제출하고 챙기기 5단계)" },
+                    { key: "feature_pdf", label: "PDF 내보내기", desc: "특허 요약서를 PDF로 다운로드하는 기능", defaultOn: true },
+                    { key: "feature_favorites", label: "관심 특허(즐겨찾기)", desc: "요약 화면의 '담기' 버튼 및 비교 페이지", defaultOn: true },
+                    { key: "feature_search_history", label: "최근 검색 기록", desc: "메인 화면의 검색 기록 카드 노출", defaultOn: true },
+                    { key: "feature_glossary", label: "용어집 자동 주석", desc: "AI 요약 본문의 학술 용어 툴팁 자동 표시", defaultOn: true },
+                    { key: "feature_filing", label: "출원도우미", desc: "상단 메뉴의 ‘출원도우미’와 검색 결과의 ‘이 키워드로 출원 준비’ 버튼 (아이디어 정리 → 비슷한 특허 찾기 → 특허 가능성 진단 → 서류 만들기 → 제출하고 챙기기 5단계) — 지금은 비공개, 켜야 나타납니다", defaultOn: false },
                   ].map(feat => {
-                    const isOn = siteSettings[feat.key] !== "false";
+                    const isOn = feat.defaultOn ? siteSettings[feat.key] !== "false" : siteSettings[feat.key] === "true";
                     return (
                       <div key={feat.key} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/30">
                         <div>

@@ -10,8 +10,8 @@ import {
 } from "@/lib/filing";
 
 describe("출원지원(에이프) 연결", () => {
-  it("기본은 켜짐, 'false' 일 때만 꺼짐", () => {
-    expect(filingEnabled({})).toBe(true);
+  it("기본은 꺼짐(비공개), 'true' 일 때만 켜짐", () => {
+    expect(filingEnabled({})).toBe(false);
     expect(filingEnabled({ feature_filing: "true" })).toBe(true);
     expect(filingEnabled({ feature_filing: "false" })).toBe(false);
   });
