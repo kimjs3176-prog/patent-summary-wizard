@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMarketRows, splitSentences, splitTrustNotes, toReportParagraphs } from "@/lib/summaryReport";
+import { marketTrustNote, parseMarketRows, splitSentences, splitTrustNotes, toReportParagraphs } from "@/lib/summaryReport";
 
 const HFF = "KOSIS 국가통계포털, 식품의약품안전처 「건강기능식품 매출액」";
 const MARKET =
@@ -79,5 +79,27 @@ describe("요약서 보고서 레이아웃 도우미", () => {
       { trust: "official", source: HFF, converted: false },
       { trust: "ai" },
     ]);
+  });
+});
+
+describe("시장 근거 주석 한 줄 (배지를 문단마다 달지 않는다)", () => {
+  it("표로 읽힌 시장마다 공식 통계(출처)·AI 추정을 한 줄에 적고 전망 환산을 덧붙인다", () => {
+    const note = marketTrustNote([
+      "**국내 버섯 시장**은 2023년 1,500억 원에서 연평균 6.5% 성장해 2026년 1,812억 원에 이를 전망이다(출처: 통계청 「농업면적조사」, 2023년 기준).",
+      "**글로벌 버섯 시장**은 2023년 500억 달러 규모이며 연평균 7% 성장하고 있다(AI 추정치).",
+    ]);
+    expect(note).toBe("근거: 국내 버섯 시장은 공식 통계(통계청 「농업면적조사」), 글로벌 버섯 시장은 AI 추정(출처를 확인하지 못한 참고값)입니다. 전망은 기준 규모에 연평균 성장률을 적용해 환산했습니다.");
+  });
+
+  it("모든 시장이 같은 근거면 '모두'로 짧게 적는다", () => {
+    const note = marketTrustNote([
+      "**국내 버섯 시장**은 2023년 1,500억 원 규모이며 연평균 6.5% 성장하고 있다(AI 추정치).",
+      "**글로벌 버섯 시장**은 2023년 500억 달러 규모이며 연평균 7% 성장하고 있다(AI 추정치).",
+    ]);
+    expect(note).toBe("근거: 시장 수치는 모두 AI 추정(출처를 확인하지 못한 참고값)입니다.");
+  });
+
+  it("근거 괄호가 없으면 주석을 달지 않는다", () => {
+    expect(marketTrustNote(["시장 규모를 확인할 수 있는 자료가 없다."])).toBe("");
   });
 });
