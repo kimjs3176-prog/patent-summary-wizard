@@ -19,7 +19,7 @@
   <img src="./assets/readme/summary-pages.png" width="100%" alt="특허 10-2080834(미생물 발효 유채박 식물 생장 촉진용 조성물)로 만든 실제 요약서 A4 두 쪽. 1쪽은 특허 기본정보, 사업화 점수 81점, 기술 성숙도 TRL 6, 기술 설명과 대표 도면, 2쪽은 시장 표와 근거 주석, 사업화 가능성, 예상 규제, 기능이 비슷한 특허, 종합 의견">
 </p>
 
-특허 `10-2080834`를 넣었을 때 나오는 요약서를 그대로 인쇄한 두 쪽입니다(도면은 저장소용 대체 그림). 화면, 인쇄, PDF 다운로드가 모두 같은 내용의 **A4 정확히 2쪽**으로 나오며, CI가 매번 이것을 확인합니다.
+특허 `10-2080834`를 넣었을 때 나오는 요약서를 그대로 인쇄한 두 쪽입니다(도면은 저장소용 대체 그림). 화면, 인쇄, PDF 다운로드가 모두 같은 내용의 **A4 정확히 2쪽**으로 나오며.
 
 - **1쪽 · 기술**: 특허 기본정보와 관련 키워드 → 사업화 점수·기술 성숙도(TRL) → 어떤 기술인가요? → 무엇을 해결하나요?(대표 도면) → 어디에 쓸 수 있나요?
 - **2쪽 · 시장과 사업화**: 시장 표(기준 규모·연평균 성장률·전망)와 근거 주석 한 줄 → 사업화 가능성 → 예상 규제(법령 링크) → 기능이 비슷한 특허 → 종합 의견
@@ -51,15 +51,13 @@ AI가 쓴 글을 그대로 내보내지 않도록 서버가 먼저 걸러 냅니
 
 ## 주요 기능
 
-메뉴 이름과 설명은 `src/lib/services.ts` 한 곳에서 관리합니다.
-
 | 메뉴 | 주소 | 하는 일 |
 | --- | --- | --- |
 | 통합검색 (홈) | `/` | 키워드, 문장, 질문을 검색창 하나로 받습니다. 특허번호는 요약서로, 짧은 단어는 넓은 검색으로, 설명형 문장은 조건에 맞는 특허만 골라 보여 주고, 질문은 그 자리에서 대화형 특허 상담으로 답합니다. |
 | AI 특허 요약서 | `/?patent=번호` | 특허번호 하나로 A4 2쪽 요약서를 만듭니다(아래 '요약서' 참고). |
 | 나만의 특허찾기 | `/finder` | 업종과 아이템을 넣으면 검색된 후보 안에서 맞는 특허를 골라 추천합니다. |
 | 무상기술이전 | `/potential` | 무상으로 이전받을 수 있는 특허 목록을 모아 보여 줍니다. |
-| 출원도우미 | `/filing` | 아이디어 정리 → 비슷한 특허 찾기 → 특허 가능성 진단 → 서류 만들기 → 제출하고 챙기기 5단계로 출원 준비를 돕고, 제출용 묶음 파일(zip)과 변리사 상담 요약서(.docx)를 만듭니다. 지금은 비공개로, 관리자 설정 `feature_filing` 을 켜야 메뉴와 화면이 열립니다. 자세한 동작은 [docs/filing-helper.md](docs/filing-helper.md)에 있습니다. |
+| 출원도우미 | `/filing` | 아이디어 정리 → 비슷한 특허 찾기 → 특허 가능성 진단 → 서류 만들기 → 제출하고 챙기기 5단계로 출원 준비를 돕고, 제출용 묶음 파일(zip)과 변리사 상담 요약서(.docx)를 만듭니다. 지금은 비공개이며, 관리자가 켜야 메뉴와 화면이 열립니다. |
 | 인사이트 | `/insights` | 연도별·기술분야별 출원 동향과 주요 키워드를 보여 줍니다. |
 | 일괄조회 | `/batch` | 여러 특허를 한 번에 조회하고 엑셀로 내려받습니다. |
 | 관심특허 | `/compare` | 담아 둔 특허를 모아 나란히 비교합니다(브라우저에만 저장). |
@@ -78,55 +76,6 @@ AI가 쓴 글을 그대로 내보내지 않도록 서버가 먼저 걸러 냅니
 
 </details>
 
-## 구조
-
-```text
-┌──────────────────────┐  HTTPS  ┌───────────────────────────┐       ┌────────────────────────┐
-│ 브라우저              │────────▶│ Supabase Edge Functions   │──────▶│ KIPRIS (특허 원문)      │
-│ React 화면 (src/)     │         │ (Deno, supabase/functions)│──────▶│ KOSIS (국가통계)        │
-│ 출원도우미             │         │                           │──────▶│ 국가법령정보 (법령)      │
-│ (public/filing-app)  │         │ 저장: Supabase Postgres    │──────▶│ AI 게이트웨이 (LLM)     │
-└──────────────────────┘         └───────────────────────────┘       └────────────────────────┘
-```
-
-- **화면**: Vite 6, React 18, TypeScript, Tailwind CSS, shadcn/ui, React Router 7 (`src/`)
-- **출원도우미**: 한 파일로 된 화면 `public/filing-app/index.html`을 `/filing` 페이지가 iframe으로 넣고, 서버는 `supabase/functions/filing-api/`입니다.
-- **서버**: Supabase Edge Functions(Deno). 현재 Lovable Cloud(Supabase 기반)에서 운영합니다.
-- **데이터**: KIPRIS(특허), KOSIS(국가통계), 국가법령정보(법령) 공개 API. 요약서와 조회 결과는 Supabase Postgres에 저장해 다시 씁니다.
-
-<details>
-<summary><b>AI 모델 연결과 교체</b></summary>
-
-- 모든 AI 호출은 서버에서 OpenAI 호환 Chat Completions 방식의 게이트웨이(Lovable AI Gateway) 한 곳으로만 나갑니다. 화면은 AI를 직접 부르지 않습니다.
-- 모델 이름은 `supabase/functions/_shared/aiConfig.ts` 한 곳에서 정합니다. 작업 무게에 따라 세 단계입니다.
-
-| 단계 | 환경변수 | 기본 모델 | 쓰는 곳 |
-| --- | --- | --- | --- |
-| main | `AI_MODEL` | `google/gemini-3.8-flash` | 요약서, 사업화 점수, 특허 상담 답변, 출원도우미, 출원 동향 |
-| lite | `AI_MODEL_LITE` | `google/gemini-3.1-flash-lite` | 검색어 정리, 용어 풀이, 규제 찾기 |
-| alt | `AI_MODEL_ALT` | `openai/gpt-6-astra` | 대체 검색어 제안 |
-
-- **모델 교체**: 위 환경변수(서버 비밀값)에 `제공사/모델명`을 넣으면 코드 수정 없이 바뀝니다. 형식이 틀리면 기본 모델을 씁니다.
-- **게이트웨이 교체**: 요약서·점수·검색·출원도우미는 `aiConfig.ts`의 게이트웨이 주소와 키 이름만 바꾸면 됩니다. 특허 상담(`patent-chat`), 나만의 특허찾기(`find-my-patents`), 출원 동향(`filing-trends`)은 게이트웨이 연결 모듈(`@lovable.dev/ai-gateway`)을 쓰므로 그 모듈도 함께 바꿔야 합니다.
-- **키**: `LOVABLE_API_KEY`, `KIPRIS_API_KEY`, `KOSIS_SERVICE_KEY` 등은 서버 비밀값으로만 두고 저장소에는 넣지 않습니다.
-
-</details>
-
-<details>
-<summary><b>서버 함수</b></summary>
-
-| Edge Function | 역할 |
-| --- | --- |
-| `search-patents` | 키워드·문장 검색, 문장형 검색의 관련도 판정 |
-| `fetch-patent`, `patent-register`, `govt-patent`, `proxy-image` | 특허 원문·등록 정보·국유특허 정보·도면 가져오기 |
-| `summarize-patent` | 요약서 생성(프롬프트 버전 관리, 볼드 규칙 `boldPolicy.ts`, 시장 수치 보정) |
-| `analyze-commercialization`, `analyze-regulations`, `recommend-similar-patents`, `extract-glossary` | 점수·TRL, 예상 규제, 비슷한 특허, 용어 풀이 |
-| `patent-chat`, `find-my-patents`, `suggest-keywords` | 특허 상담, 나만의 특허찾기, 대체 검색어 |
-| `filing-api`, `filing-trends` | 출원도우미 서버, 출원 동향 통계 |
-| `export-patents`, `manage-featured-patents`, `sync-r2-videos` | 엑셀 내보내기, 추천 특허 관리, 영상 목록 동기화 |
-
-</details>
-
 ## 알려진 제약
 
 - 특허·통계·법령은 KIPRIS·KOSIS·국가법령정보 공개 API에 의존합니다. 해당 기관에 장애가 있으면 일부 항목이 늦게 나오거나 비어 있을 수 있습니다.
@@ -136,9 +85,4 @@ AI가 쓴 글을 그대로 내보내지 않도록 서버가 먼저 걸러 냅니
 
 ## 오픈소스
 
-React, Vite, Tailwind CSS, shadcn/ui, Supabase JS, jsPDF, html2canvas 등 MIT·ISC·Apache-2.0·BSD 계열의 허용형 라이선스 구성요소를 씁니다(전체 목록은 `package.json`). 외부 API 키는 저장소에 들어 있지 않습니다.
-
-## 문서
-
-- [docs/filing-helper.md](docs/filing-helper.md): 출원도우미 자세한 동작
-- [docs/security-review-2026-11.md](docs/security-review-2026-11.md): 보안 점검 기록
+React, Vite, Tailwind CSS, shadcn/ui, Supabase JS, jsPDF, html2canvas 등 MIT·ISC·Apache-2.0·BSD 계열의 허용형 라이선스 구성요소를 씁니다.
