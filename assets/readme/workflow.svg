@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">요약서가 만들어지는 과정</title>
+  <desc id="desc">특허번호를 넣으면 KIPRIS에서 초록과 청구항을 가져오고, AI가 쉬운 말로 요약한 뒤 원문에 없는 수치를 지우고, KOSIS 시장 통계와 국가법령 규제 정보를 붙여 A4 2쪽 요약서로 냅니다.</desc>
+  <rect width="1200" height="300" rx="26" fill="#F3F7F4"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Segoe UI', sans-serif">
+    <g transform="translate(48 56)">
+      <rect width="196" height="188" rx="16" fill="#FFFFFF" stroke="#C9DBD1"/>
+      <text x="20" y="44" font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#17855F">01</text>
+      <text x="20" y="84" font-size="24" font-weight="700" fill="#10241C">특허번호</text>
+      <text x="20" y="114" font-size="24" font-weight="700" fill="#10241C">입력</text>
+      <text x="20" y="154" font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#5E7A6C">10-2080834</text>
+    </g>
+    <g transform="translate(270 56)">
+      <rect width="196" height="188" rx="16" fill="#FFFFFF" stroke="#C9DBD1"/>
+      <text x="20" y="44" font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#17855F">02</text>
+      <text x="20" y="84" font-size="24" font-weight="700" fill="#10241C">원문 수집</text>
+      <text x="20" y="124" font-size="20" fill="#3D5A4C">KIPRIS</text>
+      <text x="20" y="152" font-size="20" fill="#3D5A4C">초록 · 청구항</text>
+    </g>
+    <g transform="translate(492 56)">
+      <rect width="216" height="188" rx="16" fill="#10241C"/>
+      <text x="20" y="44" font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#7FE0B8">03</text>
+      <text x="20" y="84" font-size="24" font-weight="700" fill="#F4F7F2">AI 요약 · 검증</text>
+      <text x="20" y="124" font-size="20" fill="#A9C4B7">쉬운 말로 쓰고,</text>
+      <text x="20" y="152" font-size="20" fill="#A9C4B7">원문에 없는 수치는</text>
+      <text x="20" y="180" font-size="20" fill="#A9C4B7">서버가 지움</text>
+    </g>
+    <g transform="translate(734 56)">
+      <rect width="196" height="188" rx="16" fill="#FFFFFF" stroke="#C9DBD1"/>
+      <text x="20" y="44" font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#17855F">04</text>
+      <text x="20" y="84" font-size="24" font-weight="700" fill="#10241C">시장 · 규제</text>
+      <text x="20" y="124" font-size="20" fill="#3D5A4C">KOSIS 국가통계</text>
+      <text x="20" y="152" font-size="20" fill="#3D5A4C">국가법령 링크</text>
+    </g>
+    <g transform="translate(956 56)">
+      <rect width="196" height="188" rx="16" fill="#25A87A"/>
+      <text x="20" y="44" font-family="ui-monospace, Menlo, monospace" font-size="18" fill="#E6FFF4">05</text>
+      <text x="20" y="84" font-size="24" font-weight="700" fill="#FFFFFF">A4 2쪽 요약서</text>
+      <text x="20" y="124" font-size="20" fill="#E6FFF4">인쇄 · PDF</text>
+      <text x="20" y="152" font-size="20" fill="#E6FFF4">링크 · QR 공유</text>
+    </g>
+    <g fill="#25A87A">
+      <path d="M248 150 l14 -8 v16 z"/><path d="M470 150 l14 -8 v16 z"/><path d="M712 150 l14 -8 v16 z"/><path d="M934 150 l14 -8 v16 z"/>
+    </g>
+  </g>
+</svg>
