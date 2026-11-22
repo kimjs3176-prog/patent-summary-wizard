@@ -84,7 +84,7 @@ export function DatasheetReport(p: Props) {
       <section className="ds-sheet" data-sheet="2">
         <div className="ds-body">
           {at("market")}
-          {slots.market.length > 0 && <MarketReadNote />}
+          {slots.market.length > 0 && <MarketReadNote paragraphs={slots.market.flatMap((i) => sections[i]?.paragraphs ?? [])} />}
           {at("biz")}
           {at("extra")}
           {patentData && !isStreaming && (

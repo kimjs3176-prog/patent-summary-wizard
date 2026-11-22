@@ -143,3 +143,28 @@ export function splitTrustNotes(text: string): TrustPart[] {
   if (last < text.length) out.push({ text: text.slice(last) });
   return out;
 }
+
+/**
+ * 시장 절 아래에 붙일 근거 주석 한 줄(owner: 근거 배지를 문단마다 달지 않는다).
+ * 표로 읽힌 시장마다 '공식 통계(출처)' 또는 'AI 추정'을 적고, 표가 없으면 본문 괄호에서 모은다.
+ */
+export function marketTrustNote(paragraphs: string[]): string {
+  const AI = "AI 추정(출처를 확인하지 못한 참고값)";
+  const official = new Set<string>();
+  let ai = false;
+  for (const p of paragraphs) for (const part of splitTrustNotes(p)) {
+    if ("text" in part) continue;
+    if (part.trust === "official") official.add(part.source);
+    else ai = true;
+  }
+  const rows = parseMarketRows(paragraphs).filter((r) => r.trust !== "unknown");
+  const off = (src?: string) => `공식 통계${src ? `(${src})` : ""}`;
+  let head: string;
+  if (rows.length && rows.every((r) => r.trust === "ai")) head = `시장 수치는 모두 ${AI}입니다.`;
+  else if (rows.length && rows.every((r) => r.trust === "official") && new Set(rows.map((r) => r.source)).size === 1) head = `시장 수치는 모두 ${off(rows[0].source)}입니다.`;
+  else if (rows.length) head = `${rows.map((r) => `${r.label}은 ${r.trust === "official" ? off(r.source) : AI}`).join(", ")}입니다.`;
+  else if (official.size || ai) head = `시장 수치는 ${[official.size ? off([...official].join(", ")) : "", ai ? AI : ""].filter(Boolean).join("와 ")} 값입니다.`;
+  else return "";
+  const proj = parseMarketRows(paragraphs).some((r) => r.projAmount);
+  return `근거: ${head}${proj ? " 전망은 기준 규모에 연평균 성장률을 적용해 환산했습니다." : ""}`;
+}

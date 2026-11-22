@@ -6,6 +6,7 @@ import { KeywordChip, type KwItem } from "../_keywords";
 import { formatPatentNumber } from "./helpers";
 import { PatentStatusBadge } from "./PatentStatusBadge";
 import { renderBold } from "./RenderBold";
+import { marketTrustNote } from "@/lib/summaryReport";
 
 type PatentData = BasePatentSummaryProps["patentData"];
 
@@ -105,13 +106,12 @@ export function ScoreStrip({ score, scoreSummary, scoreLoading, details, trl, tr
   );
 }
 
-/** 시장 표 아래 한 줄: 시장 규모 근거 읽는 법 */
-export function MarketReadNote() {
-  return (
-    <p className="ds-read">
-      <span><span className="trust-badge official">공식 통계</span> KOSIS 등 국가통계나 검증된 자료의 값</span>
-      <span><span className="trust-badge ai">AI 추정</span> 출처를 확인하지 못한 참고값</span>
-      <span>전망은 기준 규모에 연평균 성장률을 적용해 환산했습니다.</span>
-    </p>
-  );
+/**
+ * 시장 절 아래 주석 한 줄: 시장 규모 근거를 문단마다 배지로 달지 않고 여기에 모은다(owner).
+ * 시장별로 '공식 통계(출처)' 또는 'AI 추정'을 적고, 전망 환산 방법을 덧붙인다.
+ */
+export function MarketReadNote({ paragraphs }: { paragraphs: string[] }) {
+  const text = marketTrustNote(paragraphs);
+  if (!text) return null;
+  return <p className="ds-read">※ {text}</p>;
 }

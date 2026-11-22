@@ -1,13 +1,12 @@
 import { sectionMeta, type MdSection } from "./helpers";
 import { splitBold, splitItalic } from "@/lib/summaryMarkup";
 import { parseMarketRows, splitTrustNotes, toReportParagraphs } from "@/lib/summaryReport";
-import { TrustBadge } from "./TrustBadge";
 import { renderBold } from "./RenderBold";
 
 
 type Annotate = (text: string) => React.ReactNode;
 
-/** 문단 한 조각: 각주 표시([^N]) → 근거 괄호(출처·AI 추정) 배지 → 볼드 → 학명 이탤릭 → 용어집 주석 */
+/** 문단 한 조각: 각주 표시([^N]) → 근거 괄호(출처·AI 추정)는 지움(시장 절 아래 주석 한 줄로 모음, owner) → 볼드 → 학명 이탤릭 → 용어집 주석 */
 function renderInline(p: string, key: string, annotate: Annotate): React.ReactNode[] {
   const out: React.ReactNode[] = [];
   p.split(/(\[\^\d+\])/g).forEach((part, j) => {
@@ -18,10 +17,7 @@ function renderInline(p: string, key: string, annotate: Annotate): React.ReactNo
     }
     if (!part) return;
     splitTrustNotes(part).forEach((tp, t) => {
-      if (!("text" in tp)) {
-        out.push(<TrustBadge key={`${key}-tr-${j}-${t}`} trust={tp.trust} source={tp.trust === "official" ? tp.source : undefined} converted={tp.trust === "official" ? tp.converted : undefined} />);
-        return;
-      }
+      if (!("text" in tp)) return;
       // 볼드 안에 학명 이탤릭이 있어도(**신규 *Leuconostoc* 균주**) 한 볼드로 묶는다. 볼드 안은 용어집을 달지 않는다(노이즈 회피)
       splitBold(tp.text).forEach((bp, bi) => {
         if (bp.bold) {
@@ -43,7 +39,7 @@ function renderInline(p: string, key: string, annotate: Annotate): React.ReactNo
   return out;
 }
 
-/** 관련시장 동향 요약표: 시장 · 기준 규모 · 연평균 성장률 · 전망 · 근거 (읽는 법은 왼쪽 여백 주석에) */
+/** 관련시장 동향 요약표: 시장 · 기준 규모 · 연평균 성장률 · 전망 (근거는 표 아래 주석 한 줄에) */
 export function MarketTable({ paragraphs }: { paragraphs: string[] }) {
   const rows = parseMarketRows(paragraphs);
   if (!rows.length) return null;
@@ -54,7 +50,7 @@ export function MarketTable({ paragraphs }: { paragraphs: string[] }) {
         <table className="report-market-table">
           <caption className="sr-only">관련 시장 규모 요약</caption>
           <thead>
-            <tr><th scope="col">시장</th><th scope="col">기준 규모</th><th scope="col">연평균 성장률</th><th scope="col">전망</th><th scope="col">근거</th></tr>
+            <tr><th scope="col">시장</th><th scope="col">기준 규모</th><th scope="col">연평균 성장률</th><th scope="col">전망</th></tr>
           </thead>
           <tbody>
             {rows.map((r) => (
@@ -63,7 +59,6 @@ export function MarketTable({ paragraphs }: { paragraphs: string[] }) {
                 <td className="tabular-nums">{r.baseAmount ? <>{r.baseAmount}<span className="yr">{r.baseYear}년</span></> : "-"}</td>
                 <td className="tabular-nums">{r.cagr ?? "-"}</td>
                 <td className="tabular-nums">{r.projAmount ? <>{r.projAmount}<span className="yr">{r.projYear}년</span></> : "-"}</td>
-                <td><TrustBadge trust={r.trust} source={r.source} compact /></td>
               </tr>
             ))}
           </tbody>
